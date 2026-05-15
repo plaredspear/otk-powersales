@@ -132,8 +132,8 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage> {
     return Column(
       children: [
         _infoRow('행사번호', detail.promotionNumber),
-        if (detail.promotionTypeName != null)
-          _infoRow('행사유형', detail.promotionTypeName!),
+        if (detail.promotionType != null)
+          _infoRow('행사유형', detail.promotionType!),
         if (detail.accountName != null)
           _infoRow('거래처', detail.accountName!),
         _infoRow('기간', '${detail.startDate} ~ ${detail.endDate}'),

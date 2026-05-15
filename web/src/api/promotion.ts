@@ -4,7 +4,7 @@ import type { ApiResponse } from './types';
 
 export interface PromotionListParams {
   keyword?: string;
-  promotionTypeId?: number;
+  promotionType?: string;
   category?: string;
   startDate?: string;
   endDate?: string;
@@ -16,8 +16,7 @@ export interface PromotionListItem {
   id: number;
   promotionNumber: string;
   promotionName: string | null;
-  promotionTypeId: number | null;
-  promotionTypeName: string | null;
+  promotionType: string | null;
   accountName: string | null;
   startDate: string;
   endDate: string;
@@ -45,8 +44,7 @@ export interface PromotionDetail {
   id: number;
   promotionNumber: string;
   promotionName: string | null;
-  promotionTypeId: number | null;
-  promotionTypeName: string | null;
+  promotionType: string | null;
   accountId: number;
   accountName: string | null;
   startDate: string;
@@ -70,7 +68,7 @@ export interface PromotionDetail {
 }
 
 export interface PromotionFormData {
-  promotionTypeId: number;
+  promotionType: string;
   accountId: number;
   startDate: string;
   endDate: string;
@@ -85,7 +83,7 @@ export interface PromotionFormData {
 
 
 export interface PromotionFormMeta {
-  promotionTypes: { id: number; name: string }[];
+  promotionTypes: { value: string; name: string }[];
   standLocations: { value: string; name: string }[];
 }
 
@@ -106,7 +104,7 @@ export async function fetchPromotions(params: PromotionListParams): Promise<Prom
     size: params.size,
   };
   if (params.keyword) queryParams.keyword = params.keyword;
-  if (params.promotionTypeId) queryParams.promotionTypeId = params.promotionTypeId;
+  if (params.promotionType) queryParams.promotionType = params.promotionType;
   if (params.category) queryParams.category = params.category;
   if (params.startDate) queryParams.startDate = params.startDate;
   if (params.endDate) queryParams.endDate = params.endDate;

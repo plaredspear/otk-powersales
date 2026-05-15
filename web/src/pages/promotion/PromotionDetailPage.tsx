@@ -135,7 +135,7 @@ export default function PromotionDetailPage() {
     accountName: null,
     startDate: '',
     endDate: '',
-    promotionTypeId: null,
+    promotionType: null,
     standLocation: null,
     message: null,
   });
@@ -206,7 +206,7 @@ export default function PromotionDetailPage() {
       accountName: promotion.accountName,
       startDate: promotion.startDate,
       endDate: promotion.endDate,
-      promotionTypeId: promotion.promotionTypeId,
+      promotionType: promotion.promotionType,
       standLocation: promotion.standLocation,
       message: promotion.message,
     });
@@ -225,7 +225,7 @@ export default function PromotionDetailPage() {
       detailForm.accountId !== promotion.accountId ||
       detailForm.startDate !== promotion.startDate ||
       detailForm.endDate !== promotion.endDate ||
-      detailForm.promotionTypeId !== promotion.promotionTypeId ||
+      detailForm.promotionType !== promotion.promotionType ||
       detailForm.standLocation !== promotion.standLocation ||
       detailForm.message !== promotion.message
     );
@@ -275,7 +275,7 @@ export default function PromotionDetailPage() {
     }
 
     const data: PromotionFormData = {
-      promotionTypeId: detailForm.promotionTypeId ?? promotion.promotionTypeId ?? 0,
+      promotionType: detailForm.promotionType ?? promotion.promotionType ?? '',
       accountId: detailForm.accountId,
       startDate: detailForm.startDate,
       endDate: detailForm.endDate,

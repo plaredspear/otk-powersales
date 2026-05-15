@@ -3,7 +3,7 @@ class PromotionItem {
   final int id;
   final String promotionNumber;
   final String? promotionName;
-  final String? promotionTypeName;
+  final String? promotionType;
   final String? accountName;
   final String startDate;
   final String endDate;
@@ -18,7 +18,7 @@ class PromotionItem {
     required this.id,
     required this.promotionNumber,
     this.promotionName,
-    this.promotionTypeName,
+    this.promotionType,
     this.accountName,
     required this.startDate,
     required this.endDate,
@@ -35,7 +35,7 @@ class PromotionItem {
       id: json['id'] as int,
       promotionNumber: json['promotionNumber'] as String,
       promotionName: json['promotionName'] as String?,
-      promotionTypeName: json['promotionTypeName'] as String?,
+      promotionType: json['promotionType'] as String?,
       accountName: json['accountName'] as String?,
       startDate: json['startDate'] as String,
       endDate: json['endDate'] as String,
@@ -61,7 +61,7 @@ class PromotionDetail {
   final int id;
   final String promotionNumber;
   final String? promotionName;
-  final String? promotionTypeName;
+  final String? promotionType;
   final String? accountName;
   final String startDate;
   final String endDate;
@@ -81,7 +81,7 @@ class PromotionDetail {
     required this.id,
     required this.promotionNumber,
     this.promotionName,
-    this.promotionTypeName,
+    this.promotionType,
     this.accountName,
     required this.startDate,
     required this.endDate,
@@ -104,7 +104,7 @@ class PromotionDetail {
       id: json['id'] as int,
       promotionNumber: json['promotionNumber'] as String,
       promotionName: json['promotionName'] as String?,
-      promotionTypeName: json['promotionTypeName'] as String?,
+      promotionType: json['promotionType'] as String?,
       accountName: json['accountName'] as String?,
       startDate: json['startDate'] as String,
       endDate: json['endDate'] as String,

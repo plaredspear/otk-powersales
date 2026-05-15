@@ -28,7 +28,6 @@ const NoticeFormPage = lazy(() => import('@/pages/notice/NoticeFormPage'));
 const PromotionListPage = lazy(() => import('@/pages/promotion/PromotionListPage'));
 const PromotionDetailPage = lazy(() => import('@/pages/promotion/PromotionDetailPage'));
 const PromotionFormPage = lazy(() => import('@/pages/promotion/PromotionFormPage'));
-const PromotionTypesPage = lazy(() => import('@/pages/settings/PromotionTypesPage'));
 const EducationListPage = lazy(() => import('@/pages/education/EducationListPage'));
 const EducationDetailPage = lazy(() => import('@/pages/education/EducationDetailPage'));
 const EducationFormPage = lazy(() => import('@/pages/education/EducationFormPage'));
@@ -99,7 +98,6 @@ export const router = createBrowserRouter(
             { path: '/education/new', element: <LazyWrapper><EducationFormPage /></LazyWrapper> },
             { path: '/education/:id', element: <LazyWrapper><EducationDetailPage /></LazyWrapper> },
             { path: '/education/:id/edit', element: <LazyWrapper><EducationFormPage /></LazyWrapper> },
-            { path: '/settings/promotion-types', element: <LazyWrapper><PromotionTypesPage /></LazyWrapper> },
             { path: '/alternative-holidays', element: <LazyWrapper><AlternativeHolidayPage /></LazyWrapper> },
             { path: '/settings/organizations', element: <LazyWrapper><OrganizationPage /></LazyWrapper> },
             { path: '/settings/holiday-masters', element: <LazyWrapper><HolidayMasterListPage /></LazyWrapper> },

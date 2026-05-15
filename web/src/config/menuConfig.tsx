@@ -91,7 +91,6 @@ export const menuRoute: MenuRoute = {
         { path: '/product', name: '제품' },
         { path: '/account', name: '거래처', requiredPermission: 'ACCOUNT_READ' },
         { path: '/settings/organizations', name: '조직마스터' },
-        { path: '/settings/promotion-types', name: '행사유형 관리' },
         { path: '/settings/holiday-masters', name: '공휴일 관리' },
       ],
     },

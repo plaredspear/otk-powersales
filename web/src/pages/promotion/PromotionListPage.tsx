@@ -4,7 +4,7 @@ import { Button, DatePicker, Input, Select, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
-import { usePromotionTypes } from '@/hooks/promotion/usePromotionTypes';
+import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
 import { usePermission } from '@/hooks/usePermission';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { PromotionListItem } from '@/api/promotion';
@@ -47,19 +47,19 @@ export default function PromotionListPage() {
   const navigate = useNavigate();
   const { hasPermission } = usePermission();
   const canWrite = hasPermission('PROMOTION_WRITE');
-  const [promotionTypeId, setPromotionTypeId] = useState<number | undefined>();
+  const [promotionType, setPromotionType] = useState<string | undefined>();
   const [category, setCategory] = useState<string | undefined>();
   const [startDate, setStartDate] = useState<string | undefined>();
   const [endDate, setEndDate] = useState<string | undefined>();
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(0);
 
-  const { data: promotionTypes } = usePromotionTypes();
+  const { data: formMeta } = usePromotionFormMeta();
   const handleRowClick = useThrottleClick((id: number) => navigate(`/promotions/${id}`));
   const handleCreate = useThrottleClick(() => navigate('/promotions/new'));
   const { data, isLoading } = usePromotions({
     keyword: keyword || undefined,
-    promotionTypeId,
+    promotionType,
     category,
     startDate,
     endDate,
@@ -68,9 +68,8 @@ export default function PromotionListPage() {
   });
 
   const promotionTypeOptions = [
-    { value: 0, label: '전체' },
-    ...(promotionTypes?.filter((t) => t.isActive).map((t) => ({ value: t.id, label: t.name })) ??
-      []),
+    { value: '', label: '전체' },
+    ...(formMeta?.promotionTypes.map((t) => ({ value: t.name, label: t.name })) ?? []),
   ];
 
   const columns: ColumnsType<PromotionListItem> = [
@@ -90,7 +89,7 @@ export default function PromotionListPage() {
     },
     {
       title: '유형',
-      dataIndex: 'promotionTypeName',
+      dataIndex: 'promotionType',
       width: 90,
       align: 'center',
       render: (val: string | null) => {
@@ -180,10 +179,10 @@ export default function PromotionListPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select
           style={{ width: 130 }}
-          value={promotionTypeId ?? 0}
+          value={promotionType ?? ''}
           options={promotionTypeOptions}
           onChange={(val) => {
-            setPromotionTypeId(val || undefined);
+            setPromotionType(val || undefined);
             setPage(0);
           }}
         />

@@ -17,7 +17,7 @@ export interface DetailFormValues {
   accountName: string | null;
   startDate: string;
   endDate: string;
-  promotionTypeId: number | null;
+  promotionType: string | null;
   standLocation: string | null;
   message: string | null;
 }
@@ -61,12 +61,12 @@ export default function PromotionDetailSection({
     }, 300);
   };
 
-  const typeColor = promotion.promotionTypeName
-    ? PROMOTION_TYPE_TAG[promotion.promotionTypeName]
+  const typeColor = promotion.promotionType
+    ? PROMOTION_TYPE_TAG[promotion.promotionType]
     : undefined;
 
   const promotionTypeOptions = formMeta?.promotionTypes.map((t) => ({
-    value: t.id,
+    value: t.name,
     label: t.name,
   })) ?? [];
 
@@ -155,12 +155,12 @@ export default function PromotionDetailSection({
           <Select
             size="small"
             options={promotionTypeOptions}
-            value={formValues.promotionTypeId}
-            onChange={(v) => onFormChange({ promotionTypeId: v })}
+            value={formValues.promotionType}
+            onChange={(v) => onFormChange({ promotionType: v })}
             style={{ width: '100%' }}
           />
-        ) : promotion.promotionTypeName ? (
-          <Tag color={typeColor}>{promotion.promotionTypeName}</Tag>
+        ) : promotion.promotionType ? (
+          <Tag color={typeColor}>{promotion.promotionType}</Tag>
         ) : (
           '-'
         )}

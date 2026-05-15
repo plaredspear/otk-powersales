@@ -39,7 +39,7 @@ interface ProductOption {
 
 interface FormValues {
   promotionName?: string;
-  promotionTypeId: number;
+  promotionType: string;
   accountId: number;
   startDate: dayjs.Dayjs;
   endDate: dayjs.Dayjs;
@@ -69,7 +69,7 @@ export default function PromotionFormPage() {
   const [productSearching, setProductSearching] = useState(false);
 
   const promotionTypeOptions =
-    formMeta?.promotionTypes.map((t) => ({ value: t.id, label: t.name })) ?? [];
+    formMeta?.promotionTypes.map((t) => ({ value: t.name, label: t.name })) ?? [];
 
   const standLocationOptions =
     formMeta?.standLocations.map((s) => ({ value: s.name, label: s.name })) ?? [];
@@ -85,7 +85,7 @@ export default function PromotionFormPage() {
     if (isEdit && promotion) {
       form.setFieldsValue({
         promotionName: promotion.promotionName ?? undefined,
-        promotionTypeId: promotion.promotionTypeId ?? undefined,
+        promotionType: promotion.promotionType ?? undefined,
         accountId: promotion.accountId,
         startDate: dayjs(promotion.startDate),
         endDate: dayjs(promotion.endDate),
@@ -150,7 +150,7 @@ export default function PromotionFormPage() {
 
   const handleSubmit = async (values: FormValues) => {
     const payload: PromotionFormData = {
-      promotionTypeId: values.promotionTypeId,
+      promotionType: values.promotionType,
       accountId: values.accountId,
       startDate: values.startDate.format('YYYY-MM-DD'),
       endDate: values.endDate.format('YYYY-MM-DD'),
@@ -273,7 +273,7 @@ export default function PromotionFormPage() {
           <Row gutter={24}>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="promotionTypeId"
+                name="promotionType"
                 label="행사유형"
                 rules={[{ required: true, message: '행사유형을 선택해주세요' }]}
               >

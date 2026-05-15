@@ -97,9 +97,9 @@ class PromotionCard extends StatelessWidget {
         ),
         const Spacer(),
         if (item.category != null) _buildBadge(item.category!),
-        if (item.promotionTypeName != null) ...[
+        if (item.promotionType != null) ...[
           const SizedBox(width: AppSpacing.xs),
-          _buildBadge(item.promotionTypeName!),
+          _buildBadge(item.promotionType!),
         ],
         if (item.isClosed) ...[
           const SizedBox(width: AppSpacing.xs),
