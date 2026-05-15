@@ -94,8 +94,8 @@ export async function fetchTeamScheduleBranches(): Promise<Branch[]> {
 }
 
 export async function fetchTeamSchedules(params: {
-  year: number;
-  month: number;
+  from: string;
+  to: string;
   employeeIds: number[];
   accountIds: number[];
 }): Promise<MonthlyScheduleWithSummary> {
@@ -103,8 +103,8 @@ export async function fetchTeamSchedules(params: {
     '/api/v1/admin/team-schedule',
     {
       params: {
-        year: params.year,
-        month: params.month,
+        from: params.from,
+        to: params.to,
         employeeIds: params.employeeIds.join(','),
         accountIds: params.accountIds.join(','),
       },

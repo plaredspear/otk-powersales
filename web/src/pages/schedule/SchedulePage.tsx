@@ -5,17 +5,24 @@ import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAc
 import { useTeamSchedules } from '@/hooks/team-schedule/useTeamSchedules';
 import type { TeamSchedule } from '@/api/team-schedule';
 import { ScheduleFilterPanel } from './components/ScheduleFilterPanel';
-import { ScheduleCalendar } from './components/ScheduleCalendar';
+import { ScheduleCalendar, type CalendarView } from './components/ScheduleCalendar';
 import { DayScheduleListModal } from './components/DayScheduleListModal';
 import { ScheduleEditModal } from './components/ScheduleEditModal';
 import { usePermission } from '@/hooks/usePermission';
 
 type FilterTab = 'member' | 'account';
 
+const DATE_FMT = 'YYYY-MM-DD';
+
 export default function SchedulePage() {
   const { hasPermission } = usePermission();
   const canWrite = hasPermission('SCHEDULE_WRITE');
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
+  const [viewType, setViewType] = useState<CalendarView>('dayGridMonth');
+  const [listRange, setListRange] = useState<[Dayjs, Dayjs]>(() => [
+    dayjs().startOf('month'),
+    dayjs().endOf('month'),
+  ]);
   const [filterTab, setFilterTab] = useState<FilterTab>('account');
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
@@ -44,18 +51,22 @@ export default function SchedulePage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editSchedule, setEditSchedule] = useState<TeamSchedule | null>(null);
 
-  const year = currentDate.year();
-  const month = currentDate.month() + 1;
-
-  const queryParams = useMemo(
-    () => ({
-      year,
-      month,
+  const queryParams = useMemo(() => {
+    const from =
+      viewType === 'listMonth'
+        ? listRange[0].format(DATE_FMT)
+        : currentDate.startOf('month').format(DATE_FMT);
+    const to =
+      viewType === 'listMonth'
+        ? listRange[1].format(DATE_FMT)
+        : currentDate.endOf('month').format(DATE_FMT);
+    return {
+      from,
+      to,
       employeeIds: filterTab === 'member' ? debouncedEmployeeIds : [],
       accountIds: filterTab === 'account' ? debouncedAccountIds : [],
-    }),
-    [year, month, filterTab, debouncedEmployeeIds, debouncedAccountIds],
-  );
+    };
+  }, [currentDate, viewType, listRange, filterTab, debouncedEmployeeIds, debouncedAccountIds]);
 
   const { data, isLoading: schedulesLoading } = useTeamSchedules(queryParams);
   const schedules = data?.schedules ?? [];
@@ -96,6 +107,10 @@ export default function SchedulePage() {
           <ScheduleCalendar
             currentDate={currentDate}
             onDateChange={setCurrentDate}
+            viewType={viewType}
+            onViewTypeChange={setViewType}
+            listRange={listRange}
+            onListRangeChange={setListRange}
             schedules={schedules}
             summaries={summaries}
             onDateClick={handleDateClick}

@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Button, Segmented } from 'antd';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Button, DatePicker, Segmented } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -11,11 +11,15 @@ import type { DailySummary, TeamSchedule } from '@/api/team-schedule';
 import { DaySummaryBanner } from './DaySummaryBanner';
 import { ScheduleEventCard } from './ScheduleEventCard';
 
-type CalendarView = 'dayGridMonth' | 'listMonth';
+export type CalendarView = 'dayGridMonth' | 'listMonth';
 
 interface ScheduleCalendarProps {
   currentDate: Dayjs;
   onDateChange: (d: Dayjs) => void;
+  viewType: CalendarView;
+  onViewTypeChange: (v: CalendarView) => void;
+  listRange: [Dayjs, Dayjs];
+  onListRangeChange: (range: [Dayjs, Dayjs]) => void;
   schedules: TeamSchedule[];
   summaries: DailySummary[];
   onDateClick: (date: string) => void;
@@ -33,13 +37,16 @@ function getEventColor(schedule: TeamSchedule): string {
 export function ScheduleCalendar({
   currentDate,
   onDateChange,
+  viewType,
+  onViewTypeChange,
+  listRange,
+  onListRangeChange,
   schedules,
   summaries,
   onDateClick,
   onEventClick,
 }: ScheduleCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null);
-  const [viewType, setViewType] = useState<CalendarView>('dayGridMonth');
 
   const summaryMap = useMemo(() => {
     const map = new Map<string, DailySummary>();
@@ -87,14 +94,25 @@ export function ScheduleCalendar({
   const handleViewChange = useCallback(
     (value: string | number) => {
       const view = value as CalendarView;
-      setViewType(view);
+      onViewTypeChange(view);
       calendarRef.current?.getApi().changeView(view);
-      // Sync the date after view change
       const calDate = currentDate.format('YYYY-MM-DD');
       calendarRef.current?.getApi().gotoDate(calDate);
     },
-    [currentDate],
+    [currentDate, onViewTypeChange],
   );
+
+  // 목록 뷰의 임의 기간 표시 — FullCalendar visibleRange 동적 적용
+  useEffect(() => {
+    if (viewType !== 'listMonth') return;
+    const api = calendarRef.current?.getApi();
+    if (!api) return;
+    // visibleRange.end 는 exclusive 이므로 +1일
+    api.changeView('listMonth', {
+      start: listRange[0].format('YYYY-MM-DD'),
+      end: listRange[1].add(1, 'day').format('YYYY-MM-DD'),
+    });
+  }, [viewType, listRange]);
 
   const renderDayCellContent = useCallback(
     (arg: DayCellContentArg) => {
@@ -129,12 +147,13 @@ export function ScheduleCalendar({
     (info: { event: { id: string } }) => {
       const schedule = scheduleMap.get(info.event.id);
       if (!schedule) return;
-      // Only allow editing for 진열 events
       if (schedule.workingType !== '근무') return;
       onEventClick(schedule);
     },
     [scheduleMap, onEventClick],
   );
+
+  const isListView = viewType === 'listMonth';
 
   return (
     <div
@@ -152,17 +171,34 @@ export function ScheduleCalendar({
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 16,
+          gap: 12,
+          flexWrap: 'wrap',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Button icon={<LeftOutlined />} size="small" onClick={handlePrev} />
-          <span style={{ fontSize: 18, fontWeight: 600, minWidth: 140, textAlign: 'center' }}>
-            {currentDate.year()}년 {currentDate.month() + 1}월
-          </span>
-          <Button icon={<RightOutlined />} size="small" onClick={handleNext} />
-          <Button size="small" onClick={handleToday} style={{ marginLeft: 8 }}>
-            오늘
-          </Button>
+          {isListView ? (
+            <DatePicker.RangePicker
+              size="small"
+              value={listRange}
+              onChange={(range) => {
+                if (range && range[0] && range[1]) {
+                  onListRangeChange([range[0], range[1]]);
+                }
+              }}
+              allowClear={false}
+            />
+          ) : (
+            <>
+              <Button icon={<LeftOutlined />} size="small" onClick={handlePrev} />
+              <span style={{ fontSize: 18, fontWeight: 600, minWidth: 140, textAlign: 'center' }}>
+                {currentDate.year()}년 {currentDate.month() + 1}월
+              </span>
+              <Button icon={<RightOutlined />} size="small" onClick={handleNext} />
+              <Button size="small" onClick={handleToday} style={{ marginLeft: 8 }}>
+                오늘
+              </Button>
+            </>
+          )}
         </div>
         <Segmented
           size="small"

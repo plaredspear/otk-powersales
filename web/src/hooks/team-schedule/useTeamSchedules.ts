@@ -2,14 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchTeamSchedules } from '@/api/team-schedule';
 
 export function useTeamSchedules(params: {
-  year: number;
-  month: number;
+  from: string;
+  to: string;
   employeeIds: number[];
   accountIds: number[];
 }) {
   const hasFilter = params.employeeIds.length > 0 || params.accountIds.length > 0;
   return useQuery({
-    queryKey: ['admin', 'team-schedule', 'list', params.year, params.month, params.employeeIds, params.accountIds],
+    queryKey: ['admin', 'team-schedule', 'list', params.from, params.to, params.employeeIds, params.accountIds],
     queryFn: () => fetchTeamSchedules(params),
     enabled: hasFilter,
   });

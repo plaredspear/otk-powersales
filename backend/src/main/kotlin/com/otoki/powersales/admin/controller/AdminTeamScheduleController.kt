@@ -10,10 +10,12 @@ import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
+import java.time.LocalDate
 
 @RestController
 @RequestMapping("/api/v1/admin/team-schedule")
@@ -52,17 +54,17 @@ class AdminTeamScheduleController(
 
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping
-    fun getMonthlySchedules(
+    fun getSchedules(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @RequestParam year: Int,
-        @RequestParam month: Int,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate,
         @RequestParam(required = false) employeeIds: String?,
         @RequestParam(required = false) accountIds: String?
     ): ResponseEntity<ApiResponse<MonthlyScheduleWithSummaryDto>> {
         val employeeIdList = employeeIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toLong() }
         val accountIdList = accountIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toInt() }
-        val result = adminTeamScheduleService.getMonthlySchedulesWithSummary(
-            principal.requireEmployeeId(), year, month, employeeIdList, accountIdList
+        val result = adminTeamScheduleService.getSchedulesWithSummary(
+            principal.requireEmployeeId(), from, to, employeeIdList, accountIdList
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }

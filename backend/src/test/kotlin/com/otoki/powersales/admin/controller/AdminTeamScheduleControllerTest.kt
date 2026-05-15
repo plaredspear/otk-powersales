@@ -215,15 +215,19 @@ class AdminTeamScheduleControllerTest {
                 )
             )
             whenever(
-                adminTeamScheduleService.getMonthlySchedulesWithSummary(
-                    eq(1L), eq(2026), eq(3), eq(null), eq(null)
+                adminTeamScheduleService.getSchedulesWithSummary(
+                    eq(1L),
+                    eq(java.time.LocalDate.of(2026, 3, 1)),
+                    eq(java.time.LocalDate.of(2026, 3, 31)),
+                    eq(null),
+                    eq(null)
                 )
             ).thenReturn(response)
 
             mockMvc.perform(
                 get("/api/v1/admin/team-schedule")
-                    .param("year", "2026")
-                    .param("month", "3")
+                    .param("from", "2026-03-01")
+                    .param("to", "2026-03-31")
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -256,15 +260,19 @@ class AdminTeamScheduleControllerTest {
                 dailySummary = emptyList()
             )
             whenever(
-                adminTeamScheduleService.getMonthlySchedulesWithSummary(
-                    eq(1L), eq(2026), eq(3), eq(null), eq(null)
+                adminTeamScheduleService.getSchedulesWithSummary(
+                    eq(1L),
+                    eq(java.time.LocalDate.of(2026, 3, 1)),
+                    eq(java.time.LocalDate.of(2026, 3, 31)),
+                    eq(null),
+                    eq(null)
                 )
             ).thenReturn(response)
 
             mockMvc.perform(
                 get("/api/v1/admin/team-schedule")
-                    .param("year", "2026")
-                    .param("month", "3")
+                    .param("from", "2026-03-01")
+                    .param("to", "2026-03-31")
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))

@@ -102,7 +102,7 @@ class AdminTeamScheduleService(
     }
 
     /**
-     * 캘린더 일정 조회.
+     * 일정 조회.
      *
      * SF 레거시 `FullCalendarComponentController.fetchAllShcedule()` 정합 — **XOR 분기**:
      * - `employeeIds` 가 있으면 여사원 IN 절 단일 사용 (SF `cls:60`)
@@ -110,11 +110,13 @@ class AdminTeamScheduleService(
      * - 둘 다 없으면 빈 결과
      *
      * 두 IN 절을 합쳐 OR 처럼 동작하지 않는다 — 운영 부하 worst case (전사 IN×IN) 회피.
+     *
+     * 기간: `from` ~ `to` 임의 범위. 캘린더 월 뷰는 그달 1일~말일을, 목록 뷰의 RangePicker 는 사용자 지정 기간을 넘긴다.
      */
-    fun getMonthlySchedulesWithSummary(
+    fun getSchedulesWithSummary(
         employeeId: Long,
-        year: Int,
-        month: Int,
+        from: LocalDate,
+        to: LocalDate,
         employeeIds: List<Long>?,
         accountIds: List<Int>?
     ): MonthlyScheduleWithSummaryDto {
@@ -124,10 +126,6 @@ class AdminTeamScheduleService(
         if (!hasEmployeeFilter && !hasAccountFilter) {
             return MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
         }
-
-        val yearMonth = YearMonth.of(year, month)
-        val from = yearMonth.atDay(1)
-        val to = yearMonth.atEndOfMonth()
 
         // SF XOR: 여사원 우선, 없으면 거래처. 두 IN 절을 동시에 합치지 않는다.
         val rawSchedules: List<TeamMemberSchedule> = if (hasEmployeeFilter) {
