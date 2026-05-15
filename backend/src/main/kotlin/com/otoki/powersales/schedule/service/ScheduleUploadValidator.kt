@@ -96,14 +96,16 @@ class ScheduleUploadValidator {
                 rowErrors.add(RowError(row.rowNumber, "B", "사번", employeeCode, "사원번호 $employeeCode: 존재하지 않는 사원"))
             }
 
-            // V2: 재직 상태
-            if (employee != null && employee.status != "재직") {
-                rowErrors.add(RowError(row.rowNumber, "B", "사번", employeeCode, "사원번호 $employeeCode: 퇴직한 사원"))
-            }
-
-            // V2a: 사원 앱 로그인 활성화
-            if (employee != null && employee.status == "재직" && employee.appLoginActive != true) {
-                rowErrors.add(RowError(row.rowNumber, "B", "사번", employeeCode, "사원번호 $employeeCode: 앱 로그인이 비활성화된 사원입니다"))
+            // V2: 재직 상태 / 앱 로그인 활성화 — 종료일(endDate) 이 지난 경우만 차단 (유예 정책).
+            // 레거시 SF DisplayWorkScheduleMasterTriggerHandler.retirementCheck() 와 동등:
+            //   (Status != '재직' OR APPLoginActive != true) AND 오늘 > EndDate__c → 차단.
+            // endDate 가 null 이거나 미래이면 퇴직 예정자 입력을 허용한다.
+            if (employee != null) {
+                val isInactive = employee.status != "재직" || employee.appLoginActive != true
+                val endDate = employee.endDate
+                if (isInactive && endDate != null && LocalDate.now().isAfter(endDate)) {
+                    rowErrors.add(RowError(row.rowNumber, "B", "사번", employeeCode, "사원번호 $employeeCode: 퇴직한 사원"))
+                }
             }
 
             // V3: 거래처코드 존재

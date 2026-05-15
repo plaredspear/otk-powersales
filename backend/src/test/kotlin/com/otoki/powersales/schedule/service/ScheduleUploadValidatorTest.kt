@@ -19,7 +19,7 @@ class ScheduleUploadValidatorTest {
     private val employeeMap = mapOf(
         "20030001" to createEmployee("20030001", "홍길동", "USR001", "재직"),
         "20030002" to createEmployee("20030002", "김철수", "USR002", "재직"),
-        "99999999" to createEmployee("99999999", "퇴직자", "USR999", "퇴직")
+        "99999999" to createEmployee("99999999", "퇴직자", "USR999", "퇴직", endDate = LocalDate.of(2026, 1, 31))
     )
 
     private val accountMap = mapOf(
@@ -81,12 +81,12 @@ class ScheduleUploadValidatorTest {
     }
 
     @Nested
-    @DisplayName("V2 - 재직 상태")
+    @DisplayName("V2 - 재직 상태 / 앱 로그인 활성화 + 종료일 유예")
     inner class V2Tests {
 
         @Test
-        @DisplayName("퇴직한 사원 - 에러")
-        fun v2_resignedEmployee() {
+        @DisplayName("퇴직 사원 + endDate 과거 - 에러")
+        fun v2_resignedWithPastEndDate() {
             val rows = listOf(
                 createParsedRow(4, "99999999", "퇴직자", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
@@ -96,47 +96,92 @@ class ScheduleUploadValidatorTest {
             assertThat(result.errors).hasSize(1)
             assertThat(result.errors[0].message).contains("퇴직한 사원")
         }
-    }
-
-    @Nested
-    @DisplayName("V2a - 사원 앱 로그인 활성화")
-    inner class V2aTests {
 
         @Test
-        @DisplayName("appLoginActive가 false인 사원 - 에러")
-        fun v2a_inactiveEmployee() {
-            val inactiveEmployeeMap = mapOf(
+        @DisplayName("퇴직 사원 + endDate 미래 - 유예 통과")
+        fun v2_resignedWithFutureEndDate() {
+            val futureRetireMap = mapOf(
+                "99999999" to createEmployee(
+                    "99999999", "퇴직예정", "USR999", "퇴직",
+                    endDate = LocalDate.now().plusDays(30)
+                )
+            )
+            val rows = listOf(
+                createParsedRow(4, "99999999", "퇴직예정", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, futureRetireMap, accountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("퇴직 사원 + endDate null - 유예 통과")
+        fun v2_resignedWithoutEndDate() {
+            val nullEndMap = mapOf(
+                "99999999" to createEmployee("99999999", "퇴직자(EndDate미상)", "USR999", "퇴직", endDate = null)
+            )
+            val rows = listOf(
+                createParsedRow(4, "99999999", "퇴직자(EndDate미상)", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, nullEndMap, accountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("재직 + appLoginActive false + endDate 과거 - 에러")
+        fun v2_inactiveLoginWithPastEndDate() {
+            val inactiveMap = mapOf(
+                "20030001" to createEmployee(
+                    "20030001", "홍길동", "USR001", "재직",
+                    appLoginActive = false, endDate = LocalDate.of(2026, 1, 31)
+                )
+            )
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, inactiveMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("퇴직한 사원")
+        }
+
+        @Test
+        @DisplayName("재직 + appLoginActive false + endDate null - 유예 통과")
+        fun v2_inactiveLoginWithoutEndDate() {
+            val inactiveMap = mapOf(
                 "20030001" to createEmployee("20030001", "홍길동", "USR001", "재직", appLoginActive = false)
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, inactiveEmployeeMap, accountMap, emptyList())
+            val result = validator.validate(rows, inactiveMap, accountMap, emptyList())
 
-            assertThat(result.errors).hasSize(1)
-            assertThat(result.errors[0].message).contains("앱 로그인이 비활성화된 사원입니다")
+            assertThat(result.errors).isEmpty()
         }
 
         @Test
-        @DisplayName("appLoginActive가 null인 사원 - 에러")
-        fun v2a_nullAppLoginActive() {
-            val nullActiveEmployeeMap = mapOf(
+        @DisplayName("재직 + appLoginActive null + endDate null - 유예 통과")
+        fun v2_nullAppLoginActiveWithoutEndDate() {
+            val nullActiveMap = mapOf(
                 "20030001" to createEmployee("20030001", "홍길동", "USR001", "재직", appLoginActive = null)
             )
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
 
-            val result = validator.validate(rows, nullActiveEmployeeMap, accountMap, emptyList())
+            val result = validator.validate(rows, nullActiveMap, accountMap, emptyList())
 
-            assertThat(result.errors).hasSize(1)
-            assertThat(result.errors[0].message).contains("앱 로그인이 비활성화된 사원입니다")
+            assertThat(result.errors).isEmpty()
         }
 
         @Test
-        @DisplayName("appLoginActive가 true인 사원 - 정상")
-        fun v2a_activeEmployee() {
+        @DisplayName("재직 + appLoginActive true - 정상")
+        fun v2_activeEmployee() {
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
             )
@@ -144,20 +189,6 @@ class ScheduleUploadValidatorTest {
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).isEmpty()
-        }
-
-        @Test
-        @DisplayName("퇴직 사원은 V2에서 이미 실패 - V2a 미실행")
-        fun v2a_resignedEmployeeSkipped() {
-            val rows = listOf(
-                createParsedRow(4, "99999999", "퇴직자", "ACC001", null, "고정", "상온", "상시", "2026-04-01", null)
-            )
-
-            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
-
-            assertThat(result.errors).hasSize(1)
-            assertThat(result.errors[0].message).contains("퇴직한 사원")
-            assertThat(result.errors[0].message).doesNotContain("앱 로그인")
         }
     }
 
@@ -260,10 +291,13 @@ class ScheduleUploadValidatorTest {
         }
 
         @Test
-        @DisplayName("비활성 사원 + 폐업 거래처 동시 - 에러 2건")
+        @DisplayName("퇴직(EndDate 과거) 사원 + 폐업 거래처 동시 - 에러 2건")
         fun v3a_inactiveEmployeeAndClosedAccountBothErrors() {
             val inactiveEmployeeMap = mapOf(
-                "20030001" to createEmployee("20030001", "홍길동", "USR001", "재직", appLoginActive = false)
+                "20030001" to createEmployee(
+                    "20030001", "홍길동", "USR001", "재직",
+                    appLoginActive = false, endDate = LocalDate.of(2026, 1, 31)
+                )
             )
             val closedAccountMap = mapOf(
                 "ACC001" to createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", accountStatusName = "폐업", accountGroup = "2000")
@@ -275,7 +309,7 @@ class ScheduleUploadValidatorTest {
             val result = validator.validate(rows, inactiveEmployeeMap, closedAccountMap, emptyList())
 
             assertThat(result.errors).hasSize(2)
-            assertThat(result.errors.map { it.message }).anySatisfy { assertThat(it).contains("앱 로그인이 비활성화된 사원입니다") }
+            assertThat(result.errors.map { it.message }).anySatisfy { assertThat(it).contains("퇴직한 사원") }
             assertThat(result.errors.map { it.message }).anySatisfy { assertThat(it).contains("폐업 상태의 거래처입니다") }
         }
 
@@ -638,7 +672,8 @@ class ScheduleUploadValidatorTest {
         name: String,
         sfid: String,
         status: String,
-        appLoginActive: Boolean? = true
+        appLoginActive: Boolean? = true,
+        endDate: LocalDate? = null
     ): Employee = Employee(
         id = 1L,
         employeeCode = employeeCode,
@@ -646,7 +681,8 @@ class ScheduleUploadValidatorTest {
         sfid = sfid,
         status = status,
         role = null,
-        appLoginActive = appLoginActive
+        appLoginActive = appLoginActive,
+        endDate = endDate
     )
 
     private fun createAccount(
