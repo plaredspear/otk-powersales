@@ -1,0 +1,319 @@
+package com.otoki.powersales.admin.controller
+
+import com.otoki.powersales.admin.dto.AdminUserDetailResponse
+import com.otoki.powersales.admin.dto.AdminUserListItem
+import com.otoki.powersales.admin.dto.AdminUserListResponse
+import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
+import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
+import com.otoki.powersales.admin.exception.AdminUserNotFoundException
+import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
+import com.otoki.powersales.admin.security.AdminAuthorityFilter
+import com.otoki.powersales.admin.service.AdminUserService
+import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.common.security.GpsConsentFilter
+import com.otoki.powersales.common.security.JwtAuthenticationFilter
+import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import com.otoki.powersales.user.entity.ProfileType
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.whenever
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
+import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import tools.jackson.databind.ObjectMapper
+import java.time.LocalDateTime
+
+@WebMvcTest(AdminUserController::class)
+@AutoConfigureMockMvc(addFilters = false)
+@DisplayName("AdminUserController 테스트")
+class AdminUserControllerTest {
+
+    @Autowired
+    private lateinit var mockMvc: MockMvc
+
+    @Autowired
+    private lateinit var objectMapper: ObjectMapper
+
+    @MockitoBean
+    private lateinit var adminUserService: AdminUserService
+
+    @MockitoBean
+    private lateinit var jwtTokenProvider: JwtTokenProvider
+
+    @MockitoBean
+    private lateinit var sapInboundAuditService: SapInboundAuditService
+
+    @MockitoBean
+    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+
+    @MockitoBean
+    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
+
+    @MockitoBean
+    private lateinit var gpsConsentFilter: GpsConsentFilter
+
+    @BeforeEach
+    fun setUp() {
+        val principal = WebUserPrincipal(
+            userId = 100L,
+            usernameValue = "admin@otokims.co.kr",
+            employeeCode = "ADMIN-OPS01",
+            employeeId = 1L,
+            role = UserRole.SYSTEM_ADMIN,
+            profileType = ProfileType.SYSTEM_ADMIN,
+            isSalesSupport = false,
+            passwordChangeRequired = false,
+            encodedPassword = "",
+            grantedAuthorities = emptyList(),
+            active = true
+        )
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/users - 사용자 목록 조회")
+    inner class GetUsers {
+
+        @Test
+        @DisplayName("성공 - 기본 조회")
+        fun getUsers_success() {
+            val response = AdminUserListResponse(
+                content = listOf(
+                    AdminUserListItem(
+                        id = 1L,
+                        username = "kim@otokims.co.kr",
+                        employeeCode = "10000001",
+                        name = "김영업",
+                        email = "kim@otokims.co.kr",
+                        profileType = "SALES_REP",
+                        profileTypeLabel = "영업사원",
+                        branch = "서울1지점",
+                        department = "영업1부",
+                        isActive = true,
+                        lastLoginAt = LocalDateTime.of(2026, 5, 14, 10, 0)
+                    )
+                ),
+                page = 0,
+                size = 20,
+                totalElements = 1,
+                totalPages = 1
+            )
+            whenever(adminUserService.findUsers(anyOrNull(), anyOrNull(), eq(0), eq(20)))
+                .thenReturn(response)
+
+            mockMvc.perform(get("/api/v1/admin/users"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content[0].id").value(1L))
+                .andExpect(jsonPath("$.data.content[0].username").value("kim@otokims.co.kr"))
+                .andExpect(jsonPath("$.data.content[0].employeeCode").value("10000001"))
+                .andExpect(jsonPath("$.data.content[0].profileType").value("SALES_REP"))
+                .andExpect(jsonPath("$.data.content[0].profileTypeLabel").value("영업사원"))
+                .andExpect(jsonPath("$.data.content[0].isActive").value(true))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+        }
+
+        @Test
+        @DisplayName("성공 - keyword + isActive 필터")
+        fun getUsers_withFilters() {
+            val response = AdminUserListResponse(
+                content = emptyList(),
+                page = 0,
+                size = 10,
+                totalElements = 0,
+                totalPages = 0
+            )
+            whenever(adminUserService.findUsers(eq("kim"), eq(false), eq(0), eq(10)))
+                .thenReturn(response)
+
+            mockMvc.perform(
+                get("/api/v1/admin/users")
+                    .param("keyword", "kim")
+                    .param("isActive", "false")
+                    .param("page", "0")
+                    .param("size", "10")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content").isEmpty)
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/users/{userId} - 사용자 상세 조회")
+    inner class GetUser {
+
+        @Test
+        @DisplayName("성공 - 200 OK")
+        fun getUser_success() {
+            val response = AdminUserDetailResponse(
+                id = 1L,
+                username = "kim@otokims.co.kr",
+                employeeCode = "10000001",
+                name = "김영업",
+                firstName = "영업",
+                lastName = "김",
+                email = "kim@otokims.co.kr",
+                alias = "kim",
+                title = "사원",
+                department = "영업1부",
+                division = "영업본부",
+                branch = "서울1지점",
+                mobilePhone = "010-1234-5678",
+                phone = null,
+                hrCode = "HR001",
+                sfid = "0058A000001abcdQAA",
+                profileType = "SALES_REP",
+                profileTypeLabel = "영업사원",
+                isSalesSupport = false,
+                isActive = true,
+                passwordChangeRequired = false,
+                lastLoginAt = LocalDateTime.of(2026, 5, 14, 10, 0),
+                createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
+                lastModifiedAt = LocalDateTime.of(2026, 5, 14, 10, 0)
+            )
+            whenever(adminUserService.findUserDetail(eq(1L))).thenReturn(response)
+
+            mockMvc.perform(get("/api/v1/admin/users/1"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1L))
+                .andExpect(jsonPath("$.data.username").value("kim@otokims.co.kr"))
+                .andExpect(jsonPath("$.data.profileTypeLabel").value("영업사원"))
+                .andExpect(jsonPath("$.data.isActive").value(true))
+        }
+
+        @Test
+        @DisplayName("실패 - 미존재 사용자 → 404")
+        fun getUser_notFound() {
+            whenever(adminUserService.findUserDetail(eq(99999L)))
+                .thenThrow(AdminUserNotFoundException(99999L))
+
+            mockMvc.perform(get("/api/v1/admin/users/99999"))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"))
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/admin/users/{userId}/reset-password - 비밀번호 임시 리셋")
+    inner class ResetPassword {
+
+        @Test
+        @DisplayName("성공 - 200 OK, passwordChangeRequired=true")
+        fun resetPassword_success() {
+            val response = AdminUserPasswordResetResponse(
+                userId = 5L,
+                username = "kim@otokims.co.kr",
+                temporaryPasswordIssued = true,
+                passwordChangeRequired = true,
+                resetAt = LocalDateTime.of(2026, 5, 14, 14, 30)
+            )
+            whenever(adminUserService.resetPassword(eq(5L))).thenReturn(response)
+
+            mockMvc.perform(post("/api/v1/admin/users/5/reset-password"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.userId").value(5L))
+                .andExpect(jsonPath("$.data.temporaryPasswordIssued").value(true))
+                .andExpect(jsonPath("$.data.passwordChangeRequired").value(true))
+                .andExpect(jsonPath("$.message").value("비밀번호가 초기화되었습니다"))
+        }
+
+        @Test
+        @DisplayName("실패 - 미존재 사용자 → 404")
+        fun resetPassword_notFound() {
+            whenever(adminUserService.resetPassword(eq(99999L)))
+                .thenThrow(AdminUserNotFoundException(99999L))
+
+            mockMvc.perform(post("/api/v1/admin/users/99999/reset-password"))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"))
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /api/v1/admin/users/{userId}/active - 활성/비활성 토글")
+    inner class UpdateActiveStatus {
+
+        @Test
+        @DisplayName("성공 - 비활성화")
+        fun deactivate_success() {
+            val request = UpdateUserActiveStatusRequest(isActive = false)
+
+            mockMvc.perform(
+                put("/api/v1/admin/users/5/active")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("사용자가 비활성화되었습니다"))
+        }
+
+        @Test
+        @DisplayName("성공 - 활성화")
+        fun activate_success() {
+            val request = UpdateUserActiveStatusRequest(isActive = true)
+
+            mockMvc.perform(
+                put("/api/v1/admin/users/5/active")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("사용자가 활성화되었습니다"))
+        }
+
+        @Test
+        @DisplayName("실패 - 자기 자신 비활성화 → 400")
+        fun deactivateSelf_blocked() {
+            val request = UpdateUserActiveStatusRequest(isActive = false)
+            whenever(adminUserService.updateActiveStatus(eq(100L), eq(100L), eq(false)))
+                .thenThrow(CannotDeactivateSelfException())
+
+            mockMvc.perform(
+                put("/api/v1/admin/users/100/active")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("CANNOT_DEACTIVATE_SELF"))
+        }
+
+        @Test
+        @DisplayName("실패 - 미존재 사용자 → 404")
+        fun update_notFound() {
+            val request = UpdateUserActiveStatusRequest(isActive = true)
+            whenever(adminUserService.updateActiveStatus(any(), any(), any()))
+                .thenThrow(AdminUserNotFoundException(99999L))
+
+            mockMvc.perform(
+                put("/api/v1/admin/users/99999/active")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"))
+        }
+    }
+}

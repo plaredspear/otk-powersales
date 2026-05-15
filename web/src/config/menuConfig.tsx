@@ -98,6 +98,7 @@ export const menuRoute: MenuRoute = {
       name: '시스템',
       icon: <SettingOutlined />,
       children: [
+        { path: '/users', name: '사용자 관리', requiredPermission: 'USER_READ' },
         { path: '/settings/permissions', name: '권한 관리' },
         { path: '/admin/agreement-words', name: '동의 약관 등록', requiredPermission: 'AGREEMENT_READ' },
       ],
