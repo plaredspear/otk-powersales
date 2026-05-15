@@ -104,7 +104,9 @@ class EmployeeUpsertService(
                     cache[employeeCode] = it
                     // Spec #758: Employee 신규 생성 시 같은 Transaction 으로 User 도 생성.
                     // User 매칭 키 (audit FK 풀): User.employee_number == Employee.employee_code.
-                    newUsers += buildUserForEmployee(it)
+                    // SF 레거시 IF_REST_SAP_EmployeeMaster.cls:281 동등 — Email 부재 사원은 User 생성 skip
+                    // (Username UNIQUE + 로그인 ID 설정 불가). 이메일 채워지면 후속 인바운드에서 생성.
+                    buildUserForEmployee(it)?.let { user -> newUsers += user }
                 }
                 toSave += entity
             } catch (ex: IllegalArgumentException) {
@@ -168,15 +170,15 @@ class EmployeeUpsertService(
         return raw
     }
 
-    private fun buildUserForEmployee(employee: Employee): User {
+    private fun buildUserForEmployee(employee: Employee): User? {
         // Spec #757 Q5 정책: 임시 비밀번호 = 사번 + 생년월일 4자리 (MMdd). birthDate 부재 시 "0000".
-        // Spec #757 §97-99: Username UNIQUE 정합. SAP 인바운드 단계에서 email 부재 가능 → 사번 fallback placeholder.
+        // SF 레거시 IF_REST_SAP_EmployeeMaster.cls:281 동등 — workEmail / email 둘 다 null 이면 User 생성 skip.
         val email = employee.workEmail?.takeIf { it.isNotBlank() }
             ?: employee.email?.takeIf { it.isNotBlank() }
-        val username = email ?: "${employee.employeeCode}${USERNAME_FALLBACK_SUFFIX}"
+            ?: return null
         val tempPassword = "${employee.employeeCode}${employee.birthDate?.takeLast(BIRTH_SUFFIX_LENGTH) ?: BIRTH_SUFFIX_FALLBACK}"
         return User(
-            username = username,
+            username = email,
             email = email,
             employeeNumber = employee.employeeCode,
             name = employee.name,
@@ -193,7 +195,6 @@ class EmployeeUpsertService(
         private const val OTOKI_COMPANY_CODE = "1000"
         private const val EMPTY_DATE = "00000000"
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
-        private const val USERNAME_FALLBACK_SUFFIX = "@otoki.placeholder"
         private const val BIRTH_SUFFIX_LENGTH = 4
         private const val BIRTH_SUFFIX_FALLBACK = "0000"
     }

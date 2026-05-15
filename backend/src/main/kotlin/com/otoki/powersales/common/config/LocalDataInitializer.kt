@@ -10,6 +10,9 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.user.entity.ProfileType
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
@@ -24,6 +27,7 @@ import java.time.LocalDate
 @Profile("local")
 class LocalDataInitializer(
     private val employeeRepository: EmployeeRepository,
+    private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val agreementWordRepository: AgreementWordRepository,
     private val accountRepository: AccountRepository,
@@ -63,15 +67,16 @@ class LocalDataInitializer(
         data class SeedEmployee(
             val code: String, val name: String, val role: UserRole,
             val orgName: String, val costCenterCode: String, val birthDate: String,
-            val homePhone: String, val workPhone: String, val startDate: LocalDate
+            val homePhone: String, val workPhone: String, val startDate: LocalDate,
+            val workEmail: String
         )
 
         val seeds = listOf(
-            SeedEmployee("99990001", "개발테스트", UserRole.SALES_SUPPORT, "테스트지점", "1111", "19850315", "02-1234-5678", "02-9876-5432", LocalDate.of(2015, 3, 1)),
-            SeedEmployee("99990002", "여사원테스트", UserRole.WOMAN, "테스트지점", "1111", "19920820", "02-2345-6789", "02-8765-4321", LocalDate.of(2018, 7, 1)),
-            SeedEmployee("99990003", "지점장테스트", UserRole.BRANCH_MANAGER, "테스트지점", "1111", "19780105", "02-3456-7890", "02-7654-3210", LocalDate.of(2010, 1, 15)),
-            SeedEmployee("99990004", "강남조장", UserRole.LEADER, "테스트지점", "1111", "19880510", "02-4567-8901", "02-6543-2109", LocalDate.of(2016, 5, 1)),
-            SeedEmployee("99990005", "강남여사원", UserRole.WOMAN, "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1))
+            SeedEmployee("99990001", "개발테스트", UserRole.SALES_SUPPORT, "테스트지점", "1111", "19850315", "02-1234-5678", "02-9876-5432", LocalDate.of(2015, 3, 1), "dev-test@otoki.local"),
+            SeedEmployee("99990002", "여사원테스트", UserRole.WOMAN, "테스트지점", "1111", "19920820", "02-2345-6789", "02-8765-4321", LocalDate.of(2018, 7, 1), "woman-test@otoki.local"),
+            SeedEmployee("99990003", "지점장테스트", UserRole.BRANCH_MANAGER, "테스트지점", "1111", "19780105", "02-3456-7890", "02-7654-3210", LocalDate.of(2010, 1, 15), "manager-test@otoki.local"),
+            SeedEmployee("99990004", "강남조장", UserRole.LEADER, "테스트지점", "1111", "19880510", "02-4567-8901", "02-6543-2109", LocalDate.of(2016, 5, 1), "leader-test@otoki.local"),
+            SeedEmployee("99990005", "강남여사원", UserRole.WOMAN, "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1), "woman-gn@otoki.local")
         )
 
         for (seed in seeds) {
@@ -83,14 +88,51 @@ class LocalDataInitializer(
                 appLoginActive = true, orgName = seed.orgName, role = seed.role,
                 birthDate = seed.birthDate, homePhone = seed.homePhone, workPhone = seed.workPhone,
                 startDate = seed.startDate, costCenterCode = seed.costCenterCode,
+                workEmail = seed.workEmail,
                 password = encodedPassword, passwordChangeRequired = false
             )
             if (infoExists) {
                 employee.employeeInfo = null
             }
             employeeRepository.save(employee)
+
+            // SF 레거시 IF_REST_SAP_EmployeeMaster.upsertUser 동등 — Employee 신규 INSERT 시 매칭 User 동시 생성.
+            // ProfileType 은 UserRole 시드값 기준으로 직접 매핑 (운영 경로는 발령 후처리에서 EmployeeProfileResolver 가 정정).
+            if (userRepository.findByUsername(seed.workEmail) == null) {
+                val user = User(
+                    username = seed.workEmail,
+                    email = seed.workEmail,
+                    employeeNumber = seed.code,
+                    name = seed.name,
+                    password = encodedPassword,
+                    passwordChangeRequired = false,
+                    isActive = true,
+                    profileType = profileTypeFor(seed.role),
+                    isSalesSupport = seed.role == UserRole.SALES_SUPPORT,
+                    isDeleted = false
+                )
+                userRepository.save(user)
+            }
             log.info("시드 계정 생성 완료: employeeCode={}, name={}", seed.code, seed.name)
         }
+    }
+
+    /**
+     * 시드 UserRole → ProfileType 매핑.
+     *
+     * 운영 경로는 [com.otoki.powersales.user.service.EmployeeProfileResolver] 가
+     * Org__c + jikchak 기반으로 산출하지만, 시드는 Org/jikchak 정보가 빈약하므로
+     * UserRole 을 출발점으로 직접 매핑한다.
+     */
+    private fun profileTypeFor(role: UserRole): ProfileType = when (role) {
+        UserRole.SYSTEM_ADMIN -> ProfileType.SYSTEM_ADMIN
+        UserRole.LEADER -> ProfileType.TEAM_LEADER
+        UserRole.BRANCH_MANAGER -> ProfileType.BRANCH_MANAGER
+        UserRole.SALES_MANAGER -> ProfileType.SALES_MANAGER
+        UserRole.BUSINESS_MANAGER -> ProfileType.BUSINESS_DIRECTOR
+        UserRole.HEADQUARTERS_MANAGER -> ProfileType.DIVISION_HEAD
+        UserRole.SALES_SUPPORT -> ProfileType.STAFF
+        UserRole.WOMAN, UserRole.ACCOUNT_VIEW_ALL, UserRole.UNKNOWN -> ProfileType.SALES_REP
     }
 
     /**
@@ -107,11 +149,11 @@ class LocalDataInitializer(
     private fun seedSystemAdmin() {
         val encodedPassword = passwordEncoder.encode("a1234!@#$")!!
 
-        data class SeedSystemAdmin(val code: String, val name: String, val orgName: String)
+        data class SeedSystemAdmin(val code: String, val name: String, val orgName: String, val workEmail: String)
 
         val seeds = listOf(
-            SeedSystemAdmin("ADMIN-99999999", "시스템개발자", "시스템개발자조직"),
-            SeedSystemAdmin("ADMIN-99990001", "시스템개발자2", "시스템개발자조직")
+            SeedSystemAdmin("ADMIN-99999999", "시스템개발자", "시스템개발자조직", "sysadmin@otoki.local"),
+            SeedSystemAdmin("ADMIN-99990001", "시스템개발자2", "시스템개발자조직", "sysadmin2@otoki.local")
         )
 
         for (seed in seeds) {
@@ -128,11 +170,30 @@ class LocalDataInitializer(
                 role = UserRole.SYSTEM_ADMIN
                 origin = EmployeeOrigin.MANUAL
                 appLoginActive = false
+                workEmail = seed.workEmail
             }
             if (infoExists) {
                 employee.employeeInfo = null
             }
             employeeRepository.save(employee)
+
+            // Web Admin 로그인 가능하도록 User 동시 생성 (SF 레거시 IF_REST_SAP_EmployeeMaster.upsertUser 동등).
+            // SYSTEM_ADMIN 은 isSalesSupport=false 가 디폴트 (영업지원실 분기 별도).
+            if (userRepository.findByUsername(seed.workEmail) == null) {
+                val user = User(
+                    username = seed.workEmail,
+                    email = seed.workEmail,
+                    employeeNumber = seed.code,
+                    name = seed.name,
+                    password = encodedPassword,
+                    passwordChangeRequired = false,
+                    isActive = true,
+                    profileType = ProfileType.SYSTEM_ADMIN,
+                    isSalesSupport = false,
+                    isDeleted = false
+                )
+                userRepository.save(user)
+            }
             log.info("시드 SYSTEM_ADMIN 계정 생성 완료: employeeCode={}", seed.code)
         }
     }

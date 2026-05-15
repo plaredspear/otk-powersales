@@ -401,17 +401,14 @@ class EmployeeUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("U3 workEmail / email 부재 - username = '{employeeCode}@otoki.placeholder' fallback")
-        fun upsert_noEmail_usernameFallback() {
+        @DisplayName("U3 workEmail / email 부재 - User 생성 skip (SF IF_REST_SAP_EmployeeMaster.cls:281 동등)")
+        fun upsert_noEmail_skipsUserCreation() {
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(emptyList())
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
             service.upsert(listOf(command(employeeCode = "100123", employeeName = "홍길동")))
 
-            val captor = argumentCaptor<List<User>>()
-            verify(userRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().username).isEqualTo("100123@otoki.placeholder")
-            assertThat(captor.firstValue.single().email).isNull()
+            verify(userRepository, never()).saveAll(any<List<User>>())
         }
 
         @Test
@@ -420,7 +417,7 @@ class EmployeeUpsertServiceTest {
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(emptyList())
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
-            service.upsert(listOf(command(employeeCode = "100123", employeeName = "홍길동", birthdate = null)))
+            service.upsert(listOf(command(employeeCode = "100123", employeeName = "홍길동", workEmail = "hong@otoki.com", birthdate = null)))
 
             val captor = argumentCaptor<List<User>>()
             verify(userRepository).saveAll(captor.capture())
@@ -438,7 +435,7 @@ class EmployeeUpsertServiceTest {
             service.upsert(
                 listOf(
                     command(employeeCode = "100100", employeeName = "기존갱신"),
-                    command(employeeCode = "100200", employeeName = "신규")
+                    command(employeeCode = "100200", employeeName = "신규", workEmail = "new@otoki.com")
                 )
             )
 
@@ -454,7 +451,7 @@ class EmployeeUpsertServiceTest {
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(emptyList())
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
-            service.upsert(listOf(command(employeeCode = "100123", employeeName = "홍길동", lockingFlag = "Y")))
+            service.upsert(listOf(command(employeeCode = "100123", employeeName = "홍길동", workEmail = "hong@otoki.com", lockingFlag = "Y")))
 
             val captor = argumentCaptor<List<User>>()
             verify(userRepository).saveAll(captor.capture())

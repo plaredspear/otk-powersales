@@ -10,6 +10,8 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -42,6 +44,9 @@ class LocalDataInitializerTest {
 
     @Mock
     private lateinit var employeeRepository: EmployeeRepository
+
+    @Mock
+    private lateinit var userRepository: UserRepository
 
     @Mock
     private lateinit var passwordEncoder: PasswordEncoder
@@ -91,6 +96,8 @@ class LocalDataInitializerTest {
         whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
         whenever(passwordEncoder.encode("a1234!@#$")).thenReturn("encoded_password")
         whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+        whenever(userRepository.findByUsername(any<String>())).thenReturn(null)
+        whenever(userRepository.save(any<User>())).thenAnswer { it.getArgument<User>(0) }
         stubEmployeeInfoExists()
     }
 
