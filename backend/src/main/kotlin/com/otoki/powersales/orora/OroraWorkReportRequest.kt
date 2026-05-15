@@ -1,4 +1,4 @@
-package com.otoki.powersales.schedule.integration
+package com.otoki.powersales.orora
 
 /**
  * Orora API 출근보고 요청 데이터 (안전점검 데이터 포함)

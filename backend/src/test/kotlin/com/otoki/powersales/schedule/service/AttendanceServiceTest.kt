@@ -37,8 +37,8 @@ import com.otoki.powersales.schedule.exception.DistanceExceededException
 import com.otoki.powersales.schedule.exception.InvalidCoordsException
 import com.otoki.powersales.schedule.exception.SafetyCheckRequiredException
 import com.otoki.powersales.schedule.exception.TeamMemberScheduleNotFoundException
-import com.otoki.powersales.schedule.integration.OroraApiService
-import com.otoki.powersales.schedule.integration.OroraWorkReportResult
+import com.otoki.powersales.orora.OroraApiService
+import com.otoki.powersales.orora.OroraWorkReportResult
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat

@@ -19,8 +19,8 @@ import com.otoki.powersales.schedule.enums.AttendanceType
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.exception.*
-import com.otoki.powersales.schedule.integration.OroraApiService
-import com.otoki.powersales.schedule.integration.OroraWorkReportRequest
+import com.otoki.powersales.orora.OroraApiService
+import com.otoki.powersales.orora.OroraWorkReportRequest
 import com.otoki.powersales.schedule.policy.AbcExemptPolicy
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository

@@ -1,4 +1,4 @@
-package com.otoki.powersales.schedule.integration
+package com.otoki.powersales.orora
 
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty

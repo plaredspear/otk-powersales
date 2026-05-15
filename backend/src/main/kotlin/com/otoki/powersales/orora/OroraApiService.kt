@@ -1,4 +1,4 @@
-package com.otoki.powersales.schedule.integration
+package com.otoki.powersales.orora
 
 /**
  * Orora WorkReport 외부 API 연동 인터페이스
