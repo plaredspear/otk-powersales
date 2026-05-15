@@ -1,13 +1,10 @@
 package com.otoki.powersales.employee.repository
 
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.employee.entity.QEmployeeInfo.Companion.employeeInfo
 import com.otoki.powersales.employee.entity.Employee
 import com.querydsl.core.BooleanBuilder
-import com.querydsl.core.types.Projections
-import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -66,28 +63,6 @@ class EmployeeRepositoryCustomImpl(
                 employee.costCenterCode.eq(costCenterCode),
                 employee.role.eq(role)
             )
-            .fetch()
-    }
-
-    override fun findDistinctBranches(): List<BranchResponse> {
-        return queryFactory
-            .select(
-                Projections.constructor(
-                    BranchResponse::class.java,
-                    Expressions.cases()
-                        .`when`(employee.costCenterCode.isNotNull)
-                        .then(employee.costCenterCode)
-                        .otherwise(employee.orgName),
-                    employee.orgName
-                )
-            )
-            .from(employee)
-            .where(
-                employee.orgName.isNotNull,
-                employee.isDeleted.isNull.or(employee.isDeleted.isFalse)
-            )
-            .groupBy(employee.orgName, employee.costCenterCode)
-            .orderBy(employee.orgName.asc())
             .fetch()
     }
 

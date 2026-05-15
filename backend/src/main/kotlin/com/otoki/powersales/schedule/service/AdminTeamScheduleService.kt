@@ -14,6 +14,7 @@ import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -26,6 +27,7 @@ class AdminTeamScheduleService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
+    private val organizationRepository: OrganizationRepository,
     private val adminEmployeeHolder: AdminEmployeeHolder,
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
     private val teamScheduleValidator: TeamScheduleValidator
@@ -51,8 +53,28 @@ class AdminTeamScheduleService(
             .map { TeamScheduleAccountDto.from(it) }
     }
 
-    fun getBranches(): List<BranchResponse> {
-        return employeeRepository.findDistinctBranches()
+    /**
+     * 여사원 일정관리 "지점 선택" 드롭다운 옵션.
+     *
+     * SF 레거시 `ScheduleSearchByTeamMemberController.init()` → `CurrentUserBranchNameList.getOrgList()` 정합.
+     * - SYSTEM_ADMIN: `Organization` 전체에서 distinct(Level5 우선)
+     * - ALL_BRANCHES Role (영업지원/본부): SF `RT.Name in ('영업지원실','영업본부')` 분기 (CVS 미포함)
+     * - 그 외 (LEADER, BRANCH_MANAGER, WOMAN 등): 본인 `costCenterCode` 기준 조직 트리 + Retail/제1/CVS사업부
+     */
+    fun getBranches(userId: Long): List<BranchResponse> {
+        val currentEmployee = findEmployeeById(userId)
+        val role = currentEmployee.role
+
+        return when {
+            role == UserRole.SYSTEM_ADMIN -> organizationRepository.findAllTeamScheduleBranches()
+            role != null && UserRole.ALL_BRANCHES.contains(role) ->
+                organizationRepository.findTeamScheduleBranches(hrCode = null, allBranches = true)
+            else ->
+                organizationRepository.findTeamScheduleBranches(
+                    hrCode = currentEmployee.costCenterCode,
+                    allBranches = false
+                )
+        }
     }
 
     fun getMonthlySchedulesWithSummary(

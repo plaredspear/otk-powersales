@@ -16,6 +16,7 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -46,6 +47,9 @@ class AdminTeamScheduleServiceTest {
     private lateinit var accountRepository: AccountRepository
 
     @Mock
+    private lateinit var organizationRepository: OrganizationRepository
+
+    @Mock
     private lateinit var adminEmployeeHolder: AdminEmployeeHolder
 
     @Mock
@@ -63,6 +67,7 @@ class AdminTeamScheduleServiceTest {
             teamMemberScheduleRepository = teamMemberScheduleRepository,
             employeeRepository = employeeRepository,
             accountRepository = accountRepository,
+            organizationRepository = organizationRepository,
             adminEmployeeHolder = adminEmployeeHolder,
             adminMonthlyIntegrationService = adminMonthlyIntegrationService,
             teamScheduleValidator = teamScheduleValidator
@@ -237,6 +242,62 @@ class AdminTeamScheduleServiceTest {
             assertThat(result).hasSize(1)
             assertThat(result[0].accountId).isEqualTo(1)
             verify(employeeRepository, never()).findWithEmployeeInfoById(any())
+        }
+    }
+
+    // ========== getBranches ==========
+
+    @Nested
+    @DisplayName("getBranches - 지점 드롭다운 옵션 조회 (SF 정합)")
+    inner class GetBranchesTests {
+
+        @Test
+        @DisplayName("SYSTEM_ADMIN - 전체 Organization 조회")
+        fun getBranches_systemAdmin() {
+            val admin = createEmployee(id = 10L, role = UserRole.SYSTEM_ADMIN, costCenterCode = "9999")
+            val branches = listOf(
+                com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"),
+                com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점")
+            )
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(admin)
+            whenever(organizationRepository.findAllTeamScheduleBranches()).thenReturn(branches)
+
+            val result = service.getBranches(10L)
+
+            assertThat(result).hasSize(2)
+            assertThat(result[0].branchCode).isEqualTo("5460")
+            verify(organizationRepository, never()).findTeamScheduleBranches(any(), any())
+        }
+
+        @Test
+        @DisplayName("ALL_BRANCHES Role (영업지원실) - 전사 분기 (CVS 미포함)")
+        fun getBranches_allBranchesRole() {
+            val supporter = createEmployee(id = 10L, role = UserRole.SALES_SUPPORT, costCenterCode = "3475")
+            val branches = listOf(com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"))
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(supporter)
+            whenever(organizationRepository.findTeamScheduleBranches(null, true)).thenReturn(branches)
+
+            val result = service.getBranches(10L)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].branchCode).isEqualTo("5460")
+            verify(organizationRepository, never()).findAllTeamScheduleBranches()
+            verify(organizationRepository).findTeamScheduleBranches(null, true)
+        }
+
+        @Test
+        @DisplayName("일반 영업담당 Role (조장) - 본인 costCenterCode 기준 분기")
+        fun getBranches_scopedRole() {
+            val leader = createEmployee(id = 10L, role = UserRole.LEADER, costCenterCode = "5457")
+            val branches = listOf(com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점"))
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
+            whenever(organizationRepository.findTeamScheduleBranches("5457", false)).thenReturn(branches)
+
+            val result = service.getBranches(10L)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].branchCode).isEqualTo("5457")
+            verify(organizationRepository).findTeamScheduleBranches("5457", false)
         }
     }
 

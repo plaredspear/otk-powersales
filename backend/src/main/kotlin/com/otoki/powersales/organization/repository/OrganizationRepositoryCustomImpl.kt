@@ -1,13 +1,83 @@
 package com.otoki.powersales.organization.repository
 
+import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.entity.QOrganization.Companion.organization
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.Tuple
 import com.querydsl.jpa.impl.JPAQueryFactory
 
 class OrganizationRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : OrganizationRepositoryCustom {
+
+    override fun findTeamScheduleBranches(hrCode: String?, allBranches: Boolean): List<BranchResponse> {
+        val builder = BooleanBuilder()
+        builder.and(organization.isDeleted.isNull.or(organization.isDeleted.isFalse))
+
+        if (allBranches) {
+            builder.and(
+                organization.orgNameLevel3.eq("Retail사업부")
+                    .or(organization.orgNameLevel3.eq("제1사업부"))
+                    .or(organization.orgNameLevel4.eq("영업지원1팀"))
+                    .or(organization.orgNameLevel4.eq("영업지원2팀"))
+            )
+        } else {
+            if (hrCode.isNullOrBlank()) return emptyList()
+            builder.and(
+                organization.costCenterLevel5.eq(hrCode)
+                    .or(organization.costCenterLevel4.eq(hrCode))
+                    .or(organization.costCenterLevel3.eq(hrCode))
+                    .or(organization.costCenterLevel2.eq(hrCode))
+            )
+            builder.and(
+                organization.orgNameLevel3.`in`("Retail사업부", "제1사업부", "CVS사업부")
+            )
+        }
+
+        return fetchTeamScheduleBranches(builder)
+    }
+
+    override fun findAllTeamScheduleBranches(): List<BranchResponse> {
+        val builder = BooleanBuilder()
+        builder.and(organization.isDeleted.isNull.or(organization.isDeleted.isFalse))
+        return fetchTeamScheduleBranches(builder)
+    }
+
+    private fun fetchTeamScheduleBranches(where: BooleanBuilder): List<BranchResponse> {
+        val tuples: List<Tuple> = queryFactory
+            .select(
+                organization.costCenterLevel5,
+                organization.orgNameLevel5,
+                organization.costCenterLevel4,
+                organization.orgNameLevel4
+            )
+            .from(organization)
+            .where(where)
+            .orderBy(
+                organization.orgCodeLevel3.asc(),
+                organization.orgCodeLevel4.asc(),
+                organization.orgCodeLevel5.asc()
+            )
+            .fetch()
+
+        val seen = LinkedHashSet<String>()
+        val result = mutableListOf<BranchResponse>()
+        for (t in tuples) {
+            val cc5 = t.get(0, String::class.java)
+            val nm5 = t.get(1, String::class.java)
+            val cc4 = t.get(2, String::class.java)
+            val nm4 = t.get(3, String::class.java)
+
+            val code = if (!cc5.isNullOrBlank()) cc5 else cc4
+            val name = if (!nm5.isNullOrBlank()) nm5 else nm4
+            if (code.isNullOrBlank() || name.isNullOrBlank()) continue
+            if (seen.add(code)) {
+                result += BranchResponse(code, name)
+            }
+        }
+        return result
+    }
 
     override fun searchForAdmin(
         keyword: String?,

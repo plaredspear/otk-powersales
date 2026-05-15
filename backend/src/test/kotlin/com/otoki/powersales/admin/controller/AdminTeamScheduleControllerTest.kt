@@ -164,7 +164,7 @@ class AdminTeamScheduleControllerTest {
                 BranchResponse(branchCode = "1234", branchName = "서울지점"),
                 BranchResponse(branchCode = "5678", branchName = "부산지점")
             )
-            whenever(adminTeamScheduleService.getBranches()).thenReturn(branches)
+            whenever(adminTeamScheduleService.getBranches(1L)).thenReturn(branches)
 
             mockMvc.perform(get("/api/v1/admin/team-schedule/branches"))
                 .andExpect(status().isOk)

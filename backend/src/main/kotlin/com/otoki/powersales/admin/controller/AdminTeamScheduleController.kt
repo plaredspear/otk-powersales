@@ -45,7 +45,7 @@ class AdminTeamScheduleController(
     fun getBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        val result = adminTeamScheduleService.getBranches()
+        val result = adminTeamScheduleService.getBranches(principal.requireEmployeeId())
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
