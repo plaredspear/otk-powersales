@@ -60,13 +60,13 @@ class AccountUpsertService(
         }
 
         // Spec #758: owner FK 가 User 로 전환됨. Employee 매칭은 존재 검증용으로 유지하고
-        // owner 적재는 User.employee_number 매칭 결과를 사용한다.
+        // owner 적재는 User.employee_code 매칭 결과를 사용한다.
         // invariant: Employee 신규 생성 시 같은 Transaction 으로 User 도 생성됨 (EmployeeUpsertService).
-        val userByEmployeeNumber: Map<String, User> = if (employeeCodes.isEmpty()) {
+        val userByEmployeeCode: Map<String, User> = if (employeeCodes.isEmpty()) {
             emptyMap()
         } else {
-            userRepository.findByEmployeeNumberIn(employeeCodes.distinct())
-                .associateBy { it.employeeNumber }
+            userRepository.findByEmployeeCodeIn(employeeCodes.distinct())
+                .associateBy { it.employeeCode }
         }
 
         val orgLookup = OrganizationLookup.build(organizationRepository)
@@ -92,7 +92,7 @@ class AccountUpsertService(
                 }
 
                 val matchedOrg = orgLookup.match(command)
-                val matchedUser = command.employeeCode?.let { userByEmployeeNumber[it] }
+                val matchedUser = command.employeeCode?.let { userByEmployeeCode[it] }
                 val account = accountCache[externalKey]?.also { mapper.update(it, name, command, matchedOrg, matchedUser) }
                     ?: mapper.newAccount(externalKey, name, command, matchedOrg, matchedUser)
                         .also { accountCache[externalKey] = it }

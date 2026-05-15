@@ -30,7 +30,6 @@ import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
-import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -114,7 +113,7 @@ class AdminScheduleService(
         val employeeCodes = parseResult.rows.mapNotNull { it.employeeCode }.distinct()
         val accountCodes = parseResult.rows.mapNotNull { it.accountCode }.distinct()
 
-        val usersByEmployeeNumber = if (employeeCodes.isNotEmpty()) {
+        val usersByEmployeeCode = if (employeeCodes.isNotEmpty()) {
             employeeRepository.findByEmployeeCodeIn(employeeCodes).associateBy { it.employeeCode }
         } else {
             emptyMap()
@@ -129,7 +128,7 @@ class AdminScheduleService(
         }
 
         // 기존 스케줄 조회 (중복 검증용)
-        val userIds = usersByEmployeeNumber.values.map { it.id }
+        val userIds = usersByEmployeeCode.values.map { it.id }
         val existingSchedules = if (userIds.isNotEmpty()) {
             scheduleRepository.findByEmployeeIdInAndNotDeleted(userIds)
         } else {
@@ -138,7 +137,7 @@ class AdminScheduleService(
 
         // 검증
         val validationResult = uploadValidator.validate(
-            parseResult.rows, usersByEmployeeNumber, accountsByExternalKey, existingSchedules
+            parseResult.rows, usersByEmployeeCode, accountsByExternalKey, existingSchedules
         )
 
         // UUID 생성 + Redis 저장
@@ -190,7 +189,7 @@ class AdminScheduleService(
 
         // 조장 일괄 조회: costCenterCode 목록 → role=LEADER 사원 → User 매핑.
         // 레거시 SF DisplayWorkScheduleMasterTriggerHandler.setOwner() 와 동등한 chain:
-        // 여사원(FullName__c) → CostCenterCode → 조장 Employee → Employee.employeeCode == User.employeeNumber → User.
+        // 여사원(FullName__c) → CostCenterCode → 조장 Employee → Employee.employeeCode == User.employeeCode → User.
         val costCenterCodes = cacheData.validRows.mapNotNull { it.costCenterCode }.distinct()
         val leadersByCostCenter = if (costCenterCodes.isNotEmpty()) {
             employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes, UserRole.LEADER)
@@ -202,8 +201,8 @@ class AdminScheduleService(
             .flatten()
             .mapNotNull { it.employeeCode }
             .distinct()
-        val userByEmployeeNumber = if (leaderEmployeeCodes.isNotEmpty()) {
-            userRepository.findByEmployeeNumberIn(leaderEmployeeCodes).associateBy { it.employeeNumber }
+        val userByEmployeeCode = if (leaderEmployeeCodes.isNotEmpty()) {
+            userRepository.findByEmployeeCodeIn(leaderEmployeeCodes).associateBy { it.employeeCode }
         } else {
             emptyMap()
         }
@@ -228,7 +227,7 @@ class AdminScheduleService(
                 leadersByCostCenter[costCenterCode]
                     ?.firstOrNull()
                     ?.employeeCode
-                    ?.let { userByEmployeeNumber[it] }
+                    ?.let { userByEmployeeCode[it] }
             } else {
                 null
             }

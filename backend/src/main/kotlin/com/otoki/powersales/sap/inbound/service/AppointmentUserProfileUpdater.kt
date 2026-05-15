@@ -3,7 +3,6 @@ package com.otoki.powersales.sap.inbound.service
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.common.repository.SystemCodeMasterRepository
@@ -172,11 +171,11 @@ class AppointmentUserProfileUpdater(
      * Spec #759 — 발령 후처리로 변경된 Employee 의 최신 상태를 기준으로 User cache 갱신.
      *
      * SF `AppointmentTriggerHanlder.cls:233-365` `updateUser(@future)` 동등 — Profile/UserRole 산출 후
-     * 매칭 User 행(`User.employeeNumber == Employee.employeeCode`) 의 `profileType` / `isSalesSupport` 갱신.
+     * 매칭 User 행(`User.employeeCode == Employee.employeeCode`) 의 `profileType` / `isSalesSupport` 갱신.
      * 매칭 User 행 부재 시 silently skip (마이그레이션 이전 단계 / 신규 미동기화 사원 케이스).
      */
     internal fun updateUserProfileCache(employee: Employee) {
-        val user = userRepository.findByEmployeeNumber(employee.employeeCode) ?: return
+        val user = userRepository.findByEmployeeCode(employee.employeeCode) ?: return
         user.profileType = employeeProfileResolver.resolve(employee)
         user.isSalesSupport = userRoleResolver.isSalesSupport(employee)
     }

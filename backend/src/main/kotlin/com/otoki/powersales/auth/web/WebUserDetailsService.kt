@@ -52,7 +52,7 @@ class WebUserDetailsService(
         return WebUserPrincipal(
             userId = user.id,
             usernameValue = user.username,
-            employeeNumber = user.employeeNumber,
+            employeeCode = user.employeeCode,
             employeeId = null,
             role = null,
             profileType = user.profileType,

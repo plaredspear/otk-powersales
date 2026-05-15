@@ -20,7 +20,7 @@ import org.springframework.security.core.userdetails.UserDetails
 data class WebUserPrincipal(
     val userId: Long,
     val usernameValue: String,
-    val employeeNumber: String,
+    val employeeCode: String,
     val employeeId: Long?,
     val role: UserRole?,
     val profileType: ProfileType,
@@ -51,5 +51,5 @@ data class WebUserPrincipal(
      * admin 패키지 controller 들이 service 에 employeeId 를 넘기는 표준 경로.
      */
     fun requireEmployeeId(): Long = employeeId
-        ?: throw IllegalStateException("Web Admin 사용자에 매칭되는 Employee 가 없습니다 (employeeNumber=$employeeNumber)")
+        ?: throw IllegalStateException("Web Admin 사용자에 매칭되는 Employee 가 없습니다 (employeeCode=$employeeCode)")
 }

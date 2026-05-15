@@ -21,7 +21,7 @@ data class SchedulePeriod(
 data class PromotionScheduleMember(
     val promotionEmployeeId: Long,
     val employeeId: Long,
-    val employeeNumber: String,
+    val employeeCode: String,
     val employeeName: String,
     val schedules: List<PromotionScheduleItem>
 )

@@ -74,7 +74,7 @@ class AdminScheduleControllerTest {
         val principal = WebUserPrincipal(
             userId = 100L,
             usernameValue = "test@otokims.co.kr",
-            employeeNumber = "S001",
+            employeeCode = "S001",
             employeeId = 1L,
             role = UserRole.BRANCH_MANAGER,
             profileType = ProfileType.STAFF,

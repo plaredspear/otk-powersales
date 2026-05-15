@@ -53,8 +53,8 @@ class StaffReview(
 
     @SFField("EmployeeNumber__c")
     @HCColumn("employeenumber__c")
-    @Column(name = "employee_number", length = 1300)
-    val employeeNumber: String? = null,
+    @Column(name = "employee_code", length = 1300)
+    val employeeCode: String? = null,
 
     @SFField("Branch__c")
     @HCColumn("branch__c")

@@ -56,7 +56,7 @@ class AdminPermissionMatrixControllerTest {
         val principal = WebUserPrincipal(
             userId = 100L,
             usernameValue = "leader@otokims.co.kr",
-            employeeNumber = "S001",
+            employeeCode = "S001",
             employeeId = 1L,
             role = UserRole.LEADER,
             profileType = ProfileType.TEAM_LEADER,

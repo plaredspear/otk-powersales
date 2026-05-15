@@ -551,17 +551,17 @@ class AccountUpsertServiceTest {
     @DisplayName("Spec #758 - Owner FK 매핑 (User)")
     inner class UpsertOwnerFk {
 
-        private fun user(employeeNumber: String, username: String = "$employeeNumber@otoki.local"): User =
-            User(username = username, employeeNumber = employeeNumber, password = "encoded")
+        private fun user(employeeCode: String, username: String = "$employeeCode@otoki.local"): User =
+            User(username = username, employeeCode = employeeCode, password = "encoded")
 
         @Test
-        @DisplayName("O1 정상 owner 매핑 - account.owner = 매칭 User (employee_number 매칭)")
+        @DisplayName("O1 정상 owner 매핑 - account.owner = 매칭 User (employee_code 매칭)")
         fun upsert_ownerMapped() {
             val employee = Employee(employeeCode = "12345", name = "홍길동")
             val matchedUser = user("12345")
             whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(employee))
-            whenever(userRepository.findByEmployeeNumberIn(listOf("12345"))).thenReturn(listOf(matchedUser))
+            whenever(userRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(matchedUser))
             whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val result = service.upsert(listOf(command(employeeCode = "12345")))
@@ -578,7 +578,7 @@ class AccountUpsertServiceTest {
         fun upsert_employeeMissing_blocksRow() {
             whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("99999"))).thenReturn(emptyList())
-            whenever(userRepository.findByEmployeeNumberIn(listOf("99999"))).thenReturn(emptyList())
+            whenever(userRepository.findByEmployeeCodeIn(listOf("99999"))).thenReturn(emptyList())
             whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val result = service.upsert(listOf(command(employeeCode = "99999")))
@@ -610,7 +610,7 @@ class AccountUpsertServiceTest {
             val employee = Employee(employeeCode = "12345", name = "홍길동")
             whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(employee))
-            whenever(userRepository.findByEmployeeNumberIn(listOf("12345"))).thenReturn(emptyList())
+            whenever(userRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(emptyList())
             whenever(organizationRepository.findAll()).thenReturn(emptyList())
 
             val result = service.upsert(listOf(command(employeeCode = "12345")))
@@ -629,7 +629,7 @@ class AccountUpsertServiceTest {
             whenever(accountRepository.findByExternalKeyIn(listOf("A", "B", "C"))).thenReturn(emptyList())
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345", "99999")))
                 .thenReturn(listOf(employee))
-            whenever(userRepository.findByEmployeeNumberIn(listOf("12345", "99999")))
+            whenever(userRepository.findByEmployeeCodeIn(listOf("12345", "99999")))
                 .thenReturn(listOf(matchedUser))
             whenever(organizationRepository.findAll()).thenReturn(emptyList())
 

@@ -25,7 +25,7 @@ class ScheduleUploadValidator {
 
     data class ValidatedRow(
         val userId: Long,
-        val userEmployeeNumber: String,
+        val userEmployeeCode: String,
         val accountId: Int,
         val typeOfWork3: String,
         val typeOfWork4: String,
@@ -38,7 +38,7 @@ class ScheduleUploadValidator {
 
     fun validate(
         parsedRows: List<ScheduleExcelParser.ParsedRow>,
-        usersByEmployeeNumber: Map<String, Employee>,
+        usersByEmployeeCode: Map<String, Employee>,
         accountsByExternalKey: Map<String, Account>,
         existingSchedules: List<DisplayWorkSchedule>
     ): ValidationResult {
@@ -91,7 +91,7 @@ class ScheduleUploadValidator {
             val endDate = row.endDate
 
             // V1: 사원번호 존재
-            val employee = usersByEmployeeNumber[employeeCode]
+            val employee = usersByEmployeeCode[employeeCode]
             if (employee == null) {
                 rowErrors.add(RowError(row.rowNumber, "B", "사번", employeeCode, "사원번호 $employeeCode: 존재하지 않는 사원"))
             }
@@ -153,7 +153,7 @@ class ScheduleUploadValidator {
             }
 
             val userId = employee!!.id
-            val userEmployeeNumber = employee.employeeCode
+            val userEmployeeCode = employee.employeeCode
             val accountIdVal = account!!.id
 
             // V8: DB 기존 레코드와 기간 중복 검사
@@ -207,7 +207,7 @@ class ScheduleUploadValidator {
             } else {
                 val validatedRow = ValidatedRow(
                     userId = userId,
-                    userEmployeeNumber = userEmployeeNumber,
+                    userEmployeeCode = userEmployeeCode,
                     accountId = accountIdVal,
                     typeOfWork3 = typeOfWork3,
                     typeOfWork4 = typeOfWork4,
@@ -222,7 +222,7 @@ class ScheduleUploadValidator {
                     FileRowData(
                         rowNumber = row.rowNumber,
                         userId = userId,
-                        userEmployeeNumber = userEmployeeNumber,
+                        userEmployeeCode = userEmployeeCode,
                         accountId = accountIdVal,
                         typeOfWork3 = typeOfWork3,
                         typeOfWork5 = typeOfWork5,
@@ -267,7 +267,7 @@ class ScheduleUploadValidator {
     private data class FileRowData(
         val rowNumber: Int,
         val userId: Long,
-        val userEmployeeNumber: String,
+        val userEmployeeCode: String,
         val accountId: Int,
         val typeOfWork3: String,
         val typeOfWork5: String,

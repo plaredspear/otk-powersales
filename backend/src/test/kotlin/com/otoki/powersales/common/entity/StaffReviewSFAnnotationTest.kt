@@ -58,7 +58,7 @@ class StaffReviewSFAnnotationTest {
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["DKRetail_EmployeeId__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["EmployeeName__c"]).isEqualTo("employee_name")
-            assertThat(mapping["EmployeeNumber__c"]).isEqualTo("employee_number")
+            assertThat(mapping["EmployeeNumber__c"]).isEqualTo("employee_code")
             assertThat(mapping["Branch__c"]).isEqualTo("branch")
             assertThat(mapping["BranchReviews__c"]).isEqualTo("branch_review_sfid")
             assertThat(mapping["CostCenterCode__c"]).isEqualTo("cost_center_code")

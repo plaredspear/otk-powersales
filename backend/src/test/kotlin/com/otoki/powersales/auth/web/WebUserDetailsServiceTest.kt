@@ -132,7 +132,7 @@ class WebUserDetailsServiceTest {
     private fun createUser(
         id: Long = 1L,
         username: String = "u@otokims.co.kr",
-        employeeNumber: String = "S001",
+        employeeCode: String = "S001",
         profileType: ProfileType,
         isSalesSupport: Boolean,
         isActive: Boolean = true,
@@ -141,7 +141,7 @@ class WebUserDetailsServiceTest {
         id = id,
         username = username,
         isActive = isActive,
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         profileType = profileType,
         isSalesSupport = isSalesSupport,
         password = password,

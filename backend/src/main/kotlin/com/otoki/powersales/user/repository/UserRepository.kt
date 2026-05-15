@@ -7,9 +7,9 @@ interface UserRepository : JpaRepository<User, Long> {
 
     fun findByUsername(username: String): User?
 
-    fun findByEmployeeNumber(employeeNumber: String): User?
+    fun findByEmployeeCode(employeeCode: String): User?
 
-    fun findByEmployeeNumberIn(employeeNumbers: Collection<String>): List<User>
+    fun findByEmployeeCodeIn(employeeCodes: Collection<String>): List<User>
 
     fun findBySfid(sfid: String): User?
 }

@@ -5,7 +5,7 @@ import type { UserRole } from '@/constants/userRole';
 /**
  * Web Admin 인증 사용자 (Spec #760).
  *
- * Backend `WebUserSummary` (userId/username/employeeNumber) 응답을 web 의 기존 소비 코드
+ * Backend `WebUserSummary` (userId/username/employeeCode) 응답을 web 의 기존 소비 코드
  * 컨벤션(id/employeeCode) 에 맞춰 매핑한 형태. token 은 별도 localStorage 키로 분리 관리.
  */
 export interface AuthUser {
@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     const user: AuthUser = {
       id: data.user.userId,
-      employeeCode: data.user.employeeNumber,
+      employeeCode: data.user.employeeCode,
       username: data.user.username,
       name: data.user.name ?? '',
       orgName: data.user.orgName,

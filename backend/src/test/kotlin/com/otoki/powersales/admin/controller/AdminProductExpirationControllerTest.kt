@@ -71,7 +71,7 @@ class AdminProductExpirationControllerTest {
         val principal = WebUserPrincipal(
             userId = 100L,
             usernameValue = "test@otokims.co.kr",
-            employeeNumber = "S001",
+            employeeCode = "S001",
             employeeId = userId,
             role = role,
             profileType = ProfileType.STAFF,

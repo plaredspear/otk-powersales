@@ -23,7 +23,7 @@ class AlternativeHolidayRepositoryCustomImpl(
         val condition = BooleanBuilder()
             .and(alternativeHoliday.actualWorkDate.between(startDate, endDate))
             .and(buildStatusCondition(status))
-            .and(buildEmployeeNumberCondition(employeeCode))
+            .and(buildEmployeeCodeCondition(employeeCode))
             .and(buildOrgCodeCondition(orgCode))
 
         return queryFactory
@@ -56,7 +56,7 @@ class AlternativeHolidayRepositoryCustomImpl(
                 ?.let { altStatus -> alternativeHoliday.status.eq(altStatus) }
         }
 
-    private fun buildEmployeeNumberCondition(employeeCode: String?) =
+    private fun buildEmployeeCodeCondition(employeeCode: String?) =
         employeeCode?.let { employee.employeeCode.eq(it) }
 
     private fun buildOrgCodeCondition(orgCode: String?) =

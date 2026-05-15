@@ -140,7 +140,7 @@ class UserProvisioningService(
         val user = User(
             username = resolvedEmail,
             email = resolvedEmail,
-            employeeNumber = employeeCode,
+            employeeCode = employeeCode,
             name = name,
             password = encoded,
             passwordChangeRequired = passwordChangeRequired,

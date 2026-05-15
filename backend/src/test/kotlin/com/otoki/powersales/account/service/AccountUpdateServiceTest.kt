@@ -49,7 +49,7 @@ class AccountUpdateServiceTest {
     private fun webPrincipal(userId: Long, role: UserRole) = WebUserPrincipal(
         userId = userId,
         usernameValue = "u$userId@otokims.co.kr",
-        employeeNumber = "S$userId",
+        employeeCode = "S$userId",
         employeeId = userId,
         role = role,
         profileType = ProfileType.STAFF,

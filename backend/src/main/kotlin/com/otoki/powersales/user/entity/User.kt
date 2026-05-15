@@ -23,7 +23,7 @@ import java.time.LocalDateTime
  * Employee (인사 마스터) 와 별개로 인증/권한 책임을 분리한다.
  *
  * - Web 로그인 인증 대상 (Mobile 은 Employee 기반 — 비밀번호 분리)
- * - Employee 와의 매칭 키: `employee_number == Employee.employee_code`
+ * - Employee 와의 매칭 키: `User.employee_code == Employee.employee_code`
  * - audit (created_by / last_modified_by / manager) 는 User → User self-reference (R-2)
  *
  * 후속 spec:
@@ -57,8 +57,8 @@ class User(
     var isActive: Boolean = true,
 
     @SFField("DKRetail__EmployeeNumber__c")
-    @Column(name = "employee_number", nullable = false, unique = true, length = 20)
-    var employeeNumber: String,
+    @Column(name = "employee_code", nullable = false, unique = true, length = 20)
+    var employeeCode: String,
 
     @SFField("Name")
     @Column(name = "name", length = 121)
@@ -165,7 +165,7 @@ class User(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,
 
-) : BaseEntity() {
+    ) : BaseEntity() {
 
     /**
      * 비밀번호 변경 (Spec #760).

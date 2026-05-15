@@ -43,7 +43,7 @@ class ScheduleUploadValidatorTest {
             assertThat(result.errors).isEmpty()
             assertThat(result.validRows).hasSize(1)
             assertThat(result.previews).hasSize(1)
-            assertThat(result.validRows[0].userEmployeeNumber).isEqualTo("20030001")
+            assertThat(result.validRows[0].userEmployeeCode).isEqualTo("20030001")
             assertThat(result.validRows[0].accountId).isEqualTo(1)
             assertThat(result.validRows[0].typeOfWork4).isEqualTo("상온")
         }

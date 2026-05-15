@@ -99,7 +99,7 @@ class AdminPromotionScheduleService(
             PromotionScheduleMember(
                 promotionEmployeeId = pe.id,
                 employeeId = employee.id,
-                employeeNumber = employee.employeeCode,
+                employeeCode = employee.employeeCode,
                 employeeName = employee.name,
                 schedules = items
             )

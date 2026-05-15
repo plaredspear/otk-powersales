@@ -56,7 +56,7 @@ class AdminAlternativeHolidayControllerTest {
         val principal = WebUserPrincipal(
             userId = 100L,
             usernameValue = "test@otokims.co.kr",
-            employeeNumber = "S001",
+            employeeCode = "S001",
             employeeId = 1L,
             role = UserRole.BRANCH_MANAGER,
             profileType = ProfileType.STAFF,
@@ -147,7 +147,7 @@ class AdminAlternativeHolidayControllerTest {
 
         @Test
         @DisplayName("실패 - 사번 누락")
-        fun create_missingEmployeeNumber() {
+        fun create_missingEmployeeCode() {
             val json = """{"employeeCode": "", "actualWorkDate": "2026-03-07", "targetAltHolidayDate": "2026-03-09"}"""
             mockMvc.perform(
                 post("/api/v1/admin/alternative-holidays")

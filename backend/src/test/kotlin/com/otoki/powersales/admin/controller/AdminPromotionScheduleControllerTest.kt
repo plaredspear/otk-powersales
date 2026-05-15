@@ -60,7 +60,7 @@ class AdminPromotionScheduleControllerTest {
         val principal = WebUserPrincipal(
             userId = 100L,
             usernameValue = "test@otokims.co.kr",
-            employeeNumber = "S001",
+            employeeCode = "S001",
             employeeId = 1L,
             role = UserRole.BRANCH_MANAGER,
             profileType = ProfileType.STAFF,
@@ -88,7 +88,7 @@ class AdminPromotionScheduleControllerTest {
                     PromotionScheduleMember(
                         promotionEmployeeId = 200L,
                         employeeId = 50L,
-                        employeeNumber = "20030001",
+                        employeeCode = "20030001",
                         employeeName = "홍길동",
                         schedules = listOf(
                             PromotionScheduleItem(
@@ -116,7 +116,7 @@ class AdminPromotionScheduleControllerTest {
                 .andExpect(jsonPath("$.data.promotionId").value(100))
                 .andExpect(jsonPath("$.data.totalMemberCount").value(1))
                 .andExpect(jsonPath("$.data.totalScheduleCount").value(1))
-                .andExpect(jsonPath("$.data.members[0].employeeNumber").value("20030001"))
+                .andExpect(jsonPath("$.data.members[0].employeeCode").value("20030001"))
                 .andExpect(jsonPath("$.data.members[0].schedules[0].accountCode").value("SAP001"))
         }
     }

@@ -1,10 +1,7 @@
 package com.otoki.powersales.auth.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.dto.request.ChangePasswordRequest
 import com.otoki.powersales.auth.dto.request.LoginRequest
-import com.otoki.powersales.auth.dto.request.RefreshTokenRequest
-import com.otoki.powersales.auth.dto.request.VerifyPasswordRequest
 import com.otoki.powersales.auth.dto.response.*
 import com.otoki.powersales.common.dto.response.*
 import com.otoki.powersales.auth.entity.UserRole
@@ -171,7 +168,7 @@ class AuthControllerTest {
 
     @Test
     @DisplayName("필수 필드 누락 (employeeCode 빈 값) - 400 INVALID_PARAMETER")
-    fun login_missingEmployeeNumber() {
+    fun login_missingEmployeeCode() {
         // When & Then
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
@@ -185,7 +182,7 @@ class AuthControllerTest {
 
     @Test
     @DisplayName("사번 형식 오류 (6자리) - 400 with validation message")
-    fun login_invalidEmployeeNumberFormat() {
+    fun login_invalidEmployeeCodeFormat() {
         // When & Then
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")

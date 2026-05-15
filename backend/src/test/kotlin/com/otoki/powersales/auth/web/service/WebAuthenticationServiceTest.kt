@@ -286,7 +286,7 @@ class WebAuthenticationServiceTest {
     private fun createUser(
         id: Long = 1L,
         username: String = "u@otokims.co.kr",
-        employeeNumber: String = "S001",
+        employeeCode: String = "S001",
         profileType: ProfileType = ProfileType.STAFF,
         isSalesSupport: Boolean = false,
         isActive: Boolean = true,
@@ -295,7 +295,7 @@ class WebAuthenticationServiceTest {
         id = id,
         username = username,
         isActive = isActive,
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         profileType = profileType,
         isSalesSupport = isSalesSupport,
         password = "\$2a\$10\$encodedHash",
@@ -306,7 +306,7 @@ class WebAuthenticationServiceTest {
         WebUserPrincipal(
             userId = user.id,
             usernameValue = user.username,
-            employeeNumber = user.employeeNumber,
+            employeeCode = user.employeeCode,
             employeeId = null,
             role = null,
             profileType = user.profileType,

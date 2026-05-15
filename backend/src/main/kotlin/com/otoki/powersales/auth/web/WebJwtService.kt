@@ -48,7 +48,7 @@ class WebJwtService(
             .claim("audience", JwtTokenProvider.AUDIENCE_WEB)
             .claim("user_id", principal.userId)
             .claim("employee_id", principal.employeeId)
-            .claim("employee_number", principal.employeeNumber)
+            .claim("employee_code", principal.employeeCode)
             .claim("profile_type", principal.profileType.name)
             .claim("is_sales_support", principal.isSalesSupport)
             .claim("password_change_required", principal.passwordChangeRequired)
@@ -144,9 +144,9 @@ class WebJwtService(
     fun getIsSalesSupportFromToken(token: String): Boolean =
         parseClaims(token).get("is_sales_support", java.lang.Boolean::class.java)?.booleanValue() ?: false
 
-    /** employee_number claim 추출. */
-    fun getEmployeeNumberFromToken(token: String): String =
-        parseClaims(token).get("employee_number", String::class.java)
+    /** employee_code claim 추출. */
+    fun getEmployeeCodeFromToken(token: String): String =
+        parseClaims(token).get("employee_code", String::class.java)
 
     /** password_change_required claim 추출. */
     fun getPasswordChangeRequiredFromToken(token: String): Boolean =

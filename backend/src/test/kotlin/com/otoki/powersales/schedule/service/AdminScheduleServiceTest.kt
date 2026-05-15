@@ -494,7 +494,7 @@ class AdminScheduleServiceTest {
             )
             val json = objectMapper.writeValueAsString(cacheData)
             val manager = createEmployee(employeeCode = "20030099", name = "조장사원", costCenterCode = "A10010", role = UserRole.LEADER)
-            val leaderUser = createUser(id = 1099L, employeeNumber = "20030099")
+            val leaderUser = createUser(id = 1099L, employeeCode = "20030099")
 
             whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
             whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
@@ -502,7 +502,7 @@ class AdminScheduleServiceTest {
             whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
             whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
                 .thenReturn(listOf(manager))
-            whenever(userRepository.findByEmployeeNumberIn(listOf("20030099"))).thenReturn(listOf(leaderUser))
+            whenever(userRepository.findByEmployeeCodeIn(listOf("20030099"))).thenReturn(listOf(leaderUser))
             whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
             whenever(redisTemplate.delete(any<String>())).thenReturn(true)
 
@@ -1017,13 +1017,13 @@ class AdminScheduleServiceTest {
 
     private fun createUser(
         id: Long = 1L,
-        employeeNumber: String = "20030001",
-        username: String = "user-$employeeNumber",
+        employeeCode: String = "20030001",
+        username: String = "user-$employeeCode",
         password: String = "pwd"
     ): User = User(
         id = id,
         username = username,
-        employeeNumber = employeeNumber,
+        employeeCode = employeeCode,
         password = password
     )
 }

@@ -86,7 +86,7 @@ class UserEntityTest {
             assertThat(mapping["Username"]).isEqualTo("username")
             assertThat(mapping["Email"]).isEqualTo("email")
             assertThat(mapping["IsActive"]).isEqualTo("is_active")
-            assertThat(mapping["DKRetail__EmployeeNumber__c"]).isEqualTo("employee_number")
+            assertThat(mapping["DKRetail__EmployeeNumber__c"]).isEqualTo("employee_code")
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["LastName"]).isEqualTo("last_name")
             assertThat(mapping["FirstName"]).isEqualTo("first_name")
@@ -143,11 +143,11 @@ class UserEntityTest {
         }
 
         @Test
-        @DisplayName("employee_number 컬럼은 unique=true + nullable=false")
-        fun employeeNumberUnique() {
-            val field = User::class.java.getDeclaredField("employeeNumber")
+        @DisplayName("employee_code 컬럼은 unique=true + nullable=false")
+        fun employeeCodeUnique() {
+            val field = User::class.java.getDeclaredField("employeeCode")
             val column = field.getAnnotation(Column::class.java)
-            assertThat(column.name).isEqualTo("employee_number")
+            assertThat(column.name).isEqualTo("employee_code")
             assertThat(column.unique).isTrue()
             assertThat(column.nullable).isFalse()
             assertThat(column.length).isEqualTo(20)

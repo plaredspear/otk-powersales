@@ -30,7 +30,7 @@ class StaffReviewTest {
             name = "2026-01 영업사원 평가",
             employeeSfid = "a032x000006SZeHAAW",
             employeeName = "홍길동",
-            employeeNumber = "EMP001",
+            employeeCode = "EMP001",
             branch = "서울지점",
             costCenterCode = "CC100",
             employeeTotalScore = 85.5
@@ -47,7 +47,7 @@ class StaffReviewTest {
         assertThat(found.name).isEqualTo("2026-01 영업사원 평가")
         assertThat(found.employeeSfid).isEqualTo("a032x000006SZeHAAW")
         assertThat(found.employeeName).isEqualTo("홍길동")
-        assertThat(found.employeeNumber).isEqualTo("EMP001")
+        assertThat(found.employeeCode).isEqualTo("EMP001")
         assertThat(found.branch).isEqualTo("서울지점")
         assertThat(found.costCenterCode).isEqualTo("CC100")
     }
@@ -87,7 +87,7 @@ class StaffReviewTest {
         assertThat(found.name).isNull()
         assertThat(found.employeeSfid).isNull()
         assertThat(found.employeeName).isNull()
-        assertThat(found.employeeNumber).isNull()
+        assertThat(found.employeeCode).isNull()
         assertThat(found.branch).isNull()
         assertThat(found.branchReviewSfid).isNull()
         assertThat(found.costCenterCode).isNull()

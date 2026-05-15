@@ -87,7 +87,7 @@ class WebAuthenticationService(
 
         user.recordLogin(LocalDateTime.now())
 
-        val employee: Employee? = employeeRepository.findByEmployeeCode(user.employeeNumber).orElse(null)
+        val employee: Employee? = employeeRepository.findByEmployeeCode(user.employeeCode).orElse(null)
         val summary = summaryFor(user, employee)
         val principal = principalFor(user, employee)
         val familyId = UUID.randomUUID().toString()
@@ -143,7 +143,7 @@ class WebAuthenticationService(
         webRefreshTokenStore.delete(tokenId)
 
         val user = userRepository.findById(userId).orElseThrow { InvalidTokenException() }
-        val employee: Employee? = employeeRepository.findByEmployeeCode(user.employeeNumber).orElse(null)
+        val employee: Employee? = employeeRepository.findByEmployeeCode(user.employeeCode).orElse(null)
         val principal = principalFor(user, employee)
         val summary = summaryFor(user, employee)
 
@@ -213,7 +213,7 @@ class WebAuthenticationService(
             userId = user.id,
             username = user.username,
             name = user.name,
-            employeeNumber = user.employeeNumber,
+            employeeCode = user.employeeCode,
             profileType = user.profileType,
             isSalesSupport = user.isSalesSupport,
             role = role,
@@ -227,7 +227,7 @@ class WebAuthenticationService(
     private fun principalFor(user: User, employee: Employee?): WebUserPrincipal = WebUserPrincipal(
         userId = user.id,
         usernameValue = user.username,
-        employeeNumber = user.employeeNumber,
+        employeeCode = user.employeeCode,
         employeeId = employee?.id,
         role = employee?.role,
         profileType = user.profileType,

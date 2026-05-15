@@ -10,14 +10,14 @@ interface LoginRequest {
 /**
  * Backend `WebUserSummary` 응답 매핑 (Spec #760).
  *
- * `id`/`employeeCode` 는 backend `userId`/`employeeNumber` 필드의 web 별칭.
- * 실제 axios 응답 키는 userId/employeeNumber 이므로 authStore 에서 변환한다.
+ * `id` 는 backend `userId` 필드의 web 별칭. 실제 axios 응답 키는 userId 이므로
+ * authStore 에서 변환한다.
  */
 export interface AdminUserInfo {
   userId: number;
   username: string;
   name: string | null;
-  employeeNumber: string;
+  employeeCode: string;
   profileType: string;
   isSalesSupport: boolean;
   role: UserRole | null;

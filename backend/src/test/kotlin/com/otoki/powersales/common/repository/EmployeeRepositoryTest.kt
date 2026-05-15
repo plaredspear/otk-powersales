@@ -39,7 +39,7 @@ class EmployeeRepositoryTest {
 
     @Test
     @DisplayName("findByEmployeeCode - 존재하는 사번으로 사용자를 조회하면 User를 반환한다")
-    fun findByEmployeeCode_WithExistingEmployeeNumber_ReturnsUser() {
+    fun findByEmployeeCode_WithExistingEmployeeCode_ReturnsUser() {
         // Given
         val testEmployee = createTestEmployee(
             employeeCode = "20010585",
@@ -61,7 +61,7 @@ class EmployeeRepositoryTest {
 
     @Test
     @DisplayName("findByEmployeeCode - 존재하지 않는 사번으로 조회하면 Optional.empty()를 반환한다")
-    fun findByEmployeeCode_WithNonExistingEmployeeNumber_ReturnsEmpty() {
+    fun findByEmployeeCode_WithNonExistingEmployeeCode_ReturnsEmpty() {
         // Given
         val testEmployee = createTestEmployee(employeeCode = "20010585")
         testEntityManager.persistAndFlush(testEmployee)
@@ -76,7 +76,7 @@ class EmployeeRepositoryTest {
 
     @Test
     @DisplayName("existsByEmployeeCode - 존재하는 사번으로 확인하면 true를 반환한다")
-    fun existsByEmployeeCode_WithExistingEmployeeNumber_ReturnsTrue() {
+    fun existsByEmployeeCode_WithExistingEmployeeCode_ReturnsTrue() {
         // Given
         val testEmployee = createTestEmployee(employeeCode = "20010585")
         testEntityManager.persistAndFlush(testEmployee)
@@ -91,7 +91,7 @@ class EmployeeRepositoryTest {
 
     @Test
     @DisplayName("existsByEmployeeCode - 존재하지 않는 사번으로 확인하면 false를 반환한다")
-    fun existsByEmployeeCode_WithNonExistingEmployeeNumber_ReturnsFalse() {
+    fun existsByEmployeeCode_WithNonExistingEmployeeCode_ReturnsFalse() {
         // Given
         val testEmployee = createTestEmployee(employeeCode = "20010585")
         testEntityManager.persistAndFlush(testEmployee)

@@ -48,7 +48,7 @@ class UserProvisioningServiceTest {
     inner class EventHandling {
 
         @Test
-        @DisplayName("U1 정상 — workEmail 기준 User 생성 (employee_number / username / email / password 매칭)")
+        @DisplayName("U1 정상 — workEmail 기준 User 생성 (employee_code / username / email / password 매칭)")
         fun handleEvent_createsUser() {
             service.handleEmployeeCreated(
                 EmployeeCreatedEvent(
@@ -65,7 +65,7 @@ class UserProvisioningServiceTest {
             val captor = argumentCaptor<User>()
             verify(userRepository).save(captor.capture())
             val saved = captor.firstValue
-            assertThat(saved.employeeNumber).isEqualTo("100123")
+            assertThat(saved.employeeCode).isEqualTo("100123")
             assertThat(saved.username).isEqualTo("hong@otokims.co.kr")
             assertThat(saved.email).isEqualTo("hong@otokims.co.kr")
             assertThat(saved.name).isEqualTo("홍길동")
@@ -159,7 +159,7 @@ class UserProvisioningServiceTest {
             whenever(userRepository.findByUsername("dup@otoki.com")).thenReturn(
                 User(
                     username = "dup@otoki.com",
-                    employeeNumber = "100128",
+                    employeeCode = "100128",
                     password = "x"
                 )
             )
@@ -262,7 +262,7 @@ class UserProvisioningServiceTest {
 
             val captor = argumentCaptor<User>()
             verify(userRepository, org.mockito.kotlin.times(cases.size)).save(captor.capture())
-            val byProfile = captor.allValues.associate { it.employeeNumber to it.profileType }
+            val byProfile = captor.allValues.associate { it.employeeCode to it.profileType }
             cases.forEach { (role, expected) ->
                 assertThat(byProfile["P_$role"]).isEqualTo(expected)
             }
