@@ -3,30 +3,39 @@ import type { UserRole } from '@/constants/userRole';
 import type { ApiResponse } from './types';
 
 interface LoginRequest {
-  employeeCode: string;
+  username: string;
   password: string;
 }
 
-interface AdminUserInfo {
-  id: number;
-  employeeCode: string;
-  name: string;
-  orgName: string | null;
+/**
+ * Backend `WebUserSummary` 응답 매핑 (Spec #760).
+ *
+ * `id`/`employeeCode` 는 backend `userId`/`employeeNumber` 필드의 web 별칭.
+ * 실제 axios 응답 키는 userId/employeeNumber 이므로 authStore 에서 변환한다.
+ */
+export interface AdminUserInfo {
+  userId: number;
+  username: string;
+  name: string | null;
+  employeeNumber: string;
+  profileType: string;
+  isSalesSupport: boolean;
   role: UserRole | null;
   roleLabel: string | null;
+  orgName: string | null;
   costCenterCode: string | null;
   permissions: string[];
 }
 
-interface AdminTokenInfo {
+/**
+ * Backend `WebLoginResponse` (flat 구조 — token + user 형제 필드).
+ */
+export interface LoginData {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
-}
-
-interface LoginData {
+  passwordChangeRequired: boolean;
   user: AdminUserInfo;
-  token: AdminTokenInfo;
 }
 
 interface RefreshData {
@@ -50,7 +59,7 @@ export async function login(request: LoginRequest): Promise<LoginData> {
           throw new Error(serverMessage);
         }
         const status = err.response.status;
-        if (status === 401) throw new Error('사번 또는 비밀번호가 올바르지 않습니다');
+        if (status === 401) throw new Error('아이디 또는 비밀번호가 올바르지 않습니다');
         if (status === 403) throw new Error('웹 관리자 로그인 권한이 없습니다');
         throw new Error('로그인에 실패했습니다');
       }

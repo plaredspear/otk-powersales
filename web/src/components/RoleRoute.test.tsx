@@ -23,6 +23,7 @@ function setRole(role: UserRole | null) {
     user: {
       id: 1,
       employeeCode: 'TEST-001',
+      username: 'test@otoki.local',
       name: '테스트',
       orgName: null,
       role,

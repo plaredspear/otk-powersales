@@ -1,5 +1,7 @@
 package com.otoki.powersales.auth.web.service
 
+import com.otoki.powersales.admin.service.AdminPermissionResolver
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.CurrentPasswordRequiredException
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
@@ -18,6 +20,8 @@ import com.otoki.powersales.auth.web.dto.WebLoginResponse
 import com.otoki.powersales.auth.web.dto.WebRefreshTokenRequest
 import com.otoki.powersales.auth.web.dto.WebTokenResponse
 import com.otoki.powersales.auth.web.dto.WebUserSummary
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -54,6 +58,8 @@ class WebAuthenticationService(
     private val webRefreshTokenStore: WebRefreshTokenStore,
     private val passwordEncoder: PasswordEncoder,
     private val passwordPolicyValidator: PasswordPolicyValidator,
+    private val employeeRepository: EmployeeRepository,
+    private val adminPermissionResolver: AdminPermissionResolver,
 ) {
 
     /**
@@ -81,11 +87,12 @@ class WebAuthenticationService(
 
         user.recordLogin(LocalDateTime.now())
 
+        val summary = summaryFor(user)
         val principal = principalFor(user)
         val familyId = UUID.randomUUID().toString()
         val tokenId = UUID.randomUUID().toString()
 
-        val accessToken = webJwtService.createAccessToken(principal)
+        val accessToken = webJwtService.createAccessToken(principal, summary.role, summary.permissions)
         val refreshToken = webJwtService.createRefreshToken(
             username = user.username,
             userId = user.id,
@@ -99,14 +106,7 @@ class WebAuthenticationService(
             refreshToken = refreshToken,
             expiresIn = webJwtService.getAccessTokenExpirationSeconds(),
             passwordChangeRequired = user.passwordChangeRequired,
-            user = WebUserSummary(
-                userId = user.id,
-                username = user.username,
-                name = user.name,
-                employeeNumber = user.employeeNumber,
-                profileType = user.profileType,
-                isSalesSupport = user.isSalesSupport
-            )
+            user = summary
         )
     }
 
@@ -143,9 +143,10 @@ class WebAuthenticationService(
 
         val user = userRepository.findById(userId).orElseThrow { InvalidTokenException() }
         val principal = principalFor(user)
+        val summary = summaryFor(user)
 
         val newTokenId = UUID.randomUUID().toString()
-        val newAccessToken = webJwtService.createAccessToken(principal)
+        val newAccessToken = webJwtService.createAccessToken(principal, summary.role, summary.permissions)
         val newRefreshToken = webJwtService.createRefreshToken(
             username = user.username,
             userId = user.id,
@@ -192,6 +193,34 @@ class WebAuthenticationService(
         user.changePassword(encoded)
 
         return WebChangePasswordResponse(passwordChangeRequired = false)
+    }
+
+    /**
+     * `WebUserSummary` 산출 — Web Admin UI 의 라우트 가드 / 권한 가드 / 데이터 스코프 분기에 필요한
+     * Employee + 권한 정보를 1회 응답에 함께 담는다.
+     *
+     * Employee 미존재 (예: ADMIN-* 부트스트랩 직후 또는 SAP 미동기 상태) 시 role/orgName/permissions 는
+     * null/빈 배열로 fallback. 동일 정보가 JWT claim 으로도 발급된다.
+     */
+    private fun summaryFor(user: User): WebUserSummary {
+        val employee: Employee? = employeeRepository.findByEmployeeCode(user.employeeNumber).orElse(null)
+        val role: UserRole? = employee?.role
+        val permissions: List<String> = employee
+            ?.let { adminPermissionResolver.resolve(it).map { perm -> perm.name } }
+            ?: emptyList()
+        return WebUserSummary(
+            userId = user.id,
+            username = user.username,
+            name = user.name,
+            employeeNumber = user.employeeNumber,
+            profileType = user.profileType,
+            isSalesSupport = user.isSalesSupport,
+            role = role,
+            roleLabel = role?.toKorean(),
+            orgName = employee?.orgName,
+            costCenterCode = employee?.costCenterCode,
+            permissions = permissions
+        )
     }
 
     private fun principalFor(user: User): WebUserPrincipal = WebUserPrincipal(

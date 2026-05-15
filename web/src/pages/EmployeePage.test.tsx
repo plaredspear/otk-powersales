@@ -57,6 +57,7 @@ function setPermissions(permissions: string[]) {
     user: {
       id: 1,
       employeeCode: 'TEST-001',
+      username: 'test@otoki.local',
       name: '테스트',
       orgName: null,
       role: 'SYSTEM_ADMIN',

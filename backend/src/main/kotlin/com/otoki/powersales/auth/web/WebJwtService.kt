@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.web
 
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.JwtTokenProvider
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
@@ -31,10 +32,14 @@ class WebJwtService(
     /**
      * Web Access Token 발급.
      *
-     * subject = `User.username`, audience = "web". 권한 산출 정보(`profileType`, `isSalesSupport`)는
-     * 필터에서 토큰만으로 principal 복원 가능하도록 claim 으로 함께 포함.
+     * subject = `User.username`, audience = "web". 권한 산출 정보(`profileType`, `isSalesSupport`,
+     * `role`, `permissions`) 는 필터에서 토큰만으로 principal 복원 가능하도록 claim 으로 함께 포함.
+     *
+     * `role` 은 Employee 미존재(예: ADMIN-* 부트스트랩 직후) 시 null 일 수 있어 nullable 로 직렬화.
+     * `permissions` 는 [com.otoki.powersales.admin.service.AdminPermissionResolver] 산출 결과를
+     * 그대로 실어 web 의 권한 가드(usePermission) 가 별도 API 호출 없이 동작하도록 한다.
      */
-    fun createAccessToken(principal: WebUserPrincipal): String {
+    fun createAccessToken(principal: WebUserPrincipal, role: UserRole?, permissions: List<String>): String {
         val now = Date()
         val expiry = Date(now.time + accessExpiration)
         return Jwts.builder()
@@ -46,6 +51,8 @@ class WebJwtService(
             .claim("profile_type", principal.profileType.name)
             .claim("is_sales_support", principal.isSalesSupport)
             .claim("password_change_required", principal.passwordChangeRequired)
+            .claim("role", role?.name)
+            .claim("permissions", permissions)
             .issuedAt(now)
             .expiration(expiry)
             .signWith(key)
@@ -139,6 +146,17 @@ class WebJwtService(
     /** password_change_required claim 추출. */
     fun getPasswordChangeRequiredFromToken(token: String): Boolean =
         parseClaims(token).get("password_change_required", java.lang.Boolean::class.java)?.booleanValue() ?: false
+
+    /** role claim 추출 — Employee 미존재 시 null. */
+    fun getRoleFromToken(token: String): String? =
+        parseClaims(token).get("role", String::class.java)
+
+    /** permissions claim 추출 — 부재 시 빈 리스트. */
+    @Suppress("UNCHECKED_CAST")
+    fun getPermissionsFromToken(token: String): List<String> {
+        val raw = parseClaims(token)["permissions"] ?: return emptyList()
+        return (raw as? List<String>) ?: emptyList()
+    }
 
     /** family_id claim 추출 (refresh token rotation). */
     fun getFamilyIdFromToken(token: String): String =

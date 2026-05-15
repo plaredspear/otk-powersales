@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 const { Title } = Typography;
 
 interface LoginForm {
-  employeeCode: string;
+  username: string;
   password: string;
 }
 
@@ -24,7 +24,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await login(values.employeeCode, values.password);
+      await login(values.username, values.password);
       navigate('/', { replace: true });
     } catch (err) {
       if (err instanceof Error) {
@@ -65,11 +65,11 @@ export default function LoginPage() {
 
         <Form<LoginForm> onFinish={handleSubmit} layout="vertical" autoComplete="off">
           <Form.Item
-            label="사번"
-            name="employeeCode"
-            rules={[{ required: true, message: '사번을 입력하세요' }]}
+            label="아이디"
+            name="username"
+            rules={[{ required: true, message: '아이디를 입력하세요' }]}
           >
-            <Input placeholder="사번을 입력하세요" size="large" />
+            <Input placeholder="아이디(이메일)를 입력하세요" size="large" />
           </Form.Item>
 
           <Form.Item

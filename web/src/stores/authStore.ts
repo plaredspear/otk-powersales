@@ -2,9 +2,16 @@ import { create } from 'zustand';
 import { login as loginApi } from '@/api/auth';
 import type { UserRole } from '@/constants/userRole';
 
+/**
+ * Web Admin 인증 사용자 (Spec #760).
+ *
+ * Backend `WebUserSummary` (userId/username/employeeNumber) 응답을 web 의 기존 소비 코드
+ * 컨벤션(id/employeeCode) 에 맞춰 매핑한 형태. token 은 별도 localStorage 키로 분리 관리.
+ */
 export interface AuthUser {
   id: number;
   employeeCode: string;
+  username: string;
   name: string;
   orgName: string | null;
   role: UserRole | null;
@@ -17,7 +24,7 @@ interface AuthState {
   user: AuthUser | null;
   accessToken: string | null;
   isAuthenticated: boolean;
-  login: (employeeCode: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   initialize: () => void;
@@ -28,13 +35,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   isAuthenticated: false,
 
-  login: async (employeeCode: string, password: string) => {
-    const data = await loginApi({ employeeCode: employeeCode, password });
+  login: async (username: string, password: string) => {
+    const data = await loginApi({ username, password });
 
     const user: AuthUser = {
-      id: data.user.id,
-      employeeCode: data.user.employeeCode,
-      name: data.user.name,
+      id: data.user.userId,
+      employeeCode: data.user.employeeNumber,
+      username: data.user.username,
+      name: data.user.name ?? '',
       orgName: data.user.orgName,
       role: data.user.role,
       roleLabel: data.user.roleLabel,
@@ -42,13 +50,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       permissions: data.user.permissions ?? [],
     };
 
-    localStorage.setItem('accessToken', data.token.accessToken);
-    localStorage.setItem('refreshToken', data.token.refreshToken);
+    localStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
     localStorage.setItem('user', JSON.stringify(user));
 
     set({
       user,
-      accessToken: data.token.accessToken,
+      accessToken: data.accessToken,
       isAuthenticated: true,
     });
   },

@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.web.service
 
+import com.otoki.powersales.admin.service.AdminPermissionResolver
 import com.otoki.powersales.auth.exception.CurrentPasswordRequiredException
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
@@ -14,6 +15,7 @@ import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.auth.web.dto.WebChangePasswordRequest
 import com.otoki.powersales.auth.web.dto.WebLoginRequest
 import com.otoki.powersales.auth.web.dto.WebRefreshTokenRequest
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
@@ -27,6 +29,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -52,6 +55,12 @@ class WebAuthenticationServiceTest {
     @Mock
     private lateinit var passwordEncoder: PasswordEncoder
 
+    @Mock
+    private lateinit var employeeRepository: EmployeeRepository
+
+    @Mock
+    private lateinit var adminPermissionResolver: AdminPermissionResolver
+
     @org.mockito.Spy
     private val passwordPolicyValidator: PasswordPolicyValidator = PasswordPolicyValidator()
 
@@ -68,7 +77,8 @@ class WebAuthenticationServiceTest {
             val user = createUser()
             whenever(userRepository.findByUsername("u@otokims.co.kr")).thenReturn(user)
             whenever(passwordEncoder.matches("password123", user.password)).thenReturn(true)
-            whenever(webJwtService.createAccessToken(any())).thenReturn("access-token")
+            whenever(employeeRepository.findByEmployeeCode(any())).thenReturn(Optional.empty())
+            whenever(webJwtService.createAccessToken(any(), anyOrNull(), any())).thenReturn("access-token")
             whenever(webJwtService.createRefreshToken(any(), any(), any(), any())).thenReturn("refresh-token")
             whenever(webJwtService.getAccessTokenExpirationSeconds()).thenReturn(3600)
             whenever(webJwtService.getRefreshExpirationMillis()).thenReturn(7 * 24 * 60 * 60 * 1000L)
@@ -121,7 +131,8 @@ class WebAuthenticationServiceTest {
             val user = createUser(passwordChangeRequired = true)
             whenever(userRepository.findByUsername("u@otokims.co.kr")).thenReturn(user)
             whenever(passwordEncoder.matches("1234", user.password)).thenReturn(true)
-            whenever(webJwtService.createAccessToken(any())).thenReturn("a")
+            whenever(employeeRepository.findByEmployeeCode(any())).thenReturn(Optional.empty())
+            whenever(webJwtService.createAccessToken(any(), anyOrNull(), any())).thenReturn("a")
             whenever(webJwtService.createRefreshToken(any(), any(), any(), any())).thenReturn("r")
             whenever(webJwtService.getAccessTokenExpirationSeconds()).thenReturn(3600)
             whenever(webJwtService.getRefreshExpirationMillis()).thenReturn(60_000L)
@@ -147,7 +158,8 @@ class WebAuthenticationServiceTest {
             whenever(webRefreshTokenStore.isFamilyRevoked("fam-1")).thenReturn(false)
             whenever(webRefreshTokenStore.exists("tok-1")).thenReturn(true)
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
-            whenever(webJwtService.createAccessToken(any())).thenReturn("new-access")
+            whenever(employeeRepository.findByEmployeeCode(any())).thenReturn(Optional.empty())
+            whenever(webJwtService.createAccessToken(any(), anyOrNull(), any())).thenReturn("new-access")
             whenever(webJwtService.createRefreshToken(any(), any(), eq("fam-1"), any())).thenReturn("new-refresh")
             whenever(webJwtService.getAccessTokenExpirationSeconds()).thenReturn(3600)
             whenever(webJwtService.getRefreshExpirationMillis()).thenReturn(60_000L)
