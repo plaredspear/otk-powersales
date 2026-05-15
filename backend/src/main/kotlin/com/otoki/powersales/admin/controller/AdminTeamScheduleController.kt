@@ -24,9 +24,10 @@ class AdminTeamScheduleController(
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/members")
     fun getMembers(
-        @AuthenticationPrincipal principal: WebUserPrincipal
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @RequestParam(required = false) branchCode: String?
     ): ResponseEntity<ApiResponse<List<TeamMemberDto>>> {
-        val result = adminTeamScheduleService.getMembers(principal.requireEmployeeId())
+        val result = adminTeamScheduleService.getMembers(principal.requireEmployeeId(), branchCode)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 

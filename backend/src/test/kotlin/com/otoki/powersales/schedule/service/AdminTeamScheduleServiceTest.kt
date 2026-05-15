@@ -157,45 +157,100 @@ class AdminTeamScheduleServiceTest {
     // ========== getMembers ==========
 
     @Nested
-    @DisplayName("getMembers - 여사원 목록 조회")
+    @DisplayName("getMembers - 여사원 목록 조회 (SF 정합)")
     inner class GetMembersTests {
 
         @Test
-        @DisplayName("정상 조회 - 조장의 costCenterCode에 속한 여사원 목록 반환")
-        fun getMembers_success() {
-            // Given
-            val leader = createEmployee(id = 10L, costCenterCode = "1234", role = UserRole.LEADER)
-            val member1 = createEmployee(id = 2L, sfid = "USR_002", employeeCode = "20030002", name = "김영희", role = UserRole.WOMAN)
-            val member2 = createEmployee(id = 3L, sfid = "USR_003", employeeCode = "20030003", name = "이수진", role = UserRole.WOMAN)
+        @DisplayName("일반 조장 - 본인 costCenterCode 의 활성 WOMAN 반환")
+        fun getMembers_leader_singleCostCenter() {
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "1234", role = UserRole.LEADER)
+            val m1 = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = UserRole.WOMAN)
+            val m2 = createEmployee(id = 3L, employeeCode = "20030003", name = "이수진", role = UserRole.WOMAN)
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
-            whenever(employeeRepository.findWithEmployeeInfoByCostCenterCodeAndRole("1234", UserRole.WOMAN))
-                .thenReturn(listOf(member1, member2))
+            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")))
+                .thenReturn(listOf(m1, m2))
 
-            // When
             val result = service.getMembers(10L)
 
-            // Then
             assertThat(result).hasSize(2)
             assertThat(result[0].employeeCode).isEqualTo("20030002")
-            assertThat(result[0].name).isEqualTo("김영희")
             assertThat(result[1].employeeCode).isEqualTo("20030003")
-            assertThat(result[1].name).isEqualTo("이수진")
         }
 
         @Test
-        @DisplayName("빈 결과 - costCenterCode가 null인 경우 빈 목록 반환")
+        @DisplayName("SYSTEM_ADMIN + branchCode 미지정 - 빈 결과 (SF 적응형 패턴: 다중 지점)")
+        fun getMembers_systemAdmin_noBranch_returnsEmpty() {
+            val admin = createEmployee(id = 10L, employeeCode = "99990001", costCenterCode = "9999", role = UserRole.SYSTEM_ADMIN)
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(admin)
+
+            val result = service.getMembers(10L, branchCode = null)
+
+            assertThat(result).isEmpty()
+            verify(employeeRepository, never()).findActiveWomenByCostCenterCodes(any())
+        }
+
+        @Test
+        @DisplayName("SYSTEM_ADMIN + branchCode 지정 - 그 지점 WOMAN")
+        fun getMembers_systemAdmin_withBranch() {
+            val admin = createEmployee(id = 10L, employeeCode = "99990001", costCenterCode = "9999", role = UserRole.SYSTEM_ADMIN)
+            val m1 = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = UserRole.WOMAN)
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(admin)
+            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("5457"))).thenReturn(listOf(m1))
+
+            val result = service.getMembers(10L, branchCode = "5457")
+
+            assertThat(result).hasSize(1)
+            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("5457"))
+        }
+
+        @Test
+        @DisplayName("특수 사번 (19951029) - cost center IN ('3233','3234','3235','3236','5691')")
+        fun getMembers_specialEmployeeCode() {
+            val leader = createEmployee(id = 10L, employeeCode = "19951029", costCenterCode = "9999", role = UserRole.LEADER)
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
+            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("3233", "3234", "3235", "3236", "5691")))
+                .thenReturn(emptyList())
+
+            service.getMembers(10L)
+
+            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("3233", "3234", "3235", "3236", "5691"))
+        }
+
+        @Test
+        @DisplayName("영업지원1팀 (cost_center_code=4888) + branchCode 미지정 - 빈 결과")
+        fun getMembers_salesSupport1Team_noBranch() {
+            val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "4888", role = UserRole.SALES_SUPPORT)
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(supporter)
+
+            val result = service.getMembers(10L, branchCode = null)
+
+            assertThat(result).isEmpty()
+            verify(employeeRepository, never()).findActiveWomenByCostCenterCodes(any())
+        }
+
+        @Test
+        @DisplayName("영업지원1팀 + branchCode 지정 - 그 지점 WOMAN")
+        fun getMembers_salesSupport1Team_withBranch() {
+            val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "4888", role = UserRole.SALES_SUPPORT)
+            whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(supporter)
+            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("5457"))).thenReturn(emptyList())
+
+            service.getMembers(10L, branchCode = "5457")
+
+            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("5457"))
+        }
+
+        @Test
+        @DisplayName("costCenterCode null + 일반 Role - 빈 결과")
         fun getMembers_costCenterCodeNull_returnsEmpty() {
-            // Given
-            val leader = createEmployee(id = 10L, costCenterCode = null)
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = null, role = UserRole.LEADER)
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
 
-            // When
             val result = service.getMembers(10L)
 
-            // Then
             assertThat(result).isEmpty()
-            verify(employeeRepository, never()).findWithEmployeeInfoByCostCenterCodeAndRole(any(), any())
+            verify(employeeRepository, never()).findActiveWomenByCostCenterCodes(any())
         }
     }
 
@@ -378,6 +433,20 @@ class AdminTeamScheduleServiceTest {
             assertThat(result.schedules).isEmpty()
             assertThat(result.dailySummary).isEmpty()
             verifyNoInteractions(teamMemberScheduleRepository)
+        }
+
+        @Test
+        @DisplayName("SF XOR - employeeIds 와 accountIds 동시 지정 시 employeeIds 만 사용")
+        fun getMonthlySchedulesWithSummary_xor_employeePrefers() {
+            val from = LocalDate.of(2026, 4, 1)
+            val to = LocalDate.of(2026, 4, 30)
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to))
+                .thenReturn(emptyList())
+
+            service.getMonthlySchedulesWithSummary(1L, 2026, 4, listOf(1L), listOf(10))
+
+            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to)
+            verify(teamMemberScheduleRepository, never()).findMonthlyByAccountIds(any(), any(), any())
         }
     }
 

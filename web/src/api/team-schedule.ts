@@ -61,9 +61,10 @@ export interface TeamScheduleUpdateRequest {
 
 // --- API functions ---
 
-export async function fetchTeamMembers(): Promise<TeamMember[]> {
+export async function fetchTeamMembers(branchCode?: string): Promise<TeamMember[]> {
   const res = await client.get<ApiResponse<TeamMember[]>>(
     '/api/v1/admin/team-schedule/members',
+    branchCode ? { params: { branchCode } } : undefined,
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '팀원 목록 조회에 실패했습니다');

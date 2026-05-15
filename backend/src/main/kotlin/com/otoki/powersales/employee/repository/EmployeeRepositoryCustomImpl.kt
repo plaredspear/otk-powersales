@@ -66,6 +66,22 @@ class EmployeeRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findActiveWomenByCostCenterCodes(costCenterCodes: List<String>?): List<Employee> {
+        val builder = BooleanBuilder()
+        builder.and(employee.role.eq(UserRole.WOMAN))
+        builder.and(employee.appLoginActive.isTrue)
+        builder.and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
+        if (!costCenterCodes.isNullOrEmpty()) {
+            builder.and(employee.costCenterCode.`in`(costCenterCodes))
+        }
+        return queryFactory
+            .selectFrom(employee)
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            .where(builder)
+            .orderBy(employee.name.asc())
+            .fetch()
+    }
+
     override fun findAllEmployeeCodes(): List<String> {
         return queryFactory
             .select(employee.employeeCode)

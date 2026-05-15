@@ -55,6 +55,8 @@ export function ScheduleFilterPanel({
           <MemberFilterTab
             selectedIds={selectedEmployeeIds}
             onChange={onSelectedEmployeeIdsChange}
+            branchCode={selectedBranchCode}
+            onBranchCodeChange={onSelectedBranchCodeChange}
           />
         ) : (
           <AccountFilterTab

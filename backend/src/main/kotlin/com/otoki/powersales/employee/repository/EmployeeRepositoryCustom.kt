@@ -17,6 +17,16 @@ interface EmployeeRepositoryCustom {
 
     fun findWithEmployeeInfoByCostCenterCodeAndRole(costCenterCode: String, role: UserRole): List<Employee>
 
+    /**
+     * SF 레거시 `TeamMemberListController.fetchTeamMembers()` 정합.
+     *
+     * `DKRetail__Employee__c WHERE CostCenterCode__c IN :codes AND DKRetail__AppAuthority__c='여사원'
+     *                              AND DKRetail__APPLoginActive__c=true ORDER BY Name`
+     *
+     * @param costCenterCodes  필터링할 cost center 코드 집합. `null` 또는 비어있으면 전사 조회.
+     */
+    fun findActiveWomenByCostCenterCodes(costCenterCodes: List<String>?): List<Employee>
+
     fun findAllEmployeeCodes(): List<String>
 
     fun findEmployees(

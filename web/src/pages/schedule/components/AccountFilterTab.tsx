@@ -1,5 +1,4 @@
-import { useEffect, useRef } from 'react';
-import { Checkbox, Select, Spin } from 'antd';
+import { Checkbox, Empty, Select, Spin } from 'antd';
 import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
 import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAccounts';
 
@@ -17,20 +16,9 @@ export function AccountFilterTab({
   onBranchCodeChange,
 }: AccountFilterTabProps) {
   const { data: branches = [] } = useTeamScheduleBranches();
-  const { data: accounts = [], isLoading } = useTeamScheduleAccounts(branchCode);
-  const initializedRef = useRef(false);
-  const prevBranchCode = useRef(branchCode);
-
-  // Select all on first data load or when branch changes
-  useEffect(() => {
-    if (accounts.length > 0) {
-      if (!initializedRef.current || prevBranchCode.current !== branchCode) {
-        initializedRef.current = true;
-        prevBranchCode.current = branchCode;
-        onChange(accounts.map((a) => a.accountId));
-      }
-    }
-  }, [accounts, branchCode, onChange]);
+  const isSingleBranch = branches.length === 1;
+  const effectiveBranchCode = isSingleBranch ? branches[0].branchCode : branchCode;
+  const { data: accounts = [], isLoading } = useTeamScheduleAccounts(effectiveBranchCode);
 
   const branchOptions = branches.map((b) => ({
     value: b.branchCode,
@@ -54,19 +42,31 @@ export function AccountFilterTab({
 
   return (
     <div>
-      <Select
-        style={{ width: '100%', marginBottom: 8 }}
-        placeholder="지점 선택"
-        options={branchOptions}
-        value={branchCode || undefined}
-        onChange={onBranchCodeChange}
-        allowClear
-      />
+      {!isSingleBranch && (
+        <Select
+          style={{ width: '100%', marginBottom: 8 }}
+          placeholder="지점 선택"
+          options={branchOptions}
+          value={branchCode || undefined}
+          onChange={onBranchCodeChange}
+          allowClear
+          showSearch
+          optionFilterProp="label"
+        />
+      )}
 
-      {isLoading ? (
+      {!effectiveBranchCode ? (
+        <Empty
+          description="지점을 먼저 선택해주세요"
+          imageStyle={{ height: 48 }}
+          style={{ marginTop: 24 }}
+        />
+      ) : isLoading ? (
         <div style={{ textAlign: 'center', padding: 24 }}>
           <Spin size="small" />
         </div>
+      ) : accounts.length === 0 ? (
+        <Empty description="거래처가 없습니다" imageStyle={{ height: 48 }} style={{ marginTop: 24 }} />
       ) : (
         <>
           <div
@@ -74,6 +74,9 @@ export function AccountFilterTab({
               padding: '4px 0',
               borderBottom: '1px solid #f0f0f0',
               marginBottom: 4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
             <Checkbox
@@ -83,6 +86,9 @@ export function AccountFilterTab({
             >
               <span style={{ fontWeight: 600 }}>전체선택</span>
             </Checkbox>
+            <span style={{ fontSize: 12, color: '#8c8c8c' }}>
+              {selectedIds.length} / {accounts.length}
+            </span>
           </div>
           {accounts.map((account) => (
             <div key={account.accountId} style={{ padding: '3px 0' }}>
