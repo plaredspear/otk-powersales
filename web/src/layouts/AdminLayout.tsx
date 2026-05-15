@@ -1,5 +1,5 @@
 import './AdminLayout.css';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ProLayout from '@ant-design/pro-layout';
 import { Button, Space, Typography } from 'antd';
@@ -15,12 +15,23 @@ import { usePermission } from '@/hooks/usePermission';
 const { Text } = Typography;
 
 
+const SIDER_COLLAPSED_KEY = 'admin.sider.collapsed';
+
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { forbidden, setForbidden } = useForbiddenStore();
   const { hasPermission } = usePermission();
+
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem(SIDER_COLLAPSED_KEY) === 'true';
+  });
+
+  const handleCollapse = (next: boolean) => {
+    setCollapsed(next);
+    localStorage.setItem(SIDER_COLLAPSED_KEY, String(next));
+  };
 
   const filteredMenuRoute = useMemo(() => {
     const filterItems = (items: MenuItem[]): MenuItem[] =>
@@ -48,6 +59,8 @@ export default function AdminLayout() {
         location={{ pathname: location.pathname }}
         fixSiderbar
         layout="side"
+        collapsed={collapsed}
+        onCollapse={handleCollapse}
         token={{
           header: {
             heightLayoutHeader: 0,
