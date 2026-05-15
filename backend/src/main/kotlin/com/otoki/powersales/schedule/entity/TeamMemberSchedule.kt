@@ -93,9 +93,14 @@ class TeamMemberSchedule(
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
+    /**
+     * 조장(팀리더) sfid sync buffer.
+     * SF prod 메타가 `type=string(100)` 자유 텍스트로 정의되어 있으므로 SF 라이브 권위 정합 (§6.8) 으로 entity length=100 적용 — 절단 위험 회피.
+     * 실 운영값은 SF Id 18자 고정으로 추정되나 SF org 메타가 정비되기 전까지는 SF 정합 우선 (추후 SF org length=18 좁힘 시 entity 도 동반 축소 예정).
+     */
     @SFField("teamleadersfid__c")
     @HCColumn("teamleadersfid__c")
-    @Column(name = "team_leader_sfid", length = 18)
+    @Column(name = "team_leader_sfid", length = 100)
     val teamLeaderSfid: String? = null,
 
     @SFField("DKRetail__AltHolidayId__c")
