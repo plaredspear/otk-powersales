@@ -16,8 +16,8 @@ interface ScheduleFilterPanelProps {
 }
 
 const TAB_OPTIONS = [
-  { label: '여사원', value: 'member' as const },
   { label: '거래처', value: 'account' as const },
+  { label: '여사원', value: 'member' as const },
 ];
 
 export function ScheduleFilterPanel({

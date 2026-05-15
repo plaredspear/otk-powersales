@@ -16,7 +16,7 @@ export default function SchedulePage() {
   const { hasPermission } = usePermission();
   const canWrite = hasPermission('SCHEDULE_WRITE');
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
-  const [filterTab, setFilterTab] = useState<FilterTab>('member');
+  const [filterTab, setFilterTab] = useState<FilterTab>('account');
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
   const [selectedBranchCode, setSelectedBranchCode] = useState<string>('');
