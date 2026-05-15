@@ -7,10 +7,8 @@ import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.enums.Gender
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
-import com.otoki.powersales.user.entity.User
-import com.otoki.powersales.user.repository.UserRepository
+import com.otoki.powersales.user.event.EmployeeCreatedEvent
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -25,7 +23,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
@@ -40,19 +38,10 @@ class EmployeeUpsertServiceTest {
     private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
-
-    @Mock
-    private lateinit var passwordEncoder: PasswordEncoder
+    private lateinit var eventPublisher: ApplicationEventPublisher
 
     @InjectMocks
     private lateinit var service: EmployeeUpsertService
-
-    @BeforeEach
-    fun setUp() {
-        // PasswordEncoder.encode 호출 발생 (Employee 신규 시) — Lenient stub 으로 모든 nested 클래스 공통 적용.
-        whenever(passwordEncoder.encode(any<CharSequence>())).thenAnswer { it.arguments[0].toString() + ":encoded" }
-    }
 
     private fun command(
         employeeCode: String? = "100123",
@@ -362,71 +351,52 @@ class EmployeeUpsertServiceTest {
     }
 
     @Nested
-    @DisplayName("Spec #758 - Employee 신규 생성 시 User 자동 생성")
-    inner class UserAutoCreation {
+    @DisplayName("Employee 신규 생성 시 EmployeeCreatedEvent 발행 (SF @future 동등)")
+    inner class EventPublishing {
 
         @Test
-        @DisplayName("U1 신규 Employee 인입 - User 1건 자동 생성 (employee_number 매칭)")
-        fun upsert_newEmployee_createsUser() {
+        @DisplayName("E1 신규 Employee 인입 - EmployeeCreatedEvent 1건 발행 (Employee 스냅샷 전달)")
+        fun upsert_newEmployee_publishesEvent() {
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(emptyList())
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
             val result = service.upsert(
-                listOf(command(employeeCode = "100123", employeeName = "홍길동", workEmail = "hong@otokims.co.kr", birthdate = "19900315"))
+                listOf(
+                    command(
+                        employeeCode = "100123",
+                        employeeName = "홍길동",
+                        workEmail = "hong@otokims.co.kr",
+                        birthdate = "19900315"
+                    )
+                )
             )
 
             assertThat(result.successCount).isEqualTo(1)
-            val captor = argumentCaptor<List<User>>()
-            verify(userRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
-            assertThat(saved.employeeNumber).isEqualTo("100123")
-            assertThat(saved.username).isEqualTo("hong@otokims.co.kr")
-            assertThat(saved.email).isEqualTo("hong@otokims.co.kr")
-            assertThat(saved.name).isEqualTo("홍길동")
-            assertThat(saved.passwordChangeRequired).isTrue
-            // Q5 정책: 사번 + 생년월일 끝 4자리 (MMdd) — passwordEncoder.encode 가 ":encoded" 접미
-            assertThat(saved.password).isEqualTo("1001230315:encoded")
+            val captor = argumentCaptor<EmployeeCreatedEvent>()
+            verify(eventPublisher).publishEvent(captor.capture())
+            val event = captor.firstValue
+            assertThat(event.employeeCode).isEqualTo("100123")
+            assertThat(event.name).isEqualTo("홍길동")
+            assertThat(event.workEmail).isEqualTo("hong@otokims.co.kr")
+            assertThat(event.birthDate).isEqualTo("19900315")
+            assertThat(event.appLoginActive).isTrue()
         }
 
         @Test
-        @DisplayName("U2 기존 Employee 갱신 - User 생성 안 함")
-        fun upsert_existingEmployee_skipsUserCreation() {
+        @DisplayName("E2 기존 Employee 갱신 - 이벤트 발행 안 함")
+        fun upsert_existingEmployee_doesNotPublish() {
             val existing = Employee(employeeCode = "100123", name = "기존")
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(listOf(existing))
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
             service.upsert(listOf(command(employeeCode = "100123", employeeName = "갱신")))
 
-            verify(userRepository, never()).saveAll(any<List<User>>())
+            verify(eventPublisher, never()).publishEvent(any<EmployeeCreatedEvent>())
         }
 
         @Test
-        @DisplayName("U3 workEmail / email 부재 - User 생성 skip (SF IF_REST_SAP_EmployeeMaster.cls:281 동등)")
-        fun upsert_noEmail_skipsUserCreation() {
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            service.upsert(listOf(command(employeeCode = "100123", employeeName = "홍길동")))
-
-            verify(userRepository, never()).saveAll(any<List<User>>())
-        }
-
-        @Test
-        @DisplayName("U4 birthdate 부재 - 임시 비밀번호 = 사번 + '0000'")
-        fun upsert_noBirthdate_passwordFallback() {
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
-
-            service.upsert(listOf(command(employeeCode = "100123", employeeName = "홍길동", workEmail = "hong@otoki.com", birthdate = null)))
-
-            val captor = argumentCaptor<List<User>>()
-            verify(userRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().password).isEqualTo("1001230000:encoded")
-        }
-
-        @Test
-        @DisplayName("U5 신규 + 기존 혼합 - 신규 행만 User 생성")
-        fun upsert_partialNew_createsOnlyForNew() {
+        @DisplayName("E3 신규 + 기존 혼합 - 신규 행에만 이벤트 발행")
+        fun upsert_partialNew_publishesOnlyForNew() {
             val existing = Employee(employeeCode = "100100", name = "기존")
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("100100", "100200")))
                 .thenReturn(listOf(existing))
@@ -439,23 +409,43 @@ class EmployeeUpsertServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<List<User>>()
-            verify(userRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue).hasSize(1)
-            assertThat(captor.firstValue.single().employeeNumber).isEqualTo("100200")
+            val captor = argumentCaptor<EmployeeCreatedEvent>()
+            verify(eventPublisher).publishEvent(captor.capture())
+            assertThat(captor.firstValue.employeeCode).isEqualTo("100200")
         }
 
         @Test
-        @DisplayName("U6 LockingFlag Y - User.isActive = false (Employee.appLoginActive 동기)")
-        fun upsert_lockingFlagY_userInactive() {
+        @DisplayName("E4 LockingFlag Y - 이벤트의 appLoginActive=false 로 전달")
+        fun upsert_lockingFlagY_eventCarriesAppLoginActiveFalse() {
             whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(emptyList())
             whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
 
-            service.upsert(listOf(command(employeeCode = "100123", employeeName = "홍길동", workEmail = "hong@otoki.com", lockingFlag = "Y")))
+            service.upsert(
+                listOf(
+                    command(
+                        employeeCode = "100123",
+                        employeeName = "홍길동",
+                        workEmail = "hong@otoki.com",
+                        lockingFlag = "Y"
+                    )
+                )
+            )
 
-            val captor = argumentCaptor<List<User>>()
-            verify(userRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().isActive).isFalse
+            val captor = argumentCaptor<EmployeeCreatedEvent>()
+            verify(eventPublisher).publishEvent(captor.capture())
+            assertThat(captor.firstValue.appLoginActive).isFalse()
+        }
+
+        @Test
+        @DisplayName("E5 origin=MANUAL 기존 Employee - 이벤트 발행 안 함")
+        fun upsert_manualOriginExisting_doesNotPublish() {
+            val existing = Employee(employeeCode = "100123", name = "기존").apply { origin = EmployeeOrigin.MANUAL }
+            whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(listOf(existing))
+            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
+
+            service.upsert(listOf(command(employeeCode = "100123", employeeName = "변경시도")))
+
+            verify(eventPublisher, never()).publishEvent(any<EmployeeCreatedEvent>())
         }
     }
 }

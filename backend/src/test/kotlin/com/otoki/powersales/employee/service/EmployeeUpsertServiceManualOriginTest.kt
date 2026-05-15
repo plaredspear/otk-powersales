@@ -5,7 +5,6 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
-import com.otoki.powersales.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -21,7 +20,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.context.ApplicationEventPublisher
 
 /**
  * Spec #579 — EmployeeUpsertService 가 origin=MANUAL 직원을 보호하는지 검증.
@@ -41,10 +40,7 @@ class EmployeeUpsertServiceManualOriginTest {
     private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
 
     @Mock
-    private lateinit var userRepository: UserRepository
-
-    @Mock
-    private lateinit var passwordEncoder: PasswordEncoder
+    private lateinit var eventPublisher: ApplicationEventPublisher
 
     @InjectMocks
     private lateinit var service: EmployeeUpsertService
@@ -68,12 +64,6 @@ class EmployeeUpsertServiceManualOriginTest {
         orgCode = null,
         lockingFlag = lockingFlag
     )
-
-    @org.junit.jupiter.api.BeforeEach
-    fun setUp() {
-        // EmployeeUpsertService 의 신규 Employee 인입 시 User 자동 생성 경로에서 호출됨 (#758).
-        whenever(passwordEncoder.encode(any<CharSequence>())).thenAnswer { it.arguments[0].toString() + ":encoded" }
-    }
 
     @Nested
     @DisplayName("origin=MANUAL 직원 보호")

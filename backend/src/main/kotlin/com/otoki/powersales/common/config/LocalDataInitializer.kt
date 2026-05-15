@@ -10,9 +10,7 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
-import com.otoki.powersales.user.entity.ProfileType
-import com.otoki.powersales.user.entity.User
-import com.otoki.powersales.user.repository.UserRepository
+import com.otoki.powersales.user.service.UserProvisioningService
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
@@ -27,7 +25,7 @@ import java.time.LocalDate
 @Profile("local")
 class LocalDataInitializer(
     private val employeeRepository: EmployeeRepository,
-    private val userRepository: UserRepository,
+    private val userProvisioningService: UserProvisioningService,
     private val passwordEncoder: PasswordEncoder,
     private val agreementWordRepository: AgreementWordRepository,
     private val accountRepository: AccountRepository,
@@ -97,42 +95,21 @@ class LocalDataInitializer(
             employeeRepository.save(employee)
 
             // SF 레거시 IF_REST_SAP_EmployeeMaster.upsertUser 동등 — Employee 신규 INSERT 시 매칭 User 동시 생성.
-            // ProfileType 은 UserRole 시드값 기준으로 직접 매핑 (운영 경로는 발령 후처리에서 EmployeeProfileResolver 가 정정).
-            if (userRepository.findByUsername(seed.workEmail) == null) {
-                val user = User(
-                    username = seed.workEmail,
-                    email = seed.workEmail,
-                    employeeNumber = seed.code,
-                    name = seed.name,
-                    password = encodedPassword,
-                    passwordChangeRequired = false,
-                    isActive = true,
-                    profileType = profileTypeFor(seed.role),
-                    isSalesSupport = seed.role == UserRole.SALES_SUPPORT,
-                    isDeleted = false
-                )
-                userRepository.save(user)
-            }
+            // 운영 경로는 EmployeeUpsertService 가 EmployeeCreatedEvent 를 발행해 비동기 처리하지만,
+            // 시드는 부트스트랩 단일 호출이라 트랜잭션 분리 의미가 없어 직접(동기) provision 호출.
+            userProvisioningService.provisionForSeed(
+                employeeCode = seed.code,
+                name = seed.name,
+                workEmail = seed.workEmail,
+                email = null,
+                birthDate = seed.birthDate,
+                role = seed.role,
+                appLoginActive = true,
+                encodedPassword = encodedPassword,
+                passwordChangeRequired = false,
+            )
             log.info("시드 계정 생성 완료: employeeCode={}, name={}", seed.code, seed.name)
         }
-    }
-
-    /**
-     * 시드 UserRole → ProfileType 매핑.
-     *
-     * 운영 경로는 [com.otoki.powersales.user.service.EmployeeProfileResolver] 가
-     * Org__c + jikchak 기반으로 산출하지만, 시드는 Org/jikchak 정보가 빈약하므로
-     * UserRole 을 출발점으로 직접 매핑한다.
-     */
-    private fun profileTypeFor(role: UserRole): ProfileType = when (role) {
-        UserRole.SYSTEM_ADMIN -> ProfileType.SYSTEM_ADMIN
-        UserRole.LEADER -> ProfileType.TEAM_LEADER
-        UserRole.BRANCH_MANAGER -> ProfileType.BRANCH_MANAGER
-        UserRole.SALES_MANAGER -> ProfileType.SALES_MANAGER
-        UserRole.BUSINESS_MANAGER -> ProfileType.BUSINESS_DIRECTOR
-        UserRole.HEADQUARTERS_MANAGER -> ProfileType.DIVISION_HEAD
-        UserRole.SALES_SUPPORT -> ProfileType.STAFF
-        UserRole.WOMAN, UserRole.ACCOUNT_VIEW_ALL, UserRole.UNKNOWN -> ProfileType.SALES_REP
     }
 
     /**
@@ -177,23 +154,18 @@ class LocalDataInitializer(
             }
             employeeRepository.save(employee)
 
-            // Web Admin 로그인 가능하도록 User 동시 생성 (SF 레거시 IF_REST_SAP_EmployeeMaster.upsertUser 동등).
-            // SYSTEM_ADMIN 은 isSalesSupport=false 가 디폴트 (영업지원실 분기 별도).
-            if (userRepository.findByUsername(seed.workEmail) == null) {
-                val user = User(
-                    username = seed.workEmail,
-                    email = seed.workEmail,
-                    employeeNumber = seed.code,
-                    name = seed.name,
-                    password = encodedPassword,
-                    passwordChangeRequired = false,
-                    isActive = true,
-                    profileType = ProfileType.SYSTEM_ADMIN,
-                    isSalesSupport = false,
-                    isDeleted = false
-                )
-                userRepository.save(user)
-            }
+            // Web Admin 로그인 가능하도록 User 동시 생성 (시드는 동기 호출).
+            userProvisioningService.provisionForSeed(
+                employeeCode = seed.code,
+                name = seed.name,
+                workEmail = seed.workEmail,
+                email = null,
+                birthDate = null,
+                role = UserRole.SYSTEM_ADMIN,
+                appLoginActive = false,
+                encodedPassword = encodedPassword,
+                passwordChangeRequired = false,
+            )
             log.info("시드 SYSTEM_ADMIN 계정 생성 완료: employeeCode={}", seed.code)
         }
     }

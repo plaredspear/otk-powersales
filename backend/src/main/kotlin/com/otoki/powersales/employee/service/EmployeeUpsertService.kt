@@ -8,9 +8,8 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertFailedRow
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertResult
-import com.otoki.powersales.user.entity.User
-import com.otoki.powersales.user.repository.UserRepository
-import org.springframework.security.crypto.password.PasswordEncoder
+import com.otoki.powersales.user.event.EmployeeCreatedEvent
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -36,7 +35,12 @@ import java.time.format.DateTimeParseException
  * 4. 외부 호출: [EmployeeRepository.saveAll] (성공 행만 일괄). 행 검증 실패는 트랜잭션 롤백하지 않음.
  *    INSERT 시 `Employee.employeeInfo` 가 cascade=ALL 로 자동 영속화됨.
  *
- * ## 신규 차이 — 동등 (생략)
+ * ## User 행 자동 생성 (별도 트랜잭션)
+ * Employee 신규 INSERT 시 [EmployeeCreatedEvent] 를 발행한다. User 행 생성은
+ * [com.otoki.powersales.user.service.UserProvisioningService.handleEmployeeCreated]
+ * 가 `AFTER_COMMIT + @Async` 로 수신해 별도 트랜잭션에서 수행한다.
+ * SF 레거시 `IF_REST_SAP_EmployeeMaster.upsertUser(@future)` 동등 — User 생성 실패는
+ * Employee 트랜잭션에 영향을 주지 않는다.
  *
  * cross-domain 의존: [SystemCodeMasterRepository] (status code map lookup) — Q3 옵션 1 정합 (lookup 용도 read-only).
  * 회사 코드 / status group code 는 도메인 자체 상수로 박는다 (`sap.*` 패키지 의존 0건 정합).
@@ -45,8 +49,7 @@ import java.time.format.DateTimeParseException
 class EmployeeUpsertService(
     private val employeeRepository: EmployeeRepository,
     private val systemCodeMasterRepository: SystemCodeMasterRepository,
-    private val userRepository: UserRepository,
-    private val passwordEncoder: PasswordEncoder
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     @Transactional
@@ -72,7 +75,7 @@ class EmployeeUpsertService(
 
         val failures = mutableListOf<EmployeeUpsertFailedRow>()
         val toSave = mutableListOf<Employee>()
-        val newUsers = mutableListOf<User>()
+        val newEmployees = mutableListOf<Employee>()
         val protectedManualCodes = mutableListOf<String>()
 
         commands.forEach { command ->
@@ -102,11 +105,7 @@ class EmployeeUpsertService(
                 } ?: Employee(employeeCode = employeeCode, name = employeeName).also {
                     applyMutableFields(it, command, employeeName, convertedGender, startDate, endDate, birthDate, resolvedStatus, appLoginActive)
                     cache[employeeCode] = it
-                    // Spec #758: Employee 신규 생성 시 같은 Transaction 으로 User 도 생성.
-                    // User 매칭 키 (audit FK 풀): User.employee_number == Employee.employee_code.
-                    // SF 레거시 IF_REST_SAP_EmployeeMaster.cls:281 동등 — Email 부재 사원은 User 생성 skip
-                    // (Username UNIQUE + 로그인 ID 설정 불가). 이메일 채워지면 후속 인바운드에서 생성.
-                    buildUserForEmployee(it)?.let { user -> newUsers += user }
+                    newEmployees += it
                 }
                 toSave += entity
             } catch (ex: IllegalArgumentException) {
@@ -117,8 +116,21 @@ class EmployeeUpsertService(
         if (toSave.isNotEmpty()) {
             employeeRepository.saveAll(toSave)
         }
-        if (newUsers.isNotEmpty()) {
-            userRepository.saveAll(newUsers)
+
+        // SF IF_REST_SAP_EmployeeMaster.upsertUser(@future) 동등 — Employee 신규 행에 한해 이벤트 발행.
+        // 실제 User INSERT 는 UserProvisioningService 가 AFTER_COMMIT + @Async 로 별도 트랜잭션 처리.
+        newEmployees.forEach { employee ->
+            eventPublisher.publishEvent(
+                EmployeeCreatedEvent(
+                    employeeCode = employee.employeeCode,
+                    name = employee.name,
+                    workEmail = employee.workEmail,
+                    email = employee.email,
+                    birthDate = employee.birthDate,
+                    role = employee.role,
+                    appLoginActive = employee.appLoginActive,
+                )
+            )
         }
 
         return EmployeeUpsertResult(
@@ -170,32 +182,11 @@ class EmployeeUpsertService(
         return raw
     }
 
-    private fun buildUserForEmployee(employee: Employee): User? {
-        // Spec #757 Q5 정책: 임시 비밀번호 = 사번 + 생년월일 4자리 (MMdd). birthDate 부재 시 "0000".
-        // SF 레거시 IF_REST_SAP_EmployeeMaster.cls:281 동등 — workEmail / email 둘 다 null 이면 User 생성 skip.
-        val email = employee.workEmail?.takeIf { it.isNotBlank() }
-            ?: employee.email?.takeIf { it.isNotBlank() }
-            ?: return null
-        val tempPassword = "${employee.employeeCode}${employee.birthDate?.takeLast(BIRTH_SUFFIX_LENGTH) ?: BIRTH_SUFFIX_FALLBACK}"
-        return User(
-            username = email,
-            email = email,
-            employeeNumber = employee.employeeCode,
-            name = employee.name,
-            password = passwordEncoder.encode(tempPassword)!!,
-            passwordChangeRequired = true,
-            isActive = employee.appLoginActive ?: true,
-            isDeleted = false
-        )
-    }
-
     companion object {
         private const val STATUS_GROUP_CODE = "H10010"
         // 어댑터 측 SapConstants.OTOKI_COMPANY_CODE 와 동일 값. 도메인이 sap 패키지 의존 0건 정합 위해 자체 박음.
         private const val OTOKI_COMPANY_CODE = "1000"
         private const val EMPTY_DATE = "00000000"
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
-        private const val BIRTH_SUFFIX_LENGTH = 4
-        private const val BIRTH_SUFFIX_FALLBACK = "0000"
     }
 }
