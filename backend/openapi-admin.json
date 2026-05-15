@@ -6,13 +6,50 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50715",
+    "url" : "http://localhost:58048",
     "description" : "Generated server url"
   } ],
   "security" : [ {
     "Bearer Authentication" : [ ]
   } ],
   "paths" : {
+    "/api/v1/admin/users/{userId}/active" : {
+      "put" : {
+        "tags" : [ "admin-user-controller" ],
+        "operationId" : "updateActiveStatus",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateUserActiveStatusRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/team-schedule/{id}" : {
       "put" : {
         "tags" : [ "admin-team-schedule-controller" ],
@@ -248,68 +285,6 @@
       "delete" : {
         "tags" : [ "admin-promotion-controller" ],
         "operationId" : "deletePromotion",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseObject"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/promotion-types/{id}" : {
-      "put" : {
-        "tags" : [ "admin-promotion-type-controller" ],
-        "operationId" : "updatePromotionType",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/PromotionTypeRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePromotionTypeResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete" : {
-        "tags" : [ "admin-promotion-type-controller" ],
-        "operationId" : "deletePromotionType",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1050,6 +1025,33 @@
         }
       }
     },
+    "/api/v1/admin/users/{userId}/reset-password" : {
+      "post" : {
+        "tags" : [ "admin-user-controller" ],
+        "operationId" : "resetPassword",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminUserPasswordResetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/users/{employeeCode}/reset-device" : {
       "post" : {
         "tags" : [ "admin-controller" ],
@@ -1226,12 +1228,11 @@
             "minLength" : 1
           }
         }, {
-          "name" : "promotionTypeId",
+          "name" : "promotionType",
           "in" : "query",
           "required" : false,
           "schema" : {
-            "type" : "integer",
-            "format" : "int64"
+            "type" : "string"
           }
         }, {
           "name" : "startDate",
@@ -1391,50 +1392,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePromotionConfirmResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/promotion-types" : {
-      "get" : {
-        "tags" : [ "admin-promotion-type-controller" ],
-        "operationId" : "getPromotionTypes",
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListPromotionTypeResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post" : {
-        "tags" : [ "admin-promotion-type-controller" ],
-        "operationId" : "createPromotionType",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/PromotionTypeRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePromotionTypeResponse"
                 }
               }
             }
@@ -2021,7 +1978,7 @@
     "/api/v1/admin/employees/{employeeId}/reset-password" : {
       "post" : {
         "tags" : [ "admin-employee-controller" ],
-        "operationId" : "resetPassword",
+        "operationId" : "resetPassword_1",
         "parameters" : [ {
           "name" : "employeeId",
           "in" : "path",
@@ -2585,6 +2542,84 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseScheduleBatchConfirmResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users" : {
+      "get" : {
+        "tags" : [ "admin-user-controller" ],
+        "operationId" : "getUsers",
+        "parameters" : [ {
+          "name" : "keyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "isActive",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminUserListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{userId}" : {
+      "get" : {
+        "tags" : [ "admin-user-controller" ],
+        "operationId" : "getUser",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminUserDetailResponse"
                 }
               }
             }
@@ -3537,6 +3572,51 @@
   },
   "components" : {
     "schemas" : {
+      "UpdateUserActiveStatusRequest" : {
+        "type" : "object",
+        "properties" : {
+          "active" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ApiResponseUnit" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ErrorDetail" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "details" : {
+            "type" : [ "object", "null" ],
+            "additionalProperties" : { }
+          }
+        }
+      },
       "TeamScheduleUpdateRequest" : {
         "type" : "object",
         "properties" : {
@@ -3554,7 +3634,7 @@
           },
           "workingCategory2" : {
             "type" : [ "string", "null" ],
-            "enum" : [ "전담", "진열겸임", "임시" ]
+            "enum" : [ "전담", "진열겸임" ]
           },
           "workingCategory3" : {
             "type" : [ "string", "null" ],
@@ -3589,21 +3669,6 @@
           "timestamp" : {
             "type" : "string",
             "format" : "date-time"
-          }
-        }
-      },
-      "ErrorDetail" : {
-        "type" : "object",
-        "properties" : {
-          "code" : {
-            "type" : "string"
-          },
-          "message" : {
-            "type" : "string"
-          },
-          "details" : {
-            "type" : [ "object", "null" ],
-            "additionalProperties" : { }
           }
         }
       },
@@ -3915,9 +3980,9 @@
       "PromotionCreateRequest" : {
         "type" : "object",
         "properties" : {
-          "promotionTypeId" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+          "promotionType" : {
+            "type" : [ "string", "null" ],
+            "minLength" : 1
           },
           "accountId" : {
             "type" : "integer",
@@ -3961,7 +4026,7 @@
             "minLength" : 0
           }
         },
-        "required" : [ "accountId", "endDate", "primaryProductId", "promotionTypeId", "standLocation", "startDate" ]
+        "required" : [ "accountId", "endDate", "primaryProductId", "promotionType", "standLocation", "startDate" ]
       },
       "ApiResponsePromotionDetailResponse" : {
         "type" : "object",
@@ -4002,11 +4067,7 @@
           "promotionNumber" : {
             "type" : "string"
           },
-          "promotionTypeId" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
-          "promotionTypeName" : {
+          "promotionType" : {
             "type" : [ "string", "null" ]
           },
           "accountId" : {
@@ -4061,70 +4122,6 @@
             "type" : "boolean"
           },
           "closed" : {
-            "type" : "boolean"
-          }
-        }
-      },
-      "PromotionTypeRequest" : {
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string",
-            "maxLength" : 50,
-            "minLength" : 0
-          },
-          "displayOrder" : {
-            "type" : "integer",
-            "format" : "int32",
-            "minimum" : 1
-          }
-        },
-        "required" : [ "displayOrder", "name" ]
-      },
-      "ApiResponsePromotionTypeResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/PromotionTypeResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "PromotionTypeResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "displayOrder" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "active" : {
             "type" : "boolean"
           }
         }
@@ -5369,6 +5366,57 @@
           }
         }
       },
+      "AdminUserPasswordResetResponse" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "username" : {
+            "type" : "string"
+          },
+          "temporaryPasswordIssued" : {
+            "type" : "boolean"
+          },
+          "passwordChangeRequired" : {
+            "type" : "boolean"
+          },
+          "resetAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseAdminUserPasswordResetResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminUserPasswordResetResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "TeamScheduleCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -5390,7 +5438,7 @@
           },
           "workingCategory2" : {
             "type" : [ "string", "null" ],
-            "enum" : [ "전담", "진열겸임", "임시" ]
+            "enum" : [ "전담", "진열겸임" ]
           },
           "workingCategory3" : {
             "type" : [ "string", "null" ],
@@ -6475,12 +6523,31 @@
           "name" : {
             "type" : [ "string", "null" ]
           },
-          "employeeNumber" : {
+          "employeeCode" : {
             "type" : "string"
           },
           "profileType" : {
             "type" : "string",
             "enum" : [ "MARKETING", "STAFF", "TEAM_LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_DIRECTOR", "DIVISION_HEAD", "SALES_REP", "SYSTEM_ADMIN" ]
+          },
+          "role" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
+          },
+          "roleLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "costCenterCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "permissions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           },
           "salesSupport" : {
             "type" : "boolean"
@@ -6855,6 +6922,212 @@
           "updatedCount" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "AdminUserListItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "username" : {
+            "type" : "string"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "email" : {
+            "type" : [ "string", "null" ]
+          },
+          "profileType" : {
+            "type" : "string"
+          },
+          "profileTypeLabel" : {
+            "type" : "string"
+          },
+          "branch" : {
+            "type" : [ "string", "null" ]
+          },
+          "department" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastLoginAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "AdminUserListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AdminUserListItem"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ApiResponseAdminUserListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminUserListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "AdminUserDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "username" : {
+            "type" : "string"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "firstName" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastName" : {
+            "type" : [ "string", "null" ]
+          },
+          "email" : {
+            "type" : [ "string", "null" ]
+          },
+          "alias" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "department" : {
+            "type" : [ "string", "null" ]
+          },
+          "division" : {
+            "type" : [ "string", "null" ]
+          },
+          "branch" : {
+            "type" : [ "string", "null" ]
+          },
+          "mobilePhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "phone" : {
+            "type" : [ "string", "null" ]
+          },
+          "hrCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "profileType" : {
+            "type" : "string"
+          },
+          "profileTypeLabel" : {
+            "type" : "string"
+          },
+          "passwordChangeRequired" : {
+            "type" : "boolean"
+          },
+          "lastLoginAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "createdAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "lastModifiedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "salesSupport" : {
+            "type" : "boolean"
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ApiResponseAdminUserDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminUserDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       },
@@ -7346,20 +7619,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ScheduleListItemDto"
-            }
-          },
-          "number" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
@@ -7376,6 +7635,20 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ScheduleListItemDto"
+            }
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "empty" : {
             "type" : "boolean"
           }
@@ -7384,9 +7657,12 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "offset" : {
+          "pageNumber" : {
             "type" : "integer",
-            "format" : "int64"
+            "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           },
           "pageSize" : {
             "type" : "integer",
@@ -7398,12 +7674,9 @@
           "paged" : {
             "type" : "boolean"
           },
-          "pageNumber" : {
+          "offset" : {
             "type" : "integer",
-            "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
+            "format" : "int64"
           }
         }
       },
@@ -7458,13 +7731,13 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "empty" : {
-            "type" : "boolean"
-          },
           "unsorted" : {
             "type" : "boolean"
           },
           "sorted" : {
+            "type" : "boolean"
+          },
+          "empty" : {
             "type" : "boolean"
           }
         }
@@ -7634,11 +7907,7 @@
           "promotionNumber" : {
             "type" : "string"
           },
-          "promotionTypeId" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
-          "promotionTypeName" : {
+          "promotionType" : {
             "type" : [ "string", "null" ]
           },
           "accountName" : {
@@ -7798,7 +8067,7 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "employeeNumber" : {
+          "employeeCode" : {
             "type" : "string"
           },
           "employeeName" : {
@@ -7902,9 +8171,8 @@
       "PromotionTypeOption" : {
         "type" : "object",
         "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
+          "value" : {
+            "type" : "string"
           },
           "name" : {
             "type" : "string"
@@ -7919,34 +8187,6 @@
           },
           "name" : {
             "type" : "string"
-          }
-        }
-      },
-      "ApiResponseListPromotionTypeResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/PromotionTypeResponse"
-            }
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
           }
         }
       },
@@ -8002,8 +8242,7 @@
             "type" : [ "string", "null" ]
           },
           "standardUnitPrice" : {
-            "type" : [ "number", "null" ],
-            "format" : "double"
+            "type" : [ "number", "null" ]
           },
           "unit" : {
             "type" : [ "string", "null" ]

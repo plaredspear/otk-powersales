@@ -44,6 +44,8 @@ const EmployeePermissionPage = lazy(() => import('@/pages/settings/EmployeePermi
 const AdminAccountRegisterPage = lazy(() => import('@/pages/settings/AdminAccountRegisterPage'));
 const NaverGeocodeTestPage = lazy(() => import('@/pages/admin/NaverGeocodeTestPage'));
 const AgreementWordsPage = lazy(() => import('@/pages/admin/agreement-words/AgreementWordsPage'));
+const UserListPage = lazy(() => import('@/pages/users/UserListPage'));
+const UserDetailPage = lazy(() => import('@/pages/users/UserDetailPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -162,6 +164,13 @@ export const router = createBrowserRouter(
               element: <PermissionRoute requiredPermission="AGREEMENT_READ" />,
               children: [
                 { path: '/admin/agreement-words', element: <LazyWrapper><AgreementWordsPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute requiredPermission="USER_READ" />,
+              children: [
+                { path: '/users', element: <LazyWrapper><UserListPage /></LazyWrapper> },
+                { path: '/users/:id', element: <LazyWrapper><UserDetailPage /></LazyWrapper> },
               ],
             },
             { path: '*', element: <Navigate to="/" replace /> },
