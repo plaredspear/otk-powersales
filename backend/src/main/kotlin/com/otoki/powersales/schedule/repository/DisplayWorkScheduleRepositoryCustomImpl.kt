@@ -98,6 +98,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
+        costCenterCodes: List<String>?,
         pageable: Pageable
     ): Page<DisplayWorkSchedule> {
         val today = LocalDate.now()
@@ -110,6 +111,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .and(buildStartDateFromCondition(startDateFrom))
             .and(buildStartDateToCondition(startDateTo))
             .and(buildPresetCondition(preset, today))
+            .and(buildCostCenterCodesCondition(costCenterCodes))
 
         val content = queryFactory
             .selectFrom(displayWorkSchedule)
@@ -436,5 +438,15 @@ class DisplayWorkScheduleRepositoryCustomImpl(
 
     private fun isNotDeleted(): BooleanExpression {
         return displayWorkSchedule.isDeleted.isNull.or(displayWorkSchedule.isDeleted.eq(false))
+    }
+
+    /**
+     * UC-12 사업소 가시 범위 필터.
+     * null = 무제한 (ADMIN_GRADE / SYSTEM_ADMIN), 빈 list = no match (-1), list = 그 안에만.
+     */
+    private fun buildCostCenterCodesCondition(costCenterCodes: List<String>?): BooleanExpression? {
+        if (costCenterCodes == null) return null
+        if (costCenterCodes.isEmpty()) return displayWorkSchedule.costCenterCode.eq("__NO_MATCH__")
+        return displayWorkSchedule.costCenterCode.`in`(costCenterCodes)
     }
 }

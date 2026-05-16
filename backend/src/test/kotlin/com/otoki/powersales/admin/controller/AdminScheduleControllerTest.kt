@@ -120,7 +120,7 @@ class AdminScheduleControllerTest {
             )
             val page = PageImpl(items, PageRequest.of(0, 20), 1)
             whenever(adminScheduleService.listSchedules(
-                eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
+                eq(1L), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
             )).thenReturn(page)
 
             mockMvc.perform(get("/api/v1/admin/schedule/list"))
@@ -140,7 +140,7 @@ class AdminScheduleControllerTest {
         fun list_withFilters() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             whenever(adminScheduleService.listSchedules(
-                eq(0), eq(20), eq("123"), isNull(), eq(true), isNull(), isNull(), isNull(), isNull(), any()
+                eq(1L), eq(0), eq(20), eq("123"), isNull(), eq(true), isNull(), isNull(), isNull(), isNull(), any()
             )).thenReturn(emptyPage)
 
             mockMvc.perform(
@@ -157,7 +157,7 @@ class AdminScheduleControllerTest {
         fun list_empty() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             whenever(adminScheduleService.listSchedules(
-                eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
+                eq(1L), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
             )).thenReturn(emptyPage)
 
             mockMvc.perform(get("/api/v1/admin/schedule/list"))
@@ -171,7 +171,7 @@ class AdminScheduleControllerTest {
         fun list_withPreset() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             whenever(adminScheduleService.listSchedules(
-                eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                eq(1L), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
                 eq(SchedulePreset.END), any()
             )).thenReturn(emptyPage)
 
@@ -187,7 +187,7 @@ class AdminScheduleControllerTest {
         fun list_withSort() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             whenever(adminScheduleService.listSchedules(
-                eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                eq(1L), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
                 argThat { getOrderFor("endDate")?.direction == Sort.Direction.ASC }
             )).thenReturn(emptyPage)
 
@@ -230,7 +230,7 @@ class AdminScheduleControllerTest {
                 costCenterCode = "A10010",
                 lastMonthRevenue = 5000000L
             )
-            whenever(adminScheduleService.createSchedule(any())).thenReturn(result)
+            whenever(adminScheduleService.createSchedule(eq(1L), any())).thenReturn(result)
 
             mockMvc.perform(
                 post("/api/v1/admin/schedule")
@@ -258,7 +258,7 @@ class AdminScheduleControllerTest {
                 startDate = LocalDate.of(2026, 5, 1),
                 endDate = null
             )
-            whenever(adminScheduleService.createSchedule(any()))
+            whenever(adminScheduleService.createSchedule(eq(1L), any()))
                 .thenThrow(ScheduleValidationException("기간내에 동일한 거래처가 등록되어 있습니다"))
 
             mockMvc.perform(
@@ -487,7 +487,7 @@ class AdminScheduleControllerTest {
                 bytes = ByteArray(800),
                 filename = "진열스케줄_20260516_120000.xlsx"
             )
-            whenever(adminScheduleService.exportSchedules(eq(listOf(1L, 2L, 3L)))).thenReturn(result)
+            whenever(adminScheduleService.exportSchedules(eq(1L), eq(listOf(1L, 2L, 3L)))).thenReturn(result)
 
             mockMvc.perform(
                 post("/api/v1/admin/schedule/export")

@@ -24,6 +24,9 @@ interface DisplayWorkScheduleRepositoryCustom {
 
     fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Int>
 
+    /**
+     * @param costCenterCodes UC-12 사업소 가시 범위 필터. null = 무제한(ADMIN_GRADE 등), list = 본인 담당 사업소.
+     */
     fun findScheduleList(
         employeeCode: String?,
         accountIds: List<Int>?,
@@ -32,6 +35,7 @@ interface DisplayWorkScheduleRepositoryCustom {
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
+        costCenterCodes: List<String>?,
         pageable: Pageable
     ): Page<DisplayWorkSchedule>
 

@@ -78,3 +78,13 @@ class ScheduleEditBlockedAfterConfirmException : BusinessException(
     message = "확정 후에는 종료일 이외는 편집할 수 없습니다. 시스템 관리자에게 문의하십시오",
     httpStatus = HttpStatus.CONFLICT
 )
+
+/**
+ * UC-12 사업소 가시 범위 위반 — 조장이 본인 담당 사업소 외 레코드 접근 시도 시 차단.
+ * 레거시 SF Sharing Rule 50+ 룰 (CostCenterCode 기준) 의 신규 매핑.
+ */
+class ScheduleForbiddenException : BusinessException(
+    errorCode = "SCHEDULE_FORBIDDEN",
+    message = "본인 담당 사업소 외 레코드는 접근할 수 없습니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)

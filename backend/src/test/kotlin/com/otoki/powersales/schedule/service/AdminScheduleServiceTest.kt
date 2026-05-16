@@ -85,6 +85,9 @@ class AdminScheduleServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Mock
+    private lateinit var dataScopeService: com.otoki.powersales.admin.service.AdminDataScopeService
+
+    @Mock
     private lateinit var redisTemplate: RedisTemplate<String, String>
 
     @Mock
@@ -299,15 +302,24 @@ class AdminScheduleServiceTest {
     @DisplayName("exportSchedules - 선택 다운로드 (UC-08)")
     inner class ExportSchedulesTests {
 
+        private val userId = 1L
+
+        private fun mockAdminScope() {
+            whenever(dataScopeService.resolve(userId)).thenReturn(
+                com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
+            )
+        }
+
         @Test
         @DisplayName("정상 다운로드 - 선택 ID 순서 보존 + 파일명 패턴")
         fun exportSchedules_success() {
+            mockAdminScope()
             val s1 = createSchedule(id = 11L)
             val s2 = createSchedule(id = 12L)
             whenever(scheduleRepository.findAllById(listOf(12L, 11L))).thenReturn(listOf(s1, s2))
             whenever(exportGenerator.generate(any())).thenReturn(ByteArray(500))
 
-            val result = adminScheduleService.exportSchedules(listOf(12L, 11L))
+            val result = adminScheduleService.exportSchedules(userId, listOf(12L, 11L))
 
             assertThat(result.bytes).hasSize(500)
             assertThat(result.filename).startsWith("진열스케줄_").endsWith(".xlsx")
@@ -320,12 +332,31 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("삭제된 레코드는 제외")
         fun exportSchedules_excludesDeleted() {
+            mockAdminScope()
             val active = createSchedule(id = 11L)
             val deletedSchedule = createSchedule(id = 12L, isDeleted = true)
             whenever(scheduleRepository.findAllById(listOf(11L, 12L))).thenReturn(listOf(active, deletedSchedule))
             whenever(exportGenerator.generate(any())).thenReturn(ByteArray(200))
 
-            adminScheduleService.exportSchedules(listOf(11L, 12L))
+            adminScheduleService.exportSchedules(userId, listOf(11L, 12L))
+
+            verify(exportGenerator).generate(argThat<List<DisplayWorkSchedule>> {
+                this.size == 1 && this[0].id == 11L
+            })
+        }
+
+        @Test
+        @DisplayName("UC-12 scope 위반 - LEADER scope 밖 레코드는 조용히 제외")
+        fun exportSchedules_leaderScopeFilter() {
+            whenever(dataScopeService.resolve(userId)).thenReturn(
+                com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
+            )
+            val inScope = DisplayWorkSchedule(id = 11L, costCenterCode = "A10010")
+            val outOfScope = DisplayWorkSchedule(id = 12L, costCenterCode = "B20020")
+            whenever(scheduleRepository.findAllById(listOf(11L, 12L))).thenReturn(listOf(inScope, outOfScope))
+            whenever(exportGenerator.generate(any())).thenReturn(ByteArray(200))
+
+            adminScheduleService.exportSchedules(userId, listOf(11L, 12L))
 
             verify(exportGenerator).generate(argThat<List<DisplayWorkSchedule>> {
                 this.size == 1 && this[0].id == 11L
@@ -698,18 +729,27 @@ class AdminScheduleServiceTest {
     @DisplayName("listSchedules - 스케줄 목록 조회")
     inner class ListSchedulesTests {
 
+        private val userId = 1L
+
+        private fun mockAdminScope() {
+            whenever(dataScopeService.resolve(userId)).thenReturn(
+                com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
+            )
+        }
+
         @Test
         @DisplayName("정상 조회 - 필터 없이 전체 목록 반환")
         fun listSchedules_success() {
+            mockAdminScope()
             val employee = createEmployee(id = 1L, employeeCode = "20030001", name = "홍길동")
             val account = createAccount(id = 100, externalKey = "SAP001", name = "이마트 성수점")
             val schedule = createSchedule(id = 1L, confirmed = false, employee = employee, account = account)
             val page = PageImpl(listOf(schedule), PageRequest.of(0, 20), 1)
 
-            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(page)
 
-            val result = adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null, null, Sort.unsorted())
+            val result = adminScheduleService.listSchedules(userId, 0, 20, null, null, null, null, null, null, null, Sort.unsorted())
 
             assertThat(result.totalElements).isEqualTo(1)
             assertThat(result.content[0].employeeCode).isEqualTo("20030001")
@@ -721,11 +761,12 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("빈 결과 - 매칭 없음")
         fun listSchedules_empty() {
+            mockAdminScope()
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
-            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(emptyPage)
 
-            val result = adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null, null, Sort.unsorted())
+            val result = adminScheduleService.listSchedules(userId, 0, 20, null, null, null, null, null, null, null, Sort.unsorted())
 
             assertThat(result.totalElements).isEqualTo(0)
             assertThat(result.content).isEmpty()
@@ -734,60 +775,82 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("거래처명 필터 - 매칭 거래처 ID로 조회")
         fun listSchedules_accountNameFilter() {
+            mockAdminScope()
             val account = createAccount(id = 100, name = "이마트 성수점")
             whenever(accountRepository.findByNameContainingIgnoreCase("이마트")).thenReturn(listOf(account))
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
-            whenever(scheduleRepository.findScheduleList(isNull(), eq(listOf(100)), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+            whenever(scheduleRepository.findScheduleList(isNull(), eq(listOf(100)), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(emptyPage)
 
-            adminScheduleService.listSchedules(0, 20, null, "이마트", null, null, null, null, null, Sort.unsorted())
+            adminScheduleService.listSchedules(userId, 0, 20, null, "이마트", null, null, null, null, null, Sort.unsorted())
 
-            verify(scheduleRepository).findScheduleList(isNull(), eq(listOf(100)), isNull(), isNull(), isNull(), isNull(), isNull(), any())
+            verify(scheduleRepository).findScheduleList(isNull(), eq(listOf(100)), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any())
         }
 
         @Test
         @DisplayName("페이지 크기 제한 - 100 초과 시 100으로 제한")
         fun listSchedules_pageSizeLimit() {
+            mockAdminScope()
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 100), 0)
-            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(emptyPage)
 
-            adminScheduleService.listSchedules(0, 200, null, null, null, null, null, null, null, Sort.unsorted())
+            adminScheduleService.listSchedules(userId, 0, 200, null, null, null, null, null, null, null, Sort.unsorted())
 
             verify(scheduleRepository).findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), argThat { pageSize == 100 }
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), argThat { pageSize == 100 }
             )
         }
 
         @Test
         @DisplayName("preset 필터 - 레거시 List View 매핑 (END) 가 Repository 에 전달됨")
         fun listSchedules_presetEnd() {
+            mockAdminScope()
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
             whenever(scheduleRepository.findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(SchedulePreset.END), any()
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(SchedulePreset.END), isNull(), any()
             )).thenReturn(emptyPage)
 
-            adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null, SchedulePreset.END, Sort.unsorted())
+            adminScheduleService.listSchedules(userId, 0, 20, null, null, null, null, null, null, SchedulePreset.END, Sort.unsorted())
 
             verify(scheduleRepository).findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(SchedulePreset.END), any()
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(SchedulePreset.END), isNull(), any()
             )
         }
 
         @Test
         @DisplayName("정렬 - Sort 가 Pageable 에 반영됨")
         fun listSchedules_sortApplied() {
+            mockAdminScope()
             val sort = Sort.by(Sort.Direction.DESC, "endDate")
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20, sort), 0)
             whenever(scheduleRepository.findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
             )).thenReturn(emptyPage)
 
-            adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null, null, sort)
+            adminScheduleService.listSchedules(userId, 0, 20, null, null, null, null, null, null, null, sort)
 
             verify(scheduleRepository).findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
                 argThat { this.sort == sort }
+            )
+        }
+
+        @Test
+        @DisplayName("UC-12 LEADER 사용자 - costCenterCodes 필터가 Repository 에 전달됨")
+        fun listSchedules_leaderScope() {
+            whenever(dataScopeService.resolve(userId)).thenReturn(
+                com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
+            )
+            val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
+            whenever(scheduleRepository.findScheduleList(
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(listOf("A10010")), any()
+            )).thenReturn(emptyPage)
+
+            adminScheduleService.listSchedules(userId, 0, 20, null, null, null, null, null, null, null, Sort.unsorted())
+
+            verify(scheduleRepository).findScheduleList(
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(listOf("A10010")), any()
             )
         }
     }
@@ -917,6 +980,13 @@ class AdminScheduleServiceTest {
 
         private val userId = 1L
         private val scheduleId = 10L
+
+        private fun mockAdminScope() {
+            whenever(dataScopeService.resolve(userId)).thenReturn(
+                com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
+            )
+        }
+
         private val baseRequest = AdminScheduleUpdateRequest(
             employeeCode = "20030001",
             accountCode = "ACC001",
@@ -930,6 +1000,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("정상 편집 — validateSingle 통과 + 자동채움 재실행 + entity 갱신")
         fun updateSchedule_success() {
+            mockAdminScope()
             val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
             val originalAccount = createAccount(id = 1, externalKey = "ACC001")
             val schedule = createSchedule(id = scheduleId, confirmed = false, employee = originalEmployee, account = originalAccount)
@@ -968,6 +1039,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("UC-05 차단 — 확정 + LEADER + 거래처 변경 시 ScheduleEditBlockedAfterConfirmException")
         fun updateSchedule_blockedAfterConfirm_leaderChangesAccount() {
+            mockAdminScope()
             val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001")
             val originalAccount = createAccount(id = 1, externalKey = "ACC_ORIGINAL")
             val schedule = createSchedule(id = scheduleId, confirmed = true, employee = originalEmployee, account = originalAccount)
@@ -988,6 +1060,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("UC-05 차단 예외 — 확정 + SYSTEM_ADMIN 은 모든 필드 변경 가능")
         fun updateSchedule_systemAdminBypassesBlock() {
+            mockAdminScope()
             val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
             val originalAccount = createAccount(id = 1, externalKey = "ACC001")
             val schedule = createSchedule(id = scheduleId, confirmed = true, employee = originalEmployee, account = originalAccount)
@@ -1022,6 +1095,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("UC-05 통과 — 확정 + LEADER + 종료일만 변경은 차단되지 않음")
         fun updateSchedule_leaderChangesOnlyEndDate() {
+            mockAdminScope()
             val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
             val originalAccount = createAccount(id = 1, externalKey = "ACC001")
             // 기존 시작일·종료일 (baseRequest 와 시작일 동일하게 설정)
@@ -1080,6 +1154,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("validator 실패 — ScheduleValidationException")
         fun updateSchedule_validationFailure() {
+            mockAdminScope()
             val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001")
             val originalAccount = createAccount(id = 1, externalKey = "ACC001")
             val schedule = createSchedule(id = scheduleId, confirmed = false, employee = originalEmployee, account = originalAccount)
@@ -1110,10 +1185,17 @@ class AdminScheduleServiceTest {
 
         private val userId = 1L
 
+        private fun mockAdminScopeForUser(user: Employee) {
+            whenever(dataScopeService.resolve(user)).thenReturn(
+                com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
+            )
+        }
+
         @Test
         @DisplayName("ADMIN_GRADE - 확정/연결 여부 무관 전체 삭제")
         fun batchDelete_adminAllSucceed() {
             val admin = createEmployee(id = userId, role = UserRole.SYSTEM_ADMIN)
+            mockAdminScopeForUser(admin)
             val s1 = createSchedule(id = 11L, confirmed = true)
             val s2 = createSchedule(id = 12L, confirmed = false)
 
@@ -1134,6 +1216,7 @@ class AdminScheduleServiceTest {
         @DisplayName("LEADER - partial success: 확정+FK 연결 건만 차단, 나머지 삭제")
         fun batchDelete_leaderPartialSuccess() {
             val leader = createEmployee(id = userId, role = UserRole.LEADER)
+            mockAdminScopeForUser(leader)
             val blocked = createSchedule(id = 21L, confirmed = true) // FK 연결 있음
             val confirmedNoLink = createSchedule(id = 22L, confirmed = true)
             val unconfirmed = createSchedule(id = 23L, confirmed = false)
@@ -1172,6 +1255,7 @@ class AdminScheduleServiceTest {
         @DisplayName("미존재 / 이미 삭제된 ID 포함 - SCHEDULE_NOT_FOUND 로 실패 기록")
         fun batchDelete_missingIds() {
             val leader = createEmployee(id = userId, role = UserRole.LEADER)
+            mockAdminScopeForUser(leader)
             val valid = createSchedule(id = 31L, confirmed = false)
             val deletedAlready = createSchedule(id = 32L, confirmed = false, isDeleted = true)
 
@@ -1191,6 +1275,7 @@ class AdminScheduleServiceTest {
         @DisplayName("LEADER - 전체 차단되는 케이스 (deletedCount=0)")
         fun batchDelete_leaderAllBlocked() {
             val leader = createEmployee(id = userId, role = UserRole.LEADER)
+            mockAdminScopeForUser(leader)
             val blocked1 = createSchedule(id = 41L, confirmed = true)
             val blocked2 = createSchedule(id = 42L, confirmed = true)
 
@@ -1213,9 +1298,16 @@ class AdminScheduleServiceTest {
         private val userId = 1L
         private val scheduleId = 10L
 
+        private fun mockAdminScope() {
+            whenever(dataScopeService.resolve(userId)).thenReturn(
+                com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
+            )
+        }
+
         @Test
         @DisplayName("시스템관리자 삭제 - 확정+여사원일정 존재해도 삭제 성공")
         fun deleteSchedule_systemAdmin_success() {
+            mockAdminScope()
             val employee = createEmployee(id = userId, role = UserRole.SYSTEM_ADMIN)
             val schedule = createSchedule(id = scheduleId, confirmed = true)
 
@@ -1230,6 +1322,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("영업지원실 삭제 - 확정+여사원일정 존재해도 삭제 성공")
         fun deleteSchedule_salesSupport_success() {
+            mockAdminScope()
             val employee = createEmployee(id = userId, role = UserRole.SALES_SUPPORT)
             val schedule = createSchedule(id = scheduleId, confirmed = true)
 
@@ -1244,6 +1337,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("일반 사용자 미확정 삭제 - 삭제 성공")
         fun deleteSchedule_normalUser_unconfirmed_success() {
+            mockAdminScope()
             val employee = createEmployee(id = userId, role = UserRole.LEADER)
             val schedule = createSchedule(id = scheduleId, confirmed = false)
 
@@ -1258,6 +1352,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("일반 사용자 확정+FK 연결 없음 - 삭제 성공")
         fun deleteSchedule_normalUser_confirmedNoLinked_success() {
+            mockAdminScope()
             val scheduleEmployee = createEmployee(id = 2L)
             val scheduleAccount = createAccount(id = 100)
             val schedule = createSchedule(
@@ -1298,6 +1393,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("지점장 삭제 시도 - ScheduleDeleteForbiddenException")
         fun deleteSchedule_branchManager_forbidden() {
+            mockAdminScope()
             val employee = createEmployee(id = userId, role = UserRole.BRANCH_MANAGER)
             val schedule = createSchedule(id = scheduleId)
 
@@ -1311,6 +1407,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("확정+FK 연결 여사원일정 존재 - ScheduleDeleteConstraintException")
         fun deleteSchedule_confirmedWithLinked_constraint() {
+            mockAdminScope()
             val scheduleEmployee = createEmployee(id = 2L)
             val scheduleAccount = createAccount(id = 100)
             val schedule = createSchedule(
@@ -1328,10 +1425,28 @@ class AdminScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("UC-12 scope 위반 - LEADER 가 본인 담당 사업소 외 레코드 삭제 시도 시 ScheduleForbiddenException")
+        fun deleteSchedule_uc12LeaderForbidden() {
+            whenever(dataScopeService.resolve(userId)).thenReturn(
+                com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
+            )
+            val user = createEmployee(id = userId, role = UserRole.LEADER, costCenterCode = "A10010")
+            val schedule = DisplayWorkSchedule(id = scheduleId, costCenterCode = "B20020")
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
+
+            assertThatThrownBy { adminScheduleService.deleteSchedule(userId, scheduleId) }
+                .isInstanceOf(ScheduleForbiddenException::class.java)
+
+            assertThat(schedule.isDeleted).isNotEqualTo(true)
+        }
+
+        @Test
         @DisplayName("UC-06 FK null 일정만 존재 - 삭제 허용 (값 매칭 대비 false positive 회피)")
         fun deleteSchedule_fkNullLinkedOnly_allowsDelete() {
             // 시나리오: 동일 (사원, 거래처, 기간) 의 여사원일정이 존재하지만 FK 가 null 인 케이스
             // 레거시 SF 와 동등하게 진열마스터 FK 가 연결되지 않은 일정은 "연결 없음" 으로 간주.
+            mockAdminScope()
             val scheduleEmployee = createEmployee(id = 2L)
             val scheduleAccount = createAccount(id = 100)
             val schedule = createSchedule(
@@ -1355,6 +1470,7 @@ class AdminScheduleServiceTest {
     @DisplayName("createSchedule - 단건 신규 등록")
     inner class CreateScheduleTests {
 
+        private val userId = 1L
         private val baseRequest = AdminScheduleCreateRequest(
             employeeCode = "20030001",
             accountCode = "ACC001",
@@ -1365,9 +1481,16 @@ class AdminScheduleServiceTest {
             endDate = null
         )
 
+        private fun mockAdminScope() {
+            whenever(dataScopeService.resolve(userId)).thenReturn(
+                com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
+            )
+        }
+
         @Test
         @DisplayName("정상 등록 - validator 통과 + 자동채움 적용 후 저장")
         fun createSchedule_success() {
+            mockAdminScope()
             val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
             val account = createAccount(id = 1, externalKey = "ACC001", name = "이마트 강남점")
             val validatedRow = ScheduleUploadValidator.ValidatedRow(
@@ -1390,7 +1513,7 @@ class AdminScheduleServiceTest {
                 .thenReturn(emptyList())
             whenever(scheduleRepository.save(any<DisplayWorkSchedule>())).thenAnswer { it.getArgument<DisplayWorkSchedule>(0) }
 
-            val result = adminScheduleService.createSchedule(baseRequest)
+            val result = adminScheduleService.createSchedule(userId, baseRequest)
 
             assertThat(result.employeeCode).isEqualTo("20030001")
             assertThat(result.accountCode).isEqualTo("ACC001")
@@ -1408,6 +1531,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("검증 실패 - validator 메시지로 ScheduleValidationException")
         fun createSchedule_validationFailure() {
+            mockAdminScope()
             val employee = createEmployee(id = 1L, employeeCode = "20030001")
             val account = createAccount(id = 1, externalKey = "ACC001")
 
@@ -1421,7 +1545,7 @@ class AdminScheduleServiceTest {
                 listOf("기간내에 동일한 거래처가 등록되어 있습니다"), null
             ))
 
-            assertThatThrownBy { adminScheduleService.createSchedule(baseRequest) }
+            assertThatThrownBy { adminScheduleService.createSchedule(userId, baseRequest) }
                 .isInstanceOf(ScheduleValidationException::class.java)
                 .hasMessageContaining("기간내에 동일한 거래처가 등록되어 있습니다")
 
@@ -1431,6 +1555,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("사원 미존재 - validator 가 결정 + 에러 메시지 포함")
         fun createSchedule_employeeNotFound() {
+            // employee 가 null 이면 scope 검증 skip 되므로 mockAdminScope 호출 불필요
             val account = createAccount(id = 1, externalKey = "ACC001")
             whenever(employeeRepository.findByEmployeeCode("99999999")).thenReturn(Optional.empty())
             whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
@@ -1442,7 +1567,7 @@ class AdminScheduleServiceTest {
             ))
 
             assertThatThrownBy {
-                adminScheduleService.createSchedule(baseRequest.copy(employeeCode = "99999999"))
+                adminScheduleService.createSchedule(userId, baseRequest.copy(employeeCode = "99999999"))
             }.isInstanceOf(ScheduleValidationException::class.java)
                 .hasMessageContaining("존재하지 않는 사원")
         }
@@ -1450,6 +1575,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("조장 매칭 - 조장 User 가 ownerUser 로 설정됨")
         fun createSchedule_ownerLeader() {
+            mockAdminScope()
             val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
             val account = createAccount(id = 1, externalKey = "ACC001")
             val validatedRow = ScheduleUploadValidator.ValidatedRow(
@@ -1475,7 +1601,7 @@ class AdminScheduleServiceTest {
                 .thenReturn(emptyList())
             whenever(scheduleRepository.save(any<DisplayWorkSchedule>())).thenAnswer { it.getArgument<DisplayWorkSchedule>(0) }
 
-            adminScheduleService.createSchedule(baseRequest)
+            adminScheduleService.createSchedule(userId, baseRequest)
 
             verify(scheduleRepository).save(argThat<DisplayWorkSchedule> {
                 this.ownerUser?.id == 1099L
@@ -1483,8 +1609,28 @@ class AdminScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("UC-12 scope 위반 - LEADER 가 다른 사업소 사원 등록 시 ScheduleForbiddenException")
+        fun createSchedule_leaderScopeViolation() {
+            whenever(dataScopeService.resolve(userId)).thenReturn(
+                com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
+            )
+            val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "B20020")
+            val account = createAccount(id = 1, externalKey = "ACC001")
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
+
+            assertThatThrownBy { adminScheduleService.createSchedule(userId, baseRequest) }
+                .isInstanceOf(ScheduleForbiddenException::class.java)
+
+            verify(uploadValidator, never()).validateSingle(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+
+        @Test
         @DisplayName("전월 매출 자동채움 - lastMonthRevenue BigDecimal 매핑")
         fun createSchedule_lastMonthRevenue() {
+            mockAdminScope()
             val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
             val account = Account(id = 1, externalKey = "ACC001")
             val validatedRow = ScheduleUploadValidator.ValidatedRow(
@@ -1510,7 +1656,7 @@ class AdminScheduleServiceTest {
                 .thenReturn(listOf(salesHistory))
             whenever(scheduleRepository.save(any<DisplayWorkSchedule>())).thenAnswer { it.getArgument<DisplayWorkSchedule>(0) }
 
-            val result = adminScheduleService.createSchedule(baseRequest)
+            val result = adminScheduleService.createSchedule(userId, baseRequest)
 
             assertThat(result.lastMonthRevenue).isEqualTo(3500000L)
             verify(scheduleRepository).save(argThat<DisplayWorkSchedule> {

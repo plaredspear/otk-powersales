@@ -2,6 +2,8 @@ package com.otoki.powersales.schedule.service
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.service.AdminDataScopeService
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
@@ -58,7 +60,8 @@ class AdminScheduleService(
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
     private val userRepository: UserRepository,
     private val redisTemplate: RedisTemplate<String, String>,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val dataScopeService: AdminDataScopeService,
 ) {
 
     companion object {
@@ -108,9 +111,12 @@ class AdminScheduleService(
      * 레거시 SF `ExcelIO_ExportDisplayWorkScheduleMaster2.page` (ecio 패키지) 동등 — 선택된 레코드만 export.
      * 입력 순서 보존하여 출력 (사용자가 선택한 순서대로 행 정렬).
      */
-    fun exportSchedules(ids: List<Long>): TemplateResult {
+    fun exportSchedules(userId: Long, ids: List<Long>): TemplateResult {
+        // UC-12 사업소 가시 범위 — scope 밖 ID 는 조용히 제외 (레거시 SF Sharing Rule row-level filter 동등)
+        val scope = dataScopeService.resolve(userId)
         val schedules = scheduleRepository.findAllById(ids)
             .filter { it.isDeleted != true }
+            .filter { scope.validateAccess(it.costCenterCode) }
             .associateBy { it.id }
         val ordered = ids.mapNotNull { schedules[it] }
 
@@ -283,6 +289,7 @@ class AdminScheduleService(
     }
 
     fun listSchedules(
+        userId: Long,
         page: Int,
         size: Int,
         employeeCode: String?,
@@ -303,8 +310,11 @@ class AdminScheduleService(
             null
         }
 
+        // UC-12 사업소 가시 범위 필터 — LEADER/BRANCH_MANAGER 는 본인 담당 사업소만, ADMIN_GRADE 는 무제한(null)
+        val costCenterCodes = scopeBranchCodesOrNull(userId)
+
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, pageable
+            employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, costCenterCodes, pageable
         )
 
         return schedulePage.map { schedule ->
@@ -364,9 +374,14 @@ class AdminScheduleService(
      * (전월 매출액 / costCenterCode / ownerUser) 을 단건 시나리오로 적용한다.
      */
     @Transactional
-    fun createSchedule(request: AdminScheduleCreateRequest): ScheduleCreateResultDto {
+    fun createSchedule(userId: Long, request: AdminScheduleCreateRequest): ScheduleCreateResultDto {
         val employee = employeeRepository.findByEmployeeCode(request.employeeCode).orElse(null)
         val account = accountRepository.findByExternalKey(request.accountCode)
+
+        // UC-12 등록할 사원의 costCenterCode 가 사용자 scope 내인지 검증
+        if (employee != null) {
+            requireCostCenterCodeScope(userId, employee.costCenterCode)
+        }
 
         // 동일 사원 기존 스케줄 조회 (V8 + C1~C3 검증용). 사원이 존재할 때만 조회.
         val existingSchedules = if (employee != null) {
@@ -475,6 +490,9 @@ class AdminScheduleService(
         val user = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
+        // UC-12 기존 schedule 의 costCenterCode 가 사용자 scope 내인지 먼저 검증.
+        requireScheduleScope(userId, schedule)
+
         // UC-05 차단 룰: 확정 후 ADMIN_GRADE 외 사용자가 종료일 외 필드 변경 시도하면 차단.
         if (schedule.confirmed == true && user.role !in UserRole.ADMIN_GRADE) {
             val originalEmployeeCode = schedule.employee?.employeeCode
@@ -498,6 +516,11 @@ class AdminScheduleService(
 
         val employee = employeeRepository.findByEmployeeCode(request.employeeCode).orElse(null)
         val account = accountRepository.findByExternalKey(request.accountCode)
+
+        // UC-12 변경 후 사원의 costCenterCode 도 사용자 scope 내인지 검증 (사원 변경 시 다른 사업소로 이전 차단)
+        if (employee != null) {
+            requireCostCenterCodeScope(userId, employee.costCenterCode)
+        }
 
         val existingSchedules = if (employee != null) {
             scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(employee.id))
@@ -594,6 +617,7 @@ class AdminScheduleService(
         }
 
         val isAdmin = user.role in UserRole.ADMIN_GRADE
+        val scope = dataScopeService.resolve(user)
         val schedules = scheduleRepository.findAllById(ids).associateBy { it.id }
 
         var deletedCount = 0
@@ -607,6 +631,18 @@ class AdminScheduleService(
                         id = id,
                         errorCode = "SCHEDULE_NOT_FOUND",
                         message = "존재하지 않거나 삭제된 스케줄입니다"
+                    )
+                )
+                continue
+            }
+
+            // UC-12 사업소 가시 범위 검증 — 본인 담당 사업소 외 레코드는 partial fail 로 기록
+            if (!scope.validateAccess(schedule.costCenterCode)) {
+                failures.add(
+                    ScheduleBatchDeleteFailure(
+                        id = id,
+                        errorCode = "SCHEDULE_FORBIDDEN",
+                        message = "본인 담당 사업소 외 레코드는 접근할 수 없습니다"
                     )
                 )
                 continue
@@ -647,6 +683,9 @@ class AdminScheduleService(
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
+        // UC-12 사업소 가시 범위 검증 — 본인 담당 사업소 외 레코드 차단 (ADMIN_GRADE 는 무제한)
+        requireScheduleScope(userId, schedule)
+
         val role = employee.role
 
         if (role in UserRole.ADMIN_GRADE) {
@@ -669,6 +708,37 @@ class AdminScheduleService(
         }
 
         schedule.isDeleted = true
+    }
+
+    /**
+     * UC-12 helper — 사용자 scope 의 사업소 코드 목록을 반환.
+     * ADMIN_GRADE / SYSTEM_ADMIN 은 무제한 → null 반환 (repository 측 무필터).
+     * LEADER / BRANCH_MANAGER 는 본인 담당 사업소 코드 목록.
+     */
+    private fun scopeBranchCodesOrNull(userId: Long): List<String>? {
+        val scope = dataScopeService.resolve(userId)
+        return if (scope.isAllBranches) null else scope.branchCodes
+    }
+
+    /**
+     * UC-12 helper — 스케줄 entity 의 costCenterCode 가 사용자 scope 내인지 검증.
+     * 위반 시 ScheduleForbiddenException.
+     */
+    private fun requireScheduleScope(userId: Long, schedule: DisplayWorkSchedule) {
+        val scope = dataScopeService.resolve(userId)
+        if (!scope.validateAccess(schedule.costCenterCode)) {
+            throw ScheduleForbiddenException()
+        }
+    }
+
+    /**
+     * UC-12 helper — 등록·편집 시 「대상 사원의 costCenterCode」 가 사용자 scope 내인지 검증.
+     */
+    private fun requireCostCenterCodeScope(userId: Long, costCenterCode: String?) {
+        val scope = dataScopeService.resolve(userId)
+        if (!scope.validateAccess(costCenterCode)) {
+            throw ScheduleForbiddenException()
+        }
     }
 
     private fun validateScheduleIds(ids: List<Long>, schedules: List<DisplayWorkSchedule>) {

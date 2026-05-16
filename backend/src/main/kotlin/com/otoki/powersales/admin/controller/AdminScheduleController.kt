@@ -39,6 +39,7 @@ class AdminScheduleController(
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/list")
     fun listSchedules(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(required = false) employeeCode: String?,
@@ -53,7 +54,8 @@ class AdminScheduleController(
     ): ResponseEntity<ApiResponse<Page<ScheduleListItemDto>>> {
         val sort = resolveSort(sortBy, sortDir)
         val result = adminScheduleService.listSchedules(
-            page, size, employeeCode, accountName, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, sort
+            principal.requireEmployeeId(), page, size, employeeCode, accountName, confirmed,
+            typeOfWork3, startDateFrom, startDateTo, preset, sort
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }
@@ -96,9 +98,10 @@ class AdminScheduleController(
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @PostMapping("/export")
     fun exportSchedules(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: ScheduleExportRequest
     ): ResponseEntity<ByteArray> {
-        val result = adminScheduleService.exportSchedules(request.ids)
+        val result = adminScheduleService.exportSchedules(principal.requireEmployeeId(), request.ids)
 
         val headers = HttpHeaders()
         headers.contentType = MediaType.parseMediaType(
@@ -159,9 +162,10 @@ class AdminScheduleController(
     @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
     @PostMapping
     fun createSchedule(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminScheduleCreateRequest
     ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
-        val result = adminScheduleService.createSchedule(request)
+        val result = adminScheduleService.createSchedule(principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 등록되었습니다"))
     }
 
