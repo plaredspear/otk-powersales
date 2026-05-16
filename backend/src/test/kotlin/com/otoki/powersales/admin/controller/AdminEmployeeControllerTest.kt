@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
@@ -86,6 +87,9 @@ class AdminEmployeeControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+        // controller 가 dataScopeHolder.require() 결과를 service 에 explicit parameter 로 전달.
+        whenever(dataScopeHolder.require())
+            .thenReturn(com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true))
     }
 
     @Nested
@@ -124,7 +128,7 @@ class AdminEmployeeControllerTest {
                 totalElements = 1,
                 totalPages = 1
             )
-            whenever(adminEmployeeService.getEmployees(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+            whenever(adminEmployeeService.getEmployees(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
                 .thenReturn(response)
 
             mockMvc.perform(get("/api/v1/admin/employees"))
@@ -155,7 +159,7 @@ class AdminEmployeeControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminEmployeeService.getEmployees(eq("재직"), eq("A001"), eq("홍"), eq(UserRole.LEADER), eq(0), eq(10)))
+            whenever(adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("홍"), eq(UserRole.LEADER), eq(0), eq(10)))
                 .thenReturn(response)
 
             mockMvc.perform(
@@ -183,7 +187,7 @@ class AdminEmployeeControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminEmployeeService.getEmployees(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+            whenever(adminEmployeeService.getEmployees(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
                 .thenReturn(response)
 
             mockMvc.perform(get("/api/v1/admin/employees"))

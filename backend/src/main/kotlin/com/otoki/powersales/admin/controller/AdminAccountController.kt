@@ -9,6 +9,7 @@ import com.otoki.powersales.account.service.AccountCreateService
 import com.otoki.powersales.account.service.AccountDeleteService
 import com.otoki.powersales.account.service.AccountUpdateService
 import com.otoki.powersales.account.service.AdminAccountService
+import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.common.dto.ApiResponse
@@ -38,7 +39,10 @@ class AdminAccountController(
     private val adminAccountService: AdminAccountService,
     private val accountCreateService: AccountCreateService,
     private val accountUpdateService: AccountUpdateService,
-    private val accountDeleteService: AccountDeleteService
+    private val accountDeleteService: AccountDeleteService,
+    // WebAdminContextFilter 가 요청 진입 시 산출한 DataScope 를 1회 읽어 service 에 explicit
+    // parameter 로 전달.
+    private val dataScopeHolder: DataScopeHolder,
 ) {
 
     @GetMapping
@@ -53,6 +57,7 @@ class AdminAccountController(
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<AccountListResponse>> {
         val response = adminAccountService.getAccounts(
+            scope = dataScopeHolder.require(),
             keyword = keyword,
             abcType = abcType,
             branchCode = branchCode,

@@ -1,7 +1,7 @@
 package com.otoki.powersales.account.service
 
+import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
-import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.account.dto.response.AccountListItem
 import com.otoki.powersales.account.dto.response.AccountListResponse
 import com.otoki.powersales.account.repository.AccountRepository
@@ -13,11 +13,15 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class AdminAccountService(
-    private val dataScopeHolder: DataScopeHolder,
     private val accountRepository: AccountRepository
 ) {
 
+    /**
+     * @param scope 호출자(controller) 에서 산출/주입한 현재 사용자의 DataScope.
+     *              service 가 holder/ambient context 에 의존하지 않도록 explicit parameter 로 받는다.
+     */
     fun getAccounts(
+        scope: DataScope,
         keyword: String?,
         abcType: String?,
         branchCode: String?,
@@ -25,8 +29,6 @@ class AdminAccountService(
         page: Int,
         size: Int
     ): AccountListResponse {
-        val scope = dataScopeHolder.require()
-
         val effectiveBranchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(branchCode)) {
             is EffectiveBranchResult.All -> null
             is EffectiveBranchResult.Filtered -> result.codes

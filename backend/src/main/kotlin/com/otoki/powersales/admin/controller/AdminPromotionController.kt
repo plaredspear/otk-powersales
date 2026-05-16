@@ -4,6 +4,7 @@ import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.PromotionDetailResponse
 import com.otoki.powersales.promotion.dto.response.PromotionFormMetaResponse
 import com.otoki.powersales.promotion.dto.response.PromotionListResponse
+import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.promotion.service.AdminPromotionService
@@ -23,7 +24,10 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/admin/promotions")
 @Validated
 class AdminPromotionController(
-    private val adminPromotionService: AdminPromotionService
+    private val adminPromotionService: AdminPromotionService,
+    // WebAdminContextFilter 가 요청 진입 시 산출한 DataScope 를 1회 읽어 service 에 explicit
+    // parameter 로 전달.
+    private val dataScopeHolder: DataScopeHolder,
 ) {
 
     @GetMapping("/form-meta")
@@ -45,6 +49,7 @@ class AdminPromotionController(
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<PromotionListResponse>> {
         val response = adminPromotionService.getPromotions(
+            scope = dataScopeHolder.require(),
             keyword = keyword,
             promotionType = promotionType,
             startDate = startDate,
@@ -61,7 +66,7 @@ class AdminPromotionController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
-        val response = adminPromotionService.getPromotion(id)
+        val response = adminPromotionService.getPromotion(dataScopeHolder.require(), id)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -82,7 +87,7 @@ class AdminPromotionController(
         @PathVariable id: Long,
         @Valid @RequestBody request: PromotionCreateRequest
     ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
-        val response = adminPromotionService.updatePromotion(id, principal.requireEmployeeId(), request)
+        val response = adminPromotionService.updatePromotion(dataScopeHolder.require(), id, principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -92,7 +97,7 @@ class AdminPromotionController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminPromotionService.deletePromotion(id)
+        adminPromotionService.deletePromotion(dataScopeHolder.require(), id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?))
     }
 }

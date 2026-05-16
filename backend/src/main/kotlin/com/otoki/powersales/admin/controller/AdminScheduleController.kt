@@ -14,6 +14,7 @@ import com.otoki.powersales.schedule.dto.response.ScheduleListItemDto
 import com.otoki.powersales.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.exception.ScheduleFileRequiredException
+import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.service.AdminScheduleService
@@ -33,7 +34,10 @@ import java.time.LocalDate
 @RestController
 @RequestMapping("/api/v1/admin/schedule")
 class AdminScheduleController(
-    private val adminScheduleService: AdminScheduleService
+    private val adminScheduleService: AdminScheduleService,
+    // WebAdminContextFilter 가 요청 진입 시 산출한 DataScope 를 1회 읽어 service 에 explicit
+    // parameter 로 전달. service 는 holder/ambient context 비인지로 유지.
+    private val dataScopeHolder: DataScopeHolder,
 ) {
 
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
@@ -54,7 +58,7 @@ class AdminScheduleController(
     ): ResponseEntity<ApiResponse<Page<ScheduleListItemDto>>> {
         val sort = resolveSort(sortBy, sortDir)
         val result = adminScheduleService.listSchedules(
-            principal.requireEmployeeId(), page, size, employeeCode, accountName, confirmed,
+            dataScopeHolder.require(), page, size, employeeCode, accountName, confirmed,
             typeOfWork3, startDateFrom, startDateTo, preset, sort
         )
         return ResponseEntity.ok(ApiResponse.success(result))
@@ -91,7 +95,7 @@ class AdminScheduleController(
         @PathVariable id: Long,
         @Valid @RequestBody request: AdminScheduleUpdateRequest
     ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
-        val result = adminScheduleService.updateSchedule(principal.requireEmployeeId(), id, request)
+        val result = adminScheduleService.updateSchedule(dataScopeHolder.require(), principal.requireEmployeeId(), id, request)
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 수정되었습니다"))
     }
 
@@ -101,7 +105,7 @@ class AdminScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: ScheduleExportRequest
     ): ResponseEntity<ByteArray> {
-        val result = adminScheduleService.exportSchedules(principal.requireEmployeeId(), request.ids)
+        val result = adminScheduleService.exportSchedules(dataScopeHolder.require(), request.ids)
 
         val headers = HttpHeaders()
         headers.contentType = MediaType.parseMediaType(
@@ -121,7 +125,7 @@ class AdminScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: ScheduleBatchDeleteRequest
     ): ResponseEntity<ApiResponse<ScheduleBatchDeleteResultDto>> {
-        val result = adminScheduleService.batchDelete(principal.requireEmployeeId(), request.ids)
+        val result = adminScheduleService.batchDelete(dataScopeHolder.require(), principal.requireEmployeeId(), request.ids)
         val message = when {
             result.failedCount == 0 -> "${result.deletedCount}건이 삭제되었습니다"
             result.deletedCount == 0 -> "모든 항목 삭제 실패 (${result.failedCount}건)"
@@ -136,7 +140,7 @@ class AdminScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminScheduleService.deleteSchedule(principal.requireEmployeeId(), id)
+        adminScheduleService.deleteSchedule(dataScopeHolder.require(), principal.requireEmployeeId(), id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "스케줄이 삭제되었습니다"))
     }
 
@@ -165,7 +169,7 @@ class AdminScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminScheduleCreateRequest
     ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
-        val result = adminScheduleService.createSchedule(principal.requireEmployeeId(), request)
+        val result = adminScheduleService.createSchedule(dataScopeHolder.require(), principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 등록되었습니다"))
     }
 

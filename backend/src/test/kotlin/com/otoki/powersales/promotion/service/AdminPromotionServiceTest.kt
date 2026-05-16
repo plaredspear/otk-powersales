@@ -5,7 +5,6 @@ import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
@@ -47,7 +46,6 @@ class AdminPromotionServiceTest {
     @Mock private lateinit var accountRepository: AccountRepository
     @Mock private lateinit var productRepository: ProductRepository
     @Mock private lateinit var employeeRepository: EmployeeRepository
-    @Mock private lateinit var dataScopeHolder: DataScopeHolder
     @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
 
     @InjectMocks private lateinit var adminPromotionService: AdminPromotionService
@@ -85,7 +83,7 @@ class AdminPromotionServiceTest {
         @DisplayName("정상 조회 - 전체 권한 사용자 -> 행사마스터 목록 반환")
         fun getPromotions_allBranches_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion(promotionType = PromotionType.SAMPLING).apply {
                 account = createAccount()
@@ -97,7 +95,7 @@ class AdminPromotionServiceTest {
                 startDate = null, endDate = null, branchCodes = null, pageable = pageable
             )).thenReturn(page)
 
-            val result = adminPromotionService.getPromotions(
+            val result = adminPromotionService.getPromotions(scope = scope,
                 keyword = null, promotionType = null,
                 startDate = null, endDate = null, page = 0, size = 20
             )
@@ -113,9 +111,9 @@ class AdminPromotionServiceTest {
         @DisplayName("지점 제한 사용자 - branchCodes 비어있음 -> 빈 결과")
         fun getPromotions_emptyBranchCodes_emptyResult() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
-            val result = adminPromotionService.getPromotions(
+            val result = adminPromotionService.getPromotions(scope = scope,
                 keyword = null, promotionType = null,
                 startDate = null, endDate = null, page = 0, size = 20
             )
@@ -129,11 +127,14 @@ class AdminPromotionServiceTest {
     @DisplayName("getPromotion - 행사마스터 상세 조회")
     inner class GetPromotionTests {
 
+        // controller 가 dataScopeHolder.require() 결과를 explicit parameter 로 전달하는 패턴
+        // 시뮬레이션. 권한 검증 분기와 무관한 케이스는 ALL scope 사용.
+        private val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
         @Test
         @DisplayName("정상 조회 - 유효한 ID -> 상세 정보 반환")
         fun getPromotion_success() {
-            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion(promotionType = PromotionType.SAMPLING).apply {
                 account = createAccount()
@@ -141,7 +142,7 @@ class AdminPromotionServiceTest {
             }
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
-            val result = adminPromotionService.getPromotion(1L)
+            val result = adminPromotionService.getPromotion(scope, 1L)
 
             assertThat(result.promotionNumber).isEqualTo("PM00000001")
             assertThat(result.accountName).isEqualTo("GS25 역삼점")
@@ -152,7 +153,7 @@ class AdminPromotionServiceTest {
         @Test
         @DisplayName("음수 ID - id=-1 -> PromotionInvalidParameterException")
         fun getPromotion_negativeId() {
-            assertThatThrownBy { adminPromotionService.getPromotion(-1L) }
+            assertThatThrownBy { adminPromotionService.getPromotion(scope, -1L) }
                 .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
@@ -161,7 +162,7 @@ class AdminPromotionServiceTest {
         fun getPromotion_notFound() {
             whenever(promotionRepository.findByIdWithRelations(999L)).thenReturn(null)
 
-            assertThatThrownBy { adminPromotionService.getPromotion(999L) }
+            assertThatThrownBy { adminPromotionService.getPromotion(scope, 999L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
@@ -171,7 +172,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion(isDeleted = true)
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
-            assertThatThrownBy { adminPromotionService.getPromotion(1L) }
+            assertThatThrownBy { adminPromotionService.getPromotion(scope, 1L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
@@ -179,12 +180,12 @@ class AdminPromotionServiceTest {
         @DisplayName("권한 외 조회 - 지점장이 타 지점 행사 -> PromotionForbiddenException")
         fun getPromotion_forbidden() {
             val scope = DataScope(branchCodes = listOf("2202"), isAllBranches = false)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion(costCenterCode = "1101")
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
-            assertThatThrownBy { adminPromotionService.getPromotion(1L) }
+            assertThatThrownBy { adminPromotionService.getPromotion(scope, 1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
         }
     }
@@ -393,11 +394,13 @@ class AdminPromotionServiceTest {
     @DisplayName("updatePromotion - 행사마스터 수정")
     inner class UpdatePromotionTests {
 
+        // controller 가 dataScopeHolder.require() 결과를 explicit parameter 로 전달하는 패턴 시뮬레이션.
+        private val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
         @Test
         @DisplayName("정상 수정 - 대표제품 유지")
         fun updatePromotion_success() {
-            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -406,14 +409,14 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             val request = createRequest()
-            adminPromotionService.updatePromotion(1L, userId, request)
+            adminPromotionService.updatePromotion(scope, 1L, userId, request)
         }
 
         @Test
         @DisplayName("정상 수정 - 거래처 변경 시 branchName 자동 갱신")
         fun updatePromotion_branchNameFromAccount() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -426,14 +429,14 @@ class AdminPromotionServiceTest {
             whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(emptyList())
 
             val request = createRequest(accountId = 200)
-            adminPromotionService.updatePromotion(1L, userId, request)
+            adminPromotionService.updatePromotion(scope, 1L, userId, request)
         }
 
         @Test
         @DisplayName("대표제품 변경 수정 - 새 제품으로 변경")
         fun updatePromotion_changeProduct_promotionNameUpdated() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion(primaryProductId = 200L)
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -444,14 +447,14 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             val request = createRequest(primaryProductId = 300L)
-            adminPromotionService.updatePromotion(1L, userId, request)
+            adminPromotionService.updatePromotion(scope, 1L, userId, request)
         }
 
         @Test
         @DisplayName("대표상품 변경 - 기존과 다른 product_id -> Promotion.primaryProductId 업데이트")
         fun updatePromotion_changePrimaryProduct() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion(primaryProductId = 200L)
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -462,7 +465,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             val request = createRequest(primaryProductId = 300L)
-            val result = adminPromotionService.updatePromotion(1L, userId, request)
+            val result = adminPromotionService.updatePromotion(scope, 1L, userId, request)
 
             assertThat(result.primaryProductId).isEqualTo(300L)
         }
@@ -471,14 +474,14 @@ class AdminPromotionServiceTest {
         @DisplayName("기타상품에 작은따옴표 포함 -> InvalidOtherProductException")
         fun updatePromotion_otherProductWithSingleQuote() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             val request = createRequest(otherProduct = "라면's")
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
                 .isInstanceOf(InvalidOtherProductException::class.java)
         }
 
@@ -488,7 +491,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion(isDeleted = true)
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, createRequest()) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, createRequest()) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
@@ -496,14 +499,14 @@ class AdminPromotionServiceTest {
         @DisplayName("유효하지 않은 행사유형으로 수정 -> PromotionInvalidParameterException")
         fun updatePromotion_invalidPromotionType() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
             val request = createRequest(promotionType = "없는유형")
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
                 .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
@@ -511,7 +514,7 @@ class AdminPromotionServiceTest {
         @DisplayName("USER가 마감 조원 존재 + 거래처 변경 -> ClosedPromotionModificationException")
         fun updatePromotion_closedEmployeeCriticalField() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -520,7 +523,7 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(accountId = 200)
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
                 .isInstanceOf(ClosedPromotionModificationException::class.java)
         }
 
@@ -528,7 +531,7 @@ class AdminPromotionServiceTest {
         @DisplayName("USER가 마감 조원 존재 + 날짜 변경 -> ClosedPromotionModificationException")
         fun updatePromotion_closedEmployeeDateChange() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -537,7 +540,7 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
                 .isInstanceOf(ClosedPromotionModificationException::class.java)
         }
 
@@ -545,7 +548,7 @@ class AdminPromotionServiceTest {
         @DisplayName("ADMIN이 마감 조원 존재 + 거래처 변경 -> 수정 허용")
         fun updatePromotion_adminClosedEmployeeCriticalField_allowed() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -566,7 +569,7 @@ class AdminPromotionServiceTest {
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>())).thenAnswer { it.getArgument<PromotionEmployee>(0) }
 
             val request = createRequest(accountId = 200)
-            val result = adminPromotionService.updatePromotion(1L, userId, request)
+            val result = adminPromotionService.updatePromotion(scope, 1L, userId, request)
 
             assertThat(result).isNotNull()
         }
@@ -575,7 +578,7 @@ class AdminPromotionServiceTest {
         @DisplayName("ADMIN이 마감 조원 존재 + 시작일 변경 -> 수정 허용")
         fun updatePromotion_adminClosedEmployeeDateChange_allowed() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -588,7 +591,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
-            val result = adminPromotionService.updatePromotion(1L, userId, request)
+            val result = adminPromotionService.updatePromotion(scope, 1L, userId, request)
 
             assertThat(result).isNotNull()
         }
@@ -597,7 +600,7 @@ class AdminPromotionServiceTest {
         @DisplayName("LEADER가 마감 조원 존재 + 시작일 변경 -> ClosedPromotionModificationException")
         fun updatePromotion_leaderClosedEmployeeDateChange() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -606,7 +609,7 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
                 .isInstanceOf(ClosedPromotionModificationException::class.java)
         }
 
@@ -614,7 +617,7 @@ class AdminPromotionServiceTest {
         @DisplayName("날짜 축소 시 조원 범위 초과 -> DateRangeConflictException")
         fun updatePromotion_dateRangeConflict() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -625,7 +628,7 @@ class AdminPromotionServiceTest {
             // startDate를 3/13으로 → minDate(3/12) 이후이므로 충돌
             val request = createRequest(startDate = LocalDate.of(2026, 3, 13))
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
                 .isInstanceOf(DateRangeConflictException::class.java)
         }
 
@@ -633,7 +636,7 @@ class AdminPromotionServiceTest {
         @DisplayName("거래처 변경 -> 스케줄 초기화")
         fun updatePromotion_accountChange_resetSchedules() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -652,7 +655,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>())).thenAnswer { it.getArgument<PromotionEmployee>(0) }
 
-            adminPromotionService.updatePromotion(1L, userId, createRequest(accountId = 200))
+            adminPromotionService.updatePromotion(scope, 1L, userId, createRequest(accountId = 200))
 
             verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
             assertThat(pe.teamMemberScheduleId).isNull()
@@ -663,11 +666,13 @@ class AdminPromotionServiceTest {
     @DisplayName("deletePromotion - 행사마스터 삭제")
     inner class DeletePromotionTests {
 
+        // controller 가 dataScopeHolder.require() 결과를 explicit parameter 로 전달하는 패턴 시뮬레이션.
+        private val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
         @Test
         @DisplayName("정상 삭제 - 유효한 ID -> soft delete + 연쇄 삭제")
         fun deletePromotion_success() {
-            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -681,7 +686,7 @@ class AdminPromotionServiceTest {
             whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(listOf(pe))
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
-            adminPromotionService.deletePromotion(1L)
+            adminPromotionService.deletePromotion(scope, 1L)
 
             assertThat(promotion.isDeleted).isTrue()
             verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
@@ -693,13 +698,13 @@ class AdminPromotionServiceTest {
         @DisplayName("마감 조원 존재 -> ClosedPromotionDeleteException")
         fun deletePromotion_closedEmployee() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
             whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
 
-            assertThatThrownBy { adminPromotionService.deletePromotion(1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(scope, 1L) }
                 .isInstanceOf(ClosedPromotionDeleteException::class.java)
         }
 
@@ -709,14 +714,14 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion(isDeleted = true)
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
-            assertThatThrownBy { adminPromotionService.deletePromotion(1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(scope, 1L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
         @Test
         @DisplayName("음수 ID -> PromotionInvalidParameterException")
         fun deletePromotion_negativeId() {
-            assertThatThrownBy { adminPromotionService.deletePromotion(-1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(scope, -1L) }
                 .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
@@ -724,12 +729,12 @@ class AdminPromotionServiceTest {
         @DisplayName("권한 외 삭제 - 지점장이 타 지점 행사 -> PromotionForbiddenException")
         fun deletePromotion_forbidden() {
             val scope = DataScope(branchCodes = listOf("2202"), isAllBranches = false)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
+            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion(costCenterCode = "1101")
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
 
-            assertThatThrownBy { adminPromotionService.deletePromotion(1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(scope, 1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
         }
     }

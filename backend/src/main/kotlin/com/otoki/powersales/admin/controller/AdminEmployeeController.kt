@@ -1,5 +1,6 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.auth.entity.UserRole
@@ -23,7 +24,10 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/employees")
 class AdminEmployeeController(
     private val adminEmployeeService: AdminEmployeeService,
-    private val adminEmployeeCredentialService: AdminEmployeeCredentialService
+    private val adminEmployeeCredentialService: AdminEmployeeCredentialService,
+    // WebAdminContextFilter 가 요청 진입 시 산출한 DataScope 를 1회 읽어 service 에 explicit
+    // parameter 로 전달.
+    private val dataScopeHolder: DataScopeHolder,
 ) {
 
     @GetMapping
@@ -38,6 +42,7 @@ class AdminEmployeeController(
         @RequestParam(required = false, defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
         val response = adminEmployeeService.getEmployees(
+            scope = dataScopeHolder.require(),
             status = status,
             costCenterCode = costCenterCode,
             keyword = keyword,

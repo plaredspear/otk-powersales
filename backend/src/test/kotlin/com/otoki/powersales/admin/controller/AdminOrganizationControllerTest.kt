@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
@@ -76,6 +77,9 @@ class AdminOrganizationControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+        // controller 가 dataScopeHolder.require() 결과를 service 에 explicit parameter 로 전달.
+        whenever(dataScopeHolder.require())
+            .thenReturn(com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true))
     }
 
     @Nested
@@ -103,7 +107,7 @@ class AdminOrganizationControllerTest {
                     createdAt = LocalDateTime.of(2026, 1, 15, 9, 0)
                 )
             )
-            whenever(adminOrganizationService.getOrganizations(anyOrNull(), anyOrNull()))
+            whenever(adminOrganizationService.getOrganizations(any(), anyOrNull(), anyOrNull()))
                 .thenReturn(response)
 
             mockMvc.perform(get("/api/v1/admin/organizations"))
@@ -123,7 +127,7 @@ class AdminOrganizationControllerTest {
         @Test
         @DisplayName("성공 - 키워드 + 레벨 필터")
         fun getOrganizations_withFilters() {
-            whenever(adminOrganizationService.getOrganizations(eq("강남"), eq("L4")))
+            whenever(adminOrganizationService.getOrganizations(any(), eq("강남"), eq("L4")))
                 .thenReturn(emptyList())
 
             mockMvc.perform(
@@ -139,7 +143,7 @@ class AdminOrganizationControllerTest {
         @Test
         @DisplayName("성공 - 빈 결과")
         fun getOrganizations_empty() {
-            whenever(adminOrganizationService.getOrganizations(anyOrNull(), anyOrNull()))
+            whenever(adminOrganizationService.getOrganizations(any(), anyOrNull(), anyOrNull()))
                 .thenReturn(emptyList())
 
             mockMvc.perform(get("/api/v1/admin/organizations"))

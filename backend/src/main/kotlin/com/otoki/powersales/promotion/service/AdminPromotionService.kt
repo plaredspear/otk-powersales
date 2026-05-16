@@ -3,7 +3,7 @@ package com.otoki.powersales.promotion.service
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.*
-import com.otoki.powersales.admin.scope.DataScopeHolder
+import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.promotion.enums.ProductTemperatureType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.enums.PromotionType
@@ -29,7 +29,6 @@ class AdminPromotionService(
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val employeeRepository: EmployeeRepository,
-    private val dataScopeHolder: DataScopeHolder,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository
 ) {
 
@@ -48,7 +47,12 @@ class AdminPromotionService(
         )
     }
 
+    /**
+     * @param scope 호출자(controller) 에서 산출/주입한 현재 사용자의 DataScope.
+     *              service 가 holder/ambient context 에 의존하지 않도록 explicit parameter 로 받는다.
+     */
     fun getPromotions(
+        scope: DataScope,
         keyword: String?,
         promotionType: String?,
         startDate: String?,
@@ -56,8 +60,6 @@ class AdminPromotionService(
         page: Int,
         size: Int
     ): PromotionListResponse {
-        val scope = dataScopeHolder.require()
-
         val effectiveBranchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(null)) {
             is EffectiveBranchResult.All -> null
             is EffectiveBranchResult.Filtered -> result.codes
@@ -88,11 +90,11 @@ class AdminPromotionService(
         )
     }
 
-    fun getPromotion(id: Long): PromotionDetailResponse {
+    fun getPromotion(scope: DataScope, id: Long): PromotionDetailResponse {
         if (id <= 0) throw PromotionInvalidParameterException()
 
         val promotion = findActivePromotion(id)
-        validateDataScope(promotion)
+        validateDataScope(scope, promotion)
 
         return PromotionDetailResponse.from(
             promotion = promotion,
@@ -148,11 +150,11 @@ class AdminPromotionService(
     }
 
     @Transactional
-    fun updatePromotion(id: Long, userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
+    fun updatePromotion(scope: DataScope, id: Long, userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
         if (id <= 0) throw PromotionInvalidParameterException()
 
         val promotion = findActivePromotion(id)
-        validateDataScope(promotion)
+        validateDataScope(scope, promotion)
         validateDateRange(request.startDate, request.endDate)
         val promotionType = parsePromotionType(request.promotionType)
         validateStandLocation(request.standLocation)
@@ -217,11 +219,11 @@ class AdminPromotionService(
     }
 
     @Transactional
-    fun deletePromotion(id: Long) {
+    fun deletePromotion(scope: DataScope, id: Long) {
         if (id <= 0) throw PromotionInvalidParameterException()
 
         val promotion = findActivePromotion(id)
-        validateDataScope(promotion)
+        validateDataScope(scope, promotion)
 
         // 1-2-D: 마감 보호 — 삭제 차단
         if (promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(id)) {
@@ -267,8 +269,7 @@ class AdminPromotionService(
         return promotion
     }
 
-    private fun validateDataScope(promotion: Promotion) {
-        val scope = dataScopeHolder.require()
+    private fun validateDataScope(scope: DataScope, promotion: Promotion) {
         if (!scope.validateAccess(promotion.costCenterCode)) {
             throw PromotionForbiddenException()
         }

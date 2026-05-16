@@ -75,6 +75,9 @@ class AdminScheduleControllerTest {
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
+    @MockitoBean
+    private lateinit var dataScopeHolder: com.otoki.powersales.admin.scope.DataScopeHolder
+
     @BeforeEach
     fun setUp() {
         val principal = WebUserPrincipal(
@@ -92,6 +95,9 @@ class AdminScheduleControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+        // controller 가 dataScopeHolder.require() 결과를 service 에 explicit parameter 로 전달.
+        whenever(dataScopeHolder.require())
+            .thenReturn(com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true))
     }
 
     @Nested
@@ -120,7 +126,7 @@ class AdminScheduleControllerTest {
             )
             val page = PageImpl(items, PageRequest.of(0, 20), 1)
             whenever(adminScheduleService.listSchedules(
-                eq(1L), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
+                any(), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
             )).thenReturn(page)
 
             mockMvc.perform(get("/api/v1/admin/schedule/list"))
@@ -140,7 +146,7 @@ class AdminScheduleControllerTest {
         fun list_withFilters() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             whenever(adminScheduleService.listSchedules(
-                eq(1L), eq(0), eq(20), eq("123"), isNull(), eq(true), isNull(), isNull(), isNull(), isNull(), any()
+                any(), eq(0), eq(20), eq("123"), isNull(), eq(true), isNull(), isNull(), isNull(), isNull(), any()
             )).thenReturn(emptyPage)
 
             mockMvc.perform(
@@ -157,7 +163,7 @@ class AdminScheduleControllerTest {
         fun list_empty() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             whenever(adminScheduleService.listSchedules(
-                eq(1L), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
+                any(), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
             )).thenReturn(emptyPage)
 
             mockMvc.perform(get("/api/v1/admin/schedule/list"))
@@ -171,7 +177,7 @@ class AdminScheduleControllerTest {
         fun list_withPreset() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             whenever(adminScheduleService.listSchedules(
-                eq(1L), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                any(), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
                 eq(SchedulePreset.END), any()
             )).thenReturn(emptyPage)
 
@@ -187,7 +193,7 @@ class AdminScheduleControllerTest {
         fun list_withSort() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             whenever(adminScheduleService.listSchedules(
-                eq(1L), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                any(), eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
                 argThat { getOrderFor("endDate")?.direction == Sort.Direction.ASC }
             )).thenReturn(emptyPage)
 
@@ -230,7 +236,7 @@ class AdminScheduleControllerTest {
                 costCenterCode = "A10010",
                 lastMonthRevenue = 5000000L
             )
-            whenever(adminScheduleService.createSchedule(eq(1L), any())).thenReturn(result)
+            whenever(adminScheduleService.createSchedule(any(), eq(1L), any())).thenReturn(result)
 
             mockMvc.perform(
                 post("/api/v1/admin/schedule")
@@ -258,7 +264,7 @@ class AdminScheduleControllerTest {
                 startDate = LocalDate.of(2026, 5, 1),
                 endDate = null
             )
-            whenever(adminScheduleService.createSchedule(eq(1L), any()))
+            whenever(adminScheduleService.createSchedule(any(), eq(1L), any()))
                 .thenThrow(ScheduleValidationException("기간내에 동일한 거래처가 등록되어 있습니다"))
 
             mockMvc.perform(
@@ -317,7 +323,7 @@ class AdminScheduleControllerTest {
                 costCenterCode = "A10010",
                 lastMonthRevenue = 3000000L
             )
-            whenever(adminScheduleService.updateSchedule(eq(1L), eq(10L), any())).thenReturn(result)
+            whenever(adminScheduleService.updateSchedule(any(), eq(1L), eq(10L), any())).thenReturn(result)
 
             mockMvc.perform(
                 put("/api/v1/admin/schedule/10")
@@ -343,7 +349,7 @@ class AdminScheduleControllerTest {
                 startDate = LocalDate.of(2026, 5, 1),
                 endDate = LocalDate.of(2026, 12, 31)
             )
-            whenever(adminScheduleService.updateSchedule(eq(1L), eq(10L), any()))
+            whenever(adminScheduleService.updateSchedule(any(), eq(1L), eq(10L), any()))
                 .thenThrow(ScheduleEditBlockedAfterConfirmException())
 
             mockMvc.perform(
@@ -367,7 +373,7 @@ class AdminScheduleControllerTest {
                 startDate = LocalDate.of(2026, 5, 1),
                 endDate = LocalDate.of(2026, 12, 31)
             )
-            whenever(adminScheduleService.updateSchedule(eq(1L), eq(999L), any()))
+            whenever(adminScheduleService.updateSchedule(any(), eq(1L), eq(999L), any()))
                 .thenThrow(ScheduleNotFoundException("존재하지 않거나 삭제된 스케줄입니다"))
 
             mockMvc.perform(
@@ -487,7 +493,7 @@ class AdminScheduleControllerTest {
                 bytes = ByteArray(800),
                 filename = "진열스케줄_20260516_120000.xlsx"
             )
-            whenever(adminScheduleService.exportSchedules(eq(1L), eq(listOf(1L, 2L, 3L)))).thenReturn(result)
+            whenever(adminScheduleService.exportSchedules(any(), eq(listOf(1L, 2L, 3L)))).thenReturn(result)
 
             mockMvc.perform(
                 post("/api/v1/admin/schedule/export")
@@ -534,7 +540,7 @@ class AdminScheduleControllerTest {
                     )
                 )
             )
-            whenever(adminScheduleService.batchDelete(eq(1L), eq(listOf(21L, 22L, 23L))))
+            whenever(adminScheduleService.batchDelete(any(), eq(1L), eq(listOf(21L, 22L, 23L))))
                 .thenReturn(result)
 
             mockMvc.perform(
@@ -557,7 +563,7 @@ class AdminScheduleControllerTest {
             val result = ScheduleBatchDeleteResultDto(
                 deletedCount = 3, failedCount = 0, failures = emptyList()
             )
-            whenever(adminScheduleService.batchDelete(eq(1L), any())).thenReturn(result)
+            whenever(adminScheduleService.batchDelete(any(), eq(1L), any())).thenReturn(result)
 
             mockMvc.perform(
                 post("/api/v1/admin/schedule/batch-delete")
@@ -572,7 +578,7 @@ class AdminScheduleControllerTest {
         @Test
         @DisplayName("실패 - BRANCH_MANAGER → 403")
         fun batchDelete_branchManagerForbidden() {
-            whenever(adminScheduleService.batchDelete(eq(1L), any()))
+            whenever(adminScheduleService.batchDelete(any(), eq(1L), any()))
                 .thenThrow(ScheduleDeleteForbiddenException())
 
             mockMvc.perform(
