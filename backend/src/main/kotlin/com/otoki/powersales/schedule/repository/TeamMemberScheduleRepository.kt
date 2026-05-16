@@ -5,6 +5,7 @@ import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
@@ -34,7 +35,11 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
         workingType: WorkingType
     ): List<TeamMemberSchedule>
 
-    fun existsByEmployeeAndAccountAndWorkingDateBetween(employee: Employee, account: Account, startDate: LocalDate, endDate: LocalDate): Boolean
+    /**
+     * UC-06 진열마스터 단건 삭제 차단 — 레거시 SF lookup FK 매칭 동등.
+     * `TeamMemberSchedule.displayWorkSchedule` (FK) 가 진열마스터를 가리키는 일정이 1건이라도 있으면 true.
+     */
+    fun existsByDisplayWorkSchedule(displayWorkSchedule: DisplayWorkSchedule): Boolean
 
     fun findByEmployeeAndAccountAndWorkingDate(employee: Employee, account: Account, workingDate: LocalDate): TeamMemberSchedule?
 

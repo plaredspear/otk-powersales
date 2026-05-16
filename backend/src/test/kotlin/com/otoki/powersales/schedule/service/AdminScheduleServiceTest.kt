@@ -1113,7 +1113,7 @@ class AdminScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("일반 사용자 확정+일정없음 - 삭제 성공")
+        @DisplayName("일반 사용자 확정+FK 연결 없음 - 삭제 성공")
         fun deleteSchedule_normalUser_confirmedNoLinked_success() {
             val scheduleEmployee = createEmployee(id = 2L)
             val scheduleAccount = createAccount(id = 100)
@@ -1125,11 +1125,7 @@ class AdminScheduleServiceTest {
 
             whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(
-                teamMemberScheduleRepository.existsByEmployeeAndAccountAndWorkingDateBetween(
-                    eq(scheduleEmployee), eq(scheduleAccount), any(), any()
-                )
-            ).thenReturn(false)
+            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule))).thenReturn(false)
 
             adminScheduleService.deleteSchedule(userId, scheduleId)
 
@@ -1170,7 +1166,7 @@ class AdminScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("확정+여사원일정 존재 - ScheduleDeleteConstraintException")
+        @DisplayName("확정+FK 연결 여사원일정 존재 - ScheduleDeleteConstraintException")
         fun deleteSchedule_confirmedWithLinked_constraint() {
             val scheduleEmployee = createEmployee(id = 2L)
             val scheduleAccount = createAccount(id = 100)
@@ -1182,14 +1178,33 @@ class AdminScheduleServiceTest {
 
             whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(
-                teamMemberScheduleRepository.existsByEmployeeAndAccountAndWorkingDateBetween(
-                    eq(scheduleEmployee), eq(scheduleAccount), any(), any()
-                )
-            ).thenReturn(true)
+            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule))).thenReturn(true)
 
             assertThatThrownBy { adminScheduleService.deleteSchedule(userId, scheduleId) }
                 .isInstanceOf(ScheduleDeleteConstraintException::class.java)
+        }
+
+        @Test
+        @DisplayName("UC-06 FK null 일정만 존재 - 삭제 허용 (값 매칭 대비 false positive 회피)")
+        fun deleteSchedule_fkNullLinkedOnly_allowsDelete() {
+            // 시나리오: 동일 (사원, 거래처, 기간) 의 여사원일정이 존재하지만 FK 가 null 인 케이스
+            // 레거시 SF 와 동등하게 진열마스터 FK 가 연결되지 않은 일정은 "연결 없음" 으로 간주.
+            val scheduleEmployee = createEmployee(id = 2L)
+            val scheduleAccount = createAccount(id = 100)
+            val schedule = createSchedule(
+                id = scheduleId, confirmed = true,
+                employee = scheduleEmployee, account = scheduleAccount
+            )
+            val employee = createEmployee(id = userId, role = UserRole.LEADER)
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            // FK 매칭 — FK null 인 일정은 매치되지 않으므로 false 반환
+            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule))).thenReturn(false)
+
+            adminScheduleService.deleteSchedule(userId, scheduleId)
+
+            assertThat(schedule.isDeleted).isTrue()
         }
     }
 

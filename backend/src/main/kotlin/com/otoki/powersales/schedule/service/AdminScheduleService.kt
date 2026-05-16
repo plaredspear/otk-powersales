@@ -577,18 +577,13 @@ class AdminScheduleService(
             throw ScheduleDeleteForbiddenException()
         }
 
+        // UC-06 차단 룰: 확정 + ADMIN_GRADE 외 사용자 + FK 로 본 진열마스터를 가리키는 여사원일정 존재 시 차단.
+        // 레거시 SF `DisplayWorkScheduleMasterTriggerHandler.deleteCheck` 의 lookup FK 매칭
+        // (WHERE DisplayWorkScheduleMaster__c IN :masterIds) 와 동등.
         if (schedule.confirmed == true) {
-            val scheduleEmployee = schedule.employee
-            val scheduleAccount = schedule.account
-            val startDate = schedule.startDate
-            val endDate = schedule.endDate
-
-            if (scheduleEmployee != null && scheduleAccount != null && startDate != null && endDate != null) {
-                val hasLinkedSchedule = teamMemberScheduleRepository
-                    .existsByEmployeeAndAccountAndWorkingDateBetween(scheduleEmployee, scheduleAccount, startDate, endDate)
-                if (hasLinkedSchedule) {
-                    throw ScheduleDeleteConstraintException()
-                }
+            val hasLinkedSchedule = teamMemberScheduleRepository.existsByDisplayWorkSchedule(schedule)
+            if (hasLinkedSchedule) {
+                throw ScheduleDeleteConstraintException()
             }
         }
 
