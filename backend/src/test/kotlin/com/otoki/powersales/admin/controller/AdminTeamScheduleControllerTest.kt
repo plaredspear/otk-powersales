@@ -199,7 +199,8 @@ class AdminTeamScheduleControllerTest {
                         accountId = 1001,
                         accountName = "이마트 강남점",
                         accountExternalKey = "EXT001",
-                        isClockIn = true
+                        isClockIn = true,
+                        promotionId = null
                     )
                 ),
                 dailySummary = listOf(
@@ -219,6 +220,7 @@ class AdminTeamScheduleControllerTest {
                     eq(1L),
                     eq(java.time.LocalDate.of(2026, 3, 1)),
                     eq(java.time.LocalDate.of(2026, 3, 31)),
+                    eq(null),
                     eq(null),
                     eq(null)
                 )
@@ -264,6 +266,7 @@ class AdminTeamScheduleControllerTest {
                     eq(1L),
                     eq(java.time.LocalDate.of(2026, 3, 1)),
                     eq(java.time.LocalDate.of(2026, 3, 31)),
+                    eq(null),
                     eq(null),
                     eq(null)
                 )

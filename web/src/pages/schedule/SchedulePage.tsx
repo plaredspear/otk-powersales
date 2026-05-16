@@ -95,15 +95,17 @@ export default function SchedulePage() {
     setDayListModalOpen(true);
   }, []);
 
-  const handleEventClick = useCallback((schedule: TeamSchedule) => {
+  const openScheduleDetail = useCallback((schedule: TeamSchedule) => {
+    if (schedule.workingCategory1 === '행사' && schedule.promotionId != null) {
+      window.open(`/promotions/${schedule.promotionId}`, '_blank', 'noopener');
+      return;
+    }
     setEditSchedule(schedule);
     setEditModalOpen(true);
   }, []);
 
-  const handleScheduleClickFromList = useCallback((schedule: TeamSchedule) => {
-    setEditSchedule(schedule);
-    setEditModalOpen(true);
-  }, []);
+  const handleEventClick = openScheduleDetail;
+  const handleScheduleClickFromList = openScheduleDetail;
 
   return (
     <div style={{ display: 'flex', height: '100%', gap: 16, padding: 16 }}>

@@ -44,7 +44,8 @@ data class TeamScheduleDto(
     val accountId: Int?,
     val accountName: String?,
     val accountExternalKey: String?,
-    val isClockIn: Boolean
+    val isClockIn: Boolean,
+    val promotionId: Long?
 ) {
     companion object {
         fun from(schedule: TeamMemberSchedule): TeamScheduleDto {
@@ -60,7 +61,8 @@ data class TeamScheduleDto(
                 accountId = schedule.account?.id,
                 accountName = schedule.account?.name,
                 accountExternalKey = schedule.account?.externalKey,
-                isClockIn = schedule.commuteLogSfid != null
+                isClockIn = schedule.commuteLogSfid != null,
+                promotionId = schedule.promotionEmployee?.promotionId
             )
         }
     }

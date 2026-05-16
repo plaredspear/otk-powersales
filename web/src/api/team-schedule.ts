@@ -32,6 +32,7 @@ export interface TeamSchedule {
   accountName: string | null;
   accountExternalKey: string | null;
   isClockIn: boolean;
+  promotionId: number | null;
 }
 
 export interface DailySummary {
