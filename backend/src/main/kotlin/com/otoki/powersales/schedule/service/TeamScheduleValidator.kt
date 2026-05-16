@@ -33,15 +33,20 @@ class TeamScheduleValidator(
         }
     }
 
+    /**
+     * UC-13 양방향 잠금 — 여사원일정이 진열마스터에 lookup 으로 연결된 상태에서
+     * 수정·삭제 시도 시 차단 (ADMIN_GRADE 예외).
+     * 레거시 SF TeamMemberScheduleTrigger 의 chain 1-hop 차단 동등.
+     *
+     * 매칭 키: `schedule.displayWorkSchedule` (FK) — 레거시 SF lookup FK 매칭과 동등.
+     * (이전 값 매칭 — 사원·거래처·날짜 조합 — 은 false positive/negative 위험으로 FK 매칭으로 전환.
+     *  UC-06 단건 삭제 차단과 일관된 정책. FK 백필은 AttendanceService 진열 출근 경로에서 자동 채움)
+     */
     fun validateDisplayMasterLink(currentEmployee: Employee, schedule: TeamMemberSchedule) {
         if (currentEmployee.role in UserRole.ADMIN_GRADE) return
         if (schedule.workingCategory1 != WorkingCategory1.DISPLAY) return
 
-        val employeeId = schedule.employee?.id ?: return
-        val accountId = schedule.account?.id ?: return
-        val workingDate = schedule.workingDate ?: return
-
-        if (displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(employeeId, accountId, workingDate)) {
+        if (schedule.displayWorkSchedule != null) {
             throw TeamScheduleDisplayMasterLinkException()
         }
     }

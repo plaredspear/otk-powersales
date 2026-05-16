@@ -114,6 +114,10 @@ class AdminTeamScheduleServiceTest {
         isDeleted = isDeleted
     )
 
+    /** UC-13 FK 매칭 검증용 dummy DisplayWorkSchedule — id 만 있으면 됨 (validator 는 null 체크만 수행). */
+    private fun dummyDisplayMaster(): com.otoki.powersales.schedule.entity.DisplayWorkSchedule =
+        com.otoki.powersales.schedule.entity.DisplayWorkSchedule(id = 9999L)
+
     private fun createSchedule(
         id: Long = 1L,
         employeeId: Long? = 1L,
@@ -128,7 +132,8 @@ class AdminTeamScheduleServiceTest {
         accountName: String? = null,
         accountExternalKey: String? = null,
         teamLeaderId: Long? = 99L,
-        commuteLogSfid: String? = null
+        commuteLogSfid: String? = null,
+        displayWorkSchedule: com.otoki.powersales.schedule.entity.DisplayWorkSchedule? = null
     ): TeamMemberSchedule = TeamMemberSchedule(
         id = id,
         employee = employeeId?.let {
@@ -151,7 +156,8 @@ class AdminTeamScheduleServiceTest {
             )
         },
         teamLeader = teamLeaderId?.let { Employee(id = it, employeeCode = "EMP$it", name = "팀장$it") },
-        commuteLogSfid = commuteLogSfid
+        commuteLogSfid = commuteLogSfid,
+        displayWorkSchedule = displayWorkSchedule
     )
 
     // ========== getMembers ==========
@@ -892,8 +898,6 @@ class AdminTeamScheduleServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
-                .thenReturn(false)
             whenever(accountRepository.findById(2)).thenReturn(Optional.of(newAccount))
 
             // When
@@ -924,7 +928,7 @@ class AdminTeamScheduleServiceTest {
         @Test
         @DisplayName("진열마스터 연결 일정 수정 (일반 사용자) - DISPLAY_MASTER_LINK_CONSTRAINT")
         fun updateSchedule_displayMasterLinked_forbidden() {
-            // Given
+            // UC-13 FK 매칭 — schedule.displayWorkSchedule 가 진열마스터를 가리키는 일정은 LEADER 수정 차단
             val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(
                 id = 100L,
@@ -932,7 +936,8 @@ class AdminTeamScheduleServiceTest {
                 workingDate = LocalDate.of(2026, 4, 1),
                 workingType = WorkingType.WORK,
                 workingCategory1 = WorkingCategory1.DISPLAY,
-                accountId = 1
+                accountId = 1,
+                displayWorkSchedule = dummyDisplayMaster()
             )
 
             val request = TeamScheduleUpdateRequest(
@@ -945,8 +950,6 @@ class AdminTeamScheduleServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
-                .thenReturn(true)
 
             // When & Then
             assertThatThrownBy { service.updateSchedule(10L, 100L, request) }
@@ -983,7 +986,6 @@ class AdminTeamScheduleServiceTest {
             service.updateSchedule(10L, 100L, request)
 
             // Then (no exception thrown)
-            verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
         }
 
         @Test
@@ -1016,7 +1018,6 @@ class AdminTeamScheduleServiceTest {
             service.updateSchedule(10L, 100L, request)
 
             // Then (no exception thrown)
-            verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
         }
 
         @Test
@@ -1045,8 +1046,6 @@ class AdminTeamScheduleServiceTest {
 
             whenever(adminEmployeeHolder.employee).thenReturn(currentUser)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, yesterday))
-                .thenReturn(false)
 
             // When & Then
             assertThatThrownBy { service.updateSchedule(10L, 100L, request) }
@@ -1140,8 +1139,6 @@ class AdminTeamScheduleServiceTest {
 
             whenever(adminEmployeeHolder.employee).thenReturn(currentUser)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, yesterday))
-                .thenReturn(false)
 
             // When
             service.updateSchedule(10L, 100L, request)
@@ -1177,8 +1174,6 @@ class AdminTeamScheduleServiceTest {
 
             whenever(adminEmployeeHolder.employee).thenReturn(currentUser)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, today))
-                .thenReturn(false)
             whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, tomorrow))
                 .thenReturn(emptyList())
 
@@ -1216,8 +1211,6 @@ class AdminTeamScheduleServiceTest {
 
             whenever(adminEmployeeHolder.employee).thenReturn(currentUser)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, tomorrow))
-                .thenReturn(false)
             whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, dayAfter))
                 .thenReturn(emptyList())
 
@@ -1256,7 +1249,6 @@ class AdminTeamScheduleServiceTest {
             service.updateSchedule(10L, 100L, request)
 
             // Then (no exception, no display master check)
-            verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
         }
 
         @Test
@@ -1282,8 +1274,6 @@ class AdminTeamScheduleServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
-                .thenReturn(false)
 
             // When & Then
             assertThatThrownBy { service.updateSchedule(10L, 100L, request) }
@@ -1342,8 +1332,6 @@ class AdminTeamScheduleServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(currentUser)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
-                .thenReturn(false)
 
             // When
             service.updateSchedule(10L, 100L, request)
@@ -1369,8 +1357,6 @@ class AdminTeamScheduleServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
-                .thenReturn(false)
 
             // When
             service.deleteSchedule(10L, 100L)
@@ -1447,8 +1433,6 @@ class AdminTeamScheduleServiceTest {
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
-                .thenReturn(false)
 
             // When
             service.deleteSchedule(10L, 100L)
@@ -1460,14 +1444,16 @@ class AdminTeamScheduleServiceTest {
         @Test
         @DisplayName("진열마스터 연결 일정 삭제 (일반 사용자) - DISPLAY_MASTER_LINK_CONSTRAINT")
         fun deleteSchedule_displayMasterLinked_forbidden() {
-            // Given
+            // UC-13 FK 매칭 — schedule.displayWorkSchedule 가 진열마스터를 가리키는 일정은 LEADER 삭제 차단
             val leader = createEmployee(id = 10L, role = UserRole.LEADER)
-            val schedule = createSchedule(id = 100L, commuteLogSfid = null, workingCategory1 = WorkingCategory1.DISPLAY)
+            val schedule = createSchedule(
+                id = 100L, commuteLogSfid = null,
+                workingCategory1 = WorkingCategory1.DISPLAY,
+                displayWorkSchedule = dummyDisplayMaster()
+            )
 
             whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(leader)
             whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(displayWorkScheduleRepository.existsConfirmedByEmployeeAndAccountAndDate(1L, 1, LocalDate.of(2026, 4, 1)))
-                .thenReturn(true)
 
             // When & Then
             assertThatThrownBy { service.deleteSchedule(10L, 100L) }
@@ -1490,7 +1476,6 @@ class AdminTeamScheduleServiceTest {
 
             // Then
             verify(teamMemberScheduleRepository).delete(schedule)
-            verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
         }
 
         @Test
@@ -1508,7 +1493,6 @@ class AdminTeamScheduleServiceTest {
 
             // Then
             verify(teamMemberScheduleRepository).delete(schedule)
-            verify(displayWorkScheduleRepository, never()).existsConfirmedByEmployeeAndAccountAndDate(any(), any(), any())
         }
     }
 }
