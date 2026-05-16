@@ -80,8 +80,8 @@ class AdminScheduleService(
             throw MissingCostCenterException()
         }
 
-        val org = organizationRepository.findFirstByCostCenterLevel5(costCenterCode)
-            ?: organizationRepository.findFirstByCostCenterLevel4(costCenterCode)
+        // cost_center 컬럼 cascade (Level5 → Level4) — 정책은 OrganizationRepository 에 응집
+        val org = organizationRepository.findFirstByCostCenterCascade(costCenterCode)
             ?: throw OrganizationNotFoundException()
 
         val employees = if (employee.role == UserRole.SALES_SUPPORT) {

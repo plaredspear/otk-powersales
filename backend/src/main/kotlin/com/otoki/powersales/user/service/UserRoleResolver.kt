@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service
  *
  * 동작 요약:
  *  - 입력: `Employee.costCenterCode`
- *  - 외부 호출: `OrganizationRepository.findFirstByCostCenterCodeCascade()`
+ *  - 외부 호출: `OrganizationRepository.findFirstByOrgCodeCascade()`
  *  - 분기: 4가지 (Level4 contains / Level3 contains / Level4 == 영업본부 / Level3 == 영업본부)
  *  - 부수 효과: 없음 (순수 산출).
  */
@@ -34,10 +34,9 @@ class UserRoleResolver(
     fun isSalesSupport(employee: Employee): Boolean {
         val costCenterCode = employee.costCenterCode
         if (costCenterCode.isNullOrEmpty()) return false
-        // SF AppointmentTriggerHanlder.cls:264-271, 297-311 동등 — Level5 → Level4 → Level3 cascade
-        val org = organizationRepository.findFirstByOrgCodeLevel5(costCenterCode)
-            ?: organizationRepository.findFirstByOrgCodeLevel4(costCenterCode)
-            ?: organizationRepository.findFirstByOrgCodeLevel3(costCenterCode)
+        // SF AppointmentTriggerHanlder.cls:264-271, 297-311 동등 — org_code Level5 → Level4 → Level3 cascade.
+        // cascade 정책은 OrganizationRepository.findFirstByOrgCodeCascade 에 응집.
+        val org = organizationRepository.findFirstByOrgCodeCascade(costCenterCode)
             ?: return false
         val level4 = org.orgNameLevel4.orEmpty()
         val level3 = org.orgNameLevel3.orEmpty()

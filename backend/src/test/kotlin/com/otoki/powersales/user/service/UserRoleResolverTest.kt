@@ -61,9 +61,8 @@ class UserRoleResolverTest {
     @Test
     @DisplayName("Organization lookup 실패 → false")
     fun orgMissing() {
-        whenever(organizationRepository.findFirstByOrgCodeLevel5("0000")).thenReturn(null)
-        whenever(organizationRepository.findFirstByOrgCodeLevel4("0000")).thenReturn(null)
-        whenever(organizationRepository.findFirstByOrgCodeLevel3("0000")).thenReturn(null)
+        // cascade Level5→4→3 모두 miss → null. Resolver 는 false 반환.
+        whenever(organizationRepository.findFirstByOrgCodeCascade("0000")).thenReturn(null)
         val employee = createEmployee(costCenterCode = "0000")
 
         assertThat(resolver.isSalesSupport(employee)).isFalse
@@ -106,7 +105,9 @@ class UserRoleResolverTest {
     }
 
     private fun stubOrg(costCenterCode: String, orgNameLevel4: String?, orgNameLevel3: String?) {
-        whenever(organizationRepository.findFirstByOrgCodeLevel5(costCenterCode))
+        // cascade 메커니즘 자체는 OrganizationRepositoryCustomImpl 의 책임 — resolver 테스트는
+        // cascade 결과 Org 만 stub 하고 resolver 의 정책 분기를 검증.
+        whenever(organizationRepository.findFirstByOrgCodeCascade(costCenterCode))
             .thenReturn(Organization(orgNameLevel4 = orgNameLevel4, orgNameLevel3 = orgNameLevel3))
     }
 

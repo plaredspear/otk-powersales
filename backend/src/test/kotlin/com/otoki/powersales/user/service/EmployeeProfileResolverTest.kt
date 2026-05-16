@@ -134,11 +134,10 @@ class EmployeeProfileResolverTest {
     }
 
     @Test
-    @DisplayName("[Edge] Organization cascade lookup 모두 실패 → STAFF 디폴트")
+    @DisplayName("[Edge] Organization cascade lookup 실패 → STAFF 디폴트")
     fun orgLookupAllMissing() {
-        whenever(organizationRepository.findFirstByOrgCodeLevel5("9999")).thenReturn(null)
-        whenever(organizationRepository.findFirstByOrgCodeLevel4("9999")).thenReturn(null)
-        whenever(organizationRepository.findFirstByOrgCodeLevel3("9999")).thenReturn(null)
+        // cascade Level5→4→3 모두 miss → null. Resolver 는 STAFF 디폴트.
+        whenever(organizationRepository.findFirstByOrgCodeCascade("9999")).thenReturn(null)
         val employee = createEmployee(costCenterCode = "9999", jikchak = "사업부장")
 
         assertThat(resolver.resolve(employee)).isEqualTo(ProfileType.STAFF)
@@ -162,10 +161,11 @@ class EmployeeProfileResolverTest {
     }
 
     @Test
-    @DisplayName("[Cascade] OrgCodeLevel5 miss → OrgCodeLevel4 hit → orgCodeLevel3 매칭 분기 평가")
+    @DisplayName("[Cascade] cascade lookup 결과 (Level3 hit 등) — resolver 는 cascade 메커니즘 비인지")
     fun cascadeLevel4Hit() {
-        whenever(organizationRepository.findFirstByOrgCodeLevel5("5066")).thenReturn(null)
-        whenever(organizationRepository.findFirstByOrgCodeLevel4("5066")).thenReturn(
+        // cascade 메커니즘 (Level5/4/3 순서) 자체는 OrganizationRepositoryCustomImpl 의 책임.
+        // resolver 테스트는 "cascade 가 Org 를 돌려주면 정책 분기가 의도대로 평가되는가" 만 검증.
+        whenever(organizationRepository.findFirstByOrgCodeCascade("5066")).thenReturn(
             organization(orgCodeLevel3 = "5066")
         )
         val employee = createEmployee(costCenterCode = "5066", jikchak = "사원")
@@ -174,7 +174,7 @@ class EmployeeProfileResolverTest {
     }
 
     private fun stubOrg(costCenterCode: String, orgCodeLevel3: String?) {
-        whenever(organizationRepository.findFirstByOrgCodeLevel5(costCenterCode))
+        whenever(organizationRepository.findFirstByOrgCodeCascade(costCenterCode))
             .thenReturn(organization(orgCodeLevel3 = orgCodeLevel3))
     }
 

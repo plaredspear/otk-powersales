@@ -118,7 +118,7 @@ class AdminScheduleServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(org)
             whenever(
                 employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                     costCenterCode, UserRole.WOMAN, "재직"
@@ -169,8 +169,8 @@ class AdminScheduleServiceTest {
             val costCenterCode = "0000"
             val employee = createEmployee(costCenterCode = costCenterCode)
             whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(null)
-            whenever(organizationRepository.findFirstByCostCenterLevel4(costCenterCode)).thenReturn(null)
+            // cascade Level5→4 모두 miss → null. Service 는 OrganizationNotFoundException.
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(null)
 
             assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
                 .isInstanceOf(OrganizationNotFoundException::class.java)
@@ -185,7 +185,7 @@ class AdminScheduleServiceTest {
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(org)
             whenever(
                 employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                     costCenterCode, UserRole.WOMAN, "재직"
@@ -214,7 +214,7 @@ class AdminScheduleServiceTest {
             val emp3 = createEmployee(employeeCode = "20030003", name = "박여사", orgName = "B지점", costCenterCode = "3333")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(org)
             whenever(organizationRepository.findByCostCenterLevel3("CC3")).thenReturn(listOf(org, orgA, orgB))
             whenever(
                 employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
@@ -247,7 +247,7 @@ class AdminScheduleServiceTest {
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(org)
             whenever(
                 employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                     costCenterCode, UserRole.WOMAN, "재직"
@@ -283,7 +283,7 @@ class AdminScheduleServiceTest {
             val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterLevel5(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(org)
             whenever(organizationRepository.findByCostCenterLevel3("CC3")).thenReturn(listOf(org, orgA))
             whenever(
                 employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(

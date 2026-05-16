@@ -147,6 +147,52 @@ class OrganizationRepositoryCustomImpl(
             .fetchFirst()
     }
 
+    /**
+     * cost_center 컬럼 cascade lookup — Level5 → Level4.
+     *
+     * 단일 JPQL 로 통합하지 않고 Level5 → Level4 derived 쿼리를 순차 호출하는 이유:
+     *  - 첫 번째 hit 시 두 번째 쿼리 short-circuit (?: 단락 평가) — 다수 케이스에서 SELECT 1회로 종료
+     *  - 단일 JPQL 통합 시 CASE-ORDER BY 가 필요해져 plan 복잡도 증가 + 가독성 하락
+     *
+     * 정책 변경(예: Level3 추가) 시 본 메서드 본문만 수정.
+     */
+    override fun findFirstByCostCenterCascade(costCenterCode: String): Organization? {
+        return queryFactory
+            .selectFrom(organization)
+            .where(organization.costCenterLevel5.eq(costCenterCode))
+            .limit(1)
+            .fetchFirst()
+            ?: queryFactory
+                .selectFrom(organization)
+                .where(organization.costCenterLevel4.eq(costCenterCode))
+                .limit(1)
+                .fetchFirst()
+    }
+
+    /**
+     * org_code 컬럼 cascade lookup — Level5 → Level4 → Level3.
+     *
+     * 호출자: `EmployeeProfileResolver`, `UserRoleResolver` (SF AppointmentTriggerHanlder cascade 정합).
+     * cascade 순서 변경 시 본 메서드 본문만 수정.
+     */
+    override fun findFirstByOrgCodeCascade(orgCode: String): Organization? {
+        return queryFactory
+            .selectFrom(organization)
+            .where(organization.orgCodeLevel5.eq(orgCode))
+            .limit(1)
+            .fetchFirst()
+            ?: queryFactory
+                .selectFrom(organization)
+                .where(organization.orgCodeLevel4.eq(orgCode))
+                .limit(1)
+                .fetchFirst()
+            ?: queryFactory
+                .selectFrom(organization)
+                .where(organization.orgCodeLevel3.eq(orgCode))
+                .limit(1)
+                .fetchFirst()
+    }
+
     override fun expandCostCenterCodes(costCenterCodes: List<String>): List<String> {
         if (costCenterCodes.isEmpty()) return emptyList()
 
