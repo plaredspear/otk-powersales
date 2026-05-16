@@ -2,8 +2,10 @@ package com.otoki.powersales.schedule.service
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleConfirmResultDto
+import com.otoki.powersales.schedule.dto.response.ScheduleCreateResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleListItemDto
 import com.otoki.powersales.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.schedule.exception.*
@@ -332,6 +334,103 @@ class AdminScheduleService(
         }
 
         return ScheduleBatchConfirmResultDto(updatedCount = updatedCount)
+    }
+
+    /**
+     * 단건 신규 등록.
+     * 레거시 SF DisplayWorkScheduleMasterTriggerHandler before insert 의 검증 + before insert 의 자동채움
+     * (전월 매출액 / costCenterCode / ownerUser) 을 단건 시나리오로 적용한다.
+     */
+    @Transactional
+    fun createSchedule(request: AdminScheduleCreateRequest): ScheduleCreateResultDto {
+        val employee = employeeRepository.findByEmployeeCode(request.employeeCode).orElse(null)
+        val account = accountRepository.findByExternalKey(request.accountCode)
+
+        // 동일 사원 기존 스케줄 조회 (V8 + C1~C3 검증용). 사원이 존재할 때만 조회.
+        val existingSchedules = if (employee != null) {
+            scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(employee.id))
+        } else {
+            emptyList()
+        }
+
+        val result = uploadValidator.validateSingle(
+            employeeCode = request.employeeCode,
+            accountCode = request.accountCode,
+            typeOfWork3 = request.typeOfWork3,
+            typeOfWork4 = request.typeOfWork4,
+            typeOfWork5 = request.typeOfWork5,
+            startDate = request.startDate,
+            endDate = request.endDate,
+            employee = employee,
+            account = account,
+            existingSchedules = existingSchedules
+        )
+
+        if (result.validatedRow == null) {
+            throw ScheduleValidationException(result.messages.joinToString("; "))
+        }
+
+        val validatedRow = result.validatedRow
+
+        // 자동채움 1: 전월 매출액 (월별 매출 이력에서 lastMonth 의 lastMonthResults 조회)
+        val today = LocalDate.now()
+        val lastMonth = today.minusMonths(1)
+        val salesYear = SalesYear.fromValueOrNull(lastMonth.year.toString())
+        val salesMonth = SalesMonth.fromValueOrNull(String.format("%02d", lastMonth.monthValue))
+        val lastMonthRevenue = if (account != null && salesYear != null && salesMonth != null) {
+            monthlySalesHistoryRepository
+                .findBySalesYearAndSalesMonthAndAccountIn(salesYear, salesMonth, listOf(account))
+                .firstOrNull()
+                ?.lastMonthResults
+                ?.setScale(0, java.math.RoundingMode.HALF_UP)
+        } else {
+            null
+        }
+
+        // 자동채움 2: 소속 조장 사용자 (조장 Employee.employeeCode → User)
+        val costCenterCode = validatedRow.costCenterCode
+        val ownerUser = if (!costCenterCode.isNullOrBlank()) {
+            val leaders = employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
+                listOf(costCenterCode), UserRole.LEADER
+            )
+            leaders.firstOrNull()
+                ?.employeeCode
+                ?.let { code -> userRepository.findByEmployeeCodeIn(listOf(code)).firstOrNull() }
+        } else {
+            null
+        }
+
+        val entity = DisplayWorkSchedule(
+            employee = employee,
+            account = account,
+            typeOfWork1 = TypeOfWork1.DISPLAY,
+            typeOfWork3 = TypeOfWork3.fromDisplayNameOrNull(validatedRow.typeOfWork3),
+            typeOfWork4 = SecondWorkType.fromDisplayNameOrNull(validatedRow.typeOfWork4),
+            typeOfWork5 = TypeOfWork5.fromDisplayNameOrNull(validatedRow.typeOfWork5),
+            startDate = validatedRow.startDate,
+            endDate = validatedRow.endDate,
+            confirmed = false,
+            costCenterCode = costCenterCode,
+            lastMonthRevenue = lastMonthRevenue,
+            ownerUser = ownerUser
+        )
+
+        val saved = scheduleRepository.save(entity)
+
+        return ScheduleCreateResultDto(
+            id = saved.id,
+            employeeCode = employee?.employeeCode ?: "",
+            employeeName = employee?.name ?: "",
+            accountCode = account?.externalKey,
+            accountName = account?.name,
+            typeOfWork3 = saved.typeOfWork3?.displayName,
+            typeOfWork4 = saved.typeOfWork4?.displayName,
+            typeOfWork5 = saved.typeOfWork5?.displayName,
+            startDate = saved.startDate,
+            endDate = saved.endDate,
+            costCenterCode = saved.costCenterCode,
+            lastMonthRevenue = saved.lastMonthRevenue?.toLong()
+        )
     }
 
     @Transactional

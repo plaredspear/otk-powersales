@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
 import com.otoki.powersales.schedule.dto.response.*
@@ -194,6 +195,93 @@ class AdminScheduleControllerTest {
                     .param("sortDir", "asc")
             )
                 .andExpect(status().isOk)
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/admin/schedule - 단건 신규 등록")
+    inner class CreateSchedule {
+
+        @Test
+        @DisplayName("성공 - 등록 결과 반환")
+        fun create_success() {
+            val request = AdminScheduleCreateRequest(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = null
+            )
+            val result = ScheduleCreateResultDto(
+                id = 1L,
+                employeeCode = "20030001",
+                employeeName = "홍길동",
+                accountCode = "ACC001",
+                accountName = "이마트 강남점",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = null,
+                costCenterCode = "A10010",
+                lastMonthRevenue = 5000000L
+            )
+            whenever(adminScheduleService.createSchedule(any())).thenReturn(result)
+
+            mockMvc.perform(
+                post("/api/v1/admin/schedule")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.employeeName").value("홍길동"))
+                .andExpect(jsonPath("$.data.accountName").value("이마트 강남점"))
+                .andExpect(jsonPath("$.data.lastMonthRevenue").value(5000000))
+                .andExpect(jsonPath("$.message").value("스케줄이 등록되었습니다"))
+        }
+
+        @Test
+        @DisplayName("실패 - 검증 에러 (ScheduleValidationException 400)")
+        fun create_validationFailure() {
+            val request = AdminScheduleCreateRequest(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = null
+            )
+            whenever(adminScheduleService.createSchedule(any()))
+                .thenThrow(ScheduleValidationException("기간내에 동일한 거래처가 등록되어 있습니다"))
+
+            mockMvc.perform(
+                post("/api/v1/admin/schedule")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("SCHEDULE_VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.error.message").value("기간내에 동일한 거래처가 등록되어 있습니다"))
+        }
+
+        @Test
+        @DisplayName("실패 - 필수 파라미터 누락 (employeeCode blank)")
+        fun create_blankEmployeeCode() {
+            val invalidBody = """
+                {"employeeCode":"","accountCode":"ACC001","typeOfWork3":"고정","typeOfWork4":"상온","typeOfWork5":"상시","startDate":"2026-05-01"}
+            """.trimIndent()
+
+            mockMvc.perform(
+                post("/api/v1/admin/schedule")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(invalidBody)
+            )
+                .andExpect(status().isBadRequest)
         }
     }
 

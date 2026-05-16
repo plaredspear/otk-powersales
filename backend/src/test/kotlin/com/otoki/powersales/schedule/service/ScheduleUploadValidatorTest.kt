@@ -667,6 +667,125 @@ class ScheduleUploadValidatorTest {
         )
     }
 
+    @Nested
+    @DisplayName("validateSingle - 단건 등록 검증")
+    inner class ValidateSingleTests {
+
+        private val employee = createEmployee("20030001", "홍길동", "USR001", "재직")
+        private val account = createAccount("ACC001", "ACC_SFID_001", "이마트 강남점", id = 1)
+
+        @Test
+        @DisplayName("정상 데이터 - 검증 통과")
+        fun validateSingle_success() {
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = null,
+                employee = employee,
+                account = account,
+                existingSchedules = emptyList()
+            )
+
+            assertThat(result.messages).isEmpty()
+            assertThat(result.validatedRow).isNotNull
+            assertThat(result.validatedRow!!.userEmployeeCode).isEqualTo("20030001")
+        }
+
+        @Test
+        @DisplayName("사원 미존재 - 에러 메시지 + validatedRow null")
+        fun validateSingle_employeeNotFound() {
+            val result = validator.validateSingle(
+                employeeCode = "99999999",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = null,
+                employee = null,
+                account = account,
+                existingSchedules = emptyList()
+            )
+
+            assertThat(result.messages).anyMatch { it.contains("존재하지 않는 사원") }
+            assertThat(result.validatedRow).isNull()
+        }
+
+        @Test
+        @DisplayName("V4 시작일이 종료일보다 늦음 - 에러")
+        fun validateSingle_startDateAfterEndDate() {
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 10),
+                endDate = LocalDate.of(2026, 5, 1),
+                employee = employee,
+                account = account,
+                existingSchedules = emptyList()
+            )
+
+            assertThat(result.messages).anyMatch { it.contains("시작일이 종료일보다 이후") }
+            assertThat(result.validatedRow).isNull()
+        }
+
+        @Test
+        @DisplayName("V7 임시 + 고정 - 차단")
+        fun validateSingle_temporaryWithFixed() {
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "임시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = LocalDate.of(2026, 5, 31),
+                employee = employee,
+                account = account,
+                existingSchedules = emptyList()
+            )
+
+            assertThat(result.messages).anyMatch { it.contains("임시 배치는 순회만 가능") }
+            assertThat(result.validatedRow).isNull()
+        }
+
+        @Test
+        @DisplayName("V8 동일 거래처/사원 기간 중복 - 차단")
+        fun validateSingle_duplicateAccount() {
+            val existing = DisplayWorkSchedule(
+                id = 1L,
+                employee = employee,
+                account = account,
+                typeOfWork3 = TypeOfWork3.FIXED,
+                typeOfWork5 = TypeOfWork5.REGULAR,
+                startDate = LocalDate.of(2026, 4, 1),
+                endDate = LocalDate.of(2026, 6, 30)
+            )
+
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "순회",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = LocalDate.of(2026, 5, 31),
+                employee = employee,
+                account = account,
+                existingSchedules = listOf(existing)
+            )
+
+            assertThat(result.messages).anyMatch { it.contains("기간내에 동일한 거래처") }
+            assertThat(result.validatedRow).isNull()
+        }
+    }
+
     private fun createEmployee(
         employeeCode: String,
         name: String,

@@ -1,9 +1,11 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleConfirmResultDto
+import com.otoki.powersales.schedule.dto.response.ScheduleCreateResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleListItemDto
 import com.otoki.powersales.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.schedule.enums.SchedulePreset
@@ -103,6 +105,15 @@ class AdminScheduleController(
         return ResponseEntity.ok()
             .headers(headers)
             .body(result.bytes)
+    }
+
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @PostMapping
+    fun createSchedule(
+        @Valid @RequestBody request: AdminScheduleCreateRequest
+    ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
+        val result = adminScheduleService.createSchedule(request)
+        return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 등록되었습니다"))
     }
 
     @RequiresPermission(AdminPermission.SCHEDULE_WRITE)

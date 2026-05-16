@@ -3,6 +3,7 @@ package com.otoki.powersales.schedule.service
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.entity.UserRole
 import tools.jackson.databind.json.JsonMapper
+import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.response.RowPreview
 import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
@@ -994,6 +995,174 @@ class AdminScheduleServiceTest {
 
             assertThatThrownBy { adminScheduleService.deleteSchedule(userId, scheduleId) }
                 .isInstanceOf(ScheduleDeleteConstraintException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("createSchedule - 단건 신규 등록")
+    inner class CreateScheduleTests {
+
+        private val baseRequest = AdminScheduleCreateRequest(
+            employeeCode = "20030001",
+            accountCode = "ACC001",
+            typeOfWork3 = "고정",
+            typeOfWork4 = "상온",
+            typeOfWork5 = "상시",
+            startDate = LocalDate.of(2026, 5, 1),
+            endDate = null
+        )
+
+        @Test
+        @DisplayName("정상 등록 - validator 통과 + 자동채움 적용 후 저장")
+        fun createSchedule_success() {
+            val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val account = createAccount(id = 1, externalKey = "ACC001", name = "이마트 강남점")
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1), endDate = null,
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
+            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
+            whenever(uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList())
+            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
+                .thenReturn(emptyList())
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))))
+                .thenReturn(emptyList())
+            whenever(scheduleRepository.save(any<DisplayWorkSchedule>())).thenAnswer { it.getArgument<DisplayWorkSchedule>(0) }
+
+            val result = adminScheduleService.createSchedule(baseRequest)
+
+            assertThat(result.employeeCode).isEqualTo("20030001")
+            assertThat(result.accountCode).isEqualTo("ACC001")
+            assertThat(result.typeOfWork3).isEqualTo("고정")
+            assertThat(result.costCenterCode).isEqualTo("A10010")
+            verify(scheduleRepository).save(argThat<DisplayWorkSchedule> {
+                this.employee?.id == 1L &&
+                    this.account?.id == 1 &&
+                    this.typeOfWork1 == TypeOfWork1.DISPLAY &&
+                    this.confirmed == false &&
+                    this.costCenterCode == "A10010"
+            })
+        }
+
+        @Test
+        @DisplayName("검증 실패 - validator 메시지로 ScheduleValidationException")
+        fun createSchedule_validationFailure() {
+            val employee = createEmployee(id = 1L, employeeCode = "20030001")
+            val account = createAccount(id = 1, externalKey = "ACC001")
+
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
+            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
+            whenever(uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList())
+            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(
+                listOf("기간내에 동일한 거래처가 등록되어 있습니다"), null
+            ))
+
+            assertThatThrownBy { adminScheduleService.createSchedule(baseRequest) }
+                .isInstanceOf(ScheduleValidationException::class.java)
+                .hasMessageContaining("기간내에 동일한 거래처가 등록되어 있습니다")
+
+            verify(scheduleRepository, never()).save(any<DisplayWorkSchedule>())
+        }
+
+        @Test
+        @DisplayName("사원 미존재 - validator 가 결정 + 에러 메시지 포함")
+        fun createSchedule_employeeNotFound() {
+            val account = createAccount(id = 1, externalKey = "ACC001")
+            whenever(employeeRepository.findByEmployeeCode("99999999")).thenReturn(Optional.empty())
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
+            whenever(uploadValidator.validateSingle(
+                eq("99999999"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(LocalDate.of(2026, 5, 1)), isNull(), isNull(), eq(account), eq(emptyList())
+            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(
+                listOf("사원번호 99999999: 존재하지 않는 사원"), null
+            ))
+
+            assertThatThrownBy {
+                adminScheduleService.createSchedule(baseRequest.copy(employeeCode = "99999999"))
+            }.isInstanceOf(ScheduleValidationException::class.java)
+                .hasMessageContaining("존재하지 않는 사원")
+        }
+
+        @Test
+        @DisplayName("조장 매칭 - 조장 User 가 ownerUser 로 설정됨")
+        fun createSchedule_ownerLeader() {
+            val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val account = createAccount(id = 1, externalKey = "ACC001")
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1), endDate = null,
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+            val leaderEmp = createEmployee(employeeCode = "20030099", costCenterCode = "A10010", role = UserRole.LEADER)
+            val leaderUser = createUser(id = 1099L, employeeCode = "20030099")
+
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
+            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
+            whenever(uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList())
+            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
+                .thenReturn(listOf(leaderEmp))
+            whenever(userRepository.findByEmployeeCodeIn(listOf("20030099"))).thenReturn(listOf(leaderUser))
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))))
+                .thenReturn(emptyList())
+            whenever(scheduleRepository.save(any<DisplayWorkSchedule>())).thenAnswer { it.getArgument<DisplayWorkSchedule>(0) }
+
+            adminScheduleService.createSchedule(baseRequest)
+
+            verify(scheduleRepository).save(argThat<DisplayWorkSchedule> {
+                this.ownerUser?.id == 1099L
+            })
+        }
+
+        @Test
+        @DisplayName("전월 매출 자동채움 - lastMonthRevenue BigDecimal 매핑")
+        fun createSchedule_lastMonthRevenue() {
+            val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val account = Account(id = 1, externalKey = "ACC001")
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1), endDate = null,
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+            val salesHistory = MonthlySalesHistory(
+                id = 1, account = account, lastMonthResults = BigDecimal("3500000")
+            )
+
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
+            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
+            whenever(uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList())
+            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
+                .thenReturn(emptyList())
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))))
+                .thenReturn(listOf(salesHistory))
+            whenever(scheduleRepository.save(any<DisplayWorkSchedule>())).thenAnswer { it.getArgument<DisplayWorkSchedule>(0) }
+
+            val result = adminScheduleService.createSchedule(baseRequest)
+
+            assertThat(result.lastMonthRevenue).isEqualTo(3500000L)
+            verify(scheduleRepository).save(argThat<DisplayWorkSchedule> {
+                this.lastMonthRevenue?.compareTo(BigDecimal("3500000")) == 0
+            })
         }
     }
 

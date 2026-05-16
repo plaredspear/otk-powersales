@@ -19,7 +19,7 @@ import {
   Tag,
   Modal,
 } from 'antd';
-import { DownloadOutlined, UploadOutlined, SearchOutlined, UndoOutlined } from '@ant-design/icons';
+import { DownloadOutlined, UploadOutlined, SearchOutlined, UndoOutlined, PlusOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useScheduleUpload';
@@ -28,6 +28,7 @@ import { useScheduleBatchConfirm, useScheduleBatchUnconfirm } from '@/hooks/sche
 import { downloadScheduleTemplate } from '@/api/schedule';
 import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, SchedulePreset } from '@/api/schedule';
 import { PresetFilterSelect, type PresetOption } from '@/components/common/PresetFilterSelect';
+import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
 
 /**
  * 레거시 SF List View 10개 매핑 — `docs/plan/legacy-pages/진열사원스케줄마스터/UC-01.md` 참조.
@@ -136,6 +137,7 @@ export default function DisplaySchedulePage() {
   }>({});
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const scheduleListQuery = useScheduleList({
     page: listPage,
@@ -283,6 +285,12 @@ export default function DisplaySchedulePage() {
           <Space>
             <Button
               type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              신규 등록
+            </Button>
+            <Button
               icon={<DownloadOutlined />}
               loading={downloading}
               onClick={handleDownload}
@@ -520,6 +528,14 @@ export default function DisplaySchedulePage() {
           }}
         />
       </Card>
+
+      <ScheduleCreateModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={() => {
+          scheduleListQuery.refetch();
+        }}
+      />
     </div>
   );
 }

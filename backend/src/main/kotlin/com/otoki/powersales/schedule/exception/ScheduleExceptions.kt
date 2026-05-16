@@ -62,3 +62,9 @@ class ScheduleDeleteConstraintException : BusinessException(
     message = "확정된 스케줄에 연결된 여사원 일정이 존재하여 삭제할 수 없습니다",
     httpStatus = HttpStatus.CONFLICT
 )
+
+class ScheduleValidationException(message: String) : BusinessException(
+    errorCode = "SCHEDULE_VALIDATION_FAILED",
+    message = message,
+    httpStatus = HttpStatus.BAD_REQUEST
+)

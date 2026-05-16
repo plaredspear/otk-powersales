@@ -252,6 +252,155 @@ class ScheduleUploadValidator {
         return ValidationResult(errors = errors, previews = previews, validRows = validRows)
     }
 
+    /**
+     * 단건 등록 검증.
+     * 레거시 DisplayWorkScheduleMasterTriggerHandler before insert 의 검증 룰을 단건에 적용한다.
+     * 위반 시 SingleValidationFailure(`messages` 목록) 반환. 정상이면 ValidatedRow 반환.
+     */
+    fun validateSingle(
+        employeeCode: String,
+        accountCode: String,
+        typeOfWork3: String,
+        typeOfWork4: String,
+        typeOfWork5: String,
+        startDate: LocalDate,
+        endDate: LocalDate?,
+        employee: Employee?,
+        account: Account?,
+        existingSchedules: List<DisplayWorkSchedule>
+    ): SingleValidationResult {
+        val messages = mutableListOf<String>()
+
+        // V1: 사원번호 존재
+        if (employee == null) {
+            messages.add("사원번호 $employeeCode: 존재하지 않는 사원")
+        }
+
+        // V2: 재직 상태 / 앱 로그인 — 종료일(endDate) 이 지난 경우만 차단 (유예 정책).
+        if (employee != null) {
+            val isInactive = employee.status != "재직" || employee.appLoginActive != true
+            val empEndDate = employee.endDate
+            if (isInactive && empEndDate != null && LocalDate.now().isAfter(empEndDate)) {
+                messages.add("사원번호 $employeeCode: 퇴직한 사원")
+            }
+        }
+
+        // V3: 거래처코드 존재
+        if (account == null) {
+            messages.add("거래처코드 $accountCode: 존재하지 않는 거래처")
+        }
+
+        // V3a: 거래처 폐업 상태
+        if (account != null && account.accountStatusName == "폐업") {
+            val isExempt = (account.accountGroup == "1000" || account.accountGroup == "1010") &&
+                (!account.distribution.isNullOrBlank() || account.abcTypeCode == "3062")
+            if (!isExempt) {
+                messages.add("거래처코드 $accountCode: 폐업 상태의 거래처입니다")
+            }
+        }
+
+        // V5: 근무형태3 유효성
+        if (typeOfWork3 !in VALID_WORK_TYPE3) {
+            messages.add("유효하지 않은 근무형태3 '$typeOfWork3'")
+        }
+
+        // V5a: 근무형태4 유효성
+        if (typeOfWork4 !in VALID_WORK_TYPE4) {
+            messages.add("유효하지 않은 근무형태4 '$typeOfWork4'")
+        }
+
+        // V6: 근무형태5 유효성
+        if (typeOfWork5 !in VALID_WORK_TYPE5) {
+            messages.add("유효하지 않은 근무형태5 '$typeOfWork5'")
+        }
+
+        // V7: 임시 + 순회만 허용
+        if (typeOfWork5 == "임시" && typeOfWork3 != "순회") {
+            messages.add("임시 배치는 순회만 가능합니다")
+        }
+
+        // V4: 시작일 <= 종료일
+        if (endDate != null && startDate.isAfter(endDate)) {
+            messages.add("시작일이 종료일보다 이후입니다")
+        }
+
+        // 기본 검증 실패 시 V8 / C1~C3 skip
+        if (messages.isNotEmpty() || employee == null || account == null) {
+            return SingleValidationResult(messages = messages, validatedRow = null)
+        }
+
+        val userId = employee.id
+        val accountIdVal = account.id
+
+        // V8: DB 기존 레코드와 기간 중복 검사 (동일 사원 + 동일 거래처)
+        val overlappingDb = existingSchedules.filter { schedule ->
+            schedule.employee?.id == userId &&
+                schedule.account?.id == accountIdVal &&
+                periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
+        }
+        if (overlappingDb.isNotEmpty()) {
+            messages.add("기간내에 동일한 거래처가 등록되어 있습니다")
+        }
+
+        // C1~C3: 동일 사원 + 동일 기간 근무유형 조합 규칙
+        if (messages.isEmpty()) {
+            val sameEmployeeSamePeriod = existingSchedules.filter { schedule ->
+                schedule.employee?.id == userId &&
+                    periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
+            }
+
+            val existingTypes = sameEmployeeSamePeriod.map {
+                Pair(it.typeOfWork3?.displayName, it.typeOfWork5?.displayName)
+            }
+
+            val hasFixed = existingTypes.any { it.first == "고정" }
+            if (hasFixed) {
+                messages.add("해당 기간에 고정 배치가 이미 존재합니다")
+            } else if (typeOfWork3 == "고정" && existingTypes.isNotEmpty()) {
+                messages.add("해당 기간에 다른 배치가 존재하여 고정을 추가할 수 없습니다")
+            } else if (typeOfWork3 == "격고") {
+                val existingAlternateCount = existingTypes.count { it.first == "격고" }
+                if (existingAlternateCount >= 2) {
+                    messages.add("격고 배치가 이미 2개 존재합니다")
+                } else {
+                    val hasPatrol = existingTypes.any { it.first == "순회" }
+                    if (hasPatrol && existingAlternateCount >= 1) {
+                        messages.add("순회 레코드가 존재하므로 격고는 1건만 등록 가능합니다")
+                    }
+                }
+            }
+            if (typeOfWork5 == "임시") {
+                val existingTempCount = existingTypes.count { it.second == "임시" }
+                if (existingTempCount >= 1) {
+                    messages.add("임시 배치가 이미 존재합니다")
+                }
+            }
+        }
+
+        if (messages.isNotEmpty()) {
+            return SingleValidationResult(messages = messages, validatedRow = null)
+        }
+
+        val validatedRow = ValidatedRow(
+            userId = userId,
+            userEmployeeCode = employee.employeeCode,
+            accountId = accountIdVal,
+            typeOfWork3 = typeOfWork3,
+            typeOfWork4 = typeOfWork4,
+            typeOfWork5 = typeOfWork5,
+            startDate = startDate,
+            endDate = endDate,
+            costCenterCode = employee.costCenterCode,
+            accountExternalKey = accountCode
+        )
+        return SingleValidationResult(messages = emptyList(), validatedRow = validatedRow)
+    }
+
+    data class SingleValidationResult(
+        val messages: List<String>,
+        val validatedRow: ValidatedRow?
+    )
+
     private fun periodsOverlap(
         start1: LocalDate?,
         end1: LocalDate?,

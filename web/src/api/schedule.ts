@@ -97,6 +97,31 @@ export interface ScheduleBatchConfirmResult {
   updatedCount: number;
 }
 
+export interface ScheduleCreateRequest {
+  employeeCode: string;
+  accountCode: string;
+  typeOfWork3: string;
+  typeOfWork4: string;
+  typeOfWork5: string;
+  startDate: string;
+  endDate?: string | null;
+}
+
+export interface ScheduleCreateResult {
+  id: number;
+  employeeCode: string;
+  employeeName: string;
+  accountCode: string | null;
+  accountName: string | null;
+  typeOfWork3: string | null;
+  typeOfWork4: string | null;
+  typeOfWork5: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  costCenterCode: string | null;
+  lastMonthRevenue: number | null;
+}
+
 
 // --- API functions ---
 
@@ -202,6 +227,17 @@ export async function batchConfirmSchedules(ids: number[]): Promise<ScheduleBatc
     throw new Error(res.data.error?.message || res.data.message || '일괄 확정에 실패했습니다');
   }
 
+  return res.data.data;
+}
+
+export async function createSchedule(payload: ScheduleCreateRequest): Promise<ScheduleCreateResult> {
+  const res = await client.post<ApiResponse<ScheduleCreateResult>>(
+    '/api/v1/admin/schedule',
+    payload,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '스케줄 등록에 실패했습니다');
+  }
   return res.data.data;
 }
 
