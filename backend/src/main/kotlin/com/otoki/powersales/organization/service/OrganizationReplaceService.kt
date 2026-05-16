@@ -1,10 +1,13 @@
 package com.otoki.powersales.organization.service
 
+import com.otoki.powersales.common.config.CacheConfig
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.organization.service.dto.OrganizationReplaceCommand
 import com.otoki.powersales.organization.service.dto.OrganizationReplaceResult
 import jakarta.persistence.EntityManager
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Caching
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -36,6 +39,25 @@ class OrganizationReplaceService(
     private val entityManager: EntityManager
 ) {
 
+    /**
+     * Organization 전체 교체 + 캐시 무효화.
+     *
+     * `@CacheEvict` 가 SAP daily sync 직후 [CacheConfig.CACHE_ORGANIZATION_CASCADE] /
+     * [CacheConfig.CACHE_TEAM_SCHEDULE_BRANCHES] 의 모든 entry 를 즉시 무효화한다.
+     * Organization row 가 전량 교체되었으므로 어떤 cascade lookup / branch 옵션 결과도
+     * stale 가능성이 있어 `allEntries = true`.
+     *
+     * `beforeInvocation = false` (기본) — 트랜잭션 커밋 후 evict. 적재 실패 시 evict 도 안 일어나
+     * 기존 캐시 보존 (정합 우선). 단 트랜잭션 advisory lock 안에서 동작하므로 동시 호출은 직렬화됨.
+     *
+     * NoOp profile (test / local) 에서는 evict 가 무동작 — 캐시 자체가 없으므로 시맨틱 동등.
+     */
+    @Caching(
+        evict = [
+            CacheEvict(value = [CacheConfig.CACHE_ORGANIZATION_CASCADE], allEntries = true),
+            CacheEvict(value = [CacheConfig.CACHE_TEAM_SCHEDULE_BRANCHES], allEntries = true),
+        ]
+    )
     @Transactional
     fun replaceAll(commands: List<OrganizationReplaceCommand>): OrganizationReplaceResult {
         acquireOrganizationLock()
