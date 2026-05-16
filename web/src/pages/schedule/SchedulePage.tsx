@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Spin } from 'antd';
+import { message, Spin } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAccounts';
 import { useTeamSchedules } from '@/hooks/team-schedule/useTeamSchedules';
@@ -96,7 +96,12 @@ export default function SchedulePage() {
   }, []);
 
   const openScheduleDetail = useCallback((schedule: TeamSchedule) => {
-    if (schedule.workingCategory1 === '행사' && schedule.promotionId != null) {
+    if (schedule.workingCategory1 === '행사') {
+      if (schedule.promotionId == null) {
+        message.warning('연결된 행사를 찾을 수 없습니다.');
+        return;
+      }
+      message.info('행사페이지가 안 뜰 경우 다시 클릭해주세요.');
       window.open(`/promotions/${schedule.promotionId}`, '_blank', 'noopener');
       return;
     }
