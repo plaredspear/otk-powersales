@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
+import com.otoki.powersales.schedule.dto.request.ScheduleBatchDeleteRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.enums.SchedulePreset
@@ -472,6 +473,86 @@ class AdminScheduleControllerTest {
             )
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_FOUND"))
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/admin/schedule/batch-delete - 일괄 삭제 (UC-07)")
+    inner class BatchDelete {
+
+        @Test
+        @DisplayName("성공 - partial success 결과 반환")
+        fun batchDelete_partialSuccess() {
+            val result = ScheduleBatchDeleteResultDto(
+                deletedCount = 2,
+                failedCount = 1,
+                failures = listOf(
+                    ScheduleBatchDeleteFailure(
+                        id = 21L,
+                        errorCode = "SCHEDULE_DELETE_CONSTRAINT",
+                        message = "확정된 스케줄에 연결된 여사원 일정이 존재하여 삭제할 수 없습니다"
+                    )
+                )
+            )
+            whenever(adminScheduleService.batchDelete(eq(1L), eq(listOf(21L, 22L, 23L))))
+                .thenReturn(result)
+
+            mockMvc.perform(
+                post("/api/v1/admin/schedule/batch-delete")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": [21, 22, 23]}""")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.deletedCount").value(2))
+                .andExpect(jsonPath("$.data.failedCount").value(1))
+                .andExpect(jsonPath("$.data.failures[0].id").value(21))
+                .andExpect(jsonPath("$.data.failures[0].errorCode").value("SCHEDULE_DELETE_CONSTRAINT"))
+                .andExpect(jsonPath("$.message").value("2건 삭제 / 1건 실패"))
+        }
+
+        @Test
+        @DisplayName("성공 - 전체 삭제")
+        fun batchDelete_allSucceed() {
+            val result = ScheduleBatchDeleteResultDto(
+                deletedCount = 3, failedCount = 0, failures = emptyList()
+            )
+            whenever(adminScheduleService.batchDelete(eq(1L), any())).thenReturn(result)
+
+            mockMvc.perform(
+                post("/api/v1/admin/schedule/batch-delete")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": [1, 2, 3]}""")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.deletedCount").value(3))
+                .andExpect(jsonPath("$.message").value("3건이 삭제되었습니다"))
+        }
+
+        @Test
+        @DisplayName("실패 - BRANCH_MANAGER → 403")
+        fun batchDelete_branchManagerForbidden() {
+            whenever(adminScheduleService.batchDelete(eq(1L), any()))
+                .thenThrow(ScheduleDeleteForbiddenException())
+
+            mockMvc.perform(
+                post("/api/v1/admin/schedule/batch-delete")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": [1, 2]}""")
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+        }
+
+        @Test
+        @DisplayName("실패 - 빈 ids 목록 → 400")
+        fun batchDelete_emptyIds() {
+            mockMvc.perform(
+                post("/api/v1/admin/schedule/batch-delete")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": []}""")
+            )
+                .andExpect(status().isBadRequest)
         }
     }
 

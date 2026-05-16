@@ -24,7 +24,7 @@ import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useScheduleUpload';
 import { useScheduleList } from '@/hooks/schedule/useScheduleList';
-import { useScheduleBatchConfirm, useScheduleBatchUnconfirm } from '@/hooks/schedule/useScheduleBatchConfirm';
+import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDelete } from '@/hooks/schedule/useScheduleBatchConfirm';
 import { downloadScheduleTemplate } from '@/api/schedule';
 import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, SchedulePreset } from '@/api/schedule';
 import { PresetFilterSelect, type PresetOption } from '@/components/common/PresetFilterSelect';
@@ -165,6 +165,7 @@ export default function DisplaySchedulePage() {
 
   const batchConfirmMutation = useScheduleBatchConfirm();
   const batchUnconfirmMutation = useScheduleBatchUnconfirm();
+  const batchDeleteMutation = useScheduleBatchDelete();
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -287,6 +288,40 @@ export default function DisplaySchedulePage() {
           setSelectedRowKeys([]);
         }).catch((err) => {
           message.error(err instanceof Error ? err.message : '확정 해제에 실패했습니다');
+        }),
+    });
+  };
+
+  const handleBatchDelete = () => {
+    const ids = selectedRowKeys as number[];
+    Modal.confirm({
+      title: '선택 삭제',
+      content: `${ids.length}건을 삭제하시겠습니까? (확정 + 여사원일정 연결 건은 차단됩니다)`,
+      okType: 'danger',
+      onOk: () =>
+        batchDeleteMutation.mutateAsync(ids).then((result) => {
+          setSelectedRowKeys([]);
+          if (result.failedCount === 0) {
+            message.success(`${result.deletedCount}건이 삭제되었습니다`);
+            return;
+          }
+          // partial success — 실패 사유 표시
+          Modal.info({
+            title: `삭제 결과: 성공 ${result.deletedCount}건 / 실패 ${result.failedCount}건`,
+            width: 560,
+            content: (
+              <div>
+                <p>다음 항목은 차단되어 삭제되지 않았습니다:</p>
+                <ul style={{ marginTop: 8 }}>
+                  {result.failures.map((f) => (
+                    <li key={f.id}>ID {f.id} — {f.message}</li>
+                  ))}
+                </ul>
+              </div>
+            ),
+          });
+        }).catch((err) => {
+          message.error(err instanceof Error ? err.message : '일괄 삭제에 실패했습니다');
         }),
     });
   };
@@ -507,6 +542,16 @@ export default function DisplaySchedulePage() {
             {selectedRowKeys.length > 0
               ? `확정 해제 (${selectedRowKeys.length}건 선택)`
               : '확정 해제'}
+          </Button>
+          <Button
+            danger
+            disabled={selectedRowKeys.length === 0}
+            loading={batchDeleteMutation.isPending}
+            onClick={handleBatchDelete}
+          >
+            {selectedRowKeys.length > 0
+              ? `선택 삭제 (${selectedRowKeys.length}건 선택)`
+              : '선택 삭제'}
           </Button>
         </Space>
 

@@ -54,6 +54,22 @@ data class ScheduleBatchConfirmResultDto(
     val updatedCount: Int
 )
 
+/**
+ * UC-07 일괄 삭제 결과 — partial success 지원.
+ * 레거시 SF Mass Delete 의 row-level 결과 형식 동등 (성공 건 + 실패 건 사유 분리).
+ */
+data class ScheduleBatchDeleteResultDto(
+    val deletedCount: Int,
+    val failedCount: Int,
+    val failures: List<ScheduleBatchDeleteFailure>
+)
+
+data class ScheduleBatchDeleteFailure(
+    val id: Long,
+    val errorCode: String,
+    val message: String
+)
+
 data class ScheduleCreateResultDto(
     val id: Long,
     val employeeCode: String,

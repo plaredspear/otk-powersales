@@ -3,8 +3,10 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
+import com.otoki.powersales.schedule.dto.request.ScheduleBatchDeleteRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
+import com.otoki.powersales.schedule.dto.response.ScheduleBatchDeleteResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleCreateResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleListItemDto
@@ -88,6 +90,21 @@ class AdminScheduleController(
     ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
         val result = adminScheduleService.updateSchedule(principal.requireEmployeeId(), id, request)
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 수정되었습니다"))
+    }
+
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @PostMapping("/batch-delete")
+    fun batchDelete(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @Valid @RequestBody request: ScheduleBatchDeleteRequest
+    ): ResponseEntity<ApiResponse<ScheduleBatchDeleteResultDto>> {
+        val result = adminScheduleService.batchDelete(principal.requireEmployeeId(), request.ids)
+        val message = when {
+            result.failedCount == 0 -> "${result.deletedCount}건이 삭제되었습니다"
+            result.deletedCount == 0 -> "모든 항목 삭제 실패 (${result.failedCount}건)"
+            else -> "${result.deletedCount}건 삭제 / ${result.failedCount}건 실패"
+        }
+        return ResponseEntity.ok(ApiResponse.success(result, message))
     }
 
     @RequiresPermission(AdminPermission.SCHEDULE_WRITE)

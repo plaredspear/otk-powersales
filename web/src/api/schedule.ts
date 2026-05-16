@@ -97,6 +97,18 @@ export interface ScheduleBatchConfirmResult {
   updatedCount: number;
 }
 
+export interface ScheduleBatchDeleteFailure {
+  id: number;
+  errorCode: string;
+  message: string;
+}
+
+export interface ScheduleBatchDeleteResult {
+  deletedCount: number;
+  failedCount: number;
+  failures: ScheduleBatchDeleteFailure[];
+}
+
 export interface ScheduleCreateRequest {
   employeeCode: string;
   accountCode: string;
@@ -250,6 +262,17 @@ export async function updateSchedule(id: number, payload: ScheduleUpdateRequest)
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message || res.data.message || '스케줄 수정에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function batchDeleteSchedules(ids: number[]): Promise<ScheduleBatchDeleteResult> {
+  const res = await client.post<ApiResponse<ScheduleBatchDeleteResult>>(
+    '/api/v1/admin/schedule/batch-delete',
+    { ids },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '일괄 삭제에 실패했습니다');
   }
   return res.data.data;
 }

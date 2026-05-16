@@ -5,6 +5,8 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
+import com.otoki.powersales.schedule.dto.response.ScheduleBatchDeleteFailure
+import com.otoki.powersales.schedule.dto.response.ScheduleBatchDeleteResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleCreateResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleListItemDto
@@ -554,6 +556,66 @@ class AdminScheduleService(
             endDate = schedule.endDate,
             costCenterCode = schedule.costCenterCode,
             lastMonthRevenue = schedule.lastMonthRevenue?.toLong()
+        )
+    }
+
+    /**
+     * UC-07 일괄 삭제 — partial success.
+     * 레거시 SF Mass Delete 와 동등 — 각 레코드에 UC-06 차단 룰 적용 후
+     * 차단된 건만 실패로 기록하고 나머지는 삭제 진행.
+     * BRANCH_MANAGER 는 전체 거부 (단건 deleteSchedule 정책과 동등).
+     */
+    @Transactional
+    fun batchDelete(userId: Long, ids: List<Long>): ScheduleBatchDeleteResultDto {
+        val user = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
+
+        if (user.role == UserRole.BRANCH_MANAGER) {
+            throw ScheduleDeleteForbiddenException()
+        }
+
+        val isAdmin = user.role in UserRole.ADMIN_GRADE
+        val schedules = scheduleRepository.findAllById(ids).associateBy { it.id }
+
+        var deletedCount = 0
+        val failures = mutableListOf<ScheduleBatchDeleteFailure>()
+
+        for (id in ids) {
+            val schedule = schedules[id]
+            if (schedule == null || schedule.isDeleted == true) {
+                failures.add(
+                    ScheduleBatchDeleteFailure(
+                        id = id,
+                        errorCode = "SCHEDULE_NOT_FOUND",
+                        message = "존재하지 않거나 삭제된 스케줄입니다"
+                    )
+                )
+                continue
+            }
+
+            // UC-06 차단 룰: ADMIN_GRADE 외 사용자 + 확정 + FK 매칭 여사원일정 존재 시 차단
+            if (!isAdmin && schedule.confirmed == true) {
+                val hasLinkedSchedule = teamMemberScheduleRepository.existsByDisplayWorkSchedule(schedule)
+                if (hasLinkedSchedule) {
+                    failures.add(
+                        ScheduleBatchDeleteFailure(
+                            id = id,
+                            errorCode = "SCHEDULE_DELETE_CONSTRAINT",
+                            message = "확정된 스케줄에 연결된 여사원 일정이 존재하여 삭제할 수 없습니다"
+                        )
+                    )
+                    continue
+                }
+            }
+
+            schedule.isDeleted = true
+            deletedCount++
+        }
+
+        return ScheduleBatchDeleteResultDto(
+            deletedCount = deletedCount,
+            failedCount = failures.size,
+            failures = failures
         )
     }
 

@@ -1064,6 +1064,108 @@ class AdminScheduleServiceTest {
     }
 
     @Nested
+    @DisplayName("batchDelete - 일괄 삭제 (UC-07 partial success)")
+    inner class BatchDeleteTests {
+
+        private val userId = 1L
+
+        @Test
+        @DisplayName("ADMIN_GRADE - 확정/연결 여부 무관 전체 삭제")
+        fun batchDelete_adminAllSucceed() {
+            val admin = createEmployee(id = userId, role = UserRole.SYSTEM_ADMIN)
+            val s1 = createSchedule(id = 11L, confirmed = true)
+            val s2 = createSchedule(id = 12L, confirmed = false)
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(admin))
+            whenever(scheduleRepository.findAllById(listOf(11L, 12L))).thenReturn(listOf(s1, s2))
+
+            val result = adminScheduleService.batchDelete(userId, listOf(11L, 12L))
+
+            assertThat(result.deletedCount).isEqualTo(2)
+            assertThat(result.failedCount).isEqualTo(0)
+            assertThat(result.failures).isEmpty()
+            assertThat(s1.isDeleted).isTrue()
+            assertThat(s2.isDeleted).isTrue()
+            verify(teamMemberScheduleRepository, never()).existsByDisplayWorkSchedule(any())
+        }
+
+        @Test
+        @DisplayName("LEADER - partial success: 확정+FK 연결 건만 차단, 나머지 삭제")
+        fun batchDelete_leaderPartialSuccess() {
+            val leader = createEmployee(id = userId, role = UserRole.LEADER)
+            val blocked = createSchedule(id = 21L, confirmed = true) // FK 연결 있음
+            val confirmedNoLink = createSchedule(id = 22L, confirmed = true)
+            val unconfirmed = createSchedule(id = 23L, confirmed = false)
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
+            whenever(scheduleRepository.findAllById(listOf(21L, 22L, 23L)))
+                .thenReturn(listOf(blocked, confirmedNoLink, unconfirmed))
+            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(blocked))).thenReturn(true)
+            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(confirmedNoLink))).thenReturn(false)
+
+            val result = adminScheduleService.batchDelete(userId, listOf(21L, 22L, 23L))
+
+            assertThat(result.deletedCount).isEqualTo(2)
+            assertThat(result.failedCount).isEqualTo(1)
+            assertThat(result.failures).hasSize(1)
+            assertThat(result.failures[0].id).isEqualTo(21L)
+            assertThat(result.failures[0].errorCode).isEqualTo("SCHEDULE_DELETE_CONSTRAINT")
+            assertThat(blocked.isDeleted).isNotEqualTo(true)
+            assertThat(confirmedNoLink.isDeleted).isEqualTo(true)
+            assertThat(unconfirmed.isDeleted).isEqualTo(true)
+        }
+
+        @Test
+        @DisplayName("BRANCH_MANAGER - 전체 거부 (ScheduleDeleteForbiddenException)")
+        fun batchDelete_branchManagerRejected() {
+            val branch = createEmployee(id = userId, role = UserRole.BRANCH_MANAGER)
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(branch))
+
+            assertThatThrownBy { adminScheduleService.batchDelete(userId, listOf(11L, 12L)) }
+                .isInstanceOf(ScheduleDeleteForbiddenException::class.java)
+
+            verify(scheduleRepository, never()).findAllById(any<List<Long>>())
+        }
+
+        @Test
+        @DisplayName("미존재 / 이미 삭제된 ID 포함 - SCHEDULE_NOT_FOUND 로 실패 기록")
+        fun batchDelete_missingIds() {
+            val leader = createEmployee(id = userId, role = UserRole.LEADER)
+            val valid = createSchedule(id = 31L, confirmed = false)
+            val deletedAlready = createSchedule(id = 32L, confirmed = false, isDeleted = true)
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
+            whenever(scheduleRepository.findAllById(listOf(31L, 32L, 99L)))
+                .thenReturn(listOf(valid, deletedAlready))
+
+            val result = adminScheduleService.batchDelete(userId, listOf(31L, 32L, 99L))
+
+            assertThat(result.deletedCount).isEqualTo(1)
+            assertThat(result.failedCount).isEqualTo(2)
+            assertThat(result.failures.map { it.id }).containsExactlyInAnyOrder(32L, 99L)
+            assertThat(result.failures).allMatch { it.errorCode == "SCHEDULE_NOT_FOUND" }
+        }
+
+        @Test
+        @DisplayName("LEADER - 전체 차단되는 케이스 (deletedCount=0)")
+        fun batchDelete_leaderAllBlocked() {
+            val leader = createEmployee(id = userId, role = UserRole.LEADER)
+            val blocked1 = createSchedule(id = 41L, confirmed = true)
+            val blocked2 = createSchedule(id = 42L, confirmed = true)
+
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
+            whenever(scheduleRepository.findAllById(listOf(41L, 42L)))
+                .thenReturn(listOf(blocked1, blocked2))
+            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(any())).thenReturn(true)
+
+            val result = adminScheduleService.batchDelete(userId, listOf(41L, 42L))
+
+            assertThat(result.deletedCount).isEqualTo(0)
+            assertThat(result.failedCount).isEqualTo(2)
+        }
+    }
+
+    @Nested
     @DisplayName("deleteSchedule - 진열마스터 삭제")
     inner class DeleteScheduleTests {
 
