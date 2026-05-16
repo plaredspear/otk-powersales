@@ -1,0 +1,730 @@
+package com.otoki.powersales.schedule.service
+
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.account.entity.AccountType
+import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.schedule.dto.response.*
+import com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster
+import com.otoki.powersales.schedule.enums.TypeOfWork1
+import com.otoki.powersales.schedule.repository.EmployeeInputCriteriaMasterRepository
+import org.apache.poi.ss.usermodel.FillPatternType
+import org.apache.poi.ss.usermodel.HorizontalAlignment
+import org.apache.poi.ss.usermodel.IndexedColors
+import org.apache.poi.xssf.usermodel.XSSFColor
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.io.ByteArrayOutputStream
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
+/**
+ * 거래처별 진열사원 배치적합성 산출 + 조회 + 엑셀 export.
+ *
+ * 레거시 매핑: `SalesComparisonSearchController.getLowDataList` / `getSummaryItems` (force-app/main/default/classes).
+ * 동작: 월별 통합일정(`AdminMonthlyIntegrationService.buildIntegrationItems`) 결과를 기반으로 거래처별 진열 상시 환산인원 합 + 6개월 평균매출 + 투입기준마스터의 고정/격고 기준금액을 비교하여 배치적합성(적합/경계/재검토) 판정 후 집계/중간집계/상세 3종 응답을 빌드한다.
+ * 부수 효과: 없음 (조회 전용).
+ * 신규 도입 — 레거시 미존재 web 진입점(`DeploymentPage`) 신규 구현 동반.
+ */
+@Service
+@Transactional(readOnly = true)
+class AdminSalesComparisonService(
+    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
+    private val accountRepository: AccountRepository,
+    private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository
+) {
+
+    /** 체인 거래처 (4종) — 일반 카테고리 대신 ABCType 으로 투입기준 조회. */
+    private val chainAccountTypeNames = setOf("서원부산", "수협", "그랜드마트", "우리마트")
+
+    /**
+     * 집계 모드 조회 — 배치적합성 × 거래처 카테고리 거래처 수 집계표 산출.
+     *
+     * 근무형태1=진열 + 근무형태5=상시 조건의 사원 일정만 산출 대상. 거래처 코드 단위 중복 제거.
+     */
+    fun getSummary(year: Int, month: Int, costCenterCodes: List<String>): SalesComparisonSummaryResponse {
+        validateParams(year, month, costCenterCodes)
+
+        val accountSuitabilities = computeAccountSuitabilities(year, month, costCenterCodes)
+        val rows = buildSummaryRows(accountSuitabilities)
+        val total = buildTotalRow(accountSuitabilities)
+
+        return SalesComparisonSummaryResponse(year, month, rows, total)
+    }
+
+    /**
+     * 중간집계 모드 조회 — 거래처별 행 + 적합성별 소계 + 전체 총계.
+     *
+     * accountIds 가 비어있으면 전체 범위 (집계 모드의 전체 셀에 해당). 비어있지 않으면 해당 거래처만 필터.
+     */
+    fun getMiddle(
+        year: Int,
+        month: Int,
+        costCenterCodes: List<String>,
+        accountIds: List<Int>
+    ): SalesComparisonMiddleResponse {
+        validateParams(year, month, costCenterCodes)
+
+        val accountSuitabilities = computeAccountSuitabilities(year, month, costCenterCodes)
+        val filtered = if (accountIds.isEmpty()) {
+            accountSuitabilities
+        } else {
+            val accountIdSet = accountIds.toSet()
+            accountSuitabilities.filter { it.account.id in accountIdSet }
+        }
+
+        val items = filtered.map { it.toMiddleItem() }
+            .sortedWith(compareBy({ suitabilityOrder(it.suitability) }, { it.accountCategory }, { it.accountName }))
+        val subtotals = buildMiddleSubtotals(filtered)
+        val total = buildMiddleTotal(filtered)
+
+        return SalesComparisonMiddleResponse(year, month, items, subtotals, total)
+    }
+
+    /**
+     * 상세 모드 조회 — 사원별 행 + 총계.
+     *
+     * accountIds 가 비어있으면 전체 (상세 모드 단일 그리드). accountIds 지정 시 해당 거래처의 사원만 (집계 → 중간집계 → 상세 드릴다운 최하위).
+     * workingCategory1Filter / workingCategory5Filter 가 지정되면 사원 단위 추가 필터.
+     */
+    fun getDetail(
+        year: Int,
+        month: Int,
+        costCenterCodes: List<String>,
+        accountIds: List<Int>,
+        workingCategory1Filter: String?,
+        workingCategory5Filter: String?
+    ): SalesComparisonDetailResponse {
+        validateParams(year, month, costCenterCodes)
+
+        val accountSuitabilities = computeAccountSuitabilities(year, month, costCenterCodes)
+        val accountIdSet = accountIds.toSet()
+
+        val items = accountSuitabilities
+            .filter { accountIdSet.isEmpty() || it.account.id in accountIdSet }
+            .flatMap { suit -> suit.allEmployeeItems.map { suit to it } }
+            .filter { (_, item) ->
+                (workingCategory1Filter.isNullOrBlank() || item.workingCategory1 == workingCategory1Filter) &&
+                    (workingCategory5Filter.isNullOrBlank() || item.workingCategory5 == workingCategory5Filter)
+            }
+            .map { (suit, item) -> suit.toDetailItem(item) }
+            .sortedWith(
+                compareBy(
+                    { it.accountCategoryCode },
+                    { it.accountName },
+                    { suitabilityOrder(it.suitability) },
+                    { it.employeeName }
+                )
+            )
+
+        val total = buildDetailTotal(items)
+        return SalesComparisonDetailResponse(year, month, items, total)
+    }
+
+    /**
+     * 집계표 엑셀 export — 헤더 + 적합성 × 카테고리 셀 + 총계.
+     */
+    fun exportSummary(year: Int, month: Int, costCenterCodes: List<String>): ExcelResult {
+        val response = getSummary(year, month, costCenterCodes)
+        val workbook = XSSFWorkbook()
+        val sheet = workbook.createSheet("배치적합성_집계")
+
+        val headerStyle = createHeaderStyle(workbook)
+        val intStyle = workbook.createCellStyle().apply {
+            dataFormat = workbook.createDataFormat().getFormat("#,##0")
+        }
+        val totalStyle = workbook.createCellStyle().apply {
+            dataFormat = workbook.createDataFormat().getFormat("#,##0")
+            setFillForegroundColor(XSSFColor(byteArrayOf(0x8E.toByte(), 0x44, 0xAD.toByte()), null))
+            fillPattern = FillPatternType.SOLID_FOREGROUND
+            setFont(workbook.createFont().apply {
+                bold = true
+                color = IndexedColors.WHITE.index
+            })
+        }
+
+        val categoryColumns = AccountCategoryColumn.entries.map { it.displayName }
+        val headers = listOf("구분", "전체") + categoryColumns
+
+        val headerRow = sheet.createRow(0)
+        headers.forEachIndexed { i, h ->
+            headerRow.createCell(i).apply {
+                setCellValue(h)
+                cellStyle = headerStyle
+            }
+        }
+
+        (response.rows + response.total).forEachIndexed { rowIdx, row ->
+            val excelRow = sheet.createRow(rowIdx + 1)
+            val isTotal = row.suitability == "총계"
+            val labelStyle = if (isTotal) totalStyle else workbook.createCellStyle().apply {
+                setFillForegroundColor(suitabilityColor(row.suitability))
+                fillPattern = FillPatternType.SOLID_FOREGROUND
+            }
+            excelRow.createCell(0).apply {
+                setCellValue(row.suitability)
+                cellStyle = labelStyle
+            }
+            excelRow.createCell(1).apply {
+                setCellValue(row.totalCount.toDouble())
+                cellStyle = if (isTotal) totalStyle else intStyle
+            }
+            categoryColumns.forEachIndexed { idx, label ->
+                excelRow.createCell(idx + 2).apply {
+                    setCellValue((row.countsByCategory[label] ?: 0).toDouble())
+                    cellStyle = if (isTotal) totalStyle else intStyle
+                }
+            }
+        }
+        headers.indices.forEach { sheet.autoSizeColumn(it) }
+
+        val bytes = workbookToBytes(workbook)
+        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+        val filename = "${year}년${month}월_월평균_매출대비_여사원배치_현황_집계_${timestamp}.xlsx"
+        return ExcelResult(bytes, filename)
+    }
+
+    /**
+     * 중간집계 엑셀 export — 거래처 행 + 적합성별 소계 + 총계.
+     */
+    fun exportMiddle(
+        year: Int,
+        month: Int,
+        costCenterCodes: List<String>,
+        accountIds: List<Int>
+    ): ExcelResult {
+        val response = getMiddle(year, month, costCenterCodes, accountIds)
+        val workbook = XSSFWorkbook()
+        val sheet = workbook.createSheet("배치적합성_중간집계")
+
+        val headerStyle = createHeaderStyle(workbook)
+        val intStyle = workbook.createCellStyle().apply {
+            dataFormat = workbook.createDataFormat().getFormat("#,##0")
+        }
+        val decimal3Style = workbook.createCellStyle().apply {
+            dataFormat = workbook.createDataFormat().getFormat("#,##0.000")
+        }
+
+        val headers = listOf(
+            "거래처지점명", "배치적합성", "월평균매출", "총 진열인원",
+            "총 진열환산인원", "총 행사환산인원", "거래처유형", "거래처명", "거래처코드",
+            "고정배치기준", "격고배치기준", "총 투입횟수", "총 환산일수", "당월매출", "EDI/POS"
+        )
+
+        val headerRow = sheet.createRow(0)
+        headers.forEachIndexed { i, h ->
+            headerRow.createCell(i).apply {
+                setCellValue(h)
+                cellStyle = headerStyle
+            }
+        }
+        sheet.createFreezePane(0, 1)
+
+        var rowIdx = 1
+        response.items.forEach { item ->
+            val excelRow = sheet.createRow(rowIdx++)
+            excelRow.createCell(0).setCellValue(item.accountBranchName ?: "")
+            excelRow.createCell(1).apply {
+                setCellValue(item.suitability)
+                cellStyle = workbook.createCellStyle().apply {
+                    setFillForegroundColor(suitabilityColor(item.suitability))
+                    fillPattern = FillPatternType.SOLID_FOREGROUND
+                }
+            }
+            excelRow.createCell(2).apply { setCellValue(item.avgClosingAmount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(3).apply { setCellValue(item.totalDisplayHeadcount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(4).apply { setCellValue(item.totalDisplayConvertedHeadcount.toDouble()); cellStyle = decimal3Style }
+            excelRow.createCell(5).apply { setCellValue(item.totalEventConvertedHeadcount.toDouble()); cellStyle = decimal3Style }
+            excelRow.createCell(6).setCellValue(item.accountCategory)
+            excelRow.createCell(7).setCellValue(item.accountName)
+            excelRow.createCell(8).setCellValue(item.accountCode)
+            excelRow.createCell(9).apply { setCellValue((item.fixedStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
+            excelRow.createCell(10).apply { setCellValue((item.bifurcationHalfStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
+            excelRow.createCell(11).apply { setCellValue(item.totalInputCount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(12).apply { setCellValue(item.totalEquivalentWorkingDays.toDouble()); cellStyle = decimal3Style }
+            excelRow.createCell(13).apply { setCellValue(item.thisMonthSalesAmount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(14).setCellValue(item.ediPos ?: "")
+        }
+        headers.indices.forEach { sheet.autoSizeColumn(it) }
+
+        val bytes = workbookToBytes(workbook)
+        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+        val filename = "${year}년${month}월_월평균_매출대비_여사원배치_현황_중간집계_${timestamp}.xlsx"
+        return ExcelResult(bytes, filename)
+    }
+
+    /**
+     * 상세 엑셀 export — 사원별 행 + 총계.
+     */
+    fun exportDetail(
+        year: Int,
+        month: Int,
+        costCenterCodes: List<String>,
+        accountIds: List<Int>,
+        workingCategory1Filter: String?,
+        workingCategory5Filter: String?
+    ): ExcelResult {
+        val response = getDetail(year, month, costCenterCodes, accountIds, workingCategory1Filter, workingCategory5Filter)
+        val workbook = XSSFWorkbook()
+        val sheet = workbook.createSheet("배치적합성_상세")
+
+        val headerStyle = createHeaderStyle(workbook)
+        val intStyle = workbook.createCellStyle().apply {
+            dataFormat = workbook.createDataFormat().getFormat("#,##0")
+        }
+        val decimal3Style = workbook.createCellStyle().apply {
+            dataFormat = workbook.createDataFormat().getFormat("#,##0.000")
+        }
+
+        val headers = listOf(
+            "거래처지점명", "배치적합성", "월평균매출", "총 진열인원",
+            "총 진열환산인원", "총 행사환산인원", "거래처유형", "거래처유형코드",
+            "거래처명", "거래처코드", "사원명", "사번", "직위",
+            "근무형태1", "근무형태3", "근무형태4", "근무형태5",
+            "고정배치기준", "격고배치기준", "투입횟수", "환산일수", "환산인원",
+            "당월매출", "EDI/POS"
+        )
+
+        val headerRow = sheet.createRow(0)
+        headers.forEachIndexed { i, h ->
+            headerRow.createCell(i).apply {
+                setCellValue(h)
+                cellStyle = headerStyle
+            }
+        }
+        sheet.createFreezePane(0, 1)
+
+        response.items.forEachIndexed { idx, item ->
+            val excelRow = sheet.createRow(idx + 1)
+            excelRow.createCell(0).setCellValue(item.accountBranchName ?: "")
+            excelRow.createCell(1).apply {
+                setCellValue(item.suitability)
+                cellStyle = workbook.createCellStyle().apply {
+                    setFillForegroundColor(suitabilityColor(item.suitability))
+                    fillPattern = FillPatternType.SOLID_FOREGROUND
+                }
+            }
+            excelRow.createCell(2).apply { setCellValue(item.avgClosingAmount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(3).apply { setCellValue(item.totalDisplayHeadcount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(4).apply { setCellValue(item.totalDisplayConvertedHeadcount.toDouble()); cellStyle = decimal3Style }
+            excelRow.createCell(5).apply { setCellValue(item.totalEventConvertedHeadcount.toDouble()); cellStyle = decimal3Style }
+            excelRow.createCell(6).setCellValue(item.accountCategory)
+            excelRow.createCell(7).setCellValue(item.accountCategoryCode)
+            excelRow.createCell(8).setCellValue(item.accountName)
+            excelRow.createCell(9).setCellValue(item.accountCode)
+            excelRow.createCell(10).setCellValue(item.employeeName)
+            excelRow.createCell(11).setCellValue(item.employeeCode)
+            excelRow.createCell(12).setCellValue(item.title ?: "")
+            excelRow.createCell(13).setCellValue(item.workingCategory1)
+            excelRow.createCell(14).setCellValue(item.workingCategory3 ?: "")
+            excelRow.createCell(15).setCellValue(item.workingCategory4 ?: "")
+            excelRow.createCell(16).setCellValue(item.workingCategory5 ?: "")
+            excelRow.createCell(17).apply { setCellValue((item.fixedStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
+            excelRow.createCell(18).apply { setCellValue((item.bifurcationHalfStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
+            excelRow.createCell(19).apply { setCellValue(item.inputCount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(20).apply { setCellValue(item.equivalentWorkingDays.toDouble()); cellStyle = decimal3Style }
+            excelRow.createCell(21).apply { setCellValue(item.convertedHeadcount.toDouble()); cellStyle = decimal3Style }
+            excelRow.createCell(22).apply { setCellValue(item.thisMonthSalesAmount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(23).setCellValue(item.ediPos ?: "")
+        }
+        headers.indices.forEach { sheet.autoSizeColumn(it) }
+
+        val bytes = workbookToBytes(workbook)
+        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+        val filename = "${year}년${month}월_월평균_매출대비_여사원배치_현황_상세_${timestamp}.xlsx"
+        return ExcelResult(bytes, filename)
+    }
+
+    // --- 내부 산출 로직 ---
+
+    /**
+     * 거래처별 배치적합성 산출 결과 (집계/중간집계/상세 공통 입력).
+     *
+     * `AdminMonthlyIntegrationService.buildIntegrationItems` 로 사원 × 거래처 단위 일정 행렬을 얻은 뒤 거래처별로 진열 상시 환산인원 합계를 산출하고 6개월 평균매출 / 투입기준마스터의 기준금액과 비교하여 적합/경계/재검토를 판정한다.
+     */
+    internal fun computeAccountSuitabilities(
+        year: Int,
+        month: Int,
+        costCenterCodes: List<String>
+    ): List<AccountSuitability> {
+        val integrationItems = adminMonthlyIntegrationService.buildIntegrationItems(year, month, costCenterCodes)
+        if (integrationItems.isEmpty()) return emptyList()
+
+        // 거래처 단위 그룹핑
+        val accountCodeMap = integrationItems.groupBy { it.accountCode }
+        val accountCodes = accountCodeMap.keys.filter { it.isNotBlank() }
+        val accounts = if (accountCodes.isEmpty()) emptyList() else accountRepository.findByExternalKeyIn(accountCodes)
+        val accountByCode = accounts.associateBy { it.externalKey }
+
+        // 6개월 평균매출 (account.id → avg amount)
+        val avgClosingAmounts = adminMonthlyIntegrationService.let { svc ->
+            // calculateAvgClosingAmounts 는 private 이라 동일 결과를 buildIntegrationItems item.avgClosingAmount 로 추출
+            integrationItems.associate { it.accountCode to it.avgClosingAmount }
+        }
+
+        // 투입기준마스터 (진열 + confirmed = true + isDeleted != true) — 화면 단위 1회 조회
+        val criteriaList = employeeInputCriteriaMasterRepository
+            .findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(TypeOfWork1.DISPLAY, true)
+
+        return accountCodeMap.entries.mapNotNull { (accountCode, items) ->
+            val account = accountByCode[accountCode] ?: return@mapNotNull null
+
+            val displayItems = items.filter { it.workingCategory1 == "진열" && it.workingCategory5 == "상시" }
+            val eventItems = items.filter { it.workingCategory1 == "행사" }
+
+            val totalDisplayConverted = displayItems
+                .fold(BigDecimal.ZERO) { acc, it -> acc.add(it.convertedHeadcount) }
+                .setScale(3, RoundingMode.HALF_UP)
+            val totalEventConverted = eventItems
+                .fold(BigDecimal.ZERO) { acc, it -> acc.add(it.convertedHeadcount) }
+                .setScale(3, RoundingMode.HALF_UP)
+            val totalDisplayHeadcount = displayItems.map { it.employeeCode }.distinct().size
+            val totalInputCount = items.sumOf { it.totalInputCount }
+            val totalEquivalentDays = items
+                .fold(BigDecimal.ZERO) { acc, it -> acc.add(it.equivalentWorkingDays) }
+                .setScale(3, RoundingMode.HALF_UP)
+            val avgClosingAmount = avgClosingAmounts[accountCode] ?: 0L
+            val thisMonthSalesAmount = avgClosingAmount  // 별도 당월 매출 컬럼 매핑 부재 — 6개월 평균 재사용 (TODO: SF 명세 확인 후 정정 후보)
+
+            val criteria = findCriteriaForAccount(criteriaList, account)
+            val fixedStandard = criteria?.fixed1PersonStandardAmount
+            val fixedMin = criteria?.fixed1PersonMinAmountInRealmRange
+            val bifurcationStandard = criteria?.bifurcationHalfPersonStandard
+            val bifurcationMin = criteria?.bifurcationHalfPersonMinAmountInRealmRange
+
+            // 진열 환산인원으로 평균매출 분배. 거래처별 적합성은 거래처 단위 1건 — 근무형태3 분기는 사원 단위 (상세) 에서.
+            val accountCategory = resolveAccountCategory(account)
+            val accountCategoryCode = resolveAccountCategoryCode(account)
+
+            AccountSuitability(
+                account = account,
+                accountCode = accountCode,
+                accountName = items.first().accountName,
+                accountBranchName = items.first().accountBranchName,
+                accountCategory = accountCategory,
+                accountCategoryCode = accountCategoryCode,
+                totalDisplayConvertedHeadcount = totalDisplayConverted,
+                totalEventConvertedHeadcount = totalEventConverted,
+                totalDisplayHeadcount = totalDisplayHeadcount,
+                totalInputCount = totalInputCount,
+                totalEquivalentWorkingDays = totalEquivalentDays,
+                avgClosingAmount = avgClosingAmount,
+                thisMonthSalesAmount = thisMonthSalesAmount,
+                fixedStandardAmount = fixedStandard,
+                fixedMinAmount = fixedMin,
+                bifurcationHalfStandardAmount = bifurcationStandard,
+                bifurcationHalfMinAmount = bifurcationMin,
+                allEmployeeItems = items,
+                ediPos = account.abcType
+            )
+        }
+    }
+
+    /**
+     * 사원별 근무형태3(고정/격고/순회) + 거래처 진열 환산인원으로 배치적합성 판정.
+     *
+     * - 순회: 무조건 적합
+     * - 고정: (월평균매출 / 진열 상시 환산인원 합계) 를 고정 기준금액과 비교
+     * - 격고: 동일 비율을 격고 기준금액과 비교
+     * - 기준금액 이상 → 적합, 최소금액 이상 기준금액 미만 → 경계, 최소금액 미만 → 재검토
+     * - 환산인원 합 0 또는 데이터 부재 → 공백
+     */
+    internal fun judgeSuitability(
+        workingCategory3: String?,
+        avgClosingAmount: Long,
+        totalDisplayConverted: BigDecimal,
+        fixedStandard: BigDecimal?,
+        fixedMin: BigDecimal?,
+        bifurcationStandard: BigDecimal?,
+        bifurcationMin: BigDecimal?
+    ): String {
+        if (workingCategory3 == "순회") return Suitability.FIT.displayName
+        if (totalDisplayConverted.compareTo(BigDecimal.ZERO) == 0) return ""
+
+        val ratio = BigDecimal(avgClosingAmount).divide(totalDisplayConverted, 0, RoundingMode.HALF_UP)
+
+        val (standard, min) = when (workingCategory3) {
+            "고정" -> fixedStandard to fixedMin
+            "격고" -> bifurcationStandard to bifurcationMin
+            else -> return ""
+        }
+        if (standard == null || min == null) return ""
+
+        return when {
+            ratio >= standard -> Suitability.FIT.displayName
+            ratio >= min -> Suitability.BOUNDARY.displayName
+            else -> Suitability.REVIEW.displayName
+        }
+    }
+
+    /** 거래처별 단일 적합성 — 진열 상시 환산인원 합 기준. 첫 진열 상시 사원의 근무형태3 으로 판정 (대표값). */
+    private fun AccountSuitability.computeAccountLevelSuitability(): String {
+        val displayPermanent = allEmployeeItems.filter { it.workingCategory1 == "진열" && it.workingCategory5 == "상시" }
+        if (displayPermanent.isEmpty()) return ""
+        // 거래처 안 사원의 근무형태3 가 섞여 있으면 가장 빈도 높은 값으로 판정
+        val dominantWc3 = displayPermanent
+            .mapNotNull { it.workingCategory3 }
+            .groupingBy { it }
+            .eachCount()
+            .maxByOrNull { it.value }?.key
+        return judgeSuitability(
+            workingCategory3 = dominantWc3,
+            avgClosingAmount = avgClosingAmount,
+            totalDisplayConverted = totalDisplayConvertedHeadcount,
+            fixedStandard = fixedStandardAmount,
+            fixedMin = fixedMinAmount,
+            bifurcationStandard = bifurcationHalfStandardAmount,
+            bifurcationMin = bifurcationHalfMinAmount
+        )
+    }
+
+    private fun AccountSuitability.toMiddleItem(): SalesComparisonMiddleItem = SalesComparisonMiddleItem(
+        accountId = account.id,
+        accountCode = accountCode,
+        accountName = accountName,
+        accountBranchName = accountBranchName,
+        accountCategory = accountCategory,
+        suitability = computeAccountLevelSuitability(),
+        avgClosingAmount = avgClosingAmount,
+        totalDisplayHeadcount = totalDisplayHeadcount,
+        totalDisplayConvertedHeadcount = totalDisplayConvertedHeadcount,
+        totalEventConvertedHeadcount = totalEventConvertedHeadcount,
+        fixedStandardAmount = fixedStandardAmount,
+        bifurcationHalfStandardAmount = bifurcationHalfStandardAmount,
+        totalInputCount = totalInputCount,
+        totalEquivalentWorkingDays = totalEquivalentWorkingDays,
+        thisMonthSalesAmount = thisMonthSalesAmount,
+        ediPos = ediPos
+    )
+
+    private fun AccountSuitability.toDetailItem(
+        item: com.otoki.powersales.schedule.dto.response.MonthlyIntegrationScheduleItem
+    ): SalesComparisonDetailItem {
+        val isDisplayPermanent = item.workingCategory1 == "진열" && item.workingCategory5 == "상시"
+        val suitability = if (isDisplayPermanent) {
+            judgeSuitability(
+                workingCategory3 = item.workingCategory3,
+                avgClosingAmount = avgClosingAmount,
+                totalDisplayConverted = totalDisplayConvertedHeadcount,
+                fixedStandard = fixedStandardAmount,
+                fixedMin = fixedMinAmount,
+                bifurcationStandard = bifurcationHalfStandardAmount,
+                bifurcationMin = bifurcationHalfMinAmount
+            )
+        } else ""
+
+        return SalesComparisonDetailItem(
+            accountId = account.id,
+            accountCode = accountCode,
+            accountName = accountName,
+            accountBranchName = accountBranchName,
+            accountCategory = accountCategory,
+            accountCategoryCode = accountCategoryCode,
+            employeeCode = item.employeeCode,
+            employeeName = item.employeeName,
+            title = item.title,
+            workingCategory1 = item.workingCategory1,
+            workingCategory3 = item.workingCategory3,
+            workingCategory4 = item.workingCategory4,
+            workingCategory5 = item.workingCategory5,
+            suitability = suitability,
+            avgClosingAmount = avgClosingAmount,
+            totalDisplayHeadcount = totalDisplayHeadcount,
+            totalDisplayConvertedHeadcount = totalDisplayConvertedHeadcount,
+            totalEventConvertedHeadcount = totalEventConvertedHeadcount,
+            fixedStandardAmount = fixedStandardAmount,
+            bifurcationHalfStandardAmount = bifurcationHalfStandardAmount,
+            inputCount = item.totalInputCount,
+            equivalentWorkingDays = item.equivalentWorkingDays,
+            convertedHeadcount = item.convertedHeadcount,
+            thisMonthSalesAmount = thisMonthSalesAmount,
+            ediPos = ediPos
+        )
+    }
+
+    private fun buildSummaryRows(accountSuitabilities: List<AccountSuitability>): List<SalesComparisonSummaryRow> {
+        val grouped = accountSuitabilities
+            .map { it to it.computeAccountLevelSuitability() }
+            .filter { it.second.isNotBlank() }
+            .groupBy({ it.second }, { it.first })
+
+        return Suitability.entries.map { suit ->
+            val accounts = grouped[suit.displayName] ?: emptyList()
+            buildSummaryRowFromAccounts(suit.displayName, accounts)
+        }
+    }
+
+    private fun buildTotalRow(accountSuitabilities: List<AccountSuitability>): SalesComparisonSummaryRow {
+        return buildSummaryRowFromAccounts("총계", accountSuitabilities)
+    }
+
+    private fun buildSummaryRowFromAccounts(
+        suitabilityLabel: String,
+        accounts: List<AccountSuitability>
+    ): SalesComparisonSummaryRow {
+        val byCategory = AccountCategoryColumn.entries.associate { col ->
+            col.displayName to accounts.filter { it.accountCategory == col.displayName }
+        }
+        val countsByCategory = byCategory.mapValues { (_, list) -> list.distinctBy { it.accountCode }.size }
+        val accountIdsByCategory = byCategory.mapValues { (_, list) -> list.map { it.account.id }.distinct() }
+        val total = accounts.distinctBy { it.accountCode }.size
+        return SalesComparisonSummaryRow(
+            suitability = suitabilityLabel,
+            totalCount = total,
+            countsByCategory = countsByCategory,
+            accountIdsByCategory = accountIdsByCategory
+        )
+    }
+
+    private fun buildMiddleSubtotals(items: List<AccountSuitability>): List<SalesComparisonMiddleSubtotal> {
+        val grouped = items.groupBy { it.computeAccountLevelSuitability() }
+            .filterKeys { it.isNotBlank() }
+        return Suitability.entries.mapNotNull { suit ->
+            grouped[suit.displayName]?.let { sublist ->
+                aggregateMiddle(suit.displayName, sublist)
+            }
+        }
+    }
+
+    private fun buildMiddleTotal(items: List<AccountSuitability>): SalesComparisonMiddleSubtotal {
+        return aggregateMiddle("총계", items)
+    }
+
+    private fun aggregateMiddle(label: String, list: List<AccountSuitability>): SalesComparisonMiddleSubtotal {
+        return SalesComparisonMiddleSubtotal(
+            suitability = label,
+            accountCount = list.distinctBy { it.accountCode }.size,
+            avgClosingAmount = list.sumOf { it.avgClosingAmount },
+            totalDisplayHeadcount = list.sumOf { it.totalDisplayHeadcount },
+            totalDisplayConvertedHeadcount = list.fold(BigDecimal.ZERO) { acc, it -> acc.add(it.totalDisplayConvertedHeadcount) }.setScale(3, RoundingMode.HALF_UP),
+            totalEventConvertedHeadcount = list.fold(BigDecimal.ZERO) { acc, it -> acc.add(it.totalEventConvertedHeadcount) }.setScale(3, RoundingMode.HALF_UP),
+            totalInputCount = list.sumOf { it.totalInputCount },
+            totalEquivalentWorkingDays = list.fold(BigDecimal.ZERO) { acc, it -> acc.add(it.totalEquivalentWorkingDays) }.setScale(3, RoundingMode.HALF_UP),
+            thisMonthSalesAmount = list.sumOf { it.thisMonthSalesAmount }
+        )
+    }
+
+    private fun buildDetailTotal(items: List<SalesComparisonDetailItem>): SalesComparisonDetailTotal {
+        return SalesComparisonDetailTotal(
+            rowCount = items.size,
+            totalDisplayHeadcount = items.sumOf { it.totalDisplayHeadcount },
+            totalDisplayConvertedHeadcount = items.fold(BigDecimal.ZERO) { acc, it -> acc.add(it.totalDisplayConvertedHeadcount) }.setScale(3, RoundingMode.HALF_UP),
+            totalEventConvertedHeadcount = items.fold(BigDecimal.ZERO) { acc, it -> acc.add(it.totalEventConvertedHeadcount) }.setScale(3, RoundingMode.HALF_UP),
+            totalInputCount = items.sumOf { it.inputCount },
+            totalEquivalentWorkingDays = items.fold(BigDecimal.ZERO) { acc, it -> acc.add(it.equivalentWorkingDays) }.setScale(3, RoundingMode.HALF_UP),
+            totalConvertedHeadcount = items.fold(BigDecimal.ZERO) { acc, it -> acc.add(it.convertedHeadcount) }.setScale(3, RoundingMode.HALF_UP),
+            totalThisMonthSalesAmount = items.sumOf { it.thisMonthSalesAmount }
+        )
+    }
+
+    private fun findCriteriaForAccount(criteriaList: List<EmployeeInputCriteriaMaster>, account: Account): EmployeeInputCriteriaMaster? {
+        val targetCategoryCode = if (account.name in chainAccountTypeNames) {
+            account.abcType
+        } else {
+            resolveAccountCategoryCode(account)
+        }
+        return criteriaList.firstOrNull { it.accountCategorizedCode == targetCategoryCode }
+    }
+
+    private fun resolveAccountCategoryCode(account: Account): String? {
+        return account.accountType?.displayName
+    }
+
+    private fun resolveAccountCategory(account: Account): String {
+        if (account.name in chainAccountTypeNames) return AccountCategoryColumn.CHAIN.displayName
+        return when (account.accountType) {
+            AccountType.DISCOUNT_STORE -> AccountCategoryColumn.HYPER.displayName
+            AccountType.NONGHYUP -> AccountCategoryColumn.NH.displayName
+            AccountType.CHAIN -> AccountCategoryColumn.CHAIN.displayName
+            AccountType.SUPER -> AccountCategoryColumn.SUPER.displayName
+            AccountType.AGENCY -> AccountCategoryColumn.DEALER.displayName
+            AccountType.DEPARTMENT_STORE -> AccountCategoryColumn.DEPT.displayName
+            AccountType.MILITARY -> AccountCategoryColumn.MILITARY.displayName
+            AccountType.FOOD_MATERIAL -> AccountCategoryColumn.FOOD.displayName
+            else -> AccountCategoryColumn.OTHER.displayName
+        }
+    }
+
+    private fun suitabilityOrder(label: String): Int = when (label) {
+        Suitability.FIT.displayName -> 0
+        Suitability.BOUNDARY.displayName -> 1
+        Suitability.REVIEW.displayName -> 2
+        else -> 9
+    }
+
+    private fun suitabilityColor(label: String): XSSFColor = when (label) {
+        Suitability.FIT.displayName -> XSSFColor(byteArrayOf(0x66, 0xBB.toByte(), 0x6A), null)
+        Suitability.BOUNDARY.displayName -> XSSFColor(byteArrayOf(0xFF.toByte(), 0xEB.toByte(), 0x3B), null)
+        Suitability.REVIEW.displayName -> XSSFColor(byteArrayOf(0xEF.toByte(), 0x53, 0x50), null)
+        else -> XSSFColor(byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte()), null)
+    }
+
+    private fun createHeaderStyle(workbook: XSSFWorkbook) = workbook.createCellStyle().apply {
+        setFillForegroundColor(XSSFColor(byteArrayOf(0x1E, 0x2F, 0x97.toByte()), null))
+        fillPattern = FillPatternType.SOLID_FOREGROUND
+        alignment = HorizontalAlignment.CENTER
+        setFont(workbook.createFont().apply {
+            bold = true
+            color = IndexedColors.WHITE.index
+        })
+    }
+
+    private fun workbookToBytes(workbook: XSSFWorkbook): ByteArray {
+        return ByteArrayOutputStream().use { out ->
+            workbook.write(out)
+            workbook.close()
+            out.toByteArray()
+        }
+    }
+
+    private fun validateParams(year: Int, month: Int, costCenterCodes: List<String>) {
+        if (year !in 2020..2099) {
+            throw InvalidParameterException("year는 2020~2099 범위여야 합니다")
+        }
+        if (month !in 1..12) {
+            throw InvalidParameterException("month는 1~12 범위여야 합니다")
+        }
+        if (costCenterCodes.isEmpty()) {
+            throw InvalidParameterException("cost_center_codes는 필수입니다")
+        }
+    }
+
+    /** 거래처 단위 산출 결과 — 집계/중간집계/상세 응답 빌드용 중간 모델. */
+    internal data class AccountSuitability(
+        val account: Account,
+        val accountCode: String,
+        val accountName: String,
+        val accountBranchName: String?,
+        val accountCategory: String,
+        val accountCategoryCode: String?,
+        val totalDisplayConvertedHeadcount: BigDecimal,
+        val totalEventConvertedHeadcount: BigDecimal,
+        val totalDisplayHeadcount: Int,
+        val totalInputCount: Int,
+        val totalEquivalentWorkingDays: BigDecimal,
+        val avgClosingAmount: Long,
+        val thisMonthSalesAmount: Long,
+        val fixedStandardAmount: BigDecimal?,
+        val fixedMinAmount: BigDecimal?,
+        val bifurcationHalfStandardAmount: BigDecimal?,
+        val bifurcationHalfMinAmount: BigDecimal?,
+        val allEmployeeItems: List<MonthlyIntegrationScheduleItem>,
+        val ediPos: String?
+    )
+
+    data class ExcelResult(
+        val bytes: ByteArray,
+        val filename: String
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+            other as ExcelResult
+            return bytes.contentEquals(other.bytes) && filename == other.filename
+        }
+
+        override fun hashCode(): Int = bytes.contentHashCode() * 31 + filename.hashCode()
+    }
+}
