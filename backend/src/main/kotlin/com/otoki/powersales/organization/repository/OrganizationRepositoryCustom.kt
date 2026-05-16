@@ -2,6 +2,7 @@ package com.otoki.powersales.organization.repository
 
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.organization.entity.Organization
+import com.otoki.powersales.organization.repository.dto.OrganizationCacheDto
 
 interface OrganizationRepositoryCustom {
 
@@ -43,9 +44,12 @@ interface OrganizationRepositoryCustom {
      * cascade 정책 (5→4 순서) 변경 시 본 메서드 1곳만 수정. 기존 호출자가 `findFirstByCostCenterLevel5/4`
      * 를 ?: chain 으로 직접 결합하던 패턴을 단일 호출로 응집.
      *
-     * @return 매칭된 Organization 또는 null
+     * Redis 캐싱 — 결과는 [OrganizationCacheDto] 로 캐싱 (24h TTL, SAP daily sync 시 evict).
+     * Organization entity 를 그대로 캐싱하지 않는 이유는 [OrganizationCacheDto] KDoc 참조.
+     *
+     * @return 매칭된 OrganizationCacheDto 또는 null (cascade 모두 miss)
      */
-    fun findFirstByCostCenterCascade(costCenterCode: String): Organization?
+    fun findFirstByCostCenterCascade(costCenterCode: String): OrganizationCacheDto?
 
     /**
      * org_code 컬럼 cascade lookup — Level5 → Level4 → Level3 순.
@@ -55,7 +59,9 @@ interface OrganizationRepositoryCustom {
      *
      * cascade 정책 (5→4→3 순서) 변경 시 본 메서드 1곳만 수정.
      *
-     * @return 매칭된 Organization 또는 null
+     * Redis 캐싱 — 결과는 [OrganizationCacheDto] 로 캐싱 (24h TTL, SAP daily sync 시 evict).
+     *
+     * @return 매칭된 OrganizationCacheDto 또는 null (cascade 모두 miss)
      */
-    fun findFirstByOrgCodeCascade(orgCode: String): Organization?
+    fun findFirstByOrgCodeCascade(orgCode: String): OrganizationCacheDto?
 }

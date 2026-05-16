@@ -1,8 +1,8 @@
 package com.otoki.powersales.user.service
 
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.organization.repository.dto.OrganizationCacheDto
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -106,9 +106,16 @@ class UserRoleResolverTest {
 
     private fun stubOrg(costCenterCode: String, orgNameLevel4: String?, orgNameLevel3: String?) {
         // cascade 메커니즘 자체는 OrganizationRepositoryCustomImpl 의 책임 — resolver 테스트는
-        // cascade 결과 Org 만 stub 하고 resolver 의 정책 분기를 검증.
+        // cascade 결과 DTO 만 stub 하고 resolver 의 정책 분기를 검증.
         whenever(organizationRepository.findFirstByOrgCodeCascade(costCenterCode))
-            .thenReturn(Organization(orgNameLevel4 = orgNameLevel4, orgNameLevel3 = orgNameLevel3))
+            .thenReturn(
+                OrganizationCacheDto(
+                    orgCodeLevel3 = null,
+                    orgNameLevel3 = orgNameLevel3,
+                    orgNameLevel4 = orgNameLevel4,
+                    costCenterLevel3 = null,
+                )
+            )
     }
 
     private fun createEmployee(costCenterCode: String?): Employee = Employee(

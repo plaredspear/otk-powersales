@@ -1,8 +1,8 @@
 package com.otoki.powersales.user.service
 
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.organization.repository.dto.OrganizationCacheDto
 import com.otoki.powersales.user.entity.ProfileType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -178,7 +178,14 @@ class EmployeeProfileResolverTest {
             .thenReturn(organization(orgCodeLevel3 = orgCodeLevel3))
     }
 
-    private fun organization(orgCodeLevel3: String?): Organization = Organization(orgCodeLevel3 = orgCodeLevel3)
+    // cascade 결과는 Repository 단에서 OrganizationCacheDto 로 변환 후 캐시 / 반환되므로 테스트도 DTO 로 stub.
+    private fun organization(orgCodeLevel3: String?): OrganizationCacheDto =
+        OrganizationCacheDto(
+            orgCodeLevel3 = orgCodeLevel3,
+            orgNameLevel3 = null,
+            orgNameLevel4 = null,
+            costCenterLevel3 = null,
+        )
 
     private fun createEmployee(costCenterCode: String?, jikchak: String?): Employee = Employee(
         employeeCode = "100234",

@@ -1,16 +1,38 @@
 package com.otoki.powersales.organization.repository
 
+import com.otoki.powersales.common.config.CacheConfig
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.entity.QOrganization.Companion.organization
+import com.otoki.powersales.organization.repository.dto.OrganizationCacheDto
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.Tuple
 import com.querydsl.jpa.impl.JPAQueryFactory
+import org.springframework.cache.annotation.Cacheable
+import org.springframework.stereotype.Repository
 
+// @Repository 의 본질적 역할은 Spring 스테레오타입 인식. Spring Data JPA Custom Impl 패턴은
+// 이 어노테이션 없어도 자동 감지되지만, @Cacheable AOP 가 CGLIB proxy 를 생성해야 하므로
+// kotlin("plugin.spring") 의 all-open 컴파일러 분기에 본 클래스를 포함시키기 위해 명시한다
+// (Kotlin 기본 final 클래스는 CGLIB subclassing 불가 → BeanCreationException).
+@Repository
 class OrganizationRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : OrganizationRepositoryCustom {
 
+    /**
+     * Redis 캐싱 — 24h TTL, SAP daily sync 시 evict.
+     *
+     * 캐시 키: `"hrCode|allBranches"`. `hrCode` 가 null 인 케이스 (admin role) 는 키 `"null|true"` 로
+     * `findAllTeamScheduleBranches` 와 별개로 운영되며, 호출 site 자체가 다르므로 충돌 없음.
+     *
+     * 캐시 hit 분포: `(null, true)` 는 ALL_BRANCHES role 사용자 전원이 공유하는 단일 entry,
+     * `(hrCode, false)` 는 BRANCH_SCOPE 사용자별 distinct hrCode 수 만큼 entry → 운영 규모 < 1000.
+     */
+    @Cacheable(
+        value = [CacheConfig.CACHE_TEAM_SCHEDULE_BRANCHES],
+        key = "(#hrCode ?: 'null') + '|' + #allBranches"
+    )
     override fun findTeamScheduleBranches(hrCode: String?, allBranches: Boolean): List<BranchResponse> {
         val builder = BooleanBuilder()
         builder.and(organization.isDeleted.isNull.or(organization.isDeleted.isFalse))
@@ -38,6 +60,12 @@ class OrganizationRepositoryCustomImpl(
         return fetchTeamScheduleBranches(builder)
     }
 
+    /**
+     * Redis 캐싱 — 24h TTL, SAP daily sync 시 evict.
+     *
+     * 무인자 메서드라 단일 entry (cache name 당 1개). SYSTEM_ADMIN 호출자 전원 공유.
+     */
+    @Cacheable(value = [CacheConfig.CACHE_TEAM_SCHEDULE_BRANCHES], key = "'ALL'")
     override fun findAllTeamScheduleBranches(): List<BranchResponse> {
         val builder = BooleanBuilder()
         builder.and(organization.isDeleted.isNull.or(organization.isDeleted.isFalse))
@@ -155,9 +183,13 @@ class OrganizationRepositoryCustomImpl(
      *  - 단일 JPQL 통합 시 CASE-ORDER BY 가 필요해져 plan 복잡도 증가 + 가독성 하락
      *
      * 정책 변경(예: Level3 추가) 시 본 메서드 본문만 수정.
+     *
+     * Redis 캐싱 — 24h TTL, SAP daily sync 시 evict. cascade miss (null) 는 캐싱하지 않는다
+     * (CacheConfig 의 disableCachingNullValues). miss 가 빈번하면 향후 unless 옵션 조정 검토.
      */
-    override fun findFirstByCostCenterCascade(costCenterCode: String): Organization? {
-        return queryFactory
+    @Cacheable(value = [CacheConfig.CACHE_ORGANIZATION_CASCADE], key = "'CC|' + #costCenterCode")
+    override fun findFirstByCostCenterCascade(costCenterCode: String): OrganizationCacheDto? {
+        val org: Organization = queryFactory
             .selectFrom(organization)
             .where(organization.costCenterLevel5.eq(costCenterCode))
             .limit(1)
@@ -167,6 +199,8 @@ class OrganizationRepositoryCustomImpl(
                 .where(organization.costCenterLevel4.eq(costCenterCode))
                 .limit(1)
                 .fetchFirst()
+            ?: return null
+        return OrganizationCacheDto.from(org)
     }
 
     /**
@@ -174,9 +208,15 @@ class OrganizationRepositoryCustomImpl(
      *
      * 호출자: `EmployeeProfileResolver`, `UserRoleResolver` (SF AppointmentTriggerHanlder cascade 정합).
      * cascade 순서 변경 시 본 메서드 본문만 수정.
+     *
+     * Redis 캐싱 — 24h TTL, SAP daily sync 시 evict. cascade miss 정책은 cost_center cascade 와 동등.
+     *
+     * 캐시 키 prefix `OC|` — cost_center cascade (`CC|`) 와 별도 namespace 로 같은 cache name
+     * 내에서 입력값이 일치하는 우연한 충돌 방지.
      */
-    override fun findFirstByOrgCodeCascade(orgCode: String): Organization? {
-        return queryFactory
+    @Cacheable(value = [CacheConfig.CACHE_ORGANIZATION_CASCADE], key = "'OC|' + #orgCode")
+    override fun findFirstByOrgCodeCascade(orgCode: String): OrganizationCacheDto? {
+        val org: Organization = queryFactory
             .selectFrom(organization)
             .where(organization.orgCodeLevel5.eq(orgCode))
             .limit(1)
@@ -191,6 +231,8 @@ class OrganizationRepositoryCustomImpl(
                 .where(organization.orgCodeLevel3.eq(orgCode))
                 .limit(1)
                 .fetchFirst()
+            ?: return null
+        return OrganizationCacheDto.from(org)
     }
 
     override fun expandCostCenterCodes(costCenterCodes: List<String>): List<String> {

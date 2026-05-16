@@ -111,14 +111,14 @@ class AdminScheduleServiceTest {
             val userId = 1L
             val costCenterCode = "1234"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode)
-            val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
             val employees = listOf(
                 createEmployee(employeeCode = "20030001", name = "홍길동", orgName = "A팀"),
                 createEmployee(employeeCode = "20030002", name = "김철수", orgName = "B팀")
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode))
+                .thenReturn(orgCacheDto())
             whenever(
                 employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                     costCenterCode, UserRole.WOMAN, "재직"
@@ -182,10 +182,10 @@ class AdminScheduleServiceTest {
             val userId = 1L
             val costCenterCode = "1234"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode)
-            val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode))
+                .thenReturn(orgCacheDto())
             whenever(
                 employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                     costCenterCode, UserRole.WOMAN, "재직"
@@ -205,6 +205,9 @@ class AdminScheduleServiceTest {
             val userId = 1L
             val costCenterCode = "1111"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = UserRole.SALES_SUPPORT)
+            // cascade 결과 (DTO) — UC: SALES_SUPPORT 케이스에서 costCenterLevel3 를 expand 키로 사용
+            val orgCache = orgCacheDto(costCenterLevel3 = "CC3")
+            // findByCostCenterLevel3 결과는 Organization entity 리스트 (캐시 대상 아님)
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
             val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
             val orgB = Organization(id = 3, costCenterLevel3 = "CC3", costCenterLevel5 = "3333")
@@ -214,7 +217,7 @@ class AdminScheduleServiceTest {
             val emp3 = createEmployee(employeeCode = "20030003", name = "박여사", orgName = "B지점", costCenterCode = "3333")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(orgCache)
             whenever(organizationRepository.findByCostCenterLevel3("CC3")).thenReturn(listOf(org, orgA, orgB))
             whenever(
                 employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
@@ -240,14 +243,14 @@ class AdminScheduleServiceTest {
             val userId = 1L
             val costCenterCode = "1234"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = UserRole.LEADER)
-            val org = Organization(id = 1, costCenterLevel5 = costCenterCode)
             val employees = listOf(
                 createEmployee(employeeCode = "20030001", name = "홍길동", orgName = "A팀"),
                 createEmployee(employeeCode = "20030002", name = "김철수", orgName = "B팀")
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode))
+                .thenReturn(orgCacheDto())
             whenever(
                 employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                     costCenterCode, UserRole.WOMAN, "재직"
@@ -279,11 +282,12 @@ class AdminScheduleServiceTest {
             val userId = 1L
             val costCenterCode = "1111"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = UserRole.SALES_SUPPORT)
+            val orgCache = orgCacheDto(costCenterLevel3 = "CC3")
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
             val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(org)
+            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(orgCache)
             whenever(organizationRepository.findByCostCenterLevel3("CC3")).thenReturn(listOf(org, orgA))
             whenever(
                 employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
@@ -1664,6 +1668,21 @@ class AdminScheduleServiceTest {
             })
         }
     }
+
+    // cascade stub helper — generateTemplate 의 cascade hit 케이스. SALES_SUPPORT 분기에서만
+    // costCenterLevel3 가 필요, 나머지 케이스는 cascade 결과 non-null 확인만 의도.
+    private fun orgCacheDto(
+        costCenterLevel3: String? = null,
+        orgCodeLevel3: String? = null,
+        orgNameLevel3: String? = null,
+        orgNameLevel4: String? = null,
+    ): com.otoki.powersales.organization.repository.dto.OrganizationCacheDto =
+        com.otoki.powersales.organization.repository.dto.OrganizationCacheDto(
+            orgCodeLevel3 = orgCodeLevel3,
+            orgNameLevel3 = orgNameLevel3,
+            orgNameLevel4 = orgNameLevel4,
+            costCenterLevel3 = costCenterLevel3,
+        )
 
     private fun createSchedule(
         id: Long = 1L,
