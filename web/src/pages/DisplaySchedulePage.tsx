@@ -26,7 +26,25 @@ import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useSched
 import { useScheduleList } from '@/hooks/schedule/useScheduleList';
 import { useScheduleBatchConfirm, useScheduleBatchUnconfirm } from '@/hooks/schedule/useScheduleBatchConfirm';
 import { downloadScheduleTemplate } from '@/api/schedule';
-import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem } from '@/api/schedule';
+import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, SchedulePreset } from '@/api/schedule';
+import { PresetFilterSelect, type PresetOption } from '@/components/common/PresetFilterSelect';
+
+/**
+ * 레거시 SF List View 10개 매핑 — `docs/plan/legacy-pages/진열사원스케줄마스터/UC-01.md` 참조.
+ * 프리셋 선택 시 backend 가 ValidData 계산식 + 근무형태 / 확정여부 조건을 일괄 적용.
+ */
+const SCHEDULE_PRESET_OPTIONS: PresetOption<SchedulePreset>[] = [
+  { value: 'INPUT_TODAY', label: '0. 당일등록' },
+  { value: 'ALL', label: '1. 모두' },
+  { value: 'VALID', label: '2-1. 유효사원' },
+  { value: 'VALID_CONFIRMED', label: '2-2. 유효사원(확정)' },
+  { value: 'VALID_NOT_CONFIRMED', label: '2-3. 유효사원(미확정)' },
+  { value: 'FIXED_VALID', label: '3. 고정 유효사원' },
+  { value: 'BIFURCATION_VALID', label: '4. 격고 유효사원' },
+  { value: 'PATROL_VALID', label: '5. 순회 유효사원' },
+  { value: 'VALID_CONFIRMED_TEMP', label: '6. 유효사원(확정)_임시' },
+  { value: 'END', label: '7. 종료 사원' },
+];
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -57,13 +75,14 @@ const listColumns: ColumnsType<ScheduleListItem> = [
   { title: '거래처명', dataIndex: 'accountName', key: 'accountName', width: 150, render: (v) => v ?? '-' },
   { title: '근무유형3', dataIndex: 'typeOfWork3', key: 'typeOfWork3', width: 80, align: 'center' },
   { title: '근무유형5', dataIndex: 'typeOfWork5', key: 'typeOfWork5', width: 80, align: 'center' },
-  { title: '시작일', dataIndex: 'startDate', key: 'startDate', width: 110, align: 'center' },
+  { title: '시작일', dataIndex: 'startDate', key: 'startDate', width: 110, align: 'center', sorter: true },
   {
     title: '종료일',
     dataIndex: 'endDate',
     key: 'endDate',
     width: 110,
     align: 'center',
+    sorter: true,
     render: (v) => v ?? '-',
   },
   {
@@ -72,6 +91,7 @@ const listColumns: ColumnsType<ScheduleListItem> = [
     key: 'confirmed',
     width: 70,
     align: 'center',
+    sorter: true,
     render: (confirmed: boolean | null) =>
       confirmed ? <Tag color="green">확정</Tag> : <Tag>미확정</Tag>,
   },
@@ -82,6 +102,7 @@ const listColumns: ColumnsType<ScheduleListItem> = [
     key: 'lastMonthRevenue',
     width: 120,
     align: 'right',
+    sorter: true,
     render: (v: number | null) => (v != null ? v.toLocaleString() : '-'),
   },
 ];
@@ -99,6 +120,9 @@ export default function DisplaySchedulePage() {
   const [filterTypeOfWork3, setFilterTypeOfWork3] = useState<string | undefined>(undefined);
   const [filterConfirmed, setFilterConfirmed] = useState<boolean | undefined>(undefined);
   const [filterStartDateRange, setFilterStartDateRange] = useState<[string, string] | null>(null);
+  const [filterPreset, setFilterPreset] = useState<SchedulePreset | undefined>(undefined);
+  const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc' | undefined>(undefined);
 
   // Applied filters (only update on search click)
   const [appliedFilters, setAppliedFilters] = useState<{
@@ -108,6 +132,7 @@ export default function DisplaySchedulePage() {
     confirmed?: boolean;
     startDateFrom?: string;
     startDateTo?: string;
+    preset?: SchedulePreset;
   }>({});
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -116,6 +141,8 @@ export default function DisplaySchedulePage() {
     page: listPage,
     size: 20,
     ...appliedFilters,
+    sortBy,
+    sortDir,
   });
 
   const batchConfirmMutation = useScheduleBatchConfirm();
@@ -179,6 +206,7 @@ export default function DisplaySchedulePage() {
       confirmed: filterConfirmed,
       startDateFrom: filterStartDateRange?.[0],
       startDateTo: filterStartDateRange?.[1],
+      preset: filterPreset,
     });
   };
 
@@ -188,9 +216,31 @@ export default function DisplaySchedulePage() {
     setFilterTypeOfWork3(undefined);
     setFilterConfirmed(undefined);
     setFilterStartDateRange(null);
+    setFilterPreset(undefined);
+    setSortBy(undefined);
+    setSortDir(undefined);
     setListPage(0);
     setSelectedRowKeys([]);
     setAppliedFilters({});
+  };
+
+  /**
+   * 프리셋 선택 시 자유 필터 폼을 자동 채움 + 즉시 적용 (검색 버튼 클릭 불필요).
+   * 레거시 SF List View 드롭다운 UX 동등.
+   */
+  const handlePresetChange = (preset: SchedulePreset | undefined) => {
+    setFilterPreset(preset);
+    setListPage(0);
+    setSelectedRowKeys([]);
+    setAppliedFilters({
+      employeeCode: filterEmployeeCode || undefined,
+      accountName: filterAccountName || undefined,
+      typeOfWork3: filterTypeOfWork3,
+      confirmed: filterConfirmed,
+      startDateFrom: filterStartDateRange?.[0],
+      startDateTo: filterStartDateRange?.[1],
+      preset,
+    });
   };
 
   const handleBatchConfirm = () => {
@@ -344,6 +394,13 @@ export default function DisplaySchedulePage() {
 
       <Card title="스케줄 목록" style={{ marginTop: 16 }}>
         <Space wrap size="middle" style={{ marginBottom: 16 }}>
+          <PresetFilterSelect<SchedulePreset>
+            options={SCHEDULE_PRESET_OPTIONS}
+            value={filterPreset}
+            onChange={handlePresetChange}
+            placeholder="뷰 선택"
+            style={{ width: 220 }}
+          />
           <Input
             placeholder="사원번호"
             value={filterEmployeeCode}
@@ -449,6 +506,17 @@ export default function DisplaySchedulePage() {
               setListPage(page - 1);
               setSelectedRowKeys([]);
             },
+          }}
+          onChange={(_pagination, _filters, sorter) => {
+            const single = Array.isArray(sorter) ? sorter[0] : sorter;
+            if (single && single.order && single.field) {
+              setSortBy(String(single.field));
+              setSortDir(single.order === 'ascend' ? 'asc' : 'desc');
+            } else {
+              setSortBy(undefined);
+              setSortDir(undefined);
+            }
+            setListPage(0);
           }}
         />
       </Card>

@@ -3,16 +3,22 @@ package com.otoki.powersales.schedule.repository
 import com.otoki.powersales.employee.enums.EmploymentStatus
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule
+import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.enums.TypeOfWork3
+import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.types.OrderSpecifier
 import com.querydsl.core.types.dsl.BooleanExpression
+import com.querydsl.core.types.dsl.ComparableExpressionBase
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.data.support.PageableExecutionUtils
 import java.time.LocalDate
+import java.time.LocalTime
 
 class DisplayWorkScheduleRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
@@ -91,8 +97,10 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
+        preset: SchedulePreset?,
         pageable: Pageable
     ): Page<DisplayWorkSchedule> {
+        val today = LocalDate.now()
         val where = BooleanBuilder()
             .and(isNotDeleted())
             .and(buildEmployeeCodeCondition(employeeCode))
@@ -101,13 +109,14 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .and(buildTypeOfWork3Condition(typeOfWork3))
             .and(buildStartDateFromCondition(startDateFrom))
             .and(buildStartDateToCondition(startDateTo))
+            .and(buildPresetCondition(preset, today))
 
         val content = queryFactory
             .selectFrom(displayWorkSchedule)
             .leftJoin(displayWorkSchedule.employee).fetchJoin()
             .leftJoin(displayWorkSchedule.account).fetchJoin()
             .where(where)
-            .orderBy(displayWorkSchedule.startDate.desc(), displayWorkSchedule.id.desc())
+            .orderBy(*resolveOrder(pageable.sort))
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
@@ -120,6 +129,101 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         return PageableExecutionUtils.getPage(content, pageable) {
             countQuery.fetchOne() ?: 0L
         }
+    }
+
+    /**
+     * SF Formula `ValidData__c = '종료'` 의 신규 단순 매핑.
+     *
+     * SF formula 원본의 '종료' 분기는 사원 status (재직/퇴직/휴직) + appLoginActive + 사원 endDate + 스케줄
+     * startDate/endDate 의 복합 조건이나, 본 페이지 List View "7. 종료 사원" 의 실제 운영 의미는
+     * 「스케줄 종료일이 지난 레코드」 이므로 endDate < TODAY 단순 조건으로 매핑.
+     */
+    private fun validDataEqualsEnd(date: LocalDate): BooleanExpression =
+        displayWorkSchedule.endDate.lt(date)
+
+    /**
+     * preset → WHERE 조건 변환.
+     * SF List View 10개의 필터 조건 매핑 ([SchedulePreset] doc 참조).
+     * BooleanBuilder 반환 — BooleanBuilder.and() chain 은 Predicate 를 리턴하므로 BooleanBuilder 로 wrap.
+     */
+    private fun buildPresetCondition(preset: SchedulePreset?, today: LocalDate): BooleanBuilder? {
+        if (preset == null) return null
+        return when (preset) {
+            SchedulePreset.INPUT_TODAY ->
+                BooleanBuilder(
+                    displayWorkSchedule.createdAt.between(today.atStartOfDay(), today.atTime(LocalTime.MAX))
+                )
+            SchedulePreset.ALL -> null
+            SchedulePreset.VALID ->
+                BooleanBuilder(validDataEqualsEnd(today).not())
+            SchedulePreset.VALID_CONFIRMED ->
+                BooleanBuilder()
+                    .and(validDataEqualsValid(today))
+                    .and(displayWorkSchedule.confirmed.eq(true))
+                    .and(validPeriodCondition(today))
+            SchedulePreset.VALID_NOT_CONFIRMED ->
+                BooleanBuilder()
+                    .and(validDataEqualsValid(today))
+                    .and(displayWorkSchedule.confirmed.ne(true).or(displayWorkSchedule.confirmed.isNull))
+                    .and(validPeriodCondition(today))
+            SchedulePreset.FIXED_VALID ->
+                BooleanBuilder()
+                    .and(validDataEqualsEnd(today).not())
+                    .and(displayWorkSchedule.typeOfWork3.eq(TypeOfWork3.FIXED))
+                    .and(displayWorkSchedule.confirmed.eq(true))
+            SchedulePreset.BIFURCATION_VALID ->
+                BooleanBuilder()
+                    .and(validDataEqualsEnd(today).not())
+                    .and(displayWorkSchedule.typeOfWork3.eq(TypeOfWork3.GAP))
+                    .and(displayWorkSchedule.confirmed.eq(true))
+            SchedulePreset.PATROL_VALID ->
+                BooleanBuilder()
+                    .and(validDataEqualsEnd(today).not())
+                    .and(displayWorkSchedule.typeOfWork3.eq(TypeOfWork3.ROTATION))
+                    .and(displayWorkSchedule.confirmed.eq(true))
+            SchedulePreset.VALID_CONFIRMED_TEMP ->
+                BooleanBuilder()
+                    .and(validDataEqualsValid(today))
+                    .and(displayWorkSchedule.confirmed.eq(true))
+                    .and(displayWorkSchedule.typeOfWork5.eq(TypeOfWork5.TEMPORARY))
+                    .and(validPeriodCondition(today))
+            SchedulePreset.END ->
+                BooleanBuilder(validDataEqualsEnd(today))
+        }
+    }
+
+    /**
+     * SF ValidData '유효' formula 의 기간 조건 절 (StartDate ≤ TODAY AND (EndDate IS NULL OR TODAY ≤ EndDate)).
+     */
+    private fun validPeriodCondition(date: LocalDate): BooleanExpression =
+        displayWorkSchedule.startDate.loe(date)
+            .and(displayWorkSchedule.endDate.goe(date).or(displayWorkSchedule.endDate.isNull))
+
+    /**
+     * Pageable.sort 를 QueryDSL OrderSpecifier 로 변환.
+     * 허용 필드: startDate, endDate, confirmed, lastMonthRevenue, createdAt.
+     * 미지정 시 기본 정렬 (startDate desc, id desc) 유지.
+     */
+    private fun resolveOrder(sort: Sort): Array<OrderSpecifier<*>> {
+        if (sort.isUnsorted) {
+            return arrayOf(displayWorkSchedule.startDate.desc(), displayWorkSchedule.id.desc())
+        }
+        val specifiers = mutableListOf<OrderSpecifier<*>>()
+        for (order in sort) {
+            val path: ComparableExpressionBase<*>? = when (order.property) {
+                "startDate" -> displayWorkSchedule.startDate
+                "endDate" -> displayWorkSchedule.endDate
+                "confirmed" -> displayWorkSchedule.confirmed
+                "lastMonthRevenue" -> displayWorkSchedule.lastMonthRevenue
+                "createdAt" -> displayWorkSchedule.createdAt
+                else -> null
+            }
+            if (path != null) {
+                specifiers += if (order.isAscending) path.asc() else path.desc()
+            }
+        }
+        specifiers += displayWorkSchedule.id.desc()
+        return specifiers.toTypedArray()
     }
 
     override fun findByEmployeeAndStartDate(employeeId: Long, startDate: LocalDate): List<DisplayWorkSchedule> {

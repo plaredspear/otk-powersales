@@ -13,6 +13,7 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.enums.SecondWorkType
 import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.schedule.enums.TypeOfWork3
@@ -21,6 +22,7 @@ import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import com.otoki.powersales.sales.enums.SalesMonth
@@ -264,10 +266,12 @@ class AdminScheduleService(
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
-        startDateTo: LocalDate?
+        startDateTo: LocalDate?,
+        preset: SchedulePreset?,
+        sort: Sort,
     ): Page<ScheduleListItemDto> {
         val pageSize = size.coerceIn(1, 100)
-        val pageable = PageRequest.of(page, pageSize)
+        val pageable = PageRequest.of(page, pageSize, sort)
 
         val accountIds = if (!accountName.isNullOrBlank()) {
             accountRepository.findByNameContainingIgnoreCase(accountName).map { it.id }
@@ -276,7 +280,7 @@ class AdminScheduleService(
         }
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, pageable
+            employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, pageable
         )
 
         return schedulePage.map { schedule ->

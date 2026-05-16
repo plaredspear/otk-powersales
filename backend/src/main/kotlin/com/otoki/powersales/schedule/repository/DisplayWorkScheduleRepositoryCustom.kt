@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.repository
 
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.enums.SchedulePreset
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import java.time.LocalDate
@@ -30,6 +31,7 @@ interface DisplayWorkScheduleRepositoryCustom {
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
+        preset: SchedulePreset?,
         pageable: Pageable
     ): Page<DisplayWorkSchedule>
 

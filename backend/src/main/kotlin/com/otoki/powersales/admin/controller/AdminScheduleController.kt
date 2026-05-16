@@ -6,6 +6,7 @@ import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleListItemDto
 import com.otoki.powersales.schedule.dto.response.ScheduleUploadResultDto
+import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.exception.ScheduleFileRequiredException
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
@@ -14,6 +15,7 @@ import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.Sort
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -38,12 +40,22 @@ class AdminScheduleController(
         @RequestParam(required = false) confirmed: Boolean?,
         @RequestParam(required = false) typeOfWork3: String?,
         @RequestParam(required = false) startDateFrom: LocalDate?,
-        @RequestParam(required = false) startDateTo: LocalDate?
+        @RequestParam(required = false) startDateTo: LocalDate?,
+        @RequestParam(required = false) preset: SchedulePreset?,
+        @RequestParam(required = false) sortBy: String?,
+        @RequestParam(required = false) sortDir: String?,
     ): ResponseEntity<ApiResponse<Page<ScheduleListItemDto>>> {
+        val sort = resolveSort(sortBy, sortDir)
         val result = adminScheduleService.listSchedules(
-            page, size, employeeCode, accountName, confirmed, typeOfWork3, startDateFrom, startDateTo
+            page, size, employeeCode, accountName, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, sort
         )
         return ResponseEntity.ok(ApiResponse.success(result))
+    }
+
+    private fun resolveSort(sortBy: String?, sortDir: String?): Sort {
+        if (sortBy.isNullOrBlank()) return Sort.unsorted()
+        val direction = if (sortDir.equals("asc", ignoreCase = true)) Sort.Direction.ASC else Sort.Direction.DESC
+        return Sort.by(direction, sortBy)
     }
 
     @RequiresPermission(AdminPermission.SCHEDULE_WRITE)

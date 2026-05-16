@@ -67,6 +67,18 @@ export interface ScheduleListResponse {
   size: number;
 }
 
+export type SchedulePreset =
+  | 'INPUT_TODAY'
+  | 'ALL'
+  | 'VALID'
+  | 'VALID_CONFIRMED'
+  | 'VALID_NOT_CONFIRMED'
+  | 'FIXED_VALID'
+  | 'BIFURCATION_VALID'
+  | 'PATROL_VALID'
+  | 'VALID_CONFIRMED_TEMP'
+  | 'END';
+
 export interface ScheduleListParams {
   page?: number;
   size?: number;
@@ -76,6 +88,9 @@ export interface ScheduleListParams {
   typeOfWork3?: string;
   startDateFrom?: string;
   startDateTo?: string;
+  preset?: SchedulePreset;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
 }
 
 export interface ScheduleBatchConfirmResult {
@@ -154,6 +169,9 @@ export async function fetchScheduleList(params: ScheduleListParams): Promise<Sch
   if (params.typeOfWork3) queryParams.typeOfWork3 = params.typeOfWork3;
   if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;
   if (params.startDateTo) queryParams.startDateTo = params.startDateTo;
+  if (params.preset) queryParams.preset = params.preset;
+  if (params.sortBy) queryParams.sortBy = params.sortBy;
+  if (params.sortDir) queryParams.sortDir = params.sortDir;
 
   const res = await client.get<ApiResponse<PageRaw<ScheduleListItem>>>(
     '/api/v1/admin/schedule/list',

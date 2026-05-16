@@ -15,6 +15,7 @@ import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.schedule.enums.TypeOfWork3
 import com.otoki.powersales.schedule.enums.TypeOfWork5
@@ -35,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import org.springframework.mock.web.MockMultipartFile
@@ -660,10 +662,10 @@ class AdminScheduleServiceTest {
             val schedule = createSchedule(id = 1L, confirmed = false, employee = employee, account = account)
             val page = PageImpl(listOf(schedule), PageRequest.of(0, 20), 1)
 
-            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(page)
 
-            val result = adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null)
+            val result = adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null, null, Sort.unsorted())
 
             assertThat(result.totalElements).isEqualTo(1)
             assertThat(result.content[0].employeeCode).isEqualTo("20030001")
@@ -676,10 +678,10 @@ class AdminScheduleServiceTest {
         @DisplayName("빈 결과 - 매칭 없음")
         fun listSchedules_empty() {
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
-            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(emptyPage)
 
-            val result = adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null)
+            val result = adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null, null, Sort.unsorted())
 
             assertThat(result.totalElements).isEqualTo(0)
             assertThat(result.content).isEmpty()
@@ -691,24 +693,58 @@ class AdminScheduleServiceTest {
             val account = createAccount(id = 100, name = "이마트 성수점")
             whenever(accountRepository.findByNameContainingIgnoreCase("이마트")).thenReturn(listOf(account))
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
-            whenever(scheduleRepository.findScheduleList(isNull(), eq(listOf(100)), isNull(), isNull(), isNull(), isNull(), any()))
+            whenever(scheduleRepository.findScheduleList(isNull(), eq(listOf(100)), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(emptyPage)
 
-            adminScheduleService.listSchedules(0, 20, null, "이마트", null, null, null, null)
+            adminScheduleService.listSchedules(0, 20, null, "이마트", null, null, null, null, null, Sort.unsorted())
 
-            verify(scheduleRepository).findScheduleList(isNull(), eq(listOf(100)), isNull(), isNull(), isNull(), isNull(), any())
+            verify(scheduleRepository).findScheduleList(isNull(), eq(listOf(100)), isNull(), isNull(), isNull(), isNull(), isNull(), any())
         }
 
         @Test
         @DisplayName("페이지 크기 제한 - 100 초과 시 100으로 제한")
         fun listSchedules_pageSizeLimit() {
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 100), 0)
-            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
                 .thenReturn(emptyPage)
 
-            adminScheduleService.listSchedules(0, 200, null, null, null, null, null, null)
+            adminScheduleService.listSchedules(0, 200, null, null, null, null, null, null, null, Sort.unsorted())
 
-            verify(scheduleRepository).findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), argThat { pageSize == 100 })
+            verify(scheduleRepository).findScheduleList(
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), argThat { pageSize == 100 }
+            )
+        }
+
+        @Test
+        @DisplayName("preset 필터 - 레거시 List View 매핑 (END) 가 Repository 에 전달됨")
+        fun listSchedules_presetEnd() {
+            val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
+            whenever(scheduleRepository.findScheduleList(
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(SchedulePreset.END), any()
+            )).thenReturn(emptyPage)
+
+            adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null, SchedulePreset.END, Sort.unsorted())
+
+            verify(scheduleRepository).findScheduleList(
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(SchedulePreset.END), any()
+            )
+        }
+
+        @Test
+        @DisplayName("정렬 - Sort 가 Pageable 에 반영됨")
+        fun listSchedules_sortApplied() {
+            val sort = Sort.by(Sort.Direction.DESC, "endDate")
+            val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20, sort), 0)
+            whenever(scheduleRepository.findScheduleList(
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
+            )).thenReturn(emptyPage)
+
+            adminScheduleService.listSchedules(0, 20, null, null, null, null, null, null, null, sort)
+
+            verify(scheduleRepository).findScheduleList(
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                argThat { this.sort == sort }
+            )
         }
     }
 

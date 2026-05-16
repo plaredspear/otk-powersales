@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
 import com.otoki.powersales.schedule.dto.response.*
+import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.schedule.service.AdminScheduleService
 import com.otoki.powersales.schedule.service.MissingCostCenterException
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.whenever
@@ -30,6 +32,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -113,8 +116,9 @@ class AdminScheduleControllerTest {
                 )
             )
             val page = PageImpl(items, PageRequest.of(0, 20), 1)
-            whenever(adminScheduleService.listSchedules(eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull()))
-                .thenReturn(page)
+            whenever(adminScheduleService.listSchedules(
+                eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
+            )).thenReturn(page)
 
             mockMvc.perform(get("/api/v1/admin/schedule/list"))
                 .andExpect(status().isOk)
@@ -133,7 +137,7 @@ class AdminScheduleControllerTest {
         fun list_withFilters() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             whenever(adminScheduleService.listSchedules(
-                eq(0), eq(20), eq("123"), isNull(), eq(true), isNull(), isNull(), isNull()
+                eq(0), eq(20), eq("123"), isNull(), eq(true), isNull(), isNull(), isNull(), isNull(), any()
             )).thenReturn(emptyPage)
 
             mockMvc.perform(
@@ -149,13 +153,47 @@ class AdminScheduleControllerTest {
         @DisplayName("성공 - 빈 결과")
         fun list_empty() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
-            whenever(adminScheduleService.listSchedules(eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull()))
-                .thenReturn(emptyPage)
+            whenever(adminScheduleService.listSchedules(
+                eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
+            )).thenReturn(emptyPage)
 
             mockMvc.perform(get("/api/v1/admin/schedule/list"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isEmpty())
                 .andExpect(jsonPath("$.data.totalElements").value(0))
+        }
+
+        @Test
+        @DisplayName("성공 - preset 파라미터 (END) 가 service 에 전달")
+        fun list_withPreset() {
+            val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
+            whenever(adminScheduleService.listSchedules(
+                eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                eq(SchedulePreset.END), any()
+            )).thenReturn(emptyPage)
+
+            mockMvc.perform(
+                get("/api/v1/admin/schedule/list")
+                    .param("preset", "END")
+            )
+                .andExpect(status().isOk)
+        }
+
+        @Test
+        @DisplayName("성공 - sortBy/sortDir 파라미터가 Sort 로 변환")
+        fun list_withSort() {
+            val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
+            whenever(adminScheduleService.listSchedules(
+                eq(0), eq(20), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                argThat { getOrderFor("endDate")?.direction == Sort.Direction.ASC }
+            )).thenReturn(emptyPage)
+
+            mockMvc.perform(
+                get("/api/v1/admin/schedule/list")
+                    .param("sortBy", "endDate")
+                    .param("sortDir", "asc")
+            )
+                .andExpect(status().isOk)
         }
     }
 
