@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
+import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
@@ -76,6 +77,17 @@ class AdminScheduleController(
     ): ResponseEntity<ApiResponse<ScheduleBatchConfirmResultDto>> {
         val result = adminScheduleService.batchUnconfirm(request.ids)
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정 해제되었습니다"))
+    }
+
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @PutMapping("/{id}")
+    fun updateSchedule(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @PathVariable id: Long,
+        @Valid @RequestBody request: AdminScheduleUpdateRequest
+    ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
+        val result = adminScheduleService.updateSchedule(principal.requireEmployeeId(), id, request)
+        return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 수정되었습니다"))
     }
 
     @RequiresPermission(AdminPermission.SCHEDULE_WRITE)

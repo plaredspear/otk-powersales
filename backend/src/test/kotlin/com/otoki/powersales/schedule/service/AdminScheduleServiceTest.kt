@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.entity.UserRole
 import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
+import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.RowPreview
 import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
@@ -17,6 +18,7 @@ import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.SchedulePreset
+import com.otoki.powersales.schedule.enums.SecondWorkType
 import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.schedule.enums.TypeOfWork3
 import com.otoki.powersales.schedule.enums.TypeOfWork5
@@ -869,6 +871,199 @@ class AdminScheduleServiceTest {
     }
 
     @Nested
+    @DisplayName("updateSchedule - 단건 편집")
+    inner class UpdateScheduleTests {
+
+        private val userId = 1L
+        private val scheduleId = 10L
+        private val baseRequest = AdminScheduleUpdateRequest(
+            employeeCode = "20030001",
+            accountCode = "ACC001",
+            typeOfWork3 = "고정",
+            typeOfWork4 = "상온",
+            typeOfWork5 = "상시",
+            startDate = LocalDate.of(2026, 5, 1),
+            endDate = LocalDate.of(2026, 12, 31)
+        )
+
+        @Test
+        @DisplayName("정상 편집 — validateSingle 통과 + 자동채움 재실행 + entity 갱신")
+        fun updateSchedule_success() {
+            val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val originalAccount = createAccount(id = 1, externalKey = "ACC001")
+            val schedule = createSchedule(id = scheduleId, confirmed = false, employee = originalEmployee, account = originalAccount)
+            val user = createEmployee(id = userId, role = UserRole.LEADER)
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = baseRequest.startDate, endDate = baseRequest.endDate,
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(originalEmployee))
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(originalAccount)
+            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(listOf(schedule))
+            whenever(uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(baseRequest.startDate), eq(baseRequest.endDate),
+                eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
+            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
+                .thenReturn(emptyList())
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))))
+                .thenReturn(emptyList())
+
+            val result = adminScheduleService.updateSchedule(userId, scheduleId, baseRequest)
+
+            assertThat(result.id).isEqualTo(scheduleId)
+            assertThat(result.employeeCode).isEqualTo("20030001")
+            assertThat(schedule.startDate).isEqualTo(baseRequest.startDate)
+            assertThat(schedule.endDate).isEqualTo(baseRequest.endDate)
+            assertThat(schedule.costCenterCode).isEqualTo("A10010")
+        }
+
+        @Test
+        @DisplayName("UC-05 차단 — 확정 + LEADER + 거래처 변경 시 ScheduleEditBlockedAfterConfirmException")
+        fun updateSchedule_blockedAfterConfirm_leaderChangesAccount() {
+            val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001")
+            val originalAccount = createAccount(id = 1, externalKey = "ACC_ORIGINAL")
+            val schedule = createSchedule(id = scheduleId, confirmed = true, employee = originalEmployee, account = originalAccount)
+            val user = createEmployee(id = userId, role = UserRole.LEADER)
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
+
+            assertThatThrownBy {
+                adminScheduleService.updateSchedule(userId, scheduleId, baseRequest.copy(accountCode = "ACC001"))
+            }.isInstanceOf(ScheduleEditBlockedAfterConfirmException::class.java)
+
+            verify(uploadValidator, never()).validateSingle(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+
+        @Test
+        @DisplayName("UC-05 차단 예외 — 확정 + SYSTEM_ADMIN 은 모든 필드 변경 가능")
+        fun updateSchedule_systemAdminBypassesBlock() {
+            val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val originalAccount = createAccount(id = 1, externalKey = "ACC001")
+            val schedule = createSchedule(id = scheduleId, confirmed = true, employee = originalEmployee, account = originalAccount)
+            val adminUser = createEmployee(id = userId, role = UserRole.SYSTEM_ADMIN)
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = baseRequest.startDate, endDate = baseRequest.endDate,
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(adminUser))
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(originalEmployee))
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(originalAccount)
+            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(listOf(schedule))
+            whenever(uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(baseRequest.startDate), eq(baseRequest.endDate),
+                eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
+            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
+                .thenReturn(emptyList())
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))))
+                .thenReturn(emptyList())
+
+            adminScheduleService.updateSchedule(userId, scheduleId, baseRequest.copy(typeOfWork3 = "고정"))
+
+            assertThat(schedule.startDate).isEqualTo(baseRequest.startDate)
+        }
+
+        @Test
+        @DisplayName("UC-05 통과 — 확정 + LEADER + 종료일만 변경은 차단되지 않음")
+        fun updateSchedule_leaderChangesOnlyEndDate() {
+            val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val originalAccount = createAccount(id = 1, externalKey = "ACC001")
+            // 기존 시작일·종료일 (baseRequest 와 시작일 동일하게 설정)
+            val schedule = DisplayWorkSchedule(
+                id = scheduleId,
+                employee = originalEmployee,
+                account = originalAccount,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                typeOfWork3 = TypeOfWork3.FIXED,
+                typeOfWork4 = SecondWorkType.ROOM_TEMP,
+                typeOfWork5 = TypeOfWork5.REGULAR,
+                startDate = baseRequest.startDate,
+                endDate = LocalDate.of(2026, 6, 30),
+                confirmed = true
+            )
+            val user = createEmployee(id = userId, role = UserRole.LEADER)
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = baseRequest.startDate, endDate = LocalDate.of(2026, 5, 31),
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(originalEmployee))
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(originalAccount)
+            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(listOf(schedule))
+            whenever(uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(baseRequest.startDate), eq(LocalDate.of(2026, 5, 31)),
+                eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
+            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
+            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
+                .thenReturn(emptyList())
+            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))))
+                .thenReturn(emptyList())
+
+            adminScheduleService.updateSchedule(
+                userId, scheduleId,
+                baseRequest.copy(endDate = LocalDate.of(2026, 5, 31))
+            )
+
+            assertThat(schedule.endDate).isEqualTo(LocalDate.of(2026, 5, 31))
+        }
+
+        @Test
+        @DisplayName("미존재 스케줄 — ScheduleNotFoundException")
+        fun updateSchedule_notFound() {
+            whenever(scheduleRepository.findById(999L)).thenReturn(Optional.empty())
+
+            assertThatThrownBy { adminScheduleService.updateSchedule(userId, 999L, baseRequest) }
+                .isInstanceOf(ScheduleNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("validator 실패 — ScheduleValidationException")
+        fun updateSchedule_validationFailure() {
+            val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001")
+            val originalAccount = createAccount(id = 1, externalKey = "ACC001")
+            val schedule = createSchedule(id = scheduleId, confirmed = false, employee = originalEmployee, account = originalAccount)
+            val user = createEmployee(id = userId, role = UserRole.LEADER)
+
+            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
+            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(originalEmployee))
+            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(originalAccount)
+            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(listOf(schedule))
+            whenever(uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(baseRequest.startDate), eq(baseRequest.endDate),
+                eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
+            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(
+                listOf("시작일이 종료일보다 이후입니다"), null
+            ))
+
+            assertThatThrownBy { adminScheduleService.updateSchedule(userId, scheduleId, baseRequest) }
+                .isInstanceOf(ScheduleValidationException::class.java)
+                .hasMessageContaining("시작일이 종료일보다 이후")
+        }
+    }
+
+    @Nested
     @DisplayName("deleteSchedule - 진열마스터 삭제")
     inner class DeleteScheduleTests {
 
@@ -1029,7 +1224,7 @@ class AdminScheduleServiceTest {
             whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
             whenever(uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList())
+                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList()), isNull()
             )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
             whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
                 .thenReturn(emptyList())
@@ -1063,7 +1258,7 @@ class AdminScheduleServiceTest {
             whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
             whenever(uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList())
+                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList()), isNull()
             )).thenReturn(ScheduleUploadValidator.SingleValidationResult(
                 listOf("기간내에 동일한 거래처가 등록되어 있습니다"), null
             ))
@@ -1083,7 +1278,7 @@ class AdminScheduleServiceTest {
             whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
             whenever(uploadValidator.validateSingle(
                 eq("99999999"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), isNull(), isNull(), eq(account), eq(emptyList())
+                eq(LocalDate.of(2026, 5, 1)), isNull(), isNull(), eq(account), eq(emptyList()), isNull()
             )).thenReturn(ScheduleUploadValidator.SingleValidationResult(
                 listOf("사원번호 99999999: 존재하지 않는 사원"), null
             ))
@@ -1113,7 +1308,7 @@ class AdminScheduleServiceTest {
             whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
             whenever(uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList())
+                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList()), isNull()
             )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
             whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
                 .thenReturn(listOf(leaderEmp))
@@ -1149,7 +1344,7 @@ class AdminScheduleServiceTest {
             whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
             whenever(uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList())
+                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList()), isNull()
             )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
             whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
                 .thenReturn(emptyList())

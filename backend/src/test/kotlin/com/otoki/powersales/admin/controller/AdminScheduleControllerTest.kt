@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
+import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
 import com.otoki.powersales.schedule.dto.response.*
@@ -282,6 +283,99 @@ class AdminScheduleControllerTest {
                     .content(invalidBody)
             )
                 .andExpect(status().isBadRequest)
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /api/v1/admin/schedule/{id} - 단건 편집")
+    inner class UpdateSchedule {
+
+        @Test
+        @DisplayName("성공 - 편집 결과 반환")
+        fun update_success() {
+            val request = AdminScheduleUpdateRequest(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = LocalDate.of(2026, 12, 31)
+            )
+            val result = ScheduleCreateResultDto(
+                id = 10L,
+                employeeCode = "20030001",
+                employeeName = "홍길동",
+                accountCode = "ACC001",
+                accountName = "이마트 강남점",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = LocalDate.of(2026, 12, 31),
+                costCenterCode = "A10010",
+                lastMonthRevenue = 3000000L
+            )
+            whenever(adminScheduleService.updateSchedule(eq(1L), eq(10L), any())).thenReturn(result)
+
+            mockMvc.perform(
+                put("/api/v1/admin/schedule/10")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(10))
+                .andExpect(jsonPath("$.data.employeeName").value("홍길동"))
+                .andExpect(jsonPath("$.message").value("스케줄이 수정되었습니다"))
+        }
+
+        @Test
+        @DisplayName("실패 - 확정 후 차단 (UC-05) → 409")
+        fun update_blockedAfterConfirm() {
+            val request = AdminScheduleUpdateRequest(
+                employeeCode = "20030001",
+                accountCode = "ACC_NEW",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = LocalDate.of(2026, 12, 31)
+            )
+            whenever(adminScheduleService.updateSchedule(eq(1L), eq(10L), any()))
+                .thenThrow(ScheduleEditBlockedAfterConfirmException())
+
+            mockMvc.perform(
+                put("/api/v1/admin/schedule/10")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isConflict)
+                .andExpect(jsonPath("$.error.code").value("SCHEDULE_EDIT_BLOCKED_AFTER_CONFIRM"))
+        }
+
+        @Test
+        @DisplayName("실패 - 미존재 스케줄 → 404")
+        fun update_notFound() {
+            val request = AdminScheduleUpdateRequest(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "고정",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = LocalDate.of(2026, 12, 31)
+            )
+            whenever(adminScheduleService.updateSchedule(eq(1L), eq(999L), any()))
+                .thenThrow(ScheduleNotFoundException("존재하지 않거나 삭제된 스케줄입니다"))
+
+            mockMvc.perform(
+                put("/api/v1/admin/schedule/999")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_FOUND"))
         }
     }
 

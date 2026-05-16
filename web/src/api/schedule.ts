@@ -107,6 +107,8 @@ export interface ScheduleCreateRequest {
   endDate?: string | null;
 }
 
+export type ScheduleUpdateRequest = ScheduleCreateRequest;
+
 export interface ScheduleCreateResult {
   id: number;
   employeeCode: string;
@@ -237,6 +239,17 @@ export async function createSchedule(payload: ScheduleCreateRequest): Promise<Sc
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message || res.data.message || '스케줄 등록에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function updateSchedule(id: number, payload: ScheduleUpdateRequest): Promise<ScheduleCreateResult> {
+  const res = await client.put<ApiResponse<ScheduleCreateResult>>(
+    `/api/v1/admin/schedule/${id}`,
+    payload,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '스케줄 수정에 실패했습니다');
   }
   return res.data.data;
 }

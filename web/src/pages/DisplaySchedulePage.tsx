@@ -69,44 +69,57 @@ const previewColumns: ColumnsType<RowPreview> = [
   { title: '종료일', dataIndex: 'endDate', key: 'endDate', width: 110, render: (v) => v ?? '-' },
 ];
 
-const listColumns: ColumnsType<ScheduleListItem> = [
-  { title: '사원번호', dataIndex: 'employeeCode', key: 'employeeCode', width: 100 },
-  { title: '사원명', dataIndex: 'employeeName', key: 'employeeName', width: 80 },
-  { title: '거래처코드', dataIndex: 'accountCode', key: 'accountCode', width: 110, render: (v) => v ?? '-' },
-  { title: '거래처명', dataIndex: 'accountName', key: 'accountName', width: 150, render: (v) => v ?? '-' },
-  { title: '근무유형3', dataIndex: 'typeOfWork3', key: 'typeOfWork3', width: 80, align: 'center' },
-  { title: '근무유형5', dataIndex: 'typeOfWork5', key: 'typeOfWork5', width: 80, align: 'center' },
-  { title: '시작일', dataIndex: 'startDate', key: 'startDate', width: 110, align: 'center', sorter: true },
-  {
-    title: '종료일',
-    dataIndex: 'endDate',
-    key: 'endDate',
-    width: 110,
-    align: 'center',
-    sorter: true,
-    render: (v) => v ?? '-',
-  },
-  {
-    title: '확정',
-    dataIndex: 'confirmed',
-    key: 'confirmed',
-    width: 70,
-    align: 'center',
-    sorter: true,
-    render: (confirmed: boolean | null) =>
-      confirmed ? <Tag color="green">확정</Tag> : <Tag>미확정</Tag>,
-  },
-  { title: '조직코드', dataIndex: 'costCenterCode', key: 'costCenterCode', width: 80, align: 'center', render: (v) => v ?? '-' },
-  {
-    title: '전월매출',
-    dataIndex: 'lastMonthRevenue',
-    key: 'lastMonthRevenue',
-    width: 120,
-    align: 'right',
-    sorter: true,
-    render: (v: number | null) => (v != null ? v.toLocaleString() : '-'),
-  },
-];
+function buildListColumns(onEdit: (row: ScheduleListItem) => void): ColumnsType<ScheduleListItem> {
+  return [
+    { title: '사원번호', dataIndex: 'employeeCode', key: 'employeeCode', width: 100 },
+    { title: '사원명', dataIndex: 'employeeName', key: 'employeeName', width: 80 },
+    { title: '거래처코드', dataIndex: 'accountCode', key: 'accountCode', width: 110, render: (v) => v ?? '-' },
+    { title: '거래처명', dataIndex: 'accountName', key: 'accountName', width: 150, render: (v) => v ?? '-' },
+    { title: '근무유형3', dataIndex: 'typeOfWork3', key: 'typeOfWork3', width: 80, align: 'center' },
+    { title: '근무유형5', dataIndex: 'typeOfWork5', key: 'typeOfWork5', width: 80, align: 'center' },
+    { title: '시작일', dataIndex: 'startDate', key: 'startDate', width: 110, align: 'center', sorter: true },
+    {
+      title: '종료일',
+      dataIndex: 'endDate',
+      key: 'endDate',
+      width: 110,
+      align: 'center',
+      sorter: true,
+      render: (v) => v ?? '-',
+    },
+    {
+      title: '확정',
+      dataIndex: 'confirmed',
+      key: 'confirmed',
+      width: 70,
+      align: 'center',
+      sorter: true,
+      render: (confirmed: boolean | null) =>
+        confirmed ? <Tag color="green">확정</Tag> : <Tag>미확정</Tag>,
+    },
+    { title: '조직코드', dataIndex: 'costCenterCode', key: 'costCenterCode', width: 80, align: 'center', render: (v) => v ?? '-' },
+    {
+      title: '전월매출',
+      dataIndex: 'lastMonthRevenue',
+      key: 'lastMonthRevenue',
+      width: 120,
+      align: 'right',
+      sorter: true,
+      render: (v: number | null) => (v != null ? v.toLocaleString() : '-'),
+    },
+    {
+      title: '액션',
+      key: 'action',
+      width: 80,
+      align: 'center',
+      render: (_, row) => (
+        <Button size="small" onClick={() => onEdit(row)}>
+          수정
+        </Button>
+      ),
+    },
+  ];
+}
 
 export default function DisplaySchedulePage() {
   const [downloading, setDownloading] = useState(false);
@@ -138,6 +151,9 @@ export default function DisplaySchedulePage() {
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ScheduleListItem | null>(null);
+  const modalOpen = createModalOpen || editTarget != null;
+  const listColumns = buildListColumns((row) => setEditTarget(row));
 
   const scheduleListQuery = useScheduleList({
     page: listPage,
@@ -530,8 +546,12 @@ export default function DisplaySchedulePage() {
       </Card>
 
       <ScheduleCreateModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
+        open={modalOpen}
+        editTarget={editTarget}
+        onClose={() => {
+          setCreateModalOpen(false);
+          setEditTarget(null);
+        }}
         onSuccess={() => {
           scheduleListQuery.refetch();
         }}

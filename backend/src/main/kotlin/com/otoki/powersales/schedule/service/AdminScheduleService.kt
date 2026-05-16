@@ -3,6 +3,7 @@ package com.otoki.powersales.schedule.service
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
+import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleCreateResultDto
@@ -430,6 +431,129 @@ class AdminScheduleService(
             endDate = saved.endDate,
             costCenterCode = saved.costCenterCode,
             lastMonthRevenue = saved.lastMonthRevenue?.toLong()
+        )
+    }
+
+    /**
+     * UC-03 단건 편집.
+     * 레거시 SF Validation Rule `EditDisableForDisplayMaster` (UC-05) 동등:
+     *   confirmed=true 이고 사용자가 ADMIN_GRADE(SYSTEM_ADMIN/SALES_SUPPORT) 가 아닐 때
+     *   거래처·근무형태1·근무형태3·근무형태5·사원·시작일·확정 변경 시 차단.
+     * 통과 시 validateSingle 재실행 (자기 자신 row 는 V8/C1~C3 중복 검사에서 제외) + 자동채움 재계산.
+     */
+    @Transactional
+    fun updateSchedule(
+        userId: Long,
+        scheduleId: Long,
+        request: AdminScheduleUpdateRequest
+    ): ScheduleCreateResultDto {
+        val schedule = scheduleRepository.findById(scheduleId)
+            .filter { it.isDeleted != true }
+            .orElseThrow { ScheduleNotFoundException("존재하지 않거나 삭제된 스케줄입니다") }
+
+        val user = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
+
+        // UC-05 차단 룰: 확정 후 ADMIN_GRADE 외 사용자가 종료일 외 필드 변경 시도하면 차단.
+        if (schedule.confirmed == true && user.role !in UserRole.ADMIN_GRADE) {
+            val originalEmployeeCode = schedule.employee?.employeeCode
+            val originalAccountCode = schedule.account?.externalKey
+            val originalType3 = schedule.typeOfWork3?.displayName
+            val originalType4 = schedule.typeOfWork4?.displayName
+            val originalType5 = schedule.typeOfWork5?.displayName
+            val originalStart = schedule.startDate
+
+            val blockedFieldChanged =
+                originalEmployeeCode != request.employeeCode ||
+                    originalAccountCode != request.accountCode ||
+                    originalType3 != request.typeOfWork3 ||
+                    originalType4 != request.typeOfWork4 ||
+                    originalType5 != request.typeOfWork5 ||
+                    originalStart != request.startDate
+            if (blockedFieldChanged) {
+                throw ScheduleEditBlockedAfterConfirmException()
+            }
+        }
+
+        val employee = employeeRepository.findByEmployeeCode(request.employeeCode).orElse(null)
+        val account = accountRepository.findByExternalKey(request.accountCode)
+
+        val existingSchedules = if (employee != null) {
+            scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(employee.id))
+        } else {
+            emptyList()
+        }
+
+        val result = uploadValidator.validateSingle(
+            employeeCode = request.employeeCode,
+            accountCode = request.accountCode,
+            typeOfWork3 = request.typeOfWork3,
+            typeOfWork4 = request.typeOfWork4,
+            typeOfWork5 = request.typeOfWork5,
+            startDate = request.startDate,
+            endDate = request.endDate,
+            employee = employee,
+            account = account,
+            existingSchedules = existingSchedules,
+            excludeScheduleId = scheduleId
+        )
+
+        if (result.validatedRow == null) {
+            throw ScheduleValidationException(result.messages.joinToString("; "))
+        }
+
+        val validatedRow = result.validatedRow
+
+        // 자동채움 재실행 (거래처·사원이 바뀌었을 수 있으므로 항상 재계산)
+        val today = LocalDate.now()
+        val lastMonth = today.minusMonths(1)
+        val salesYear = SalesYear.fromValueOrNull(lastMonth.year.toString())
+        val salesMonth = SalesMonth.fromValueOrNull(String.format("%02d", lastMonth.monthValue))
+        val lastMonthRevenue = if (account != null && salesYear != null && salesMonth != null) {
+            monthlySalesHistoryRepository
+                .findBySalesYearAndSalesMonthAndAccountIn(salesYear, salesMonth, listOf(account))
+                .firstOrNull()
+                ?.lastMonthResults
+                ?.setScale(0, java.math.RoundingMode.HALF_UP)
+        } else {
+            null
+        }
+
+        val costCenterCode = validatedRow.costCenterCode
+        val ownerUser = if (!costCenterCode.isNullOrBlank()) {
+            employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
+                listOf(costCenterCode), UserRole.LEADER
+            ).firstOrNull()
+                ?.employeeCode
+                ?.let { code -> userRepository.findByEmployeeCodeIn(listOf(code)).firstOrNull() }
+        } else {
+            null
+        }
+
+        schedule.employee = employee
+        schedule.account = account
+        schedule.typeOfWork3 = TypeOfWork3.fromDisplayNameOrNull(validatedRow.typeOfWork3)
+        schedule.typeOfWork4 = SecondWorkType.fromDisplayNameOrNull(validatedRow.typeOfWork4)
+        schedule.typeOfWork5 = TypeOfWork5.fromDisplayNameOrNull(validatedRow.typeOfWork5)
+        schedule.startDate = validatedRow.startDate
+        schedule.endDate = validatedRow.endDate
+        schedule.costCenterCode = costCenterCode
+        schedule.lastMonthRevenue = lastMonthRevenue
+        schedule.ownerUser = ownerUser
+
+        return ScheduleCreateResultDto(
+            id = schedule.id,
+            employeeCode = employee?.employeeCode ?: "",
+            employeeName = employee?.name ?: "",
+            accountCode = account?.externalKey,
+            accountName = account?.name,
+            typeOfWork3 = schedule.typeOfWork3?.displayName,
+            typeOfWork4 = schedule.typeOfWork4?.displayName,
+            typeOfWork5 = schedule.typeOfWork5?.displayName,
+            startDate = schedule.startDate,
+            endDate = schedule.endDate,
+            costCenterCode = schedule.costCenterCode,
+            lastMonthRevenue = schedule.lastMonthRevenue?.toLong()
         )
     }
 

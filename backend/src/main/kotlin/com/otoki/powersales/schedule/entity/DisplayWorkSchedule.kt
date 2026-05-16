@@ -66,12 +66,12 @@ class DisplayWorkSchedule(
     @SFField("StartDate__c")
     @HCColumn("startdate__c")
     @Column(name = "start_date")
-    val startDate: LocalDate? = null,
+    var startDate: LocalDate? = null,
 
     @SFField("EndDate__c")
     @HCColumn("enddate__c")
     @Column(name = "end_date")
-    val endDate: LocalDate? = null,
+    var endDate: LocalDate? = null,
 
     @SFField("Confirmed__c")
     @HCColumn("confirmed__c")
@@ -88,19 +88,19 @@ class DisplayWorkSchedule(
     @HCColumn("typeofwork3__c")
     @Column(name = "type_of_work3", length = 255)
     @Convert(converter = TypeOfWork3Converter::class)
-    val typeOfWork3: TypeOfWork3? = null,
+    var typeOfWork3: TypeOfWork3? = null,
 
     @SFField("TypeOfWork4__c")
     @HCColumn("typeofwork4__c")
     @Column(name = "type_of_work4", length = 255)
     @Convert(converter = SecondWorkTypeConverter::class)
-    val typeOfWork4: SecondWorkType? = null,
+    var typeOfWork4: SecondWorkType? = null,
 
     @SFField("TypeOfWork5__c")
     @HCColumn("typeofwork5__c")
     @Column(name = "type_of_work5", length = 255)
     @Convert(converter = TypeOfWork5Converter::class)
-    val typeOfWork5: TypeOfWork5? = null,
+    var typeOfWork5: TypeOfWork5? = null,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")
@@ -120,12 +120,12 @@ class DisplayWorkSchedule(
     @SFField("CostCenterCode__c")
     @HCColumn("costcentercode__c")
     @Column(name = "cost_center_code", length = 20)
-    val costCenterCode: String? = null,
+    var costCenterCode: String? = null,
 
     @SFField("LastMonthRevenue__c")
     @HCColumn("lastmonthrevenue__c")
     @Column(name = "last_month_revenue", precision = 18, scale = 0)
-    val lastMonthRevenue: BigDecimal? = null,
+    var lastMonthRevenue: BigDecimal? = null,
 
     @SFField("IsDeleted")
     @HCColumn("isdeleted")
@@ -136,11 +136,11 @@ class DisplayWorkSchedule(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
-    val account: Account? = null,
+    var account: Account? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id")
-    val employee: Employee? = null,
+    var employee: Employee? = null,
 
     // OwnerId polymorphic R-2 (referenceTo = [Group, User]) — sfid prefix `005` = User / `00G` = Group.
     // XOR CHECK 제약 chk_display_work_schedule_owner_xor.

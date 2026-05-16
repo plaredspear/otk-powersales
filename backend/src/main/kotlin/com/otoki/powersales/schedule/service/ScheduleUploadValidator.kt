@@ -267,8 +267,15 @@ class ScheduleUploadValidator {
         endDate: LocalDate?,
         employee: Employee?,
         account: Account?,
-        existingSchedules: List<DisplayWorkSchedule>
+        existingSchedules: List<DisplayWorkSchedule>,
+        excludeScheduleId: Long? = null
     ): SingleValidationResult {
+        // 편집 시나리오에서는 자기 자신을 중복 검사 대상에서 제외 (UC-03 동일 레코드 update)
+        val filteredExisting = if (excludeScheduleId != null) {
+            existingSchedules.filter { it.id != excludeScheduleId }
+        } else {
+            existingSchedules
+        }
         val messages = mutableListOf<String>()
 
         // V1: 사원번호 존재
@@ -333,7 +340,7 @@ class ScheduleUploadValidator {
         val accountIdVal = account.id
 
         // V8: DB 기존 레코드와 기간 중복 검사 (동일 사원 + 동일 거래처)
-        val overlappingDb = existingSchedules.filter { schedule ->
+        val overlappingDb = filteredExisting.filter { schedule ->
             schedule.employee?.id == userId &&
                 schedule.account?.id == accountIdVal &&
                 periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
@@ -344,7 +351,7 @@ class ScheduleUploadValidator {
 
         // C1~C3: 동일 사원 + 동일 기간 근무유형 조합 규칙
         if (messages.isEmpty()) {
-            val sameEmployeeSamePeriod = existingSchedules.filter { schedule ->
+            val sameEmployeeSamePeriod = filteredExisting.filter { schedule ->
                 schedule.employee?.id == userId &&
                     periodsOverlap(schedule.startDate, schedule.endDate, startDate, endDate)
             }

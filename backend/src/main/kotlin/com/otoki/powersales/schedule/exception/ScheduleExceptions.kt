@@ -68,3 +68,13 @@ class ScheduleValidationException(message: String) : BusinessException(
     message = message,
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+/**
+ * UC-05: 확정된 스케줄에서 조장이 종료일 외 필드를 변경 시도하면 차단.
+ * 레거시 SF Validation Rule `EditDisableForDisplayMaster` 동등.
+ */
+class ScheduleEditBlockedAfterConfirmException : BusinessException(
+    errorCode = "SCHEDULE_EDIT_BLOCKED_AFTER_CONFIRM",
+    message = "확정 후에는 종료일 이외는 편집할 수 없습니다. 시스템 관리자에게 문의하십시오",
+    httpStatus = HttpStatus.CONFLICT
+)
