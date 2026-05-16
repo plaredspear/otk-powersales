@@ -64,7 +64,7 @@ class MyScheduleServiceTest {
                 eq(LocalDate.of(2020, 8, 31))
             )).thenReturn(workDates)
             whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
-                eq(listOf(userId)), any(), any()
+                eq(listOf(userId)), any(), any(), anyOrNull()
             )).thenReturn(emptyList())
 
             // When
@@ -99,7 +99,7 @@ class MyScheduleServiceTest {
                 any()
             )).thenReturn(emptyList())
             whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
-                eq(listOf(userId)), any(), any()
+                eq(listOf(userId)), any(), any(), anyOrNull()
             )).thenReturn(emptyList())
 
             // When
@@ -129,7 +129,7 @@ class MyScheduleServiceTest {
                 any()
             )).thenReturn(emptyList())
             whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
-                eq(listOf(userId)), any(), any()
+                eq(listOf(userId)), any(), any(), anyOrNull()
             )).thenReturn(emptyList())
 
             // When
@@ -155,7 +155,8 @@ class MyScheduleServiceTest {
             whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)),
                 eq(LocalDate.of(2026, 4, 1)),
-                eq(LocalDate.of(2026, 4, 30))
+                eq(LocalDate.of(2026, 4, 30)),
+                anyOrNull()
             )).thenReturn(listOf(
                 createMockMemberSchedule(workingDate = LocalDate.of(2026, 4, 5), workingType = WorkingType.ALT_HOLIDAY),
                 createMockMemberSchedule(workingDate = LocalDate.of(2026, 4, 12), workingType = WorkingType.ALT_HOLIDAY),
@@ -184,7 +185,7 @@ class MyScheduleServiceTest {
                 eq(userId), any(), any()
             )).thenReturn(emptyList())
             whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
-                eq(listOf(userId)), any(), any()
+                eq(listOf(userId)), any(), any(), anyOrNull()
             )).thenReturn(emptyList())
 
             // When
@@ -210,7 +211,8 @@ class MyScheduleServiceTest {
             whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)),
                 eq(LocalDate.of(2026, 3, 1)),
-                eq(LocalDate.of(2026, 3, 31))
+                eq(LocalDate.of(2026, 3, 31)),
+                anyOrNull()
             )).thenReturn(listOf(
                 createMockMemberSchedule("20030117", LocalDate.of(2026, 3, 5), WorkingType.ANNUAL_LEAVE),
                 createMockMemberSchedule("20030117", LocalDate.of(2026, 3, 10), WorkingType.WORK),

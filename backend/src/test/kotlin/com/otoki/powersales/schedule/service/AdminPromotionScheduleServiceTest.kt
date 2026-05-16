@@ -37,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -102,7 +103,7 @@ class AdminPromotionScheduleServiceTest {
             whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId))
                 .thenReturn(listOf(pe))
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(50L)), eq(startDate), eq(endDate)))
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(50L)), eq(startDate), eq(endDate), anyOrNull()))
                 .thenReturn(listOf(schedule))
 
             // When
@@ -150,7 +151,7 @@ class AdminPromotionScheduleServiceTest {
             whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
             whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId))
                 .thenReturn(listOf(peThis))
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(any(), any(), any()))
+            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(any(), any(), any(), anyOrNull()))
                 .thenReturn(listOf(scheduleThis, scheduleOther))
 
             val result = service.getSchedules(promotionId, null, null)
