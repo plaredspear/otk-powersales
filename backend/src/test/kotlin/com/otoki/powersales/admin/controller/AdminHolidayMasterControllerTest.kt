@@ -5,7 +5,6 @@ import com.otoki.powersales.leave.dto.request.HolidayMasterCreateRequest
 import com.otoki.powersales.leave.dto.request.HolidayMasterUpdateRequest
 import com.otoki.powersales.leave.dto.response.HolidayMasterResponse
 import com.otoki.powersales.leave.service.AdminHolidayMasterService
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
@@ -57,8 +56,6 @@ class AdminHolidayMasterControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @BeforeEach
     fun setUp() {

@@ -5,7 +5,6 @@ import com.otoki.powersales.productexpiration.dto.response.AdminProductExpiratio
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationListResponse
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationResponse
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.productexpiration.service.AdminProductExpirationService
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -61,8 +60,6 @@ class AdminProductExpirationControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter

@@ -8,8 +8,10 @@ import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.exception.*
+import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
+import com.otoki.powersales.admin.security.CurrentEmployee
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.service.AdminTeamScheduleService
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -27,6 +29,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
@@ -60,14 +63,15 @@ class AdminTeamScheduleControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
+    // controller 의 @CurrentEmployee 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
+    // @AutoConfigureMockMvc(addFilters = false) 환경에서 WebAdminContextFilter 가 동작하지 않으므로
+    // ArgumentResolver 자체를 stub 하여 fixture Employee 를 주입.
     @MockitoBean
-    private lateinit var adminEmployeeHolder: com.otoki.powersales.admin.scope.AdminEmployeeHolder
+    private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
     fun setUp() {
@@ -86,9 +90,12 @@ class AdminTeamScheduleControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        // controller 가 adminEmployeeHolder.require() 결과를 service 에 explicit parameter 로 전달.
-        whenever(adminEmployeeHolder.require())
-            .thenReturn(com.otoki.powersales.employee.entity.Employee(employeeCode = "S001", name = "테스트"))
+        whenever(currentAdminContextArgumentResolver.supportsParameter(any())).thenAnswer { invocation ->
+            val parameter = invocation.arguments[0] as MethodParameter
+            parameter.hasParameterAnnotation(CurrentEmployee::class.java)
+        }
+        whenever(currentAdminContextArgumentResolver.resolveArgument(any(), anyOrNull(), any(), anyOrNull()))
+            .thenReturn(Employee(employeeCode = "S001", name = "테스트"))
     }
 
     @Nested

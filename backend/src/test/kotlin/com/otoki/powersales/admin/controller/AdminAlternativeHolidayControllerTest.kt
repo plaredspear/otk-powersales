@@ -7,7 +7,6 @@ import com.otoki.powersales.leave.dto.response.AlternativeHolidayApproveResponse
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayCreateResponse
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayRejectResponse
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.leave.service.AdminAlternativeHolidayService
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -49,7 +48,6 @@ class AdminAlternativeHolidayControllerTest {
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
     @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @BeforeEach
     fun setUp() {

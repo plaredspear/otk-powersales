@@ -6,7 +6,6 @@ import com.otoki.powersales.schedule.dto.response.PromotionScheduleItem
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleListResponse
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleMember
 import com.otoki.powersales.schedule.dto.response.SchedulePeriod
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.schedule.service.AdminPromotionScheduleService
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -51,7 +50,6 @@ class AdminPromotionScheduleControllerTest {
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
     @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     private val promotionId = 100L
 

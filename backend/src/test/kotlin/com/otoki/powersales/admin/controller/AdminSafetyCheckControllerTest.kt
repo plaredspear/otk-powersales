@@ -3,7 +3,6 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
 import com.otoki.powersales.safetycheck.dto.response.MemberStatus
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -41,7 +40,6 @@ class AdminSafetyCheckControllerTest {
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
     @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
     @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach

@@ -1,6 +1,5 @@
 package com.otoki.powersales.order.controller
 
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -40,7 +39,6 @@ class LoanInquiryControllerTest {
     @MockitoBean private lateinit var loanInquiryService: LoanInquiryService
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
     @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
     @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
 

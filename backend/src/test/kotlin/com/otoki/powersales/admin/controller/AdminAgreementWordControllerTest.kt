@@ -1,7 +1,5 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.scope.DataScopeHolder
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.agreement.dto.request.AdminAgreementWordCreateRequest
 import com.otoki.powersales.agreement.dto.response.AdminAgreementWordActiveResponse
 import com.otoki.powersales.agreement.dto.response.AdminAgreementWordCreateResponse
@@ -58,14 +56,10 @@ class AdminAgreementWordControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    @MockitoBean
-    private lateinit var dataScopeHolder: DataScopeHolder
 
     private val futureDate: LocalDate = LocalDate.now().plusMonths(6)
 
@@ -155,9 +149,9 @@ class AdminAgreementWordControllerTest {
                 .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
         }
 
-        // T4 (AGREEMENT_WRITE 권한 미보유 → 403) / T5 (인증 누락 → 401) 는 AdminAuthorityFilter 단에서 처리.
+        // T4 (AGREEMENT_WRITE 권한 미보유 → 403) / T5 (인증 누락 → 401) 는 WebAdminContextFilter 단에서 처리.
         // 본 컨트롤러 테스트는 @AutoConfigureMockMvc(addFilters = false) 로 필터를 우회하므로
-        // 권한/인증 케이스는 AdminAuthorityFilterTest 가 책임 (AdminAccountControllerTest 컨벤션 정합).
+        // 권한/인증 케이스는 컨트롤러 테스트 책임 외.
 
         @Test
         @DisplayName("T6 name 누락 → 400 INVALID_PARAMETER (@NotBlank 위반)")
@@ -326,7 +320,7 @@ class AdminAgreementWordControllerTest {
                 .andExpect(jsonPath("$.message").value("활성 약관 없음"))
         }
 
-        // T15 (AGREEMENT_READ 권한 미보유 → 403) 는 AdminAuthorityFilter 단에서 처리.
+        // T15 (AGREEMENT_READ 권한 미보유 → 403) 는 WebAdminContextFilter 단에서 처리.
         // 본 컨트롤러 테스트는 @AutoConfigureMockMvc(addFilters = false) 로 필터를 우회.
     }
 }

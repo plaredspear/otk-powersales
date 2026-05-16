@@ -3,7 +3,6 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.leave.dto.response.AnnualLeaveDayDto
 import com.otoki.powersales.leave.dto.response.EmployeeAnnualLeaveDto
 import com.otoki.powersales.leave.service.AdminAnnualLeaveService
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -49,8 +48,6 @@ class AdminAnnualLeaveControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter

@@ -5,9 +5,11 @@ import com.otoki.powersales.admin.dto.AdminEmployeeRegisterRequest
 import com.otoki.powersales.admin.dto.AdminEmployeeRegisterResponse
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
+import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
+import com.otoki.powersales.admin.security.CurrentEmployee
 import com.otoki.powersales.admin.service.AdminEmployeeRegisterService
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -19,8 +21,10 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
@@ -53,14 +57,15 @@ class AdminEmployeeRegisterControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
+    // controller 의 @CurrentEmployee 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
+    // @AutoConfigureMockMvc(addFilters = false) 환경에서 WebAdminContextFilter 가 동작하지 않으므로
+    // ArgumentResolver 자체를 stub 하여 SYSTEM_ADMIN actor 를 주입.
     @MockitoBean
-    private lateinit var adminEmployeeHolder: com.otoki.powersales.admin.scope.AdminEmployeeHolder
+    private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
     fun setUp() {
@@ -79,10 +84,13 @@ class AdminEmployeeRegisterControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        // controller 가 adminEmployeeHolder.require() 결과를 service 에 explicit parameter 로 전달.
-        whenever(adminEmployeeHolder.require())
+        whenever(currentAdminContextArgumentResolver.supportsParameter(any())).thenAnswer { invocation ->
+            val parameter = invocation.arguments[0] as MethodParameter
+            parameter.hasParameterAnnotation(CurrentEmployee::class.java)
+        }
+        whenever(currentAdminContextArgumentResolver.resolveArgument(any(), anyOrNull(), any(), anyOrNull()))
             .thenReturn(
-                com.otoki.powersales.employee.entity.Employee(employeeCode = "S001", name = "테스트").apply {
+                Employee(employeeCode = "S001", name = "테스트").apply {
                     role = UserRole.SYSTEM_ADMIN
                 }
             )

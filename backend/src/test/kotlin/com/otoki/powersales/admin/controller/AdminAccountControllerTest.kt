@@ -15,8 +15,9 @@ import com.otoki.powersales.account.service.AccountCreateService
 import com.otoki.powersales.account.service.AccountDeleteService
 import com.otoki.powersales.account.service.AccountUpdateService
 import com.otoki.powersales.account.service.AdminAccountService
-import com.otoki.powersales.admin.scope.DataScopeHolder
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -34,6 +35,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
@@ -80,14 +82,16 @@ class AdminAccountControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
+    // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
+    // 운영에서는 WebAdminContextFilter 가 request attribute 에 DataScope 를 적재 → ArgumentResolver
+    // 가 그 값을 꺼낸다. 본 테스트는 @AutoConfigureMockMvc(addFilters = false) 로 필터가 비활성
+    // 이므로 ArgumentResolver 자체를 stub 하여 ALL scope 기본값을 주입한다.
     @MockitoBean
-    private lateinit var dataScopeHolder: DataScopeHolder
+    private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
     fun setUp() {
@@ -106,10 +110,12 @@ class AdminAccountControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        // controller 가 dataScopeHolder.require() 결과를 service 에 explicit parameter 로 전달하므로
-        // holder mock 도 require() stub 필수 (ALL scope 기본값)
-        whenever(dataScopeHolder.require())
-            .thenReturn(com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true))
+        whenever(currentAdminContextArgumentResolver.supportsParameter(any())).thenAnswer { invocation ->
+            val parameter = invocation.arguments[0] as MethodParameter
+            parameter.hasParameterAnnotation(CurrentDataScope::class.java)
+        }
+        whenever(currentAdminContextArgumentResolver.resolveArgument(any(), anyOrNull(), any(), anyOrNull()))
+            .thenReturn(DataScope(branchCodes = emptyList(), isAllBranches = true))
     }
 
     @Nested

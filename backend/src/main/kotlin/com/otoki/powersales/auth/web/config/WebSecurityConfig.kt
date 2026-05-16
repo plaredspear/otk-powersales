@@ -1,8 +1,5 @@
 package com.otoki.powersales.auth.web.config
 
-import com.otoki.powersales.admin.scope.AdminEmployeeHolder
-import com.otoki.powersales.admin.scope.AdminPermissionHolder
-import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.admin.security.WebAdminContextFilter
 import com.otoki.powersales.admin.service.AdminDataScopeService
 import com.otoki.powersales.admin.service.AdminPermissionResolver
@@ -64,18 +61,12 @@ class WebSecurityConfig(
         employeeRepository: EmployeeRepository,
         adminDataScopeService: AdminDataScopeService,
         adminPermissionResolver: AdminPermissionResolver,
-        adminEmployeeHolder: AdminEmployeeHolder,
-        dataScopeHolder: DataScopeHolder,
-        adminPermissionHolder: AdminPermissionHolder,
         requestMappingHandlerMapping: RequestMappingHandlerMapping,
         objectMapper: ObjectMapper,
     ): WebAdminContextFilter = WebAdminContextFilter(
         employeeRepository = employeeRepository,
         adminDataScopeService = adminDataScopeService,
         adminPermissionResolver = adminPermissionResolver,
-        adminEmployeeHolder = adminEmployeeHolder,
-        dataScopeHolder = dataScopeHolder,
-        adminPermissionHolder = adminPermissionHolder,
         requestMappingHandlerMapping = requestMappingHandlerMapping,
         objectMapper = objectMapper,
     )

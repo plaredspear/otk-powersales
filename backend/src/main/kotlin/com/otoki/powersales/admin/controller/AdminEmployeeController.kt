@@ -1,7 +1,8 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.scope.DataScopeHolder
+import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.dto.response.EmployeeListResponse
@@ -25,15 +26,13 @@ import org.springframework.web.bind.annotation.RestController
 class AdminEmployeeController(
     private val adminEmployeeService: AdminEmployeeService,
     private val adminEmployeeCredentialService: AdminEmployeeCredentialService,
-    // WebAdminContextFilter 가 요청 진입 시 산출한 DataScope 를 1회 읽어 service 에 explicit
-    // parameter 로 전달.
-    private val dataScopeHolder: DataScopeHolder,
 ) {
 
     @GetMapping
     @RequiresPermission(AdminPermission.EMPLOYEE_READ)
     fun getEmployees(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) costCenterCode: String?,
         @RequestParam(required = false) keyword: String?,
@@ -42,7 +41,7 @@ class AdminEmployeeController(
         @RequestParam(required = false, defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
         val response = adminEmployeeService.getEmployees(
-            scope = dataScopeHolder.require(),
+            scope = scope,
             status = status,
             costCenterCode = costCenterCode,
             keyword = keyword,

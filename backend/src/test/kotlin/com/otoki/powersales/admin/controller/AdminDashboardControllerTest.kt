@@ -8,8 +8,6 @@ import com.otoki.powersales.admin.dto.response.StaffDeployment
 import com.otoki.powersales.admin.dto.response.StaffTypeCount
 import com.otoki.powersales.admin.dto.response.TotalByPosition
 import com.otoki.powersales.admin.dto.response.WorkTypeStats
-import com.otoki.powersales.admin.scope.DataScopeHolder
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.admin.service.AdminDashboardService
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.GpsConsentFilter
@@ -56,14 +54,10 @@ class AdminDashboardControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    @MockitoBean
-    private lateinit var dataScopeHolder: DataScopeHolder
 
     private val testPrincipal = WebUserPrincipal(
         userId = 100L,

@@ -7,7 +7,6 @@ import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
 import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
 import com.otoki.powersales.admin.exception.AdminUserNotFoundException
 import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.admin.service.AdminUserService
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -63,8 +62,6 @@ class AdminUserControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter

@@ -6,7 +6,6 @@ import com.otoki.powersales.claim.dto.response.ClaimPhotoItem
 import com.otoki.powersales.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.claim.exception.InvalidDateFormatException
 import com.otoki.powersales.claim.exception.InvalidDateRangeException
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.claim.service.ClaimQueryService
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -53,8 +52,6 @@ class ClaimQueryControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @BeforeEach
     fun setUp() {

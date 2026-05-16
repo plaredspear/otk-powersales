@@ -6,7 +6,6 @@ import com.otoki.powersales.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.product.exception.InvalidSearchTypeException
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
@@ -51,7 +50,6 @@ class ProductControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter

@@ -2,8 +2,6 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.request.NaverGeocodeTestRequest
 import com.otoki.powersales.admin.dto.response.NaverGeocodeTestResponse
-import com.otoki.powersales.admin.scope.DataScopeHolder
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.admin.service.AdminNaverGeocodeService
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.naver.NaverApiException
@@ -45,9 +43,7 @@ class AdminNaverGeocodeControllerTest {
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
     @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
     @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
-    @MockitoBean private lateinit var dataScopeHolder: DataScopeHolder
 
     @BeforeEach
     fun setUp() {

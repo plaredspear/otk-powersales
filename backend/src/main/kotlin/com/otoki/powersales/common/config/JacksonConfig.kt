@@ -1,5 +1,6 @@
 package com.otoki.powersales.common.config
 
+import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
@@ -10,13 +11,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 // wire format 은 Jackson 기본 (LOWER_CAMEL_CASE) 을 사용한다 (Spec #580 P1-B). SAP 인바운드
 // 응답의 RESULT_DETAIL 내부는 각 Detail DTO 의 `@JsonNaming(SnakeCaseStrategy)` 으로 SnakeCase 유지.
 //
-// 본 설정은 Spring Security 7 + @WebMvcTest(addFilters=false) 환경에서
-// SecurityFilterChain 비활성으로 자동 등록되지 않는 @AuthenticationPrincipal argument resolver 를
-// 명시 등록하는 역할만 수행한다.
+// 본 설정은 argument resolver 명시 등록을 함께 담당한다:
+//  - [AuthenticationPrincipalArgumentResolver] — Spring Security 7 + @WebMvcTest(addFilters=false)
+//    환경에서 SecurityFilterChain 비활성으로 자동 등록되지 않는 `@AuthenticationPrincipal` 지원
+//  - [CurrentAdminContextArgumentResolver] — admin controller 의 `@CurrentEmployee` /
+//    `@CurrentDataScope` 파라미터 주입 (holder 빈 대체)
 @Configuration
-class JacksonConfig : WebMvcConfigurer {
+class JacksonConfig(
+    private val currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver,
+) : WebMvcConfigurer {
 
     override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
         resolvers.add(AuthenticationPrincipalArgumentResolver())
+        resolvers.add(currentAdminContextArgumentResolver)
     }
 }

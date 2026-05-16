@@ -15,10 +15,10 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 /**
- * 관리자 등록 API 의 미인증 흐름 통합 테스트. (Spec #581 P1-B, 후속 of #579 §5.2 #2)
+ * 관리자 등록 API 의 미인증 흐름 통합 테스트.
  *
- * `@WebMvcTest` 슬라이스가 `addFilters=false` + `@MockitoBean adminAuthorityFilter` 로 보안 체인을
- * 비활성화하므로, 미인증 흐름을 검증하려면 전체 `@SpringBootTest` 컨텍스트가 필요하다.
+ * `@WebMvcTest` 슬라이스가 `addFilters=false` 로 보안 체인을 비활성화하므로,
+ * 미인증 흐름을 검증하려면 전체 `@SpringBootTest` 컨텍스트가 필요하다.
  *
  * 본 테스트는 다음 컴포넌트의 종단 흐름이 정상 동작함을 회귀 차단한다:
  * - SecurityConfig: `/api/v1/admin/employees` 가 `authenticated()` 정책 하에 보호됨

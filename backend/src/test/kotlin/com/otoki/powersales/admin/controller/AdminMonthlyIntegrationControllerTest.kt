@@ -1,6 +1,5 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.service.AdminMonthlyIntegrationService
 import com.otoki.powersales.schedule.service.InvalidParameterException
@@ -38,7 +37,6 @@ class AdminMonthlyIntegrationControllerTest {
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
     @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @BeforeEach
     fun setUp() {

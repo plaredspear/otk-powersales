@@ -4,8 +4,6 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeListResponse
-import com.otoki.powersales.admin.scope.DataScopeHolder
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.promotion.service.AdminPromotionConfirmService
 import com.otoki.powersales.promotion.service.AdminPromotionEmployeeService
 import com.otoki.powersales.common.security.GpsConsentFilter
@@ -49,9 +47,7 @@ class AdminPromotionEmployeeControllerTest {
     @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
     @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
     @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
     @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
-    @MockitoBean private lateinit var dataScopeHolder: DataScopeHolder
 
     @BeforeEach
     fun setUp() {

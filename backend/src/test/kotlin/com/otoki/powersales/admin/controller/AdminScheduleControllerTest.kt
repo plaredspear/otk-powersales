@@ -9,10 +9,12 @@ import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.exception.*
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.schedule.service.AdminScheduleService
 import com.otoki.powersales.schedule.service.MissingCostCenterException
 import com.otoki.powersales.schedule.service.OrganizationNotFoundException
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -26,11 +28,13 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.data.domain.PageImpl
@@ -69,14 +73,15 @@ class AdminScheduleControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
+    // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
+    // @AutoConfigureMockMvc(addFilters = false) 환경에서 WebAdminContextFilter 가 동작하지 않으므로
+    // ArgumentResolver 자체를 stub 하여 ALL scope 기본값 주입.
     @MockitoBean
-    private lateinit var dataScopeHolder: com.otoki.powersales.admin.scope.DataScopeHolder
+    private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
     fun setUp() {
@@ -95,9 +100,12 @@ class AdminScheduleControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        // controller 가 dataScopeHolder.require() 결과를 service 에 explicit parameter 로 전달.
-        whenever(dataScopeHolder.require())
-            .thenReturn(com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true))
+        whenever(currentAdminContextArgumentResolver.supportsParameter(any())).thenAnswer { invocation ->
+            val parameter = invocation.arguments[0] as MethodParameter
+            parameter.hasParameterAnnotation(CurrentDataScope::class.java)
+        }
+        whenever(currentAdminContextArgumentResolver.resolveArgument(any(), anyOrNull(), any(), anyOrNull()))
+            .thenReturn(DataScope(branchCodes = emptyList(), isAllBranches = true))
     }
 
     @Nested

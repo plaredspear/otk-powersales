@@ -1,6 +1,5 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.product.dto.response.ProductListResponse
 import com.otoki.powersales.product.dto.response.ProductListItem
 import com.otoki.powersales.product.dto.response.CategoryTree
@@ -52,8 +51,6 @@ class AdminProductControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter

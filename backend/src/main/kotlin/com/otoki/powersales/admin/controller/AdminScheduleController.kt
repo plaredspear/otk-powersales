@@ -14,8 +14,9 @@ import com.otoki.powersales.schedule.dto.response.ScheduleListItemDto
 import com.otoki.powersales.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.exception.ScheduleFileRequiredException
-import com.otoki.powersales.admin.scope.DataScopeHolder
+import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.service.AdminScheduleService
 import com.otoki.powersales.common.dto.ApiResponse
@@ -35,15 +36,13 @@ import java.time.LocalDate
 @RequestMapping("/api/v1/admin/schedule")
 class AdminScheduleController(
     private val adminScheduleService: AdminScheduleService,
-    // WebAdminContextFilter 가 요청 진입 시 산출한 DataScope 를 1회 읽어 service 에 explicit
-    // parameter 로 전달. service 는 holder/ambient context 비인지로 유지.
-    private val dataScopeHolder: DataScopeHolder,
 ) {
 
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/list")
     fun listSchedules(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(required = false) employeeCode: String?,
@@ -58,7 +57,7 @@ class AdminScheduleController(
     ): ResponseEntity<ApiResponse<Page<ScheduleListItemDto>>> {
         val sort = resolveSort(sortBy, sortDir)
         val result = adminScheduleService.listSchedules(
-            dataScopeHolder.require(), page, size, employeeCode, accountName, confirmed,
+            scope, page, size, employeeCode, accountName, confirmed,
             typeOfWork3, startDateFrom, startDateTo, preset, sort
         )
         return ResponseEntity.ok(ApiResponse.success(result))
@@ -92,10 +91,11 @@ class AdminScheduleController(
     @PutMapping("/{id}")
     fun updateSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @PathVariable id: Long,
         @Valid @RequestBody request: AdminScheduleUpdateRequest
     ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
-        val result = adminScheduleService.updateSchedule(dataScopeHolder.require(), principal.requireEmployeeId(), id, request)
+        val result = adminScheduleService.updateSchedule(scope, principal.requireEmployeeId(), id, request)
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 수정되었습니다"))
     }
 
@@ -103,9 +103,10 @@ class AdminScheduleController(
     @PostMapping("/export")
     fun exportSchedules(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @Valid @RequestBody request: ScheduleExportRequest
     ): ResponseEntity<ByteArray> {
-        val result = adminScheduleService.exportSchedules(dataScopeHolder.require(), request.ids)
+        val result = adminScheduleService.exportSchedules(scope, request.ids)
 
         val headers = HttpHeaders()
         headers.contentType = MediaType.parseMediaType(
@@ -123,9 +124,10 @@ class AdminScheduleController(
     @PostMapping("/batch-delete")
     fun batchDelete(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @Valid @RequestBody request: ScheduleBatchDeleteRequest
     ): ResponseEntity<ApiResponse<ScheduleBatchDeleteResultDto>> {
-        val result = adminScheduleService.batchDelete(dataScopeHolder.require(), principal.requireEmployeeId(), request.ids)
+        val result = adminScheduleService.batchDelete(scope, principal.requireEmployeeId(), request.ids)
         val message = when {
             result.failedCount == 0 -> "${result.deletedCount}건이 삭제되었습니다"
             result.deletedCount == 0 -> "모든 항목 삭제 실패 (${result.failedCount}건)"
@@ -138,9 +140,10 @@ class AdminScheduleController(
     @DeleteMapping("/{id}")
     fun deleteSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminScheduleService.deleteSchedule(dataScopeHolder.require(), principal.requireEmployeeId(), id)
+        adminScheduleService.deleteSchedule(scope, principal.requireEmployeeId(), id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "스케줄이 삭제되었습니다"))
     }
 
@@ -167,9 +170,10 @@ class AdminScheduleController(
     @PostMapping
     fun createSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @Valid @RequestBody request: AdminScheduleCreateRequest
     ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
-        val result = adminScheduleService.createSchedule(dataScopeHolder.require(), principal.requireEmployeeId(), request)
+        val result = adminScheduleService.createSchedule(scope, principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 등록되었습니다"))
     }
 

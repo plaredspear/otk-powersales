@@ -1,6 +1,5 @@
 package com.otoki.powersales.order.controller
 
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -49,8 +48,6 @@ class ClientOrderControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
-    private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter

@@ -3,7 +3,6 @@ package com.otoki.powersales.productexpiration.controller
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.admin.security.AdminAuthorityFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
@@ -55,7 +54,6 @@ class ProductExpirationControllerTest {
 
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
     @BeforeEach
     fun setUp() {
