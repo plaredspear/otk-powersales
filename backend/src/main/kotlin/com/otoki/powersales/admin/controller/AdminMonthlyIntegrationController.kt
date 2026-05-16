@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.dto.response.CategoryScheduleResponse
 import com.otoki.powersales.schedule.dto.response.MonthlyIntegrationScheduleResponse
 import com.otoki.powersales.schedule.service.AdminMonthlyIntegrationService
@@ -19,6 +21,7 @@ class AdminMonthlyIntegrationController(
 ) {
 
     @GetMapping
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     fun getMonthlyIntegration(
         @RequestParam year: Int,
         @RequestParam month: Int,
@@ -29,6 +32,7 @@ class AdminMonthlyIntegrationController(
     }
 
     @GetMapping("/export")
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     fun exportMonthlyIntegration(
         @RequestParam year: Int,
         @RequestParam month: Int,
@@ -46,6 +50,7 @@ class AdminMonthlyIntegrationController(
     }
 
     @GetMapping("/category")
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     fun getCategorySchedule(
         @RequestParam year: Int,
         @RequestParam month: Int,
@@ -56,6 +61,7 @@ class AdminMonthlyIntegrationController(
     }
 
     @GetMapping("/category/export")
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
     fun exportCategorySchedule(
         @RequestParam year: Int,
         @RequestParam month: Int,

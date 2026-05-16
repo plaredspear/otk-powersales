@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Alert, Empty, Spin, Table, Typography } from 'antd';
+import { Alert, Card, Empty, Grid, Space, Spin, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
 import ScheduleFilterBar from '@/components/schedules/ScheduleFilterBar';
 import { useMonthlyIntegrationSchedule } from '@/hooks/schedules/useMonthlyIntegrationSchedule';
 import { useMonthlyIntegrationExport } from '@/hooks/schedules/useMonthlyIntegrationExport';
 import type { MonthlyIntegrationScheduleItem } from '@/api/monthlyIntegration';
 
 const { Text } = Typography;
+const { useBreakpoint } = Grid;
 
 function formatNumber(value: number): string {
   return value.toLocaleString('ko-KR');
@@ -58,16 +60,49 @@ const columns: ColumnsType<MonthlyIntegrationScheduleItem> = [
   },
 ];
 
+function MobileItemCard({ item }: { item: MonthlyIntegrationScheduleItem }) {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: '거래처지점명', value: item.accountBranchName ?? '-' },
+    { label: '거래처코드', value: item.accountCode },
+    { label: '거래처명', value: item.accountName },
+    { label: '근무형태1', value: item.workingCategory1 },
+    { label: '근무형태3', value: item.workingCategory3 ?? '-' },
+    { label: '근무형태4', value: item.workingCategory4 ?? '-' },
+    { label: '근무형태5', value: item.workingCategory5 ?? '-' },
+    { label: '총 투입횟수', value: formatNumber(item.totalInputCount) },
+    { label: '총 환산근무일수', value: formatDecimal3(item.equivalentWorkingDays) },
+    { label: '총 환산인원', value: formatDecimal3(item.convertedHeadcount) },
+    { label: 'ABC마감실적', value: formatNumber(item.avgClosingAmount) },
+  ];
+
+  return (
+    <Card size="small" style={{ marginBottom: 8 }}>
+      <div style={{ fontWeight: 600, marginBottom: 8 }}>
+        {item.branchName} / {item.employeeName} / {item.title ?? '-'} / {item.employeeCode}
+      </div>
+      {rows.map((row) => (
+        <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+          <span style={{ color: '#666' }}>{row.label}</span>
+          <span>{row.value}</span>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
 export default function MonthlyIntegrationSchedulePage() {
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const previousMonth = dayjs().subtract(1, 'month');
+  const [year, setYear] = useState(previousMonth.year());
+  const [month, setMonth] = useState(previousMonth.month() + 1);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [queryParams, setQueryParams] = useState<{
     year: number;
     month: number;
     codes: string[];
   } | null>(null);
+
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const { data, isLoading, isError, error } = useMonthlyIntegrationSchedule(
     queryParams?.year ?? year,
@@ -105,6 +140,7 @@ export default function MonthlyIntegrationSchedulePage() {
         exportDisabled={!data || data.items.length === 0}
         exportLoading={exportMutation.isPending}
         searchLoading={isLoading}
+        hideExport={isMobile}
       />
 
       {isError && (
@@ -127,15 +163,23 @@ export default function MonthlyIntegrationSchedulePage() {
           <Text style={{ marginBottom: 8, display: 'block' }}>
             총 {formatNumber(data.totalCount)}건
           </Text>
-          <Table
-            rowKey={(_, index) => String(index)}
-            columns={columns}
-            dataSource={data.items}
-            pagination={false}
-            scroll={{ x: 1600 }}
-            size="small"
-            sticky
-          />
+          {isMobile ? (
+            <Space direction="vertical" style={{ width: '100%' }} size={0}>
+              {data.items.map((item, index) => (
+                <MobileItemCard key={index} item={item} />
+              ))}
+            </Space>
+          ) : (
+            <Table
+              rowKey={(_, index) => String(index)}
+              columns={columns}
+              dataSource={data.items}
+              pagination={false}
+              scroll={{ x: 1600 }}
+              size="small"
+              sticky
+            />
+          )}
         </>
       ) : null}
     </div>

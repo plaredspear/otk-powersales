@@ -142,7 +142,7 @@ class AdminMonthlyIntegrationService(
         }
 
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-        val filename = "${year}년${month}월_여사원_통합일정_${timestamp}.xlsx"
+        val filename = "${year}년${month}월_여사원 통합일정 조회_${timestamp}.xlsx"
         return ExcelResult(bytes, filename)
     }
 

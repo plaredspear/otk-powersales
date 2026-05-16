@@ -14,6 +14,7 @@ interface ScheduleFilterBarProps {
   exportDisabled?: boolean;
   exportLoading?: boolean;
   searchLoading?: boolean;
+  hideExport?: boolean;
 }
 
 export default function ScheduleFilterBar({
@@ -28,6 +29,7 @@ export default function ScheduleFilterBar({
   exportDisabled = true,
   exportLoading = false,
   searchLoading = false,
+  hideExport = false,
 }: ScheduleFilterBarProps) {
   const { data: branches = [] } = useTeamScheduleBranches();
 
@@ -65,6 +67,7 @@ export default function ScheduleFilterBar({
           style={{ minWidth: 300 }}
           placeholder="지점을 선택하세요"
           maxTagCount="responsive"
+          disabled={isAllSelected}
           options={branches.map((b) => ({ label: b.branchName, value: b.branchCode }))}
         />
       </Space>
@@ -82,14 +85,16 @@ export default function ScheduleFilterBar({
           >
             조회
           </Button>
-          <Button
-            icon={<DownloadOutlined />}
-            onClick={onExport}
-            disabled={exportDisabled}
-            loading={exportLoading}
-          >
-            엑셀 다운로드
-          </Button>
+          {!hideExport && (
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={onExport}
+              disabled={exportDisabled}
+              loading={exportLoading}
+            >
+              엑셀 다운로드
+            </Button>
+          )}
         </Space>
       </div>
     </div>

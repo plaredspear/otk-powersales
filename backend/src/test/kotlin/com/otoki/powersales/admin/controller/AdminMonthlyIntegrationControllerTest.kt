@@ -134,7 +134,7 @@ class AdminMonthlyIntegrationControllerTest {
         fun success() {
             val excelResult = AdminMonthlyIntegrationService.ExcelResult(
                 bytes = byteArrayOf(0x50, 0x4B), // dummy xlsx header
-                filename = "2026년3월_여사원_통합일정_20260322_120000.xlsx"
+                filename = "2026년3월_여사원 통합일정 조회_20260322_120000.xlsx"
             )
             whenever(adminMonthlyIntegrationService.exportMonthlyIntegration(eq(2026), eq(3), any()))
                 .thenReturn(excelResult)
