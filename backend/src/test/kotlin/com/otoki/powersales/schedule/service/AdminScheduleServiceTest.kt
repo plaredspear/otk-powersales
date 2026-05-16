@@ -85,7 +85,7 @@ class AdminScheduleServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Mock
-    private lateinit var dataScopeService: com.otoki.powersales.admin.service.AdminDataScopeService
+    private lateinit var dataScopeHolder: com.otoki.powersales.admin.scope.DataScopeHolder
 
     @Mock
     private lateinit var redisTemplate: RedisTemplate<String, String>
@@ -305,7 +305,7 @@ class AdminScheduleServiceTest {
         private val userId = 1L
 
         private fun mockAdminScope() {
-            whenever(dataScopeService.resolve(userId)).thenReturn(
+            whenever(dataScopeHolder.require()).thenReturn(
                 com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
             )
         }
@@ -348,7 +348,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("UC-12 scope 위반 - LEADER scope 밖 레코드는 조용히 제외")
         fun exportSchedules_leaderScopeFilter() {
-            whenever(dataScopeService.resolve(userId)).thenReturn(
+            whenever(dataScopeHolder.require()).thenReturn(
                 com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             )
             val inScope = DisplayWorkSchedule(id = 11L, costCenterCode = "A10010")
@@ -732,7 +732,7 @@ class AdminScheduleServiceTest {
         private val userId = 1L
 
         private fun mockAdminScope() {
-            whenever(dataScopeService.resolve(userId)).thenReturn(
+            whenever(dataScopeHolder.require()).thenReturn(
                 com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
             )
         }
@@ -839,7 +839,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("UC-12 LEADER 사용자 - costCenterCodes 필터가 Repository 에 전달됨")
         fun listSchedules_leaderScope() {
-            whenever(dataScopeService.resolve(userId)).thenReturn(
+            whenever(dataScopeHolder.require()).thenReturn(
                 com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             )
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
@@ -982,7 +982,7 @@ class AdminScheduleServiceTest {
         private val scheduleId = 10L
 
         private fun mockAdminScope() {
-            whenever(dataScopeService.resolve(userId)).thenReturn(
+            whenever(dataScopeHolder.require()).thenReturn(
                 com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
             )
         }
@@ -1186,7 +1186,7 @@ class AdminScheduleServiceTest {
         private val userId = 1L
 
         private fun mockAdminScopeForUser(user: Employee) {
-            whenever(dataScopeService.resolve(user)).thenReturn(
+            whenever(dataScopeHolder.require()).thenReturn(
                 com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
             )
         }
@@ -1299,7 +1299,7 @@ class AdminScheduleServiceTest {
         private val scheduleId = 10L
 
         private fun mockAdminScope() {
-            whenever(dataScopeService.resolve(userId)).thenReturn(
+            whenever(dataScopeHolder.require()).thenReturn(
                 com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
             )
         }
@@ -1427,7 +1427,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("UC-12 scope 위반 - LEADER 가 본인 담당 사업소 외 레코드 삭제 시도 시 ScheduleForbiddenException")
         fun deleteSchedule_uc12LeaderForbidden() {
-            whenever(dataScopeService.resolve(userId)).thenReturn(
+            whenever(dataScopeHolder.require()).thenReturn(
                 com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             )
             val user = createEmployee(id = userId, role = UserRole.LEADER, costCenterCode = "A10010")
@@ -1482,7 +1482,7 @@ class AdminScheduleServiceTest {
         )
 
         private fun mockAdminScope() {
-            whenever(dataScopeService.resolve(userId)).thenReturn(
+            whenever(dataScopeHolder.require()).thenReturn(
                 com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
             )
         }
@@ -1611,7 +1611,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("UC-12 scope 위반 - LEADER 가 다른 사업소 사원 등록 시 ScheduleForbiddenException")
         fun createSchedule_leaderScopeViolation() {
-            whenever(dataScopeService.resolve(userId)).thenReturn(
+            whenever(dataScopeHolder.require()).thenReturn(
                 com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             )
             val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "B20020")

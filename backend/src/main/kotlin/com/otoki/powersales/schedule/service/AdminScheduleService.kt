@@ -3,7 +3,7 @@ package com.otoki.powersales.schedule.service
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.service.AdminDataScopeService
+import com.otoki.powersales.admin.scope.DataScopeHolder
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
@@ -61,7 +61,7 @@ class AdminScheduleService(
     private val userRepository: UserRepository,
     private val redisTemplate: RedisTemplate<String, String>,
     private val objectMapper: ObjectMapper,
-    private val dataScopeService: AdminDataScopeService,
+    private val dataScopeHolder: DataScopeHolder,
 ) {
 
     companion object {
@@ -113,7 +113,7 @@ class AdminScheduleService(
      */
     fun exportSchedules(userId: Long, ids: List<Long>): TemplateResult {
         // UC-12 사업소 가시 범위 — scope 밖 ID 는 조용히 제외 (레거시 SF Sharing Rule row-level filter 동등)
-        val scope = dataScopeService.resolve(userId)
+        val scope = dataScopeHolder.require()
         val schedules = scheduleRepository.findAllById(ids)
             .filter { it.isDeleted != true }
             .filter { scope.validateAccess(it.costCenterCode) }
@@ -617,7 +617,7 @@ class AdminScheduleService(
         }
 
         val isAdmin = user.role in UserRole.ADMIN_GRADE
-        val scope = dataScopeService.resolve(user)
+        val scope = dataScopeHolder.require()
         val schedules = scheduleRepository.findAllById(ids).associateBy { it.id }
 
         var deletedCount = 0
@@ -716,7 +716,7 @@ class AdminScheduleService(
      * LEADER / BRANCH_MANAGER 는 본인 담당 사업소 코드 목록.
      */
     private fun scopeBranchCodesOrNull(userId: Long): List<String>? {
-        val scope = dataScopeService.resolve(userId)
+        val scope = dataScopeHolder.require()
         return if (scope.isAllBranches) null else scope.branchCodes
     }
 
@@ -725,7 +725,7 @@ class AdminScheduleService(
      * 위반 시 ScheduleForbiddenException.
      */
     private fun requireScheduleScope(userId: Long, schedule: DisplayWorkSchedule) {
-        val scope = dataScopeService.resolve(userId)
+        val scope = dataScopeHolder.require()
         if (!scope.validateAccess(schedule.costCenterCode)) {
             throw ScheduleForbiddenException()
         }
@@ -735,7 +735,7 @@ class AdminScheduleService(
      * UC-12 helper — 등록·편집 시 「대상 사원의 costCenterCode」 가 사용자 scope 내인지 검증.
      */
     private fun requireCostCenterCodeScope(userId: Long, costCenterCode: String?) {
-        val scope = dataScopeService.resolve(userId)
+        val scope = dataScopeHolder.require()
         if (!scope.validateAccess(costCenterCode)) {
             throw ScheduleForbiddenException()
         }
