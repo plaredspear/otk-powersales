@@ -477,6 +477,46 @@ class AdminScheduleControllerTest {
     }
 
     @Nested
+    @DisplayName("POST /api/v1/admin/schedule/export - 선택 다운로드 (UC-08)")
+    inner class ExportSchedules {
+
+        @Test
+        @DisplayName("성공 - Excel byte 응답 + Content-Disposition")
+        fun export_success() {
+            val result = AdminScheduleService.TemplateResult(
+                bytes = ByteArray(800),
+                filename = "진열스케줄_20260516_120000.xlsx"
+            )
+            whenever(adminScheduleService.exportSchedules(eq(listOf(1L, 2L, 3L)))).thenReturn(result)
+
+            mockMvc.perform(
+                post("/api/v1/admin/schedule/export")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": [1, 2, 3]}""")
+            )
+                .andExpect(status().isOk)
+                .andExpect(
+                    header().string(
+                        "Content-Type",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                )
+                .andExpect(header().exists("Content-Disposition"))
+        }
+
+        @Test
+        @DisplayName("실패 - 빈 ids 목록 → 400")
+        fun export_emptyIds() {
+            mockMvc.perform(
+                post("/api/v1/admin/schedule/export")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"ids": []}""")
+            )
+                .andExpect(status().isBadRequest)
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/v1/admin/schedule/batch-delete - 일괄 삭제 (UC-07)")
     inner class BatchDelete {
 

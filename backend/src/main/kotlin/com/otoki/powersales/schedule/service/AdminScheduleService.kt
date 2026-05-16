@@ -50,6 +50,7 @@ class AdminScheduleService(
     private val accountRepository: AccountRepository,
     private val organizationRepository: OrganizationRepository,
     private val templateGenerator: ScheduleTemplateGenerator,
+    private val exportGenerator: ScheduleExportGenerator,
     private val excelParser: ScheduleExcelParser,
     private val uploadValidator: ScheduleUploadValidator,
     private val scheduleRepository: DisplayWorkScheduleRepository,
@@ -100,6 +101,24 @@ class AdminScheduleService(
         val filename = "진열마스터Template(신규작성용)_${timestamp}.xlsx"
 
         return TemplateResult(excelBytes, filename)
+    }
+
+    /**
+     * UC-08 진열마스터 Excel 다운로드 (선택 레코드).
+     * 레거시 SF `ExcelIO_ExportDisplayWorkScheduleMaster2.page` (ecio 패키지) 동등 — 선택된 레코드만 export.
+     * 입력 순서 보존하여 출력 (사용자가 선택한 순서대로 행 정렬).
+     */
+    fun exportSchedules(ids: List<Long>): TemplateResult {
+        val schedules = scheduleRepository.findAllById(ids)
+            .filter { it.isDeleted != true }
+            .associateBy { it.id }
+        val ordered = ids.mapNotNull { schedules[it] }
+
+        val bytes = exportGenerator.generate(ordered)
+        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+        val filename = "진열스케줄_${timestamp}.xlsx"
+
+        return TemplateResult(bytes, filename)
     }
 
     fun uploadAndValidate(file: MultipartFile): ScheduleUploadResultDto {

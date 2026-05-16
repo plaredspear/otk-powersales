@@ -64,6 +64,9 @@ class AdminScheduleServiceTest {
     private lateinit var templateGenerator: ScheduleTemplateGenerator
 
     @Mock
+    private lateinit var exportGenerator: ScheduleExportGenerator
+
+    @Mock
     private lateinit var excelParser: ScheduleExcelParser
 
     @Mock
@@ -289,6 +292,44 @@ class AdminScheduleServiceTest {
             val result = adminScheduleService.generateTemplate(userId)
 
             assertThat(result.bytes).hasSize(50)
+        }
+    }
+
+    @Nested
+    @DisplayName("exportSchedules - 선택 다운로드 (UC-08)")
+    inner class ExportSchedulesTests {
+
+        @Test
+        @DisplayName("정상 다운로드 - 선택 ID 순서 보존 + 파일명 패턴")
+        fun exportSchedules_success() {
+            val s1 = createSchedule(id = 11L)
+            val s2 = createSchedule(id = 12L)
+            whenever(scheduleRepository.findAllById(listOf(12L, 11L))).thenReturn(listOf(s1, s2))
+            whenever(exportGenerator.generate(any())).thenReturn(ByteArray(500))
+
+            val result = adminScheduleService.exportSchedules(listOf(12L, 11L))
+
+            assertThat(result.bytes).hasSize(500)
+            assertThat(result.filename).startsWith("진열스케줄_").endsWith(".xlsx")
+            // 입력 순서대로 (12, 11) entity 가 generator 에 전달되었는지 확인
+            verify(exportGenerator).generate(argThat<List<DisplayWorkSchedule>> {
+                this.size == 2 && this[0].id == 12L && this[1].id == 11L
+            })
+        }
+
+        @Test
+        @DisplayName("삭제된 레코드는 제외")
+        fun exportSchedules_excludesDeleted() {
+            val active = createSchedule(id = 11L)
+            val deletedSchedule = createSchedule(id = 12L, isDeleted = true)
+            whenever(scheduleRepository.findAllById(listOf(11L, 12L))).thenReturn(listOf(active, deletedSchedule))
+            whenever(exportGenerator.generate(any())).thenReturn(ByteArray(200))
+
+            adminScheduleService.exportSchedules(listOf(11L, 12L))
+
+            verify(exportGenerator).generate(argThat<List<DisplayWorkSchedule>> {
+                this.size == 1 && this[0].id == 11L
+            })
         }
     }
 

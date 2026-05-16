@@ -5,6 +5,7 @@ import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchDeleteRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
+import com.otoki.powersales.schedule.dto.request.ScheduleExportRequest
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchDeleteResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleConfirmResultDto
@@ -90,6 +91,25 @@ class AdminScheduleController(
     ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
         val result = adminScheduleService.updateSchedule(principal.requireEmployeeId(), id, request)
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 수정되었습니다"))
+    }
+
+    @RequiresPermission(AdminPermission.SCHEDULE_READ)
+    @PostMapping("/export")
+    fun exportSchedules(
+        @Valid @RequestBody request: ScheduleExportRequest
+    ): ResponseEntity<ByteArray> {
+        val result = adminScheduleService.exportSchedules(request.ids)
+
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        headers.setContentDispositionFormData("attachment", result.filename)
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${result.filename}\"")
+
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(result.bytes)
     }
 
     @RequiresPermission(AdminPermission.SCHEDULE_WRITE)

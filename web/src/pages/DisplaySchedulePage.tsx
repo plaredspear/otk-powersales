@@ -25,7 +25,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useScheduleUpload';
 import { useScheduleList } from '@/hooks/schedule/useScheduleList';
 import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDelete } from '@/hooks/schedule/useScheduleBatchConfirm';
-import { downloadScheduleTemplate } from '@/api/schedule';
+import { downloadScheduleTemplate, exportSelectedSchedules } from '@/api/schedule';
 import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, SchedulePreset } from '@/api/schedule';
 import { PresetFilterSelect, type PresetOption } from '@/components/common/PresetFilterSelect';
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
@@ -152,6 +152,7 @@ export default function DisplaySchedulePage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ScheduleListItem | null>(null);
+  const [exporting, setExporting] = useState(false);
   const modalOpen = createModalOpen || editTarget != null;
   const listColumns = buildListColumns((row) => setEditTarget(row));
 
@@ -290,6 +291,19 @@ export default function DisplaySchedulePage() {
           message.error(err instanceof Error ? err.message : '확정 해제에 실패했습니다');
         }),
     });
+  };
+
+  const handleExportSelected = async () => {
+    const ids = selectedRowKeys as number[];
+    if (ids.length === 0) return;
+    setExporting(true);
+    try {
+      await exportSelectedSchedules(ids);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '다운로드에 실패했습니다');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleBatchDelete = () => {
@@ -552,6 +566,16 @@ export default function DisplaySchedulePage() {
             {selectedRowKeys.length > 0
               ? `선택 삭제 (${selectedRowKeys.length}건 선택)`
               : '선택 삭제'}
+          </Button>
+          <Button
+            icon={<DownloadOutlined />}
+            disabled={selectedRowKeys.length === 0}
+            loading={exporting}
+            onClick={handleExportSelected}
+          >
+            {selectedRowKeys.length > 0
+              ? `선택 다운로드 (${selectedRowKeys.length}건 선택)`
+              : '선택 다운로드'}
           </Button>
         </Space>
 
