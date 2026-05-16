@@ -59,6 +59,9 @@ class AdminEmployeeRegisterControllerTest {
     @MockitoBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
+    @MockitoBean
+    private lateinit var adminEmployeeHolder: com.otoki.powersales.admin.scope.AdminEmployeeHolder
+
     @BeforeEach
     fun setUp() {
         val principal = WebUserPrincipal(
@@ -76,6 +79,13 @@ class AdminEmployeeRegisterControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+        // controller 가 adminEmployeeHolder.require() 결과를 service 에 explicit parameter 로 전달.
+        whenever(adminEmployeeHolder.require())
+            .thenReturn(
+                com.otoki.powersales.employee.entity.Employee(employeeCode = "S001", name = "테스트").apply {
+                    role = UserRole.SYSTEM_ADMIN
+                }
+            )
     }
 
     private fun validRequest() = AdminEmployeeRegisterRequest(
@@ -107,7 +117,7 @@ class AdminEmployeeRegisterControllerTest {
         @Test
         @DisplayName("성공 - 201 Created, role=SYSTEM_ADMIN, origin=MANUAL")
         fun success() {
-            whenever(adminEmployeeRegisterService.register(any())).thenReturn(stubResponse())
+            whenever(adminEmployeeRegisterService.register(any(), any())).thenReturn(stubResponse())
 
             mockMvc.perform(
                 post("/api/v1/admin/employees")
@@ -126,7 +136,7 @@ class AdminEmployeeRegisterControllerTest {
         @Test
         @DisplayName("권한 부족 - 서비스가 AdminForbiddenException -> 403, error.code=FORBIDDEN")
         fun forbidden() {
-            whenever(adminEmployeeRegisterService.register(any()))
+            whenever(adminEmployeeRegisterService.register(any(), any()))
                 .thenThrow(AdminForbiddenException())
 
             mockMvc.perform(
@@ -162,7 +172,7 @@ class AdminEmployeeRegisterControllerTest {
         @Test
         @DisplayName("사번 중복 - 서비스가 EmployeeCodeDuplicatedException -> 409")
         fun duplicateCode() {
-            whenever(adminEmployeeRegisterService.register(any()))
+            whenever(adminEmployeeRegisterService.register(any(), any()))
                 .thenThrow(EmployeeCodeDuplicatedException())
 
             mockMvc.perform(

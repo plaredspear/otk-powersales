@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.AdminEmployeeRegisterRequest
 import com.otoki.powersales.admin.dto.AdminEmployeeRegisterResponse
+import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.admin.service.AdminEmployeeRegisterService
 import com.otoki.powersales.common.dto.ApiResponse
 import jakarta.validation.Valid
@@ -21,14 +22,17 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/admin/employees")
 class AdminEmployeeRegisterController(
-    private val adminEmployeeRegisterService: AdminEmployeeRegisterService
+    private val adminEmployeeRegisterService: AdminEmployeeRegisterService,
+    // WebAdminContextFilter 가 요청 진입 시 산출한 Employee 를 1회 읽어 service 에 explicit
+    // parameter 로 전달.
+    private val adminEmployeeHolder: AdminEmployeeHolder,
 ) {
 
     @PostMapping
     fun register(
         @Valid @RequestBody request: AdminEmployeeRegisterRequest
     ): ResponseEntity<ApiResponse<AdminEmployeeRegisterResponse>> {
-        val response = adminEmployeeRegisterService.register(request)
+        val response = adminEmployeeRegisterService.register(adminEmployeeHolder.require(), request)
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse.success(response, "관리자 계정이 등록되었습니다"))

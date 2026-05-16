@@ -51,6 +51,9 @@ class AdminPermissionMatrixControllerTest {
     @MockitoBean
     private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
+    @MockitoBean
+    private lateinit var adminEmployeeHolder: com.otoki.powersales.admin.scope.AdminEmployeeHolder
+
     @BeforeEach
     fun setUp() {
         val principal = WebUserPrincipal(
@@ -68,6 +71,9 @@ class AdminPermissionMatrixControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+        // controller 가 adminEmployeeHolder.require() 결과를 service 에 explicit parameter 로 전달.
+        whenever(adminEmployeeHolder.require())
+            .thenReturn(com.otoki.powersales.employee.entity.Employee(employeeCode = "S001", name = "테스트"))
     }
 
     @Nested

@@ -64,6 +64,9 @@ class AdminEmployeePermissionControllerTest {
     @MockitoBean
     private lateinit var adminAuthorityFilter: AdminAuthorityFilter
 
+    @MockitoBean
+    private lateinit var adminEmployeeHolder: com.otoki.powersales.admin.scope.AdminEmployeeHolder
+
     @BeforeEach
     fun setUp() {
         val principal = WebUserPrincipal(
@@ -81,6 +84,9 @@ class AdminEmployeePermissionControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+        // controller 가 adminEmployeeHolder.require() 결과를 service 에 explicit parameter 로 전달.
+        whenever(adminEmployeeHolder.require())
+            .thenReturn(com.otoki.powersales.employee.entity.Employee(employeeCode = "S001", name = "테스트"))
     }
 
     @Nested
@@ -101,7 +107,7 @@ class AdminEmployeePermissionControllerTest {
                 userPermissions = listOf(UserPermissionDetailResponse("SCHEDULE_WRITE", "관리자김")),
                 effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_READ", "SCHEDULE_WRITE")
             )
-            whenever(adminEmployeePermissionService.getEmployeePermissions(2L)).thenReturn(response)
+            whenever(adminEmployeePermissionService.getEmployeePermissions(any(), eq(2L))).thenReturn(response)
 
             // When & Then
             mockMvc.perform(get("/api/v1/admin/employees/2/permissions"))
@@ -118,7 +124,7 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("실패 - 비관리자 → 403")
         fun forbidden() {
-            whenever(adminEmployeePermissionService.getEmployeePermissions(2L))
+            whenever(adminEmployeePermissionService.getEmployeePermissions(any(), eq(2L)))
                 .thenThrow(AdminForbiddenException())
 
             mockMvc.perform(get("/api/v1/admin/employees/2/permissions"))
@@ -129,7 +135,7 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("실패 - 사원 미존재 → 404")
         fun notFound() {
-            whenever(adminEmployeePermissionService.getEmployeePermissions(999L))
+            whenever(adminEmployeePermissionService.getEmployeePermissions(any(), eq(999L)))
                 .thenThrow(EmployeeNotFoundException())
 
             mockMvc.perform(get("/api/v1/admin/employees/999/permissions"))
@@ -153,7 +159,7 @@ class AdminEmployeePermissionControllerTest {
                 userPermissions = listOf(UserPermissionDetailResponse("SCHEDULE_WRITE", "시스템관리자")),
                 effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_WRITE")
             )
-            whenever(adminEmployeePermissionService.updateUserPermissions(eq(2L), any())).thenReturn(response)
+            whenever(adminEmployeePermissionService.updateUserPermissions(any(), eq(2L), any())).thenReturn(response)
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("SCHEDULE_WRITE"))
 
@@ -171,7 +177,7 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("실패 - 자기 자신 수정 → 400")
         fun selfModify() {
-            whenever(adminEmployeePermissionService.updateUserPermissions(eq(1L), any()))
+            whenever(adminEmployeePermissionService.updateUserPermissions(any(), eq(1L), any()))
                 .thenThrow(CannotModifyOwnPermissionException())
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("SCHEDULE_WRITE"))
@@ -188,7 +194,7 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 권한 → 400")
         fun invalidPermission() {
-            whenever(adminEmployeePermissionService.updateUserPermissions(eq(2L), any()))
+            whenever(adminEmployeePermissionService.updateUserPermissions(any(), eq(2L), any()))
                 .thenThrow(InvalidPermissionException("INVALID"))
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("INVALID"))
@@ -217,7 +223,7 @@ class AdminEmployeePermissionControllerTest {
                 newRole = "SALES_MANAGER", newRoleLabel = "영업부장",
                 effectivePermissions = listOf("DASHBOARD_READ")
             )
-            whenever(adminEmployeePermissionService.updateAuthority(eq(2L), any())).thenReturn(response)
+            whenever(adminEmployeePermissionService.updateAuthority(any(), eq(2L), any())).thenReturn(response)
 
             val request = UpdateAuthorityRequest(role = UserRole.SALES_MANAGER)
 

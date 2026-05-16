@@ -23,6 +23,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -65,6 +66,9 @@ class AdminTeamScheduleControllerTest {
     @MockitoBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
+    @MockitoBean
+    private lateinit var adminEmployeeHolder: com.otoki.powersales.admin.scope.AdminEmployeeHolder
+
     @BeforeEach
     fun setUp() {
         val principal = WebUserPrincipal(
@@ -82,6 +86,9 @@ class AdminTeamScheduleControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+        // controller 가 adminEmployeeHolder.require() 결과를 service 에 explicit parameter 로 전달.
+        whenever(adminEmployeeHolder.require())
+            .thenReturn(com.otoki.powersales.employee.entity.Employee(employeeCode = "S001", name = "테스트"))
     }
 
     @Nested
@@ -95,7 +102,7 @@ class AdminTeamScheduleControllerTest {
                 TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "홍길동"),
                 TeamMemberDto(employeeId = 2L, employeeCode = "20030002", name = "김영희")
             )
-            whenever(adminTeamScheduleService.getMembers(1L)).thenReturn(members)
+            whenever(adminTeamScheduleService.getMembers(any(), anyOrNull())).thenReturn(members)
 
             mockMvc.perform(get("/api/v1/admin/team-schedule/members"))
                 .andExpect(status().isOk)
@@ -120,7 +127,7 @@ class AdminTeamScheduleControllerTest {
                 TeamScheduleAccountDto(accountId = 1001, externalKey = "EXT001", name = "이마트 강남점"),
                 TeamScheduleAccountDto(accountId = 1002, externalKey = "EXT002", name = "홈플러스 잠실점")
             )
-            whenever(adminTeamScheduleService.getAccounts(eq(1L), eq(null))).thenReturn(accounts)
+            whenever(adminTeamScheduleService.getAccounts(any(), eq(null))).thenReturn(accounts)
 
             mockMvc.perform(get("/api/v1/admin/team-schedule/accounts"))
                 .andExpect(status().isOk)
@@ -138,7 +145,7 @@ class AdminTeamScheduleControllerTest {
             val accounts = listOf(
                 TeamScheduleAccountDto(accountId = 1003, externalKey = "EXT003", name = "롯데마트 서울역점")
             )
-            whenever(adminTeamScheduleService.getAccounts(eq(1L), eq("BR001"))).thenReturn(accounts)
+            whenever(adminTeamScheduleService.getAccounts(any(), eq("BR001"))).thenReturn(accounts)
 
             mockMvc.perform(
                 get("/api/v1/admin/team-schedule/accounts")
@@ -164,7 +171,7 @@ class AdminTeamScheduleControllerTest {
                 BranchResponse(branchCode = "1234", branchName = "서울지점"),
                 BranchResponse(branchCode = "5678", branchName = "부산지점")
             )
-            whenever(adminTeamScheduleService.getBranches(1L)).thenReturn(branches)
+            whenever(adminTeamScheduleService.getBranches(any())).thenReturn(branches)
 
             mockMvc.perform(get("/api/v1/admin/team-schedule/branches"))
                 .andExpect(status().isOk)
@@ -217,7 +224,6 @@ class AdminTeamScheduleControllerTest {
             )
             whenever(
                 adminTeamScheduleService.getSchedulesWithSummary(
-                    eq(1L),
                     eq(java.time.LocalDate.of(2026, 3, 1)),
                     eq(java.time.LocalDate.of(2026, 3, 31)),
                     eq(null),
@@ -263,7 +269,6 @@ class AdminTeamScheduleControllerTest {
             )
             whenever(
                 adminTeamScheduleService.getSchedulesWithSummary(
-                    eq(1L),
                     eq(java.time.LocalDate.of(2026, 3, 1)),
                     eq(java.time.LocalDate.of(2026, 3, 31)),
                     eq(null),
@@ -301,7 +306,7 @@ class AdminTeamScheduleControllerTest {
                 workingCategory2 = WorkingCategory2.DEDICATED,
                 accountId = 1001
             )
-            whenever(adminTeamScheduleService.createSchedule(eq(1L), any()))
+            whenever(adminTeamScheduleService.createSchedule(any(), any()))
                 .thenReturn(TeamScheduleCreateResultDto(id = 10L))
 
             mockMvc.perform(
@@ -323,7 +328,7 @@ class AdminTeamScheduleControllerTest {
                 workingDate = "2026-03-20",
                 workingType = WorkingType.WORK
             )
-            whenever(adminTeamScheduleService.createSchedule(eq(1L), any()))
+            whenever(adminTeamScheduleService.createSchedule(any(), any()))
                 .thenThrow(TeamScheduleEmployeeOnLeaveException())
 
             mockMvc.perform(
@@ -343,7 +348,7 @@ class AdminTeamScheduleControllerTest {
                 workingDate = "2026-03-20",
                 workingType = WorkingType.WORK
             )
-            whenever(adminTeamScheduleService.createSchedule(eq(1L), any()))
+            whenever(adminTeamScheduleService.createSchedule(any(), any()))
                 .thenThrow(TeamScheduleConflictException("해당 날짜에 이미 일정이 등록되어 있습니다"))
 
             mockMvc.perform(
@@ -387,7 +392,7 @@ class AdminTeamScheduleControllerTest {
                 workingDate = "2026-03-21",
                 workingType = WorkingType.WORK
             )
-            whenever(adminTeamScheduleService.updateSchedule(eq(1L), eq(999L), any()))
+            whenever(adminTeamScheduleService.updateSchedule(any(), eq(999L), any()))
                 .thenThrow(TeamScheduleNotFoundException())
 
             mockMvc.perform(
@@ -416,7 +421,7 @@ class AdminTeamScheduleControllerTest {
         @Test
         @DisplayName("실패 - 지점장 삭제 권한 없음")
         fun deleteSchedule_forbidden() {
-            whenever(adminTeamScheduleService.deleteSchedule(eq(1L), eq(1L)))
+            whenever(adminTeamScheduleService.deleteSchedule(any(), eq(1L)))
                 .thenThrow(TeamScheduleDeleteForbiddenException())
 
             mockMvc.perform(delete("/api/v1/admin/team-schedule/1"))
@@ -427,7 +432,7 @@ class AdminTeamScheduleControllerTest {
         @Test
         @DisplayName("실패 - 미존재 일정 삭제")
         fun deleteSchedule_notFound() {
-            whenever(adminTeamScheduleService.deleteSchedule(eq(1L), eq(999L)))
+            whenever(adminTeamScheduleService.deleteSchedule(any(), eq(999L)))
                 .thenThrow(TeamScheduleNotFoundException())
 
             mockMvc.perform(delete("/api/v1/admin/team-schedule/999"))

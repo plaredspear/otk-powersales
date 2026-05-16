@@ -6,7 +6,6 @@ import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
 import com.otoki.powersales.admin.exception.InvalidEmployeeCodeFormatException
 import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
-import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.admin.util.AdminPasswordPolicyValidator
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
@@ -30,14 +29,16 @@ import org.springframework.transaction.annotation.Transactional
 class AdminEmployeeRegisterService(
     private val employeeRepository: EmployeeRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val adminEmployeeHolder: AdminEmployeeHolder
 ) {
 
     private val logger = LoggerFactory.getLogger(AdminEmployeeRegisterService::class.java)
 
+    /**
+     * @param actor 호출자(controller) 가 주입한 현재 로그인 Employee. service 가 holder/ambient
+     *              context 에 의존하지 않도록 explicit parameter 로 받는다.
+     */
     @Transactional
-    fun register(request: AdminEmployeeRegisterRequest): AdminEmployeeRegisterResponse {
-        val actor = adminEmployeeHolder.require()
+    fun register(actor: Employee, request: AdminEmployeeRegisterRequest): AdminEmployeeRegisterResponse {
         if (actor.role !in UserRole.MANAGE_PERMISSIONS) {
             throw AdminForbiddenException()
         }

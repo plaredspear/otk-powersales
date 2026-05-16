@@ -6,7 +6,6 @@ import com.otoki.powersales.admin.exception.AdminPasswordPolicyViolationExceptio
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
 import com.otoki.powersales.admin.exception.InvalidEmployeeCodeFormatException
 import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
-import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
@@ -38,9 +37,6 @@ class AdminEmployeeRegisterServiceTest {
 
     @Mock
     private lateinit var passwordEncoder: PasswordEncoder
-
-    @Mock
-    private lateinit var adminEmployeeHolder: AdminEmployeeHolder
 
     @InjectMocks
     private lateinit var service: AdminEmployeeRegisterService
@@ -79,10 +75,8 @@ class AdminEmployeeRegisterServiceTest {
         costCenterCode = costCenterCode
     )
 
-    @BeforeEach
-    fun setUp() {
-        whenever(adminEmployeeHolder.require()).thenReturn(systemAdminActor)
-    }
+    // actor 는 각 케이스에서 service.register(actor, request) 로 직접 전달.
+    // (holder mock 패턴 제거 — explicit parameter 컨벤션)
 
     @Nested
     @DisplayName("register - 정상 등록")
@@ -95,7 +89,7 @@ class AdminEmployeeRegisterServiceTest {
             whenever(passwordEncoder.encode("Admin@2026!")).thenReturn("\$2a\$10\$encoded")
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
-            val response = service.register(request())
+            val response = service.register(systemAdminActor, request())
 
             val captor = argumentCaptor<Employee>()
             verify(employeeRepository).save(captor.capture())
@@ -120,7 +114,7 @@ class AdminEmployeeRegisterServiceTest {
             whenever(passwordEncoder.encode("Admin@2026!")).thenReturn("HASHED")
             whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
 
-            service.register(request())
+            service.register(systemAdminActor, request())
 
             val captor = argumentCaptor<Employee>()
             verify(employeeRepository).save(captor.capture())
@@ -137,9 +131,7 @@ class AdminEmployeeRegisterServiceTest {
         @Test
         @DisplayName("권한 없음 - WOMAN role 호출자 -> AdminForbiddenException")
         fun forbiddenWhenNotSystemAdmin() {
-            whenever(adminEmployeeHolder.require()).thenReturn(womanActor)
-
-            assertThatThrownBy { service.register(request()) }
+            assertThatThrownBy { service.register(womanActor, request()) }
                 .isInstanceOf(AdminForbiddenException::class.java)
 
             verify(employeeRepository, never()).save(any<Employee>())
@@ -148,14 +140,14 @@ class AdminEmployeeRegisterServiceTest {
         @Test
         @DisplayName("사번 prefix 위반 - EMP-001 -> InvalidEmployeeCodeFormatException")
         fun invalidPrefix() {
-            assertThatThrownBy { service.register(request(employeeCode = "EMP-001")) }
+            assertThatThrownBy { service.register(systemAdminActor, request(employeeCode = "EMP-001")) }
                 .isInstanceOf(InvalidEmployeeCodeFormatException::class.java)
         }
 
         @Test
         @DisplayName("사번 형식 위반 - 한글 포함 -> InvalidEmployeeCodeFormatException")
         fun invalidCharacters() {
-            assertThatThrownBy { service.register(request(employeeCode = "ADMIN-홍길동")) }
+            assertThatThrownBy { service.register(systemAdminActor, request(employeeCode = "ADMIN-홍길동")) }
                 .isInstanceOf(InvalidEmployeeCodeFormatException::class.java)
         }
 
@@ -163,7 +155,7 @@ class AdminEmployeeRegisterServiceTest {
         @DisplayName("비밀번호 불일치 - password ≠ passwordConfirm -> PasswordConfirmMismatchException")
         fun passwordConfirmMismatch() {
             assertThatThrownBy {
-                service.register(request(password = "Admin@2026!", passwordConfirm = "Other@2026!"))
+                service.register(systemAdminActor, request(password = "Admin@2026!", passwordConfirm = "Other@2026!"))
             }.isInstanceOf(PasswordConfirmMismatchException::class.java)
         }
 
@@ -171,7 +163,7 @@ class AdminEmployeeRegisterServiceTest {
         @DisplayName("비밀번호 정책 - 7자 -> AdminPasswordPolicyViolationException")
         fun passwordTooShort() {
             assertThatThrownBy {
-                service.register(request(password = "Ab1!def", passwordConfirm = "Ab1!def"))
+                service.register(systemAdminActor, request(password = "Ab1!def", passwordConfirm = "Ab1!def"))
             }.isInstanceOf(AdminPasswordPolicyViolationException::class.java)
         }
 
@@ -179,7 +171,7 @@ class AdminEmployeeRegisterServiceTest {
         @DisplayName("비밀번호 정책 - 영문만 8자 -> AdminPasswordPolicyViolationException")
         fun passwordSingleCategory() {
             assertThatThrownBy {
-                service.register(request(password = "abcdefgh", passwordConfirm = "abcdefgh"))
+                service.register(systemAdminActor, request(password = "abcdefgh", passwordConfirm = "abcdefgh"))
             }.isInstanceOf(AdminPasswordPolicyViolationException::class.java)
         }
 
@@ -187,7 +179,7 @@ class AdminEmployeeRegisterServiceTest {
         @DisplayName("비밀번호 정책 - 동일 문자 4회 반복 -> AdminPasswordPolicyViolationException")
         fun passwordConsecutiveSameChars() {
             assertThatThrownBy {
-                service.register(request(password = "Abcd1111", passwordConfirm = "Abcd1111"))
+                service.register(systemAdminActor, request(password = "Abcd1111", passwordConfirm = "Abcd1111"))
             }.isInstanceOf(AdminPasswordPolicyViolationException::class.java)
         }
 
@@ -196,7 +188,7 @@ class AdminEmployeeRegisterServiceTest {
         fun duplicatedEmployeeCode() {
             whenever(employeeRepository.existsByEmployeeCode("ADMIN-001")).thenReturn(true)
 
-            assertThatThrownBy { service.register(request()) }
+            assertThatThrownBy { service.register(systemAdminActor, request()) }
                 .isInstanceOf(EmployeeCodeDuplicatedException::class.java)
 
             verify(employeeRepository, never()).save(any<Employee>())
@@ -210,7 +202,7 @@ class AdminEmployeeRegisterServiceTest {
             whenever(employeeRepository.save(any<Employee>()))
                 .thenThrow(DataIntegrityViolationException("duplicate key"))
 
-            assertThatThrownBy { service.register(request()) }
+            assertThatThrownBy { service.register(systemAdminActor, request()) }
                 .isInstanceOf(EmployeeCodeDuplicatedException::class.java)
         }
     }

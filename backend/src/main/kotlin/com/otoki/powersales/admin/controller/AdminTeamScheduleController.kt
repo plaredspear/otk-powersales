@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*
+import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.service.AdminTeamScheduleService
@@ -20,7 +21,10 @@ import java.time.LocalDate
 @RestController
 @RequestMapping("/api/v1/admin/team-schedule")
 class AdminTeamScheduleController(
-    private val adminTeamScheduleService: AdminTeamScheduleService
+    private val adminTeamScheduleService: AdminTeamScheduleService,
+    // WebAdminContextFilter 가 요청 진입 시 산출한 Employee 를 1회 읽어 service 에 explicit
+    // parameter 로 전달.
+    private val adminEmployeeHolder: AdminEmployeeHolder,
 ) {
 
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
@@ -29,7 +33,7 @@ class AdminTeamScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) branchCode: String?
     ): ResponseEntity<ApiResponse<List<TeamMemberDto>>> {
-        val result = adminTeamScheduleService.getMembers(principal.requireEmployeeId(), branchCode)
+        val result = adminTeamScheduleService.getMembers(adminEmployeeHolder.require(), branchCode)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -39,7 +43,7 @@ class AdminTeamScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) branchCode: String?
     ): ResponseEntity<ApiResponse<List<TeamScheduleAccountDto>>> {
-        val result = adminTeamScheduleService.getAccounts(principal.requireEmployeeId(), branchCode)
+        val result = adminTeamScheduleService.getAccounts(adminEmployeeHolder.require(), branchCode)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -48,7 +52,7 @@ class AdminTeamScheduleController(
     fun getBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        val result = adminTeamScheduleService.getBranches(principal.requireEmployeeId())
+        val result = adminTeamScheduleService.getBranches(adminEmployeeHolder.require())
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -57,7 +61,7 @@ class AdminTeamScheduleController(
     fun getProfessionalPromotionTeams(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<List<String>>> {
-        val result = adminTeamScheduleService.getProfessionalPromotionTeams(principal.requireEmployeeId())
+        val result = adminTeamScheduleService.getProfessionalPromotionTeams()
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -75,7 +79,7 @@ class AdminTeamScheduleController(
         val accountIdList = accountIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toInt() }
         val promotionTeamList = promotionTeams?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
         val result = adminTeamScheduleService.getSchedulesWithSummary(
-            principal.requireEmployeeId(), from, to, employeeIdList, accountIdList, promotionTeamList
+            from, to, employeeIdList, accountIdList, promotionTeamList
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }
@@ -86,7 +90,7 @@ class AdminTeamScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: TeamScheduleCreateRequest
     ): ResponseEntity<ApiResponse<TeamScheduleCreateResultDto>> {
-        val result = adminTeamScheduleService.createSchedule(principal.requireEmployeeId(), request)
+        val result = adminTeamScheduleService.createSchedule(adminEmployeeHolder.require(), request)
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success(result, "일정이 등록되었습니다"))
     }
@@ -98,7 +102,7 @@ class AdminTeamScheduleController(
         @PathVariable id: Long,
         @Valid @RequestBody request: TeamScheduleUpdateRequest
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminTeamScheduleService.updateSchedule(principal.requireEmployeeId(), id, request)
+        adminTeamScheduleService.updateSchedule(adminEmployeeHolder.require(), id, request)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "일정이 수정되었습니다"))
     }
 
@@ -108,7 +112,7 @@ class AdminTeamScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminTeamScheduleService.deleteSchedule(principal.requireEmployeeId(), id)
+        adminTeamScheduleService.deleteSchedule(adminEmployeeHolder.require(), id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "일정이 삭제되었습니다"))
     }
 }

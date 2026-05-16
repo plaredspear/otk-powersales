@@ -1,6 +1,5 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.admin.scope.AdminEmployeeHolder
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingType
@@ -28,7 +27,6 @@ class AdminTeamScheduleService(
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val organizationRepository: OrganizationRepository,
-    private val adminEmployeeHolder: AdminEmployeeHolder,
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
     private val teamScheduleValidator: TeamScheduleValidator
 ) {
@@ -45,8 +43,11 @@ class AdminTeamScheduleService(
      * 공통 SOQL 정합 필터: `role = WOMAN AND app_login_active = true AND is_deleted != true`, `ORDER BY name`.
      * SF 의 `TeamMemberListComponentHelper.js:49-52` (지점 1개면 자동, N개면 사용자 선택) 패턴 정합.
      */
-    fun getMembers(employeeId: Long, branchCode: String? = null): List<TeamMemberDto> {
-        val currentEmployee = findEmployeeById(employeeId)
+    /**
+     * @param currentEmployee 호출자(controller) 가 주입한 현재 로그인 Employee. holder 의존 회피용
+     *                        explicit parameter.
+     */
+    fun getMembers(currentEmployee: Employee, branchCode: String? = null): List<TeamMemberDto> {
         val role = currentEmployee.role
         val empCode = currentEmployee.employeeCode
         val ccCode = currentEmployee.costCenterCode
@@ -65,9 +66,8 @@ class AdminTeamScheduleService(
             .map { TeamMemberDto.from(it) }
     }
 
-    fun getAccounts(employeeId: Long, branchCode: String?): List<TeamScheduleAccountDto> {
+    fun getAccounts(currentEmployee: Employee, branchCode: String?): List<TeamScheduleAccountDto> {
         val effectiveBranchCode = branchCode ?: run {
-            val currentEmployee = findEmployeeById(employeeId)
             currentEmployee.costCenterCode ?: return emptyList()
         }
         return accountRepository.findByBranchCodeAndAccountGroupIn(
@@ -85,8 +85,7 @@ class AdminTeamScheduleService(
      * - ALL_BRANCHES Role (영업지원/본부): SF `RT.Name in ('영업지원실','영업본부')` 분기 (CVS 미포함)
      * - 그 외 (LEADER, BRANCH_MANAGER, WOMAN 등): 본인 `costCenterCode` 기준 조직 트리 + Retail/제1/CVS사업부
      */
-    fun getBranches(employeeId: Long): List<BranchResponse> {
-        val currentEmployee = findEmployeeById(employeeId)
+    fun getBranches(currentEmployee: Employee): List<BranchResponse> {
         val role = currentEmployee.role
 
         return when {
@@ -107,7 +106,7 @@ class AdminTeamScheduleService(
      * (라면세일조 / 프레시세일조_냉동 / 프레시세일조_냉장 / 프레시세일조_만두 / 카레행사조) 기준이나,
      * 운영 적재 실데이터를 출처로 — 신규 조 picklist 확장 시 코드 변경 없이 자동 반영.
      */
-    fun getProfessionalPromotionTeams(employeeId: Long): List<String> {
+    fun getProfessionalPromotionTeams(): List<String> {
         return teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams()
     }
 
@@ -124,7 +123,6 @@ class AdminTeamScheduleService(
      * 기간: `from` ~ `to` 임의 범위. 캘린더 월 뷰는 그달 1일~말일을, 목록 뷰의 RangePicker 는 사용자 지정 기간을 넘긴다.
      */
     fun getSchedulesWithSummary(
-        employeeId: Long,
         from: LocalDate,
         to: LocalDate,
         employeeIds: List<Long>?,
@@ -179,7 +177,7 @@ class AdminTeamScheduleService(
     }
 
     @Transactional
-    fun createSchedule(employeeId: Long, request: TeamScheduleCreateRequest): TeamScheduleCreateResultDto {
+    fun createSchedule(currentEmployee: Employee, request: TeamScheduleCreateRequest): TeamScheduleCreateResultDto {
         val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
 
@@ -200,7 +198,6 @@ class AdminTeamScheduleService(
                 .orElseThrow { TeamScheduleAccountNotFoundException() }
         } else null
 
-        val currentEmployee = findEmployeeById(employeeId)
         val schedule = TeamMemberSchedule(
             employee = employee,
             workingDate = workingDate,
@@ -223,8 +220,7 @@ class AdminTeamScheduleService(
     }
 
     @Transactional
-    fun updateSchedule(employeeId: Long, scheduleId: Long, request: TeamScheduleUpdateRequest) {
-        val currentEmployee = findEmployeeById(employeeId)
+    fun updateSchedule(currentEmployee: Employee, scheduleId: Long, request: TeamScheduleUpdateRequest) {
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
@@ -287,8 +283,7 @@ class AdminTeamScheduleService(
     }
 
     @Transactional
-    fun deleteSchedule(employeeId: Long, scheduleId: Long) {
-        val currentEmployee = findEmployeeById(employeeId)
+    fun deleteSchedule(currentEmployee: Employee, scheduleId: Long) {
         if (currentEmployee.role == UserRole.BRANCH_MANAGER) {
             throw TeamScheduleDeleteForbiddenException()
         }
@@ -314,18 +309,6 @@ class AdminTeamScheduleService(
     }
 
     // --- Private helpers ---
-
-    /**
-     * 현재 로그인 사용자의 Employee 조회.
-     *
-     * SF 정합: SF 는 매번 `User.DKRetail__EmployeeNumber__c` → `DKRetail__Employee__c.DKRetail__EmpCode__c` 로
-     * 사번 매칭하지만, 신규는 인증 시점에 `principal.employeeId` 로 압축해 두므로 `Employee.id` 직접 lookup.
-     */
-    private fun findEmployeeById(employeeId: Long): Employee {
-        return adminEmployeeHolder.employee
-            ?: employeeRepository.findWithEmployeeInfoById(employeeId)
-            ?: throw TeamScheduleEmployeeNotFoundException()
-    }
 
     companion object {
         /** SF `TeamMemberListController.fetchTeamMembers` 특수 사번 하드코딩 분기 — 인천 cost center 광역 매핑 */
