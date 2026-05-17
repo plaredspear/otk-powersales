@@ -38,6 +38,7 @@ const AlternativeHolidayPage = lazy(() => import('@/pages/alternative-holidays/A
 const HolidayMasterListPage = lazy(() => import('@/pages/holiday-masters/HolidayMasterListPage'));
 const MonthlyIntegrationSchedulePage = lazy(() => import('@/pages/schedules/MonthlyIntegrationSchedulePage'));
 const CategorySchedulePage = lazy(() => import('@/pages/schedules/CategorySchedulePage'));
+const MonthlyInputAdequacyPage = lazy(() => import('@/pages/MonthlyInputAdequacyPage'));
 const PPTMasterPage = lazy(() => import('@/pages/promotion/PPTMasterPage'));
 const PPTHistoryPage = lazy(() => import('@/pages/promotion/PPTHistoryPage'));
 const PermissionMatrixPage = lazy(() => import('@/pages/settings/PermissionMatrixPage'));
@@ -116,6 +117,12 @@ export const router = createBrowserRouter(
             },
             { path: '/work-type-headcount', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
             { path: '/monthly-integration', element: <LazyWrapper><MonthlyIntegrationSchedulePage /></LazyWrapper> },
+            {
+              element: <PermissionRoute requiredPermission="MONTHLY_INPUT_ADEQUACY_READ" />,
+              children: [
+                { path: '/monthly-input-adequacy', element: <LazyWrapper><MonthlyInputAdequacyPage /></LazyWrapper> },
+              ],
+            },
             { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
             { path: '/promotion/ppt-master-history', element: <LazyWrapper><PPTHistoryPage /></LazyWrapper> },
             {

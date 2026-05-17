@@ -31,6 +31,7 @@ class AdminPermissionMatrixService(
         AdminPermission.SCHEDULE_READ to ("일정 조회" to listOf("여사원 일정 > 여사원 일정관리", "여사원 일정 > 월별여사원 통합일정", "여사원 일정 > 근무형태별 인원현황")),
         AdminPermission.SCHEDULE_WRITE to ("일정 생성/수정" to listOf("행사/배치 > 진열스케줄마스터 일정 확정")),
         AdminPermission.SALES_COMPARISON_READ to ("거래처별 진열사원 배치적합성 조회" to listOf("거래처별 진열사원 배치적합성")),
+        AdminPermission.MONTHLY_INPUT_ADEQUACY_READ to ("월별 진열사원 투입적합성 조회" to listOf("여사원 일정 > 월별 진열사원 투입적합성")),
         AdminPermission.PRODUCT_EXPIRATION_READ to ("유통기한 조회" to listOf("현장 점검/이슈 > 유통기한 관리")),
         AdminPermission.PRODUCT_EXPIRATION_WRITE to ("유통기한 등록/수정" to listOf("현장 점검/이슈 > 유통기한 관리 (등록 / 수정 / 삭제)")),
         AdminPermission.NAVER_GEOCODE_TEST to ("Naver Geocode 변환 테스트" to listOf("운영 도구 > Naver Geocode 변환 테스트")),
