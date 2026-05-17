@@ -94,25 +94,25 @@ class OrderRequestProduct(
     @Column(name = "unit", nullable = false, length = 40)
     val unit: String,
 
-    @Column(name = "unit_price", nullable = false, precision = 16, scale = 2)
-    val unitPrice: BigDecimal = BigDecimal.ZERO,
+    @Column(name = "unit_price", precision = 16, scale = 2)
+    val unitPrice: BigDecimal? = BigDecimal.ZERO,
 
     @SFField("DKRetail__TotalAmount__c")
     @HCColumn("dkretail__totalamount__c")
     @Column(name = "amount", nullable = false, precision = 18, scale = 2)
     val amount: BigDecimal = BigDecimal.ZERO,
 
-    @Column(name = "pieces_per_box", nullable = false)
-    val piecesPerBox: Int = 1,
+    @Column(name = "pieces_per_box")
+    val piecesPerBox: Int? = 1,
 
-    @Column(name = "min_order_unit", nullable = false)
-    val minOrderUnit: Int = 1,
+    @Column(name = "min_order_unit")
+    val minOrderUnit: Int? = 1,
 
-    @Column(name = "supply_quantity", nullable = false)
-    val supplyQuantity: Int = 0,
+    @Column(name = "supply_quantity")
+    val supplyQuantity: Int? = 0,
 
-    @Column(name = "dc_quantity", nullable = false)
-    val dcQuantity: Int = 0,
+    @Column(name = "dc_quantity")
+    val dcQuantity: Int? = 0,
 
     @SFField("DKRetail__LineChangeType__c")
     @HCColumn("dkretail__linechangetype__c")

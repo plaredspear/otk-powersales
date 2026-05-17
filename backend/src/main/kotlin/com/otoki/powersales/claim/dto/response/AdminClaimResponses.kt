@@ -77,7 +77,7 @@ data class AdminClaimDetailResponse(
             storeName = claim.accountName,
             productCode = claim.productCode,
             productName = claim.productName,
-            dateType = claim.dateType.name,
+            dateType = claim.dateType?.name,
             date = claim.date,
             categoryValue = claim.claimType1.value,
             categoryLabel = claim.claimType1.label,

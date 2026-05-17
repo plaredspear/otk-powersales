@@ -67,21 +67,21 @@ class Claim(
     @JoinColumn(name = "account_id")
     val account: Account? = null,
 
-    @Column(name = "store_name", nullable = false, length = 100)
-    val accountName: String,
+    @Column(name = "store_name", length = 100)
+    val accountName: String? = null,
 
     // Spec sf-meta-diff Q1 옵션 (a): SF Formula 필드 (`DKRetail__ProductId__r.DKRetail__ProductCode__c`).
     // §6.7 정책상 DB 컬럼 추가 금지 대상이나 application 신규 작성 시 product FK 미연결 (SAP 코드만 있는)
     // 케이스 회피용 입력값 캐시로 컬럼 유지. SF API 마이그레이션 대상에서는 제외 — `@SFField` 제거.
-    @Column(name = "product_code", nullable = false, length = 1300)
-    val productCode: String,
+    @Column(name = "product_code", length = 1300)
+    val productCode: String? = null,
 
-    @Column(name = "product_name", nullable = false, length = 200)
-    val productName: String,
+    @Column(name = "product_name", length = 200)
+    val productName: String? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "date_type", nullable = false, length = 20)
-    val dateType: ClaimDateType,
+    @Column(name = "date_type", length = 20)
+    val dateType: ClaimDateType? = null,
 
     @SFField("DKRetail__ClaimDate__c")
     @Column(name = "date", nullable = false)

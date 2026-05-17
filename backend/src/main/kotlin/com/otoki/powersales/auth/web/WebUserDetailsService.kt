@@ -56,10 +56,10 @@ class WebUserDetailsService(
             employeeId = null,
             role = null,
             profileType = user.profileType,
-            isSalesSupport = user.isSalesSupport,
-            passwordChangeRequired = user.passwordChangeRequired,
+            isSalesSupport = user.isSalesSupport ?: false,
+            passwordChangeRequired = user.passwordChangeRequired ?: true,
             encodedPassword = user.password,
-            grantedAuthorities = resolveAuthorities(user.profileType, user.isSalesSupport),
+            grantedAuthorities = resolveAuthorities(user.profileType, user.isSalesSupport ?: false),
             active = user.isActive
         )
     }

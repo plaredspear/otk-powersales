@@ -180,12 +180,13 @@ class UserEntityTest {
         }
 
         @Test
-        @DisplayName("password_change_required 컬럼은 NOT NULL, default true")
+        @DisplayName("password_change_required 컬럼 (V157 에서 nullable 화)")
         fun passwordChangeRequiredColumn() {
             val field = User::class.java.getDeclaredField("passwordChangeRequired")
             val column = field.getAnnotation(Column::class.java)
             assertThat(column.name).isEqualTo("password_change_required")
-            assertThat(column.nullable).isFalse()
+            // V157: SF Stage 1 raw INSERT 정합 위해 NOT NULL 제거. 기본값은 application 레벨 (true).
+            assertThat(column.nullable).isTrue()
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
         }
     }

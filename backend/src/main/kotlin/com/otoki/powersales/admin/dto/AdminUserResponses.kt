@@ -97,9 +97,9 @@ data class AdminUserDetailResponse(
             sfid = user.sfid,
             profileType = user.profileType.name,
             profileTypeLabel = user.profileType.toKoreanLabel(),
-            isSalesSupport = user.isSalesSupport,
+            isSalesSupport = user.isSalesSupport ?: false,
             isActive = user.isActive,
-            passwordChangeRequired = user.passwordChangeRequired,
+            passwordChangeRequired = user.passwordChangeRequired ?: true,
             lastLoginAt = user.lastLoginAt,
             createdAt = user.createdAt,
             lastModifiedAt = user.updatedAt

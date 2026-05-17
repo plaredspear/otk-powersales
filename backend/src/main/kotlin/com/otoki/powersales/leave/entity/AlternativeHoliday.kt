@@ -67,8 +67,8 @@ class AlternativeHoliday(
     @Column(name = "change_reason", length = 255)
     var changeReason: String? = null,
 
-    @Column(name = "created_by_emp_no", nullable = false, length = 20)
-    val createdByEmpNo: String,
+    @Column(name = "created_by_emp_no", length = 20)
+    val createdByEmpNo: String? = null,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")

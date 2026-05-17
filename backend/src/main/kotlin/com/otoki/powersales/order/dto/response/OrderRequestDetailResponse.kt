@@ -48,7 +48,7 @@ data class OrderRequestDetailResponse(
                 orderDate = orderRequest.orderDate,
                 deliveryDate = orderRequest.deliveryDate,
                 totalAmount = orderRequest.totalAmount,
-                totalApprovedAmount = orderRequest.totalApprovedAmount,
+                totalApprovedAmount = orderRequest.totalApprovedAmount ?: java.math.BigDecimal.ZERO,
                 orderRequestStatus = orderRequest.orderRequestStatus,
                 isClosed = isClosed,
                 orderedItemCount = orderedItems.size,

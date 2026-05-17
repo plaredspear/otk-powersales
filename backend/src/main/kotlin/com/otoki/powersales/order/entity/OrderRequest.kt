@@ -91,8 +91,8 @@ class OrderRequest(
     @Column(name = "total_amount", nullable = false, precision = 18, scale = 2)
     val totalAmount: BigDecimal = BigDecimal.ZERO,
 
-    @Column(name = "total_approved_amount", nullable = false, precision = 18, scale = 2)
-    var totalApprovedAmount: BigDecimal = BigDecimal.ZERO,
+    @Column(name = "total_approved_amount", precision = 18, scale = 2)
+    var totalApprovedAmount: BigDecimal? = BigDecimal.ZERO,
 
     @SFField("DKRetail__RequestStatus__c")
     @HCColumn("dkretail__requeststatus__c")

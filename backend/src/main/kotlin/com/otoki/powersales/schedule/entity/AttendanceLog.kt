@@ -77,8 +77,8 @@ class AttendanceLog(
      * DB 체크 제약 없음 — 본 enum 으로만 검증 (backend-conventions.md "Enum 컬럼 정책").
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "attendance_type", nullable = false, length = 20)
-    val attendanceType: AttendanceType = AttendanceType.REGULAR,
+    @Column(name = "attendance_type", length = 20)
+    val attendanceType: AttendanceType? = AttendanceType.REGULAR,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")

@@ -106,7 +106,7 @@ class WebAuthenticationService(
             accessToken = accessToken,
             refreshToken = refreshToken,
             expiresIn = webJwtService.getAccessTokenExpirationSeconds(),
-            passwordChangeRequired = user.passwordChangeRequired,
+            passwordChangeRequired = user.passwordChangeRequired ?: true,
             user = summary
         )
     }
@@ -215,7 +215,7 @@ class WebAuthenticationService(
             name = user.name,
             employeeCode = user.employeeCode,
             profileType = user.profileType,
-            isSalesSupport = user.isSalesSupport,
+            isSalesSupport = user.isSalesSupport ?: false,
             role = role,
             roleLabel = role?.toKorean(),
             orgName = employee?.orgName,
@@ -231,10 +231,10 @@ class WebAuthenticationService(
         employeeId = employee?.id,
         role = employee?.role,
         profileType = user.profileType,
-        isSalesSupport = user.isSalesSupport,
-        passwordChangeRequired = user.passwordChangeRequired,
+        isSalesSupport = user.isSalesSupport ?: false,
+        passwordChangeRequired = user.passwordChangeRequired ?: true,
         encodedPassword = user.password,
-        grantedAuthorities = WebUserDetailsService.resolveAuthorities(user.profileType, user.isSalesSupport),
+        grantedAuthorities = WebUserDetailsService.resolveAuthorities(user.profileType, user.isSalesSupport ?: false),
         active = user.isActive
     )
 }

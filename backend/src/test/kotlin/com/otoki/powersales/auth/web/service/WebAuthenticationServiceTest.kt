@@ -302,7 +302,7 @@ class WebAuthenticationServiceTest {
         passwordChangeRequired = passwordChangeRequired
     ).also { it.name = "홍길동" }
 
-    private fun principalFor(user: User, passwordChangeRequired: Boolean = user.passwordChangeRequired): WebUserPrincipal =
+    private fun principalFor(user: User, passwordChangeRequired: Boolean = user.passwordChangeRequired ?: true): WebUserPrincipal =
         WebUserPrincipal(
             userId = user.id,
             usernameValue = user.username,
@@ -310,7 +310,7 @@ class WebAuthenticationServiceTest {
             employeeId = null,
             role = null,
             profileType = user.profileType,
-            isSalesSupport = user.isSalesSupport,
+            isSalesSupport = user.isSalesSupport ?: false,
             passwordChangeRequired = passwordChangeRequired,
             encodedPassword = user.password,
             grantedAuthorities = emptyList(),

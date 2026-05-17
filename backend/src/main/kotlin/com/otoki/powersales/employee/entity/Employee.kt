@@ -215,8 +215,8 @@ class Employee(
     var lockingFlag: Boolean? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "origin", nullable = false, length = 20)
-    var origin: EmployeeOrigin = EmployeeOrigin.SAP,
+    @Column(name = "origin", length = 20)
+    var origin: EmployeeOrigin? = EmployeeOrigin.SAP,
 
     // -- Spec #713: SF Object 정합 (Group A + Reference R-2) --
 

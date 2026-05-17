@@ -126,16 +126,16 @@ class User(
     @Column(name = "profile_type", nullable = false, length = 40)
     var profileType: ProfileType = ProfileType.STAFF,
 
-    @Column(name = "is_sales_support", nullable = false)
-    var isSalesSupport: Boolean = false,
+    @Column(name = "is_sales_support")
+    var isSalesSupport: Boolean? = false,
 
     // -- Web 인증 (Mobile 은 Employee.password 별도 운영) --
 
     @Column(name = "password", nullable = false, length = 255)
     var password: String,
 
-    @Column(name = "password_change_required", nullable = false)
-    var passwordChangeRequired: Boolean = true,
+    @Column(name = "password_change_required")
+    var passwordChangeRequired: Boolean? = true,
 
     // -- Group A audit (self-reference R-2) --
 

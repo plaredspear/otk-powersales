@@ -25,7 +25,7 @@ data class AdminEmployeeRegisterResponse(
                 employeeCode = entity.employeeCode,
                 name = entity.name,
                 role = entity.role ?: UserRole.SYSTEM_ADMIN,
-                origin = entity.origin,
+                origin = entity.origin ?: EmployeeOrigin.SAP,
                 appLoginActive = entity.appLoginActive ?: false,
                 passwordChangeRequired = entity.passwordChangeRequired ?: true,
                 createdAt = entity.createdAt
