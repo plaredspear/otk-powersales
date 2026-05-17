@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.promotion.dto.request.PPTMasterBulkValidateRequest
+import com.otoki.powersales.promotion.dto.request.PPTMasterConfirmByIdsRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.promotion.dto.response.*
@@ -86,6 +87,26 @@ class AdminPPTMasterController(
         return ResponseEntity.noContent().build()
     }
 
+    @GetMapping("/api/v1/admin/ppt-masters/export")
+    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    fun exportMasters(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @RequestParam(required = false) employeeName: String?,
+        @RequestParam(required = false) employeeCode: String?,
+        @RequestParam(required = false) teamType: String?,
+        @RequestParam(required = false) branchCode: String?,
+        @RequestParam(defaultValue = "true") validOnly: Boolean
+    ): ResponseEntity<ByteArray> {
+        val bytes = adminPPTMasterService.exportToExcel(
+            employeeName, employeeCode, teamType, branchCode, validOnly
+        )
+        val filename = "전문행사조마스터_${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}.xlsx"
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(bytes)
+    }
+
     @GetMapping("/api/v1/admin/ppt-masters/excel-template")
     @RequiresPermission(AdminPermission.PROMOTION_READ)
     fun downloadExcelTemplate(
@@ -117,6 +138,16 @@ class AdminPPTMasterController(
     ): ResponseEntity<ApiResponse<BulkConfirmResponse>> {
         val response = adminPPTMasterService.confirmBulk(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
+    }
+
+    @PostMapping("/api/v1/admin/ppt-masters/confirm-by-ids")
+    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    fun confirmByIds(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @Valid @RequestBody request: PPTMasterConfirmByIdsRequest
+    ): ResponseEntity<ApiResponse<ConfirmByIdsResponse>> {
+        val response = adminPPTMasterService.confirmByIds(request)
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/{masterId}/history")

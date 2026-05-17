@@ -73,6 +73,11 @@ export interface BulkConfirmResult {
   createdCount: number;
 }
 
+export interface ConfirmByIdsResult {
+  confirmedCount: number;
+  skippedCount: number;
+}
+
 
 // --- API functions ---
 
@@ -121,6 +126,14 @@ export async function downloadPPTMasterTemplate(): Promise<Blob> {
   return res.data as Blob;
 }
 
+export async function exportPPTMasters(params: PPTMasterSearchParams): Promise<Blob> {
+  const res = await client.get('/api/v1/admin/ppt-masters/export', {
+    params,
+    responseType: 'blob',
+  });
+  return res.data as Blob;
+}
+
 export async function validatePPTMasterBulk(
   items: PPTMasterBulkItem[],
 ): Promise<BulkValidationResult> {
@@ -143,6 +156,19 @@ export async function confirmPPTMasterBulk(
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '일괄 등록에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function confirmPPTMastersByIds(
+  ids: number[],
+): Promise<ConfirmByIdsResult> {
+  const res = await client.post<ApiResponse<ConfirmByIdsResult>>(
+    '/api/v1/admin/ppt-masters/confirm-by-ids',
+    { ids },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '선택 일괄 확정에 실패했습니다');
   }
   return res.data.data;
 }

@@ -138,3 +138,8 @@ data class BulkValidationResultItem(
 data class BulkConfirmResponse(
     val createdCount: Int
 )
+
+data class ConfirmByIdsResponse(
+    val confirmedCount: Int,
+    val skippedCount: Int
+)

@@ -4,6 +4,7 @@ import {
   createPPTMaster,
   updatePPTMaster,
   deletePPTMaster,
+  confirmPPTMastersByIds,
   type PPTMasterSearchParams,
   type PPTMasterFormData,
 } from '@/api/pptMaster';
@@ -42,6 +43,16 @@ export function useDeletePPTMaster() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => deletePPTMaster(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    },
+  });
+}
+
+export function useConfirmPPTMastersByIds() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: number[]) => confirmPPTMastersByIds(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },

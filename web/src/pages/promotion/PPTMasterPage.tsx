@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Button, Card, Checkbox, Input, Popconfirm, Select, Space, Table, Tag, message } from 'antd';
-import { PlusOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
+import { PlusOutlined, DownloadOutlined, UploadOutlined, CheckOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { usePPTMasters, useDeletePPTMaster } from '@/hooks/promotion/usePPTMasters';
-import { downloadPPTMasterTemplate } from '@/api/pptMaster';
+import {
+  usePPTMasters,
+  useDeletePPTMaster,
+  useConfirmPPTMastersByIds,
+} from '@/hooks/promotion/usePPTMasters';
+import { downloadPPTMasterTemplate, exportPPTMasters } from '@/api/pptMaster';
 import type { PPTMaster, PPTMasterSearchParams } from '@/api/pptMaster';
 import PPTMasterFormModal from './components/PPTMasterFormModal';
 import PPTMasterUploadModal from './components/PPTMasterUploadModal';
@@ -30,9 +34,13 @@ export default function PPTMasterPage() {
 
   const { data, isLoading } = usePPTMasters(searchParams);
   const deleteMutation = useDeletePPTMaster();
+  const confirmByIdsMutation = useConfirmPPTMastersByIds();
+
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PPTMaster | null>(null);
+  const [cloneSource, setCloneSource] = useState<PPTMaster | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const handleSearch = () => {
@@ -56,12 +64,26 @@ export default function PPTMasterPage() {
 
   const handleAdd = () => {
     setEditingItem(null);
+    setCloneSource(null);
     setFormOpen(true);
   };
 
   const handleEdit = (record: PPTMaster) => {
     setEditingItem(record);
+    setCloneSource(null);
     setFormOpen(true);
+  };
+
+  const handleClone = (record: PPTMaster) => {
+    setEditingItem(null);
+    setCloneSource(record);
+    setFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setFormOpen(false);
+    setEditingItem(null);
+    setCloneSource(null);
   };
 
   const handleDelete = async (id: number) => {
@@ -84,6 +106,44 @@ export default function PPTMasterPage() {
       URL.revokeObjectURL(url);
     } catch {
       message.error('템플릿 다운로드에 실패했습니다');
+    }
+  };
+
+  const handleConfirmSelected = async () => {
+    if (selectedIds.length === 0) {
+      message.warning('확정할 레코드를 선택해주세요');
+      return;
+    }
+    try {
+      const result = await confirmByIdsMutation.mutateAsync(selectedIds);
+      message.success(
+        `일괄 확정 완료 (확정: ${result.confirmedCount}건${
+          result.skippedCount > 0 ? ` / 건너뜀: ${result.skippedCount}건` : ''
+        })`,
+      );
+      setSelectedIds([]);
+    } catch {
+      message.error('일괄 확정에 실패했습니다');
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportPPTMasters({
+        employeeName: searchParams.employeeName,
+        employeeCode: searchParams.employeeCode,
+        teamType: searchParams.teamType,
+        branchCode: searchParams.branchCode,
+        validOnly: searchParams.validOnly,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `전문행사조마스터_${dayjs().format('YYYYMMDD')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      message.error('엑셀 다운로드에 실패했습니다');
     }
   };
 
@@ -130,12 +190,15 @@ export default function PPTMasterPage() {
     { title: '지점', dataIndex: 'branchName', width: 100, align: 'center' },
     {
       title: '액션',
-      width: 120,
+      width: 170,
       align: 'center',
       render: (_, record) => (
         <Space size={4}>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>
             수정
+          </Button>
+          <Button type="link" size="small" onClick={() => handleClone(record)}>
+            복제
           </Button>
           <Popconfirm
             title="이 마스터를 삭제하시겠습니까?"
@@ -187,16 +250,38 @@ export default function PPTMasterPage() {
         </Space>
       </Card>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
-        <Button icon={<PlusOutlined />} type="primary" onClick={handleAdd}>
-          마스터 등록
-        </Button>
-        <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate}>
-          엑셀 템플릿 다운로드
-        </Button>
-        <Button icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
-          엑셀 업로드
-        </Button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 16 }}>
+        <Popconfirm
+          title={`선택한 ${selectedIds.length}건을 일괄 확정하시겠습니까?`}
+          onConfirm={handleConfirmSelected}
+          okText="확인"
+          cancelText="취소"
+          disabled={selectedIds.length === 0}
+        >
+          <Button
+            icon={<CheckOutlined />}
+            type="primary"
+            ghost
+            disabled={selectedIds.length === 0}
+            loading={confirmByIdsMutation.isPending}
+          >
+            선택 일괄 확정 ({selectedIds.length})
+          </Button>
+        </Popconfirm>
+        <Space>
+          <Button icon={<PlusOutlined />} type="primary" onClick={handleAdd}>
+            마스터 등록
+          </Button>
+          <Button icon={<DownloadOutlined />} onClick={handleExport}>
+            엑셀 다운로드
+          </Button>
+          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate}>
+            엑셀 템플릿 다운로드
+          </Button>
+          <Button icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
+            엑셀 업로드
+          </Button>
+        </Space>
       </div>
 
       <Table
@@ -204,6 +289,11 @@ export default function PPTMasterPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        rowSelection={{
+          selectedRowKeys: selectedIds,
+          onChange: (keys) => setSelectedIds(keys as number[]),
+          getCheckboxProps: (record) => ({ disabled: record.isConfirmed }),
+        }}
         pagination={{
           current: (data?.number ?? 0) + 1,
           pageSize: data?.size ?? 20,
@@ -219,7 +309,8 @@ export default function PPTMasterPage() {
       <PPTMasterFormModal
         open={formOpen}
         editingItem={editingItem}
-        onClose={() => setFormOpen(false)}
+        cloneSource={cloneSource}
+        onClose={handleCloseForm}
       />
 
       <PPTMasterUploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />

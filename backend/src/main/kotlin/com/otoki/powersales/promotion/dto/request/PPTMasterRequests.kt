@@ -49,6 +49,11 @@ data class PPTMasterBulkValidateRequest(
     val items: List<PPTMasterBulkItem>
 )
 
+data class PPTMasterConfirmByIdsRequest(
+    @field:Size(min = 1, max = 200, message = "선택한 항목은 1~200건이어야 합니다")
+    val ids: List<Long>
+)
+
 data class PPTMasterBulkItem(
     @field:NotBlank(message = "사번은 필수입니다")
     val employeeCode: String,

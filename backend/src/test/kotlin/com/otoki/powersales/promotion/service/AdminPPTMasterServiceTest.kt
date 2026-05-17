@@ -1,5 +1,6 @@
 package com.otoki.powersales.promotion.service
 
+import com.otoki.powersales.promotion.dto.request.PPTMasterConfirmByIdsRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
@@ -305,6 +306,34 @@ class AdminPPTMasterServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - update 시 동일 사원의 다른 teamType 유효 마스터 자동 종료 (UC-05)")
+        fun updateMaster_autoTerminate() {
+            val master = createMaster(id = 1L, teamType = ProfessionalPromotionTeamType.RAMEN_SALE)
+            val existingOther = createMaster(
+                id = 10L,
+                teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED,
+                endDate = null
+            )
+            val request = PPTMasterUpdateRequest(
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
+                startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
+            )
+            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
+            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
+            whenever(pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L))
+                .thenReturn(listOf(master, existingOther))
+            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+
+            service.updateMaster(1L, request)
+
+            // 본 레코드 자신은 종료되지 않고 다른 마스터만 종료일 자동 set
+            assertThat(master.endDate).isNull()
+            assertThat(existingOther.endDate).isEqualTo(LocalDate.of(2026, 3, 31))
+        }
+
+        @Test
         @DisplayName("실패 - accountId 변경 시 중복 -> PPTMasterDuplicateException")
         fun updateMaster_changeAccountId_duplicate() {
             val master = createMaster(accountId = 1)
@@ -389,6 +418,130 @@ class AdminPPTMasterServiceTest {
 
             assertThat(result.content).hasSize(1)
             assertThat(result.totalElements).isEqualTo(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("confirmByIds - 선택 레코드 일괄 확정 (UC-12)")
+    inner class ConfirmByIdsTests {
+
+        @Test
+        @DisplayName("성공 - 미확정 마스터를 확정으로 변경하고 확정 카운트 반환")
+        fun confirmByIds_success() {
+            val master1 = createMaster(id = 1L, isConfirmed = false)
+            val master2 = createMaster(id = 2L, isConfirmed = false)
+            whenever(pptMasterRepository.findAllById(listOf(1L, 2L))).thenReturn(listOf(master1, master2))
+            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+
+            val response = service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(1L, 2L)))
+
+            assertThat(response.confirmedCount).isEqualTo(2)
+            assertThat(response.skippedCount).isEqualTo(0)
+            assertThat(master1.isConfirmed).isTrue
+            assertThat(master2.isConfirmed).isTrue
+        }
+
+        @Test
+        @DisplayName("성공 - 이미 확정된 레코드는 skip 카운트로 집계")
+        fun confirmByIds_skipAlreadyConfirmed() {
+            val master1 = createMaster(id = 1L, isConfirmed = false)
+            val master2 = createMaster(id = 2L, isConfirmed = true)
+            whenever(pptMasterRepository.findAllById(listOf(1L, 2L))).thenReturn(listOf(master1, master2))
+            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+
+            val response = service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(1L, 2L)))
+
+            assertThat(response.confirmedCount).isEqualTo(1)
+            assertThat(response.skippedCount).isEqualTo(1)
+            assertThat(master1.isConfirmed).isTrue
+        }
+
+        @Test
+        @DisplayName("성공 - 시작일=오늘 + 확정 변경 -> 직원 행사조 즉시 갱신")
+        fun confirmByIds_immediateSyncWhenStartDateIsToday() {
+            val today = LocalDate.now()
+            val master = createMaster(id = 1L, startDate = today, isConfirmed = false)
+            val employee = createEmployee(professionalPromotionTeam = null)
+            whenever(pptMasterRepository.findAllById(listOf(1L))).thenReturn(listOf(master))
+            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+
+            service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(1L)))
+
+            assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
+            verify(pptHistoryRepository).save(any())
+            verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
+        }
+
+        @Test
+        @DisplayName("성공 - 시작일이 미래인 레코드 -> 직원 갱신 호출 안 됨")
+        fun confirmByIds_skipImmediateSyncWhenFuture() {
+            val futureDate = LocalDate.now().plusDays(7)
+            val master = createMaster(id = 1L, startDate = futureDate, isConfirmed = false)
+            whenever(pptMasterRepository.findAllById(listOf(1L))).thenReturn(listOf(master))
+            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+
+            service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(1L)))
+
+            assertThat(master.isConfirmed).isTrue
+            verify(employeeRepository, never()).save(any())
+            verify(pptHistoryRepository, never()).save(any())
+        }
+
+        @Test
+        @DisplayName("성공 - 요청 id 중 존재하지 않는 id 는 skipped 로 집계")
+        fun confirmByIds_skipNotFound() {
+            val master = createMaster(id = 1L, isConfirmed = false)
+            // 1, 2 요청 / 1 만 조회됨 (2 는 미존재)
+            whenever(pptMasterRepository.findAllById(listOf(1L, 2L))).thenReturn(listOf(master))
+            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
+                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+
+            val response = service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(1L, 2L)))
+
+            assertThat(response.confirmedCount).isEqualTo(1)
+            assertThat(response.skippedCount).isEqualTo(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("exportToExcel - 마스터 데이터 엑셀 다운로드 (UC-11)")
+    inner class ExportToExcelTests {
+
+        @Test
+        @DisplayName("성공 - 검색 조건에 맞는 마스터를 xlsx 로 반환")
+        fun exportToExcel_success() {
+            val master = createMaster()
+            val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점")
+            val page = PageImpl(listOf(searchResult), PageRequest.of(0, 50_000), 1)
+            whenever(pptMasterRepository.searchMasters(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), any()))
+                .thenReturn(page)
+
+            val bytes = service.exportToExcel(null, null, null, null, true)
+
+            // xlsx 파일 시그니처 (PK\x03\x04 — ZIP 형식) 확인
+            assertThat(bytes).isNotEmpty
+            assertThat(bytes[0]).isEqualTo(0x50.toByte()) // 'P'
+            assertThat(bytes[1]).isEqualTo(0x4B.toByte()) // 'K'
+        }
+
+        @Test
+        @DisplayName("성공 - 결과 0건 -> 헤더만 있는 빈 xlsx 반환")
+        fun exportToExcel_empty() {
+            val page = PageImpl<PPTMasterSearchResult>(emptyList(), PageRequest.of(0, 50_000), 0)
+            whenever(pptMasterRepository.searchMasters(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), any()))
+                .thenReturn(page)
+
+            val bytes = service.exportToExcel(null, null, null, null, true)
+
+            assertThat(bytes).isNotEmpty
         }
     }
 

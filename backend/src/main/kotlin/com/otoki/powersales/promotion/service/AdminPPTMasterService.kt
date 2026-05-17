@@ -4,11 +4,13 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.promotion.dto.request.PPTMasterBulkItem
 import com.otoki.powersales.promotion.dto.request.PPTMasterBulkValidateRequest
+import com.otoki.powersales.promotion.dto.request.PPTMasterConfirmByIdsRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.promotion.dto.response.BulkConfirmResponse
 import com.otoki.powersales.promotion.dto.response.BulkValidationResponse
 import com.otoki.powersales.promotion.dto.response.BulkValidationResultItem
+import com.otoki.powersales.promotion.dto.response.ConfirmByIdsResponse
 import com.otoki.powersales.promotion.dto.response.PPTMasterHistoryListResponse
 import com.otoki.powersales.promotion.dto.response.PPTMasterHistoryResponse
 import com.otoki.powersales.promotion.dto.response.PPTMasterListResponse
@@ -29,6 +31,7 @@ import com.otoki.powersales.promotion.repository.PPTHistoryRepository
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -47,6 +50,7 @@ class AdminPPTMasterService(
 
     companion object {
         private const val BULK_MAX_SIZE = 450
+        private const val EXPORT_MAX_ROWS = 50_000
     }
 
     fun getMasters(
@@ -114,6 +118,15 @@ class AdminPPTMasterService(
         )
     }
 
+    /**
+     * 전문행사조 마스터 수정.
+     *
+     * 중복 검증 + 동일 사원의 다른 teamType 유효 마스터 자동 종료(신규 시작일 -1일) 후 마스터 update.
+     * 확정=true + 시작일=오늘이면 직원의 전문행사조를 즉시 갱신하고 미래 일정 삭제 + 이력 insert.
+     *
+     * 레거시 매핑: PPTMasterTriggerHandler.ChangeToNormal (before update) + ChangeToNormalAfter (after update).
+     * 레거시 동등성: before update 의 종료일 자동 set 룰을 신규에서 동등 적용 (자기 객체 자동 종료 — UC-05).
+     */
     @Transactional
     fun updateMaster(id: Long, request: PPTMasterUpdateRequest): PPTMasterResponse {
         val master = findMasterById(id)
@@ -132,6 +145,9 @@ class AdminPPTMasterService(
                 id
             )
         }
+
+        // 동일 사원의 다른 teamType 유효 마스터 자동 종료 (본 레코드 자신은 제외)
+        autoTerminateExistingMasters(request.employeeId, request.startDate, excludeId = id)
 
         master.update(
             request.teamType,
@@ -219,6 +235,54 @@ class AdminPPTMasterService(
             number = page.number,
             size = page.size
         )
+    }
+
+    /**
+     * 현재 검색 조건 기준 전문행사조 마스터 데이터를 xlsx 로 export.
+     *
+     * 페이징 없이 매칭 레코드 전량을 단일 시트로 출력. 컬럼: 사번 / 사원명 / 거래처코드 / 거래처명 /
+     * 전문행사조 / 시작일 / 종료일 / 확정 여부 / 지점코드. 응답은 byte array (Controller 에서 attachment 헤더 부여).
+     *
+     * 레거시 매핑: List View Button 「전문행사조마스터 다운로드」 (ExcelIO 관리형 패키지 호출) — UC-11.
+     * 레거시 차이: ExcelIO 패키지 내부 로직 미공개로 컬럼 구성 / 정렬 / 헤더 스타일은 신규 자체 결정.
+     */
+    fun exportToExcel(
+        employeeName: String?,
+        employeeCode: String?,
+        teamType: String?,
+        branchCode: String?,
+        validOnly: Boolean
+    ): ByteArray {
+        val teamTypeEnum = ProfessionalPromotionTeamType.Companion.fromDisplayNameOrNull(teamType)
+        val page = pptMasterRepository.searchMasters(
+            employeeName, employeeCode, teamTypeEnum, branchCode, validOnly,
+            LocalDate.now(), PageRequest.of(0, EXPORT_MAX_ROWS)
+        )
+
+        val workbook = XSSFWorkbook()
+        val sheet = workbook.createSheet("전문행사조마스터")
+
+        val headerRow = sheet.createRow(0)
+        val headers = listOf("사번", "사원명", "거래처코드", "거래처명", "전문행사조", "시작일", "종료일", "확정", "지점코드")
+        headers.forEachIndexed { i, h -> headerRow.createCell(i).setCellValue(h) }
+
+        page.content.forEachIndexed { index, result ->
+            val m = result.master
+            val row = sheet.createRow(index + 1)
+            row.createCell(0).setCellValue(result.employeeCode ?: "")
+            row.createCell(1).setCellValue(result.employeeName ?: "")
+            row.createCell(2).setCellValue(result.accountCode ?: "")
+            row.createCell(3).setCellValue(result.accountName ?: "")
+            row.createCell(4).setCellValue(m.teamType.displayName)
+            row.createCell(5).setCellValue(m.startDate.toString())
+            row.createCell(6).setCellValue(m.endDate?.toString() ?: "")
+            row.createCell(7).setCellValue(if (m.isConfirmed) "Y" else "N")
+            row.createCell(8).setCellValue(m.branchCode ?: "")
+        }
+
+        val out = ByteArrayOutputStream()
+        workbook.use { it.write(out) }
+        return out.toByteArray()
     }
 
     fun generateExcelTemplate(): ByteArray {
@@ -316,6 +380,47 @@ class AdminPPTMasterService(
         return BulkConfirmResponse(createdCount = createdCount)
     }
 
+    /**
+     * 선택 레코드 일괄 확정 (Mass Quick Action 대체).
+     *
+     * 입력된 ids 중 미확정(`isConfirmed = false`) 마스터만 `isConfirmed = true` 로 set 후 save.
+     * 시작일=오늘 인 레코드는 추가로 `updateEmployeeTeam` 호출 (직원 전문행사조 즉시 갱신 + 이력 insert + 미래 일정 삭제).
+     * 시작일이 미래인 레코드는 새벽 배치(UC-13)가 도래일에 동기화.
+     *
+     * 레거시 매핑: SF Mass Quick Action "Valid_Update" + PPTMasterTrigger after update 의 ChangeToNormalAfter — UC-12.
+     */
+    @Transactional
+    fun confirmByIds(request: PPTMasterConfirmByIdsRequest): ConfirmByIdsResponse {
+        val masters = pptMasterRepository.findAllById(request.ids)
+        val today = LocalDate.now()
+
+        var confirmedCount = 0
+        var skippedCount = 0
+
+        for (master in masters) {
+            if (master.isConfirmed) {
+                skippedCount++
+                continue
+            }
+            master.isConfirmed = true
+            pptMasterRepository.save(master)
+            confirmedCount++
+
+            // 시작일=오늘 인 레코드는 직원 행사조 즉시 갱신 (chain 1-hop)
+            if (master.startDate == today) {
+                val employee = employeeRepository.findById(master.employeeId!!).orElse(null)
+                if (employee != null) {
+                    updateEmployeeTeam(employee, master.teamType)
+                }
+            }
+        }
+
+        // 요청 ids 중 조회되지 않은 레코드도 skipped 로 집계
+        skippedCount += request.ids.size - masters.size
+
+        return ConfirmByIdsResponse(confirmedCount = confirmedCount, skippedCount = skippedCount)
+    }
+
     // --- Private helpers ---
 
     private fun findMasterById(id: Long): ProfessionalPromotionTeamMaster {
@@ -343,9 +448,10 @@ class AdminPPTMasterService(
         if (duplicates.isNotEmpty()) throw PPTMasterDuplicateException()
     }
 
-    private fun autoTerminateExistingMasters(employeeId: Long, newStartDate: LocalDate) {
+    private fun autoTerminateExistingMasters(employeeId: Long, newStartDate: LocalDate, excludeId: Long? = null) {
         val existingValid = pptMasterRepository.findByEmployeeIdAndEndDateIsNull(employeeId)
         for (existing in existingValid) {
+            if (excludeId != null && existing.id == excludeId) continue
             existing.endDate = newStartDate.minusDays(1)
             pptMasterRepository.save(existing)
         }

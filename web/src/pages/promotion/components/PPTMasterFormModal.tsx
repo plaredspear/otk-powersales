@@ -20,10 +20,11 @@ interface FormValues {
 interface Props {
   open: boolean;
   editingItem: PPTMaster | null;
+  cloneSource?: PPTMaster | null;
   onClose: () => void;
 }
 
-export default function PPTMasterFormModal({ open, editingItem, onClose }: Props) {
+export default function PPTMasterFormModal({ open, editingItem, cloneSource, onClose }: Props) {
   const [form] = Form.useForm<FormValues>();
   const createMutation = useCreatePPTMaster();
   const updateMutation = useUpdatePPTMaster();
@@ -34,24 +35,27 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
   const [accountLoading, setAccountLoading] = useState(false);
 
   useEffect(() => {
-    if (open && editingItem) {
+    // 복제 모드는 신규 등록(create) 으로 동작하되 폼 초기값을 cloneSource 로 채운다.
+    const presetItem = editingItem ?? cloneSource ?? null;
+    if (open && presetItem) {
       form.setFieldsValue({
-        employeeId: editingItem.employeeId,
-        accountId: editingItem.accountId,
-        teamType: editingItem.teamType as PPTTeamType,
-        startDate: dayjs(editingItem.startDate),
-        endDate: editingItem.endDate ? dayjs(editingItem.endDate) : null,
-        isConfirmed: editingItem.isConfirmed,
+        employeeId: presetItem.employeeId,
+        accountId: presetItem.accountId,
+        teamType: presetItem.teamType as PPTTeamType,
+        startDate: dayjs(presetItem.startDate),
+        endDate: presetItem.endDate ? dayjs(presetItem.endDate) : null,
+        // 복제 시 확정 상태는 인계하지 않고 미확정으로 초기화
+        isConfirmed: editingItem ? presetItem.isConfirmed : false,
       });
       setEmployeeOptions([
         {
-          id: editingItem.employeeId,
-          employeeCode: editingItem.employeeCode,
-          name: editingItem.employeeName,
+          id: presetItem.employeeId,
+          employeeCode: presetItem.employeeCode,
+          name: presetItem.employeeName,
           status: null,
           gender: null,
-          orgName: editingItem.branchName,
-          costCenterCode: editingItem.branchCode,
+          orgName: presetItem.branchName,
+          costCenterCode: presetItem.branchCode,
           role: null,
           roleLabel: null,
           startDate: null,
@@ -68,9 +72,9 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
       ]);
       setAccountOptions([
         {
-          id: editingItem.accountId,
-          externalKey: editingItem.accountCode,
-          name: editingItem.accountName,
+          id: presetItem.accountId,
+          externalKey: presetItem.accountCode,
+          name: presetItem.accountName,
           abcType: null,
           branchCode: null,
           branchName: null,
@@ -86,7 +90,7 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
       setEmployeeOptions([]);
       setAccountOptions([]);
     }
-  }, [open, editingItem, form]);
+  }, [open, editingItem, cloneSource, form]);
 
   const searchEmployees = useCallback(async (keyword: string) => {
     if (!keyword || keyword.length < 2) return;
@@ -150,9 +154,15 @@ export default function PPTMasterFormModal({ open, editingItem, onClose }: Props
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
+  const modalTitle = editingItem
+    ? '전문행사조 마스터 수정'
+    : cloneSource
+    ? '전문행사조 마스터 복제'
+    : '전문행사조 마스터 등록';
+
   return (
     <Modal
-      title={editingItem ? '전문행사조 마스터 수정' : '전문행사조 마스터 등록'}
+      title={modalTitle}
       open={open}
       onCancel={onClose}
       width={520}
