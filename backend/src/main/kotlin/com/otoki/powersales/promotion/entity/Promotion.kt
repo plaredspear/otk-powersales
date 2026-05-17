@@ -125,8 +125,8 @@ class Promotion(
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
-    var account: Account,
+    @JoinColumn(name = "account_id")
+    var account: Account? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id")

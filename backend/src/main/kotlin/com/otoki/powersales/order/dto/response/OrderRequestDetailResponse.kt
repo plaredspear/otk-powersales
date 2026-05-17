@@ -42,8 +42,8 @@ data class OrderRequestDetailResponse(
             OrderRequestDetailResponse(
                 id = orderRequest.id,
                 orderRequestNumber = orderRequest.orderRequestNumber,
-                clientId = orderRequest.account.id.toLong(),
-                clientName = orderRequest.account.name ?: "",
+                clientId = orderRequest.account!!.id.toLong(),
+                clientName = orderRequest.account!!.name ?: "",
                 clientDeadlineTime = orderRequest.clientDeadlineTime,
                 orderDate = orderRequest.orderDate,
                 deliveryDate = orderRequest.deliveryDate,

@@ -128,7 +128,7 @@ class OrderRequestService(
         val orderRequest = orderRequestRepository.findByIdOrNull(orderRequestId)
             ?: throw OrderNotFoundException()
 
-        if (orderRequest.employee.id != userId) {
+        if (orderRequest.employee!!.id != userId) {
             throw ForbiddenOrderAccessException()
         }
 

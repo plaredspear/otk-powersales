@@ -47,7 +47,7 @@ class ClaimQueryService(
         val claim = claimRepository.findById(claimId)
             .orElseThrow { ClaimNotFoundException(claimId) }
 
-        if (claim.employee.id != userId) {
+        if (claim.employee!!.id != userId) {
             throw ClaimNotFoundException(claimId)
         }
 

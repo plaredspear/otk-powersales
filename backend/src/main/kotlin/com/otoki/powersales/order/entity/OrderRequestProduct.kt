@@ -162,8 +162,8 @@ class OrderRequestProduct(
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_request_id", nullable = false)
-    val orderRequest: OrderRequest,
+    @JoinColumn(name = "order_request_id")
+    val orderRequest: OrderRequest? = null,
 
     // -- Spec #761: OwnerId polymorphic R-2 (referenceTo = [Group, User]) --
     // owner_sfid 단일 컬럼이 SF 원본 식별자 보존. owner_user_id / owner_group_id 둘 중

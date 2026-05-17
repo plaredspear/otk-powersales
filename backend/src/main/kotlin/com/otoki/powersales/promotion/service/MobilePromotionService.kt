@@ -56,14 +56,14 @@ class MobilePromotionService(
             pageable = pageable
         )
 
-        val accountIds = promotionPage.content.map { it.account.id }.distinct()
+        val accountIds = promotionPage.content.map { it.account!!.id }.distinct()
         val accountMap = if (accountIds.isNotEmpty()) {
             accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else emptyMap()
 
         return MobilePromotionListResponse(
             content = promotionPage.content.map { promotion ->
-                val accountName = accountMap[promotion.account.id]?.name
+                val accountName = accountMap[promotion.account!!.id]?.name
                 val myScheduleDate = if (isWoman) {
                     promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeId(
                         promotion.id, employee.id

@@ -24,8 +24,8 @@ data class OrderRequestSummaryResponse(
             OrderRequestSummaryResponse(
                 id = entity.id,
                 orderRequestNumber = entity.orderRequestNumber,
-                clientId = entity.account.id.toLong(),
-                clientName = entity.account.name ?: "",
+                clientId = entity.account!!.id.toLong(),
+                clientName = entity.account!!.name ?: "",
                 orderDate = entity.orderDate,
                 deliveryDate = entity.deliveryDate,
                 totalAmount = entity.totalAmount,

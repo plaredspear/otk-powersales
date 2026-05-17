@@ -18,8 +18,8 @@ class ClaimPhoto(
     val id: Long = 0,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "claim_id", nullable = false)
-    val claim: Claim,
+    @JoinColumn(name = "claim_id")
+    val claim: Claim? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "photo_type", nullable = false, length = 20)

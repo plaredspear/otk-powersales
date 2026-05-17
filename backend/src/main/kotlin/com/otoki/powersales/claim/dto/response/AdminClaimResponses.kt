@@ -31,8 +31,8 @@ data class AdminClaimListItem(
     companion object {
         fun from(claim: Claim): AdminClaimListItem = AdminClaimListItem(
             claimId = claim.id,
-            employeeName = claim.employee.name,
-            employeeCode = claim.employee.employeeCode,
+            employeeName = claim.employee!!.name,
+            employeeCode = claim.employee!!.employeeCode,
             storeName = claim.accountName,
             productName = claim.productName,
             productCode = claim.productCode,
@@ -72,8 +72,8 @@ data class AdminClaimDetailResponse(
     companion object {
         fun from(claim: Claim, photos: List<ClaimPhoto>): AdminClaimDetailResponse = AdminClaimDetailResponse(
             claimId = claim.id,
-            employeeName = claim.employee.name,
-            employeeCode = claim.employee.employeeCode,
+            employeeName = claim.employee!!.name,
+            employeeCode = claim.employee!!.employeeCode,
             storeName = claim.accountName,
             productCode = claim.productCode,
             productName = claim.productName,

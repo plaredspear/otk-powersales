@@ -59,7 +59,7 @@ class OrderCancelService(
     private fun loadAndValidate(orderRequestId: Long, userId: Long): OrderRequest {
         val orderRequest = orderRequestRepository.findByIdOrNull(orderRequestId)
             ?: throw OrderNotFoundException()
-        if (orderRequest.employee.id != userId) {
+        if (orderRequest.employee!!.id != userId) {
             throw ForbiddenOrderAccessException()
         }
         if (orderRequest.orderRequestStatus !in CANCELLABLE_STATUSES) {

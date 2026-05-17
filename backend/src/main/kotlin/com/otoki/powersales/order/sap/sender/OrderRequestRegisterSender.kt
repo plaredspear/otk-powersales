@@ -42,7 +42,7 @@ class OrderRequestRegisterSender(
      * `sap_outbox` 에 송신 row 를 적재한다 (트랜잭션은 호출자 책임).
      */
     fun enqueue(orderRequest: OrderRequest, products: List<OrderRequestProduct>): SapOutbox {
-        val payload = buildPayload(orderRequest, orderRequest.account, orderRequest.employee, products)
+        val payload = buildPayload(orderRequest, orderRequest.account!!, orderRequest.employee!!, products)
         val outbox = SapOutbox(
             domainType = SapConstants.SAP_DOMAIN_ORDER_REQUEST_REGISTER,
             aggregateId = orderRequest.id,

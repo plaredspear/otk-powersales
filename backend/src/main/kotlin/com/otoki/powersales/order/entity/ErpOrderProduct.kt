@@ -30,8 +30,8 @@ class ErpOrderProduct(
     var name: String? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "erp_order_id", nullable = false)
-    var erpOrder: ErpOrder,
+    @JoinColumn(name = "erp_order_id")
+    var erpOrder: ErpOrder? = null,
 
     @SFField("ERPOrderId__c")
     @HCColumn("erporderid__c")

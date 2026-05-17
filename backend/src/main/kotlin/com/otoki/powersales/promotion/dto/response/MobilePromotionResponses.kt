@@ -69,7 +69,7 @@ data class MobilePromotionDetailResponse(
             id = promotion.id,
             promotionNumber = promotion.promotionNumber,
             promotionType = promotion.promotionType?.displayName,
-            accountId = promotion.account.id,
+            accountId = promotion.account!!.id,
             accountName = accountName,
             startDate = promotion.startDate,
             endDate = promotion.endDate,

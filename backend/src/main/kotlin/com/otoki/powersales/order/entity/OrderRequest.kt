@@ -113,12 +113,12 @@ class OrderRequest(
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id", nullable = false)
-    val employee: Employee,
+    @JoinColumn(name = "employee_id")
+    val employee: Employee? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
-    val account: Account,
+    @JoinColumn(name = "account_id")
+    val account: Account? = null,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")

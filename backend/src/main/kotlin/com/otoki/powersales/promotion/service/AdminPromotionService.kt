@@ -161,7 +161,7 @@ class AdminPromotionService(
         validateOtherProduct(request.otherProduct)
 
         // 1-2-C: 마감 보호 — 거래처/날짜 변경 차단 (ADMIN 예외)
-        val criticalFieldChanged = promotion.account.id != request.accountId ||
+        val criticalFieldChanged = promotion.account!!.id != request.accountId ||
             promotion.startDate != request.startDate ||
             promotion.endDate != request.endDate
         if (criticalFieldChanged) {
@@ -186,7 +186,7 @@ class AdminPromotionService(
         }
 
         // 1-3: 거래처 변경 시 스케줄 초기화
-        if (promotion.account.id != request.accountId) {
+        if (promotion.account!!.id != request.accountId) {
             resetSchedulesForPromotion(id)
         }
 

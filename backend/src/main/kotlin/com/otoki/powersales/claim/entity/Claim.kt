@@ -60,12 +60,12 @@ class Claim(
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id", nullable = false)
-    val employee: Employee,
+    @JoinColumn(name = "employee_id")
+    val employee: Employee? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
-    val account: Account,
+    @JoinColumn(name = "account_id")
+    val account: Account? = null,
 
     @Column(name = "store_name", nullable = false, length = 100)
     val accountName: String,
