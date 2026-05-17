@@ -4,6 +4,7 @@ import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.response.SalesComparisonDetailResponse
 import com.otoki.powersales.schedule.dto.response.SalesComparisonMiddleResponse
 import com.otoki.powersales.schedule.dto.response.SalesComparisonSummaryResponse
+import com.otoki.powersales.schedule.dto.response.SearchAccountCategoryItem
 import com.otoki.powersales.schedule.service.AdminSalesComparisonService
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -20,6 +21,13 @@ import java.nio.charset.StandardCharsets
 class AdminSalesComparisonController(
     private val adminSalesComparisonService: AdminSalesComparisonService
 ) {
+
+    /** 거래처유형 picklist — `AccountCategoryMaster.useSearch=true` 항목 목록. */
+    @GetMapping("/categories")
+    fun getSearchCategories(): ResponseEntity<ApiResponse<List<SearchAccountCategoryItem>>> {
+        val response = adminSalesComparisonService.getSearchCategories()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
 
     /** 집계 모드 — 배치적합성 × 거래처카테고리 거래처 수 집계표. */
     @GetMapping("/summary")

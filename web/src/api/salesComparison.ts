@@ -100,10 +100,21 @@ export interface SalesComparisonDetailResponse {
   total: SalesComparisonDetailTotal;
 }
 
+export interface SearchAccountCategoryItem {
+  accountCode: string;
+  name: string;
+}
+
 const BASE = '/api/v1/admin/schedules/sales-comparison';
 
 function failureMessage(label: string, res: { data: ApiResponse<unknown> }): string {
   return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
+}
+
+export async function fetchSearchCategories(): Promise<SearchAccountCategoryItem[]> {
+  const res = await client.get<ApiResponse<SearchAccountCategoryItem[]>>(`${BASE}/categories`);
+  if (!res.data.success || !res.data.data) throw new Error(failureMessage('거래처유형', res));
+  return res.data.data;
 }
 
 export async function fetchSummary(

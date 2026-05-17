@@ -19,6 +19,7 @@ import {
   fetchSummary,
   fetchMiddle,
   fetchDetail,
+  fetchSearchCategories,
   exportSummary as apiExportSummary,
   exportMiddle as apiExportMiddle,
   exportDetail as apiExportDetail,
@@ -31,19 +32,6 @@ import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBr
 const { Title, Text } = Typography;
 
 type SearchMode = 'summary' | 'detail';
-
-const CATEGORY_COLUMNS = [
-  '대형마트',
-  '농협',
-  '체인',
-  '슈퍼',
-  '대리점',
-  '백화점',
-  '홀세일',
-  '군납',
-  '식자재',
-  '기타',
-];
 
 const SUITABILITY_OPTIONS = ['적합', '경계', '재검토'];
 const WORKING_CATEGORY_3_OPTIONS = ['고정', '격고', '순회'];
@@ -115,6 +103,13 @@ export default function DeploymentPage() {
   const [clickedAccountForDetail, setClickedAccountForDetail] = useState<number | null>(null);
 
   const { data: branches = [] } = useTeamScheduleBranches();
+
+  const { data: categoryOptions = [] } = useQuery({
+    queryKey: ['salesComparison', 'categories'],
+    queryFn: fetchSearchCategories,
+    staleTime: 1000 * 60 * 30,
+  });
+  const categoryLabels = useMemo(() => categoryOptions.map((c) => c.name), [categoryOptions]);
 
   const summaryQuery = useQuery({
     queryKey: ['salesComparison', 'summary', queryParams],
@@ -195,7 +190,7 @@ export default function DeploymentPage() {
   const handleSelectAllConditions = () => {
     setSelectedCodes(branches.map((b) => b.branchCode));
     setSelectedSuitabilities([...SUITABILITY_OPTIONS]);
-    setSelectedCategories([...CATEGORY_COLUMNS]);
+    setSelectedCategories([...categoryLabels]);
     setSelectedWc3([...WORKING_CATEGORY_3_OPTIONS]);
     if (mode === 'detail') {
       setWc1('모두');
@@ -265,7 +260,7 @@ export default function DeploymentPage() {
           style: (record as { isTotal?: boolean }).isTotal ? suitabilityCellStyle('총계') : {},
         }),
       },
-      ...CATEGORY_COLUMNS.map((label) => ({
+      ...categoryLabels.map((label) => ({
         title: label,
         dataIndex: ['countsByCategory', label],
         width: 90,
@@ -283,7 +278,7 @@ export default function DeploymentPage() {
       })),
     ];
     return cols;
-  }, []);
+  }, [categoryLabels]);
 
   const middleColumns: ColumnsType<SalesComparisonMiddleItem> = [
     { title: '거래처지점명', dataIndex: 'accountBranchName', width: 110, render: (v) => v ?? '-' },
@@ -437,7 +432,7 @@ export default function DeploymentPage() {
                 <Checkbox.Group
                   value={selectedCategories}
                   onChange={(vals) => setSelectedCategories(vals as string[])}
-                  options={CATEGORY_COLUMNS}
+                  options={categoryLabels}
                   style={{ display: 'flex', flexDirection: 'column' }}
                 />
               </div>

@@ -33,6 +33,7 @@ class AdminSalesComparisonServiceTest {
     @Mock private lateinit var adminMonthlyIntegrationService: AdminMonthlyIntegrationService
     @Mock private lateinit var accountRepository: AccountRepository
     @Mock private lateinit var employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository
+    @Mock private lateinit var accountCategoryMasterRepository: com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 
     @InjectMocks private lateinit var service: AdminSalesComparisonService
 
@@ -99,6 +100,37 @@ class AdminSalesComparisonServiceTest {
     fun setup() {
         whenever(employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()))
             .thenReturn(emptyList())
+    }
+
+    @Nested
+    @DisplayName("거래처유형 picklist (getSearchCategories)")
+    inner class GetSearchCategoriesTest {
+
+        @Test
+        fun `useSearch=true 항목을 accountCode 정렬로 반환`() {
+            val cm1 = com.otoki.powersales.account.entity.AccountCategoryMaster(accountCode = "01", name = "대형마트")
+            val cm2 = com.otoki.powersales.account.entity.AccountCategoryMaster(accountCode = "02", name = "체인")
+            whenever(accountCategoryMasterRepository.findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(eq(true)))
+                .thenReturn(listOf(cm1, cm2))
+
+            val result = service.getSearchCategories()
+
+            assertThat(result).hasSize(2)
+            assertThat(result[0].accountCode).isEqualTo("01")
+            assertThat(result[0].name).isEqualTo("대형마트")
+            assertThat(result[1].accountCode).isEqualTo("02")
+            assertThat(result[1].name).isEqualTo("체인")
+        }
+
+        @Test
+        fun `useSearch=true 항목 없으면 빈 리스트`() {
+            whenever(accountCategoryMasterRepository.findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(eq(true)))
+                .thenReturn(emptyList())
+
+            val result = service.getSearchCategories()
+
+            assertThat(result).isEmpty()
+        }
     }
 
     @Nested

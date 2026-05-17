@@ -23,6 +23,12 @@ enum class AccountCategoryColumn(val displayName: String) {
     OTHER("기타");
 }
 
+/** 거래처유형 picklist 항목 — `AccountCategoryMaster.useSearch=true` 항목 1건. */
+data class SearchAccountCategoryItem(
+    val accountCode: String,
+    val name: String
+)
+
 /** 집계 조회 응답 — 배치적합성 × 거래처카테고리 거래처 수 집계표. */
 data class SalesComparisonSummaryResponse(
     val year: Int,

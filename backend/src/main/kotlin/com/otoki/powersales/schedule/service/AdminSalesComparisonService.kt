@@ -2,6 +2,7 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.entity.AccountType
+import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster
@@ -33,8 +34,21 @@ import java.time.format.DateTimeFormatter
 class AdminSalesComparisonService(
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
     private val accountRepository: AccountRepository,
-    private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository
+    private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository,
+    private val accountCategoryMasterRepository: AccountCategoryMasterRepository
 ) {
+
+    /**
+     * 거래처유형 picklist 조회 — `AccountCategoryMaster.useSearch=true` 인 항목만 `accountCode` 오름차순 반환.
+     *
+     * 레거시 매핑: `SalesComparisonSearchController.getCategoryList` (force-app/main/default/classes) — SOQL `WHERE useSearch__c = true ORDER BY AccountCode__c`.
+     * 부수 효과: 없음 (조회 전용).
+     */
+    fun getSearchCategories(): List<SearchAccountCategoryItem> {
+        return accountCategoryMasterRepository
+            .findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(true)
+            .map { SearchAccountCategoryItem(accountCode = it.accountCode, name = it.name) }
+    }
 
     /** 체인 거래처 (4종) — 일반 카테고리 대신 ABCType 으로 투입기준 조회. */
     private val chainAccountTypeNames = setOf("서원부산", "수협", "그랜드마트", "우리마트")
