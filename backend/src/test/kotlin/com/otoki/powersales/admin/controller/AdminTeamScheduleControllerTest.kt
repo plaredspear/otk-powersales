@@ -22,7 +22,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -95,7 +94,7 @@ class AdminTeamScheduleControllerTest {
                 TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "홍길동"),
                 TeamMemberDto(employeeId = 2L, employeeCode = "20030002", name = "김영희")
             )
-            whenever(adminTeamScheduleService.getMembers(any(), anyOrNull())).thenReturn(members)
+            whenever(adminTeamScheduleService.getMembers(any())).thenReturn(members)
 
             mockMvc.perform(get("/api/v1/admin/team-schedule/members"))
                 .andExpect(status().isOk)

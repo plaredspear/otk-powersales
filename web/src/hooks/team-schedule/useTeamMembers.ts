@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchTeamMembers } from '@/api/team-schedule';
 
-export function useTeamMembers(branchCode?: string) {
+export function useTeamMembers() {
   return useQuery({
-    queryKey: ['admin', 'team-schedule', 'members', branchCode ?? ''],
-    queryFn: () => fetchTeamMembers(branchCode),
+    queryKey: ['admin', 'team-schedule', 'members'],
+    queryFn: () => fetchTeamMembers(),
   });
 }

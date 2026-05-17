@@ -186,7 +186,7 @@ class AdminTeamScheduleServiceTest {
     // ========== getMembers ==========
 
     @Nested
-    @DisplayName("getMembers - 여사원 목록 조회 (SF 정합)")
+    @DisplayName("getMembers - 여사원 목록 조회 (SF 정합 — branchCode 무관)")
     inner class GetMembersTests {
 
         @Test
@@ -199,7 +199,7 @@ class AdminTeamScheduleServiceTest {
             whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")))
                 .thenReturn(listOf(m1, m2))
 
-            val result = service.getMembers(principalOf(m2))
+            val result = service.getMembers(principalOf(leader))
 
             assertThat(result).hasSize(2)
             assertThat(result[0].employeeCode).isEqualTo("20030002")
@@ -207,61 +207,39 @@ class AdminTeamScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("SYSTEM_ADMIN + branchCode 미지정 - 빈 결과 (SF 적응형 패턴: 다중 지점)")
-        fun getMembers_systemAdmin_noBranch_returnsEmpty() {
-            val admin = createEmployee(id = 10L, employeeCode = "99990001", costCenterCode = "9999", role = UserRole.SYSTEM_ADMIN)
-
-            val result = service.getMembers(principalOf(admin), branchCode = null)
-
-            assertThat(result).isEmpty()
-            verify(employeeRepository, never()).findActiveWomenByCostCenterCodes(any())
-        }
-
-        @Test
-        @DisplayName("SYSTEM_ADMIN + branchCode 지정 - 그 지점 WOMAN")
-        fun getMembers_systemAdmin_withBranch() {
+        @DisplayName("SYSTEM_ADMIN - 본인 costCenterCode 단일 조회 (SF 여사원 모드는 지점 드롭다운 없음)")
+        fun getMembers_systemAdmin_usesOwnCostCenter() {
             val admin = createEmployee(id = 10L, employeeCode = "99990001", costCenterCode = "9999", role = UserRole.SYSTEM_ADMIN)
             val m1 = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = UserRole.WOMAN)
-            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("5457"))).thenReturn(listOf(m1))
+            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("9999"))).thenReturn(listOf(m1))
 
-            val result = service.getMembers(principalOf(admin), branchCode = "5457")
+            val result = service.getMembers(principalOf(admin))
 
             assertThat(result).hasSize(1)
-            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("5457"))
+            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("9999"))
         }
 
         @Test
-        @DisplayName("특수 사번 (19951029) - cost center IN ('3233','3234','3235','3236','5691')")
+        @DisplayName("특수 사번 (19951029) - cost center IN ('3233','3234','3235','3236','5691','5694')")
         fun getMembers_specialEmployeeCode() {
             val leader = createEmployee(id = 10L, employeeCode = "19951029", costCenterCode = "9999", role = UserRole.LEADER)
-            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("3233", "3234", "3235", "3236", "5691")))
+            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("3233", "3234", "3235", "3236", "5691", "5694")))
                 .thenReturn(emptyList())
 
             service.getMembers(principalOf(leader))
 
-            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("3233", "3234", "3235", "3236", "5691"))
+            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("3233", "3234", "3235", "3236", "5691", "5694"))
         }
 
         @Test
-        @DisplayName("영업지원1팀 (cost_center_code=4888) + branchCode 미지정 - 빈 결과")
-        fun getMembers_salesSupport1Team_noBranch() {
+        @DisplayName("영업지원1팀 (cost_center_code=4888) - 본인 costCenterCode 단일 조회 (SF 정합)")
+        fun getMembers_salesSupport1Team() {
             val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "4888", role = UserRole.SALES_SUPPORT)
+            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("4888"))).thenReturn(emptyList())
 
-            val result = service.getMembers(principalOf(supporter), branchCode = null)
+            service.getMembers(principalOf(supporter))
 
-            assertThat(result).isEmpty()
-            verify(employeeRepository, never()).findActiveWomenByCostCenterCodes(any())
-        }
-
-        @Test
-        @DisplayName("영업지원1팀 + branchCode 지정 - 그 지점 WOMAN")
-        fun getMembers_salesSupport1Team_withBranch() {
-            val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "4888", role = UserRole.SALES_SUPPORT)
-            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("5457"))).thenReturn(emptyList())
-
-            service.getMembers(principalOf(supporter), branchCode = "5457")
-
-            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("5457"))
+            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("4888"))
         }
 
         @Test

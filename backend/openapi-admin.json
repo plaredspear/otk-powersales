@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:58048",
+    "url" : "http://localhost:56880",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -90,6 +90,82 @@
         "tags" : [ "admin-team-schedule-controller" ],
         "operationId" : "deleteSchedule",
         "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedule/{id}" : {
+      "put" : {
+        "tags" : [ "admin-schedule-controller" ],
+        "operationId" : "updateSchedule_1",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminScheduleUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleCreateResultDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "admin-schedule-controller" ],
+        "operationId" : "deleteSchedule_1",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "name" : "id",
           "in" : "path",
           "required" : true,
@@ -226,6 +302,13 @@
         "tags" : [ "admin-promotion-controller" ],
         "operationId" : "getPromotion",
         "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "name" : "id",
           "in" : "path",
           "required" : true,
@@ -251,6 +334,13 @@
         "tags" : [ "admin-promotion-controller" ],
         "operationId" : "updatePromotion",
         "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "name" : "id",
           "in" : "path",
           "required" : true,
@@ -286,6 +376,13 @@
         "tags" : [ "admin-promotion-controller" ],
         "operationId" : "deletePromotion",
         "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "name" : "id",
           "in" : "path",
           "required" : true,
@@ -1081,22 +1178,22 @@
     "/api/v1/admin/team-schedule" : {
       "get" : {
         "tags" : [ "admin-team-schedule-controller" ],
-        "operationId" : "getMonthlySchedules",
+        "operationId" : "getSchedules",
         "parameters" : [ {
-          "name" : "year",
+          "name" : "from",
           "in" : "query",
           "required" : true,
           "schema" : {
-            "type" : "integer",
-            "format" : "int32"
+            "type" : "string",
+            "format" : "date"
           }
         }, {
-          "name" : "month",
+          "name" : "to",
           "in" : "query",
           "required" : true,
           "schema" : {
-            "type" : "integer",
-            "format" : "int32"
+            "type" : "string",
+            "format" : "date"
           }
         }, {
           "name" : "employeeIds",
@@ -1107,6 +1204,13 @@
           }
         }, {
           "name" : "accountIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "promotionTeams",
           "in" : "query",
           "required" : false,
           "schema" : {
@@ -1146,6 +1250,42 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseTeamScheduleCreateResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedule" : {
+      "post" : {
+        "tags" : [ "admin-schedule-controller" ],
+        "operationId" : "createSchedule_1",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminScheduleCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleCreateResultDto"
                 }
               }
             }
@@ -1214,11 +1354,91 @@
         }
       }
     },
+    "/api/v1/admin/schedule/export" : {
+      "post" : {
+        "tags" : [ "admin-schedule-controller" ],
+        "operationId" : "exportSchedules",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduleExportRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedule/batch-delete" : {
+      "post" : {
+        "tags" : [ "admin-schedule-controller" ],
+        "operationId" : "batchDelete",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduleBatchDeleteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleBatchDeleteResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/promotions" : {
       "get" : {
         "tags" : [ "admin-promotion-controller" ],
         "operationId" : "getPromotions",
         "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "name" : "keyword",
           "in" : "query",
           "required" : false,
@@ -1399,6 +1619,84 @@
         }
       }
     },
+    "/api/v1/admin/promotions/{id}/clone" : {
+      "post" : {
+        "tags" : [ "admin-promotion-controller" ],
+        "operationId" : "clonePromotion",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PromotionCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePromotionDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/promotions/{id}/clone-with-children" : {
+      "post" : {
+        "tags" : [ "admin-promotion-controller" ],
+        "operationId" : "cloneWithChildren",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePromotionDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/product-expiration" : {
       "get" : {
         "tags" : [ "admin-product-expiration-controller" ],
@@ -1502,7 +1800,7 @@
     "/api/v1/admin/product-expiration/batch-delete" : {
       "post" : {
         "tags" : [ "admin-product-expiration-controller" ],
-        "operationId" : "batchDelete",
+        "operationId" : "batchDelete_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1888,6 +2186,13 @@
         "tags" : [ "admin-employee-controller" ],
         "operationId" : "getEmployees_1",
         "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "name" : "status",
           "in" : "query",
           "required" : false,
@@ -2402,6 +2707,13 @@
         "tags" : [ "admin-account-controller" ],
         "operationId" : "getAccounts",
         "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "name" : "keyword",
           "in" : "query",
           "required" : false,
@@ -2627,6 +2939,24 @@
         }
       }
     },
+    "/api/v1/admin/team-schedule/professional-promotion-teams" : {
+      "get" : {
+        "tags" : [ "admin-team-schedule-controller" ],
+        "operationId" : "getProfessionalPromotionTeams",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/team-schedule/members" : {
       "get" : {
         "tags" : [ "admin-team-schedule-controller" ],
@@ -2682,6 +3012,411 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListTeamScheduleAccountDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/sales-comparison/summary" : {
+      "get" : {
+        "tags" : [ "admin-sales-comparison-controller" ],
+        "operationId" : "getSummary",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSalesComparisonSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/sales-comparison/summary/export" : {
+      "get" : {
+        "tags" : [ "admin-sales-comparison-controller" ],
+        "operationId" : "exportSummary",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/sales-comparison/middle" : {
+      "get" : {
+        "tags" : [ "admin-sales-comparison-controller" ],
+        "operationId" : "getMiddle",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "accountIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSalesComparisonMiddleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/sales-comparison/middle/export" : {
+      "get" : {
+        "tags" : [ "admin-sales-comparison-controller" ],
+        "operationId" : "exportMiddle",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "accountIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/sales-comparison/detail" : {
+      "get" : {
+        "tags" : [ "admin-sales-comparison-controller" ],
+        "operationId" : "getDetail_1",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "accountIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        }, {
+          "name" : "workingCategory1",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "workingCategory5",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSalesComparisonDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/sales-comparison/detail/export" : {
+      "get" : {
+        "tags" : [ "admin-sales-comparison-controller" ],
+        "operationId" : "exportDetail",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "accountIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        }, {
+          "name" : "workingCategory1",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "workingCategory5",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/sales-comparison/categories" : {
+      "get" : {
+        "tags" : [ "admin-sales-comparison-controller" ],
+        "operationId" : "getSearchCategories",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListSearchAccountCategoryItem"
                 }
               }
             }
@@ -2895,6 +3630,13 @@
         "tags" : [ "admin-schedule-controller" ],
         "operationId" : "listSchedules",
         "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "name" : "page",
           "in" : "query",
           "required" : false,
@@ -2956,6 +3698,28 @@
             "type" : "string",
             "format" : "date"
           }
+        }, {
+          "name" : "preset",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "INPUT_TODAY", "ALL", "VALID", "VALID_CONFIRMED", "VALID_NOT_CONFIRMED", "FIXED_VALID", "BIFURCATION_VALID", "PATROL_VALID", "VALID_CONFIRMED_TEMP", "END" ]
+          }
+        }, {
+          "name" : "sortBy",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "sortDir",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -3000,7 +3764,7 @@
     "/api/v1/admin/promotions/{promotionId}/schedules" : {
       "get" : {
         "tags" : [ "admin-promotion-schedule-controller" ],
-        "operationId" : "getSchedules",
+        "operationId" : "getSchedules_1",
         "parameters" : [ {
           "name" : "promotionId",
           "in" : "path",
@@ -3156,7 +3920,7 @@
     "/api/v1/admin/product-expiration/summary" : {
       "get" : {
         "tags" : [ "admin-product-expiration-controller" ],
-        "operationId" : "getSummary",
+        "operationId" : "getSummary_1",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -3258,6 +4022,13 @@
         "tags" : [ "admin-organization-controller" ],
         "operationId" : "getOrganizations",
         "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "name" : "keyword",
           "in" : "query",
           "required" : false,
@@ -3459,7 +4230,7 @@
     "/api/v1/admin/annual-leave/summary" : {
       "get" : {
         "tags" : [ "admin-annual-leave-controller" ],
-        "operationId" : "getSummary_1",
+        "operationId" : "getSummary_2",
         "parameters" : [ {
           "name" : "yearMonth",
           "in" : "query",
@@ -3500,33 +4271,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAdminAgreementWordActiveResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/schedule/{id}" : {
-      "delete" : {
-        "tags" : [ "admin-schedule-controller" ],
-        "operationId" : "deleteSchedule_1",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseObject"
                 }
               }
             }
@@ -3669,6 +4413,128 @@
           "timestamp" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }
+      },
+      "DataScope" : {
+        "type" : "object",
+        "properties" : {
+          "branchCodes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "allBranches" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "AdminScheduleUpdateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "employeeCode" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "accountCode" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "typeOfWork3" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "typeOfWork4" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "typeOfWork5" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          }
+        },
+        "required" : [ "accountCode", "employeeCode", "startDate", "typeOfWork3", "typeOfWork4", "typeOfWork5" ]
+      },
+      "ApiResponseScheduleCreateResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ScheduleCreateResultDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ScheduleCreateResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork3" : {
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork4" : {
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork5" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "costCenterCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastMonthRevenue" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
           }
         }
       },
@@ -4020,6 +4886,11 @@
             "maxLength" : 50,
             "minLength" : 0
           },
+          "category1" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 1300,
+            "minLength" : 0
+          },
           "remark" : {
             "type" : [ "string", "null" ],
             "maxLength" : 200,
@@ -4105,6 +4976,9 @@
             "type" : [ "string", "null" ]
           },
           "productType" : {
+            "type" : [ "string", "null" ]
+          },
+          "category1" : {
             "type" : [ "string", "null" ]
           },
           "createdAt" : {
@@ -4830,9 +5704,6 @@
         "properties" : {
           "permission" : {
             "type" : "string"
-          },
-          "grantedByName" : {
-            "type" : "string"
           }
         }
       },
@@ -5489,6 +6360,40 @@
           }
         }
       },
+      "AdminScheduleCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "employeeCode" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "accountCode" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "typeOfWork3" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "typeOfWork4" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "typeOfWork5" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          }
+        },
+        "required" : [ "accountCode", "employeeCode", "startDate", "typeOfWork3", "typeOfWork4", "typeOfWork5" ]
+      },
       "ApiResponseScheduleUploadResultDto" : {
         "type" : "object",
         "properties" : {
@@ -5652,6 +6557,99 @@
           "insertedCount" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "ScheduleExportRequest" : {
+        "type" : "object",
+        "properties" : {
+          "ids" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "maxItems" : 1000,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "ids" ]
+      },
+      "ScheduleBatchDeleteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "ids" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "ids" ]
+      },
+      "ApiResponseScheduleBatchDeleteResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ScheduleBatchDeleteResultDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ScheduleBatchDeleteFailure" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "errorCode" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ScheduleBatchDeleteResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "deletedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "failedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "failures" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ScheduleBatchDeleteFailure"
+            }
           }
         }
       },
@@ -7247,8 +8245,40 @@
           "accountExternalKey" : {
             "type" : [ "string", "null" ]
           },
+          "promotionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
           "clockIn" : {
             "type" : "boolean"
+          }
+        }
+      },
+      "ApiResponseListString" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       },
@@ -7370,6 +8400,446 @@
             "format" : "int32"
           },
           "externalKey" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiResponseSalesComparisonSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SalesComparisonSummaryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SalesComparisonSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "month" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "rows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SalesComparisonSummaryRow"
+            }
+          },
+          "total" : {
+            "$ref" : "#/components/schemas/SalesComparisonSummaryRow"
+          }
+        }
+      },
+      "SalesComparisonSummaryRow" : {
+        "type" : "object",
+        "properties" : {
+          "suitability" : {
+            "type" : "string"
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "countsByCategory" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "accountIdsByCategory" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "integer",
+                "format" : "int32"
+              }
+            }
+          }
+        }
+      },
+      "ApiResponseSalesComparisonMiddleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SalesComparisonMiddleResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SalesComparisonMiddleItem" : {
+        "type" : "object",
+        "properties" : {
+          "accountId" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "accountCode" : {
+            "type" : "string"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "accountBranchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountCategory" : {
+            "type" : "string"
+          },
+          "suitability" : {
+            "type" : "string"
+          },
+          "avgClosingAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalDisplayHeadcount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalDisplayConvertedHeadcount" : {
+            "type" : "number"
+          },
+          "totalEventConvertedHeadcount" : {
+            "type" : "number"
+          },
+          "fixedStandardAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "bifurcationHalfStandardAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "totalInputCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalEquivalentWorkingDays" : {
+            "type" : "number"
+          },
+          "thisMonthSalesAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "ediPos" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "SalesComparisonMiddleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "month" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SalesComparisonMiddleItem"
+            }
+          },
+          "subtotals" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SalesComparisonMiddleSubtotal"
+            }
+          },
+          "total" : {
+            "$ref" : "#/components/schemas/SalesComparisonMiddleSubtotal"
+          }
+        }
+      },
+      "SalesComparisonMiddleSubtotal" : {
+        "type" : "object",
+        "properties" : {
+          "suitability" : {
+            "type" : "string"
+          },
+          "accountCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "avgClosingAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalDisplayHeadcount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalDisplayConvertedHeadcount" : {
+            "type" : "number"
+          },
+          "totalEventConvertedHeadcount" : {
+            "type" : "number"
+          },
+          "totalInputCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalEquivalentWorkingDays" : {
+            "type" : "number"
+          },
+          "thisMonthSalesAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "ApiResponseSalesComparisonDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SalesComparisonDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SalesComparisonDetailItem" : {
+        "type" : "object",
+        "properties" : {
+          "accountId" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "accountCode" : {
+            "type" : "string"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "accountBranchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountCategory" : {
+            "type" : "string"
+          },
+          "accountCategoryCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory1" : {
+            "type" : "string"
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory4" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory5" : {
+            "type" : [ "string", "null" ]
+          },
+          "suitability" : {
+            "type" : "string"
+          },
+          "avgClosingAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalDisplayHeadcount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalDisplayConvertedHeadcount" : {
+            "type" : "number"
+          },
+          "totalEventConvertedHeadcount" : {
+            "type" : "number"
+          },
+          "fixedStandardAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "bifurcationHalfStandardAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "inputCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "equivalentWorkingDays" : {
+            "type" : "number"
+          },
+          "convertedHeadcount" : {
+            "type" : "number"
+          },
+          "thisMonthSalesAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "ediPos" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "SalesComparisonDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "month" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SalesComparisonDetailItem"
+            }
+          },
+          "total" : {
+            "$ref" : "#/components/schemas/SalesComparisonDetailTotal"
+          }
+        }
+      },
+      "SalesComparisonDetailTotal" : {
+        "type" : "object",
+        "properties" : {
+          "rowCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalDisplayHeadcount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalDisplayConvertedHeadcount" : {
+            "type" : "number"
+          },
+          "totalEventConvertedHeadcount" : {
+            "type" : "number"
+          },
+          "totalInputCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalEquivalentWorkingDays" : {
+            "type" : "number"
+          },
+          "totalConvertedHeadcount" : {
+            "type" : "number"
+          },
+          "totalThisMonthSalesAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "ApiResponseListSearchAccountCategoryItem" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/SearchAccountCategoryItem"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SearchAccountCategoryItem" : {
+        "type" : "object",
+        "properties" : {
+          "accountCode" : {
             "type" : "string"
           },
           "name" : {
@@ -7619,11 +9089,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "first" : {
             "type" : "boolean"
@@ -7664,15 +9134,15 @@
           "unpaged" : {
             "type" : "boolean"
           },
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
+          "paged" : {
+            "type" : "boolean"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "paged" : {
-            "type" : "boolean"
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "offset" : {
             "type" : "integer",
@@ -7731,10 +9201,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {

@@ -34,30 +34,24 @@ class AdminTeamScheduleService(
     /**
      * 여사원 일정관리 "여사원" 탭 목록.
      *
-     * SF 레거시 `TeamMemberListController.fetchTeamMembers()` 정합 + 적응형 지점 선택:
-     * - 특수 사번 4명 (`19951029`/`20001013`/`20060052`/`20050308`) → CostCenterCode IN ('3233','3234','3235','3236','5691')
-     * - 영업지원1·2팀 (cost_center_code = `4888`/`4889`) → 다중 지점 → `branchCode` 미지정 시 빈 리스트, 지정 시 그 cost center 한정
-     * - SYSTEM_ADMIN → 다중 지점 → `branchCode` 동일 규칙
-     * - 일반 → 본인 `cost_center_code` 단일 (branchCode 무시)
+     * SF 레거시 `TeamMemberListController.fetchTeamMembers()` 정합 — branchCode 무관, 권한 기준 일괄 조회:
+     * - 특수 사번 4명 (`19951029`/`20001013`/`20060052`/`20050308`) → CostCenterCode IN ('3233','3234','3235','3236','5691','5694')
+     * - 그 외 → 본인 `cost_center_code` 단일
      *
      * 공통 SOQL 정합 필터: `role = WOMAN AND app_login_active = true AND is_deleted != true`, `ORDER BY name`.
-     * SF 의 `TeamMemberListComponentHelper.js:49-52` (지점 1개면 자동, N개면 사용자 선택) 패턴 정합.
-     */
-    /**
-     * @param principal 인증된 web admin 사용자. role / employeeCode / costCenterCode snapshot 만 사용 —
+     * 여사원 모드는 SF `TeamMemberListComponent.cmp:76-115` 의 else 블록 — 지점 드롭다운이 없고 권한 범위 여사원을
+     * 즉시 일괄 표시하는 동작. 다중 지점 사용자(SYSTEM_ADMIN / 영업지원1·2팀)도 본인 costCenterCode 단일 조회.
+     *
+     * @param principal 인증된 web admin 사용자. employeeCode / costCenterCode snapshot 만 사용 —
      *                  Employee 엔티티 재조회 없이 데이터 스코프 분기를 수행.
      */
-    fun getMembers(principal: WebUserPrincipal, branchCode: String? = null): List<TeamMemberDto> {
-        val role = principal.role
+    fun getMembers(principal: WebUserPrincipal): List<TeamMemberDto> {
         val empCode = principal.employeeCode
         val ccCode = principal.costCenterCode
 
-        val targetCostCenterCodes: List<String>? = when {
+        val targetCostCenterCodes: List<String> = when {
             empCode in SF_SPECIAL_EMPLOYEE_CODES ->
-                listOf("3233", "3234", "3235", "3236", "5691")
-            ccCode in SF_FULL_SCOPE_COST_CENTERS || role == UserRole.SYSTEM_ADMIN ->
-                // 다중 지점 케이스: 지점 선택 필수. 미지정 시 빈 리스트 (SF 적응형 패턴)
-                if (branchCode.isNullOrBlank()) return emptyList() else listOf(branchCode)
+                SF_SPECIAL_EMPLOYEE_COST_CENTERS
             ccCode.isNullOrBlank() -> return emptyList()
             else -> listOf(ccCode)
         }
@@ -317,8 +311,8 @@ class AdminTeamScheduleService(
         /** SF `TeamMemberListController.fetchTeamMembers` 특수 사번 하드코딩 분기 — 인천 cost center 광역 매핑 */
         private val SF_SPECIAL_EMPLOYEE_CODES = setOf("19951029", "20001013", "20060052", "20050308")
 
-        /** SF `TeamMemberListController.fetchManagedAccList` 영업지원1·2팀 — 전사 노출 cost center */
-        private val SF_FULL_SCOPE_COST_CENTERS = setOf("4888", "4889")
+        /** SF `TeamMemberListController.fetchTeamMembers:18` 특수 사번 4명 매핑 cost center 6개 */
+        private val SF_SPECIAL_EMPLOYEE_COST_CENTERS = listOf("3233", "3234", "3235", "3236", "5691", "5694")
 
         /** 기간 조회 상한 — 운영 부하 worst case 회피. ChronoUnit.DAYS.between(from, to) 가 이 값을 초과하면 거부 */
         private const val MAX_RANGE_DAYS = 91L
