@@ -95,7 +95,7 @@ class Employee(
     @SFField("Phone__c")
     @HCColumn("phone__c")
     @Column(name = "phone", length = 40)
-    val phone: String? = null,
+    var phone: String? = null,
 
     @SFField("DKRetail__HomePhone__c")
     @HCColumn("dkretail__homephone__c")

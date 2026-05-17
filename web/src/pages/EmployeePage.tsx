@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEmployees } from '@/hooks/employee/useEmployees';
@@ -7,6 +8,7 @@ import { ROLE_OPTIONS_FOR_FILTER, type UserRole } from '@/constants/userRole';
 import { usePermission } from '@/hooks/usePermission';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
+import EmployeeRegisterModal from '@/pages/employee/components/EmployeeRegisterModal';
 
 const STATUS_TAG: Record<string, string> = {
   재직: 'green',
@@ -29,6 +31,7 @@ const STATUS_OPTIONS = [
 const PAGE_SIZE = 20;
 
 const RESET_PERMISSION = 'EMPLOYEE_RESET_CREDENTIALS';
+const WRITE_PERMISSION = 'EMPLOYEE_WRITE';
 
 const DEVICE_TOOLTIP =
   '단말 바인딩(deviceUuid)이 해제됩니다. 사원이 다음에 어떤 단말로 로그인하더라도 새 단말로 자동 등록됩니다.';
@@ -37,6 +40,7 @@ const PASSWORD_TOOLTIP =
 const INACTIVE_NOTICE = '앱 로그인이 비활성화된 사원입니다. 사원 정보를 먼저 활성화해 주세요.';
 
 export default function EmployeePage() {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<string | undefined>();
   const [costCenterCode, setCostCenterCode] = useState<string | undefined>();
   const [keyword, setKeyword] = useState<string | undefined>();
@@ -44,8 +48,10 @@ export default function EmployeePage() {
   const [page, setPage] = useState(0);
   const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
+  const [registerOpen, setRegisterOpen] = useState(false);
   const { hasPermission } = usePermission();
   const canResetCredentials = hasPermission(RESET_PERMISSION);
+  const canWrite = hasPermission(WRITE_PERMISSION);
 
   const { data, isLoading, isError, error, refetch } = useEmployees({
     status,
@@ -57,8 +63,38 @@ export default function EmployeePage() {
   });
 
   const columns: ColumnsType<Employee> = [
-    { title: '사번', dataIndex: 'employeeCode', width: 100 },
-    { title: '이름', dataIndex: 'name', width: 120 },
+    {
+      title: '사번',
+      dataIndex: 'employeeCode',
+      width: 100,
+      render: (val: string, record: Employee) => (
+        <a
+          onClick={(e) => {
+            e.preventDefault();
+            navigate(`/employee/${record.id}`);
+          }}
+          href={`/employee/${record.id}`}
+        >
+          {val}
+        </a>
+      ),
+    },
+    {
+      title: '이름',
+      dataIndex: 'name',
+      width: 120,
+      render: (val: string, record: Employee) => (
+        <a
+          onClick={(e) => {
+            e.preventDefault();
+            navigate(`/employee/${record.id}`);
+          }}
+          href={`/employee/${record.id}`}
+        >
+          {val}
+        </a>
+      ),
+    },
     { title: '성별', dataIndex: 'gender', width: 60, align: 'center', render: (val: string | null) => val ?? '-' },
     {
       title: '상태',
@@ -148,7 +184,7 @@ export default function EmployeePage() {
   return (
     <div style={{ padding: 16 }}>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <Select
           style={{ width: 140 }}
           value={status ?? ''}
@@ -174,6 +210,13 @@ export default function EmployeePage() {
           style={{ width: 240 }}
           onSearch={(val) => { setKeyword(val || undefined); setPage(0); }}
         />
+        <div style={{ marginLeft: 'auto' }}>
+          {canWrite && (
+            <Button type="primary" onClick={() => setRegisterOpen(true)}>
+              + 신규 사원 등록
+            </Button>
+          )}
+        </div>
       </div>
 
       <Table
@@ -203,6 +246,9 @@ export default function EmployeePage() {
           open={true}
           onClose={() => setPasswordTarget(null)}
         />
+      )}
+      {registerOpen && (
+        <EmployeeRegisterModal open={true} onClose={() => setRegisterOpen(false)} />
       )}
     </div>
   );

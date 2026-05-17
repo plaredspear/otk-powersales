@@ -1,5 +1,6 @@
 import client from './client';
 import type { UserRole } from '@/constants/userRole';
+import type { PPTTeamType } from '@/constants/pptTeamType';
 import type { ApiResponse } from './types';
 
 
@@ -42,6 +43,105 @@ export interface EmployeeListData {
   totalPages: number;
 }
 
+/**
+ * 사원 상세 응답 — 6개 그룹 필드 모두 노출.
+ * 백엔드 EmployeeDetailResponse 와 1:1.
+ */
+export interface EmployeeDetail {
+  // 인사 정보
+  id: number;
+  employeeCode: string;
+  name: string;
+  gender: string | null;
+  status: string | null;
+  birthDate: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  appointmentDate: string | null;
+  origin: 'SAP' | 'MANUAL' | null;
+
+  // 조직 정보
+  costCenterCode: string | null;
+  orgName: string | null;
+  locationCode: string | null;
+  workArea: string | null;
+
+  // 직무 정보
+  jobCode: string | null;
+  jikjong: string | null;
+  jikwee: string | null;
+  jikchak: string | null;
+  jikgub: string | null;
+  workType: string | null;
+  ordDetailNode: string | null;
+
+  // 연락처
+  phone: string | null;
+  homePhone: string | null;
+  workPhone: string | null;
+  officePhone: string | null;
+  workEmail: string | null;
+  email: string | null;
+
+  // 앱 설정
+  role: UserRole | null;
+  roleLabel: string | null;
+  appLoginActive: boolean | null;
+  lockingFlag: boolean | null;
+  professionalPromotionTeam: PPTTeamType | null;
+  agreementFlag: boolean | null;
+
+  // 근무 정보
+  crmWorkType: string | null;
+  crmWorkStartDate: string | null;
+  totalAnnualLeave: string | null;
+  usedAnnualLeave: string | null;
+}
+
+export interface EmployeeUpdateRequest {
+  status?: string;
+  role?: UserRole;
+  orgName?: string;
+  costCenterCode?: string;
+  workArea?: string;
+  locationCode?: string;
+  jobCode?: string;
+  jikjong?: string;
+  jikwee?: string;
+  jikchak?: string;
+  jikgub?: string;
+  workType?: string;
+  ordDetailNode?: string;
+  appointmentDate?: string;
+  startDate?: string;
+  endDate?: string;
+  homePhone?: string;
+  workPhone?: string;
+  officePhone?: string;
+  workEmail?: string;
+  email?: string;
+  appLoginActive?: boolean;
+  lockingFlag?: boolean;
+  professionalPromotionTeam?: PPTTeamType;
+}
+
+export interface EmployeeManualRegisterRequest {
+  employeeCode: string;
+  name: string;
+  role?: UserRole;
+  orgName?: string;
+  costCenterCode?: string;
+  jobCode?: string;
+  jikwee?: string;
+  jikchak?: string;
+  jikgub?: string;
+  startDate?: string;
+  homePhone?: string;
+  workPhone?: string;
+  workEmail?: string;
+  professionalPromotionTeam?: PPTTeamType;
+}
+
 
 // --- API function ---
 
@@ -49,6 +149,41 @@ export async function fetchEmployees(params: FetchEmployeesParams): Promise<Empl
   const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/employees', { params });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '사원 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function fetchEmployee(employeeId: number): Promise<EmployeeDetail> {
+  const res = await client.get<ApiResponse<EmployeeDetail>>(`/api/v1/admin/employees/${employeeId}`);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '사원 상세 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function updateEmployee(
+  employeeId: number,
+  request: EmployeeUpdateRequest,
+): Promise<EmployeeDetail> {
+  const res = await client.patch<ApiResponse<EmployeeDetail>>(
+    `/api/v1/admin/employees/${employeeId}`,
+    request,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '사원 정보 수정에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function manualRegisterEmployee(
+  request: EmployeeManualRegisterRequest,
+): Promise<EmployeeDetail> {
+  const res = await client.post<ApiResponse<EmployeeDetail>>(
+    '/api/v1/admin/employees/manual',
+    request,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '사원 등록에 실패했습니다');
   }
   return res.data.data;
 }

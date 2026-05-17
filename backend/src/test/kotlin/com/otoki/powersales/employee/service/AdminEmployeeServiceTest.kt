@@ -1,10 +1,12 @@
 package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -152,6 +154,41 @@ class AdminEmployeeServiceTest {
             val result = adminEmployeeService.getEmployees(scope, null, "A001", null, null, 0, 20)
 
             assertThat(result.content).hasSize(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("getEmployee - 단건 상세 조회 (UC-04)")
+    inner class GetEmployeeTests {
+
+        @Test
+        @DisplayName("존재하는 사원 -> 6개 그룹 필드 응답")
+        fun success() {
+            val employee = createEmployee(id = 42L, employeeCode = "10000099", name = "김여사")
+                .apply {
+                    jobCode = "판촉직"
+                    jikwee = "사원"
+                    homePhone = "010-1234-5678"
+                }
+            whenever(employeeRepository.findWithEmployeeInfoById(42L)).thenReturn(employee)
+
+            val result = adminEmployeeService.getEmployee(42L)
+
+            assertThat(result.id).isEqualTo(42L)
+            assertThat(result.employeeCode).isEqualTo("10000099")
+            assertThat(result.name).isEqualTo("김여사")
+            assertThat(result.jobCode).isEqualTo("판촉직")
+            assertThat(result.homePhone).isEqualTo("010-1234-5678")
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 사원 -> EmployeeNotFoundException")
+        fun notFound() {
+            whenever(employeeRepository.findWithEmployeeInfoById(999L)).thenReturn(null)
+
+            assertThatThrownBy { adminEmployeeService.getEmployee(999L) }
+                .isInstanceOf(EmployeeNotFoundException::class.java)
+                .hasMessageContaining("999")
         }
     }
 

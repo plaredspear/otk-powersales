@@ -23,6 +23,7 @@ object RolePermissionMatrix {
         UserRole.SYSTEM_ADMIN to setOf(
             AdminPermission.DASHBOARD_READ,
             AdminPermission.EMPLOYEE_READ,
+            AdminPermission.EMPLOYEE_WRITE,
             AdminPermission.EMPLOYEE_RESET_CREDENTIALS,
             AdminPermission.ACCOUNT_READ,
             AdminPermission.ACCOUNT_WRITE,
@@ -44,6 +45,7 @@ object RolePermissionMatrix {
         UserRole.SALES_SUPPORT to setOf(
             AdminPermission.DASHBOARD_READ,
             AdminPermission.EMPLOYEE_READ,
+            AdminPermission.EMPLOYEE_WRITE,
             AdminPermission.ACCOUNT_READ,
             AdminPermission.ACCOUNT_WRITE,
             AdminPermission.PROMOTION_READ,

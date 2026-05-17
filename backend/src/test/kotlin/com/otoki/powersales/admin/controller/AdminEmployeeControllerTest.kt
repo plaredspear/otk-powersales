@@ -7,7 +7,9 @@ import com.otoki.powersales.employee.dto.response.ResetPasswordResponse
 import com.otoki.powersales.employee.exception.EmployeeLoginInactiveException
 import com.otoki.powersales.employee.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.service.AdminEmployeeCredentialService
+import com.otoki.powersales.employee.service.AdminEmployeeManualRegisterService
 import com.otoki.powersales.employee.service.AdminEmployeeService
+import com.otoki.powersales.employee.service.AdminEmployeeUpdateService
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
@@ -53,6 +55,12 @@ class AdminEmployeeControllerTest {
 
     @MockitoBean
     private lateinit var adminEmployeeCredentialService: AdminEmployeeCredentialService
+
+    @MockitoBean
+    private lateinit var adminEmployeeUpdateService: AdminEmployeeUpdateService
+
+    @MockitoBean
+    private lateinit var adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService
 
     @MockitoBean
     private lateinit var jwtTokenProvider: JwtTokenProvider

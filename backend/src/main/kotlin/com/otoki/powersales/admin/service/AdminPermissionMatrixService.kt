@@ -20,6 +20,7 @@ class AdminPermissionMatrixService(
     private val permissionInfoMap: Map<AdminPermission, Pair<String, List<String>>> = mapOf(
         AdminPermission.DASHBOARD_READ to ("대시보드 조회" to listOf("대시보드")),
         AdminPermission.EMPLOYEE_READ to ("사원 조회" to listOf("인사/근무 > 여사원 현황")),
+        AdminPermission.EMPLOYEE_WRITE to ("사원 등록/수정" to listOf("인사/근무 > 여사원 현황 (신규 등록 / 정보 수정)")),
         AdminPermission.EMPLOYEE_RESET_CREDENTIALS to ("사원 자격 정보 리셋" to listOf("인사/근무 > 여사원 현황 (비밀번호 초기화 / 기기 재설정)")),
         AdminPermission.ACCOUNT_READ to ("거래처 조회" to listOf("기준정보 > 거래처")),
         AdminPermission.ACCOUNT_WRITE to ("거래처 등록/수정" to listOf("기준정보 > 거래처 (신규 등록 / 수정)")),

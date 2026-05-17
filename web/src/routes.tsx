@@ -20,6 +20,7 @@ const SafetyCheckPage = lazy(() => import('@/pages/SafetyCheckPage'));
 const ProductPage = lazy(() => import('@/pages/ProductPage'));
 const AccountPage = lazy(() => import('@/pages/AccountPage'));
 const EmployeePage = lazy(() => import('@/pages/EmployeePage'));
+const EmployeeDetailPage = lazy(() => import('@/pages/EmployeeDetailPage'));
 const FieldInspectionPage = lazy(() => import('@/pages/FieldInspectionPage'));
 const ReportPage = lazy(() => import('@/pages/ReportPage'));
 const NoticeListPage = lazy(() => import('@/pages/notice/NoticeListPage'));
@@ -142,6 +143,7 @@ export const router = createBrowserRouter(
               element: <PermissionRoute requiredPermission="EMPLOYEE_READ" />,
               children: [
                 { path: '/employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
+                { path: '/employee/:employeeId', element: <LazyWrapper><EmployeeDetailPage /></LazyWrapper> },
               ],
             },
             {
