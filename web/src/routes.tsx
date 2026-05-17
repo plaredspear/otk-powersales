@@ -116,7 +116,7 @@ export const router = createBrowserRouter(
             { path: '/work-type-headcount', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
             { path: '/monthly-integration', element: <LazyWrapper><MonthlyIntegrationSchedulePage /></LazyWrapper> },
             { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
-            { path: '/promotion/ppt-masters/history', element: <LazyWrapper><PPTHistoryPage /></LazyWrapper> },
+            { path: '/promotion/ppt-master-history', element: <LazyWrapper><PPTHistoryPage /></LazyWrapper> },
             {
               element: <PermissionRoute requiredPermission="PRODUCT_EXPIRATION_READ" />,
               children: [
