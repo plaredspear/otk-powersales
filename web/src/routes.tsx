@@ -111,8 +111,8 @@ export const router = createBrowserRouter(
                 { path: '/settings/admin-accounts/new', element: <LazyWrapper><AdminAccountRegisterPage /></LazyWrapper> },
               ],
             },
+            { path: '/work-type-headcount', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
             { path: '/monthly-integration', element: <LazyWrapper><MonthlyIntegrationSchedulePage /></LazyWrapper> },
-            { path: '/monthly-integration/category', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
             { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
             {
               element: <PermissionRoute requiredPermission="PRODUCT_EXPIRATION_READ" />,
