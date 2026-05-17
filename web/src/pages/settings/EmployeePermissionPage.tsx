@@ -11,11 +11,13 @@ import {
   Spin,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useEmployees } from '@/hooks/employee/useEmployees';
 import { useAuthStore } from '@/stores/authStore';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
@@ -27,26 +29,16 @@ import {
   type EmployeePermissionDetail,
 } from '@/api/employeePermission';
 import {
+  fetchPermissionMatrix,
+  type PermissionDetail,
+} from '@/api/permission';
+import {
   ROLE_OPTIONS_FOR_ADMIN_LOGIN,
   roleLabel,
   type UserRole,
 } from '@/constants/userRole';
 
 const { Title } = Typography;
-
-const ALL_PERMISSIONS = [
-  'DASHBOARD_READ',
-  'EMPLOYEE_READ',
-  'EMPLOYEE_RESET_CREDENTIALS',
-  'ACCOUNT_READ',
-  'PROMOTION_READ',
-  'PROMOTION_WRITE',
-  'SAFETY_CHECK_READ',
-  'SCHEDULE_READ',
-  'SCHEDULE_WRITE',
-  'PRODUCT_EXPIRATION_READ',
-  'PRODUCT_EXPIRATION_WRITE',
-];
 
 export default function EmployeePermissionPage() {
   const navigate = useNavigate();
@@ -70,6 +62,13 @@ export default function EmployeePermissionPage() {
     role: searchParams.role,
     page: searchParams.page,
     size: 20,
+  });
+
+  // 권한 메타 (code/description/menus) — backend SoT 응답 재사용. drawer 가 열릴 때 1회 fetch 충분.
+  const { data: permissionMetaList = [] } = useQuery({
+    queryKey: ['admin', 'permissions', 'matrix-meta'],
+    queryFn: async () => (await fetchPermissionMatrix()).permissions,
+    staleTime: 5 * 60 * 1000,
   });
 
   const handleSearch = () => {
@@ -217,18 +216,28 @@ export default function EmployeePermissionPage() {
     },
   ];
 
-  const permTableColumns: ColumnsType<{ permission: string }> = [
+  const permTableColumns: ColumnsType<PermissionDetail> = [
     {
-      title: '권한명',
-      dataIndex: 'permission',
-      width: 200,
+      title: '권한',
+      dataIndex: 'description',
+      width: 240,
+      render: (description: string, record: PermissionDetail) => (
+        <Space size={4}>
+          <span>{description}</span>
+          {record.menus.length > 0 && (
+            <Tooltip title={record.menus.join('\n')} overlayStyle={{ whiteSpace: 'pre-line' }}>
+              <InfoCircleOutlined style={{ color: '#999' }} />
+            </Tooltip>
+          )}
+        </Space>
+      ),
     },
     {
       title: '역할 기본',
       width: 100,
       align: 'center',
-      render: (_: unknown, record: { permission: string }) => {
-        const isRolePerm = permDetail?.rolePermissions.includes(record.permission);
+      render: (_: unknown, record: PermissionDetail) => {
+        const isRolePerm = permDetail?.rolePermissions.includes(record.code);
         return isRolePerm ? <Tag color="blue">O</Tag> : <Tag>X</Tag>;
       },
     },
@@ -236,23 +245,21 @@ export default function EmployeePermissionPage() {
       title: '개별 할당',
       width: 100,
       align: 'center',
-      render: (_: unknown, record: { permission: string }) => {
-        const isRolePerm = permDetail?.rolePermissions.includes(record.permission);
-        const isUserPerm = editedUserPerms.includes(record.permission);
+      render: (_: unknown, record: PermissionDetail) => {
+        const isRolePerm = permDetail?.rolePermissions.includes(record.code);
+        const isUserPerm = editedUserPerms.includes(record.code);
         if (isRolePerm) {
           return <Checkbox checked={false} disabled />;
         }
         return (
           <Checkbox
             checked={isUserPerm}
-            onChange={(e) => handlePermToggle(record.permission, e.target.checked)}
+            onChange={(e) => handlePermToggle(record.code, e.target.checked)}
           />
         );
       },
     },
   ];
-
-  const permTableData = ALL_PERMISSIONS.map((p) => ({ permission: p }));
 
   return (
     <div style={{ padding: 16 }}>
@@ -362,9 +369,9 @@ export default function EmployeePermissionPage() {
 
             <Title level={5}>권한 설정</Title>
             <Table
-              rowKey="permission"
+              rowKey="code"
               columns={permTableColumns}
-              dataSource={permTableData}
+              dataSource={permissionMetaList}
               pagination={false}
               size="small"
             />

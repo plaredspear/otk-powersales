@@ -19,21 +19,35 @@ class AdminPermissionMatrixService(
 
     private val permissionInfoMap: Map<AdminPermission, Pair<String, List<String>>> = mapOf(
         AdminPermission.DASHBOARD_READ to ("대시보드 조회" to listOf("대시보드")),
-        AdminPermission.EMPLOYEE_READ to ("사원 조회" to listOf("사원 > 여사원 현황")),
-        AdminPermission.ACCOUNT_READ to ("거래처 조회" to listOf("SAP 데이터 > 거래처")),
-        AdminPermission.ACCOUNT_DELETE to ("거래처 삭제" to listOf("SAP 데이터 > 거래처")),
-        AdminPermission.PROMOTION_READ to ("행사 조회" to listOf("여사원 배치 > 행사마스터", "전문행사조")),
-        AdminPermission.PROMOTION_WRITE to ("행사 생성/수정" to listOf("여사원 배치 > 진열스케줄마스터", "행사 등록/수정/확정/삭제")),
-        AdminPermission.SAFETY_CHECK_READ to ("안전점검 조회" to listOf("안전점검")),
-        AdminPermission.SCHEDULE_READ to ("일정 조회" to listOf("여사원 일정관리", "여사원관리 > 월별 통합일정", "여사원관리 > 근무형태별 인원현황")),
-        AdminPermission.SCHEDULE_WRITE to ("일정 생성/수정" to listOf("여사원 배치 > 진열스케줄마스터 일정 확정")),
-        AdminPermission.AGREEMENT_READ to ("동의 약관 조회" to listOf("관리자 > 동의 약관 등록")),
-        AdminPermission.AGREEMENT_WRITE to ("동의 약관 등록" to listOf("관리자 > 동의 약관 등록"))
+        AdminPermission.EMPLOYEE_READ to ("사원 조회" to listOf("인사/근무 > 여사원 현황")),
+        AdminPermission.EMPLOYEE_RESET_CREDENTIALS to ("사원 자격 정보 리셋" to listOf("인사/근무 > 여사원 현황 (비밀번호 초기화 / 기기 재설정)")),
+        AdminPermission.ACCOUNT_READ to ("거래처 조회" to listOf("기준정보 > 거래처")),
+        AdminPermission.ACCOUNT_WRITE to ("거래처 등록/수정" to listOf("기준정보 > 거래처 (신규 등록 / 수정)")),
+        AdminPermission.ACCOUNT_DELETE to ("거래처 삭제" to listOf("기준정보 > 거래처 (삭제)")),
+        AdminPermission.PROMOTION_READ to ("행사 조회" to listOf("행사/배치 > 행사마스터", "행사/배치 > 전문행사조")),
+        AdminPermission.PROMOTION_WRITE to ("행사 생성/수정" to listOf("행사/배치 > 진열스케줄마스터", "행사 등록/수정/확정/삭제")),
+        AdminPermission.SAFETY_CHECK_READ to ("안전점검 조회" to listOf("현장 점검/이슈 > 안전점검")),
+        AdminPermission.SCHEDULE_READ to ("일정 조회" to listOf("여사원 일정 > 여사원 일정관리", "여사원 일정 > 월별 통합일정", "여사원 일정 > 근무형태별 인원현황")),
+        AdminPermission.SCHEDULE_WRITE to ("일정 생성/수정" to listOf("행사/배치 > 진열스케줄마스터 일정 확정")),
+        AdminPermission.PRODUCT_EXPIRATION_READ to ("유통기한 조회" to listOf("현장 점검/이슈 > 유통기한 관리")),
+        AdminPermission.PRODUCT_EXPIRATION_WRITE to ("유통기한 등록/수정" to listOf("현장 점검/이슈 > 유통기한 관리 (등록 / 수정 / 삭제)")),
+        AdminPermission.NAVER_GEOCODE_TEST to ("Naver Geocode 변환 테스트" to listOf("운영 도구 > Naver Geocode 변환 테스트")),
+        AdminPermission.AGREEMENT_READ to ("동의 약관 조회" to listOf("시스템 > 동의 약관 등록")),
+        AdminPermission.AGREEMENT_WRITE to ("동의 약관 등록" to listOf("시스템 > 동의 약관 등록 (등록 / 수정)")),
+        AdminPermission.USER_READ to ("사용자 조회" to listOf("시스템 > 사용자 관리")),
+        AdminPermission.USER_WRITE to ("사용자 관리 (비밀번호 리셋 / 활성화)" to listOf("시스템 > 사용자 관리 (비밀번호 초기화 / 활성-비활성 토글)")),
     )
+
+    init {
+        val missing: Set<AdminPermission> = AdminPermission.entries.toSet() - permissionInfoMap.keys
+        require(missing.isEmpty()) {
+            "AdminPermissionMatrixService.permissionInfoMap 누락 권한: $missing — 모든 AdminPermission 은 description/menus 메타를 가져야 한다"
+        }
+    }
 
     fun getMatrix(userId: Long): PermissionMatrixResponse {
         val permissions = AdminPermission.entries.map { perm ->
-            val (description, menus) = permissionInfoMap[perm] ?: ("(미정의)" to emptyList())
+            val (description, menus) = permissionInfoMap.getValue(perm)
             PermissionDetail(
                 code = perm.name,
                 description = description,
