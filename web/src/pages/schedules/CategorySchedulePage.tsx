@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Empty, message, Spin, Table } from 'antd';
+import { Alert, message, Spin, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ScheduleFilterBar from '@/components/schedules/ScheduleFilterBar';
 import { useCategorySchedule } from '@/hooks/schedules/useCategorySchedule';
@@ -24,9 +24,9 @@ const columns: ColumnsType<CategoryScheduleItem> = [
   {
     title: '총계',
     children: [
-      { title: '당월 총합계', dataIndex: 'currentMonthTotal', width: 100, align: 'right', render: (v: number) => formatDecimal1(v) },
-      { title: '전월 마감합계', dataIndex: 'previousMonthTotal', width: 110, align: 'right', render: (v: number) => formatDecimal1(v) },
-      { title: '증감', dataIndex: 'totalChange', width: 80, align: 'right', render: (v: number) => renderChange(v, formatDecimal1) },
+      { title: '당월총합계', dataIndex: 'currentMonthTotal', width: 100, align: 'right', render: (v: number) => formatDecimal1(v) },
+      { title: '전월마감합계', dataIndex: 'previousMonthTotal', width: 110, align: 'right', render: (v: number) => formatDecimal1(v) },
+      { title: '전체증감수', dataIndex: 'totalChange', width: 90, align: 'right', render: (v: number) => renderChange(v, formatDecimal1) },
     ],
   },
   {
@@ -35,9 +35,9 @@ const columns: ColumnsType<CategoryScheduleItem> = [
       { title: '고정', dataIndex: 'displayFixed', width: 80, align: 'right', render: (v: number) => formatDecimal3(v) },
       { title: '격고', dataIndex: 'displayAlternate', width: 80, align: 'right', render: (v: number) => formatDecimal3(v) },
       { title: '순회', dataIndex: 'displayPatrol', width: 80, align: 'right', render: (v: number) => formatDecimal3(v) },
-      { title: '당월 진열합계', dataIndex: 'currentMonthDisplayTotal', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
-      { title: '전월 진열합계', dataIndex: 'previousMonthDisplayTotal', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
-      { title: '진열 증감', dataIndex: 'displayChange', width: 90, align: 'right', render: (v: number) => renderChange(v, formatDecimal3) },
+      { title: '당월진열합계', dataIndex: 'currentMonthDisplayTotal', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
+      { title: '전월진열합계', dataIndex: 'previousMonthDisplayTotal', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
+      { title: '진열증감수', dataIndex: 'displayChange', width: 100, align: 'right', render: (v: number) => renderChange(v, formatDecimal3) },
     ],
   },
   {
@@ -45,9 +45,9 @@ const columns: ColumnsType<CategoryScheduleItem> = [
     children: [
       { title: '상온', dataIndex: 'eventAmbient', width: 80, align: 'right', render: (v: number) => formatDecimal3(v) },
       { title: '냉동/냉장', dataIndex: 'eventFrozenChilled', width: 100, align: 'right', render: (v: number) => formatDecimal3(v) },
-      { title: '당월 행사합계', dataIndex: 'currentMonthEventTotal', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
-      { title: '전월 행사합계', dataIndex: 'previousMonthEventTotal', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
-      { title: '행사 증감', dataIndex: 'eventChange', width: 90, align: 'right', render: (v: number) => renderChange(v, formatDecimal3) },
+      { title: '당월행사합계', dataIndex: 'currentMonthEventTotal', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
+      { title: '전월행사합계', dataIndex: 'previousMonthEventTotal', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
+      { title: '행사증감수', dataIndex: 'eventChange', width: 100, align: 'right', render: (v: number) => renderChange(v, formatDecimal3) },
     ],
   },
 ];
@@ -126,24 +126,26 @@ export default function CategorySchedulePage() {
         />
       )}
 
-      {queryParams == null ? null : isLoading ? (
+      {isLoading ? (
         <div style={{ textAlign: 'center', padding: 48 }}>
           <Spin size="large" />
         </div>
-      ) : data && data.items.length === 0 ? (
-        <Empty description="조회 결과가 없습니다" />
-      ) : data ? (
+      ) : (
         <Table
           rowKey={(_, index) => String(index)}
           columns={columns}
-          dataSource={data.items}
+          dataSource={data?.items ?? []}
           pagination={false}
           scroll={{ x: 1500 }}
           size="small"
           sticky
           bordered
+          locale={{
+            emptyText:
+              queryParams == null ? '조회 조건을 설정하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',
+          }}
         />
-      ) : null}
+      )}
     </div>
   );
 }

@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:60353",
+    "url" : "http://localhost:60552",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -4071,80 +4071,6 @@
         }
       }
     },
-    "/api/v1/admin/ppt-histories" : {
-      "get" : {
-        "tags" : [ "admin-ppt-master-controller" ],
-        "operationId" : "getAllHistory",
-        "parameters" : [ {
-          "name" : "page",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 0
-          }
-        }, {
-          "name" : "size",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 20
-          }
-        }, {
-          "name" : "employeeName",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "employeeCode",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "teamType",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "changedAtFrom",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "format" : "date"
-          }
-        }, {
-          "name" : "changedAtTo",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "format" : "date"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePPTMasterHistoryListResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/admin/permissions/matrix" : {
       "get" : {
         "tags" : [ "admin-permission-matrix-controller" ],
@@ -5138,10 +5064,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -9294,11 +9220,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -9306,9 +9230,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -9335,10 +9261,6 @@
           "unpaged" : {
             "type" : "boolean"
           },
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -9348,6 +9270,10 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "offset" : {
             "type" : "integer",
@@ -9609,10 +9535,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -10246,15 +10172,6 @@
             "format" : "int64"
           },
           "employeeName" : {
-            "type" : [ "string", "null" ]
-          },
-          "employeeCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "orgName" : {
-            "type" : [ "string", "null" ]
-          },
-          "status" : {
             "type" : [ "string", "null" ]
           },
           "oldValue" : {
