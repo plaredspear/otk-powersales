@@ -146,11 +146,6 @@ class PromotionEmployee(
     @Convert(converter = WorkingCategory2Converter::class)
     var dkWorkType2: WorkingCategory2? = null,
 
-    @SFField("OwnerId")
-    @HCColumn("ownerid")
-    @Column(name = "owner_sfid", length = 18)
-    var ownerSfid: String? = null,
-
     @SFField("CreatedById")
     @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
@@ -175,10 +170,6 @@ class PromotionEmployee(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", insertable = false, updatable = false)
     var employee: Employee? = null
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")

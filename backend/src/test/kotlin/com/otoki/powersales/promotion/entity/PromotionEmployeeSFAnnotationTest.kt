@@ -29,10 +29,10 @@ class PromotionEmployeeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 25 (sf-meta-diff Q7: WorkType2__c Formula 컬럼 제거)")
+        @DisplayName("매핑 키 수 = 24 (OwnerId 제거 — SF SObject 부재, V154)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(PromotionEmployee::class.java)
-            assertThat(mapping).hasSize(25)
+            assertThat(mapping).hasSize(24)
         }
     }
 
