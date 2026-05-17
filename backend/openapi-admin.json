@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:60814",
+    "url" : "http://localhost:61108",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1996,34 +1996,6 @@
         }
       }
     },
-    "/api/v1/admin/ppt-masters/confirm-by-ids" : {
-      "post" : {
-        "tags" : [ "admin-ppt-master-controller" ],
-        "operationId" : "confirmByIds",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/PPTMasterConfirmByIdsRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseConfirmByIdsResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/admin/ppt-masters/bulk" : {
       "post" : {
         "tags" : [ "admin-ppt-master-controller" ],
@@ -2427,34 +2399,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseResetDeviceResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/employees/manual" : {
-      "post" : {
-        "tags" : [ "admin-employee-controller" ],
-        "operationId" : "manualRegister",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AdminEmployeeManualRegisterRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
                 }
               }
             }
@@ -2982,68 +2926,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseScheduleBatchConfirmResultDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/employees/{employeeId}" : {
-      "get" : {
-        "tags" : [ "admin-employee-controller" ],
-        "operationId" : "getEmployee_1",
-        "parameters" : [ {
-          "name" : "employeeId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch" : {
-        "tags" : [ "admin-employee-controller" ],
-        "operationId" : "updateEmployee_1",
-        "parameters" : [ {
-          "name" : "employeeId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AdminEmployeeUpdateRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
                 }
               }
             }
@@ -3796,6 +3678,109 @@
         }
       }
     },
+    "/api/v1/admin/schedules/monthly-input-adequacy" : {
+      "get" : {
+        "tags" : [ "admin-monthly-input-adequacy-controller" ],
+        "operationId" : "getMatrix",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "workingCategory3",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMonthlyInputAdequacyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/schedules/monthly-input-adequacy/export" : {
+      "get" : {
+        "tags" : [ "admin-monthly-input-adequacy-controller" ],
+        "operationId" : "exportMatrix",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "workingCategory3",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/schedule/template" : {
       "get" : {
         "tags" : [ "admin-schedule-controller" ],
@@ -4170,62 +4155,6 @@
         }
       }
     },
-    "/api/v1/admin/ppt-masters/export" : {
-      "get" : {
-        "tags" : [ "admin-ppt-master-controller" ],
-        "operationId" : "exportMasters",
-        "parameters" : [ {
-          "name" : "employeeName",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "employeeCode",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "teamType",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "branchCode",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "validOnly",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "boolean",
-            "default" : true
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "string",
-                  "format" : "byte"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/admin/ppt-masters/excel-template" : {
       "get" : {
         "tags" : [ "admin-ppt-master-controller" ],
@@ -4322,7 +4251,7 @@
     "/api/v1/admin/permissions/matrix" : {
       "get" : {
         "tags" : [ "admin-permission-matrix-controller" ],
-        "operationId" : "getMatrix",
+        "operationId" : "getMatrix_1",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -7191,62 +7120,6 @@
         },
         "required" : [ "accountId", "employeeId", "startDate", "teamType" ]
       },
-      "PPTMasterConfirmByIdsRequest" : {
-        "type" : "object",
-        "properties" : {
-          "ids" : {
-            "type" : "array",
-            "items" : {
-              "type" : "integer",
-              "format" : "int64"
-            },
-            "maxItems" : 200,
-            "minItems" : 1
-          }
-        }
-      },
-      "ApiResponseConfirmByIdsResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ConfirmByIdsResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "ConfirmByIdsResponse" : {
-        "type" : "object",
-        "properties" : {
-          "confirmedCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "skippedCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }
-      },
       "PPTMasterBulkItem" : {
         "type" : "object",
         "properties" : {
@@ -7769,226 +7642,6 @@
           "resetAt" : {
             "type" : "string",
             "format" : "date-time"
-          }
-        }
-      },
-      "AdminEmployeeManualRegisterRequest" : {
-        "type" : "object",
-        "properties" : {
-          "employeeCode" : {
-            "type" : "string",
-            "minLength" : 1,
-            "pattern" : "^[A-Za-z0-9_-]{1,20}$"
-          },
-          "name" : {
-            "type" : "string",
-            "maxLength" : 80,
-            "minLength" : 0
-          },
-          "role" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
-          },
-          "orgName" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "costCenterCode" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 10,
-            "minLength" : 0
-          },
-          "jobCode" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
-          },
-          "jikwee" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
-          },
-          "jikchak" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "jikgub" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
-          },
-          "startDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          },
-          "homePhone" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 255,
-            "minLength" : 0
-          },
-          "workPhone" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 255,
-            "minLength" : 0
-          },
-          "workEmail" : {
-            "type" : [ "string", "null" ],
-            "format" : "email",
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "professionalPromotionTeam" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
-          }
-        },
-        "required" : [ "employeeCode", "name" ]
-      },
-      "ApiResponseEmployeeDetailResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/EmployeeDetailResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "EmployeeDetailResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "employeeCode" : {
-            "type" : "string"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "gender" : {
-            "type" : [ "string", "null" ]
-          },
-          "status" : {
-            "type" : [ "string", "null" ]
-          },
-          "birthDate" : {
-            "type" : [ "string", "null" ]
-          },
-          "startDate" : {
-            "type" : [ "string", "null" ]
-          },
-          "endDate" : {
-            "type" : [ "string", "null" ]
-          },
-          "appointmentDate" : {
-            "type" : [ "string", "null" ]
-          },
-          "origin" : {
-            "type" : [ "string", "null" ]
-          },
-          "costCenterCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "orgName" : {
-            "type" : [ "string", "null" ]
-          },
-          "locationCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "workArea" : {
-            "type" : [ "string", "null" ]
-          },
-          "jobCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "jikjong" : {
-            "type" : [ "string", "null" ]
-          },
-          "jikwee" : {
-            "type" : [ "string", "null" ]
-          },
-          "jikchak" : {
-            "type" : [ "string", "null" ]
-          },
-          "jikgub" : {
-            "type" : [ "string", "null" ]
-          },
-          "workType" : {
-            "type" : [ "string", "null" ]
-          },
-          "ordDetailNode" : {
-            "type" : [ "string", "null" ]
-          },
-          "phone" : {
-            "type" : [ "string", "null" ]
-          },
-          "homePhone" : {
-            "type" : [ "string", "null" ]
-          },
-          "workPhone" : {
-            "type" : [ "string", "null" ]
-          },
-          "officePhone" : {
-            "type" : [ "string", "null" ]
-          },
-          "workEmail" : {
-            "type" : [ "string", "null" ]
-          },
-          "email" : {
-            "type" : [ "string", "null" ]
-          },
-          "role" : {
-            "type" : [ "string", "null" ]
-          },
-          "roleLabel" : {
-            "type" : [ "string", "null" ]
-          },
-          "appLoginActive" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "lockingFlag" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "professionalPromotionTeam" : {
-            "type" : [ "string", "null" ]
-          },
-          "agreementFlag" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "crmWorkType" : {
-            "type" : [ "string", "null" ]
-          },
-          "crmWorkStartDate" : {
-            "type" : [ "string", "null" ]
-          },
-          "totalAnnualLeave" : {
-            "type" : [ "string", "null" ]
-          },
-          "usedAnnualLeave" : {
-            "type" : [ "string", "null" ]
           }
         }
       },
@@ -8575,141 +8228,6 @@
           "updatedCount" : {
             "type" : "integer",
             "format" : "int32"
-          }
-        }
-      },
-      "AdminEmployeeUpdateRequest" : {
-        "type" : "object",
-        "properties" : {
-          "status" : {
-            "type" : [ "string", "null" ]
-          },
-          "role" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ]
-          },
-          "orgName" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "costCenterCode" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 10,
-            "minLength" : 0
-          },
-          "workArea" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "locationCode" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "jobCode" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
-          },
-          "jikjong" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
-          },
-          "jikwee" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
-          },
-          "jikchak" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "jikgub" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
-          },
-          "workType" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
-          },
-          "ordDetailNode" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 255,
-            "minLength" : 0
-          },
-          "appointmentDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          },
-          "startDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          },
-          "endDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          },
-          "phone" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
-          },
-          "homePhone" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 255,
-            "minLength" : 0
-          },
-          "workPhone" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 255,
-            "minLength" : 0
-          },
-          "officePhone" : {
-            "type" : [ "string", "null" ],
-            "maxLength" : 40,
-            "minLength" : 0
-          },
-          "workEmail" : {
-            "type" : [ "string", "null" ],
-            "format" : "email",
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "email" : {
-            "type" : [ "string", "null" ],
-            "format" : "email",
-            "maxLength" : 100,
-            "minLength" : 0
-          },
-          "appLoginActive" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "lockingFlag" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "professionalPromotionTeam" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
-          },
-          "crmWorkType" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "-" ]
-          },
-          "crmWorkStartDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          },
-          "totalAnnualLeave" : {
-            "type" : [ "number", "null" ]
-          },
-          "usedAnnualLeave" : {
-            "type" : [ "number", "null" ]
           }
         }
       },
@@ -9839,6 +9357,88 @@
           }
         }
       },
+      "ApiResponseMonthlyInputAdequacyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MonthlyInputAdequacyResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "MonthlyInputAdequacyItem" : {
+        "type" : "object",
+        "properties" : {
+          "branchName" : {
+            "type" : "string"
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountCategory" : {
+            "type" : "string"
+          },
+          "accountCategoryCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "accountCode" : {
+            "type" : "string"
+          },
+          "monthlySuitability" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "MonthlyInputAdequacyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MonthlyInputAdequacyItem"
+            }
+          }
+        }
+      },
       "ApiResponsePageScheduleListItemDto" : {
         "type" : "object",
         "properties" : {
@@ -9879,21 +9479,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -9921,18 +9521,18 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
           "paged" : {
             "type" : "boolean"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "unpaged" : {
+            "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -9991,10 +9591,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {
