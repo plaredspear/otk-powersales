@@ -49,6 +49,142 @@ data class EntityMetadata(
     val extraStaticColumns: Map<String, String?> = emptyMap()
 )
 
+/**
+ * Stage 2 FK resolve 메타 — sfid 기반 lookup 으로 FK id 컬럼을 채움.
+ *
+ * @property sfidColumn 본 entity 의 sfid 컬럼 (예: "account_sfid")
+ * @property idColumn 본 entity 의 FK id 컬럼 (예: "account_id")
+ * @property refTable lookup 대상 테이블명 (예: "account")
+ * @property refIdColumn lookup 대상 테이블의 PK 컬럼명 (예: "account_id")
+ * @property refSfidColumn lookup 대상 테이블의 sfid 컬럼명 (대부분 "sfid", default)
+ */
+data class FkResolve(
+    val sfidColumn: String,
+    val idColumn: String,
+    val refTable: String,
+    val refIdColumn: String,
+    val refSfidColumn: String = "sfid"
+)
+
+/**
+ * Polymorphic owner entity 목록 (Spec #761 R-2).
+ * owner_sfid 의 prefix `005` = User, `00G` = Group 으로 분기되어
+ * 각각 owner_user_id / owner_group_id 채움.
+ *
+ * Stage 2 의 polymorphic resolver 가 본 목록을 순회.
+ * (어떤 entity 가 polymorphic 인지는 자동 감지 불가 — owner_user_id / owner_group_id 두
+ *  컬럼이 동시에 존재하는 entity 가 대상. Stage 2 의 resolver 가 information_schema 로 확인.)
+ */
+val POLYMORPHIC_OWNER_TABLES: List<String> = listOf(
+    "organization",
+    "order_request",
+    "order_request_product",
+    "promotion",
+    "professional_promotion_team_history",
+    "professional_promotion_team_master"
+)
+
+/**
+ * sfid prefix → (refTable, refIdColumn) 매핑.
+ *
+ * 정책: entity 의 모든 `<prefix>_sfid` 컬럼은 짝으로 `<prefix>_id` FK 컬럼을 가지며,
+ *       해당 FK 는 sfid lookup 으로 채워져야 한다.
+ *
+ * 매핑 방식:
+ *   1. 표준 prefix (audit + 명시적 alias) 는 본 표에 직접 명시.
+ *   2. 표에 없으면 prefix 를 그대로 테이블명 + `<prefix>_id` 로 자동 추론.
+ *   3. SKIP_PREFIXES 에 등록된 prefix 는 FK 처리 대상 외 (코드/메타 lookup).
+ */
+val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
+    // audit (User lookup)
+    "created_by" to ("user" to "user_id"),
+    "last_modified_by" to ("user" to "user_id"),
+    "owner" to ("user" to "user_id"),
+    // self-reference 또는 별칭
+    "manager" to ("employee" to "employee_id"),
+    "parent" to ("account" to "account_id"),
+    "full_name" to ("employee" to "employee_id"),
+    "team_leader" to ("employee" to "employee_id"),
+    "primary_product" to ("product" to "product_id"),
+    "alt_holiday" to ("alternative_holiday" to "alternative_holiday_id"),
+    "postponed_appointment" to ("appointment" to "appointment_id"),
+    "last_monthly_sales_history" to ("monthly_sales_history" to "monthly_sales_history_id"),
+    "commute_log" to ("attendance_log" to "attendance_log_id"),
+    // 도메인 FK — prefix 가 곧 table 명인 일반 케이스 (audit 처리 후 자동 추론 fallback 와 동일하지만 명시 권장)
+    "account" to ("account" to "account_id"),
+    "employee" to ("employee" to "employee_id"),
+    "product" to ("product" to "product_id"),
+    "promotion" to ("promotion" to "promotion_id"),
+    "promotion_employee" to ("promotion_employee" to "promotion_employee_id"),
+    "team_member_schedule" to ("team_member_schedule" to "team_member_schedule_id"),
+    "new_product" to ("new_product" to "new_product_id"),
+    "agreement_word" to ("agreement_word" to "agreement_word_id"),
+    "order_request" to ("order_request" to "order_request_id"),
+    "erp_order" to ("erp_order" to "erp_order_id"),
+    "push_message" to ("push_message" to "push_message_id"),
+    "display_work_schedule" to ("display_work_schedule" to "display_work_schedule_id"),
+    "hq_review" to ("hq_review" to "hq_review_id"),
+    "branch_review" to ("branch_review" to "branch_review_id"),
+    "monthly_female_employee_integration_schedule" to ("monthly_female_employee_integration_schedule" to "monthly_female_employee_integration_schedule_id"),
+    "employee_input_criteria_master" to ("employee_input_criteria_master" to "employee_input_criteria_master_id"),
+    "category" to ("employee_input_criteria_master" to "employee_input_criteria_master_id")
+)
+
+/**
+ * FK 처리에서 제외할 prefix.
+ *
+ *   - product_code : sfid 가 아닌 code 기반 lookup (NewProduct → product.product_code)
+ *   - profile      : Profile.Name (한글 문자열) lookup, sfid 아님
+ *   - user_role    : UserRole 메타 — 본 프로젝트에서 별도 FK 컬럼 없음
+ *   - record_type  : SF RecordType 메타 lookup, 본 프로젝트에서 별도 FK 컬럼 없음
+ *   - related      : Group.related (polymorphic User/Group) — 별도 처리 필요
+ */
+val SKIP_FK_PREFIXES: Set<String> = setOf(
+    "product_code",
+    "profile",
+    "user_role",
+    "record_type",
+    "related"
+)
+
+/**
+ * EntityMetadata 의 FieldMapping 을 스캔하여 sfid → id FK 페어 자동 추출.
+ *
+ * 정책:
+ *   - dbColumnName 이 `_sfid` 로 끝나면 FK 후보.
+ *   - prefix = sfid 컬럼명에서 `_sfid` 제거.
+ *   - SKIP_FK_PREFIXES 에 있으면 처리 안 함.
+ *   - FK_PREFIX_MAPPING 우선 조회. 없으면 자동 추론 (`<prefix>` 테이블, `<prefix>_id` PK).
+ *   - audit prefix (created_by / last_modified_by / owner) → id 컬럼은 `<prefix>_id` 가 아닌
+ *     `<prefix>_id` (created_by → created_by_id, owner → owner_user_id).
+ *
+ * 반환: 본 entity 의 모든 FK resolve 정의 (audit + 도메인 + polymorphic owner_group 제외 — 별도 처리).
+ *       단 `id` 가 없는 sfid (= `sfid` 자체) 는 제외.
+ */
+fun deriveFkResolves(fields: List<FieldMapping>): List<FkResolve> {
+    val result = mutableListOf<FkResolve>()
+    for (field in fields) {
+        val col = field.dbColumnName
+        if (col == "sfid") continue
+        if (!col.endsWith("_sfid")) continue
+        val prefix = col.removeSuffix("_sfid")
+        if (prefix in SKIP_FK_PREFIXES) continue
+
+        // id 컬럼명: audit prefix 는 owner → owner_user_id 처리 (polymorphic).
+        val idColumn = when (prefix) {
+            "owner" -> "owner_user_id"
+            else -> "${prefix}_id"
+        }
+
+        // 대상 table 결정.
+        val (refTable, refIdColumn) = FK_PREFIX_MAPPING[prefix]
+            ?: (prefix to "${prefix}_id")  // fallback 자동 추론
+
+        result.add(FkResolve(col, idColumn, refTable, refIdColumn))
+    }
+    return result
+}
+
 val ORGANIZATION_METADATA = EntityMetadata(
     targetName = "Organization",
     sObjectName = "Org__c",
