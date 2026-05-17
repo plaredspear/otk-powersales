@@ -52,9 +52,9 @@ const columns: ColumnsType<MonthlyIntegrationScheduleItem> = [
     render: (v: number) => formatDecimal3(v),
   },
   {
-    title: 'ABC마감실적',
+    title: '월 평균 매출(6개월)',
     dataIndex: 'avgClosingAmount',
-    width: 120,
+    width: 140,
     align: 'right',
     render: (v: number) => formatNumber(v),
   },
@@ -72,7 +72,7 @@ function MobileItemCard({ item }: { item: MonthlyIntegrationScheduleItem }) {
     { label: '총 투입횟수', value: formatNumber(item.totalInputCount) },
     { label: '총 환산근무일수', value: formatDecimal3(item.equivalentWorkingDays) },
     { label: '총 환산인원', value: formatDecimal3(item.convertedHeadcount) },
-    { label: 'ABC마감실적', value: formatNumber(item.avgClosingAmount) },
+    { label: '월 평균 매출(6개월)', value: formatNumber(item.avgClosingAmount) },
   ];
 
   return (
@@ -168,36 +168,47 @@ export default function MonthlyIntegrationSchedulePage() {
         />
       )}
 
-      {queryParams == null ? null : isLoading ? (
+      {isLoading ? (
         <div style={{ textAlign: 'center', padding: 48 }}>
           <Spin size="large" />
         </div>
-      ) : data && data.items.length === 0 ? (
-        <Empty description="조회 결과가 없습니다" />
-      ) : data ? (
-        <>
-          <Text style={{ marginBottom: 8, display: 'block' }}>
-            총 {formatNumber(data.totalCount)}건
-          </Text>
-          {isMobile ? (
+      ) : isMobile ? (
+        queryParams == null ? null : data && data.items.length === 0 ? (
+          <Empty description="조회 결과가 없습니다" />
+        ) : data ? (
+          <>
+            <Text style={{ marginBottom: 8, display: 'block' }}>
+              총 {formatNumber(data.totalCount)}건
+            </Text>
             <Space direction="vertical" style={{ width: '100%' }} size={0}>
               {data.items.map((item, index) => (
                 <MobileItemCard key={index} item={item} />
               ))}
             </Space>
-          ) : (
-            <Table
-              rowKey={(_, index) => String(index)}
-              columns={columns}
-              dataSource={data.items}
-              pagination={false}
-              scroll={{ x: 1600 }}
-              size="small"
-              sticky
-            />
+          </>
+        ) : null
+      ) : (
+        <>
+          {queryParams != null && data && (
+            <Text style={{ marginBottom: 8, display: 'block' }}>
+              총 {formatNumber(data.totalCount)}건
+            </Text>
           )}
+          <Table
+            rowKey={(_, index) => String(index)}
+            columns={columns}
+            dataSource={data?.items ?? []}
+            pagination={false}
+            scroll={{ x: 1600 }}
+            size="small"
+            sticky
+            locale={{
+              emptyText:
+                queryParams == null ? '조회 조건을 설정하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',
+            }}
+          />
         </>
-      ) : null}
+      )}
     </div>
   );
 }
