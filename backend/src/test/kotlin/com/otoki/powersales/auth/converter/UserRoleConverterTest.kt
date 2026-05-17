@@ -9,8 +9,7 @@ import org.junit.jupiter.api.Test
 /**
  * UserRoleConverter 양방향 매핑 검증.
  *
- * SF Object 정합 정책 (`sf-object-meta/sandbox/README.md` §6.6 v2.2) — DB 저장은 SF picklist 원본값.
- * SF `DKRetail__AppAuthority__c` 옵션: `조장` / `여사원` / `지점장` / `AccountViewAll`.
+ * Spec #573 P1-B 정책 — DB 저장은 `UserRole.name` (영문 enum.name).
  */
 @DisplayName("UserRoleConverter")
 class UserRoleConverterTest {
@@ -18,31 +17,31 @@ class UserRoleConverterTest {
     private val converter = UserRoleConverter()
 
     @Nested
-    @DisplayName("convertToDatabaseColumn — Entity → DB (SF 원본값 저장)")
+    @DisplayName("convertToDatabaseColumn — Entity → DB (enum.name 저장)")
     inner class ToDb {
 
         @Test
-        @DisplayName("LEADER → '조장' (SF 원본 한글값)")
+        @DisplayName("LEADER → 'LEADER'")
         fun leader() {
-            assertThat(converter.convertToDatabaseColumn(UserRole.LEADER)).isEqualTo("조장")
+            assertThat(converter.convertToDatabaseColumn(UserRole.LEADER)).isEqualTo("LEADER")
         }
 
         @Test
-        @DisplayName("WOMAN → '여사원'")
+        @DisplayName("WOMAN → 'WOMAN'")
         fun woman() {
-            assertThat(converter.convertToDatabaseColumn(UserRole.WOMAN)).isEqualTo("여사원")
+            assertThat(converter.convertToDatabaseColumn(UserRole.WOMAN)).isEqualTo("WOMAN")
         }
 
         @Test
-        @DisplayName("BRANCH_MANAGER → '지점장'")
-        fun branchManager() {
-            assertThat(converter.convertToDatabaseColumn(UserRole.BRANCH_MANAGER)).isEqualTo("지점장")
+        @DisplayName("SYSTEM_ADMIN → 'SYSTEM_ADMIN'")
+        fun systemAdmin() {
+            assertThat(converter.convertToDatabaseColumn(UserRole.SYSTEM_ADMIN)).isEqualTo("SYSTEM_ADMIN")
         }
 
         @Test
-        @DisplayName("ACCOUNT_VIEW_ALL → 'AccountViewAll' (SF 영문 원본값)")
+        @DisplayName("ACCOUNT_VIEW_ALL → 'ACCOUNT_VIEW_ALL'")
         fun accountViewAll() {
-            assertThat(converter.convertToDatabaseColumn(UserRole.ACCOUNT_VIEW_ALL)).isEqualTo("AccountViewAll")
+            assertThat(converter.convertToDatabaseColumn(UserRole.ACCOUNT_VIEW_ALL)).isEqualTo("ACCOUNT_VIEW_ALL")
         }
 
         @Test
@@ -53,19 +52,25 @@ class UserRoleConverterTest {
     }
 
     @Nested
-    @DisplayName("convertToEntityAttribute — DB → Entity")
+    @DisplayName("convertToEntityAttribute — DB → Entity (enum.valueOf)")
     inner class ToEntity {
 
         @Test
-        @DisplayName("'조장' → LEADER")
+        @DisplayName("'LEADER' → LEADER")
         fun leader() {
-            assertThat(converter.convertToEntityAttribute("조장")).isEqualTo(UserRole.LEADER)
+            assertThat(converter.convertToEntityAttribute("LEADER")).isEqualTo(UserRole.LEADER)
         }
 
         @Test
-        @DisplayName("'AccountViewAll' → ACCOUNT_VIEW_ALL")
+        @DisplayName("'SYSTEM_ADMIN' → SYSTEM_ADMIN")
+        fun systemAdmin() {
+            assertThat(converter.convertToEntityAttribute("SYSTEM_ADMIN")).isEqualTo(UserRole.SYSTEM_ADMIN)
+        }
+
+        @Test
+        @DisplayName("'ACCOUNT_VIEW_ALL' → ACCOUNT_VIEW_ALL")
         fun accountViewAll() {
-            assertThat(converter.convertToEntityAttribute("AccountViewAll")).isEqualTo(UserRole.ACCOUNT_VIEW_ALL)
+            assertThat(converter.convertToEntityAttribute("ACCOUNT_VIEW_ALL")).isEqualTo(UserRole.ACCOUNT_VIEW_ALL)
         }
 
         @Test
@@ -83,7 +88,7 @@ class UserRoleConverterTest {
         @Test
         @DisplayName("미지의 값 → UNKNOWN fallback")
         fun unknown() {
-            assertThat(converter.convertToEntityAttribute("정체불명")).isEqualTo(UserRole.UNKNOWN)
+            assertThat(converter.convertToEntityAttribute("INVALID_VALUE")).isEqualTo(UserRole.UNKNOWN)
         }
     }
 }
