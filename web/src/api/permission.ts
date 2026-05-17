@@ -9,11 +9,13 @@ export interface PermissionDetail {
 
 export interface RolePermissions {
   role: string;
+  roleLabel: string;
   permissions: string[];
 }
 
 export interface CurrentUserPermission {
   role: string;
+  roleLabel: string;
   permissions: string[];
   canManagePermissions: boolean;
 }

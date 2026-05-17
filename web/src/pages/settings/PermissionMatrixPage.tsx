@@ -5,8 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   fetchPermissionMatrix,
   updateRolePermissions,
+  type PermissionDetail,
   type PermissionMatrixData,
-  type RolePermissions,
 } from '@/api/permission';
 
 const { Title, Text } = Typography;
@@ -98,38 +98,40 @@ export default function PermissionMatrixPage() {
 
   if (!data) return null;
 
-  const permissionColumns: ColumnsType<{ code: string; description: string; menus: string[] }> = [
-    { title: '권한 코드', dataIndex: 'code', width: 180 },
-    { title: '설명', dataIndex: 'description', width: 180 },
+  const matrixColumns: ColumnsType<PermissionDetail> = [
+    { title: '설명', dataIndex: 'description', width: 200, fixed: 'left' },
     {
       title: '대상 메뉴',
       dataIndex: 'menus',
+      width: 220,
       render: (menus: string[]) => menus.join(', '),
     },
-  ];
-
-  const matrixColumns: ColumnsType<RolePermissions> = [
-    {
-      title: '역할',
-      dataIndex: 'role',
-      width: 120,
-      fixed: 'left',
-      render: (role: string) =>
-        role === data.currentUser.role ? <>{role} <Tag color="blue">내 역할</Tag></> : role,
-    },
-    ...data.permissions.map((perm) => ({
-      title: perm.description,
-      key: perm.code,
+    ...data.roles.map((roleRow) => ({
+      title:
+        roleRow.role === data.currentUser.role ? (
+          <>
+            {roleRow.roleLabel} <Tag color="blue">내 역할</Tag>
+          </>
+        ) : (
+          roleRow.roleLabel
+        ),
+      key: roleRow.role,
       width: 120,
       align: 'center' as const,
-      render: (_: unknown, record: RolePermissions) => {
-        const perms = getCurrentPermissions(record.role);
-        const hasPerm = perms.includes(perm.code);
+      className:
+        roleRow.role === data.currentUser.role ? 'permission-matrix-highlight-col' : undefined,
+      onHeaderCell: () => ({
+        className:
+          roleRow.role === data.currentUser.role ? 'permission-matrix-highlight-col' : '',
+      }),
+      render: (_: unknown, permRow: PermissionDetail) => {
+        const perms = getCurrentPermissions(roleRow.role);
+        const hasPerm = perms.includes(permRow.code);
         if (canManage) {
           return (
             <Checkbox
               checked={hasPerm}
-              onChange={(e) => handleToggle(record.role, perm.code, e.target.checked)}
+              onChange={(e) => handleToggle(roleRow.role, permRow.code, e.target.checked)}
             />
           );
         }
@@ -152,31 +154,18 @@ export default function PermissionMatrixPage() {
       <Alert
         type="info"
         showIcon
-        message={`내 권한: ${data.currentUser.role} (${data.currentUser.permissions.length}개 권한 보유)`}
+        message={`내 권한: ${data.currentUser.roleLabel} (${data.currentUser.permissions.length}개 권한 보유)`}
         style={{ marginBottom: 24 }}
       />
 
-      <Title level={5}>권한별 대상 메뉴</Title>
+      <Title level={5}>권한 · 역할 매트릭스</Title>
       <Table
         rowKey="code"
-        columns={permissionColumns}
+        columns={matrixColumns}
         dataSource={data.permissions}
         pagination={false}
         size="small"
-        style={{ marginBottom: 32 }}
-      />
-
-      <Title level={5}>역할별 권한 매트릭스</Title>
-      <Table
-        rowKey="role"
-        columns={matrixColumns}
-        dataSource={data.roles}
-        pagination={false}
-        size="small"
         scroll={{ x: 900 }}
-        rowClassName={(record) =>
-          record.role === data.currentUser.role ? 'permission-matrix-highlight' : ''
-        }
       />
 
       {canManage && (
@@ -197,7 +186,7 @@ export default function PermissionMatrixPage() {
       </Text>
 
       <style>{`
-        .permission-matrix-highlight td {
+        .permission-matrix-highlight-col {
           background-color: #e6f7ff !important;
         }
       `}</style>
