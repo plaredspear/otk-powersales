@@ -614,14 +614,16 @@ class AdminMonthlyIntegrationService(
             val headcount = item.convertedHeadcount
 
             when (item.workingCategory1) {
-                "진열" -> when (item.workingCategory3) {
-                    "고정" -> sums.displayFixed = sums.displayFixed.add(headcount)
-                    "격고" -> sums.displayAlternate = sums.displayAlternate.add(headcount)
-                    "순회" -> sums.displayPatrol = sums.displayPatrol.add(headcount)
+                "진열" -> if (item.workingCategory5?.contains("상시") == true) {
+                    when (item.workingCategory3) {
+                        "고정" -> sums.displayFixed = sums.displayFixed.add(headcount)
+                        "격고" -> sums.displayAlternate = sums.displayAlternate.add(headcount)
+                        "순회" -> sums.displayPatrol = sums.displayPatrol.add(headcount)
+                    }
                 }
                 "행사" -> when (item.workingCategory4) {
                     "상온", "라면" -> sums.eventAmbient = sums.eventAmbient.add(headcount)
-                    "냉동", "냉장", "만두", "냉동냉장" -> sums.eventFrozenChilled = sums.eventFrozenChilled.add(headcount)
+                    "냉동", "냉장", "만두", "냉동/냉장" -> sums.eventFrozenChilled = sums.eventFrozenChilled.add(headcount)
                 }
             }
         }
