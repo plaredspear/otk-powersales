@@ -7,7 +7,8 @@ import com.otoki.powersales.admin.repository.RolePermissionRepository
 import com.otoki.powersales.admin.repository.UserPermissionRepository
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -17,7 +18,6 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
-import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("AdminPermissionResolver 테스트")
@@ -30,10 +30,12 @@ class AdminPermissionResolverTest {
     private lateinit var userPermissionRepository: UserPermissionRepository
 
     @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private lateinit var userRepository: UserRepository
 
     @InjectMocks
     private lateinit var resolver: AdminPermissionResolver
+
+    private val targetUser = User(id = 101L, username = "테스트", employeeCode = "00000001", password = "x")
 
     @Nested
     @DisplayName("resolve - 최종 권한 계산")
@@ -50,7 +52,8 @@ class AdminPermissionResolverTest {
                     RolePermission(role = "BRANCH_MANAGER", permission = "SCHEDULE_READ")
                 )
             )
-            whenever(userPermissionRepository.findByEmployeeId(1L)).thenReturn(emptyList())
+            whenever(userRepository.findByEmployeeCode("00000001")).thenReturn(targetUser)
+            whenever(userPermissionRepository.findByUserId(101L)).thenReturn(emptyList())
 
             // When
             val result = resolver.resolve(employee)
@@ -67,8 +70,9 @@ class AdminPermissionResolverTest {
             whenever(rolePermissionRepository.findByRoleName("BRANCH_MANAGER")).thenReturn(
                 listOf(RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ"))
             )
-            whenever(userPermissionRepository.findByEmployeeId(1L)).thenReturn(
-                listOf(UserPermission(employeeId = 1L, permission = "SCHEDULE_WRITE", grantedBy = 2L))
+            whenever(userRepository.findByEmployeeCode("00000001")).thenReturn(targetUser)
+            whenever(userPermissionRepository.findByUserId(101L)).thenReturn(
+                listOf(UserPermission(userId = 101L, permission = "SCHEDULE_WRITE"))
             )
 
             // When
@@ -83,8 +87,9 @@ class AdminPermissionResolverTest {
         fun resolve_nullAuthority() {
             // Given
             val employee = createEmployee(role = null)
-            whenever(userPermissionRepository.findByEmployeeId(1L)).thenReturn(
-                listOf(UserPermission(employeeId = 1L, permission = "DASHBOARD_READ", grantedBy = 2L))
+            whenever(userRepository.findByEmployeeCode("00000001")).thenReturn(targetUser)
+            whenever(userPermissionRepository.findByUserId(101L)).thenReturn(
+                listOf(UserPermission(userId = 101L, permission = "DASHBOARD_READ"))
             )
 
             // When
@@ -99,7 +104,8 @@ class AdminPermissionResolverTest {
         fun resolve_noPermissions() {
             // Given
             val employee = createEmployee(role = null)
-            whenever(userPermissionRepository.findByEmployeeId(1L)).thenReturn(emptyList())
+            whenever(userRepository.findByEmployeeCode("00000001")).thenReturn(targetUser)
+            whenever(userPermissionRepository.findByUserId(101L)).thenReturn(emptyList())
 
             // When
             val result = resolver.resolve(employee)
@@ -114,18 +120,17 @@ class AdminPermissionResolverTest {
     inner class ResolveWithDetailsTests {
 
         @Test
-        @DisplayName("역할 + 개별 권한 상세 - grantedByName 포함")
+        @DisplayName("역할 + 개별 권한 상세")
         fun resolveWithDetails_success() {
             // Given
             val employee = createEmployee(role = UserRole.BRANCH_MANAGER)
-            val granter = Employee(id = 2L, employeeCode = "00000002", name = "관리자김")
             whenever(rolePermissionRepository.findByRoleName("BRANCH_MANAGER")).thenReturn(
                 listOf(RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ"))
             )
-            whenever(userPermissionRepository.findByEmployeeId(1L)).thenReturn(
-                listOf(UserPermission(employeeId = 1L, permission = "SCHEDULE_WRITE", grantedBy = 2L))
+            whenever(userRepository.findByEmployeeCode("00000001")).thenReturn(targetUser)
+            whenever(userPermissionRepository.findByUserId(101L)).thenReturn(
+                listOf(UserPermission(userId = 101L, permission = "SCHEDULE_WRITE"))
             )
-            whenever(employeeRepository.findAllById(listOf(2L))).thenReturn(listOf(granter))
 
             // When
             val result = resolver.resolveWithDetails(employee)
@@ -134,7 +139,6 @@ class AdminPermissionResolverTest {
             assertThat(result.rolePermissions).containsExactly("DASHBOARD_READ")
             assertThat(result.userPermissions).hasSize(1)
             assertThat(result.userPermissions[0].permission).isEqualTo("SCHEDULE_WRITE")
-            assertThat(result.userPermissions[0].grantedByName).isEqualTo("관리자김")
             assertThat(result.effectivePermissions).containsExactlyInAnyOrder("DASHBOARD_READ", "SCHEDULE_WRITE")
         }
     }

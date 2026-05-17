@@ -4,7 +4,6 @@ import type { ApiResponse } from './types';
 
 export interface UserPermissionInfo {
   permission: string;
-  grantedByName: string;
 }
 
 export interface EmployeePermissionDetail {

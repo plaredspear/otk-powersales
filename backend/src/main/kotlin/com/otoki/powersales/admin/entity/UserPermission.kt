@@ -11,14 +11,11 @@ class UserPermission(
     @Column(name = "user_permission_id")
     val id: Long = 0,
 
-    @Column(name = "employee_id", nullable = false)
-    val employeeId: Long,
+    @Column(name = "user_id", nullable = false)
+    val userId: Long,
 
     @Column(name = "permission", nullable = false, length = 50)
     val permission: String,
-
-    @Column(name = "granted_by", nullable = false)
-    val grantedBy: Long,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()

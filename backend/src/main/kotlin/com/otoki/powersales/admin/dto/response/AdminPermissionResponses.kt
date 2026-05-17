@@ -24,10 +24,7 @@ data class EmployeePermissionDetailResponse(
                 roleLabel = employee.role?.toKorean(),
                 rolePermissions = result.rolePermissions,
                 userPermissions = result.userPermissions.map {
-                    UserPermissionDetailResponse(
-                        permission = it.permission,
-                        grantedByName = it.grantedByName
-                    )
+                    UserPermissionDetailResponse(permission = it.permission)
                 },
                 effectivePermissions = result.effectivePermissions
             )
@@ -36,8 +33,7 @@ data class EmployeePermissionDetailResponse(
 }
 
 data class UserPermissionDetailResponse(
-    val permission: String,
-    val grantedByName: String
+    val permission: String
 )
 
 data class UpdateAuthorityResponse(

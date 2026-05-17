@@ -111,7 +111,7 @@ class AdminEmployeePermissionControllerTest {
                 role = "BRANCH_MANAGER",
                 roleLabel = "지점장",
                 rolePermissions = listOf("DASHBOARD_READ", "SCHEDULE_READ"),
-                userPermissions = listOf(UserPermissionDetailResponse("SCHEDULE_WRITE", "관리자김")),
+                userPermissions = listOf(UserPermissionDetailResponse("SCHEDULE_WRITE")),
                 effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_READ", "SCHEDULE_WRITE")
             )
             whenever(adminEmployeePermissionService.getEmployeePermissions(any(), eq(2L))).thenReturn(response)
@@ -124,7 +124,6 @@ class AdminEmployeePermissionControllerTest {
                 .andExpect(jsonPath("$.data.name").value("홍길동"))
                 .andExpect(jsonPath("$.data.rolePermissions[0]").value("DASHBOARD_READ"))
                 .andExpect(jsonPath("$.data.userPermissions[0].permission").value("SCHEDULE_WRITE"))
-                .andExpect(jsonPath("$.data.userPermissions[0].grantedByName").value("관리자김"))
                 .andExpect(jsonPath("$.data.effectivePermissions").isArray)
         }
 
@@ -163,7 +162,7 @@ class AdminEmployeePermissionControllerTest {
                 role = "BRANCH_MANAGER",
                 roleLabel = "지점장",
                 rolePermissions = listOf("DASHBOARD_READ"),
-                userPermissions = listOf(UserPermissionDetailResponse("SCHEDULE_WRITE", "시스템관리자")),
+                userPermissions = listOf(UserPermissionDetailResponse("SCHEDULE_WRITE")),
                 effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_WRITE")
             )
             whenever(adminEmployeePermissionService.updateUserPermissions(any(), eq(2L), any())).thenReturn(response)

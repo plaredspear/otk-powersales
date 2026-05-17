@@ -6,13 +6,12 @@ import com.otoki.powersales.admin.repository.findByRole
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 data class UserPermissionDetail(
-    val permission: String,
-    val grantedByName: String
+    val permission: String
 )
 
 data class PermissionResolveResult(
@@ -26,7 +25,7 @@ data class PermissionResolveResult(
 class AdminPermissionResolver(
     private val rolePermissionRepository: RolePermissionRepository,
     private val userPermissionRepository: UserPermissionRepository,
-    private val employeeRepository: EmployeeRepository
+    private val userRepository: UserRepository
 ) {
 
     fun resolve(employee: Employee): Set<AdminPermission> {
@@ -43,9 +42,14 @@ class AdminPermissionResolver(
             return emptySet()
         }
 
-        val userPerms = userPermissionRepository.findByEmployeeId(employee.id)
-            .mapNotNull { parsePermission(it.permission) }
-            .toSet()
+        val user = userRepository.findByEmployeeCode(employee.employeeCode)
+        val userPerms = if (user != null) {
+            userPermissionRepository.findByUserId(user.id)
+                .mapNotNull { parsePermission(it.permission) }
+                .toSet()
+        } else {
+            emptySet()
+        }
 
         return rolePerms + userPerms
     }
@@ -66,22 +70,14 @@ class AdminPermissionResolver(
             emptyList()
         }
 
-        val userPermEntities = userPermissionRepository.findByEmployeeId(employee.id)
-        val grantedByIds = userPermEntities.map { it.grantedBy }.distinct()
-        val grantedByNames = if (grantedByIds.isNotEmpty()) {
-            employeeRepository.findAllById(grantedByIds).associate { it.id to it.name }
+        val user = userRepository.findByEmployeeCode(employee.employeeCode)
+        val userPerms = if (user != null) {
+            userPermissionRepository.findByUserId(user.id)
+                .filter { parsePermission(it.permission) != null }
+                .map { UserPermissionDetail(permission = it.permission) }
         } else {
-            emptyMap()
+            emptyList()
         }
-
-        val userPerms = userPermEntities
-            .filter { parsePermission(it.permission) != null }
-            .map { up ->
-                UserPermissionDetail(
-                    permission = up.permission,
-                    grantedByName = grantedByNames[up.grantedBy] ?: ""
-                )
-            }
 
         val effective = (rolePerms + userPerms.map { it.permission }).distinct()
 

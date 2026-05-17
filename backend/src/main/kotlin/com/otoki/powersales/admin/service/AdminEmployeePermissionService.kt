@@ -17,6 +17,7 @@ import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -27,6 +28,7 @@ class AdminEmployeePermissionService(
     private val rolePermissionRepository: RolePermissionRepository,
     private val userPermissionRepository: UserPermissionRepository,
     private val adminPermissionResolver: AdminPermissionResolver,
+    private val userRepository: UserRepository,
 ) {
 
     /**
@@ -53,13 +55,15 @@ class AdminEmployeePermissionService(
 
         validatePermissions(request.permissions)
 
-        userPermissionRepository.deleteByEmployeeId(employeeId)
+        val user = userRepository.findByEmployeeCode(employee.employeeCode)
+            ?: throw AdminUserNotFoundException(employee.id)
+
+        userPermissionRepository.deleteByUserId(user.id)
         request.permissions.forEach { perm ->
             userPermissionRepository.save(
                 UserPermission(
-                    employeeId = employeeId,
-                    permission = perm,
-                    grantedBy = currentEmployee.id
+                    userId = user.id,
+                    permission = perm
                 )
             )
         }

@@ -13,6 +13,8 @@ import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -42,17 +44,21 @@ class AdminEmployeePermissionServiceTest {
     @Mock
     private lateinit var adminPermissionResolver: AdminPermissionResolver
 
+    @Mock
+    private lateinit var userRepository: UserRepository
+
     private lateinit var service: AdminEmployeePermissionService
 
     private val systemAdmin = Employee(id = 1L, employeeCode = "00000001", name = "시스템관리자", role = UserRole.SYSTEM_ADMIN)
     private val targetEmployee = Employee(id = 2L, employeeCode = "00000002", name = "홍길동", role = UserRole.BRANCH_MANAGER)
     private val nonAdmin = Employee(id = 3L, employeeCode = "00000003", name = "조장", role = UserRole.LEADER)
+    private val targetUser = User(id = 102L, username = "홍길동", employeeCode = "00000002", password = "x")
 
     @BeforeEach
     fun setUp() {
         service = AdminEmployeePermissionService(
             employeeRepository, rolePermissionRepository, userPermissionRepository,
-            adminPermissionResolver
+            adminPermissionResolver, userRepository
         )
     }
 
@@ -68,7 +74,7 @@ class AdminEmployeePermissionServiceTest {
             whenever(adminPermissionResolver.resolveWithDetails(targetEmployee)).thenReturn(
                 PermissionResolveResult(
                     rolePermissions = listOf("DASHBOARD_READ"),
-                    userPermissions = listOf(UserPermissionDetail("SCHEDULE_WRITE", "시스템관리자")),
+                    userPermissions = listOf(UserPermissionDetail("SCHEDULE_WRITE")),
                     effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_WRITE")
                 )
             )
@@ -113,11 +119,12 @@ class AdminEmployeePermissionServiceTest {
         fun updateUserPermissions_success() {
             // Given
             whenever(employeeRepository.findById(2L)).thenReturn(Optional.of(targetEmployee))
+            whenever(userRepository.findByEmployeeCode("00000002")).thenReturn(targetUser)
             whenever(userPermissionRepository.save(any<UserPermission>())).thenAnswer { it.arguments[0] }
             whenever(adminPermissionResolver.resolveWithDetails(targetEmployee)).thenReturn(
                 PermissionResolveResult(
                     rolePermissions = listOf("DASHBOARD_READ"),
-                    userPermissions = listOf(UserPermissionDetail("SCHEDULE_WRITE", "시스템관리자")),
+                    userPermissions = listOf(UserPermissionDetail("SCHEDULE_WRITE")),
                     effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_WRITE")
                 )
             )

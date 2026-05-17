@@ -4,6 +4,6 @@ import com.otoki.powersales.admin.entity.UserPermission
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface UserPermissionRepository : JpaRepository<UserPermission, Long> {
-    fun findByEmployeeId(employeeId: Long): List<UserPermission>
-    fun deleteByEmployeeId(employeeId: Long)
+    fun findByUserId(userId: Long): List<UserPermission>
+    fun deleteByUserId(userId: Long)
 }
