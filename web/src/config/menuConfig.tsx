@@ -32,7 +32,7 @@ export const menuRoute: MenuRoute = {
       icon: <CalendarOutlined />,
       children: [
         { path: '/schedule', name: '여사원 일정관리', requiredPermission: 'SCHEDULE_READ' },
-        { path: '/monthly-integration', name: '월별 통합일정', requiredPermission: 'SCHEDULE_READ' },
+        { path: '/monthly-integration', name: '월별여사원 통합일정', requiredPermission: 'SCHEDULE_READ' },
         { path: '/work-type-headcount', name: '근무형태별 인원현황', requiredPermission: 'SCHEDULE_READ' },
       ],
     },

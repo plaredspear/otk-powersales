@@ -27,7 +27,7 @@ import java.time.format.DateTimeFormatter
  * 거래처별 진열사원 배치적합성 산출 + 조회 + 엑셀 export.
  *
  * 레거시 매핑: `SalesComparisonSearchController.getLowDataList` / `getSummaryItems` (force-app/main/default/classes).
- * 동작: 월별 통합일정(`AdminMonthlyIntegrationService.buildIntegrationItems`) 결과를 기반으로 거래처별 진열 상시 환산인원 합 + 6개월 평균매출 + 투입기준마스터의 고정/격고 기준금액을 비교하여 배치적합성(적합/경계/재검토) 판정 후 집계/중간집계/상세 3종 응답을 빌드한다.
+ * 동작: 월별여사원 통합일정(`AdminMonthlyIntegrationService.buildIntegrationItems`) 결과를 기반으로 거래처별 진열 상시 환산인원 합 + 6개월 평균매출 + 투입기준마스터의 고정/격고 기준금액을 비교하여 배치적합성(적합/경계/재검토) 판정 후 집계/중간집계/상세 3종 응답을 빌드한다.
  * 부수 효과: 없음 (조회 전용).
  * 신규 도입 — 레거시 미존재 web 진입점(`DeploymentPage`) 신규 구현 동반.
  */

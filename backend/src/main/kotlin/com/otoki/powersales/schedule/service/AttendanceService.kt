@@ -292,7 +292,7 @@ class AttendanceService(
             )
         }
 
-        // 7. 동적 생성 시 월별 통합일정 갱신
+        // 7. 동적 생성 시 월별여사원 통합일정 갱신
         if (newlyCreated && account != null) {
             adminMonthlyIntegrationService.refreshIntegration(
                 employeeId = employee.id,
