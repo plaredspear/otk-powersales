@@ -11,7 +11,9 @@ import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.promotion.exception.*
+import com.otoki.powersales.promotion.entity.PromotionProduct
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
+import com.otoki.powersales.promotion.repository.PromotionProductRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.product.entity.Product
@@ -43,6 +45,7 @@ class AdminPromotionServiceTest {
 
     @Mock private lateinit var promotionRepository: PromotionRepository
     @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
+    @Mock private lateinit var promotionProductRepository: PromotionProductRepository
     @Mock private lateinit var accountRepository: AccountRepository
     @Mock private lateinit var productRepository: ProductRepository
     @Mock private lateinit var employeeRepository: EmployeeRepository
@@ -195,7 +198,7 @@ class AdminPromotionServiceTest {
     inner class CreatePromotionTests {
 
         @Test
-        @DisplayName("정상 생성 - 대표제품 지정")
+        @DisplayName("정상 생성 - 대표제품 지정 + 행사상품 1건 자동 생성 (레거시 PromotionTriggerHandler.insertPromotionProduct 동등)")
         fun createPromotion_success() {
             val request = createRequest(promotionType = "시식")
             val account = createAccount()
@@ -207,6 +210,7 @@ class AdminPromotionServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
 
 
             val result = adminPromotionService.createPromotion(userId, request)
@@ -215,6 +219,11 @@ class AdminPromotionServiceTest {
             assertThat(result.costCenterCode).isEqualTo("1101")
             assertThat(result.promotionType).isEqualTo("시식")
 
+            // 행사상품 1건 자동 생성 검증 (대표품목 productId=200 으로)
+            argumentCaptor<PromotionProduct>().apply {
+                verify(promotionProductRepository).save(capture())
+                assertThat(firstValue.productId).isEqualTo(200L)
+            }
         }
 
         @Test
@@ -451,7 +460,7 @@ class AdminPromotionServiceTest {
         }
 
         @Test
-        @DisplayName("대표상품 변경 - 기존과 다른 product_id -> Promotion.primaryProductId 업데이트")
+        @DisplayName("대표상품 변경 - 기존과 다른 product_id -> Promotion.primaryProductId 업데이트 + 행사상품 신규 생성 (기존 미존재)")
         fun updatePromotion_changePrimaryProduct() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
@@ -463,11 +472,72 @@ class AdminPromotionServiceTest {
             val newProduct = createProduct(id = 300L, name = "새 상품", category1 = "냉동")
             whenever(productRepository.findById(300L)).thenReturn(Optional.of(newProduct))
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.findByPromotionId(promotion.id)).thenReturn(null)
 
             val request = createRequest(primaryProductId = 300L)
             val result = adminPromotionService.updatePromotion(scope, 1L, userId, request)
 
             assertThat(result.primaryProductId).isEqualTo(300L)
+
+            // 행사상품 신규 생성 검증 (기존 미존재 → save 신규)
+            argumentCaptor<PromotionProduct>().apply {
+                verify(promotionProductRepository).save(capture())
+                assertThat(firstValue.productId).isEqualTo(300L)
+                assertThat(firstValue.promotionId).isEqualTo(promotion.id)
+            }
+        }
+
+        @Test
+        @DisplayName("대표상품 변경 - 기존 행사상품 존재 -> productId 갱신 (레거시 PromotionTriggerHandler.changePosProduct upsert 동등)")
+        fun updatePromotion_changePrimaryProduct_existingPromotionProductUpdated() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion(primaryProductId = 200L)
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+
+            val newProduct = createProduct(id = 300L, name = "새 상품", category1 = "냉동")
+            whenever(productRepository.findById(300L)).thenReturn(Optional.of(newProduct))
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+
+            // 기존 행사상품이 존재 (productId=200) → 새 productId=300 으로 갱신되어야 함
+            val existingPromotionProduct = PromotionProduct(
+                id = 1L,
+                promotionId = promotion.id,
+                productId = 200L
+            )
+            whenever(promotionProductRepository.findByPromotionId(promotion.id))
+                .thenReturn(existingPromotionProduct)
+
+            val request = createRequest(primaryProductId = 300L)
+            adminPromotionService.updatePromotion(1L, userId, request)
+
+            // 기존 entity 의 productId 가 300 으로 갱신되었는지 + 동일 entity 가 save 되었는지 검증
+            argumentCaptor<PromotionProduct>().apply {
+                verify(promotionProductRepository).save(capture())
+                assertThat(firstValue.id).isEqualTo(1L)
+                assertThat(firstValue.productId).isEqualTo(300L)
+            }
+        }
+
+        @Test
+        @DisplayName("대표상품 동일 - 변경 없음 -> 행사상품 upsert 호출 없음")
+        fun updatePromotion_samePrimaryProduct_noPromotionProductUpsert() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val promotion = createPromotion(primaryProductId = 200L)
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+
+            val request = createRequest(primaryProductId = 200L)
+            adminPromotionService.updatePromotion(1L, userId, request)
+
+            verify(promotionProductRepository, never()).save(any<PromotionProduct>())
+            verify(promotionProductRepository, never()).findByPromotionId(any())
         }
 
         @Test
@@ -736,6 +806,286 @@ class AdminPromotionServiceTest {
 
             assertThatThrownBy { adminPromotionService.deletePromotion(scope, 1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
+        }
+    }
+
+    // UC-11: 행사마스터 복제 (폼 방식) — 레거시 PromotionCloneComponent Quick Action 동등
+    @Nested
+    @DisplayName("clonePromotion - 행사마스터 복제 (폼 방식)")
+    inner class ClonePromotionTests {
+
+        @Test
+        @DisplayName("UC-11 정상 복제 - 신규 행사 생성 + 행사상품 자동 생성 + 행사사원 복사 (이력성 필드 초기화)")
+        fun clonePromotion_success() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            // 원본 행사
+            val sourcePromotion = createPromotion(id = 1L, costCenterCode = "1101")
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(sourcePromotion)
+
+            // 원본 행사사원 2건 (이력성 필드 채워진 상태)
+            val sourceEmployees = listOf(
+                PromotionEmployee(
+                    id = 100L, promotionId = 1L, employeeId = 10L,
+                    scheduleDate = LocalDate.of(2026, 3, 15),
+                    basePrice = 1500L, dailyTargetCount = 100L,
+                    primarySalesPrice = 1200L, primarySalesQuantity = 80L,
+                    otherSalesAmount = 50000L, otherSalesQuantity = 30L,
+                    primaryProductAmount = 96000L,
+                    description = "원본 비고",
+                    s3ImageUniqueKey = "uniqueKey1",
+                    teamMemberScheduleId = 5000L,
+                    promoCloseByTm = true
+                ),
+                PromotionEmployee(
+                    id = 101L, promotionId = 1L, employeeId = 11L,
+                    scheduleDate = LocalDate.of(2026, 3, 16),
+                    basePrice = 1500L, dailyTargetCount = 100L
+                )
+            )
+            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(sourceEmployees)
+
+            // createPromotion 의존 stub (CC 자동 채움 + 신규 promotion 생성)
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct(name = "꿀배청 680G")))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(costCenterCode = "1101")))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(2L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer {
+                val p = it.getArgument<Promotion>(0)
+                // id 부여 모사 (Kotlin val 이라 reflection 필요 없이 새 인스턴스 반환)
+                Promotion(
+                    id = 2L,
+                    promotionNumber = p.promotionNumber,
+                    promotionType = p.promotionType,
+                    account = p.account,
+                    startDate = p.startDate,
+                    endDate = p.endDate,
+                    primaryProductId = p.primaryProductId,
+                    costCenterCode = p.costCenterCode
+                )
+            }
+            whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
+
+            // 신규 행사사원 일괄 save
+            whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()))
+                .thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
+
+            val request = createRequest(promotionType = "시식")
+            val result = adminPromotionService.clonePromotion(1L, userId, request)
+
+            // 신규 행사 검증
+            assertThat(result.promotionNumber).isEqualTo("PM00000002")
+            assertThat(result.costCenterCode).isEqualTo("1101")
+
+            // 행사상품 1건 자동 생성 검증 (T7 동등)
+            verify(promotionProductRepository).save(any<PromotionProduct>())
+
+            // 신규 행사사원 일괄 save 호출 + 이력성 필드 초기화 검증
+            argumentCaptor<List<PromotionEmployee>>().apply {
+                verify(promotionEmployeeRepository).saveAll(capture())
+                val cloned = firstValue
+                assertThat(cloned).hasSize(2)
+
+                // 첫 번째 복제 행 — 이력성 필드 모두 초기화 + 신규 promotion_id 연결
+                val c1 = cloned[0]
+                assertThat(c1.promotionId).isEqualTo(2L)
+                assertThat(c1.employeeId).isEqualTo(10L)  // 담당자 복사 유지
+                assertThat(c1.scheduleDate).isNull()  // 투입일 초기화
+                assertThat(c1.basePrice).isNull()  // 기준단가 초기화
+                assertThat(c1.dailyTargetCount).isNull()  // 일일목표수량 초기화
+                assertThat(c1.primarySalesPrice).isNull()
+                assertThat(c1.primarySalesQuantity).isNull()
+                assertThat(c1.otherSalesAmount).isNull()
+                assertThat(c1.otherSalesQuantity).isNull()
+                assertThat(c1.primaryProductAmount).isNull()
+                assertThat(c1.description).isNull()  // 비고 초기화
+                assertThat(c1.s3ImageUniqueKey).isNull()  // 이미지 키 초기화
+                assertThat(c1.teamMemberScheduleId).isNull()  // 여사원일정 ID 초기화
+                assertThat(c1.promoCloseByTm).isFalse  // 마감 여부 초기화
+            }
+        }
+
+        @Test
+        @DisplayName("UC-11 원본 행사사원 0건 -> 신규 행사만 생성 (saveAll 호출 없음)")
+        fun clonePromotion_noEmployees_skipsSaveAll() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val sourcePromotion = createPromotion(id = 1L, costCenterCode = "1101")
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(sourcePromotion)
+            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(emptyList())
+
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(costCenterCode = "1101")))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(2L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
+
+            adminPromotionService.clonePromotion(1L, userId, createRequest())
+
+            verify(promotionEmployeeRepository, never()).saveAll(any<List<PromotionEmployee>>())
+        }
+
+        @Test
+        @DisplayName("UC-11 sourceId 0 이하 -> PromotionInvalidParameterException")
+        fun clonePromotion_invalidSourceId() {
+            assertThatThrownBy { adminPromotionService.clonePromotion(0L, userId, createRequest()) }
+                .isInstanceOf(PromotionInvalidParameterException::class.java)
+        }
+
+        @Test
+        @DisplayName("UC-11 원본 삭제됨 -> PromotionNotFoundException")
+        fun clonePromotion_sourceDeleted() {
+            whenever(promotionRepository.findByIdWithRelations(1L))
+                .thenReturn(createPromotion(isDeleted = true))
+
+            assertThatThrownBy { adminPromotionService.clonePromotion(1L, userId, createRequest()) }
+                .isInstanceOf(PromotionNotFoundException::class.java)
+        }
+    }
+
+    // UC-12: 행사마스터 자식 포함 복제 (1클릭) — 레거시 ClonePromotionWithChildsController 동등
+    @Nested
+    @DisplayName("cloneWithChildren - 행사마스터 자식 포함 복제 (1클릭)")
+    inner class CloneWithChildrenTests {
+
+        @Test
+        @DisplayName("UC-12 정상 1클릭 복제 - 원본 모든 필드 복사 + 행사사원 5필드만 복사 (나머지 초기값)")
+        fun cloneWithChildren_success() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            // 원본 행사
+            val sourcePromotion = createPromotion(
+                id = 1L,
+                promotionType = PromotionType.SAMPLING,
+                costCenterCode = "1101"
+            )
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(sourcePromotion)
+
+            // 원본 행사사원 — 모든 필드 채워진 상태
+            val sourceEmployees = listOf(
+                PromotionEmployee(
+                    id = 100L, promotionId = 1L, employeeId = 10L,
+                    workStatus = WorkingType.WORK,
+                    workType1 = WorkingCategory1.EVENT,
+                    workType3 = WorkingCategory3.FIXED,
+                    scheduleDate = LocalDate.of(2026, 3, 15),
+                    basePrice = 1500L, dailyTargetCount = 100L,
+                    primarySalesPrice = 1200L, primarySalesQuantity = 80L,
+                    otherSalesAmount = 50000L, otherSalesQuantity = 30L,
+                    primaryProductAmount = 96000L,
+                    description = "원본 비고",
+                    s3ImageUniqueKey = "uniqueKey1",
+                    teamMemberScheduleId = 5000L,
+                    promoCloseByTm = true
+                )
+            )
+            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(sourceEmployees)
+
+            // createPromotion 의존 stub
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct(name = "꿀배청 680G")))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(costCenterCode = "1101")))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(2L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer {
+                val p = it.getArgument<Promotion>(0)
+                Promotion(
+                    id = 2L,
+                    promotionNumber = p.promotionNumber,
+                    promotionType = p.promotionType,
+                    account = p.account,
+                    startDate = p.startDate,
+                    endDate = p.endDate,
+                    primaryProductId = p.primaryProductId,
+                    costCenterCode = p.costCenterCode
+                )
+            }
+            whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
+            whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()))
+                .thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
+
+            val result = adminPromotionService.cloneWithChildren(1L, userId)
+
+            // 신규 행사 검증 (시작일·종료일 포함 원본 동일)
+            assertThat(result.promotionNumber).isEqualTo("PM00000002")
+            assertThat(result.costCenterCode).isEqualTo("1101")
+            assertThat(result.startDate).isEqualTo(sourcePromotion.startDate)
+            assertThat(result.endDate).isEqualTo(sourcePromotion.endDate)
+
+            // 행사상품 1건 자동 생성 검증 (T7 동등)
+            verify(promotionProductRepository).save(any<PromotionProduct>())
+
+            // 행사사원 5필드만 복사 + 나머지 초기값 검증
+            argumentCaptor<List<PromotionEmployee>>().apply {
+                verify(promotionEmployeeRepository).saveAll(capture())
+                val cloned = firstValue
+                assertThat(cloned).hasSize(1)
+
+                val c = cloned[0]
+                assertThat(c.promotionId).isEqualTo(2L)
+
+                // 복사 유지 (5필드)
+                assertThat(c.employeeId).isEqualTo(10L)
+                assertThat(c.workStatus).isEqualTo(WorkingType.WORK)
+                assertThat(c.workType1).isEqualTo(WorkingCategory1.EVENT)
+                assertThat(c.workType3).isEqualTo(WorkingCategory3.FIXED)
+
+                // 나머지 모두 초기값 (레거시 ClonePromotionWithChildsController 동등 — UC-11 보다 더 강한 초기화)
+                assertThat(c.scheduleDate).isNull()
+                assertThat(c.basePrice).isNull()
+                assertThat(c.dailyTargetCount).isNull()
+                assertThat(c.primarySalesPrice).isNull()
+                assertThat(c.primarySalesQuantity).isNull()
+                assertThat(c.otherSalesAmount).isNull()
+                assertThat(c.otherSalesQuantity).isNull()
+                assertThat(c.primaryProductAmount).isNull()
+                assertThat(c.description).isNull()
+                assertThat(c.s3ImageUniqueKey).isNull()
+                assertThat(c.teamMemberScheduleId).isNull()
+                assertThat(c.promoCloseByTm).isFalse
+            }
+        }
+
+        @Test
+        @DisplayName("UC-12 원본 행사사원 0건 -> 신규 행사만 생성 (saveAll 호출 없음)")
+        fun cloneWithChildren_noEmployees_skipsSaveAll() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            whenever(dataScopeHolder.require()).thenReturn(scope)
+
+            val sourcePromotion = createPromotion(id = 1L, promotionType = PromotionType.SAMPLING, costCenterCode = "1101")
+            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(sourcePromotion)
+            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(emptyList())
+
+            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(costCenterCode = "1101")))
+            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(2L)
+            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
+
+            adminPromotionService.cloneWithChildren(1L, userId)
+
+            verify(promotionEmployeeRepository, never()).saveAll(any<List<PromotionEmployee>>())
+        }
+
+        @Test
+        @DisplayName("UC-12 sourceId 0 이하 -> PromotionInvalidParameterException")
+        fun cloneWithChildren_invalidSourceId() {
+            assertThatThrownBy { adminPromotionService.cloneWithChildren(0L, userId) }
+                .isInstanceOf(PromotionInvalidParameterException::class.java)
+        }
+
+        @Test
+        @DisplayName("UC-12 원본 삭제됨 -> PromotionNotFoundException")
+        fun cloneWithChildren_sourceDeleted() {
+            whenever(promotionRepository.findByIdWithRelations(1L))
+                .thenReturn(createPromotion(isDeleted = true))
+
+            assertThatThrownBy { adminPromotionService.cloneWithChildren(1L, userId) }
+                .isInstanceOf(PromotionNotFoundException::class.java)
         }
     }
 

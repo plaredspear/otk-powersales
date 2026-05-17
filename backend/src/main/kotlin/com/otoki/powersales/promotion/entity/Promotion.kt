@@ -99,6 +99,13 @@ class Promotion(
     @Convert(converter = ProductTemperatureTypeConverter::class)
     var productType: ProductTemperatureType? = null,
 
+    // SF Promotion.Category1__c (string, length=1300, label="제품유형")
+    // 레거시 PromotionEmployeeTriggerHandler 의 대표제품 vs 전문행사조 매칭 검증 입력
+    @SFField("Category1__c")
+    @HCColumn("category1__c")
+    @Column(name = "category1", length = 1300)
+    var category1: String? = null,
+
     @SFField("OwnerId")
     @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)

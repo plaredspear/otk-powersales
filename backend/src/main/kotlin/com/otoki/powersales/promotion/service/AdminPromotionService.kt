@@ -6,10 +6,13 @@ import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.promotion.enums.ProductTemperatureType
 import com.otoki.powersales.promotion.entity.Promotion
+import com.otoki.powersales.promotion.entity.PromotionEmployee
+import com.otoki.powersales.promotion.entity.PromotionProduct
 import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
+import com.otoki.powersales.promotion.repository.PromotionProductRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.account.repository.AccountRepository
@@ -26,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional
 class AdminPromotionService(
     private val promotionRepository: PromotionRepository,
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
+    private val promotionProductRepository: PromotionProductRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val employeeRepository: EmployeeRepository,
@@ -142,6 +146,10 @@ class AdminPromotionService(
             )
         )
 
+        // 레거시 PromotionTriggerHandler.insertPromotionProduct 동등 (afterInsert)
+        // 행사마스터 1건당 대표품목을 가리키는 행사상품 (DKRetail__PromotionProduct__c) 1건 자동 생성
+        upsertPromotionProduct(promotion.id, request.primaryProductId)
+
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account.name,
@@ -196,6 +204,10 @@ class AdminPromotionService(
         val product = productRepository.findById(request.primaryProductId!!)
             .orElseThrow { ProductNotFoundException() }
 
+        // 레거시 PromotionTriggerHandler.changePosProduct 동등 (afterUpdate)
+        // 대표품목 변경 시 행사상품 (DKRetail__PromotionProduct__c) 자동 upsert
+        val primaryProductChanged = promotion.primaryProductId != request.primaryProductId
+
         promotion.update(
             promotionType = promotionType,
             account = account,
@@ -210,6 +222,10 @@ class AdminPromotionService(
         )
 
         promotionRepository.save(promotion)
+
+        if (primaryProductChanged) {
+            upsertPromotionProduct(promotion.id, request.primaryProductId)
+        }
 
         return PromotionDetailResponse.from(
             promotion = promotion,
@@ -240,6 +256,133 @@ class AdminPromotionService(
 
         promotion.softDelete()
         promotionRepository.save(promotion)
+    }
+
+    /**
+     * UC-11: 행사마스터 복제 — 폼 방식.
+     * 레거시 PromotionCloneComponentController.createRecord 동등.
+     *
+     * 사용자가 폼에서 수정한 신규 행사 정보로 신규 행사마스터 생성 (CC 자동 채움 + 기타제품 검증 + 행사상품 자동 생성).
+     * 원본 행사사원 모두 복제하되 이력성 필드 (실적·일정·마감·이미지·비고·기준단가·목표수량) 11개 초기화.
+     */
+    @Transactional
+    fun clonePromotion(sourceId: Long, userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
+        if (sourceId <= 0) throw PromotionInvalidParameterException()
+
+        // 원본 조회 + 권한 검증
+        val source = findActivePromotion(sourceId)
+        validateDataScope(source)
+
+        // 신규 행사 생성 — createPromotion 동일 흐름 (CC 자동 채움, 기타제품 검증, 행사상품 자동 생성 등 모두 동일 적용)
+        val created = createPromotion(userId, request)
+
+        // 원본 행사사원 복제 (이력성 필드 초기화)
+        val sourceEmployees = promotionEmployeeRepository.findByPromotionId(sourceId)
+        if (sourceEmployees.isNotEmpty()) {
+            val cloned = sourceEmployees.map { src ->
+                PromotionEmployee(
+                    promotionId = created.id,
+                    employeeId = src.employeeId,
+                    workStatus = src.workStatus,
+                    workType1 = src.workType1,
+                    workType3 = src.workType3,
+                    dkWorkType2 = src.dkWorkType2,
+                    // 이력성 필드 초기화 (레거시 PromotionCloneComponentController 동등)
+                    scheduleDate = null,
+                    basePrice = null,
+                    dailyTargetCount = null,
+                    targetAmount = null,
+                    actualAmount = null,
+                    primaryProductAmount = null,
+                    primarySalesQuantity = null,
+                    primarySalesPrice = null,
+                    otherSalesAmount = null,
+                    otherSalesQuantity = null,
+                    s3ImageUniqueKey = null,
+                    description = null,
+                    teamMemberScheduleId = null,
+                    promoCloseByTm = false
+                )
+            }
+            promotionEmployeeRepository.saveAll(cloned)
+        }
+
+        return created
+    }
+
+    /**
+     * UC-12: 행사마스터 자식 포함 복제 — 1클릭 방식.
+     * 레거시 ClonePromotionWithChildsController.doClone 동등.
+     *
+     * 원본 행사마스터의 모든 필드 + startDate/endDate (옵션 A — 원본 그대로) 복사하여 신규 행사 생성.
+     * createPromotion 위임으로 T1 (CC 자동) + T2 (홑따옴표 검증) + T7 (행사상품 자동 생성) 일관 적용.
+     * 원본 행사사원은 5필드만 (employeeId, workStatus, workType1/2/3) 복사, 나머지는 모두 초기값.
+     */
+    @Transactional
+    fun cloneWithChildren(sourceId: Long, userId: Long): PromotionDetailResponse {
+        if (sourceId <= 0) throw PromotionInvalidParameterException()
+
+        // 원본 조회 + 권한 검증
+        val source = findActivePromotion(sourceId)
+        validateDataScope(source)
+
+        // 원본 필드 → PromotionCreateRequest 변환 (사용자 입력 없는 1클릭)
+        // 각 enum 은 fromDisplayName 으로 역변환되므로 displayName 으로 직렬화
+        val clonedRequest = PromotionCreateRequest(
+            promotionType = source.promotionType?.displayName,
+            accountId = source.account.id,
+            startDate = source.startDate,
+            endDate = source.endDate,
+            primaryProductId = source.primaryProductId,
+            otherProduct = source.otherProduct,
+            message = source.message,
+            standLocation = source.standLocation?.displayName,
+            productType = source.productType?.displayName,
+            remark = source.remark
+        )
+
+        // 신규 행사 생성 (CC 자동 채움 + 검증 + 행사상품 자동 생성 모두 적용)
+        val created = createPromotion(userId, clonedRequest)
+
+        // 원본 행사사원 5필드만 복사 (레거시 ClonePromotionWithChildsController 동등)
+        val sourceEmployees = promotionEmployeeRepository.findByPromotionId(sourceId)
+        if (sourceEmployees.isNotEmpty()) {
+            val cloned = sourceEmployees.map { src ->
+                PromotionEmployee(
+                    promotionId = created.id,
+                    employeeId = src.employeeId,
+                    workStatus = src.workStatus,
+                    workType1 = src.workType1,
+                    workType3 = src.workType3,
+                    dkWorkType2 = src.dkWorkType2
+                    // 나머지 모두 초기값 (scheduleDate / basePrice / dailyTargetCount /
+                    // primarySalesPrice / primarySalesQuantity / otherSalesAmount / otherSalesQuantity /
+                    // primaryProductAmount / description / s3ImageUniqueKey / teamMemberScheduleId / promoCloseByTm)
+                )
+            }
+            promotionEmployeeRepository.saveAll(cloned)
+        }
+
+        return created
+    }
+
+    /**
+     * 행사상품 (DKRetail__PromotionProduct__c) 자동 upsert — 행사 1건당 1건만 유지.
+     * 레거시 PromotionTriggerHandler.insertPromotionProduct (afterInsert) + changePosProduct (afterUpdate) 동등.
+     */
+    private fun upsertPromotionProduct(promotionId: Long, productId: Long?) {
+        val existing = promotionProductRepository.findByPromotionId(promotionId)
+        if (existing != null) {
+            existing.updateProduct(productId)
+            promotionProductRepository.save(existing)
+        } else {
+            promotionProductRepository.save(
+                PromotionProduct(
+                    promotionId = promotionId,
+                    productId = productId
+                )
+            )
+        }
     }
 
     private fun resetSchedulesForPromotion(promotionId: Long) {

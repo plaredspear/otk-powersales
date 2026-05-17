@@ -102,4 +102,29 @@ class AdminPromotionController(
         adminPromotionService.deletePromotion(scope, id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?))
     }
+
+    // UC-11: 행사마스터 복제 (폼 방식)
+    // 레거시 PromotionCloneComponent Quick Action 동등.
+    @PostMapping("/{id}/clone")
+    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    fun clonePromotion(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @PathVariable id: Long,
+        @Valid @RequestBody request: PromotionCreateRequest
+    ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
+        val response = adminPromotionService.clonePromotion(id, principal.requireEmployeeId(), request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
+    }
+
+    // UC-12: 행사마스터 자식 포함 복제 (1클릭)
+    // 레거시 ClonePromotionWithChildsController Quick Action 동등. body 없음.
+    @PostMapping("/{id}/clone-with-children")
+    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    fun cloneWithChildren(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @PathVariable id: Long
+    ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
+        val response = adminPromotionService.cloneWithChildren(id, principal.requireEmployeeId())
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
+    }
 }

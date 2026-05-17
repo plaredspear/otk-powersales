@@ -10,6 +10,7 @@ import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
@@ -132,6 +133,118 @@ class AdminPromotionEmployeeServiceTest {
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
                 .thenAnswer { it.getArgument<PromotionEmployee>(0) }
 
+            stubRollup()
+
+            service.createEmployee(10L, createRequest())
+        }
+
+        // --- UC-07: 대표제품 vs 전문행사조 매칭 검증 (레거시 PromotionEmployeeTriggerHandler 동등) ---
+
+        @Test
+        @DisplayName("UC-07: 라면행사 + 라면세일조 사원 -> 매칭 OK (저장 성공)")
+        fun createEmployee_uc07_ramenWithRamenSaleTeam_success() {
+            val promotion = createPromotion().also { it.category1 = "라면" }
+            val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
+                .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE }
+
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            stubRollup()
+
+            service.createEmployee(10L, createRequest())
+        }
+
+        @Test
+        @DisplayName("UC-07: 만두행사 + 카레행사조 사원 -> 매칭 OK (카레는 모든 카테고리 허용)")
+        fun createEmployee_uc07_manduWithCurryTeam_success() {
+            val promotion = createPromotion().also { it.category1 = "만두" }
+            val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
+                .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.CURRY_PROMOTION }
+
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            stubRollup()
+
+            service.createEmployee(10L, createRequest())
+        }
+
+        @Test
+        @DisplayName("UC-07: 라면행사 + 프레시세일조_냉장 사원 -> 매칭 실패 (TeamCategoryMismatchException)")
+        fun createEmployee_uc07_ramenWithFreshRefrigeratedTeam_fail() {
+            val promotion = createPromotion().also { it.category1 = "라면" }
+            val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
+                .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED }
+
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+
+            assertThatThrownBy { service.createEmployee(10L, createRequest()) }
+                .isInstanceOf(TeamCategoryMismatchException::class.java)
+                .hasMessageContaining("라면")
+                .hasMessageContaining("라면세일조")
+        }
+
+        @Test
+        @DisplayName("UC-07: 냉장행사 + 프레시세일조_냉동 사원 -> 매칭 실패")
+        fun createEmployee_uc07_refrigeratedWithFreshFrozenTeam_fail() {
+            val promotion = createPromotion().also { it.category1 = "냉장" }
+            val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
+                .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.FRESH_SALE_FROZEN }
+
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+
+            assertThatThrownBy { service.createEmployee(10L, createRequest()) }
+                .isInstanceOf(TeamCategoryMismatchException::class.java)
+                .hasMessageContaining("냉장")
+                .hasMessageContaining("프레시세일조_냉장")
+        }
+
+        @Test
+        @DisplayName("UC-07: 만두행사 + 라면세일조 사원 -> 매칭 실패 (라면은 만두 허용 룰 외)")
+        fun createEmployee_uc07_manduWithRamenSaleTeam_fail() {
+            val promotion = createPromotion().also { it.category1 = "만두" }
+            val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
+                .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE }
+
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+
+            assertThatThrownBy { service.createEmployee(10L, createRequest()) }
+                .isInstanceOf(TeamCategoryMismatchException::class.java)
+                .hasMessageContaining("만두")
+        }
+
+        @Test
+        @DisplayName("UC-07: promotion.category1 null -> 검증 스킵 (저장 성공)")
+        fun createEmployee_uc07_promotionCategoryNull_success() {
+            val promotion = createPromotion() // category1 null
+            val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
+                .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE }
+
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            stubRollup()
+
+            service.createEmployee(10L, createRequest())
+        }
+
+        @Test
+        @DisplayName("UC-07: employee.professionalPromotionTeam null -> 검증 스킵 (일반 사원 동등)")
+        fun createEmployee_uc07_employeeTeamNull_success() {
+            val promotion = createPromotion().also { it.category1 = "라면" }
+            val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
+                // professionalPromotionTeam = null (일반 사원)
+
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
+                .thenAnswer { it.getArgument<PromotionEmployee>(0) }
             stubRollup()
 
             service.createEmployee(10L, createRequest())
@@ -780,6 +893,22 @@ class AdminPromotionEmployeeServiceTest {
 
             assertThatThrownBy { service.deleteEmployee(1L) }
                 .isInstanceOf(ClosedEmployeeDeleteException::class.java)
+        }
+
+        @Test
+        @DisplayName("마감 조원이지만 사번 00000009 의 여사원 -> 삭제 허용 (레거시 동등)")
+        fun deleteEmployee_closed_bypassForSpecialEmployeeCode() {
+            val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true).also {
+                it.employee = Employee(id = 999L, sfid = "a0B5g00000SPCabc", employeeCode = "00000009", name = "운영점검계정")
+            }
+            whenever(promotionEmployeeRepository.findById(1L)).thenReturn(Optional.of(pe))
+            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
+            stubRollup()
+
+            service.deleteEmployee(1L)
+
+            verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
+            verify(promotionEmployeeRepository).delete(pe)
         }
     }
 

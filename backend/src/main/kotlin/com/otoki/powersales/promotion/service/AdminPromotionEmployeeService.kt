@@ -36,6 +36,25 @@ class AdminPromotionEmployeeService(
         private const val BATCH_MAX_SIZE = 200
         private val DEFAULT_WORK_TYPE1 = WorkingCategory1.EVENT
         private val DEFAULT_WORK_STATUS = WorkingType.WORK
+        // 레거시 동등: 여사원 마감 행 삭제 차단 우회 대상 사번
+        private const val SPECIAL_BYPASS_EMPLOYEE_CODE = "00000009"
+
+        // 레거시 PromotionEmployeeTriggerHandler 의 대표제품 vs 전문행사조 매칭 룰
+        // promotion.category1 값별 허용 전문행사조 displayName 키워드 (contains 매칭)
+        // null / "일반" 사원은 카테고리 무관 OK (호출처에서 사전 분기)
+        private const val CATEGORY_RAMEN = "라면"
+        private const val CATEGORY_REFRIGERATED = "냉장"
+        private const val CATEGORY_FROZEN = "냉동"
+        private const val CATEGORY_DUMPLING = "만두"
+
+        private const val MSG_MISMATCH_RAMEN =
+            "대표제품이 라면인 행사에는 전문행사조가 라면세일조 혹은 일반인 사원만 들어갈 수 있습니다."
+        private const val MSG_MISMATCH_REFRIGERATED =
+            "대표제품이 냉장인 행사에는 전문행사조가 프레시세일조_냉장 혹은 일반인 사원만 들어갈 수 있습니다."
+        private const val MSG_MISMATCH_FROZEN =
+            "대표제품이 냉동인 행사에는 전문행사조가 프레시세일조_냉동 혹은 일반인 사원만 들어갈 수 있습니다."
+        private const val MSG_MISMATCH_DUMPLING =
+            "대표제품이 만두인 행사에는 전문행사조가 프레시세일조_냉동, 프레시세일조_만두, 일반인 사원만 들어갈 수 있습니다."
     }
 
     private data class ResolvedEmployee(val id: Long?, val name: String?, val employeeCode: String?)
@@ -57,9 +76,13 @@ class AdminPromotionEmployeeService(
 
     @Transactional
     fun createEmployee(promotionId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
-        findActivePromotion(promotionId)
+        val promotion = findActivePromotion(promotionId)
 
         val resolved = resolveEmployee(request.employeeId)
+
+        // 레거시 PromotionEmployeeTriggerHandler 동등: 대표제품 vs 전문행사조 매칭 검증
+        validateProfessionalTeamMatch(promotion, resolved?.id ?: request.employeeId)
+            ?.let { throw TeamCategoryMismatchException(it) }
 
         val pe = promotionEmployeeRepository.save(
             PromotionEmployee(
@@ -109,6 +132,10 @@ class AdminPromotionEmployeeService(
         val promotion = pe.promotion ?: throw PromotionNotFoundException()
         if (promotion.isDeleted) throw PromotionNotFoundException()
         validateScheduleDateRange(request.scheduleDate, promotion)
+
+        // 레거시 PromotionEmployeeTriggerHandler 동등: 대표제품 vs 전문행사조 매칭 검증
+        validateProfessionalTeamMatch(promotion, resolved?.id ?: request.employeeId)
+            ?.let { throw TeamCategoryMismatchException(it) }
 
         // 1-5: 핵심필드 변경 시 스케줄 삭제
         removeScheduleOnCriticalFieldChange(
@@ -236,7 +263,8 @@ class AdminPromotionEmployeeService(
         val promotionId = pe.promotionId
 
         // 1-2-B: 마감 보호 — 삭제 차단
-        if (pe.teamMemberScheduleId != null && pe.promoCloseByTm) {
+        // 레거시 PromotionEmployeeTriggerHandler.removeScheduleOnDelete 의 사번 00000009 예외 분기 유지
+        if (pe.teamMemberScheduleId != null && pe.promoCloseByTm && pe.employee?.employeeCode != SPECIAL_BYPASS_EMPLOYEE_CODE) {
             throw ClosedEmployeeDeleteException()
         }
 
@@ -306,6 +334,11 @@ class AdminPromotionEmployeeService(
             return BatchItemError(index, item.employeeId, "INVALID_WORK_TYPE3", "근무유형3은 고정, 격고, 순회 중 하나여야 합니다")
         }
 
+        // 6. 대표제품 vs 전문행사조 매칭 검증 (레거시 동등)
+        validateProfessionalTeamMatch(promotion, item.employeeId)?.let { mismatchMessage ->
+            return BatchItemError(index, item.employeeId, "TEAM_CATEGORY_MISMATCH", mismatchMessage)
+        }
+
         // 7. 마감 보호
         if (pe.teamMemberScheduleId != null && pe.promoCloseByTm) {
             val resolvedForValidation = resolveEmployee(item.employeeId)
@@ -346,6 +379,39 @@ class AdminPromotionEmployeeService(
                 promotion.startDate.toString(),
                 promotion.endDate.toString()
             )
+        }
+    }
+
+    /**
+     * 대표제품 vs 전문행사조 매칭 검증.
+     *
+     * 레거시 PromotionEmployeeTriggerHandler beforeInsert/beforeUpdate 동등 — promotion.category1 값별
+     * 허용 전문행사조 키워드 (라면/냉장/냉동/만두/카레) contains 매칭.
+     * 사원 전문행사조가 null 이면 "일반" 사원으로 간주 — 카테고리 무관 OK.
+     * promotion.category1 이 null 또는 매칭 룰 외 값이면 검증 스킵.
+     *
+     * @return 매칭 실패 시 차단 메시지 (한글), 매칭 OK 시 null
+     */
+    private fun validateProfessionalTeamMatch(promotion: Promotion, employeeId: Long?): String? {
+        val category1 = promotion.category1 ?: return null
+        val employee = employeeId?.let { employeeRepository.findById(it).orElse(null) } ?: return null
+        val team = employee.professionalPromotionTeam?.displayName ?: return null
+
+        return when {
+            category1.contains(CATEGORY_RAMEN) &&
+                !(team.contains(CATEGORY_RAMEN) || team.contains("카레")) -> MSG_MISMATCH_RAMEN
+
+            category1.contains(CATEGORY_REFRIGERATED) &&
+                !(team.contains(CATEGORY_REFRIGERATED) || team.contains("카레")) -> MSG_MISMATCH_REFRIGERATED
+
+            category1.contains(CATEGORY_FROZEN) &&
+                !(team.contains(CATEGORY_FROZEN) || team.contains("카레")) -> MSG_MISMATCH_FROZEN
+
+            category1.contains(CATEGORY_DUMPLING) &&
+                !(team.contains(CATEGORY_DUMPLING) || team.contains(CATEGORY_FROZEN) || team.contains("카레"))
+                -> MSG_MISMATCH_DUMPLING
+
+            else -> null
         }
     }
 
