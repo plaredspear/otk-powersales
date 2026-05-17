@@ -19,7 +19,7 @@ class PPTMasterBatchService(
         val today = LocalDate.now()
         val validMasters = pptMasterRepository.findValidMasters(today)
 
-        val employeeIds = validMasters.map { it.employeeId }.distinct()
+        val employeeIds = validMasters.mapNotNull { it.employeeId }.distinct()
         val employeeMap = employeeRepository.findAllById(employeeIds).associateBy { it.id }
 
         var updated = 0
@@ -38,7 +38,7 @@ class PPTMasterBatchService(
         val today = LocalDate.now()
         val expiringMasters = pptMasterRepository.findExpiringMasters(today)
 
-        val employeeIds = expiringMasters.map { it.employeeId }.distinct()
+        val employeeIds = expiringMasters.mapNotNull { it.employeeId }.distinct()
 
         var reverted = 0
         for (employeeId in employeeIds) {

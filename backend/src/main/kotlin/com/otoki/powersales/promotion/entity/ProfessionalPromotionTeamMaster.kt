@@ -33,11 +33,11 @@ class ProfessionalPromotionTeamMaster(
     @Column(name = "name", length = 80)
     var name: String? = null,
 
-    @Column(name = "employee_id", nullable = false)
-    val employeeId: Long,
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
-    @Column(name = "account_id", nullable = false)
-    var accountId: Int,
+    @Column(name = "account_id")
+    var accountId: Int? = null,
 
     @SFField("Account__c")
     @HCColumn("account__c")

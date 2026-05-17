@@ -90,7 +90,7 @@ class AdminAlternativeHolidayService(
 
         altHoliday.approve(confirmDate, changeReason)
 
-        val employee = employeeRepository.findById(altHoliday.employeeId)
+        val employee = employeeRepository.findById(altHoliday.employeeId!!)
             .orElseThrow { IllegalStateException("Employee not found: ${altHoliday.employeeId}") }
 
         teamMemberScheduleRepository.save(

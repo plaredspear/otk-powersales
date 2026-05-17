@@ -72,8 +72,8 @@ class AdminPPTMasterService(
 
     fun getMaster(id: Long): PPTMasterResponse {
         val master = findMasterById(id)
-        val employee = employeeRepository.findById(master.employeeId).orElse(null)
-        val account = accountRepository.findById(master.accountId).orElse(null)
+        val employee = employeeRepository.findById(master.employeeId!!).orElse(null)
+        val account = accountRepository.findById(master.accountId!!).orElse(null)
         return PPTMasterResponse.Companion.from(
             master, employee?.employeeCode, employee?.name,
             account?.externalKey, account?.name
@@ -157,7 +157,7 @@ class AdminPPTMasterService(
     @Transactional
     fun deleteMaster(id: Long) {
         val master = findMasterById(id)
-        val employeeId = master.employeeId
+        val employeeId = master.employeeId!!
 
         pptMasterRepository.delete(master)
 
@@ -173,8 +173,9 @@ class AdminPPTMasterService(
 
     fun getHistory(masterId: Long, pageable: Pageable): PPTMasterHistoryListResponse {
         val master = findMasterById(masterId)
-        val page = pptHistoryRepository.findByEmployeeIdOrderByChangedAtDesc(master.employeeId, pageable)
-        val employee = employeeRepository.findById(master.employeeId).orElse(null)
+        val employeeId = master.employeeId!!
+        val page = pptHistoryRepository.findByEmployeeIdOrderByChangedAtDesc(employeeId, pageable)
+        val employee = employeeRepository.findById(employeeId).orElse(null)
 
         return PPTMasterHistoryListResponse(
             content = page.content.map { PPTMasterHistoryResponse.Companion.from(it, employee?.name) },

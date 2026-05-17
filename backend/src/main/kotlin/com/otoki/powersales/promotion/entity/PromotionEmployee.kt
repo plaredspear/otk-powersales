@@ -37,8 +37,8 @@ class PromotionEmployee(
     @Column(name = "name", length = 80)
     var name: String? = null,
 
-    @Column(name = "promotion_id", nullable = false)
-    val promotionId: Long,
+    @Column(name = "promotion_id")
+    val promotionId: Long? = null,
 
     @SFField("DKRetail__PromotionId__c")
     @HCColumn("dkretail__promotionid__c")

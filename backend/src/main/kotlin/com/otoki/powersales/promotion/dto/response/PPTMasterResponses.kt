@@ -28,10 +28,10 @@ data class PPTMasterResponse(
             val m = result.master
             return PPTMasterResponse(
                 id = m.id,
-                employeeId = m.employeeId,
+                employeeId = m.employeeId!!,
                 employeeCode = result.employeeCode,
                 employeeName = result.employeeName,
-                accountId = m.accountId,
+                accountId = m.accountId!!,
                 accountCode = result.accountCode,
                 accountName = result.accountName,
                 teamType = m.teamType,
@@ -53,10 +53,10 @@ data class PPTMasterResponse(
         ): PPTMasterResponse {
             return PPTMasterResponse(
                 id = master.id,
-                employeeId = master.employeeId,
+                employeeId = master.employeeId!!,
                 employeeCode = employeeCode,
                 employeeName = employeeName,
-                accountId = master.accountId,
+                accountId = master.accountId!!,
                 accountCode = accountCode,
                 accountName = accountName,
                 teamType = master.teamType,
@@ -83,7 +83,7 @@ data class PPTMasterHistoryResponse(
         fun from(history: ProfessionalPromotionTeamHistory, employeeName: String?): PPTMasterHistoryResponse {
             return PPTMasterHistoryResponse(
                 id = history.id,
-                employeeId = history.employeeId,
+                employeeId = history.employeeId!!,
                 employeeName = employeeName,
                 oldValue = history.oldValue,
                 newValue = history.newValue,

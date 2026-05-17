@@ -30,8 +30,8 @@ class AgreementHistory(
     @Column(name = "sfid", length = 18)
     val sfid: String? = null,
 
-    @Column(name = "employee_id", nullable = false)
-    val employeeId: Long,
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
     @SFField("EmployeeId__c")
     @Column(name = "employee_sfid", length = 18)
@@ -45,8 +45,8 @@ class AgreementHistory(
     @Column(name = "agreement_date", nullable = false)
     val agreementDate: LocalDate,
 
-    @Column(name = "agreement_word_id", nullable = false)
-    val agreementWordId: Long,
+    @Column(name = "agreement_word_id")
+    val agreementWordId: Long? = null,
 
     @SFField("AgreementWordId__c")
     @Column(name = "agreement_word_sfid", length = 18)

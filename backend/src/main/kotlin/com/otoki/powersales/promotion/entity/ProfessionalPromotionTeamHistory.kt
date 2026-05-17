@@ -32,8 +32,8 @@ class ProfessionalPromotionTeamHistory(
     @Column(name = "name", length = 80)
     var name: String? = null,
 
-    @Column(name = "employee_id", nullable = false)
-    val employeeId: Long,
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
     @SFField("EmployeeId__c")
     @HCColumn("employeeid__c")

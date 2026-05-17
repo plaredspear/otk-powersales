@@ -31,7 +31,7 @@ data class PromotionEmployeeListResponse(
         fun from(entity: PromotionEmployee, employeeName: String?, employeeCode: String? = null): PromotionEmployeeListResponse =
             PromotionEmployeeListResponse(
                 id = entity.id,
-                promotionId = entity.promotionId,
+                promotionId = entity.promotionId!!,
                 employeeId = entity.employeeId,
                 employeeCode = employeeCode,
                 employeeName = employeeName,
@@ -84,7 +84,7 @@ data class PromotionEmployeeDetailResponse(
         fun from(entity: PromotionEmployee, employeeName: String?, employeeCode: String? = null): PromotionEmployeeDetailResponse =
             PromotionEmployeeDetailResponse(
                 id = entity.id,
-                promotionId = entity.promotionId,
+                promotionId = entity.promotionId!!,
                 employeeId = entity.employeeId,
                 employeeCode = employeeCode,
                 employeeName = employeeName,

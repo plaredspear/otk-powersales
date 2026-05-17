@@ -33,8 +33,8 @@ class AlternativeHoliday(
     @Column(name = "name", length = 80)
     var name: String? = null,
 
-    @Column(name = "employee_id", nullable = false)
-    val employeeId: Long,
+    @Column(name = "employee_id")
+    val employeeId: Long? = null,
 
     @SFField("DKRetail__EmployeeId__c")
     @HCColumn("dkretail__employeeid__c")
