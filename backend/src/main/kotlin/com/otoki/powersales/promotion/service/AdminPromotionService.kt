@@ -142,6 +142,7 @@ class AdminPromotionService(
                 standLocation = StandLocation.fromDisplayNameOrNull(request.standLocation),
                 costCenterCode = costCenterCode,
                 productType = ProductTemperatureType.fromDisplayNameOrNull(request.productType),
+                category1 = request.category1,
                 remark = request.remark
             )
         )
@@ -218,6 +219,7 @@ class AdminPromotionService(
             message = request.message,
             standLocation = StandLocation.fromDisplayNameOrNull(request.standLocation),
             productType = ProductTemperatureType.fromDisplayNameOrNull(request.productType),
+            category1 = request.category1,
             remark = request.remark
         )
 
@@ -266,12 +268,12 @@ class AdminPromotionService(
      * 원본 행사사원 모두 복제하되 이력성 필드 (실적·일정·마감·이미지·비고·기준단가·목표수량) 11개 초기화.
      */
     @Transactional
-    fun clonePromotion(sourceId: Long, userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
+    fun clonePromotion(scope: DataScope, sourceId: Long, userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
         if (sourceId <= 0) throw PromotionInvalidParameterException()
 
         // 원본 조회 + 권한 검증
         val source = findActivePromotion(sourceId)
-        validateDataScope(source)
+        validateDataScope(scope, source)
 
         // 신규 행사 생성 — createPromotion 동일 흐름 (CC 자동 채움, 기타제품 검증, 행사상품 자동 생성 등 모두 동일 적용)
         val created = createPromotion(userId, request)
@@ -319,18 +321,18 @@ class AdminPromotionService(
      * 원본 행사사원은 5필드만 (employeeId, workStatus, workType1/2/3) 복사, 나머지는 모두 초기값.
      */
     @Transactional
-    fun cloneWithChildren(sourceId: Long, userId: Long): PromotionDetailResponse {
+    fun cloneWithChildren(scope: DataScope, sourceId: Long, userId: Long): PromotionDetailResponse {
         if (sourceId <= 0) throw PromotionInvalidParameterException()
 
         // 원본 조회 + 권한 검증
         val source = findActivePromotion(sourceId)
-        validateDataScope(source)
+        validateDataScope(scope, source)
 
         // 원본 필드 → PromotionCreateRequest 변환 (사용자 입력 없는 1클릭)
         // 각 enum 은 fromDisplayName 으로 역변환되므로 displayName 으로 직렬화
         val clonedRequest = PromotionCreateRequest(
             promotionType = source.promotionType?.displayName,
-            accountId = source.account.id,
+            accountId = source.account!!.id,
             startDate = source.startDate,
             endDate = source.endDate,
             primaryProductId = source.primaryProductId,
@@ -338,6 +340,7 @@ class AdminPromotionService(
             message = source.message,
             standLocation = source.standLocation?.displayName,
             productType = source.productType?.displayName,
+            category1 = source.category1,
             remark = source.remark
         )
 

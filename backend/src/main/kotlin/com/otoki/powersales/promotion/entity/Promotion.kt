@@ -176,6 +176,7 @@ class Promotion(
         message: String?,
         standLocation: StandLocation?,
         productType: ProductTemperatureType?,
+        category1: String?,
         remark: String?
     ) {
         this.promotionType = promotionType
@@ -187,6 +188,7 @@ class Promotion(
         this.message = message
         this.standLocation = standLocation
         this.productType = productType
+        this.category1 = category1
         this.remark = remark
 
     }

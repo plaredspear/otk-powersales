@@ -561,6 +561,7 @@ class AdminPromotionControllerTest {
         standLocation = "매장 입구 좌측",
         costCenterCode = "1101",
         productType = "냉장/냉동",
+        category1 = null,
         isClosed = false,
         isDeleted = false,
         createdAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0),

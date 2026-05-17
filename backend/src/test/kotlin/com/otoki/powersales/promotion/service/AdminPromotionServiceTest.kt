@@ -491,7 +491,6 @@ class AdminPromotionServiceTest {
         @DisplayName("대표상품 변경 - 기존 행사상품 존재 -> productId 갱신 (레거시 PromotionTriggerHandler.changePosProduct upsert 동등)")
         fun updatePromotion_changePrimaryProduct_existingPromotionProductUpdated() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(primaryProductId = 200L)
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -511,7 +510,7 @@ class AdminPromotionServiceTest {
                 .thenReturn(existingPromotionProduct)
 
             val request = createRequest(primaryProductId = 300L)
-            adminPromotionService.updatePromotion(1L, userId, request)
+            adminPromotionService.updatePromotion(scope, 1L, userId, request)
 
             // 기존 entity 의 productId 가 300 으로 갱신되었는지 + 동일 entity 가 save 되었는지 검증
             argumentCaptor<PromotionProduct>().apply {
@@ -525,7 +524,6 @@ class AdminPromotionServiceTest {
         @DisplayName("대표상품 동일 - 변경 없음 -> 행사상품 upsert 호출 없음")
         fun updatePromotion_samePrimaryProduct_noPromotionProductUpsert() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val promotion = createPromotion(primaryProductId = 200L)
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
@@ -534,7 +532,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
 
             val request = createRequest(primaryProductId = 200L)
-            adminPromotionService.updatePromotion(1L, userId, request)
+            adminPromotionService.updatePromotion(scope, 1L, userId, request)
 
             verify(promotionProductRepository, never()).save(any<PromotionProduct>())
             verify(promotionProductRepository, never()).findByPromotionId(any())
@@ -818,7 +816,6 @@ class AdminPromotionServiceTest {
         @DisplayName("UC-11 정상 복제 - 신규 행사 생성 + 행사상품 자동 생성 + 행사사원 복사 (이력성 필드 초기화)")
         fun clonePromotion_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             // 원본 행사
             val sourcePromotion = createPromotion(id = 1L, costCenterCode = "1101")
@@ -872,7 +869,7 @@ class AdminPromotionServiceTest {
                 .thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
 
             val request = createRequest(promotionType = "시식")
-            val result = adminPromotionService.clonePromotion(1L, userId, request)
+            val result = adminPromotionService.clonePromotion(scope, 1L, userId, request)
 
             // 신규 행사 검증
             assertThat(result.promotionNumber).isEqualTo("PM00000002")
@@ -910,7 +907,6 @@ class AdminPromotionServiceTest {
         @DisplayName("UC-11 원본 행사사원 0건 -> 신규 행사만 생성 (saveAll 호출 없음)")
         fun clonePromotion_noEmployees_skipsSaveAll() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val sourcePromotion = createPromotion(id = 1L, costCenterCode = "1101")
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(sourcePromotion)
@@ -923,7 +919,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
             whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
 
-            adminPromotionService.clonePromotion(1L, userId, createRequest())
+            adminPromotionService.clonePromotion(scope, 1L, userId, createRequest())
 
             verify(promotionEmployeeRepository, never()).saveAll(any<List<PromotionEmployee>>())
         }
@@ -931,17 +927,19 @@ class AdminPromotionServiceTest {
         @Test
         @DisplayName("UC-11 sourceId 0 이하 -> PromotionInvalidParameterException")
         fun clonePromotion_invalidSourceId() {
-            assertThatThrownBy { adminPromotionService.clonePromotion(0L, userId, createRequest()) }
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            assertThatThrownBy { adminPromotionService.clonePromotion(scope, 0L, userId, createRequest()) }
                 .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
         @Test
         @DisplayName("UC-11 원본 삭제됨 -> PromotionNotFoundException")
         fun clonePromotion_sourceDeleted() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(promotionRepository.findByIdWithRelations(1L))
                 .thenReturn(createPromotion(isDeleted = true))
 
-            assertThatThrownBy { adminPromotionService.clonePromotion(1L, userId, createRequest()) }
+            assertThatThrownBy { adminPromotionService.clonePromotion(scope, 1L, userId, createRequest()) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
     }
@@ -955,7 +953,6 @@ class AdminPromotionServiceTest {
         @DisplayName("UC-12 정상 1클릭 복제 - 원본 모든 필드 복사 + 행사사원 5필드만 복사 (나머지 초기값)")
         fun cloneWithChildren_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             // 원본 행사
             val sourcePromotion = createPromotion(
@@ -1007,7 +1004,7 @@ class AdminPromotionServiceTest {
             whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()))
                 .thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
 
-            val result = adminPromotionService.cloneWithChildren(1L, userId)
+            val result = adminPromotionService.cloneWithChildren(scope, 1L, userId)
 
             // 신규 행사 검증 (시작일·종료일 포함 원본 동일)
             assertThat(result.promotionNumber).isEqualTo("PM00000002")
@@ -1053,7 +1050,6 @@ class AdminPromotionServiceTest {
         @DisplayName("UC-12 원본 행사사원 0건 -> 신규 행사만 생성 (saveAll 호출 없음)")
         fun cloneWithChildren_noEmployees_skipsSaveAll() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(dataScopeHolder.require()).thenReturn(scope)
 
             val sourcePromotion = createPromotion(id = 1L, promotionType = PromotionType.SAMPLING, costCenterCode = "1101")
             whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(sourcePromotion)
@@ -1066,7 +1062,7 @@ class AdminPromotionServiceTest {
             whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
             whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
 
-            adminPromotionService.cloneWithChildren(1L, userId)
+            adminPromotionService.cloneWithChildren(scope, 1L, userId)
 
             verify(promotionEmployeeRepository, never()).saveAll(any<List<PromotionEmployee>>())
         }
@@ -1074,17 +1070,19 @@ class AdminPromotionServiceTest {
         @Test
         @DisplayName("UC-12 sourceId 0 이하 -> PromotionInvalidParameterException")
         fun cloneWithChildren_invalidSourceId() {
-            assertThatThrownBy { adminPromotionService.cloneWithChildren(0L, userId) }
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            assertThatThrownBy { adminPromotionService.cloneWithChildren(scope, 0L, userId) }
                 .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
         @Test
         @DisplayName("UC-12 원본 삭제됨 -> PromotionNotFoundException")
         fun cloneWithChildren_sourceDeleted() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             whenever(promotionRepository.findByIdWithRelations(1L))
                 .thenReturn(createPromotion(isDeleted = true))
 
-            assertThatThrownBy { adminPromotionService.cloneWithChildren(1L, userId) }
+            assertThatThrownBy { adminPromotionService.cloneWithChildren(scope, 1L, userId) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
     }

@@ -51,6 +51,7 @@ interface FormValues {
   otherProduct?: string;
   message?: string;
   standLocation: string;
+  category1?: string;
   remark?: string;
 }
 
@@ -108,6 +109,7 @@ export default function PromotionFormPage() {
         otherProduct: promotion.otherProduct ?? undefined,
         message: promotion.message ?? undefined,
         standLocation: promotion.standLocation ?? undefined,
+        category1: promotion.category1 ?? undefined,
         remark: promotion.remark ?? undefined,
       });
 
@@ -173,6 +175,7 @@ export default function PromotionFormPage() {
       otherProduct: values.otherProduct || null,
       message: values.message || null,
       standLocation: values.standLocation,
+      category1: values.category1?.trim() || null,
       remark: values.remark || null,
     };
 
@@ -321,6 +324,25 @@ export default function PromotionFormPage() {
                 rules={[{ required: true, whitespace: true, message: '매대위치를 입력해주세요' }]}
               >
                 <Select placeholder="매대위치 선택" options={standLocationOptions} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={24}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="category1"
+                label={
+                  <span>
+                    제품유형{' '}
+                    <Tooltip title="대표제품 카테고리 (라면 / 냉장 / 냉동 / 만두 중 하나). 입력 시 행사사원의 전문행사조와 매칭되지 않으면 배정이 차단됩니다.">
+                      <InfoCircleOutlined style={{ color: '#999' }} />
+                    </Tooltip>
+                  </span>
+                }
+                rules={[{ max: 1300, message: '1300자 이하로 입력해주세요' }]}
+              >
+                <Input placeholder="라면 / 냉장 / 냉동 / 만두 중 하나 (선택)" maxLength={1300} />
               </Form.Item>
             </Col>
           </Row>

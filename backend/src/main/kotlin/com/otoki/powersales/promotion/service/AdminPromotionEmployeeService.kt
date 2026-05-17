@@ -40,7 +40,8 @@ class AdminPromotionEmployeeService(
         private const val SPECIAL_BYPASS_EMPLOYEE_CODE = "00000009"
 
         // 레거시 PromotionEmployeeTriggerHandler 의 대표제품 vs 전문행사조 매칭 룰
-        // promotion.category1 값별 허용 전문행사조 displayName 키워드 (contains 매칭)
+        // 좌변 promotion.category1 == 카테고리 정확 일치 (레거시 `Category1__c == '라면'` 동등)
+        // 우변 team contains 키워드 부분 매칭 (예: 사원 team "라면세일조" contains "라면" → OK)
         // null / "일반" 사원은 카테고리 무관 OK (호출처에서 사전 분기)
         private const val CATEGORY_RAMEN = "라면"
         private const val CATEGORY_REFRIGERATED = "냉장"
@@ -385,8 +386,9 @@ class AdminPromotionEmployeeService(
     /**
      * 대표제품 vs 전문행사조 매칭 검증.
      *
-     * 레거시 PromotionEmployeeTriggerHandler beforeInsert/beforeUpdate 동등 — promotion.category1 값별
-     * 허용 전문행사조 키워드 (라면/냉장/냉동/만두/카레) contains 매칭.
+     * 레거시 PromotionEmployeeTriggerHandler beforeInsert/beforeUpdate 동등 —
+     * 좌변 promotion.category1 == "라면"/"냉장"/"냉동"/"만두" 정확 일치 (레거시 Apex `Category1__c == '라면'` 동등),
+     * 우변 사원 team 은 카테고리 키워드 또는 "카레" contains 부분 매칭 (예: "라면세일조" contains "라면" → OK).
      * 사원 전문행사조가 null 이면 "일반" 사원으로 간주 — 카테고리 무관 OK.
      * promotion.category1 이 null 또는 매칭 룰 외 값이면 검증 스킵.
      *
@@ -397,19 +399,20 @@ class AdminPromotionEmployeeService(
         val employee = employeeId?.let { employeeRepository.findById(it).orElse(null) } ?: return null
         val team = employee.professionalPromotionTeam?.displayName ?: return null
 
-        return when {
-            category1.contains(CATEGORY_RAMEN) &&
-                !(team.contains(CATEGORY_RAMEN) || team.contains("카레")) -> MSG_MISMATCH_RAMEN
+        return when (category1) {
+            CATEGORY_RAMEN ->
+                if (!(team.contains(CATEGORY_RAMEN) || team.contains("카레"))) MSG_MISMATCH_RAMEN else null
 
-            category1.contains(CATEGORY_REFRIGERATED) &&
-                !(team.contains(CATEGORY_REFRIGERATED) || team.contains("카레")) -> MSG_MISMATCH_REFRIGERATED
+            CATEGORY_REFRIGERATED ->
+                if (!(team.contains(CATEGORY_REFRIGERATED) || team.contains("카레"))) MSG_MISMATCH_REFRIGERATED else null
 
-            category1.contains(CATEGORY_FROZEN) &&
-                !(team.contains(CATEGORY_FROZEN) || team.contains("카레")) -> MSG_MISMATCH_FROZEN
+            CATEGORY_FROZEN ->
+                if (!(team.contains(CATEGORY_FROZEN) || team.contains("카레"))) MSG_MISMATCH_FROZEN else null
 
-            category1.contains(CATEGORY_DUMPLING) &&
-                !(team.contains(CATEGORY_DUMPLING) || team.contains(CATEGORY_FROZEN) || team.contains("카레"))
-                -> MSG_MISMATCH_DUMPLING
+            CATEGORY_DUMPLING ->
+                if (!(team.contains(CATEGORY_DUMPLING) || team.contains(CATEGORY_FROZEN) || team.contains("카레")))
+                    MSG_MISMATCH_DUMPLING
+                else null
 
             else -> null
         }

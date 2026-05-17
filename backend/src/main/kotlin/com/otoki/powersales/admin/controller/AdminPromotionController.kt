@@ -109,10 +109,11 @@ class AdminPromotionController(
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun clonePromotion(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @PathVariable id: Long,
         @Valid @RequestBody request: PromotionCreateRequest
     ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
-        val response = adminPromotionService.clonePromotion(id, principal.requireEmployeeId(), request)
+        val response = adminPromotionService.clonePromotion(scope, id, principal.requireEmployeeId(), request)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 
@@ -122,9 +123,10 @@ class AdminPromotionController(
     @RequiresPermission(AdminPermission.PROMOTION_WRITE)
     fun cloneWithChildren(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
-        val response = adminPromotionService.cloneWithChildren(id, principal.requireEmployeeId())
+        val response = adminPromotionService.cloneWithChildren(scope, id, principal.requireEmployeeId())
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 }

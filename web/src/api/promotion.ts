@@ -59,6 +59,7 @@ export interface PromotionDetail {
   costCenterCode: string | null;
   category: string | null;
   productType: string | null;
+  category1: string | null;
   branchName: string | null;
   isClosed: boolean;
   remark: string | null;
@@ -76,6 +77,7 @@ export interface PromotionFormData {
   otherProduct?: string | null;
   message?: string | null;
   standLocation: string;
+  category1?: string | null;
   remark?: string | null;
 }
 
