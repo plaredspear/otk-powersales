@@ -21,7 +21,7 @@ scripts/sf-data-migration/
 ├── db.properties                             # 실제 DB 연결 정보 (gitignore)
 ├── common.kts                                # 공통 모듈 (EntityMetadata, TARGET_SPECS, helper, ProgressBar, JDBC 로더)
 ├── migrate-stage1.main.kts                   # Stage 1 진입점 — CSV → JDBC INSERT
-├── migrate-stage2.main.kts                   # Stage 2 진입점 — 매핑/Transform/Reset (JDBC)
+├── reset-dev.main.kts                        # dev DB 초기화 (운영 가드 포함)
 │
 ├── input/                                    # CSV 입력 (gitignore)
 └── output/                                   # 리포트 (gitignore)
@@ -34,10 +34,13 @@ scripts/sf-data-migration/
 | Stage | 책임 | 진입점 | 트랜잭션 |
 |-------|-----|--------|---------|
 | **Stage 1** | CSV → staging JDBC INSERT (매핑 SF 원본 그대로) | `migrate-stage1.main.kts` | target 별 |
-| **Stage 2-B** | 한글 picklist → enum (role / ppt / profile_type) | `migrate-stage2.main.kts --substep=role / --substep=ppt / --substep=profile` | substep 별 |
-| **Stage 2-C** | BCrypt password hash | `migrate-stage2.main.kts --substep=password` | substep 별 |
-| **Stage 2-D** | PermissionSet → AdminPermission | `migrate-stage2.main.kts --substep=permission` | substep 별 |
-| **Reset**     | dev DB 초기화 | `migrate-stage2.main.kts --reset` | 단일 |
+| **Stage 2-A** | sfid → FK id (audit / 도메인 / polymorphic owner_group) | backend admin API `POST /api/v1/admin/sf-migration/stage2/fk` | substep 단위 |
+| **Stage 2-B** | 한글 picklist → enum (role / ppt / profile_type) | backend admin API `POST /api/v1/admin/sf-migration/stage2/picklist` | substep 단위 |
+| **Stage 2-C** | BCrypt password hash | backend admin API `POST /api/v1/admin/sf-migration/stage2/password` | substep 단위 |
+| **Stage 2-D** | PermissionSet → AdminPermission | backend admin API `POST /api/v1/admin/sf-migration/stage2/permission` | substep 단위 |
+| **Reset**     | dev DB 초기화 (sfid IS NOT NULL row 일괄 삭제) | `reset-dev.main.kts` (dev 전용, 운영 가드) | 단일 |
+
+> **Stage 2 가 backend admin API 로 이전된 이유**: 운영 EB 서버에서 RDS 와의 latency 를 단축하고 (사용자 로컬 → SSM 터널 경로 회피), backend 의 enum/Converter/PasswordEncoder SoT 와 정합 일관성을 유지하기 위함. 권한은 `@PreAuthorize("hasAuthority('ROLE_ADMIN')")` 로 SYSTEM_ADMIN profile 만 호출 가능. backend 구현 위치: `backend/src/main/kotlin/com/otoki/powersales/sfmigration/` (런칭 후 폐기 시 패키지 통째 삭제).
 
 각 substep 은 독립 transaction → 일부 실패 시 다른 substep 의 적용 결과 유지. 실패한 substep 만 재실행 가능.
 
@@ -52,9 +55,10 @@ backend 의 `@SFObject` 어노테이션이 붙은 모든 entity + Permission sta
 
 | target | SF SObject | Stage 2 substep |
 |--------|-----------|-----------------|
-| `Employee` | `DKRetail__Employee__c` | `--substep=role` (한글 → UserRole) + `--substep=ppt` (한글 → PPT enum) |
-| `User` | `User` | `--substep=profile` (한글 → ProfileType) + `--substep=password` (BCrypt) |
-| `Permission` | `PermissionSetAssignment` | `--substep=permission` (PermSet → AdminPermission) |
+| 전 entity | (전체) | `POST /stage2/fk` — `*_sfid` 컬럼 자동 스캔 + FK id 채움 |
+| `Employee` | `DKRetail__Employee__c` | `POST /stage2/picklist` — Employee.role + Employee.professional_promotion_team |
+| `User` | `User` | `POST /stage2/picklist` — User.profile_type / `POST /stage2/password` — BCrypt |
+| `Permission` | `PermissionSetAssignment` | `POST /stage2/permission` — PermSet → AdminPermission |
 
 **Stage 1 raw 적재만 수행하는 target** (36종):
 
@@ -188,41 +192,52 @@ kotlin migrate-stage1.main.kts --target=Organization,Employee
 [##############----------------]  47% (470/1000) Stage 1 Employee (470/1000)
 ```
 
-### 3단계 — Stage 2 적용 (Logical 처리)
+### 3단계 — Stage 2 적용 (backend admin API)
+
+Stage 2 는 backend admin REST 엔드포인트로 이전됨. 운영 backend (EB / Docker) 에 배포된 상태에서 SYSTEM_ADMIN 계정의 JWT 로 호출. 권한 가드: `@PreAuthorize("hasAuthority('ROLE_ADMIN')")`.
 
 ```bash
-# 전체 substep (role + ppt + profile + password + permission)
-kotlin migrate-stage2.main.kts
+# 사전: SYSTEM_ADMIN 계정으로 로그인하여 JWT 확보
+JWT="<access-token>"
+BASE="https://<backend-host>"
 
-# substep 단독 실행 (매핑 보정 후 반복 실행 용이)
-kotlin migrate-stage2.main.kts --substep=role --target=Employee
-kotlin migrate-stage2.main.kts --substep=ppt --target=Employee
-kotlin migrate-stage2.main.kts --substep=profile --target=User
-kotlin migrate-stage2.main.kts --substep=password --target=User
-kotlin migrate-stage2.main.kts --substep=permission --target=Permission
+# 권장 순서 — fk (FK id 채움) → picklist (한글 → enum) → password (BCrypt) → permission (PermSet → AdminPermission)
+curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/fk"          -H "Authorization: Bearer $JWT"
+curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/picklist"    -H "Authorization: Bearer $JWT"
+curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/password"    -H "Authorization: Bearer $JWT"
+curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/permission"  -H "Authorization: Bearer $JWT"
 ```
 
-옵션:
-- `--substep=all|role|ppt|profile|password|permission` (default: `all`)
-- `--target=Organization,Account,Product,Promotion,Group,Employee,User,Notice,Permission` (default: 전체)
-- `--input-dir=<path>` (default: `./input`) — password substep 이 users.csv 의 employee_code 읽음
-- `--output-dir=<path>` (default: `./output`) — 리포트 출력 경로
+각 응답 JSON:
+```json
+{
+  "substep": "picklist",
+  "results": [
+    { "label": "Employee.role", "rowsAffected": 1234 },
+    { "label": "User.profile_type", "rowsAffected": 567 }
+  ],
+  "totalRowsAffected": 1801
+}
+```
 
-산출:
-- DB: 각 substep 의 UPDATE/INSERT 적용 (substep 별 transaction)
-- 파일: `output/migration_report_stage2.txt`
+특이사항:
+- **fk substep** 은 `powersales` schema 의 모든 `*_sfid` 컬럼을 information_schema 로 자동 발견 후 짝의 `*_id` FK 컬럼을 sfid lookup 으로 채운다. `created_by` / `last_modified_by` / `owner` audit prefix 와 `manager` / `parent` / `team_leader` 등 alias prefix 는 `backend/.../sfmigration/service/SfFkResolveTables.kt` 의 `FK_PREFIX_MAPPING` 화이트리스트에 명시.
+- **picklist substep** 은 한 번에 Employee.role + Employee.professional_promotion_team + User.profile_type 세 컬럼을 일괄 처리. 매핑 표 보정 후 재호출 시 멱등 (이미 enum 으로 변환된 row 는 매칭 안 됨).
+- **password substep** 은 `sfid IS NOT NULL AND (password IS NULL OR password = '')` 인 user row 의 password 를 `employee_code` 평문으로 BCrypt hash (backend 의 PasswordEncoder 빈 재사용, strength=10) + `password_change_required=TRUE` 설정.
+- **permission substep** 은 `sf_permission_set_assignment_raw` staging → `user_permission` INSERT (`ON CONFLICT DO NOTHING` 으로 재실행 안전).
 
 #### dev DB reset (리허설 반복용)
 
 ```bash
 # ⚠️ 운영 DB 금지 — db.properties 가 dev 환경인지 사전 확인
-kotlin migrate-stage2.main.kts --reset
+# 본 스크립트는 운영 RDS endpoint 감지 시 자동 거부 (localhost 만 허용)
+kotlin reset-dev.main.kts
 ```
 
 reset 동작:
 - TRUNCATE `sf_permission_set_assignment_raw`
 - DELETE `user_permission WHERE user_id IN (SELECT user_id FROM "user" WHERE sfid IS NOT NULL)`
-- DELETE `user / employee / organization WHERE sfid IS NOT NULL`
+- DELETE 전체 entity `WHERE sfid IS NOT NULL` (TARGET_SPECS 순회, dependency 역순)
 
 ### 4단계 — 적용 결과 검증 (사용자)
 
@@ -254,8 +269,11 @@ vim db.properties   # host=<prod-host>, password=$PROD_OTK_PWRS_DB_PASSWORD 등
 # 3. Stage 1 적용
 kotlin migrate-stage1.main.kts
 
-# 4. Stage 2 적용
-kotlin migrate-stage2.main.kts
+# 4. Stage 2 적용 (backend admin API — JWT 필요)
+curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/fk"          -H "Authorization: Bearer $JWT"
+curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/picklist"    -H "Authorization: Bearer $JWT"
+curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/password"    -H "Authorization: Bearer $JWT"
+curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/permission"  -H "Authorization: Bearer $JWT"
 
 # 5. SYSTEM_ADMIN 사번 로그인 + 핵심 페이지 접근 검증
 ```
@@ -264,25 +282,21 @@ kotlin migrate-stage2.main.kts
 
 ## 매핑 표
 
-모든 매핑 표는 `common.kts` 에 정의됨:
+Stage 2 매핑 표는 backend `sfmigration` 도메인에 보관 (런칭 후 패키지 통째 폐기 용이):
 
-| 매핑 | 상수 | 적용 substep |
+| 매핑 | 상수 | 위치 |
 |---|---|---|
-| AppAuthority (한글) → UserRole | `APP_AUTHORITY_TO_USER_ROLE` | `--substep=role` |
-| ProfessionalPromotionTeam (한글) → PPT enum | `PPT_KOREAN_TO_ENUM` | `--substep=ppt` |
-| Profile.Name → ProfileType | `PROFILE_NAME_TO_PROFILE_TYPE` | `--substep=profile` |
-| PermissionSet → AdminPermission | `PERMISSION_SET_TO_PERMISSIONS` | `--substep=permission` |
-| 미사용 PermissionSet skip 목록 | `INTENTIONALLY_SKIPPED_PERMISSION_SETS` | (Stage 2-D 에서 사용) |
+| AppAuthority (한글) → UserRole | `APP_AUTHORITY_TO_USER_ROLE` | `backend/.../sfmigration/service/SfMappingTables.kt` |
+| ProfessionalPromotionTeam (한글) → PPT enum | `PPT_KOREAN_TO_ENUM` | 동일 |
+| Profile.Name → ProfileType | `PROFILE_NAME_TO_PROFILE_TYPE` | 동일 |
+| PermissionSet → AdminPermission | `PERMISSION_SET_TO_PERMISSIONS` | 동일 |
+| sfid prefix → ref table/id (FK) | `FK_PREFIX_MAPPING` | `backend/.../sfmigration/service/SfFkResolveTables.kt` |
+| Polymorphic owner entity 화이트리스트 | `POLYMORPHIC_OWNER_TABLES` | 동일 |
+| FK 처리 제외 prefix | `SKIP_FK_PREFIXES` | 동일 |
 
-### 매핑 보정 → 재실행
+### 매핑 보정 → 재배포
 
-```bash
-# 1. common.kts 의 매핑 표 편집
-vim common.kts
-
-# 2. 해당 substep 만 재실행
-kotlin migrate-stage2.main.kts --substep=permission
-```
+backend 매핑 표 변경은 코드 PR → backend 재배포 → admin API 재호출. backend 정합 테스트 (`SfMappingTablesTest`) 가 enum value 와의 정합을 자동 검증.
 
 ## 마이그레이션 제외 항목 (의도적 미구현)
 
@@ -310,11 +324,16 @@ kotlin migrate-stage2.main.kts --substep=permission
 ## 폐기 절차 (런칭 + 안정화 후)
 
 ```bash
+# 1. scripts 디렉토리 폐기 (Stage 1 + reset 도구)
 git rm -rf scripts/sf-data-migration/
+
+# 2. backend Stage 2 모듈 폐기 (admin API + 매핑 표)
+git rm -rf backend/src/main/kotlin/com/otoki/powersales/sfmigration/
+git rm -rf backend/src/test/kotlin/com/otoki/powersales/sfmigration/
 ```
 
 매핑 결과는 운영 DB 의 `employee` / `user` / `organization` / `user_permission` 테이블에
-적재된 row 로 영구 보존되므로 본 디렉토리는 안전하게 폐기 가능.
+적재된 row 로 영구 보존되므로 위 두 위치는 모두 안전하게 폐기 가능.
 
 폐기 시 함께 삭제 가능 (선택):
 - `backend/src/main/resources/db/migration/V152__create_sf_permission_set_assignment_raw.sql` —

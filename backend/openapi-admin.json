@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:56880",
+    "url" : "http://localhost:59918",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1250,6 +1250,78 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseTeamScheduleCreateResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sf-migration/stage2/picklist" : {
+      "post" : {
+        "tags" : [ "sf-migration-stage-2-controller" ],
+        "operationId" : "runPicklistMapping",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sf-migration/stage2/permission" : {
+      "post" : {
+        "tags" : [ "sf-migration-stage-2-controller" ],
+        "operationId" : "runPermissionMapping",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sf-migration/stage2/password" : {
+      "post" : {
+        "tags" : [ "sf-migration-stage-2-controller" ],
+        "operationId" : "runPasswordHash",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sf-migration/stage2/fk" : {
+      "post" : {
+        "tags" : [ "sf-migration-stage-2-controller" ],
+        "operationId" : "runFkResolve",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
                 }
               }
             }
@@ -4992,10 +5064,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -6357,6 +6429,65 @@
           "id" : {
             "type" : "integer",
             "format" : "int64"
+          }
+        }
+      },
+      "ApiResponseSfMigrationStage2Response" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SfMigrationStage2Response"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SfMigrationStage2Response" : {
+        "type" : "object",
+        "properties" : {
+          "substep" : {
+            "type" : "string"
+          },
+          "results" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SubstepResult"
+            }
+          },
+          "totalRowsAffected" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "SubstepResult" : {
+        "type" : "object",
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "rowsAffected" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
@@ -9089,11 +9220,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -9101,9 +9230,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -9127,20 +9258,20 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "unpaged" : {
             "type" : "boolean"
           },
-          "paged" : {
-            "type" : "boolean"
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageSize" : {
+          "paged" : {
+            "type" : "boolean"
+          },
+          "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -9404,10 +9535,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }

@@ -43,147 +43,11 @@ data class EntityMetadata(
     val rawColumnsAsString: List<String> = emptyList(),
     /**
      * Stage 1 INSERT 시 추가로 채워야 하는 정적 컬럼 (NOT NULL 제약 회피용 placeholder).
-     * 예: user.password (NOT NULL) → "" placeholder, Stage 2-C 가 BCrypt 로 덮어씀.
+     * 예: user.password (NOT NULL) → "" placeholder, backend admin API stage2/password 가 BCrypt 로 덮어씀.
      * 값이 null 이면 SQL NULL 로 처리.
      */
     val extraStaticColumns: Map<String, String?> = emptyMap()
 )
-
-/**
- * Stage 2 FK resolve 메타 — sfid 기반 lookup 으로 FK id 컬럼을 채움.
- *
- * @property sfidColumn 본 entity 의 sfid 컬럼 (예: "account_sfid")
- * @property idColumn 본 entity 의 FK id 컬럼 (예: "account_id")
- * @property refTable lookup 대상 테이블명 (예: "account")
- * @property refIdColumn lookup 대상 테이블의 PK 컬럼명 (예: "account_id")
- * @property refSfidColumn lookup 대상 테이블의 sfid 컬럼명 (대부분 "sfid", default)
- */
-data class FkResolve(
-    val sfidColumn: String,
-    val idColumn: String,
-    val refTable: String,
-    val refIdColumn: String,
-    val refSfidColumn: String = "sfid"
-)
-
-/**
- * Polymorphic owner entity 목록 (Spec #761 R-2).
- * owner_sfid 의 prefix `005` = User, `00G` = Group 으로 분기되어
- * 각각 owner_user_id / owner_group_id 채움.
- *
- * Stage 2 의 polymorphic resolver 가 본 목록을 순회.
- * (어떤 entity 가 polymorphic 인지는 자동 감지 불가 — owner_user_id / owner_group_id 두
- *  컬럼이 동시에 존재하는 entity 가 대상. Stage 2 의 resolver 가 information_schema 로 확인.)
- */
-val POLYMORPHIC_OWNER_TABLES: List<String> = listOf(
-    "organization",
-    "order_request",
-    "order_request_product",
-    "promotion",
-    "professional_promotion_team_history",
-    "professional_promotion_team_master"
-)
-
-/**
- * sfid prefix → (refTable, refIdColumn) 매핑.
- *
- * 정책: entity 의 모든 `<prefix>_sfid` 컬럼은 짝으로 `<prefix>_id` FK 컬럼을 가지며,
- *       해당 FK 는 sfid lookup 으로 채워져야 한다.
- *
- * 매핑 방식:
- *   1. 표준 prefix (audit + 명시적 alias) 는 본 표에 직접 명시.
- *   2. 표에 없으면 prefix 를 그대로 테이블명 + `<prefix>_id` 로 자동 추론.
- *   3. SKIP_PREFIXES 에 등록된 prefix 는 FK 처리 대상 외 (코드/메타 lookup).
- */
-val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
-    // audit (User lookup)
-    "created_by" to ("user" to "user_id"),
-    "last_modified_by" to ("user" to "user_id"),
-    "owner" to ("user" to "user_id"),
-    // self-reference 또는 별칭
-    "manager" to ("employee" to "employee_id"),
-    "parent" to ("account" to "account_id"),
-    "full_name" to ("employee" to "employee_id"),
-    "team_leader" to ("employee" to "employee_id"),
-    "primary_product" to ("product" to "product_id"),
-    "alt_holiday" to ("alternative_holiday" to "alternative_holiday_id"),
-    "postponed_appointment" to ("appointment" to "appointment_id"),
-    "last_monthly_sales_history" to ("monthly_sales_history" to "monthly_sales_history_id"),
-    "commute_log" to ("attendance_log" to "attendance_log_id"),
-    // 도메인 FK — prefix 가 곧 table 명인 일반 케이스 (audit 처리 후 자동 추론 fallback 와 동일하지만 명시 권장)
-    "account" to ("account" to "account_id"),
-    "employee" to ("employee" to "employee_id"),
-    "product" to ("product" to "product_id"),
-    "promotion" to ("promotion" to "promotion_id"),
-    "promotion_employee" to ("promotion_employee" to "promotion_employee_id"),
-    "team_member_schedule" to ("team_member_schedule" to "team_member_schedule_id"),
-    "new_product" to ("new_product" to "new_product_id"),
-    "agreement_word" to ("agreement_word" to "agreement_word_id"),
-    "order_request" to ("order_request" to "order_request_id"),
-    "erp_order" to ("erp_order" to "erp_order_id"),
-    "push_message" to ("push_message" to "push_message_id"),
-    "display_work_schedule" to ("display_work_schedule" to "display_work_schedule_id"),
-    "hq_review" to ("hq_review" to "hq_review_id"),
-    "branch_review" to ("branch_review" to "branch_review_id"),
-    "monthly_female_employee_integration_schedule" to ("monthly_female_employee_integration_schedule" to "monthly_female_employee_integration_schedule_id"),
-    "employee_input_criteria_master" to ("employee_input_criteria_master" to "employee_input_criteria_master_id"),
-    "category" to ("employee_input_criteria_master" to "employee_input_criteria_master_id")
-)
-
-/**
- * FK 처리에서 제외할 prefix.
- *
- *   - product_code : sfid 가 아닌 code 기반 lookup (NewProduct → product.product_code)
- *   - profile      : Profile.Name (한글 문자열) lookup, sfid 아님
- *   - user_role    : UserRole 메타 — 본 프로젝트에서 별도 FK 컬럼 없음
- *   - record_type  : SF RecordType 메타 lookup, 본 프로젝트에서 별도 FK 컬럼 없음
- *   - related      : Group.related (polymorphic User/Group) — 별도 처리 필요
- */
-val SKIP_FK_PREFIXES: Set<String> = setOf(
-    "product_code",
-    "profile",
-    "user_role",
-    "record_type",
-    "related"
-)
-
-/**
- * EntityMetadata 의 FieldMapping 을 스캔하여 sfid → id FK 페어 자동 추출.
- *
- * 정책:
- *   - dbColumnName 이 `_sfid` 로 끝나면 FK 후보.
- *   - prefix = sfid 컬럼명에서 `_sfid` 제거.
- *   - SKIP_FK_PREFIXES 에 있으면 처리 안 함.
- *   - FK_PREFIX_MAPPING 우선 조회. 없으면 자동 추론 (`<prefix>` 테이블, `<prefix>_id` PK).
- *   - audit prefix (created_by / last_modified_by / owner) → id 컬럼은 `<prefix>_id` 가 아닌
- *     `<prefix>_id` (created_by → created_by_id, owner → owner_user_id).
- *
- * 반환: 본 entity 의 모든 FK resolve 정의 (audit + 도메인 + polymorphic owner_group 제외 — 별도 처리).
- *       단 `id` 가 없는 sfid (= `sfid` 자체) 는 제외.
- */
-fun deriveFkResolves(fields: List<FieldMapping>): List<FkResolve> {
-    val result = mutableListOf<FkResolve>()
-    for (field in fields) {
-        val col = field.dbColumnName
-        if (col == "sfid") continue
-        if (!col.endsWith("_sfid")) continue
-        val prefix = col.removeSuffix("_sfid")
-        if (prefix in SKIP_FK_PREFIXES) continue
-
-        // id 컬럼명: audit prefix 는 owner → owner_user_id 처리 (polymorphic).
-        val idColumn = when (prefix) {
-            "owner" -> "owner_user_id"
-            else -> "${prefix}_id"
-        }
-
-        // 대상 table 결정.
-        val (refTable, refIdColumn) = FK_PREFIX_MAPPING[prefix]
-            ?: (prefix to "${prefix}_id")  // fallback 자동 추론
-
-        result.add(FkResolve(col, idColumn, refTable, refIdColumn))
-    }
-    return result
-}
 
 val ORGANIZATION_METADATA = EntityMetadata(
     targetName = "Organization",
@@ -301,7 +165,7 @@ val USER_METADATA = EntityMetadata(
     ),
     rawColumnsAsString = listOf("profile_type"),
     extraStaticColumns = mapOf(
-        // user.password 가 NOT NULL — Stage 1 placeholder, Stage 2-C 가 BCrypt 로 덮어씀.
+        // user.password 가 NOT NULL — Stage 1 placeholder, backend admin API stage2/password 가 BCrypt 로 덮어씀.
         "password" to ""
     )
 )
@@ -1367,92 +1231,6 @@ data class PermissionStagingMetadata(
 val PERMISSION_METADATA = PermissionStagingMetadata()
 
 // =============================================================================
-// Mapping tables (targets)
-// =============================================================================
-
-val APP_AUTHORITY_TO_USER_ROLE: Map<String, String> = mapOf(
-    "여사원" to "WOMAN",
-    "조장" to "LEADER",
-    "지점장" to "BRANCH_MANAGER",
-    "영업부장" to "SALES_MANAGER",
-    "사업부장" to "BUSINESS_MANAGER",
-    "영업본부장" to "HEADQUARTERS_MANAGER",
-    "영업지원실" to "SALES_SUPPORT",
-    "시스템관리자" to "SYSTEM_ADMIN",
-    "AccountViewAll" to "ACCOUNT_VIEW_ALL"
-)
-val USER_ROLE_FALLBACK = "UNKNOWN"
-
-/**
- * 매핑 — DKRetail__Employee__c.ProfessionalPromotionTeam__c (한글 free text) →
- * ProfessionalPromotionTeamType enum (5종).
- *
- * 출처: backend/.../promotion/enums/ProfessionalPromotionTeamType.kt (displayName 정합).
- * SF picklist 아님 (free text) — 매핑 실패 시 NULL 처리 (fallback 없음).
- */
-val PPT_KOREAN_TO_ENUM: Map<String, String> = mapOf(
-    "라면세일조" to "RAMEN_SALE",
-    "프레시세일조_냉장" to "FRESH_SALE_REFRIGERATED",
-    "프레시세일조_냉동" to "FRESH_SALE_FROZEN",
-    "프레시세일조_만두" to "FRESH_SALE_DUMPLING",
-    "카레행사조" to "CURRY_PROMOTION"
-)
-
-val PROFILE_NAME_TO_PROFILE_TYPE: Map<String, String> = mapOf(
-    "8. 마케팅" to "MARKETING",
-    "마케팅" to "MARKETING",
-    "9. Staff" to "STAFF",
-    "Staff" to "STAFF",
-    "6. 조장" to "TEAM_LEADER",
-    "조장" to "TEAM_LEADER",
-    "4. 지점장" to "BRANCH_MANAGER",
-    "지점장" to "BRANCH_MANAGER",
-    "영업부장" to "SALES_MANAGER",
-    "사업부장" to "BUSINESS_DIRECTOR",
-    "본부장" to "DIVISION_HEAD",
-    "5. 영업사원" to "SALES_REP",
-    "영업사원" to "SALES_REP",
-    "시스템 관리자" to "SYSTEM_ADMIN",
-    "System Administrator" to "SYSTEM_ADMIN",
-    "システム管理者" to "SYSTEM_ADMIN"
-)
-val PROFILE_TYPE_FALLBACK = "STAFF"
-
-val PERMISSION_SET_TO_PERMISSIONS: Map<String, List<String>> = mapOf(
-    "Employee_View_All" to listOf("EMPLOYEE_READ"),
-    "Activity_View_All" to listOf("SCHEDULE_READ"),
-    "SalesProgressViewAll" to listOf("ACCOUNT_READ"),
-    "View_All" to listOf("AGREEMENT_READ"),
-    "View_All_Edit_All" to listOf("SAFETY_CHECK_READ"),
-    "View_ALL_EVENT" to listOf("SCHEDULE_READ"),
-    "View_All_TeamMemberSchedule" to listOf("SCHEDULE_READ"),
-    "Acc_Permission" to listOf("ACCOUNT_READ"),
-    "Object_View_All" to listOf("ACCOUNT_READ", "EMPLOYEE_READ"),
-    "SalesDiary_View_All" to listOf("SCHEDULE_READ"),
-    "Promotion_Master_View_All" to listOf("PROMOTION_READ"),
-    "Claim_View_All" to listOf("ACCOUNT_READ"),
-    "notification_View_All" to listOf("DASHBOARD_READ"),
-    "CVSCLAIMDELETE" to listOf("ACCOUNT_DELETE"),
-    "Uploadfile_Create_Delete_Permission" to listOf("PROMOTION_WRITE"),
-    "SalesAssistant" to listOf("DASHBOARD_READ", "SCHEDULE_READ"),
-    "SalesSupport" to listOf("DASHBOARD_READ", "EMPLOYEE_READ", "ACCOUNT_READ", "SCHEDULE_READ"),
-    "notice" to listOf("DASHBOARD_READ"),
-    "ProfessionalPromotionTeam" to listOf("PROMOTION_READ", "PROMOTION_WRITE")
-)
-
-val INTENTIONALLY_SKIPPED_PERMISSION_SETS: Set<String> = setOf(
-    "MFA", "MFA_User", "Einstein_search", "Classic",
-    "sfdc_aiplanner_service_permset",
-    "sfdcInternalInt__sfdc_a360", "sfdcInternalInt__sfdc_a360_sfcrm_data_extract",
-    "sfdcInternalInt__sfdc_chatbot", "sfdcInternalInt__sfdc_nc_constraints_engine_deploy",
-    "sfdcInternalInt__sfdc_scrt2",
-    "Knowledge_Manager_523278", "mdtViewSet", "permset", "PersetInstead", "Test", "addtionalAppPermission",
-    "X1_1", "X1_2", "X1_3", "X1_View", "X2_1", "X2_2", "X2_3", "X4_View",
-    "Marketing_ETC", "Marketing_MC", "pptm",
-    "OLS_View", "rehabilitation", "Sales_User"
-)
-
-// =============================================================================
 // Identifier quoting
 // =============================================================================
 
@@ -1588,8 +1366,6 @@ data class TargetReport(
     val rawRowsCount: Int = 0,
     val insertedCount: Int = 0,
     val stage1Applied: Boolean = false,
-    val stage2MappingApplied: Boolean = false,
-    val stage2TransformApplied: Boolean = false,
     val errors: List<String> = emptyList()
 )
 
@@ -1610,8 +1386,6 @@ fun writeReport(
             w.println("  raw 행 수             : ${r.rawRowsCount}")
             w.println("  insert/update 행 수   : ${r.insertedCount}")
             w.println("  Stage 1 적용          : ${if (r.stage1Applied) "Y" else "-"}")
-            w.println("  Stage 2-B Mapping     : ${if (r.stage2MappingApplied) "Y" else "-"}")
-            w.println("  Stage 2-C Transform   : ${if (r.stage2TransformApplied) "Y" else "-"}")
             if (r.errors.isNotEmpty()) {
                 w.println("  errors:")
                 for (e in r.errors) w.println("    - $e")
