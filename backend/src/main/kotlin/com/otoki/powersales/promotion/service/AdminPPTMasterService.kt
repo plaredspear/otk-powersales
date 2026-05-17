@@ -182,7 +182,38 @@ class AdminPPTMasterService(
         val employee = employeeRepository.findById(employeeId).orElse(null)
 
         return PPTMasterHistoryListResponse(
-            content = page.content.map { PPTMasterHistoryResponse.Companion.from(it, employee?.name) },
+            content = page.content.map {
+                PPTMasterHistoryResponse.Companion.from(
+                    it, employee?.name, employee?.employeeCode, employee?.orgName, employee?.status
+                )
+            },
+            totalElements = page.totalElements,
+            totalPages = page.totalPages,
+            number = page.number,
+            size = page.size
+        )
+    }
+
+    fun getAllHistory(
+        employeeName: String?,
+        employeeCode: String?,
+        teamType: String?,
+        changedAtFrom: LocalDate?,
+        changedAtTo: LocalDate?,
+        pageable: Pageable
+    ): PPTMasterHistoryListResponse {
+        val teamTypeEnum = ProfessionalPromotionTeamType.Companion.fromDisplayNameOrNull(teamType)
+        val page = pptHistoryRepository.searchHistories(
+            employeeName, employeeCode, teamTypeEnum, changedAtFrom, changedAtTo, pageable
+        )
+
+        return PPTMasterHistoryListResponse(
+            content = page.content.map { history ->
+                val emp = history.employee
+                PPTMasterHistoryResponse.Companion.from(
+                    history, emp?.name, emp?.employeeCode, emp?.orgName, emp?.status
+                )
+            },
             totalElements = page.totalElements,
             totalPages = page.totalPages,
             number = page.number,

@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -127,6 +128,25 @@ class AdminPPTMasterController(
         @RequestParam(defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<PPTMasterHistoryListResponse>> {
         val response = adminPPTMasterService.getHistory(masterId, PageRequest.of(page, size))
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    @GetMapping("/api/v1/admin/ppt-histories")
+    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    fun getAllHistory(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+        @RequestParam(required = false) employeeName: String?,
+        @RequestParam(required = false) employeeCode: String?,
+        @RequestParam(required = false) teamType: String?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) changedAtFrom: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) changedAtTo: LocalDate?
+    ): ResponseEntity<ApiResponse<PPTMasterHistoryListResponse>> {
+        val response = adminPPTMasterService.getAllHistory(
+            employeeName, employeeCode, teamType, changedAtFrom, changedAtTo,
+            PageRequest.of(page, size)
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

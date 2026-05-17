@@ -264,12 +264,13 @@ class AdminPPTMasterControllerTest {
     inner class GetHistory {
 
         @Test
-        @DisplayName("성공 - 변경 이력 조회")
+        @DisplayName("성공 - 변경 이력 조회 + 사원 컨텍스트 3 필드 포함")
         fun getHistory_success() {
             val historyResponse = PPTMasterHistoryListResponse(
                 content = listOf(
                     PPTMasterHistoryResponse(
                         id = 1L, employeeId = 1L, employeeName = "홍길동",
+                        employeeCode = "12345678", orgName = "서울지점", status = "재직",
                         oldValue = null, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
                         changedAt = LocalDateTime.of(2026, 3, 22, 9, 0)
                     )
@@ -282,6 +283,90 @@ class AdminPPTMasterControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content[0].oldValue").doesNotExist())
                 .andExpect(jsonPath("$.data.content[0].newValue").value("라면세일조"))
+                .andExpect(jsonPath("$.data.content[0].employeeCode").value("12345678"))
+                .andExpect(jsonPath("$.data.content[0].orgName").value("서울지점"))
+                .andExpect(jsonPath("$.data.content[0].status").value("재직"))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/ppt-histories - 전 사원 시간순 이력 조회")
+    inner class GetAllHistory {
+
+        @Test
+        @DisplayName("성공 - 필터 없이 전체 조회")
+        fun getAllHistory_noFilter_success() {
+            val historyResponse = PPTMasterHistoryListResponse(
+                content = listOf(
+                    PPTMasterHistoryResponse(
+                        id = 10L, employeeId = 5L, employeeName = "백은경",
+                        employeeCode = "EMP005", orgName = "서울지점", status = "재직",
+                        oldValue = ProfessionalPromotionTeamType.RAMEN_SALE,
+                        newValue = ProfessionalPromotionTeamType.CURRY_PROMOTION,
+                        changedAt = LocalDateTime.of(2026, 5, 18, 14, 30)
+                    )
+                ),
+                totalElements = 1, totalPages = 1, number = 0, size = 20
+            )
+            whenever(adminPPTMasterService.getAllHistory(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
+                .thenReturn(historyResponse)
+
+            mockMvc.perform(get("/api/v1/admin/ppt-histories"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.content[0].id").value(10))
+                .andExpect(jsonPath("$.data.content[0].employeeName").value("백은경"))
+                .andExpect(jsonPath("$.data.content[0].employeeCode").value("EMP005"))
+                .andExpect(jsonPath("$.data.content[0].orgName").value("서울지점"))
+                .andExpect(jsonPath("$.data.content[0].status").value("재직"))
+                .andExpect(jsonPath("$.data.content[0].oldValue").value("라면세일조"))
+                .andExpect(jsonPath("$.data.content[0].newValue").value("카레행사조"))
+        }
+
+        @Test
+        @DisplayName("성공 - 사원명 + 사번 + 팀유형 + 변경일 범위 필터 적용")
+        fun getAllHistory_filterCombo_success() {
+            val historyResponse = PPTMasterHistoryListResponse(
+                content = emptyList(), totalElements = 0, totalPages = 0, number = 0, size = 20
+            )
+            whenever(adminPPTMasterService.getAllHistory(
+                eq("홍"), eq("EMP001"), eq("라면세일조"),
+                eq(LocalDate.of(2026, 5, 1)), eq(LocalDate.of(2026, 5, 31)), any()
+            )).thenReturn(historyResponse)
+
+            mockMvc.perform(get("/api/v1/admin/ppt-histories")
+                .param("employeeName", "홍")
+                .param("employeeCode", "EMP001")
+                .param("teamType", "라면세일조")
+                .param("changedAtFrom", "2026-05-01")
+                .param("changedAtTo", "2026-05-31")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.totalElements").value(0))
+        }
+
+        @Test
+        @DisplayName("성공 - 사원이 deleted 인 row 는 사원 컨텍스트 4 필드 모두 null")
+        fun getAllHistory_deletedEmployee_nullContext() {
+            val historyResponse = PPTMasterHistoryListResponse(
+                content = listOf(
+                    PPTMasterHistoryResponse(
+                        id = 99L, employeeId = 999L,
+                        employeeName = null, employeeCode = null, orgName = null, status = null,
+                        oldValue = null, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
+                        changedAt = LocalDateTime.of(2026, 5, 18, 14, 30)
+                    )
+                ),
+                totalElements = 1, totalPages = 1, number = 0, size = 20
+            )
+            whenever(adminPPTMasterService.getAllHistory(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
+                .thenReturn(historyResponse)
+
+            mockMvc.perform(get("/api/v1/admin/ppt-histories"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.content[0].employeeName").doesNotExist())
+                .andExpect(jsonPath("$.data.content[0].employeeCode").doesNotExist())
+                .andExpect(jsonPath("$.data.content[0].orgName").doesNotExist())
+                .andExpect(jsonPath("$.data.content[0].status").doesNotExist())
         }
     }
 }

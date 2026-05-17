@@ -146,3 +146,63 @@ export async function confirmPPTMasterBulk(
   }
   return res.data.data;
 }
+
+
+// --- PPT 이력 조회 ---
+
+export interface PPTHistory {
+  id: number;
+  employeeId: number;
+  employeeName: string | null;
+  employeeCode: string | null;
+  orgName: string | null;
+  status: string | null;
+  oldValue: string | null;
+  newValue: string;
+  changedAt: string;
+}
+
+export interface PPTHistoryListData {
+  content: PPTHistory[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+export interface PPTHistorySearchParams {
+  page?: number;
+  size?: number;
+  employeeName?: string;
+  employeeCode?: string;
+  teamType?: string;
+  changedAtFrom?: string;
+  changedAtTo?: string;
+}
+
+export async function getPPTHistories(
+  params: PPTHistorySearchParams,
+): Promise<PPTHistoryListData> {
+  const res = await client.get<ApiResponse<PPTHistoryListData>>(
+    '/api/v1/admin/ppt-histories',
+    { params },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '전문행사조 이력 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function getPPTMasterHistory(
+  masterId: number,
+  params: { page?: number; size?: number },
+): Promise<PPTHistoryListData> {
+  const res = await client.get<ApiResponse<PPTHistoryListData>>(
+    `/api/v1/admin/ppt-masters/${masterId}/history`,
+    { params },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '전문행사조 마스터 이력 조회에 실패했습니다');
+  }
+  return res.data.data;
+}

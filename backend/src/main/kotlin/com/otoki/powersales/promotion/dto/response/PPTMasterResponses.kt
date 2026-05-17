@@ -75,16 +75,28 @@ data class PPTMasterHistoryResponse(
     val id: Long,
     val employeeId: Long?,
     val employeeName: String?,
+    val employeeCode: String?,
+    val orgName: String?,
+    val status: String?,
     val oldValue: ProfessionalPromotionTeamType?,
     val newValue: ProfessionalPromotionTeamType,
     val changedAt: LocalDateTime
 ) {
     companion object {
-        fun from(history: ProfessionalPromotionTeamHistory, employeeName: String?): PPTMasterHistoryResponse {
+        fun from(
+            history: ProfessionalPromotionTeamHistory,
+            employeeName: String?,
+            employeeCode: String?,
+            orgName: String?,
+            status: String?
+        ): PPTMasterHistoryResponse {
             return PPTMasterHistoryResponse(
                 id = history.id,
                 employeeId = history.employeeId,
                 employeeName = employeeName,
+                employeeCode = employeeCode,
+                orgName = orgName,
+                status = status,
                 oldValue = history.oldValue,
                 newValue = history.newValue,
                 changedAt = history.changedAt

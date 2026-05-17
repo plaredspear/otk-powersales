@@ -43,6 +43,7 @@ export const menuRoute: MenuRoute = {
         { path: '/promotions', name: '행사마스터', requiredPermission: 'PROMOTION_READ' },
         { path: '/display-schedules', name: '진열스케줄마스터', requiredPermission: 'PROMOTION_WRITE' },
         { path: '/promotion/ppt-masters', name: '전문행사조' },
+        { path: '/promotion/ppt-masters/history', name: '전문행사조 이력', requiredPermission: 'PROMOTION_READ' },
         { path: '/alternative-holidays', name: '대체휴무' },
       ],
     },

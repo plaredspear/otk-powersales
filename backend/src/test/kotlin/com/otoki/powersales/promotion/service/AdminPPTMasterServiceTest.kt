@@ -543,4 +543,119 @@ class AdminPPTMasterServiceTest {
             verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
         }
     }
+
+    @Nested
+    @DisplayName("getAllHistory - 전 사원 시간순 이력 조회")
+    inner class GetAllHistoryTests {
+
+        @Test
+        @DisplayName("성공 - 필터 없이 호출 → repository searchHistories 호출 + 응답 사원 컨텍스트 정상")
+        fun getAllHistory_noFilter_success() {
+            val employee = createEmployee()
+            val history = ProfessionalPromotionTeamHistory(
+                id = 1L,
+                employeeId = employee.id,
+                oldValue = ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING,
+                newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
+                employee = employee
+            )
+            val page = PageImpl(listOf(history), PageRequest.of(0, 20), 1)
+
+            whenever(pptHistoryRepository.searchHistories(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
+                .thenReturn(page)
+
+            val result = service.getAllHistory(null, null, null, null, null, PageRequest.of(0, 20))
+
+            assertThat(result.content).hasSize(1)
+            val row = result.content[0]
+            assertThat(row.employeeId).isEqualTo(employee.id)
+            assertThat(row.employeeName).isEqualTo("홍길동")
+            assertThat(row.employeeCode).isEqualTo("12345678")
+            assertThat(row.orgName).isEqualTo("서울지점")
+            assertThat(row.status).isEqualTo("재직")
+            assertThat(row.oldValue).isEqualTo(ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING)
+            assertThat(row.newValue).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
+        }
+
+        @Test
+        @DisplayName("성공 - teamType 표시명 → enum 변환하여 repository 호출")
+        fun getAllHistory_teamTypeDisplayName_converted() {
+            whenever(pptHistoryRepository.searchHistories(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
+                .thenReturn(PageImpl(emptyList(), PageRequest.of(0, 20), 0))
+
+            service.getAllHistory(null, null, "라면세일조", null, null, PageRequest.of(0, 20))
+
+            verify(pptHistoryRepository).searchHistories(
+                anyOrNull(), anyOrNull(),
+                eq(ProfessionalPromotionTeamType.RAMEN_SALE),
+                anyOrNull(), anyOrNull(), any()
+            )
+        }
+
+        @Test
+        @DisplayName("성공 - 잘못된 teamType 문자열 → null 변환 (예외 없음)")
+        fun getAllHistory_invalidTeamType_nullConverted() {
+            whenever(pptHistoryRepository.searchHistories(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
+                .thenReturn(PageImpl(emptyList(), PageRequest.of(0, 20), 0))
+
+            service.getAllHistory(null, null, "잘못된값", null, null, PageRequest.of(0, 20))
+
+            verify(pptHistoryRepository).searchHistories(
+                anyOrNull(), anyOrNull(),
+                eq(null), anyOrNull(), anyOrNull(), any()
+            )
+        }
+
+        @Test
+        @DisplayName("성공 - 사원 lookup 결과가 null 인 row → 사원 컨텍스트 4 필드 null")
+        fun getAllHistory_deletedEmployee_nullContext() {
+            val history = ProfessionalPromotionTeamHistory(
+                id = 99L,
+                employeeId = 999L,
+                newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
+                employee = null
+            )
+            val page = PageImpl(listOf(history), PageRequest.of(0, 20), 1)
+
+            whenever(pptHistoryRepository.searchHistories(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
+                .thenReturn(page)
+
+            val result = service.getAllHistory(null, null, null, null, null, PageRequest.of(0, 20))
+
+            assertThat(result.content[0].employeeName).isNull()
+            assertThat(result.content[0].employeeCode).isNull()
+            assertThat(result.content[0].orgName).isNull()
+            assertThat(result.content[0].status).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("getHistory - 사원 컨텍스트 3 필드 보강")
+    inner class GetHistoryEnrichmentTests {
+
+        @Test
+        @DisplayName("성공 - getHistory 응답에 employeeCode/orgName/status 포함")
+        fun getHistory_includesEmployeeContext() {
+            val master = createMaster(employeeId = 1L)
+            val employee = createEmployee()
+            val history = ProfessionalPromotionTeamHistory(
+                id = 1L,
+                employeeId = 1L,
+                oldValue = null,
+                newValue = ProfessionalPromotionTeamType.RAMEN_SALE
+            )
+
+            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
+            whenever(pptHistoryRepository.findByEmployeeIdOrderByChangedAtDesc(eq(1L), any()))
+                .thenReturn(PageImpl(listOf(history), PageRequest.of(0, 20), 1))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+
+            val result = service.getHistory(1L, PageRequest.of(0, 20))
+
+            assertThat(result.content[0].employeeName).isEqualTo("홍길동")
+            assertThat(result.content[0].employeeCode).isEqualTo("12345678")
+            assertThat(result.content[0].orgName).isEqualTo("서울지점")
+            assertThat(result.content[0].status).isEqualTo("재직")
+        }
+    }
 }

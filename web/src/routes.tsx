@@ -38,6 +38,7 @@ const HolidayMasterListPage = lazy(() => import('@/pages/holiday-masters/Holiday
 const MonthlyIntegrationSchedulePage = lazy(() => import('@/pages/schedules/MonthlyIntegrationSchedulePage'));
 const CategorySchedulePage = lazy(() => import('@/pages/schedules/CategorySchedulePage'));
 const PPTMasterPage = lazy(() => import('@/pages/promotion/PPTMasterPage'));
+const PPTHistoryPage = lazy(() => import('@/pages/promotion/PPTHistoryPage'));
 const PermissionMatrixPage = lazy(() => import('@/pages/settings/PermissionMatrixPage'));
 const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
 const EmployeePermissionPage = lazy(() => import('@/pages/settings/EmployeePermissionPage'));
@@ -114,6 +115,7 @@ export const router = createBrowserRouter(
             { path: '/work-type-headcount', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
             { path: '/monthly-integration', element: <LazyWrapper><MonthlyIntegrationSchedulePage /></LazyWrapper> },
             { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
+            { path: '/promotion/ppt-masters/history', element: <LazyWrapper><PPTHistoryPage /></LazyWrapper> },
             {
               element: <PermissionRoute requiredPermission="PRODUCT_EXPIRATION_READ" />,
               children: [
