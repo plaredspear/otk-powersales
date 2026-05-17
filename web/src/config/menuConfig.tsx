@@ -95,6 +95,11 @@ export const menuRoute: MenuRoute = {
         { path: '/account', name: '거래처', requiredPermission: 'ACCOUNT_READ' },
         { path: '/settings/organizations', name: '조직마스터' },
         { path: '/settings/holiday-masters', name: '공휴일 관리' },
+        {
+          path: '/settings/employee-input-criteria-masters',
+          name: '진열사원 투입기준 마스터',
+          requiredPermission: 'EMPLOYEE_INPUT_CRITERIA_READ',
+        },
       ],
     },
     {

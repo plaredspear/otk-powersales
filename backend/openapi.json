@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:61594",
+    "url" : "http://localhost:62438",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1006,6 +1006,93 @@
         }
       }
     },
+    "/api/v1/admin/employee-input-criteria-masters/{id}" : {
+      "get" : {
+        "tags" : [ "admin-employee-input-criteria-master-controller" ],
+        "operationId" : "get",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeInputCriteriaMasterResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "admin-employee-input-criteria-master-controller" ],
+        "operationId" : "update_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeInputCriteriaMasterResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "admin-employee-input-criteria-master-controller" ],
+        "operationId" : "delete_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/education/posts/{postId}" : {
       "get" : {
         "tags" : [ "admin-education-controller" ],
@@ -1754,7 +1841,7 @@
     "/api/v1/mobile/orders/draft" : {
       "get" : {
         "tags" : [ "order-draft-controller" ],
-        "operationId" : "get",
+        "operationId" : "get_1",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -1796,7 +1883,7 @@
       },
       "delete" : {
         "tags" : [ "order-draft-controller" ],
-        "operationId" : "delete_1",
+        "operationId" : "delete_2",
         "responses" : {
           "200" : {
             "description" : "OK"
@@ -3476,6 +3563,115 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/employee-input-criteria-masters" : {
+      "get" : {
+        "tags" : [ "admin-employee-input-criteria-master-controller" ],
+        "operationId" : "list",
+        "parameters" : [ {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "ALL",
+            "enum" : [ "ALL", "VALID", "PLANNED", "ENDED" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListEmployeeInputCriteriaMasterResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "admin-employee-input-criteria-master-controller" ],
+        "operationId" : "create_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeInputCriteriaMasterResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/employee-input-criteria-masters/{id}/confirm" : {
+      "post" : {
+        "tags" : [ "admin-employee-input-criteria-master-controller" ],
+        "operationId" : "confirm",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeInputCriteriaMasterResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/employee-input-criteria-masters/bulk-confirm" : {
+      "post" : {
+        "tags" : [ "admin-employee-input-criteria-master-controller" ],
+        "operationId" : "bulkConfirm",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterBulkConfirmRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListEmployeeInputCriteriaMasterResponse"
                 }
               }
             }
@@ -6473,6 +6669,24 @@
         }
       }
     },
+    "/api/v1/admin/employee-input-criteria-masters/account-categories" : {
+      "get" : {
+        "tags" : [ "admin-employee-input-criteria-master-controller" ],
+        "operationId" : "listAccountCategories",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListAccountCategoryOptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/education/categories" : {
       "get" : {
         "tags" : [ "admin-education-controller" ],
@@ -6825,12 +7039,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
+          "expired" : {
+            "type" : "boolean"
+          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "expired" : {
-            "type" : "boolean"
           }
         }
       },
@@ -7495,10 +7709,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -8279,6 +8493,124 @@
             "items" : {
               "type" : "string"
             }
+          }
+        }
+      },
+      "EmployeeInputCriteriaMasterUpdateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "categoryId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "typeOfWork1" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "진열" ]
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "boundary" : {
+            "type" : "number"
+          },
+          "fixed1PersonStandardAmount" : {
+            "type" : "number"
+          },
+          "bifurcationHalfPersonStandard" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "bifurcationHalfPersonStandard", "boundary", "categoryId", "fixed1PersonStandardAmount", "startDate" ]
+      },
+      "ApiResponseEmployeeInputCriteriaMasterResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "EmployeeInputCriteriaMasterResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "categoryId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "categoryCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "categoryName" : {
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork1" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "진열" ]
+          },
+          "startDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "confirmed" : {
+            "type" : "boolean"
+          },
+          "boundary" : {
+            "type" : [ "number", "null" ]
+          },
+          "fixed1PersonStandardAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "bifurcationHalfPersonStandard" : {
+            "type" : [ "number", "null" ]
+          },
+          "fixed1PersonMinAmountInRealmRange" : {
+            "type" : [ "number", "null" ]
+          },
+          "bifurcationHalfPersonMinAmountInRealmRange" : {
+            "type" : [ "number", "null" ]
+          },
+          "accountCategorizedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "validData" : {
+            "type" : [ "string", "null" ]
           }
         }
       },
@@ -12375,6 +12707,78 @@
           }
         }
       },
+      "EmployeeInputCriteriaMasterCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "categoryId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "typeOfWork1" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "진열" ]
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "boundary" : {
+            "type" : "number"
+          },
+          "fixed1PersonStandardAmount" : {
+            "type" : "number"
+          },
+          "bifurcationHalfPersonStandard" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "bifurcationHalfPersonStandard", "boundary", "categoryId", "fixed1PersonStandardAmount", "startDate" ]
+      },
+      "EmployeeInputCriteriaMasterBulkConfirmRequest" : {
+        "type" : "object",
+        "properties" : {
+          "ids" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        },
+        "required" : [ "ids" ]
+      },
+      "ApiResponseListEmployeeInputCriteriaMasterResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterResponse"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "WebRefreshTokenRequest" : {
         "type" : "object",
         "properties" : {
@@ -13698,11 +14102,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -13710,9 +14112,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -13788,10 +14192,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -17098,11 +17502,9 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -17110,9 +17512,11 @@
           "last" : {
             "type" : "boolean"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -17247,10 +17651,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -18301,6 +18705,49 @@
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "AccountCategoryOptionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "accountCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiResponseListAccountCategoryOptionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/AccountCategoryOptionResponse"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       },

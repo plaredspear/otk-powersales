@@ -43,6 +43,8 @@ object RolePermissionMatrix {
             AdminPermission.USER_READ,
             AdminPermission.USER_WRITE,
             AdminPermission.SCHEDULED_JOB_READ,
+            AdminPermission.EMPLOYEE_INPUT_CRITERIA_READ,
+            AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE,
         ),
         UserRole.SALES_SUPPORT to setOf(
             AdminPermission.DASHBOARD_READ,
@@ -59,6 +61,8 @@ object RolePermissionMatrix {
             AdminPermission.MONTHLY_INPUT_ADEQUACY_READ,
             AdminPermission.PRODUCT_EXPIRATION_READ,
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
+            AdminPermission.EMPLOYEE_INPUT_CRITERIA_READ,
+            AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE,
         ),
         UserRole.LEADER to setOf(
             AdminPermission.DASHBOARD_READ,

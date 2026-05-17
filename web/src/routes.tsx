@@ -36,6 +36,9 @@ const DisplaySchedulePage = lazy(() => import('@/pages/DisplaySchedulePage'));
 const OrganizationPage = lazy(() => import('@/pages/settings/OrganizationPage'));
 const AlternativeHolidayPage = lazy(() => import('@/pages/alternative-holidays/AlternativeHolidayPage'));
 const HolidayMasterListPage = lazy(() => import('@/pages/holiday-masters/HolidayMasterListPage'));
+const EmployeeInputCriteriaMasterListPage = lazy(
+  () => import('@/pages/employee-input-criteria-masters/EmployeeInputCriteriaMasterListPage'),
+);
 const MonthlyIntegrationSchedulePage = lazy(() => import('@/pages/schedules/MonthlyIntegrationSchedulePage'));
 const CategorySchedulePage = lazy(() => import('@/pages/schedules/CategorySchedulePage'));
 const MonthlyInputAdequacyPage = lazy(() => import('@/pages/MonthlyInputAdequacyPage'));
@@ -107,6 +110,7 @@ export const router = createBrowserRouter(
             { path: '/alternative-holidays', element: <LazyWrapper><AlternativeHolidayPage /></LazyWrapper> },
             { path: '/settings/organizations', element: <LazyWrapper><OrganizationPage /></LazyWrapper> },
             { path: '/settings/holiday-masters', element: <LazyWrapper><HolidayMasterListPage /></LazyWrapper> },
+            { path: '/settings/employee-input-criteria-masters', element: <LazyWrapper><EmployeeInputCriteriaMasterListPage /></LazyWrapper> },
             { path: '/settings/permissions', element: <LazyWrapper><PermissionMatrixPage /></LazyWrapper> },
             { path: '/settings/permissions/employees', element: <LazyWrapper><EmployeePermissionPage /></LazyWrapper> },
             {
