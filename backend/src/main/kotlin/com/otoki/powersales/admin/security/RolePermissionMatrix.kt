@@ -41,6 +41,7 @@ object RolePermissionMatrix {
             AdminPermission.AGREEMENT_WRITE,
             AdminPermission.USER_READ,
             AdminPermission.USER_WRITE,
+            AdminPermission.SCHEDULED_JOB_READ,
         ),
         UserRole.SALES_SUPPORT to setOf(
             AdminPermission.DASHBOARD_READ,

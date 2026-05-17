@@ -45,6 +45,7 @@ const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage')
 const EmployeePermissionPage = lazy(() => import('@/pages/settings/EmployeePermissionPage'));
 const AdminAccountRegisterPage = lazy(() => import('@/pages/settings/AdminAccountRegisterPage'));
 const NaverGeocodeTestPage = lazy(() => import('@/pages/admin/NaverGeocodeTestPage'));
+const ScheduledJobsPage = lazy(() => import('@/pages/admin/scheduled-jobs/ScheduledJobsPage'));
 const AgreementWordsPage = lazy(() => import('@/pages/admin/agreement-words/AgreementWordsPage'));
 const UserListPage = lazy(() => import('@/pages/users/UserListPage'));
 const UserDetailPage = lazy(() => import('@/pages/users/UserDetailPage'));
@@ -162,6 +163,12 @@ export const router = createBrowserRouter(
               element: <PermissionRoute requiredPermission="NAVER_GEOCODE_TEST" />,
               children: [
                 { path: '/admin/tools/naver-geocode', element: <LazyWrapper><NaverGeocodeTestPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute requiredPermission="SCHEDULED_JOB_READ" />,
+              children: [
+                { path: '/admin/tools/scheduled-jobs', element: <LazyWrapper><ScheduledJobsPage /></LazyWrapper> },
               ],
             },
             {

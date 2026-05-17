@@ -1,0 +1,69 @@
+package com.otoki.powersales.admin.controller
+
+import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
+import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
+import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
+import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
+import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.admin.service.AdminScheduledJobService
+import com.otoki.powersales.common.dto.ApiResponse
+import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
+
+/**
+ * Admin 스케줄 잡 실행 이력 조회 endpoint.
+ *
+ * - `/runs`: 페이지네이션된 실행 이력 (필터: jobName, status, startedAt 범위)
+ * - `/catalog`: 등록된 9개 `@Scheduled` 잡의 정적 목록 (jobName + cron + 설명)
+ * - `/summary`: 최근 N시간 윈도우의 status 별 카운트 + distinct jobName 목록
+ *
+ * 모든 endpoint 는 [AdminPermission.SCHEDULED_JOB_READ] 권한 필수
+ * — [com.otoki.powersales.admin.security.RolePermissionMatrix] 의 `SYSTEM_ADMIN` 에만 부여.
+ */
+@RestController
+class AdminScheduledJobController(
+    private val adminScheduledJobService: AdminScheduledJobService,
+) {
+
+    @GetMapping("/api/v1/admin/scheduled-jobs/runs")
+    @RequiresPermission(AdminPermission.SCHEDULED_JOB_READ)
+    fun searchRuns(
+        @RequestParam(required = false) jobName: String?,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) from: LocalDateTime?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) to: LocalDateTime?,
+        @RequestParam(defaultValue = "1") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ResponseEntity<ApiResponse<ScheduledJobRunListResponse>> {
+        val response = adminScheduledJobService.search(
+            AdminScheduledJobQuery(
+                jobName = jobName,
+                status = status,
+                from = from,
+                to = to,
+                page = page,
+                size = size,
+            )
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    @GetMapping("/api/v1/admin/scheduled-jobs/catalog")
+    @RequiresPermission(AdminPermission.SCHEDULED_JOB_READ)
+    fun getCatalog(): ResponseEntity<ApiResponse<List<RegisteredScheduledJobDto>>> {
+        return ResponseEntity.ok(ApiResponse.success(adminScheduledJobService.catalog()))
+    }
+
+    @GetMapping("/api/v1/admin/scheduled-jobs/summary")
+    @RequiresPermission(AdminPermission.SCHEDULED_JOB_READ)
+    fun getSummary(
+        @RequestParam(defaultValue = "24") windowHours: Long,
+    ): ResponseEntity<ApiResponse<ScheduledJobSummaryResponse>> {
+        return ResponseEntity.ok(ApiResponse.success(adminScheduledJobService.summary(windowHours)))
+    }
+}

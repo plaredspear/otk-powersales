@@ -20,5 +20,6 @@ enum class AdminPermission {
     AGREEMENT_READ,
     AGREEMENT_WRITE,
     USER_READ,
-    USER_WRITE
+    USER_WRITE,
+    SCHEDULED_JOB_READ,
 }
