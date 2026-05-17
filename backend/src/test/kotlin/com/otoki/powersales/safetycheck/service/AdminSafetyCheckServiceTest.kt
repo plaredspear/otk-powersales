@@ -276,6 +276,60 @@ class AdminSafetyCheckServiceTest {
         }
 
         @Test
+        @DisplayName("본부 통합 권한 - costCenterCode 3232 사용자는 3234·3236 두 사업소 통합 조회 (SF callOut HRcode 3232 분기 정합)")
+        fun getStatus_hqIntegratedScope_3232to3234and3236() {
+            // Given — 본부 영업관리자 (costCenterCode = 3232) 가 로그인
+            val hqManager = createEmployee(adminUserId, "10000099", "본부관리자", UserRole.LEADER, "3232")
+            val memberAt3234 = createEmployee(42L, "123456", "홍길동", UserRole.WOMAN, "3234")
+            val memberAt3236 = createEmployee(55L, "654321", "김영희", UserRole.WOMAN, "3236")
+
+            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(hqManager))
+            // 3232 분기로 인해 findByCostCenterCodeInAndRole(["3234","3236"], WOMAN) 가 호출되어야 함
+            whenever(employeeRepository.findByCostCenterCodeInAndRole(listOf("3234", "3236"), UserRole.WOMAN))
+                .thenReturn(listOf(memberAt3234, memberAt3236))
+
+            val schedule1 = createSchedule(1L, 42L, today, WorkingType.WORK)
+            val schedule2 = createSchedule(2L, 55L, today, WorkingType.WORK)
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
+                .thenReturn(listOf(schedule1, schedule2))
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
+                .thenReturn(emptyList())
+
+            // When
+            val result = service.getStatus(adminUserId, today)
+
+            // Then — 3234, 3236 두 사업소의 여사원이 모두 응답에 포함
+            assertThat(result.totalCount).isEqualTo(2)
+            assertThat(result.members.map { it.employeeCode }).containsExactlyInAnyOrder("123456", "654321")
+        }
+
+        @Test
+        @DisplayName("일반 사업소 사용자 (3234 단일) - 본부 통합 분기 적용 안 됨, 단일 사업소만 조회")
+        fun getStatus_normalScope_singleCostCenter() {
+            // Given — 일반 영업조장 (costCenterCode = 3234) 이 로그인
+            val leader = createEmployee(adminUserId, "20100001", "조장", UserRole.LEADER, "3234")
+            val member = createEmployee(42L, "123456", "홍길동", UserRole.WOMAN, "3234")
+
+            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(leader))
+            // 본부 통합 분기 미적용 → 단일 사업소만
+            whenever(employeeRepository.findByCostCenterCodeAndRole("3234", UserRole.WOMAN))
+                .thenReturn(listOf(member))
+
+            val schedule = createSchedule(1L, 42L, today, WorkingType.WORK)
+            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
+                .thenReturn(listOf(schedule))
+            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
+                .thenReturn(emptyList())
+
+            // When
+            val result = service.getStatus(adminUserId, today)
+
+            // Then
+            assertThat(result.totalCount).isEqualTo(1)
+            assertThat(result.members[0].employeeCode).isEqualTo("123456")
+        }
+
+        @Test
         @DisplayName("결과 정렬 - 사원명 가나다순")
         fun getStatus_sortedByName() {
             val admin = createEmployee(adminUserId, "10000001", "관리자", UserRole.LEADER, "CC001")

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button, DatePicker, Empty, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, DatePicker, Empty, Grid, Spin, Table, Tag, Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -10,6 +10,7 @@ import {
 } from '@/api/safetyCheck';
 
 const { Text } = Typography;
+const { useBreakpoint } = Grid;
 
 const EQUIPMENT_COUNT = 9;
 
@@ -25,6 +26,8 @@ function formatPrecautions(precautions: string | null): string {
 
 export default function SafetyCheckPage() {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const dateStr = selectedDate.format('YYYY-MM-DD');
   const dayOfWeek = selectedDate.format('ddd');
@@ -167,6 +170,8 @@ export default function SafetyCheckPage() {
       <Spin spinning={isLoading}>
         {data && data.totalCount === 0 ? (
           <Empty description="해당 날짜에 근무 스케줄이 없습니다" />
+        ) : isMobile ? (
+          <MemberCardList members={data?.members ?? []} equipmentLabels={equipmentLabels} />
         ) : (
           <Table
             rowKey="id"
@@ -179,6 +184,74 @@ export default function SafetyCheckPage() {
           />
         )}
       </Spin>
+    </div>
+  );
+}
+
+function MemberCardList({
+  members,
+  equipmentLabels,
+}: {
+  members: MemberStatus[];
+  equipmentLabels: string[];
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {members.map((m) => (
+        <Card
+          key={m.id}
+          size="small"
+          title={
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>
+                {m.employeeCode} {m.employeeName}
+              </span>
+              {m.submitted ? <Tag color="green">완료</Tag> : <Tag>미제출</Tag>}
+            </div>
+          }
+        >
+          <CardRow label="거래처코드" value={m.accountCode ?? '-'} />
+          <CardRow label="거래처명" value={m.accountName ?? '-'} />
+          <CardRow label="설문시작시간" value={m.submitted ? formatTime(m.startTime) : '-'} />
+          <CardRow label="제출시각" value={m.submitted ? formatTime(m.submittedAt) : '-'} />
+          {Array.from({ length: EQUIPMENT_COUNT }, (_, i) => (
+            <CardRow
+              key={i}
+              label={equipmentLabels[i]}
+              value={m.submitted ? (m.equipments[i]?.answer ?? '-') : '-'}
+            />
+          ))}
+          <CardRow label='"예" 수' value={m.submitted ? String(m.yesCount) : '-'} />
+          <CardRow label='"해당없음" 수' value={m.submitted ? String(m.noCount) : '-'} />
+          <CardRow
+            label="예방사항"
+            value={m.submitted ? formatPrecautions(m.precautions) : '-'}
+          />
+          <CardRow
+            label="예방사항 수"
+            value={m.submitted ? String(m.precautionCount) : '-'}
+          />
+          <CardRow label="출근현황" value={m.workReportStatus ?? '-'} />
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function CardRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 8,
+        padding: '4px 0',
+        borderBottom: '1px solid #f0f0f0',
+        fontSize: 13,
+      }}
+    >
+      <span style={{ color: '#666', flexShrink: 0, maxWidth: '55%' }}>{label}</span>
+      <span style={{ textAlign: 'right', wordBreak: 'break-all' }}>{value}</span>
     </div>
   );
 }

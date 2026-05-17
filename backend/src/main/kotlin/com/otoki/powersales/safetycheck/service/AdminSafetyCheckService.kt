@@ -45,9 +45,12 @@ class AdminSafetyCheckService(
         val costCenterCode = currentEmployee.costCenterCode
             ?: return emptyResponse(date)
 
-        // 1. 소속 여사원 조회
-        val members = employeeRepository.findByCostCenterCodeAndRole(costCenterCode, UserRole.WOMAN)
-            .filter { it.isDeleted != true }
+        // 1. 소속 여사원 조회 — 본부 통합 권한 (costCenterCode 3232) 은 3234·3236 두 사업소 통합
+        val members = if (costCenterCode == SF_HQ_INTEGRATED_COST_CENTER) {
+            employeeRepository.findByCostCenterCodeInAndRole(SF_HQ_INTEGRATED_TARGETS, UserRole.WOMAN)
+        } else {
+            employeeRepository.findByCostCenterCodeAndRole(costCenterCode, UserRole.WOMAN)
+        }.filter { it.isDeleted != true }
         if (members.isEmpty()) return emptyResponse(date)
 
         val employeeIds = members.map { it.id }
@@ -163,5 +166,13 @@ class AdminSafetyCheckService(
     private fun findEmployeeById(userId: Long): Employee {
         return employeeRepository.findById(userId)
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
+    }
+
+    companion object {
+        /** SF `TeamMemberSafetyCheckController.callOut` 본부 영업관리자 단일 본부 코드 — 두 사업소 통합 조회 트리거 */
+        private const val SF_HQ_INTEGRATED_COST_CENTER = "3232"
+
+        /** SF `TeamMemberSafetyCheckController.callOut` 본부 통합 조회 대상 사업소 코드 — HRcode 3232 사용자가 통합으로 보는 두 사업소 */
+        private val SF_HQ_INTEGRATED_TARGETS = listOf("3234", "3236")
     }
 }
