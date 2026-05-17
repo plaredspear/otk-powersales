@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:61108",
+    "url" : "http://localhost:61594",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1526,12 +1526,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
-          "expired" : {
-            "type" : "boolean"
-          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "expired" : {
+            "type" : "boolean"
           }
         }
       },
@@ -3223,6 +3223,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
           "first" : {
             "type" : "boolean"
           },
@@ -3232,12 +3238,6 @@
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -3261,6 +3261,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -3269,9 +3272,6 @@
             "$ref" : "#/components/schemas/SortObject"
           },
           "paged" : {
-            "type" : "boolean"
-          },
-          "unpaged" : {
             "type" : "boolean"
           },
           "pageNumber" : {
@@ -3313,10 +3313,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {

@@ -35,6 +35,7 @@ class AdminPermissionMatrixService(
         AdminPermission.PRODUCT_EXPIRATION_READ to ("유통기한 조회" to listOf("현장 점검/이슈 > 유통기한 관리")),
         AdminPermission.PRODUCT_EXPIRATION_WRITE to ("유통기한 등록/수정" to listOf("현장 점검/이슈 > 유통기한 관리 (등록 / 수정 / 삭제)")),
         AdminPermission.NAVER_GEOCODE_TEST to ("Naver Geocode 변환 테스트" to listOf("운영 도구 > Naver Geocode 변환 테스트")),
+        AdminPermission.SCHEDULED_JOB_READ to ("스케줄 잡 실행 이력 조회" to listOf("운영 도구 > 스케줄 잡 실행 이력")),
         AdminPermission.AGREEMENT_READ to ("동의 약관 조회" to listOf("시스템 > 동의 약관 등록")),
         AdminPermission.AGREEMENT_WRITE to ("동의 약관 등록" to listOf("시스템 > 동의 약관 등록 (등록 / 수정)")),
         AdminPermission.USER_READ to ("사용자 조회" to listOf("시스템 > 사용자 관리")),
