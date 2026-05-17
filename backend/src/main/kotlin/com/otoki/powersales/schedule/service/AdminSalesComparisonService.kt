@@ -4,6 +4,8 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.entity.AccountType
 import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster
 import com.otoki.powersales.schedule.enums.TypeOfWork1
@@ -57,11 +59,13 @@ class AdminSalesComparisonService(
      * 집계 모드 조회 — 배치적합성 × 거래처 카테고리 거래처 수 집계표 산출.
      *
      * 근무형태1=진열 + 근무형태5=상시 조건의 사원 일정만 산출 대상. 거래처 코드 단위 중복 제거.
+     * 권한: `scope.isAllBranches` 면 사용자 입력 `costCenterCodes` 그대로 사용, 아니면 `scope.branchCodes` 와 교집합으로 필터.
      */
-    fun getSummary(year: Int, month: Int, costCenterCodes: List<String>): SalesComparisonSummaryResponse {
+    fun getSummary(scope: DataScope, year: Int, month: Int, costCenterCodes: List<String>): SalesComparisonSummaryResponse {
         validateParams(year, month, costCenterCodes)
+        val effectiveCodes = applyScope(scope, costCenterCodes)
 
-        val accountSuitabilities = computeAccountSuitabilities(year, month, costCenterCodes)
+        val accountSuitabilities = computeAccountSuitabilities(year, month, effectiveCodes)
         val rows = buildSummaryRows(accountSuitabilities)
         val total = buildTotalRow(accountSuitabilities)
 
@@ -74,14 +78,16 @@ class AdminSalesComparisonService(
      * accountIds 가 비어있으면 전체 범위 (집계 모드의 전체 셀에 해당). 비어있지 않으면 해당 거래처만 필터.
      */
     fun getMiddle(
+        scope: DataScope,
         year: Int,
         month: Int,
         costCenterCodes: List<String>,
         accountIds: List<Int>
     ): SalesComparisonMiddleResponse {
         validateParams(year, month, costCenterCodes)
+        val effectiveCodes = applyScope(scope, costCenterCodes)
 
-        val accountSuitabilities = computeAccountSuitabilities(year, month, costCenterCodes)
+        val accountSuitabilities = computeAccountSuitabilities(year, month, effectiveCodes)
         val filtered = if (accountIds.isEmpty()) {
             accountSuitabilities
         } else {
@@ -104,6 +110,7 @@ class AdminSalesComparisonService(
      * workingCategory1Filter / workingCategory5Filter 가 지정되면 사원 단위 추가 필터.
      */
     fun getDetail(
+        scope: DataScope,
         year: Int,
         month: Int,
         costCenterCodes: List<String>,
@@ -112,8 +119,9 @@ class AdminSalesComparisonService(
         workingCategory5Filter: String?
     ): SalesComparisonDetailResponse {
         validateParams(year, month, costCenterCodes)
+        val effectiveCodes = applyScope(scope, costCenterCodes)
 
-        val accountSuitabilities = computeAccountSuitabilities(year, month, costCenterCodes)
+        val accountSuitabilities = computeAccountSuitabilities(year, month, effectiveCodes)
         val accountIdSet = accountIds.toSet()
 
         val items = accountSuitabilities
@@ -140,8 +148,8 @@ class AdminSalesComparisonService(
     /**
      * 집계표 엑셀 export — 헤더 + 적합성 × 카테고리 셀 + 총계.
      */
-    fun exportSummary(year: Int, month: Int, costCenterCodes: List<String>): ExcelResult {
-        val response = getSummary(year, month, costCenterCodes)
+    fun exportSummary(scope: DataScope, year: Int, month: Int, costCenterCodes: List<String>): ExcelResult {
+        val response = getSummary(scope, year, month, costCenterCodes)
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("배치적합성_집계")
 
@@ -204,12 +212,13 @@ class AdminSalesComparisonService(
      * 중간집계 엑셀 export — 거래처 행 + 적합성별 소계 + 총계.
      */
     fun exportMiddle(
+        scope: DataScope,
         year: Int,
         month: Int,
         costCenterCodes: List<String>,
         accountIds: List<Int>
     ): ExcelResult {
-        val response = getMiddle(year, month, costCenterCodes, accountIds)
+        val response = getMiddle(scope, year, month, costCenterCodes, accountIds)
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("배치적합성_중간집계")
 
@@ -273,6 +282,7 @@ class AdminSalesComparisonService(
      * 상세 엑셀 export — 사원별 행 + 총계.
      */
     fun exportDetail(
+        scope: DataScope,
         year: Int,
         month: Int,
         costCenterCodes: List<String>,
@@ -280,7 +290,7 @@ class AdminSalesComparisonService(
         workingCategory1Filter: String?,
         workingCategory5Filter: String?
     ): ExcelResult {
-        val response = getDetail(year, month, costCenterCodes, accountIds, workingCategory1Filter, workingCategory5Filter)
+        val response = getDetail(scope, year, month, costCenterCodes, accountIds, workingCategory1Filter, workingCategory5Filter)
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("배치적합성_상세")
 
@@ -691,6 +701,22 @@ class AdminSalesComparisonService(
             workbook.close()
             out.toByteArray()
         }
+    }
+
+    /**
+     * 사용자 입력 costCenterCodes 를 권한 범위와 교집합으로 필터링.
+     *
+     * - `scope.isAllBranches=true`: 사용자 입력 그대로 사용 (전체 지점 권한)
+     * - 그 외: `scope.branchCodes` 와 교집합. 교집합이 비어있으면 [AdminForbiddenException] (권한 범위 밖 코드만 입력)
+     *
+     * 레거시 매핑: `CurrentUserBranchNameList.getOrgList` 의 isAll 분기 동등.
+     */
+    internal fun applyScope(scope: DataScope, costCenterCodes: List<String>): List<String> {
+        if (scope.isAllBranches) return costCenterCodes
+        val allowed = scope.branchCodes.toSet()
+        val intersect = costCenterCodes.filter { it in allowed }
+        if (intersect.isEmpty()) throw AdminForbiddenException()
+        return intersect
     }
 
     private fun validateParams(year: Int, month: Int, costCenterCodes: List<String>) {

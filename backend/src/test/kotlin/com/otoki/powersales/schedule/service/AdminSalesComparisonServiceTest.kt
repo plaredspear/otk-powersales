@@ -3,6 +3,8 @@ package com.otoki.powersales.schedule.service
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.entity.AccountType
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.schedule.dto.response.MonthlyIntegrationScheduleItem
 import com.otoki.powersales.schedule.dto.response.Suitability
 import com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster
@@ -36,6 +38,9 @@ class AdminSalesComparisonServiceTest {
     @Mock private lateinit var accountCategoryMasterRepository: com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 
     @InjectMocks private lateinit var service: AdminSalesComparisonService
+
+    private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+    private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
 
     private fun account(id: Int, code: String, name: String, type: AccountType?): Account {
         val acc = Account(id = id, externalKey = code)
@@ -100,6 +105,40 @@ class AdminSalesComparisonServiceTest {
     fun setup() {
         whenever(employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()))
             .thenReturn(emptyList())
+    }
+
+    @Nested
+    @DisplayName("권한 범위 필터링 (applyScope)")
+    inner class ApplyScopeTest {
+
+        @Test
+        fun `isAllBranches=true 면 사용자 입력 그대로 통과`() {
+            val result = service.applyScope(allScope, listOf("CC001", "CC002"))
+            assertThat(result).containsExactly("CC001", "CC002")
+        }
+
+        @Test
+        fun `branchCodes 교집합으로 필터링`() {
+            val scope = branchScope("CC001", "CC003")
+            val result = service.applyScope(scope, listOf("CC001", "CC002"))
+            assertThat(result).containsExactly("CC001")
+        }
+
+        @Test
+        fun `권한 범위 밖 코드만 입력하면 AdminForbiddenException`() {
+            val scope = branchScope("CC001")
+            assertThatThrownBy {
+                service.applyScope(scope, listOf("CC002", "CC003"))
+            }.isInstanceOf(AdminForbiddenException::class.java)
+        }
+
+        @Test
+        fun `branchCodes 비어있는 사용자가 코드 입력하면 AdminForbiddenException`() {
+            val scope = branchScope()
+            assertThatThrownBy {
+                service.applyScope(scope, listOf("CC001"))
+            }.isInstanceOf(AdminForbiddenException::class.java)
+        }
     }
 
     @Nested
@@ -243,21 +282,21 @@ class AdminSalesComparisonServiceTest {
         @Test
         fun `costCenterCodes 비어있으면 예외`() {
             assertThatThrownBy {
-                service.getSummary(2026, 5, emptyList())
+                service.getSummary(allScope, 2026, 5, emptyList())
             }.isInstanceOf(InvalidParameterException::class.java)
         }
 
         @Test
         fun `year 범위 밖이면 예외`() {
             assertThatThrownBy {
-                service.getSummary(1999, 5, listOf("CC001"))
+                service.getSummary(allScope, 1999, 5, listOf("CC001"))
             }.isInstanceOf(InvalidParameterException::class.java)
         }
 
         @Test
         fun `month 범위 밖이면 예외`() {
             assertThatThrownBy {
-                service.getSummary(2026, 13, listOf("CC001"))
+                service.getSummary(allScope, 2026, 13, listOf("CC001"))
             }.isInstanceOf(InvalidParameterException::class.java)
         }
     }
@@ -271,7 +310,7 @@ class AdminSalesComparisonServiceTest {
             whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
                 .thenReturn(emptyList())
 
-            val response = service.getSummary(2026, 5, listOf("CC001"))
+            val response = service.getSummary(allScope, 2026, 5, listOf("CC001"))
 
             assertThat(response.year).isEqualTo(2026)
             assertThat(response.month).isEqualTo(5)
@@ -315,7 +354,7 @@ class AdminSalesComparisonServiceTest {
             whenever(employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()))
                 .thenReturn(listOf(crit))
 
-            val response = service.getSummary(2026, 5, listOf("CC001"))
+            val response = service.getSummary(allScope, 2026, 5, listOf("CC001"))
 
             val fitRow = response.rows.first { it.suitability == "적합" }
             assertThat(fitRow.totalCount).isEqualTo(1)
@@ -340,7 +379,7 @@ class AdminSalesComparisonServiceTest {
                 .thenReturn(listOf(itmA, itmB))
             whenever(accountRepository.findByExternalKeyIn(any())).thenReturn(listOf(accA, accB))
 
-            val response = service.getMiddle(2026, 5, listOf("CC001"), listOf(1))
+            val response = service.getMiddle(allScope, 2026, 5, listOf("CC001"), listOf(1))
 
             assertThat(response.items).hasSize(1)
             assertThat(response.items.first().accountCode).isEqualTo("A001")
@@ -361,7 +400,7 @@ class AdminSalesComparisonServiceTest {
                 .thenReturn(listOf(displayItm, eventItm))
             whenever(accountRepository.findByExternalKeyIn(any())).thenReturn(listOf(acc))
 
-            val response = service.getDetail(2026, 5, listOf("CC001"), emptyList(), "진열", null)
+            val response = service.getDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), "진열", null)
 
             assertThat(response.items).hasSize(1)
             assertThat(response.items.first().workingCategory1).isEqualTo("진열")
@@ -377,7 +416,7 @@ class AdminSalesComparisonServiceTest {
                 .thenReturn(listOf(displayItm, eventItm))
             whenever(accountRepository.findByExternalKeyIn(any())).thenReturn(listOf(acc))
 
-            val response = service.getDetail(2026, 5, listOf("CC001"), emptyList(), null, null)
+            val response = service.getDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), null, null)
 
             assertThat(response.items).hasSize(2)
             assertThat(response.total.rowCount).isEqualTo(2)
@@ -393,7 +432,7 @@ class AdminSalesComparisonServiceTest {
             whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
                 .thenReturn(emptyList())
 
-            val result = service.exportSummary(2026, 5, listOf("CC001"))
+            val result = service.exportSummary(allScope, 2026, 5, listOf("CC001"))
 
             assertThat(result.filename).endsWith(".xlsx")
             assertThat(result.filename).contains("집계")
@@ -405,7 +444,7 @@ class AdminSalesComparisonServiceTest {
             whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
                 .thenReturn(emptyList())
 
-            val result = service.exportMiddle(2026, 5, listOf("CC001"), emptyList())
+            val result = service.exportMiddle(allScope, 2026, 5, listOf("CC001"), emptyList())
 
             assertThat(result.filename).endsWith(".xlsx")
             assertThat(result.filename).contains("중간집계")
@@ -417,7 +456,7 @@ class AdminSalesComparisonServiceTest {
             whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
                 .thenReturn(emptyList())
 
-            val result = service.exportDetail(2026, 5, listOf("CC001"), emptyList(), null, null)
+            val result = service.exportDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), null, null)
 
             assertThat(result.filename).endsWith(".xlsx")
             assertThat(result.filename).contains("상세")

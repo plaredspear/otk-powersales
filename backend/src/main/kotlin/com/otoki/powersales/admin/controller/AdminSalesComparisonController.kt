@@ -1,5 +1,9 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.response.SalesComparisonDetailResponse
 import com.otoki.powersales.schedule.dto.response.SalesComparisonMiddleResponse
@@ -23,6 +27,7 @@ class AdminSalesComparisonController(
 ) {
 
     /** 거래처유형 picklist — `AccountCategoryMaster.useSearch=true` 항목 목록. */
+    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
     @GetMapping("/categories")
     fun getSearchCategories(): ResponseEntity<ApiResponse<List<SearchAccountCategoryItem>>> {
         val response = adminSalesComparisonService.getSearchCategories()
@@ -30,31 +35,37 @@ class AdminSalesComparisonController(
     }
 
     /** 집계 모드 — 배치적합성 × 거래처카테고리 거래처 수 집계표. */
+    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
     @GetMapping("/summary")
     fun getSummary(
+        @CurrentDataScope scope: DataScope,
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>
     ): ResponseEntity<ApiResponse<SalesComparisonSummaryResponse>> {
-        val response = adminSalesComparisonService.getSummary(year, month, costCenterCodes)
+        val response = adminSalesComparisonService.getSummary(scope, year, month, costCenterCodes)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     /** 중간집계 모드 — 거래처별 행 + 적합성별 소계 + 총계. */
+    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
     @GetMapping("/middle")
     fun getMiddle(
+        @CurrentDataScope scope: DataScope,
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
         @RequestParam(required = false) accountIds: List<Int>?
     ): ResponseEntity<ApiResponse<SalesComparisonMiddleResponse>> {
-        val response = adminSalesComparisonService.getMiddle(year, month, costCenterCodes, accountIds ?: emptyList())
+        val response = adminSalesComparisonService.getMiddle(scope, year, month, costCenterCodes, accountIds ?: emptyList())
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     /** 상세 모드 — 사원별 행 + 총계. */
+    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
     @GetMapping("/detail")
     fun getDetail(
+        @CurrentDataScope scope: DataScope,
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
@@ -63,7 +74,7 @@ class AdminSalesComparisonController(
         @RequestParam(required = false) workingCategory5: String?
     ): ResponseEntity<ApiResponse<SalesComparisonDetailResponse>> {
         val response = adminSalesComparisonService.getDetail(
-            year, month, costCenterCodes,
+            scope, year, month, costCenterCodes,
             accountIds ?: emptyList(),
             workingCategory1,
             workingCategory5
@@ -72,29 +83,35 @@ class AdminSalesComparisonController(
     }
 
     /** 집계표 엑셀 다운로드. */
+    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
     @GetMapping("/summary/export")
     fun exportSummary(
+        @CurrentDataScope scope: DataScope,
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>
     ): ResponseEntity<ByteArray> = buildExcelResponse(
-        adminSalesComparisonService.exportSummary(year, month, costCenterCodes)
+        adminSalesComparisonService.exportSummary(scope, year, month, costCenterCodes)
     )
 
     /** 중간집계 엑셀 다운로드. */
+    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
     @GetMapping("/middle/export")
     fun exportMiddle(
+        @CurrentDataScope scope: DataScope,
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
         @RequestParam(required = false) accountIds: List<Int>?
     ): ResponseEntity<ByteArray> = buildExcelResponse(
-        adminSalesComparisonService.exportMiddle(year, month, costCenterCodes, accountIds ?: emptyList())
+        adminSalesComparisonService.exportMiddle(scope, year, month, costCenterCodes, accountIds ?: emptyList())
     )
 
     /** 상세 엑셀 다운로드. */
+    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
     @GetMapping("/detail/export")
     fun exportDetail(
+        @CurrentDataScope scope: DataScope,
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
@@ -103,7 +120,7 @@ class AdminSalesComparisonController(
         @RequestParam(required = false) workingCategory5: String?
     ): ResponseEntity<ByteArray> = buildExcelResponse(
         adminSalesComparisonService.exportDetail(
-            year, month, costCenterCodes,
+            scope, year, month, costCenterCodes,
             accountIds ?: emptyList(),
             workingCategory1,
             workingCategory5
