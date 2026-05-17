@@ -291,12 +291,56 @@ export default function PromotionDetailPage() {
       remark: productForm.remark,
     };
 
-    try {
-      await updateMutation.mutateAsync({ id: promotionId, data });
-      message.success('저장되었습니다');
-      setPromotionEditing(false);
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '수정에 실패했습니다');
+    const executePromotionSave = async () => {
+      try {
+        await updateMutation.mutateAsync({ id: promotionId, data });
+        message.success('저장되었습니다');
+        setPromotionEditing(false);
+      } catch (err) {
+        message.error(err instanceof Error ? err.message : '수정에 실패했습니다');
+      }
+    };
+
+    // 거래처 변경 시 연결된 확정 여사원일정이 일괄 해제됨 — 사전 안내 모달 (T9 동등)
+    const accountChanged = detailForm.accountId !== promotion.accountId;
+    const confirmedEmployees =
+      accountChanged && employees ? employees.filter((e) => e.scheduleId != null) : [];
+
+    if (accountChanged && confirmedEmployees.length > 0) {
+      const maxDisplay = 5;
+      const displayEmployees = confirmedEmployees.slice(0, maxDisplay);
+      const remaining = confirmedEmployees.length - maxDisplay;
+      const newAccountLabel = detailForm.accountName ?? `#${detailForm.accountId}`;
+      const oldAccountLabel = promotion.accountName ?? `#${promotion.accountId}`;
+
+      Modal.confirm({
+        title: '거래처 변경 안내',
+        icon: <InfoCircleOutlined style={{ color: '#1677ff' }} />,
+        content: (
+          <div>
+            <p>
+              거래처를 <b>{oldAccountLabel}</b> 에서 <b>{newAccountLabel}</b> 로 변경하면
+              아래 행사사원의 확정된 여사원일정이 모두 해제됩니다.
+            </p>
+            <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
+              {displayEmployees.map((e) => (
+                <li key={e.id}>
+                  {e.employeeName ?? e.employeeCode ?? '-'} ({e.scheduleDate ?? '-'})
+                </li>
+              ))}
+              {remaining > 0 && <li>외 {remaining}명</li>}
+            </ul>
+            <p style={{ color: '#666', fontSize: 13 }}>
+              해제된 일정은 &quot;일정 확정&quot; 버튼을 다시 눌러 재확정할 수 있습니다.
+            </p>
+          </div>
+        ),
+        okText: '확인 후 저장',
+        cancelText: '취소',
+        onOk: executePromotionSave,
+      });
+    } else {
+      await executePromotionSave();
     }
   };
 
