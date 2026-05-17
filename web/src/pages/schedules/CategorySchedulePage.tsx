@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Alert, Empty, Spin, Table } from 'antd';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Empty, message, Spin, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ScheduleFilterBar from '@/components/schedules/ScheduleFilterBar';
 import { useCategorySchedule } from '@/hooks/schedules/useCategorySchedule';
@@ -72,7 +72,23 @@ export default function CategorySchedulePage() {
 
   const exportMutation = useCategoryExport();
 
+  const emptyNoticeShownForRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (isLoading || isError) return;
+    if (queryParams == null || data == null) return;
+    const key = `${queryParams.year}-${queryParams.month}-${queryParams.codes.join(',')}`;
+    if (data.items.length === 0 && emptyNoticeShownForRef.current !== key) {
+      emptyNoticeShownForRef.current = key;
+      message.info('조회 결과가 없습니다');
+    }
+  }, [data, isLoading, isError, queryParams]);
+
   const handleSearch = () => {
+    if (year == null || month == null) {
+      message.warning('년도와 월을 입력해주세요');
+      return;
+    }
     setQueryParams({ year, month, codes: selectedCodes });
   };
 

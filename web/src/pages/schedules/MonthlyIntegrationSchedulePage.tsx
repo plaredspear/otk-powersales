@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Alert, Card, Empty, Grid, Space, Spin, Table, Typography } from 'antd';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Card, Empty, Grid, message, Space, Spin, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import ScheduleFilterBar from '@/components/schedules/ScheduleFilterBar';
@@ -113,7 +113,23 @@ export default function MonthlyIntegrationSchedulePage() {
 
   const exportMutation = useMonthlyIntegrationExport();
 
+  const emptyNoticeShownForRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (isLoading || isError) return;
+    if (queryParams == null || data == null) return;
+    const key = `${queryParams.year}-${queryParams.month}-${queryParams.codes.join(',')}`;
+    if (data.items.length === 0 && emptyNoticeShownForRef.current !== key) {
+      emptyNoticeShownForRef.current = key;
+      message.info('조회 결과가 없습니다');
+    }
+  }, [data, isLoading, isError, queryParams]);
+
   const handleSearch = () => {
+    if (year == null || month == null) {
+      message.warning('년도와 월을 입력해주세요');
+      return;
+    }
     setQueryParams({ year, month, codes: selectedCodes });
   };
 

@@ -1,4 +1,5 @@
-import { Button, Checkbox, InputNumber, Select, Space } from 'antd';
+import { Button, Checkbox, InputNumber, Space, Transfer } from 'antd';
+import type { TransferProps } from 'antd';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
 
@@ -40,40 +41,64 @@ export default function ScheduleFilterBar({
     onCodesChange(checked ? allCodes : []);
   };
 
+  const transferDataSource = branches.map((b) => ({
+    key: b.branchCode,
+    title: b.branchName,
+  }));
+
+  const handleTransferChange: TransferProps['onChange'] = (nextTargetKeys) => {
+    onCodesChange(nextTargetKeys.map((key) => String(key)));
+  };
+
   return (
     <div style={{ marginBottom: 16 }}>
-      <Space wrap>
-        <span>년도:</span>
-        <InputNumber
-          value={year}
-          min={2020}
-          max={2099}
-          onChange={(v) => v != null && onYearChange(v)}
-          style={{ width: 100 }}
-        />
-        <span>월:</span>
-        <InputNumber
-          value={month}
-          min={1}
-          max={12}
-          onChange={(v) => v != null && onMonthChange(v)}
-          style={{ width: 80 }}
-        />
-        <span>소속지점:</span>
-        <Select
-          mode="multiple"
-          value={selectedCodes}
-          onChange={onCodesChange}
-          style={{ minWidth: 300 }}
-          placeholder="지점을 선택하세요"
-          maxTagCount="responsive"
-          disabled={isAllSelected}
-          options={branches.map((b) => ({ label: b.branchName, value: b.branchCode }))}
-        />
+      <Space wrap align="start">
+        <Space direction="vertical" size={4}>
+          <span>년도:</span>
+          <InputNumber
+            value={year}
+            min={2020}
+            max={2099}
+            onChange={(v) => v != null && onYearChange(v)}
+            style={{ width: 100 }}
+            parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
+          />
+        </Space>
+        <Space direction="vertical" size={4}>
+          <span>월:</span>
+          <InputNumber
+            value={month}
+            min={1}
+            max={12}
+            onChange={(v) => v != null && onMonthChange(v)}
+            style={{ width: 80 }}
+            parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
+          />
+        </Space>
+        <Space direction="vertical" size={4}>
+          <span>지점명:</span>
+          <Transfer
+            dataSource={transferDataSource}
+            targetKeys={selectedCodes}
+            onChange={handleTransferChange}
+            render={(item) => item.title ?? ''}
+            titles={['선택가능', '선택완료']}
+            disabled={isAllSelected}
+            listStyle={{ width: 220, height: 220 }}
+            showSearch
+            filterOption={(input, item) => (item.title ?? '').includes(input)}
+            locale={{
+              itemUnit: '개',
+              itemsUnit: '개',
+              searchPlaceholder: '검색',
+              notFoundContent: '항목 없음',
+            }}
+          />
+        </Space>
       </Space>
       <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Checkbox checked={isAllSelected} onChange={(e) => handleSelectAll(e.target.checked)}>
-          전체선택
+          소속지점 전체선택
         </Checkbox>
         <Space>
           <Button
