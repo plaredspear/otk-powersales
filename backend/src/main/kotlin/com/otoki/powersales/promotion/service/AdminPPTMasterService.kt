@@ -72,8 +72,8 @@ class AdminPPTMasterService(
 
     fun getMaster(id: Long): PPTMasterResponse {
         val master = findMasterById(id)
-        val employee = employeeRepository.findById(master.employeeId!!).orElse(null)
-        val account = accountRepository.findById(master.accountId!!).orElse(null)
+        val employee = master.employeeId?.let { employeeRepository.findById(it).orElse(null) }
+        val account = master.accountId?.let { accountRepository.findById(it).orElse(null) }
         return PPTMasterResponse.Companion.from(
             master, employee?.employeeCode, employee?.name,
             account?.externalKey, account?.name
@@ -157,9 +157,12 @@ class AdminPPTMasterService(
     @Transactional
     fun deleteMaster(id: Long) {
         val master = findMasterById(id)
-        val employeeId = master.employeeId!!
+        val employeeId = master.employeeId
 
         pptMasterRepository.delete(master)
+
+        // employee_id 미매핑 row 는 employee 후처리 스킵
+        if (employeeId == null) return
 
         // 다른 유효 마스터가 없으면 미배정(null)으로 복귀
         val remainingValid = pptMasterRepository.findValidMastersByEmployeeId(employeeId, LocalDate.now())
@@ -173,7 +176,8 @@ class AdminPPTMasterService(
 
     fun getHistory(masterId: Long, pageable: Pageable): PPTMasterHistoryListResponse {
         val master = findMasterById(masterId)
-        val employeeId = master.employeeId!!
+        val employeeId = master.employeeId
+            ?: return PPTMasterHistoryListResponse(emptyList(), 0L, 0, pageable.pageNumber, pageable.pageSize)
         val page = pptHistoryRepository.findByEmployeeIdOrderByChangedAtDesc(employeeId, pageable)
         val employee = employeeRepository.findById(employeeId).orElse(null)
 
