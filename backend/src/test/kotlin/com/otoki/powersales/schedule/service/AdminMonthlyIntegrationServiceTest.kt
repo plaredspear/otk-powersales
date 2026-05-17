@@ -171,7 +171,7 @@ class AdminMonthlyIntegrationServiceTest {
     }
 
     @Nested
-    @DisplayName("getCategorySchedule - 근무형태별 인원현황")
+    @DisplayName("getCategorySchedule - 근무형태별 여사원인원현황")
     inner class GetCategoryScheduleTests {
 
         @Test

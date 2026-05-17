@@ -109,7 +109,7 @@ export async function fetchCategorySchedule(
     { params: { year, month, costCenterCodes: costCenterCodes.join(',') } },
   );
   if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.error?.message || res.data.message || '근무형태별 인원현황 조회에 실패했습니다');
+    throw new Error(res.data.error?.message || res.data.message || '근무형태별 여사원인원현황 조회에 실패했습니다');
   }
   return res.data.data;
 }

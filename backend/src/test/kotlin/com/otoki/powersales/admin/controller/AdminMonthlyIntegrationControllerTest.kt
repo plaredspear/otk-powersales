@@ -151,7 +151,7 @@ class AdminMonthlyIntegrationControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/schedules/monthly-integration/category - 근무형태별 인원현황")
+    @DisplayName("GET /api/v1/admin/schedules/monthly-integration/category - 근무형태별 여사원인원현황")
     inner class GetCategorySchedule {
 
         @Test

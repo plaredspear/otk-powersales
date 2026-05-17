@@ -33,7 +33,7 @@ export const menuRoute: MenuRoute = {
       children: [
         { path: '/schedule', name: '여사원 일정관리', requiredPermission: 'SCHEDULE_READ' },
         { path: '/monthly-integration', name: '월별여사원 통합일정', requiredPermission: 'SCHEDULE_READ' },
-        { path: '/work-type-headcount', name: '근무형태별 인원현황', requiredPermission: 'SCHEDULE_READ' },
+        { path: '/work-type-headcount', name: '근무형태별 여사원인원현황', requiredPermission: 'SCHEDULE_READ' },
         { path: '/monthly-input-adequacy', name: '월별 진열사원 투입적합성', requiredPermission: 'MONTHLY_INPUT_ADEQUACY_READ' },
       ],
     },

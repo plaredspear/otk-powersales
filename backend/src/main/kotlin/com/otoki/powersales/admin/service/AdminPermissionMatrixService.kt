@@ -28,7 +28,7 @@ class AdminPermissionMatrixService(
         AdminPermission.PROMOTION_READ to ("행사 조회" to listOf("행사/배치 > 행사마스터", "행사/배치 > 전문행사조")),
         AdminPermission.PROMOTION_WRITE to ("행사 생성/수정" to listOf("행사/배치 > 진열스케줄마스터", "행사 등록/수정/확정/삭제")),
         AdminPermission.SAFETY_CHECK_READ to ("안전점검 조회" to listOf("현장 점검/이슈 > 안전점검")),
-        AdminPermission.SCHEDULE_READ to ("일정 조회" to listOf("여사원 일정 > 여사원 일정관리", "여사원 일정 > 월별여사원 통합일정", "여사원 일정 > 근무형태별 인원현황")),
+        AdminPermission.SCHEDULE_READ to ("일정 조회" to listOf("여사원 일정 > 여사원 일정관리", "여사원 일정 > 월별여사원 통합일정", "여사원 일정 > 근무형태별 여사원인원현황")),
         AdminPermission.SCHEDULE_WRITE to ("일정 생성/수정" to listOf("행사/배치 > 진열스케줄마스터 일정 확정")),
         AdminPermission.SALES_COMPARISON_READ to ("거래처별 진열사원 배치적합성 조회" to listOf("거래처별 진열사원 배치적합성")),
         AdminPermission.MONTHLY_INPUT_ADEQUACY_READ to ("월별 진열사원 투입적합성 조회" to listOf("여사원 일정 > 월별 진열사원 투입적합성")),

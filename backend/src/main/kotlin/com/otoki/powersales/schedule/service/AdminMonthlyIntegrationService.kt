@@ -149,7 +149,7 @@ class AdminMonthlyIntegrationService(
     fun exportCategorySchedule(year: Int, month: Int, costCenterCodes: List<String>): ExcelResult {
         val response = getCategorySchedule(year, month, costCenterCodes)
         val workbook = XSSFWorkbook()
-        val sheet = workbook.createSheet("근무형태별 인원현황")
+        val sheet = workbook.createSheet("근무형태별 여사원인원현황")
 
         val headerStyle = createHeaderStyle(workbook)
         val decimal1Style = workbook.createCellStyle().apply {
