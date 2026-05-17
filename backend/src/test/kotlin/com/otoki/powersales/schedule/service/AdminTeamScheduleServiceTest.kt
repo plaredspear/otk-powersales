@@ -91,6 +91,7 @@ class AdminTeamScheduleServiceTest {
             profileType = com.otoki.powersales.user.entity.ProfileType.STAFF,
             isSalesSupport = false,
             passwordChangeRequired = false,
+            permissions = emptySet(),
             encodedPassword = "",
             grantedAuthorities = emptyList(),
             active = true

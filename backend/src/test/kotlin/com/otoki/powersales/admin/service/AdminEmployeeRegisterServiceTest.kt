@@ -56,6 +56,7 @@ class AdminEmployeeRegisterServiceTest {
         profileType = ProfileType.STAFF,
         isSalesSupport = false,
         passwordChangeRequired = false,
+        permissions = emptySet(),
         encodedPassword = "",
         grantedAuthorities = emptyList(),
         active = true

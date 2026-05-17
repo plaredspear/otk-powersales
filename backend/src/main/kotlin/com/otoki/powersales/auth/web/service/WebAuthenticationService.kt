@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.web.service
 
+import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.service.AdminPermissionResolver
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.CurrentPasswordRequiredException
@@ -88,8 +89,9 @@ class WebAuthenticationService(
         user.recordLogin(LocalDateTime.now())
 
         val employee: Employee? = employeeRepository.findByEmployeeCode(user.employeeCode).orElse(null)
-        val summary = summaryFor(user, employee)
-        val principal = principalFor(user, employee)
+        val permissions: Set<AdminPermission> = employee?.let { adminPermissionResolver.resolve(it) } ?: emptySet()
+        val principal = principalFor(user, employee, permissions)
+        val summary = summaryFor(user, employee, permissions)
         val familyId = UUID.randomUUID().toString()
         val tokenId = UUID.randomUUID().toString()
 
@@ -144,8 +146,9 @@ class WebAuthenticationService(
 
         val user = userRepository.findById(userId).orElseThrow { InvalidTokenException() }
         val employee: Employee? = employeeRepository.findByEmployeeCode(user.employeeCode).orElse(null)
-        val principal = principalFor(user, employee)
-        val summary = summaryFor(user, employee)
+        val permissions: Set<AdminPermission> = employee?.let { adminPermissionResolver.resolve(it) } ?: emptySet()
+        val principal = principalFor(user, employee, permissions)
+        val summary = summaryFor(user, employee, permissions)
 
         val newTokenId = UUID.randomUUID().toString()
         val newAccessToken = webJwtService.createAccessToken(principal, summary.role, summary.permissions)
@@ -204,11 +207,8 @@ class WebAuthenticationService(
      * Employee 미존재 (예: ADMIN-* 부트스트랩 직후 또는 SAP 미동기 상태) 시 role/orgName/permissions 는
      * null/빈 배열로 fallback. 동일 정보가 JWT claim 으로도 발급된다.
      */
-    private fun summaryFor(user: User, employee: Employee?): WebUserSummary {
+    private fun summaryFor(user: User, employee: Employee?, permissions: Set<AdminPermission>): WebUserSummary {
         val role: UserRole? = employee?.role
-        val permissions: List<String> = employee
-            ?.let { adminPermissionResolver.resolve(it).map { perm -> perm.name } }
-            ?: emptyList()
         return WebUserSummary(
             userId = user.id,
             username = user.username,
@@ -220,11 +220,11 @@ class WebAuthenticationService(
             roleLabel = role?.toKorean(),
             orgName = employee?.orgName,
             costCenterCode = employee?.costCenterCode,
-            permissions = permissions
+            permissions = permissions.map { it.name }
         )
     }
 
-    private fun principalFor(user: User, employee: Employee?): WebUserPrincipal = WebUserPrincipal(
+    private fun principalFor(user: User, employee: Employee?, permissions: Set<AdminPermission>): WebUserPrincipal = WebUserPrincipal(
         userId = user.id,
         usernameValue = user.username,
         employeeCode = user.employeeCode,
@@ -234,6 +234,7 @@ class WebAuthenticationService(
         profileType = user.profileType,
         isSalesSupport = user.isSalesSupport ?: false,
         passwordChangeRequired = user.passwordChangeRequired ?: true,
+        permissions = permissions,
         encodedPassword = user.password,
         grantedAuthorities = WebUserDetailsService.resolveAuthorities(user.profileType, user.isSalesSupport ?: false),
         active = user.isActive

@@ -78,6 +78,7 @@ class AdminUserControllerTest {
             profileType = ProfileType.SYSTEM_ADMIN,
             isSalesSupport = false,
             passwordChangeRequired = false,
+            permissions = emptySet(),
             encodedPassword = "",
             grantedAuthorities = emptyList(),
             active = true

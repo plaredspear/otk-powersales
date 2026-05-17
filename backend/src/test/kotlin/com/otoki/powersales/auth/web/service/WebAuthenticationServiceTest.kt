@@ -313,6 +313,7 @@ class WebAuthenticationServiceTest {
             profileType = user.profileType,
             isSalesSupport = user.isSalesSupport ?: false,
             passwordChangeRequired = passwordChangeRequired,
+            permissions = emptySet(),
             encodedPassword = user.password,
             grantedAuthorities = emptyList(),
             active = user.isActive

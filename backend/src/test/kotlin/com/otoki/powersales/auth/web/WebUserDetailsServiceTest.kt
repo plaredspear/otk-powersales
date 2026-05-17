@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.web
 
+import com.otoki.powersales.admin.service.AdminPermissionResolver
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
@@ -28,6 +29,9 @@ class WebUserDetailsServiceTest {
 
     @Mock
     private lateinit var employeeRepository: EmployeeRepository
+
+    @Mock
+    private lateinit var adminPermissionResolver: AdminPermissionResolver
 
     @InjectMocks
     private lateinit var service: WebUserDetailsService

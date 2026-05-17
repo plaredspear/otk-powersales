@@ -59,6 +59,7 @@ class AdminPermissionMatrixControllerTest {
             profileType = ProfileType.TEAM_LEADER,
             isSalesSupport = false,
             passwordChangeRequired = false,
+            permissions = emptySet(),
             encodedPassword = "",
             grantedAuthorities = emptyList(),
             active = true

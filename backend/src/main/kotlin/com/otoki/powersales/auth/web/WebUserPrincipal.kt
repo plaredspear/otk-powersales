@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.web
 
+import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.user.entity.ProfileType
 import org.springframework.security.core.GrantedAuthority
@@ -19,6 +20,9 @@ import org.springframework.security.core.userdetails.UserDetails
  * - `costCenterCode`: 로그인 시점 Employee.costCenterCode snapshot — admin service 가 Employee 엔티티
  *                    재조회 없이 데이터 스코프(지점/조직) 분기를 수행하기 위한 캐시. SAP 인사 발령으로
  *                    Employee 측이 갱신되어도 본 값은 토큰 lifetime 동안 stale — 재로그인 시 자연 보정.
+ * - `permissions`: 로그인 시점 effective permission snapshot — role_permission + user_permission 합집합.
+ *                  WebAdminContextFilter 가 매 요청 DB 조회 없이 @RequiresPermission 가드를 수행한다.
+ *                  권한 변경 후 즉시 반영이 필요하면 사용자 재로그인 안내 (token TTL = max stale window).
  */
 data class WebUserPrincipal(
     val userId: Long,
@@ -30,6 +34,7 @@ data class WebUserPrincipal(
     val profileType: ProfileType,
     val isSalesSupport: Boolean,
     val passwordChangeRequired: Boolean,
+    val permissions: Set<AdminPermission>,
     private val encodedPassword: String,
     private val grantedAuthorities: Collection<GrantedAuthority>,
     private val active: Boolean
