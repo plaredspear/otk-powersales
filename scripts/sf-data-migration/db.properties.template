@@ -1,0 +1,17 @@
+# SF 데이터 마이그레이션 DB 연결 설정 템플릿 (Spec #764)
+#
+# 사용법:
+#   1. 본 파일을 db.properties 로 복사:  cp db.properties.template db.properties
+#   2. 환경에 맞게 host/port/database/user/password 채워 넣기
+#   3. db.properties 는 .gitignore 처리됨 (커밋되지 않음)
+#
+# dev 환경 기본값 (SSM 터널 종단):
+#   - 사전: scripts/db-tunnel.sh -s dev 로 localhost:15432 터널 오픈
+#   - password 는 scripts/db-tunnel.sh -s dev --password 로 조회
+
+host=localhost
+port=15432
+database=otoki
+schema=powersales
+user=otkadmin
+password=
