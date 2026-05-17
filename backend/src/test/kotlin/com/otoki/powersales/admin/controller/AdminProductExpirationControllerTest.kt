@@ -71,6 +71,7 @@ class AdminProductExpirationControllerTest {
             employeeCode = "S001",
             employeeId = userId,
             role = role,
+            costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,
             passwordChangeRequired = false,

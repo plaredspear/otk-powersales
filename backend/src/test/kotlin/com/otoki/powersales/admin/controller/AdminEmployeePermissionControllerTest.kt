@@ -9,11 +9,8 @@ import com.otoki.powersales.admin.dto.response.UserPermissionDetailResponse
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.admin.exception.CannotModifyOwnPermissionException
 import com.otoki.powersales.admin.exception.InvalidPermissionException
-import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
-import com.otoki.powersales.admin.security.CurrentEmployee
 import com.otoki.powersales.admin.service.AdminEmployeePermissionService
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
@@ -25,11 +22,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
@@ -65,12 +60,6 @@ class AdminEmployeePermissionControllerTest {
     @MockitoBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    // controller 의 @CurrentEmployee 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
-    // @AutoConfigureMockMvc(addFilters = false) 환경에서 WebAdminContextFilter 가 동작하지 않으므로
-    // ArgumentResolver 자체를 stub 하여 fixture Employee 를 주입.
-    @MockitoBean
-    private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
-
     @BeforeEach
     fun setUp() {
         val principal = WebUserPrincipal(
@@ -79,6 +68,7 @@ class AdminEmployeePermissionControllerTest {
             employeeCode = "S001",
             employeeId = 1L,
             role = UserRole.BRANCH_MANAGER,
+            costCenterCode = "1234",
             profileType = ProfileType.STAFF,
             isSalesSupport = false,
             passwordChangeRequired = false,
@@ -88,12 +78,6 @@ class AdminEmployeePermissionControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        whenever(currentAdminContextArgumentResolver.supportsParameter(any())).thenAnswer { invocation ->
-            val parameter = invocation.arguments[0] as MethodParameter
-            parameter.hasParameterAnnotation(CurrentEmployee::class.java)
-        }
-        whenever(currentAdminContextArgumentResolver.resolveArgument(any(), anyOrNull(), any(), anyOrNull()))
-            .thenReturn(Employee(employeeCode = "S001", name = "테스트"))
     }
 
     @Nested

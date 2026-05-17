@@ -10,7 +10,6 @@ package com.otoki.powersales.admin.security
  * 키 prefix `powersales.admin.` 는 다른 attribute 와의 충돌 방지.
  */
 object AdminContextAttributes {
-    const val EMPLOYEE = "powersales.admin.currentEmployee"
     const val DATA_SCOPE = "powersales.admin.currentDataScope"
     const val PERMISSIONS = "powersales.admin.currentPermissions"
 }

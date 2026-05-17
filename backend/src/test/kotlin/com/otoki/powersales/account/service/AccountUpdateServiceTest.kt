@@ -52,6 +52,7 @@ class AccountUpdateServiceTest {
         employeeCode = "S$userId",
         employeeId = userId,
         role = role,
+        costCenterCode = null,
         profileType = ProfileType.STAFF,
         isSalesSupport = false,
         passwordChangeRequired = false,

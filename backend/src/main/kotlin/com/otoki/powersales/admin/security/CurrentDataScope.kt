@@ -10,8 +10,7 @@ package com.otoki.powersales.admin.security
  *  2. [CurrentAdminContextArgumentResolver] 가 본 어노테이션이 부착된 파라미터를 발견하면
  *     동일 request attribute 에서 DataScope 를 꺼내 주입.
  *
- * DataScope 가 attribute 에 없으면 [IllegalStateException]. [CurrentEmployee] 와 동일하게
- * admin 인증 endpoint 한정으로만 부착할 것.
+ * DataScope 가 attribute 에 없으면 [IllegalStateException]. admin 인증 endpoint 한정으로만 부착할 것.
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)

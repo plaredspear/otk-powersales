@@ -5,6 +5,7 @@ import com.otoki.powersales.admin.repository.UserPermissionRepository
 import com.otoki.powersales.admin.repository.findByRole
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -28,8 +29,13 @@ class AdminPermissionResolver(
     private val userRepository: UserRepository
 ) {
 
-    fun resolve(employee: Employee): Set<AdminPermission> {
-        val role = employee.role
+    fun resolve(employee: Employee): Set<AdminPermission> =
+        resolve(employee.role, employee.employeeCode)
+
+    fun resolve(principal: WebUserPrincipal): Set<AdminPermission> =
+        resolve(principal.role, principal.employeeCode)
+
+    private fun resolve(role: UserRole?, employeeCode: String): Set<AdminPermission> {
         val rolePerms = if (role != null && role != UserRole.UNKNOWN) {
             rolePermissionRepository.findByRole(role)
                 .mapNotNull { parsePermission(it.permission) }
@@ -42,7 +48,7 @@ class AdminPermissionResolver(
             return emptySet()
         }
 
-        val user = userRepository.findByEmployeeCode(employee.employeeCode)
+        val user = userRepository.findByEmployeeCode(employeeCode)
         val userPerms = if (user != null) {
             userPermissionRepository.findByUserId(user.id)
                 .mapNotNull { parsePermission(it.permission) }

@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.web
 
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
@@ -29,7 +30,8 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class WebUserDetailsService(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
 ) : UserDetailsService {
 
     /**
@@ -40,21 +42,26 @@ class WebUserDetailsService(
      * - `is_active == false` → principal 반환 시 `isEnabled = false` 로 표시 (DaoAuthenticationProvider 가 자동 차단)
      *
      * 권한: `ProfileType` → `ROLE_*` 매핑 + `is_sales_support == true` → `ROLE_SALES_SUPPORT` 추가.
+     *
+     * Employee snapshot (`employeeId`, `role`, `costCenterCode`) 는 admin context 분기에 사용 — Employee 미존재
+     * (예: ADMIN-* 부트스트랩) 시 null fallback.
      */
     @Transactional(readOnly = true)
     override fun loadUserByUsername(username: String): WebUserPrincipal {
         val user = userRepository.findByUsername(username)
             ?: throw UsernameNotFoundException("사용자를 찾을 수 없습니다: $username")
-        return toPrincipal(user)
+        val employee = employeeRepository.findByEmployeeCode(user.employeeCode).orElse(null)
+        return toPrincipal(user, employee)
     }
 
-    private fun toPrincipal(user: User): WebUserPrincipal {
+    private fun toPrincipal(user: User, employee: com.otoki.powersales.employee.entity.Employee?): WebUserPrincipal {
         return WebUserPrincipal(
             userId = user.id,
             usernameValue = user.username,
             employeeCode = user.employeeCode,
-            employeeId = null,
-            role = null,
+            employeeId = employee?.id,
+            role = employee?.role,
+            costCenterCode = employee?.costCenterCode,
             profileType = user.profileType,
             isSalesSupport = user.isSalesSupport ?: false,
             passwordChangeRequired = user.passwordChangeRequired ?: true,

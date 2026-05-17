@@ -74,6 +74,7 @@ class AdminUserControllerTest {
             employeeCode = "ADMIN-OPS01",
             employeeId = 1L,
             role = UserRole.SYSTEM_ADMIN,
+            costCenterCode = null,
             profileType = ProfileType.SYSTEM_ADMIN,
             isSalesSupport = false,
             passwordChangeRequired = false,

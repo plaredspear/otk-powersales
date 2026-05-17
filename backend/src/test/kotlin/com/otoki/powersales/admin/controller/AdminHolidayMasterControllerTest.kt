@@ -65,6 +65,7 @@ class AdminHolidayMasterControllerTest {
             employeeCode = "S001",
             employeeId = 1L,
             role = UserRole.BRANCH_MANAGER,
+            costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,
             passwordChangeRequired = false,

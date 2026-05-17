@@ -8,6 +8,7 @@ import com.otoki.powersales.admin.exception.InvalidEmployeeCodeFormatException
 import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
 import com.otoki.powersales.admin.util.AdminPasswordPolicyValidator
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -34,11 +35,10 @@ class AdminEmployeeRegisterService(
     private val logger = LoggerFactory.getLogger(AdminEmployeeRegisterService::class.java)
 
     /**
-     * @param actor 호출자(controller) 가 주입한 현재 로그인 Employee. service 가 holder/ambient
-     *              context 에 의존하지 않도록 explicit parameter 로 받는다.
+     * @param actor 호출자(controller) 가 주입한 인증 principal. role / employeeId / employeeCode snapshot 만 사용.
      */
     @Transactional
-    fun register(actor: Employee, request: AdminEmployeeRegisterRequest): AdminEmployeeRegisterResponse {
+    fun register(actor: WebUserPrincipal, request: AdminEmployeeRegisterRequest): AdminEmployeeRegisterResponse {
         if (actor.role !in UserRole.MANAGE_PERMISSIONS) {
             throw AdminForbiddenException()
         }
@@ -81,7 +81,7 @@ class AdminEmployeeRegisterService(
 
         logger.info(
             "ADMIN_ACCOUNT_REGISTERED actor={} actorCode={} target={} role=SYSTEM_ADMIN",
-            actor.id,
+            actor.employeeId,
             actor.employeeCode,
             saved.employeeCode
         )

@@ -42,8 +42,8 @@ class TeamScheduleValidator(
      * (이전 값 매칭 — 사원·거래처·날짜 조합 — 은 false positive/negative 위험으로 FK 매칭으로 전환.
      *  UC-06 단건 삭제 차단과 일관된 정책. FK 백필은 AttendanceService 진열 출근 경로에서 자동 채움)
      */
-    fun validateDisplayMasterLink(currentEmployee: Employee, schedule: TeamMemberSchedule) {
-        if (currentEmployee.role in UserRole.ADMIN_GRADE) return
+    fun validateDisplayMasterLink(actorRole: UserRole?, schedule: TeamMemberSchedule) {
+        if (actorRole in UserRole.ADMIN_GRADE) return
         if (schedule.workingCategory1 != WorkingCategory1.DISPLAY) return
 
         if (schedule.displayWorkSchedule != null) {

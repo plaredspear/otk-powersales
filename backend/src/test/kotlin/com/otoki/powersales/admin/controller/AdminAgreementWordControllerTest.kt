@@ -71,6 +71,7 @@ class AdminAgreementWordControllerTest {
             employeeCode = "S001",
             employeeId = 1L,
             role = UserRole.SYSTEM_ADMIN,
+            costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,
             passwordChangeRequired = false,

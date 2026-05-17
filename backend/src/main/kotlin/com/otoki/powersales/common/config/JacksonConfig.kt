@@ -14,8 +14,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 // 본 설정은 argument resolver 명시 등록을 함께 담당한다:
 //  - [AuthenticationPrincipalArgumentResolver] — Spring Security 7 + @WebMvcTest(addFilters=false)
 //    환경에서 SecurityFilterChain 비활성으로 자동 등록되지 않는 `@AuthenticationPrincipal` 지원
-//  - [CurrentAdminContextArgumentResolver] — admin controller 의 `@CurrentEmployee` /
-//    `@CurrentDataScope` 파라미터 주입 (holder 빈 대체)
+//  - [CurrentAdminContextArgumentResolver] — admin controller 의 `@CurrentDataScope`
+//    파라미터 주입 (holder 빈 대체). 인증 사용자 본인은 `@AuthenticationPrincipal WebUserPrincipal`
+//    로 직접 수신.
 @Configuration
 class JacksonConfig(
     private val currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver,

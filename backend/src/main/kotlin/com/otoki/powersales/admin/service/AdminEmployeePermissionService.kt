@@ -15,7 +15,7 @@ import com.otoki.powersales.admin.repository.deleteByRole
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -32,11 +32,11 @@ class AdminEmployeePermissionService(
 ) {
 
     /**
-     * @param currentEmployee 호출자(controller) 가 주입한 현재 로그인 Employee. holder 의존 회피용
-     *                        explicit parameter. SYSTEM_ADMIN 외 role 이면 [AdminForbiddenException].
+     * @param principal 인증된 web admin 사용자 — role / employeeId snapshot 만 사용.
+     *                  SYSTEM_ADMIN 외 role 이면 [AdminForbiddenException].
      */
-    fun getEmployeePermissions(currentEmployee: Employee, employeeId: Long): EmployeePermissionDetailResponse {
-        requireSystemAdmin(currentEmployee)
+    fun getEmployeePermissions(principal: WebUserPrincipal, employeeId: Long): EmployeePermissionDetailResponse {
+        requireSystemAdmin(principal)
         val employee = employeeRepository.findById(employeeId)
             .orElseThrow { EmployeeNotFoundException() }
         val result = adminPermissionResolver.resolveWithDetails(employee)
@@ -44,12 +44,12 @@ class AdminEmployeePermissionService(
     }
 
     @Transactional
-    fun updateUserPermissions(currentEmployee: Employee, employeeId: Long, request: UpdateUserPermissionsRequest): EmployeePermissionDetailResponse {
-        requireSystemAdmin(currentEmployee)
+    fun updateUserPermissions(principal: WebUserPrincipal, employeeId: Long, request: UpdateUserPermissionsRequest): EmployeePermissionDetailResponse {
+        requireSystemAdmin(principal)
         val employee = employeeRepository.findById(employeeId)
             .orElseThrow { EmployeeNotFoundException() }
 
-        if (currentEmployee.id == employee.id) {
+        if (principal.employeeId == employee.id) {
             throw CannotModifyOwnPermissionException()
         }
 
@@ -73,12 +73,12 @@ class AdminEmployeePermissionService(
     }
 
     @Transactional
-    fun updateAuthority(currentEmployee: Employee, employeeId: Long, request: UpdateAuthorityRequest): UpdateAuthorityResponse {
-        requireSystemAdmin(currentEmployee)
+    fun updateAuthority(principal: WebUserPrincipal, employeeId: Long, request: UpdateAuthorityRequest): UpdateAuthorityResponse {
+        requireSystemAdmin(principal)
         val employee = employeeRepository.findById(employeeId)
             .orElseThrow { EmployeeNotFoundException() }
 
-        if (currentEmployee.id == employee.id) {
+        if (principal.employeeId == employee.id) {
             throw CannotModifyOwnAuthorityException()
         }
 
@@ -105,8 +105,8 @@ class AdminEmployeePermissionService(
     }
 
     @Transactional
-    fun updateRolePermissions(currentEmployee: Employee, role: UserRole, request: UpdateRolePermissionsRequest): RolePermissionsUpdateResponse {
-        requireSystemAdmin(currentEmployee)
+    fun updateRolePermissions(principal: WebUserPrincipal, role: UserRole, request: UpdateRolePermissionsRequest): RolePermissionsUpdateResponse {
+        requireSystemAdmin(principal)
 
         if (role !in UserRole.ALLOWED_FOR_ADMIN_LOGIN) {
             throw InvalidAuthorityException(role.name)
@@ -128,8 +128,8 @@ class AdminEmployeePermissionService(
         return RolePermissionsUpdateResponse.of(role, request.permissions)
     }
 
-    private fun requireSystemAdmin(currentEmployee: Employee) {
-        if (currentEmployee.role != UserRole.SYSTEM_ADMIN) {
+    private fun requireSystemAdmin(principal: WebUserPrincipal) {
+        if (principal.role != UserRole.SYSTEM_ADMIN) {
             throw AdminForbiddenException()
         }
     }

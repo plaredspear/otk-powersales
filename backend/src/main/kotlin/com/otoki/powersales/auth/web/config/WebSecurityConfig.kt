@@ -7,7 +7,6 @@ import com.otoki.powersales.auth.web.WebJwtAuthenticationFilter
 import com.otoki.powersales.auth.web.WebJwtService
 import com.otoki.powersales.auth.web.WebRefreshTokenStore
 import com.otoki.powersales.common.security.JwtAuthenticationEntryPoint
-import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -58,13 +57,11 @@ class WebSecurityConfig(
 
     @Bean
     fun webAdminContextFilter(
-        employeeRepository: EmployeeRepository,
         adminDataScopeService: AdminDataScopeService,
         adminPermissionResolver: AdminPermissionResolver,
         requestMappingHandlerMapping: RequestMappingHandlerMapping,
         objectMapper: ObjectMapper,
     ): WebAdminContextFilter = WebAdminContextFilter(
-        employeeRepository = employeeRepository,
         adminDataScopeService = adminDataScopeService,
         adminPermissionResolver = adminPermissionResolver,
         requestMappingHandlerMapping = requestMappingHandlerMapping,

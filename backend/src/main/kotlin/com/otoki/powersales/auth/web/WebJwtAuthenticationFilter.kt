@@ -37,6 +37,7 @@ class WebJwtAuthenticationFilter(
                     val username = webJwtService.getUsernameFromToken(token)
                     val employeeCode = webJwtService.getEmployeeCodeFromToken(token)
                     val employeeId = webJwtService.getEmployeeIdFromToken(token)
+                    val costCenterCode = webJwtService.getCostCenterCodeFromToken(token)
                     val profileType = ProfileType.fromValue(webJwtService.getProfileTypeFromToken(token))
                     val isSalesSupport = webJwtService.getIsSalesSupportFromToken(token)
                     val passwordChangeRequired = webJwtService.getPasswordChangeRequiredFromToken(token)
@@ -54,6 +55,7 @@ class WebJwtAuthenticationFilter(
                             employeeCode = employeeCode,
                             employeeId = employeeId,
                             role = role,
+                            costCenterCode = costCenterCode,
                             profileType = profileType,
                             isSalesSupport = isSalesSupport,
                             passwordChangeRequired = passwordChangeRequired,

@@ -16,6 +16,9 @@ import org.springframework.security.core.userdetails.UserDetails
  * - `encodedPassword`: BCrypt 해시
  * - `profileType` / `isSalesSupport`: 권한 산출 입력 (§2.3 매핑 정책)
  * - `passwordChangeRequired`: 임시 비밀번호 상태 — frontend 강제 변경 화면 분기 입력
+ * - `costCenterCode`: 로그인 시점 Employee.costCenterCode snapshot — admin service 가 Employee 엔티티
+ *                    재조회 없이 데이터 스코프(지점/조직) 분기를 수행하기 위한 캐시. SAP 인사 발령으로
+ *                    Employee 측이 갱신되어도 본 값은 토큰 lifetime 동안 stale — 재로그인 시 자연 보정.
  */
 data class WebUserPrincipal(
     val userId: Long,
@@ -23,6 +26,7 @@ data class WebUserPrincipal(
     val employeeCode: String,
     val employeeId: Long?,
     val role: UserRole?,
+    val costCenterCode: String?,
     val profileType: ProfileType,
     val isSalesSupport: Boolean,
     val passwordChangeRequired: Boolean,

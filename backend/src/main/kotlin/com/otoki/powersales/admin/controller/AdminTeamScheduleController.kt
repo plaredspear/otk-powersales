@@ -4,13 +4,11 @@ import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.CurrentEmployee
 import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.service.AdminTeamScheduleService
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.employee.entity.Employee
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
@@ -29,10 +27,9 @@ class AdminTeamScheduleController(
     @GetMapping("/members")
     fun getMembers(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @CurrentEmployee currentEmployee: Employee,
         @RequestParam(required = false) branchCode: String?
     ): ResponseEntity<ApiResponse<List<TeamMemberDto>>> {
-        val result = adminTeamScheduleService.getMembers(currentEmployee, branchCode)
+        val result = adminTeamScheduleService.getMembers(principal, branchCode)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -40,20 +37,18 @@ class AdminTeamScheduleController(
     @GetMapping("/accounts")
     fun getAccounts(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @CurrentEmployee currentEmployee: Employee,
         @RequestParam(required = false) branchCode: String?
     ): ResponseEntity<ApiResponse<List<TeamScheduleAccountDto>>> {
-        val result = adminTeamScheduleService.getAccounts(currentEmployee, branchCode)
+        val result = adminTeamScheduleService.getAccounts(principal, branchCode)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
     @RequiresPermission(AdminPermission.SCHEDULE_READ)
     @GetMapping("/branches")
     fun getBranches(
-        @AuthenticationPrincipal principal: WebUserPrincipal,
-        @CurrentEmployee currentEmployee: Employee
+        @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        val result = adminTeamScheduleService.getBranches(currentEmployee)
+        val result = adminTeamScheduleService.getBranches(principal)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -89,10 +84,9 @@ class AdminTeamScheduleController(
     @PostMapping
     fun createSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @CurrentEmployee currentEmployee: Employee,
         @Valid @RequestBody request: TeamScheduleCreateRequest
     ): ResponseEntity<ApiResponse<TeamScheduleCreateResultDto>> {
-        val result = adminTeamScheduleService.createSchedule(currentEmployee, request)
+        val result = adminTeamScheduleService.createSchedule(principal, request)
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success(result, "일정이 등록되었습니다"))
     }
@@ -101,11 +95,10 @@ class AdminTeamScheduleController(
     @PutMapping("/{id}")
     fun updateSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @CurrentEmployee currentEmployee: Employee,
         @PathVariable id: Long,
         @Valid @RequestBody request: TeamScheduleUpdateRequest
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminTeamScheduleService.updateSchedule(currentEmployee, id, request)
+        adminTeamScheduleService.updateSchedule(principal, id, request)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "일정이 수정되었습니다"))
     }
 
@@ -113,10 +106,9 @@ class AdminTeamScheduleController(
     @DeleteMapping("/{id}")
     fun deleteSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @CurrentEmployee currentEmployee: Employee,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminTeamScheduleService.deleteSchedule(currentEmployee, id)
+        adminTeamScheduleService.deleteSchedule(principal, id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "일정이 삭제되었습니다"))
     }
 }

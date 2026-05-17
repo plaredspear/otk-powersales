@@ -230,6 +230,7 @@ class WebAuthenticationService(
         employeeCode = user.employeeCode,
         employeeId = employee?.id,
         role = employee?.role,
+        costCenterCode = employee?.costCenterCode,
         profileType = user.profileType,
         isSalesSupport = user.isSalesSupport ?: false,
         passwordChangeRequired = user.passwordChangeRequired ?: true,

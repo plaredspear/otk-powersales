@@ -7,9 +7,11 @@ import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
 import com.otoki.powersales.admin.exception.InvalidEmployeeCodeFormatException
 import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.user.entity.ProfileType
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -41,19 +43,23 @@ class AdminEmployeeRegisterServiceTest {
     @InjectMocks
     private lateinit var service: AdminEmployeeRegisterService
 
-    private val systemAdminActor = Employee(
-        employeeCode = "ADMIN-OWNER",
-        name = "기존관리자"
-    ).apply {
-        role = UserRole.SYSTEM_ADMIN
-    }
+    private val systemAdminActor = principal(employeeId = 1L, employeeCode = "ADMIN-OWNER", role = UserRole.SYSTEM_ADMIN)
+    private val womanActor = principal(employeeId = 2L, employeeCode = "EMP-001", role = UserRole.WOMAN)
 
-    private val womanActor = Employee(
-        employeeCode = "EMP-001",
-        name = "여사원"
-    ).apply {
-        role = UserRole.WOMAN
-    }
+    private fun principal(employeeId: Long, employeeCode: String, role: UserRole) = WebUserPrincipal(
+        userId = employeeId * 10,
+        usernameValue = employeeCode,
+        employeeCode = employeeCode,
+        employeeId = employeeId,
+        role = role,
+        costCenterCode = null,
+        profileType = ProfileType.STAFF,
+        isSalesSupport = false,
+        passwordChangeRequired = false,
+        encodedPassword = "",
+        grantedAuthorities = emptyList(),
+        active = true
+    )
 
     private fun request(
         employeeCode: String = "ADMIN-001",

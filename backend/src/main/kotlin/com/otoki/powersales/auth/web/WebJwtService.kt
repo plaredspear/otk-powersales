@@ -49,6 +49,7 @@ class WebJwtService(
             .claim("user_id", principal.userId)
             .claim("employee_id", principal.employeeId)
             .claim("employee_code", principal.employeeCode)
+            .claim("cost_center_code", principal.costCenterCode)
             .claim("profile_type", principal.profileType.name)
             .claim("is_sales_support", principal.isSalesSupport)
             .claim("password_change_required", principal.passwordChangeRequired)
@@ -147,6 +148,10 @@ class WebJwtService(
     /** employee_code claim 추출. */
     fun getEmployeeCodeFromToken(token: String): String =
         parseClaims(token).get("employee_code", String::class.java)
+
+    /** cost_center_code claim 추출 — Employee 미존재 또는 미할당 시 null. */
+    fun getCostCenterCodeFromToken(token: String): String? =
+        parseClaims(token).get("cost_center_code", String::class.java)
 
     /** password_change_required claim 추출. */
     fun getPasswordChangeRequiredFromToken(token: String): Boolean =

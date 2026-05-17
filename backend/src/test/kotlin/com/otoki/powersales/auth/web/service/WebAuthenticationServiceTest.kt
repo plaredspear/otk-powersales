@@ -309,6 +309,7 @@ class WebAuthenticationServiceTest {
             employeeCode = user.employeeCode,
             employeeId = null,
             role = null,
+            costCenterCode = null,
             profileType = user.profileType,
             isSalesSupport = user.isSalesSupport ?: false,
             passwordChangeRequired = passwordChangeRequired,

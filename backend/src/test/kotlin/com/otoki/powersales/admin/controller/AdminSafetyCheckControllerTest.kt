@@ -50,6 +50,7 @@ class AdminSafetyCheckControllerTest {
             employeeCode = "S001",
             employeeId = 1L,
             role = UserRole.LEADER,
+            costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,
             passwordChangeRequired = false,

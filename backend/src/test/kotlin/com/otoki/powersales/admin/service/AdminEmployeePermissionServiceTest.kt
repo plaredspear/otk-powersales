@@ -11,8 +11,10 @@ import com.otoki.powersales.admin.repository.RolePermissionRepository
 import com.otoki.powersales.admin.repository.UserPermissionRepository
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -49,10 +51,26 @@ class AdminEmployeePermissionServiceTest {
 
     private lateinit var service: AdminEmployeePermissionService
 
-    private val systemAdmin = Employee(id = 1L, employeeCode = "00000001", name = "시스템관리자", role = UserRole.SYSTEM_ADMIN)
+    private val systemAdmin = principal(employeeId = 1L, employeeCode = "00000001", role = UserRole.SYSTEM_ADMIN)
+    private val systemAdminEmployee = Employee(id = 1L, employeeCode = "00000001", name = "시스템관리자", role = UserRole.SYSTEM_ADMIN)
     private val targetEmployee = Employee(id = 2L, employeeCode = "00000002", name = "홍길동", role = UserRole.BRANCH_MANAGER)
-    private val nonAdmin = Employee(id = 3L, employeeCode = "00000003", name = "조장", role = UserRole.LEADER)
+    private val nonAdmin = principal(employeeId = 3L, employeeCode = "00000003", role = UserRole.LEADER)
     private val targetUser = User(id = 102L, username = "홍길동", employeeCode = "00000002", password = "x")
+
+    private fun principal(employeeId: Long, employeeCode: String, role: UserRole) = WebUserPrincipal(
+        userId = employeeId * 10,
+        usernameValue = employeeCode,
+        employeeCode = employeeCode,
+        employeeId = employeeId,
+        role = role,
+        costCenterCode = null,
+        profileType = ProfileType.STAFF,
+        isSalesSupport = false,
+        passwordChangeRequired = false,
+        encodedPassword = "",
+        grantedAuthorities = emptyList(),
+        active = true
+    )
 
     @BeforeEach
     fun setUp() {
@@ -143,7 +161,7 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("실패 - 자기 자신 수정 → CannotModifyOwnPermissionException")
         fun updateUserPermissions_self() {
             // Given
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(systemAdmin))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(systemAdminEmployee))
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("SCHEDULE_WRITE"))
 
@@ -209,7 +227,7 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("실패 - 자기 자신 역할 변경 → CannotModifyOwnAuthorityException")
         fun updateAuthority_self() {
             // Given
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(systemAdmin))
+            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(systemAdminEmployee))
 
             val request = UpdateAuthorityRequest(role = UserRole.LEADER)
 

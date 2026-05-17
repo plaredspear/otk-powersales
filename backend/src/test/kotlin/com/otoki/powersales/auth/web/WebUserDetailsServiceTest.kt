@@ -1,10 +1,12 @@
 package com.otoki.powersales.auth.web
 
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -12,8 +14,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.security.core.userdetails.UsernameNotFoundException
+import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("WebUserDetailsService 테스트")
@@ -22,8 +26,19 @@ class WebUserDetailsServiceTest {
     @Mock
     private lateinit var userRepository: UserRepository
 
+    @Mock
+    private lateinit var employeeRepository: EmployeeRepository
+
     @InjectMocks
     private lateinit var service: WebUserDetailsService
+
+    @BeforeEach
+    fun stubEmployeeLookup() {
+        // 본 테스트는 인증/권한 매핑만 검증 — Employee snapshot 부재 케이스만 사용.
+        org.mockito.Mockito.lenient()
+            .`when`(employeeRepository.findByEmployeeCode(any()))
+            .thenReturn(Optional.empty())
+    }
 
     @Nested
     @DisplayName("loadUserByUsername - User 조회 + 권한 산출")

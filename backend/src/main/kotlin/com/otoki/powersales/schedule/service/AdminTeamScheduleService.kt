@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
@@ -10,7 +11,6 @@ import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
@@ -44,13 +44,13 @@ class AdminTeamScheduleService(
      * SF 의 `TeamMemberListComponentHelper.js:49-52` (지점 1개면 자동, N개면 사용자 선택) 패턴 정합.
      */
     /**
-     * @param currentEmployee 호출자(controller) 가 주입한 현재 로그인 Employee. holder 의존 회피용
-     *                        explicit parameter.
+     * @param principal 인증된 web admin 사용자. role / employeeCode / costCenterCode snapshot 만 사용 —
+     *                  Employee 엔티티 재조회 없이 데이터 스코프 분기를 수행.
      */
-    fun getMembers(currentEmployee: Employee, branchCode: String? = null): List<TeamMemberDto> {
-        val role = currentEmployee.role
-        val empCode = currentEmployee.employeeCode
-        val ccCode = currentEmployee.costCenterCode
+    fun getMembers(principal: WebUserPrincipal, branchCode: String? = null): List<TeamMemberDto> {
+        val role = principal.role
+        val empCode = principal.employeeCode
+        val ccCode = principal.costCenterCode
 
         val targetCostCenterCodes: List<String>? = when {
             empCode in SF_SPECIAL_EMPLOYEE_CODES ->
@@ -66,9 +66,9 @@ class AdminTeamScheduleService(
             .map { TeamMemberDto.from(it) }
     }
 
-    fun getAccounts(currentEmployee: Employee, branchCode: String?): List<TeamScheduleAccountDto> {
+    fun getAccounts(principal: WebUserPrincipal, branchCode: String?): List<TeamScheduleAccountDto> {
         val effectiveBranchCode = branchCode ?: run {
-            currentEmployee.costCenterCode ?: return emptyList()
+            principal.costCenterCode ?: return emptyList()
         }
         return accountRepository.findByBranchCodeAndAccountGroupIn(
             effectiveBranchCode, listOf("1010", "1000")
@@ -85,8 +85,8 @@ class AdminTeamScheduleService(
      * - ALL_BRANCHES Role (영업지원/본부): SF `RT.Name in ('영업지원실','영업본부')` 분기 (CVS 미포함)
      * - 그 외 (LEADER, BRANCH_MANAGER, WOMAN 등): 본인 `costCenterCode` 기준 조직 트리 + Retail/제1/CVS사업부
      */
-    fun getBranches(currentEmployee: Employee): List<BranchResponse> {
-        val role = currentEmployee.role
+    fun getBranches(principal: WebUserPrincipal): List<BranchResponse> {
+        val role = principal.role
 
         return when {
             role == UserRole.SYSTEM_ADMIN -> organizationRepository.findAllTeamScheduleBranches()
@@ -94,7 +94,7 @@ class AdminTeamScheduleService(
                 organizationRepository.findTeamScheduleBranches(hrCode = null, allBranches = true)
             else ->
                 organizationRepository.findTeamScheduleBranches(
-                    hrCode = currentEmployee.costCenterCode,
+                    hrCode = principal.costCenterCode,
                     allBranches = false
                 )
         }
@@ -177,7 +177,7 @@ class AdminTeamScheduleService(
     }
 
     @Transactional
-    fun createSchedule(currentEmployee: Employee, request: TeamScheduleCreateRequest): TeamScheduleCreateResultDto {
+    fun createSchedule(principal: WebUserPrincipal, request: TeamScheduleCreateRequest): TeamScheduleCreateResultDto {
         val employee = employeeRepository.findByEmployeeCode(request.employeeCode)
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
 
@@ -198,6 +198,9 @@ class AdminTeamScheduleService(
                 .orElseThrow { TeamScheduleAccountNotFoundException() }
         } else null
 
+        val teamLeader = employeeRepository.findById(principal.requireEmployeeId())
+            .orElseThrow { TeamScheduleEmployeeNotFoundException() }
+
         val schedule = TeamMemberSchedule(
             employee = employee,
             workingDate = workingDate,
@@ -206,7 +209,7 @@ class AdminTeamScheduleService(
             workingCategory2 = request.workingCategory2,
             workingCategory3 = request.workingCategory3,
             account = account,
-            teamLeader = currentEmployee
+            teamLeader = teamLeader
         )
         val saved = teamMemberScheduleRepository.save(schedule)
 
@@ -220,11 +223,11 @@ class AdminTeamScheduleService(
     }
 
     @Transactional
-    fun updateSchedule(currentEmployee: Employee, scheduleId: Long, request: TeamScheduleUpdateRequest) {
+    fun updateSchedule(principal: WebUserPrincipal, scheduleId: Long, request: TeamScheduleUpdateRequest) {
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        teamScheduleValidator.validateDisplayMasterLink(currentEmployee, schedule)
+        teamScheduleValidator.validateDisplayMasterLink(principal.role, schedule)
 
         val employee = schedule.employee
         if (employee != null) {
@@ -283,19 +286,19 @@ class AdminTeamScheduleService(
     }
 
     @Transactional
-    fun deleteSchedule(currentEmployee: Employee, scheduleId: Long) {
-        if (currentEmployee.role == UserRole.BRANCH_MANAGER) {
+    fun deleteSchedule(principal: WebUserPrincipal, scheduleId: Long) {
+        if (principal.role == UserRole.BRANCH_MANAGER) {
             throw TeamScheduleDeleteForbiddenException()
         }
 
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        if (currentEmployee.role != UserRole.SYSTEM_ADMIN && schedule.commuteLogSfid != null) {
+        if (principal.role != UserRole.SYSTEM_ADMIN && schedule.commuteLogSfid != null) {
             throw TeamScheduleWorkReportDeleteException()
         }
 
-        teamScheduleValidator.validateDisplayMasterLink(currentEmployee, schedule)
+        teamScheduleValidator.validateDisplayMasterLink(principal.role, schedule)
 
         val employeeId = schedule.employee?.id
         val accountId = schedule.account?.id
