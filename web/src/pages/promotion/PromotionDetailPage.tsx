@@ -22,7 +22,11 @@ import { CheckCircleFilled, CloseCircleFilled, CloseOutlined, ExclamationCircleO
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
-import { useDeletePromotion, useUpdatePromotion } from '@/hooks/promotion/usePromotionMutation';
+import {
+  useCloneWithChildren,
+  useDeletePromotion,
+  useUpdatePromotion,
+} from '@/hooks/promotion/usePromotionMutation';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
 import { usePromotionEmployees } from '@/hooks/promotion/usePromotionEmployees';
 import {
@@ -123,6 +127,7 @@ export default function PromotionDetailPage() {
   const { data: promotion, isLoading, error } = usePromotion(promotionId);
   const deleteMutation = useDeletePromotion();
   const updateMutation = useUpdatePromotion();
+  const cloneWithChildrenMutation = useCloneWithChildren();
   const { data: formMeta } = usePromotionFormMeta();
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { hasPermission } = usePermission();
@@ -310,6 +315,30 @@ export default function PromotionDetailPage() {
           navigate('/promotions');
         } catch {
           message.error('행사마스터 삭제에 실패했습니다');
+        }
+      },
+    });
+  };
+
+  // --- 행사마스터 복제 (폼 방식 — UC-11) ---
+  const handleClone = () => {
+    navigate(`/promotions/new?cloneFrom=${promotionId}`);
+  };
+
+  // --- 행사마스터 자식 포함 복제 (1클릭 — UC-12) ---
+  const handleCloneWithChildren = () => {
+    Modal.confirm({
+      title: '자식 포함 복제',
+      content: '행사마스터 정보 및 행사사원을 모두 복제하시겠습니까?',
+      okText: '복제',
+      cancelText: '취소',
+      onOk: async () => {
+        try {
+          const result = await cloneWithChildrenMutation.mutateAsync(promotionId);
+          message.success('행사마스터와 행사사원이 복제되었습니다');
+          navigate(`/promotions/${result.id}`);
+        } catch {
+          message.error('행사마스터 자식 포함 복제에 실패했습니다');
         }
       },
     });
@@ -1096,6 +1125,13 @@ export default function PromotionDetailPage() {
         ) : canWrite ? (
           <Space>
             <Button onClick={enterPromotionEdit}>수정</Button>
+            <Button onClick={handleClone}>복제</Button>
+            <Button
+              onClick={handleCloneWithChildren}
+              loading={cloneWithChildrenMutation.isPending}
+            >
+              자식 포함 복제
+            </Button>
             <Button danger onClick={handleDelete}>
               삭제
             </Button>

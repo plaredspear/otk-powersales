@@ -1,5 +1,5 @@
-import { useContext, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -17,7 +17,11 @@ import {
 import { InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
-import { useCreatePromotion, useUpdatePromotion } from '@/hooks/promotion/usePromotionMutation';
+import {
+  useClonePromotion,
+  useCreatePromotion,
+  useUpdatePromotion,
+} from '@/hooks/promotion/usePromotionMutation';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
 import { fetchAccounts } from '@/api/account';
 import { fetchProducts } from '@/api/product';
@@ -53,15 +57,24 @@ interface FormValues {
 export default function PromotionFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isEdit = !!id;
   const promotionId = Number(id);
+  const cloneFromParam = searchParams.get('cloneFrom');
+  const cloneFromId = useMemo(() => {
+    const parsed = Number(cloneFromParam);
+    return cloneFromParam && !Number.isNaN(parsed) && parsed > 0 ? parsed : 0;
+  }, [cloneFromParam]);
+  const isClone = !isEdit && cloneFromId > 0;
+  const sourceId = isEdit ? promotionId : cloneFromId;
 
   const [form] = Form.useForm<FormValues>();
   const { setDynamicTitle } = useContext(BreadcrumbContext);
-  const { data: promotion, isLoading: detailLoading } = usePromotion(isEdit ? promotionId : 0);
+  const { data: promotion, isLoading: detailLoading } = usePromotion(sourceId);
   const { data: formMeta, isLoading: formMetaLoading } = usePromotionFormMeta();
   const createMutation = useCreatePromotion();
   const updateMutation = useUpdatePromotion();
+  const cloneMutation = useClonePromotion();
 
   const [accountOptions, setAccountOptions] = useState<AccountOption[]>([]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
@@ -77,12 +90,14 @@ export default function PromotionFormPage() {
   useEffect(() => {
     if (isEdit) {
       setDynamicTitle(promotion?.promotionNumber ?? null);
+    } else if (isClone) {
+      setDynamicTitle(promotion?.promotionNumber ? `복제: ${promotion.promotionNumber}` : '복제');
     }
     return () => setDynamicTitle(null);
-  }, [isEdit, promotion?.promotionNumber, setDynamicTitle]);
+  }, [isEdit, isClone, promotion?.promotionNumber, setDynamicTitle]);
 
   useEffect(() => {
-    if (isEdit && promotion) {
+    if ((isEdit || isClone) && promotion) {
       form.setFieldsValue({
         promotionName: promotion.promotionName ?? undefined,
         promotionType: promotion.promotionType ?? undefined,
@@ -109,7 +124,7 @@ export default function PromotionFormPage() {
         ]);
       }
     }
-  }, [isEdit, promotion, form]);
+  }, [isEdit, isClone, promotion, form]);
 
   const handleAccountSearch = async (keyword: string) => {
     if (keyword.length < 2) return;
@@ -166,17 +181,26 @@ export default function PromotionFormPage() {
         await updateMutation.mutateAsync({ id: promotionId, data: payload });
         message.success('행사마스터가 수정되었습니다');
         navigate(`/promotions/${promotionId}`);
+      } else if (isClone) {
+        const result = await cloneMutation.mutateAsync({ sourceId: cloneFromId, data: payload });
+        message.success('행사마스터가 복제되었습니다');
+        navigate(`/promotions/${result.id}`);
       } else {
         const result = await createMutation.mutateAsync(payload);
         message.success('행사마스터가 등록되었습니다');
         navigate(`/promotions/${result.id}`);
       }
     } catch {
-      message.error(isEdit ? '행사마스터 수정에 실패했습니다' : '행사마스터 등록에 실패했습니다');
+      const failMsg = isEdit
+        ? '행사마스터 수정에 실패했습니다'
+        : isClone
+          ? '행사마스터 복제에 실패했습니다'
+          : '행사마스터 등록에 실패했습니다';
+      message.error(failMsg);
     }
   };
 
-  if ((isEdit && detailLoading) || formMetaLoading) {
+  if (((isEdit || isClone) && detailLoading) || formMetaLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
         <Spin size="large" />
@@ -184,10 +208,20 @@ export default function PromotionFormPage() {
     );
   }
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isSubmitting =
+    createMutation.isPending || updateMutation.isPending || cloneMutation.isPending;
 
   return (
     <div style={{ padding: 16, maxWidth: 1200 }}>
+      {isClone && (
+        <Card
+          size="small"
+          style={{ marginBottom: 16, backgroundColor: '#e6f4ff', borderColor: '#91caff' }}
+        >
+          원본 행사마스터 {promotion?.promotionNumber ? `[${promotion.promotionNumber}] ` : ''}
+          값을 복사했습니다. 거래처·기간·대표상품 등을 수정한 뒤 저장하면 신규 행사로 등록됩니다.
+        </Card>
+      )}
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Card title="정보" style={{ marginBottom: 16 }}>
           <Row gutter={24}>
@@ -349,7 +383,15 @@ export default function PromotionFormPage() {
         <Form.Item style={{ marginTop: 24 }}>
           <Space>
             <Button
-              onClick={() => navigate(isEdit ? `/promotions/${promotionId}` : '/promotions')}
+              onClick={() =>
+                navigate(
+                  isEdit
+                    ? `/promotions/${promotionId}`
+                    : isClone
+                      ? `/promotions/${cloneFromId}`
+                      : '/promotions',
+                )
+              }
             >
               취소
             </Button>

@@ -148,3 +148,29 @@ export async function deletePromotion(id: number): Promise<void> {
     throw new Error(res.data.message || '행사마스터 삭제에 실패했습니다');
   }
 }
+
+/**
+ * 행사마스터 복제 (폼 방식 — UC-11).
+ *
+ * 원본 sourceId 의 검증/CC 자동 채움/대표상품 1건 생성 (T1/T2/T7) 을 재사용. 신규 행사사원 11개 이력성 필드 초기화.
+ */
+export async function clonePromotion(sourceId: number, data: PromotionFormData): Promise<PromotionDetail> {
+  const res = await client.post<ApiResponse<PromotionDetail>>(`/api/v1/admin/promotions/${sourceId}/clone`, data);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '행사마스터 복제에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 행사마스터 자식 포함 복제 — 1클릭 (UC-12).
+ *
+ * 원본 필드 전체 + 행사사원 5필드만 복사 (담당자/근무유형). body 없음.
+ */
+export async function cloneWithChildren(sourceId: number): Promise<PromotionDetail> {
+  const res = await client.post<ApiResponse<PromotionDetail>>(`/api/v1/admin/promotions/${sourceId}/clone-with-children`);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '행사마스터 자식 포함 복제에 실패했습니다');
+  }
+  return res.data.data;
+}
