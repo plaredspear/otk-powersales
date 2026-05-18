@@ -21,7 +21,6 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.product.enums.ProductCategory1
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -1123,7 +1122,7 @@ class AdminPromotionServiceTest {
         name: String = "진라면 매운맛 120g",
         category1: String = "라면"
     ) = Product(id = id, name = name).also {
-        it.productCategory1 = ProductCategory1.fromDisplayNameOrNull(category1)
+        it.productCategory1 = category1
     }
 
     private fun createEmployee(

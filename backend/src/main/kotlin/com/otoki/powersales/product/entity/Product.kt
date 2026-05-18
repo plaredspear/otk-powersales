@@ -6,15 +6,9 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
-import com.otoki.powersales.product.entity.converter.ProductCategory1Converter
-import com.otoki.powersales.product.entity.converter.ProductCategory2Converter
-import com.otoki.powersales.product.entity.converter.ProductCategory3Converter
 import com.otoki.powersales.product.entity.converter.ProductStatusConverter
 import com.otoki.powersales.product.entity.converter.ProductTypeConverter
 import com.otoki.powersales.product.entity.converter.StorageConditionConverter
-import com.otoki.powersales.product.enums.ProductCategory1
-import com.otoki.powersales.product.enums.ProductCategory2
-import com.otoki.powersales.product.enums.ProductCategory3
 import com.otoki.powersales.product.enums.ProductStatus
 import com.otoki.powersales.product.enums.ProductType
 import com.otoki.powersales.product.enums.StorageCondition
@@ -83,21 +77,18 @@ class Product(
 
     @SFField("DKRetail__Category1__c")
     @HCColumn("dkretail__category1__c")
-    @Convert(converter = ProductCategory1Converter::class)
     @Column(name = "category1", length = 255)
-    var productCategory1: ProductCategory1? = null,
+    var productCategory1: String? = null,
 
     @SFField("DKRetail__Category2__c")
     @HCColumn("dkretail__category2__c")
-    @Convert(converter = ProductCategory2Converter::class)
     @Column(name = "category2", length = 255)
-    var productCategory2: ProductCategory2? = null,
+    var productCategory2: String? = null,
 
     @SFField("DKRetail__Category3__c")
     @HCColumn("dkretail__category3__c")
-    @Convert(converter = ProductCategory3Converter::class)
     @Column(name = "category3", length = 255)
-    var productCategory3: ProductCategory3? = null,
+    var productCategory3: String? = null,
 
     @SFField("DKRetail__CategoryCode1__c")
     @HCColumn("dkretail__categorycode1__c")

@@ -1,9 +1,6 @@
 package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.enums.ProductCategory1
-import com.otoki.powersales.product.enums.ProductCategory2
-import com.otoki.powersales.product.enums.ProductCategory3
 import com.otoki.powersales.product.enums.ProductStatus
 import com.otoki.powersales.product.enums.ProductType
 import com.otoki.powersales.product.enums.StorageCondition
@@ -156,9 +153,9 @@ class ProductUpsertService(
     ) {
         product.productStatus = ProductStatus.fromDisplayNameOrNull(command.productStatus)
         product.productType = ProductType.fromDisplayNameOrNull(command.productType)
-        product.productCategory1 = ProductCategory1.fromDisplayNameOrNull(command.category1)
-        product.productCategory2 = ProductCategory2.fromDisplayNameOrNull(command.category2)
-        product.productCategory3 = ProductCategory3.fromDisplayNameOrNull(command.category3)
+        product.productCategory1 = command.category1
+        product.productCategory2 = command.category2
+        product.productCategory3 = command.category3
         product.categoryCode1 = command.categoryCode1
         product.categoryCode2 = command.categoryCode2
         product.categoryCode3 = command.categoryCode3

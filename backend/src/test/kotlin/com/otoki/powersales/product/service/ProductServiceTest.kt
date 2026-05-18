@@ -1,8 +1,6 @@
 package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.enums.ProductCategory1
-import com.otoki.powersales.product.enums.ProductCategory2
 import com.otoki.powersales.product.enums.StorageCondition
 import com.otoki.powersales.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.product.exception.InvalidSearchTypeException
@@ -270,8 +268,8 @@ class ProductServiceTest {
             logisticsBarcode = barcode,
             storageCondition = StorageCondition.fromDisplayNameOrNull(storageCondition),
             shelfLife = shelfLife,
-            productCategory1 = ProductCategory1.fromDisplayNameOrNull(category1),
-            productCategory2 = ProductCategory2.fromDisplayNameOrNull(category2)
+            productCategory1 = category1,
+            productCategory2 = category2
         )
     }
 }

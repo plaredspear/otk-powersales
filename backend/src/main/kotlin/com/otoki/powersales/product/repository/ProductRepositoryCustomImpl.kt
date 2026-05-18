@@ -1,9 +1,6 @@
 package com.otoki.powersales.product.repository
 
 import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.enums.ProductCategory1
-import com.otoki.powersales.product.enums.ProductCategory2
-import com.otoki.powersales.product.enums.ProductCategory3
 import com.otoki.powersales.product.enums.ProductStatus
 import com.otoki.powersales.product.entity.QProduct.Companion.product
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -38,19 +35,13 @@ class ProductRepositoryCustomImpl(
         }
 
         if (!category1.isNullOrBlank()) {
-            ProductCategory1.fromDisplayNameOrNull(category1)?.let {
-                builder.and(product.productCategory1.eq(it))
-            }
+            builder.and(product.productCategory1.eq(category1))
         }
         if (!category2.isNullOrBlank()) {
-            ProductCategory2.fromDisplayNameOrNull(category2)?.let {
-                builder.and(product.productCategory2.eq(it))
-            }
+            builder.and(product.productCategory2.eq(category2))
         }
         if (!category3.isNullOrBlank()) {
-            ProductCategory3.fromDisplayNameOrNull(category3)?.let {
-                builder.and(product.productCategory3.eq(it))
-            }
+            builder.and(product.productCategory3.eq(category3))
         }
         if (!productStatus.isNullOrBlank()) {
             ProductStatus.fromDisplayNameOrNull(productStatus)?.let {
@@ -90,12 +81,11 @@ class ProductRepositoryCustomImpl(
             .orderBy(product.productCategory1.asc(), product.productCategory2.asc(), product.productCategory3.asc())
             .fetch()
 
-        return results.map { tuple ->
-            CategoryRow(
-                category1 = tuple.get(product.productCategory1)!!.displayName,
-                category2 = tuple.get(product.productCategory2)!!.displayName,
-                category3 = tuple.get(product.productCategory3)!!.displayName
-            )
+        return results.mapNotNull { tuple ->
+            val c1 = tuple.get(product.productCategory1) ?: return@mapNotNull null
+            val c2 = tuple.get(product.productCategory2) ?: return@mapNotNull null
+            val c3 = tuple.get(product.productCategory3) ?: return@mapNotNull null
+            CategoryRow(category1 = c1, category2 = c2, category3 = c3)
         }
     }
 

@@ -1,9 +1,6 @@
 package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.enums.ProductCategory1
-import com.otoki.powersales.product.enums.ProductCategory2
-import com.otoki.powersales.product.enums.ProductCategory3
 import com.otoki.powersales.product.enums.ProductStatus
 import com.otoki.powersales.product.enums.StorageCondition
 import com.otoki.powersales.product.repository.CategoryRow
@@ -228,9 +225,9 @@ class AdminProductServiceTest {
         id = id,
         name = name,
         productCode = productCode,
-        productCategory1 = ProductCategory1.fromDisplayNameOrNull(category1),
-        productCategory2 = ProductCategory2.fromDisplayNameOrNull(category2),
-        productCategory3 = ProductCategory3.fromDisplayNameOrNull(category3),
+        productCategory1 = category1,
+        productCategory2 = category2,
+        productCategory3 = category3,
         standardUnitPrice = standardUnitPrice?.let { java.math.BigDecimal.valueOf(it) },
         unit = unit,
         storageCondition = StorageCondition.fromDisplayNameOrNull(storageCondition),
