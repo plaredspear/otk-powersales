@@ -132,7 +132,7 @@ export default function CategorySchedulePage() {
         </div>
       ) : (
         <Table
-          rowKey={(_, index) => String(index)}
+          rowKey="branchName"
           columns={columns}
           dataSource={data?.items ?? []}
           pagination={false}

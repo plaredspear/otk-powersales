@@ -195,7 +195,7 @@ export default function MonthlyIntegrationSchedulePage() {
             </Text>
           )}
           <Table
-            rowKey={(_, index) => String(index)}
+            rowKey={(record) => `${record.accountCode}-${record.employeeCode}`}
             columns={columns}
             dataSource={data?.items ?? []}
             pagination={false}

@@ -123,7 +123,6 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
       okText="저장"
       cancelText="취소"
       confirmLoading={mutation.isPending}
-      destroyOnClose
       width={560}
     >
       <Form form={form} layout="vertical" preserve={false}>

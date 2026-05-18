@@ -58,7 +58,7 @@ export function AccountFilterTab({
       {!effectiveBranchCode ? (
         <Empty
           description="지점을 먼저 선택해주세요"
-          imageStyle={{ height: 48 }}
+          styles={{ image: { height: 48 } }}
           style={{ marginTop: 24 }}
         />
       ) : isLoading ? (
@@ -66,7 +66,7 @@ export function AccountFilterTab({
           <Spin size="small" />
         </div>
       ) : accounts.length === 0 ? (
-        <Empty description="거래처가 없습니다" imageStyle={{ height: 48 }} style={{ marginTop: 24 }} />
+        <Empty description="거래처가 없습니다" styles={{ image: { height: 48 } }} style={{ marginTop: 24 }} />
       ) : (
         <>
           <div

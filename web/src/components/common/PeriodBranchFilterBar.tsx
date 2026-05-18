@@ -96,7 +96,7 @@ export default function PeriodBranchFilterBar({
             filterOption={(input, option) =>
               (option?.label ?? '').toString().includes(input)
             }
-            dropdownRender={(menu) => (
+            popupRender={(menu) => (
               <>
                 <div style={{ padding: '4px 12px', borderBottom: '1px solid #f0f0f0' }}>
                   <Checkbox

@@ -33,7 +33,7 @@ export function MemberFilterTab({ selectedIds, onChange }: MemberFilterTabProps)
   }
 
   if (members.length === 0) {
-    return <Empty description="여사원이 없습니다" imageStyle={{ height: 48 }} style={{ marginTop: 24 }} />;
+    return <Empty description="여사원이 없습니다" styles={{ image: { height: 48 } }} style={{ marginTop: 24 }} />;
   }
 
   return (
