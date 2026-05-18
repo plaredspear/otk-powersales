@@ -53,9 +53,9 @@ describe('AttendInfoPage', () => {
       totalPages: 0,
     });
     renderPage();
-    expect(screen.getByText('근태정보')).toBeInTheDocument();
+    expect(screen.getByText('근무기간 조회')).toBeInTheDocument();
     expect(
-      screen.getByText(/SAP HR 인바운드 적재 데이터/),
+      screen.getByText(/SAP HR 인바운드 적재 근무기간 데이터/),
     ).toBeInTheDocument();
     await waitFor(() => {
       expect(mockedSearch).toHaveBeenCalled();

@@ -21,7 +21,7 @@ export default function AttendInfoDeleteConfirmModal({
 }: AttendInfoDeleteConfirmModalProps) {
   return (
     <Modal
-      title="근태정보 삭제"
+      title="근무기간 조회 — 삭제"
       open
       onOk={onConfirm}
       okText="삭제"
@@ -30,7 +30,7 @@ export default function AttendInfoDeleteConfirmModal({
       onCancel={onCancel}
       confirmLoading={loading}
     >
-      <p>다음 근태정보를 삭제하시겠습니까?</p>
+      <p>다음 근무기간 데이터를 삭제하시겠습니까?</p>
       <ul style={{ paddingLeft: 20, marginBottom: 16 }}>
         <li>
           <strong>근태정보번호:</strong> {target.name ?? '(SAP 미배포)'}

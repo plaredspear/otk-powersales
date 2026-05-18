@@ -43,7 +43,7 @@ export default function AttendInfoPage() {
     try {
       const result = await deleteMutation.mutateAsync(deleteTarget.id);
       message.success(
-        `근태정보 삭제 완료. 연결 연차 일정 ${result.deletedScheduleCount}건 함께 삭제되었습니다`,
+        `근무기간 삭제 완료. 연결 연차 일정 ${result.deletedScheduleCount}건 함께 삭제되었습니다`,
       );
       setDeleteTarget(null);
     } catch (e) {
@@ -55,7 +55,7 @@ export default function AttendInfoPage() {
     <div style={{ padding: 24 }}>
       <Space style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={3} style={{ margin: 0 }}>
-          근태정보
+          근무기간 조회
         </Title>
         {canWrite && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
@@ -64,7 +64,7 @@ export default function AttendInfoPage() {
         )}
       </Space>
       <Tag color="orange" style={{ marginBottom: 16 }}>
-        SAP HR 인바운드 적재 데이터 — admin 보정 입력 / 수정 / 삭제 시 연차 일정 자동 cascade
+        SAP HR 인바운드 적재 근무기간 데이터 — admin 보정 입력 / 수정 / 삭제 시 연차 일정 자동 cascade
       </Tag>
       <AttendInfoFilter onChange={handleFilterChange} />
       <AttendInfoList

@@ -36,7 +36,7 @@ export default function AttendInfoCreateModal({ open, onClose }: AttendInfoCreat
         reason: values.reason.trim(),
       });
       const summary = result.conversionSummary;
-      const parts: string[] = [`근태정보 등록 완료 (id=${result.id})`];
+      const parts: string[] = [`근무기간 등록 완료 (id=${result.id})`];
       if (summary) {
         if (summary.converted_schedule_count > 0) {
           parts.push(`연차 일정 ${summary.converted_schedule_count}건 자동 생성`);
@@ -62,7 +62,7 @@ export default function AttendInfoCreateModal({ open, onClose }: AttendInfoCreat
 
   return (
     <Modal
-      title="근태정보 신규 등록 — SAP 미적재 / 오류 시 보정 입력용"
+      title="근무기간 조회 — 신규 등록 (SAP 미적재 / 오류 시 보정 입력용)"
       open={open}
       onOk={submit}
       onCancel={onClose}

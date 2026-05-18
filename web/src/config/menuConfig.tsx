@@ -56,7 +56,7 @@ export const menuRoute: MenuRoute = {
         { path: '/employee', name: '여사원 현황', requiredPermission: 'EMPLOYEE_READ' },
         { path: '/leave', name: '휴무관리' },
         { path: '/attendance', name: '근무 등록현황' },
-        { path: '/attend-info', name: '근태정보', requiredPermission: 'ATTEND_INFO_READ' },
+        { path: '/attend-info', name: '근무기간 조회', requiredPermission: 'ATTEND_INFO_READ' },
       ],
     },
     {

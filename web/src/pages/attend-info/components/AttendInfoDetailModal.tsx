@@ -75,7 +75,7 @@ export default function AttendInfoDetailModal({
         },
       });
       const summary = result.conversionSummary;
-      const parts: string[] = ['근태정보 수정 완료'];
+      const parts: string[] = ['근무기간 수정 완료'];
       if (summary) {
         if (summary.deleted_schedule_count > 0) {
           parts.push(`기존 연차 일정 ${summary.deleted_schedule_count}건 삭제`);
@@ -96,7 +96,7 @@ export default function AttendInfoDetailModal({
 
   return (
     <Modal
-      title={`근태정보 상세 (id=${attendInfoId})`}
+      title={`근무기간 조회 — 상세 (id=${attendInfoId})`}
       open
       onCancel={() => {
         setEditMode(false);

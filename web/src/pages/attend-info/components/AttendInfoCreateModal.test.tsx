@@ -30,7 +30,7 @@ describe('AttendInfoCreateModal', () => {
   it('모달이 열리면 모든 필드와 보정 입력 안내가 노출된다', () => {
     renderModal();
     expect(
-      screen.getByText('근태정보 신규 등록 — SAP 미적재 / 오류 시 보정 입력용'),
+      screen.getByText('근무기간 조회 — 신규 등록 (SAP 미적재 / 오류 시 보정 입력용)'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('사원번호')).toBeInTheDocument();
     expect(screen.getByLabelText('근태유형')).toBeInTheDocument();

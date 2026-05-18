@@ -30,7 +30,7 @@ describe('AttendInfoDeleteConfirmModal', () => {
       />,
     );
 
-    expect(screen.getByText('근태정보 삭제')).toBeInTheDocument();
+    expect(screen.getByText('근무기간 조회 — 삭제')).toBeInTheDocument();
     expect(screen.getByText('AI0001')).toBeInTheDocument();
     expect(screen.getByText(/홍길동/)).toBeInTheDocument();
     expect(screen.getByText(/20120253/)).toBeInTheDocument();
