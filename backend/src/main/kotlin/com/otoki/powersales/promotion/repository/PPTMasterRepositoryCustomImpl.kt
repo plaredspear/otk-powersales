@@ -139,6 +139,14 @@ class PPTMasterRepositoryCustomImpl(
             .fetch()
     }
 
+    /**
+     * 전문행사조 마스터 SAP 송신 대상 조회 (Spec #765 — UC-15).
+     *
+     * 당월 기간 (`monthFirstDay` ≤ start_date ≤ end_date 또는 end_date IS NULL) 과 겹치는 모든 마스터를 반환한다.
+     * 레거시 `IF_REST_SAP_PPTMToSAP.cls:22-36` SOQL 의 실효 동작 1:1 정합 — 레거시는 `ValidConditionData != '미확정'` 필터가
+     * 있었으나 수식 결과값이 `'미확정'` 을 생성하지 않으므로 본 조건은 항상 참 (작성자가 `ValidData != '미확정'` 을 의도한
+     * 오타로 추정). 확정/미확정 마스터 모두 송신된다 (운영 실측 동등).
+     */
     override fun findSapOutboundTargets(
         monthFirstDay: LocalDate,
         monthLastDay: LocalDate
@@ -150,8 +158,7 @@ class PPTMasterRepositoryCustomImpl(
             .where(
                 professionalPromotionTeamMaster.startDate.loe(monthLastDay),
                 professionalPromotionTeamMaster.endDate.isNull
-                    .or(professionalPromotionTeamMaster.endDate.goe(monthFirstDay)),
-                employee.status.isNull.or(employee.status.ne("미확정"))
+                    .or(professionalPromotionTeamMaster.endDate.goe(monthFirstDay))
             )
             .orderBy(professionalPromotionTeamMaster.id.asc())
             .fetch()
