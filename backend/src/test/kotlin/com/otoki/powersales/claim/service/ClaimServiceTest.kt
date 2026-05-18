@@ -1,15 +1,33 @@
-/*
 package com.otoki.powersales.claim.service
 
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.claim.dto.request.ClaimCreateRequest
-import com.otoki.powersales.entity.*
+import com.otoki.powersales.claim.entity.Claim
+import com.otoki.powersales.claim.entity.ClaimPhoto
+import com.otoki.powersales.claim.entity.sfpicklist.RequestType
+import com.otoki.powersales.claim.enums.ClaimDateType
+import com.otoki.powersales.claim.enums.ClaimPhotoType
+import com.otoki.powersales.claim.enums.ClaimStatus
+import com.otoki.powersales.claim.enums.ClaimType1
+import com.otoki.powersales.claim.enums.ClaimType2
+import com.otoki.powersales.claim.exception.ClaimAccessDeniedException
+import com.otoki.powersales.claim.exception.ClaimNotEditableException
+import com.otoki.powersales.claim.exception.ClaimTypeHierarchyMismatchException
+import com.otoki.powersales.claim.exception.InvalidClaimDateException
+import com.otoki.powersales.claim.exception.InvalidClaimType1Exception
+import com.otoki.powersales.claim.exception.PurchaseInfoRequiredException
+import com.otoki.powersales.claim.exception.RequestTypeMaxExceededException
+import com.otoki.powersales.claim.repository.ClaimPhotoRepository
+import com.otoki.powersales.claim.repository.ClaimRepository
+import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.repository.*
-import com.otoki.powersales.common.repository.*
 import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -17,7 +35,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.springframework.mock.web.MockMultipartFile
 import java.time.LocalDate
 import java.util.Optional
@@ -26,297 +48,340 @@ import java.util.Optional
 @DisplayName("ClaimService 테스트")
 class ClaimServiceTest {
 
-    @Mock
-    private lateinit var claimRepository: ClaimRepository
-
-    @Mock
-    private lateinit var claimPhotoRepository: ClaimPhotoRepository
-
-    @Mock
-    private lateinit var claimCategoryRepository: ClaimCategoryRepository
-
-    @Mock
-    private lateinit var claimSubcategoryRepository: ClaimSubcategoryRepository
-
-    @Mock
-    private lateinit var claimPurchaseMethodRepository: ClaimPurchaseMethodRepository
-
-    @Mock
-    private lateinit var claimRequestTypeRepository: ClaimRequestTypeRepository
-
-    @Mock
-    private lateinit var userRepository: UserRepository
-
-    @Mock
-    private lateinit var storeRepository: StoreRepository
-
-    @Mock
-    private lateinit var productRepository: ProductRepository
-
-    @Mock
-    private lateinit var fileStorageService: FileStorageService
-
     @InjectMocks
     private lateinit var claimService: ClaimService
 
-    // ========== 클레임 등록 Tests ==========
+    @Mock private lateinit var claimRepository: ClaimRepository
+    @Mock private lateinit var claimPhotoRepository: ClaimPhotoRepository
+    @Mock private lateinit var employeeRepository: EmployeeRepository
+    @Mock private lateinit var accountRepository: AccountRepository
+    @Mock private lateinit var productRepository: ProductRepository
+    @Mock private lateinit var fileStorageService: FileStorageService
+
+    private val userId = 100L
+    private val claimId = 999L
+
+    private lateinit var employee: Employee
+    private lateinit var account: Account
+    private lateinit var product: Product
+
+    @BeforeEach
+    fun setup() {
+        employee = Employee(
+            id = userId,
+            employeeCode = "EMP001",
+            name = "홍길동",
+            orgName = "FS사업부",
+            costCenterCode = "CC100"
+        )
+        account = Account(id = 1, name = "테스트거래처", branchCode = "B001")
+        product = Product(id = 1L, name = "테스트제품", productCode = "P0001")
+    }
+
+    private fun validRequest(
+        claimType1: String = "A",
+        claimType2: String = "AA",
+        date: String = "2026-01-01",
+        dateType: String = ClaimDateType.EXPIRY_DATE.name,
+        purchaseAmount: Long? = null,
+        purchaseMethodCode: String? = null,
+        requestTypeCode: String? = null
+    ) = ClaimCreateRequest(
+        accountId = 1L,
+        productCode = "P0001",
+        dateType = dateType,
+        date = date,
+        claimType1 = claimType1,
+        claimType2 = claimType2,
+        defectDescription = "포장이 찢어져 있음",
+        defectQuantity = 2L,
+        purchaseAmount = purchaseAmount,
+        purchaseMethodCode = purchaseMethodCode,
+        requestTypeCode = requestTypeCode
+    )
+
+    private fun mockPhoto(name: String) = MockMultipartFile(name, "$name.jpg", "image/jpeg", byteArrayOf(1, 2, 3))
+
+    private fun stubCreateDeps() {
+        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+        whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
+        whenever(productRepository.findByProductCode("P0001")).thenReturn(product)
+        whenever(claimRepository.save(any<Claim>())).thenAnswer { it.arguments[0] as Claim }
+        whenever(fileStorageService.uploadClaimPhoto(any(), any(), any(), any()))
+            .thenReturn("uploads/claim/2026/01/01/uuid.jpg")
+    }
 
     @Nested
-    @DisplayName("클레임 등록")
-    inner class CreateClaim {
+    @DisplayName("createClaim - 등록 (UC-02/UC-10)")
+    inner class CreateClaimTests {
 
         @Test
-        @DisplayName("성공 - 기본 정보만 입력")
-        fun createClaim_basicInfo_success() {
-            // Given
-            val userId = 1L
-            val request = createBasicRequest()
-            val defectPhoto = createMockFile("defect.jpg")
-            val labelPhoto = createMockFile("label.jpg")
+        @DisplayName("정상 요청 - 클레임 + 사진 2장 저장")
+        fun createsClaimWithRequiredPhotos() {
+            stubCreateDeps()
 
-            setupMocksForSuccess(userId)
-
-            // When
             val result = claimService.createClaim(
-                userId = userId,
-                request = request,
-                defectPhoto = defectPhoto,
-                labelPhoto = labelPhoto,
+                userId, validRequest(),
+                defectPhoto = mockPhoto("defectPhoto"),
+                labelPhoto = mockPhoto("labelPhoto"),
                 receiptPhoto = null
             )
 
-            // Then
-            assertThat(result.id).isGreaterThan(0)
-            assertThat(result.storeName).isEqualTo("테스트 거래처")
-            assertThat(result.productName).isEqualTo("테스트 제품")
-            verify(claimRepository).save(any())
+            assertThat(result.accountName).isEqualTo("테스트거래처")
+            assertThat(result.productCode).isEqualTo("P0001")
             verify(claimPhotoRepository).saveAll(any<List<ClaimPhoto>>())
-            verify(fileStorageService, times(2)).uploadClaimPhoto(any(), any(), any(), any())
         }
 
         @Test
-        @DisplayName("성공 - 구매 정보 포함")
-        fun createClaim_withPurchaseInfo_success() {
-            // Given
-            val userId = 1L
-            val request = createRequestWithPurchase()
-            val defectPhoto = createMockFile("defect.jpg")
-            val labelPhoto = createMockFile("label.jpg")
-            val receiptPhoto = createMockFile("receipt.jpg")
+        @DisplayName("ClaimType2.parent != ClaimType1 - hierarchy mismatch 예외")
+        fun rejectsHierarchyMismatch() {
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
+            whenever(productRepository.findByProductCode("P0001")).thenReturn(product)
 
-            setupMocksForSuccess(userId)
-            val purchaseMethod = createMockPurchaseMethod()
-            doReturn(Optional.of(purchaseMethod)).whenever(claimPurchaseMethodRepository).findById("PM01")
-
-            // When
-            val result = claimService.createClaim(
-                userId = userId,
-                request = request,
-                defectPhoto = defectPhoto,
-                labelPhoto = labelPhoto,
-                receiptPhoto = receiptPhoto
-            )
-
-            // Then
-            assertThat(result).isNotNull
-            verify(claimPhotoRepository).saveAll(any<List<ClaimPhoto>>())
-            verify(fileStorageService, times(3)).uploadClaimPhoto(any(), any(), any(), any())
+            assertThatThrownBy {
+                claimService.createClaim(
+                    userId, validRequest(claimType1 = "A", claimType2 = "BA"),
+                    mockPhoto("d"), mockPhoto("l"), null
+                )
+            }.isInstanceOf(ClaimTypeHierarchyMismatchException::class.java)
         }
 
-    }
+        @Test
+        @DisplayName("ClaimType1 유효값 외 - InvalidClaimType1Exception")
+        fun rejectsInvalidClaimType1() {
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
+            whenever(productRepository.findByProductCode("P0001")).thenReturn(product)
 
-    // ========== 폼 초기화 데이터 조회 Tests ==========
+            assertThatThrownBy {
+                claimService.createClaim(
+                    userId, validRequest(claimType1 = "Z"), mockPhoto("d"), mockPhoto("l"), null
+                )
+            }.isInstanceOf(InvalidClaimType1Exception::class.java)
+        }
+
+        @Test
+        @DisplayName("제조일자 미래 - InvalidClaimDateException")
+        fun rejectsFutureManufactureDate() {
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
+            whenever(productRepository.findByProductCode("P0001")).thenReturn(product)
+            val futureDate = LocalDate.now().plusDays(1).toString()
+
+            assertThatThrownBy {
+                claimService.createClaim(
+                    userId,
+                    validRequest(dateType = ClaimDateType.MANUFACTURE_DATE.name, date = futureDate),
+                    mockPhoto("d"), mockPhoto("l"), null
+                )
+            }.isInstanceOf(InvalidClaimDateException::class.java)
+                .hasMessageContaining("제조일자")
+        }
+
+        @Test
+        @DisplayName("유통기한 미래 - 허용")
+        fun allowsFutureExpiryDate() {
+            stubCreateDeps()
+            val futureDate = LocalDate.now().plusDays(30).toString()
+
+            claimService.createClaim(
+                userId,
+                validRequest(dateType = ClaimDateType.EXPIRY_DATE.name, date = futureDate),
+                mockPhoto("d"), mockPhoto("l"), null
+            )
+
+            verify(claimRepository).save(any<Claim>())
+        }
+
+        @Test
+        @DisplayName("구매금액 있는데 영수증 누락 - PurchaseInfoRequiredException")
+        fun rejectsPurchaseInfoMissingReceipt() {
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
+            whenever(productRepository.findByProductCode("P0001")).thenReturn(product)
+
+            assertThatThrownBy {
+                claimService.createClaim(
+                    userId,
+                    validRequest(purchaseAmount = 10000, purchaseMethodCode = "A"),
+                    mockPhoto("d"), mockPhoto("l"), null
+                )
+            }.isInstanceOf(PurchaseInfoRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("요청사항 4개 초과 - RequestTypeMaxExceededException")
+        fun rejectsMoreThanFourRequestTypes() {
+            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
+            whenever(productRepository.findByProductCode("P0001")).thenReturn(product)
+            val joined = listOf(
+                RequestType.OPINION_REPORT.displayName,
+                RequestType.CONSULTATION.displayName,
+                RequestType.URGENT_FS.displayName,
+                RequestType.SALE_CANCEL_NEEDED.displayName,
+                RequestType.PRODUCTION_SCHEDULE_ADJUSTMENT.displayName
+            ).joinToString(";")
+
+            assertThatThrownBy {
+                claimService.createClaim(
+                    userId, validRequest(requestTypeCode = joined),
+                    mockPhoto("d"), mockPhoto("l"), null
+                )
+            }.isInstanceOf(RequestTypeMaxExceededException::class.java)
+        }
+
+        @Test
+        @DisplayName("Employee.costCenterCode 우선 - claim.costCenterCode 자동 채움")
+        fun fillsCostCenterCodeFromEmployee() {
+            stubCreateDeps()
+
+            claimService.createClaim(userId, validRequest(), mockPhoto("d"), mockPhoto("l"), null)
+
+            verify(claimRepository).save(argThat<Claim> {
+                this.costCenterCode == "CC100" && this.division == "FS사업부"
+            })
+        }
+    }
 
     @Nested
-    @DisplayName("폼 초기화 데이터 조회")
-    inner class GetFormData {
+    @DisplayName("updateClaim - 수정 (UC-03)")
+    inner class UpdateClaimTests {
 
-        @Test
-        @DisplayName("성공 - 종류1+종류2 중첩 구조 반환")
-        fun getFormData_withNestedStructure() {
-            // Given
-            val category1 = createMockCategory()
-            val category2 = ClaimCategory(id = 2L, name = "변질/변패", sortOrder = 2, isActive = true)
-            val subcategories1 = listOf(
-                createMockSubcategory(category1, 1L, "벌레"),
-                createMockSubcategory(category1, 2L, "금속")
-            )
-            val subcategories2 = listOf(
-                createMockSubcategory(category2, 3L, "곰팡이")
-            )
-
-            doReturn(listOf(category1, category2))
-                .whenever(claimCategoryRepository).findByIsActiveTrueOrderBySortOrderAsc()
-            doReturn(subcategories1)
-                .whenever(claimSubcategoryRepository).findByCategoryIdAndIsActiveTrueOrderBySortOrderAsc(category1.id)
-            doReturn(subcategories2)
-                .whenever(claimSubcategoryRepository).findByCategoryIdAndIsActiveTrueOrderBySortOrderAsc(category2.id)
-            doReturn(listOf(createMockPurchaseMethod()))
-                .whenever(claimPurchaseMethodRepository).findByIsActiveTrueOrderBySortOrderAsc()
-            doReturn(listOf(createMockRequestType()))
-                .whenever(claimRequestTypeRepository).findByIsActiveTrueOrderBySortOrderAsc()
-
-            // When
-            val result = claimService.getFormData()
-
-            // Then
-            assertThat(result.categories).hasSize(2)
-            assertThat(result.categories[0].subcategories).hasSize(2)
-            assertThat(result.categories[1].subcategories).hasSize(1)
-            assertThat(result.purchaseMethods).hasSize(1)
-            assertThat(result.requestTypes).hasSize(1)
-        }
-
-        @Test
-        @DisplayName("성공 - sortOrder 순 정렬 확인")
-        fun getFormData_sortedBySortOrder() {
-            // Given
-            val category1 = ClaimCategory(id = 1L, name = "이물", sortOrder = 1, isActive = true)
-            val category2 = ClaimCategory(id = 2L, name = "변질", sortOrder = 2, isActive = true)
-
-            doReturn(listOf(category1, category2))
-                .whenever(claimCategoryRepository).findByIsActiveTrueOrderBySortOrderAsc()
-            doReturn(emptyList<ClaimSubcategory>())
-                .whenever(claimSubcategoryRepository).findByCategoryIdAndIsActiveTrueOrderBySortOrderAsc(any())
-            doReturn(emptyList<ClaimPurchaseMethod>())
-                .whenever(claimPurchaseMethodRepository).findByIsActiveTrueOrderBySortOrderAsc()
-            doReturn(emptyList<ClaimRequestType>())
-                .whenever(claimRequestTypeRepository).findByIsActiveTrueOrderBySortOrderAsc()
-
-            // When
-            val result = claimService.getFormData()
-
-            // Then
-            assertThat(result.categories[0].name).isEqualTo("이물")
-            assertThat(result.categories[1].name).isEqualTo("변질")
-        }
-    }
-
-    // ========== Helper Methods ==========
-
-    private fun createBasicRequest() = ClaimCreateRequest(
-        storeId = 1L,
-        productCode = "PROD001",
-        dateType = "EXPIRY_DATE",
-        date = "2026-12-31",
-        categoryId = 1L,
-        subcategoryId = 1L,
-        defectDescription = "불량입니다",
-        defectQuantity = 1L
-    )
-
-    private fun createRequestWithPurchase() = ClaimCreateRequest(
-        storeId = 1L,
-        productCode = "PROD001",
-        dateType = "EXPIRY_DATE",
-        date = "2026-12-31",
-        categoryId = 1L,
-        subcategoryId = 1L,
-        defectDescription = "불량입니다",
-        defectQuantity = 1L,
-        purchaseAmount = 10000L,
-        purchaseMethodCode = "PM01"
-    )
-
-    private fun createMockFile(filename: String) = MockMultipartFile(
-        "file",
-        filename,
-        "image/jpeg",
-        ByteArray(100)
-    )
-
-    private fun setupMocksForSuccess(userId: Long) {
-        val user = createMockUser()
-        val store = createMockStore()
-        val product = createMockProduct()
-        val category = createMockCategory()
-        val subcategory = createMockSubcategory(category, 1L, "벌레")
-        val claim = createMockClaim(user, store, product, category, subcategory)
-
-        doReturn(Optional.of(user)).whenever(userRepository).findById(userId)
-        doReturn(Optional.of(store)).whenever(storeRepository).findById(any())
-        doReturn(product).whenever(productRepository).findByProductCode(any())
-        doReturn(Optional.of(category)).whenever(claimCategoryRepository).findById(any())
-        doReturn(Optional.of(subcategory)).whenever(claimSubcategoryRepository).findById(any())
-        doReturn(claim).whenever(claimRepository).save(any())
-        doReturn(emptyList<ClaimPhoto>()).whenever(claimPhotoRepository).saveAll(any<List<ClaimPhoto>>())
-        doReturn("http://localhost/files/claims/1/1/defect.jpg")
-            .whenever(fileStorageService).uploadClaimPhoto(any(), any(), any(), any())
-    }
-
-    private fun createMockUser() = User(
-        id = 1L,
-        employeeCode = "10000001",
-        password = "encoded",
-        name = "테스트",
-        orgName = "서울"
-    )
-
-    private fun createMockStore() = Store(
-        id = 1L,
-        storeCode = "ST001",
-        storeName = "테스트 거래처"
-    )
-
-    private fun createMockProduct() = Product(
-        id = 1L,
-        productId = "P001",
-        productName = "테스트 제품",
-        productCode = "PROD001",
-        barcode = "1234567890",
-        storageType = "상온"
-    )
-
-    private fun createMockCategory() = ClaimCategory(
-        id = 1L,
-        name = "이물",
-        sortOrder = 1,
-        isActive = true
-    )
-
-    private fun createMockSubcategory(category: ClaimCategory, id: Long, name: String) =
-        ClaimSubcategory(
-            id = id,
-            category = category,
-            name = name,
-            sortOrder = 1,
-            isActive = true
+        private fun existingClaim(status: ClaimStatus = ClaimStatus.DRAFT) = Claim(
+            id = claimId,
+            employee = employee,
+            account = account,
+            accountName = account.name,
+            productCode = "P0001",
+            productName = "테스트제품",
+            dateType = ClaimDateType.EXPIRY_DATE,
+            date = LocalDate.now(),
+            claimType1 = ClaimType1.A,
+            claimType2 = ClaimType2.AA,
+            defectDescription = "원본 설명",
+            defectQuantity = 1L,
+            status = status
         )
 
-    private fun createMockPurchaseMethod() = ClaimPurchaseMethod(
-        code = "PM01",
-        name = "대형마트",
-        sortOrder = 1,
-        isActive = true
-    )
+        @Test
+        @DisplayName("DRAFT 상태 + 본인 작성 - 정상 수정")
+        fun updatesDraftClaim() {
+            val existing = existingClaim()
+            whenever(claimRepository.findById(claimId)).thenReturn(Optional.of(existing))
 
-    private fun createMockRequestType() = ClaimRequestType(
-        code = "RT01",
-        name = "교환",
-        sortOrder = 1,
-        isActive = true
-    )
+            val result = claimService.updateClaim(
+                userId, claimId,
+                ClaimUpdateRequest(defectDescription = "수정된 설명", defectQuantity = 5L)
+            )
 
-    private fun createMockClaim(
-        user: User,
-        store: Store,
-        product: Product,
-        category: ClaimCategory,
-        subcategory: ClaimSubcategory
-    ) = Claim(
-        id = 1L,
-        user = user,
-        store = store,
-        storeName = store.storeName,
-        productCode = product.productCode,
-        productName = product.productName,
-        dateType = ClaimDateType.EXPIRY_DATE,
-        date = LocalDate.of(2026, 12, 31),
-        category = category,
-        subcategory = subcategory,
-        defectDescription = "불량입니다",
-        defectQuantity = 1,
-        status = ClaimStatus.DRAFT
-    )
+            assertThat(existing.defectDescription).isEqualTo("수정된 설명")
+            assertThat(existing.defectQuantity).isEqualTo(5L)
+            assertThat(result.id).isEqualTo(claimId)
+        }
+
+        @Test
+        @DisplayName("SENT 상태 - ClaimNotEditableException")
+        fun rejectsNonDraftStatus() {
+            val existing = existingClaim(status = ClaimStatus.SENT)
+            whenever(claimRepository.findById(claimId)).thenReturn(Optional.of(existing))
+
+            assertThatThrownBy {
+                claimService.updateClaim(userId, claimId, ClaimUpdateRequest(defectDescription = "x"))
+            }.isInstanceOf(ClaimNotEditableException::class.java)
+        }
+
+        @Test
+        @DisplayName("다른 사원의 클레임 - ClaimAccessDeniedException")
+        fun rejectsOtherEmployeesClaim() {
+            val other = Employee(id = userId + 1, employeeCode = "EMP999", name = "타인")
+            val foreign = Claim(
+                id = claimId,
+                employee = other,
+                account = account,
+                date = LocalDate.now(),
+                claimType1 = ClaimType1.A,
+                claimType2 = ClaimType2.AA,
+                defectDescription = "x",
+                defectQuantity = 1L,
+                status = ClaimStatus.DRAFT
+            )
+            whenever(claimRepository.findById(claimId)).thenReturn(Optional.of(foreign))
+
+            assertThatThrownBy {
+                claimService.updateClaim(userId, claimId, ClaimUpdateRequest(defectDescription = "y"))
+            }.isInstanceOf(ClaimAccessDeniedException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteClaim - 삭제 (UC-11)")
+    inner class DeleteClaimTests {
+
+        @Test
+        @DisplayName("DRAFT 상태 - 클레임 + 사진 모두 삭제 + S3 파일 삭제")
+        fun deletesDraftClaimAndPhotos() {
+            val claim = Claim(
+                id = claimId, employee = employee, account = account,
+                date = LocalDate.now(), claimType1 = ClaimType1.A, claimType2 = ClaimType2.AA,
+                defectDescription = "x", defectQuantity = 1L, status = ClaimStatus.DRAFT
+            )
+            val photo = ClaimPhoto(
+                id = 1L, claim = claim, photoType = ClaimPhotoType.DEFECT,
+                url = "uploads/claim/2026/01/01/x.jpg",
+                originalFileName = "x.jpg", fileSize = 100L, contentType = "image/jpeg"
+            )
+            whenever(claimRepository.findById(claimId)).thenReturn(Optional.of(claim))
+            whenever(claimPhotoRepository.findByClaimId(claimId)).thenReturn(listOf(photo))
+
+            claimService.deleteClaim(userId, claimId)
+
+            verify(fileStorageService).deleteClaimPhoto("uploads/claim/2026/01/01/x.jpg")
+            verify(claimPhotoRepository).deleteAll(listOf(photo))
+            verify(claimRepository).delete(claim)
+        }
+
+        @Test
+        @DisplayName("SENT 상태 - 삭제 차단")
+        fun rejectsNonDraftDelete() {
+            val claim = Claim(
+                id = claimId, employee = employee, account = account,
+                date = LocalDate.now(), claimType1 = ClaimType1.A, claimType2 = ClaimType2.AA,
+                defectDescription = "x", defectQuantity = 1L, status = ClaimStatus.SENT
+            )
+            whenever(claimRepository.findById(claimId)).thenReturn(Optional.of(claim))
+
+            assertThatThrownBy { claimService.deleteClaim(userId, claimId) }
+                .isInstanceOf(ClaimNotEditableException::class.java)
+            verify(claimRepository, never()).delete(any<Claim>())
+        }
+    }
+
+    @Nested
+    @DisplayName("deletePhoto - 사진 삭제 (UC-06)")
+    inner class DeletePhotoTests {
+
+        @Test
+        @DisplayName("DRAFT 상태 - 사진 1장 삭제 + S3 파일 삭제")
+        fun deletesPhotoOnDraft() {
+            val claim = Claim(
+                id = claimId, employee = employee, account = account,
+                date = LocalDate.now(), claimType1 = ClaimType1.A, claimType2 = ClaimType2.AA,
+                defectDescription = "x", defectQuantity = 1L, status = ClaimStatus.DRAFT
+            )
+            val photo = ClaimPhoto(
+                id = 7L, claim = claim, photoType = ClaimPhotoType.RECEIPT,
+                url = "uploads/claim/2026/01/01/receipt.jpg",
+                originalFileName = "r.jpg", fileSize = 100L, contentType = "image/jpeg"
+            )
+            whenever(claimRepository.findById(claimId)).thenReturn(Optional.of(claim))
+            whenever(claimPhotoRepository.findById(7L)).thenReturn(Optional.of(photo))
+
+            claimService.deletePhoto(userId, claimId, 7L)
+
+            verify(fileStorageService).deleteClaimPhoto("uploads/claim/2026/01/01/receipt.jpg")
+            verify(claimPhotoRepository).delete(photo)
+        }
+    }
 }
-*/

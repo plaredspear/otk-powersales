@@ -1,49 +1,67 @@
-/*
 package com.otoki.powersales.claim.service
 
+import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.claim.dto.request.ClaimCreateRequest
-import com.otoki.powersales.dto.response.*
-import com.otoki.powersales.common.dto.response.*
-import com.otoki.powersales.entity.*
-import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.exception.*
-import com.otoki.powersales.common.exception.*
-import com.otoki.powersales.repository.*
-import com.otoki.powersales.common.repository.*
+import com.otoki.powersales.claim.dto.response.ClaimCreateResponse
+import com.otoki.powersales.claim.entity.Claim
+import com.otoki.powersales.claim.entity.ClaimPhoto
+import com.otoki.powersales.claim.entity.sfpicklist.PurchaseMethod
+import com.otoki.powersales.claim.entity.sfpicklist.RequestType
+import com.otoki.powersales.claim.enums.ClaimDateType
+import com.otoki.powersales.claim.enums.ClaimPhotoType
+import com.otoki.powersales.claim.enums.ClaimStatus
+import com.otoki.powersales.claim.enums.ClaimType1
+import com.otoki.powersales.claim.enums.ClaimType2
+import com.otoki.powersales.claim.exception.ClaimAccessDeniedException
+import com.otoki.powersales.claim.exception.ClaimInvalidParameterException
+import com.otoki.powersales.claim.exception.ClaimNotEditableException
+import com.otoki.powersales.claim.exception.ClaimNotFoundException
+import com.otoki.powersales.claim.exception.ClaimPhotoNotFoundException
+import com.otoki.powersales.claim.exception.ClaimTypeHierarchyMismatchException
+import com.otoki.powersales.claim.exception.InvalidClaimDateException
+import com.otoki.powersales.claim.exception.InvalidClaimType1Exception
+import com.otoki.powersales.claim.exception.InvalidClaimType2Exception
+import com.otoki.powersales.claim.exception.InvalidDateFormatException
+import com.otoki.powersales.claim.exception.InvalidDateTypeException
+import com.otoki.powersales.claim.exception.InvalidPurchaseMethodException
+import com.otoki.powersales.claim.exception.InvalidRequestTypeException
+import com.otoki.powersales.claim.exception.PurchaseInfoRequiredException
+import com.otoki.powersales.claim.exception.RequestTypeMaxExceededException
+import com.otoki.powersales.claim.repository.ClaimPhotoRepository
+import com.otoki.powersales.claim.repository.ClaimRepository
+import com.otoki.powersales.common.exception.ProductNotFoundException
+import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.promotion.exception.AccountNotFoundException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
 
-/ **
- * 클레임 Service
- * /
 @Service
 @Transactional(readOnly = true)
 class ClaimService(
     private val claimRepository: ClaimRepository,
     private val claimPhotoRepository: ClaimPhotoRepository,
-    private val claimCategoryRepository: ClaimCategoryRepository,
-    private val claimSubcategoryRepository: ClaimSubcategoryRepository,
-    private val claimPurchaseMethodRepository: ClaimPurchaseMethodRepository,
-    private val claimRequestTypeRepository: ClaimRequestTypeRepository,
-    private val userRepository: UserRepository,
+    private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val fileStorageService: FileStorageService
 ) {
 
-    / **
-     * 클레임 등록
+    /**
+     * 클레임 등록 (UC-02/UC-10 모바일 REST).
      *
-     * @param userId JWT에서 추출한 사용자 ID
-     * @param request 클레임 등록 요청
-     * @param defectPhoto 불량 사진 (필수)
-     * @param labelPhoto 일부인 사진 (필수)
-     * @param receiptPhoto 구매 영수증 사진 (선택)
-     * @return 클레임 등록 결과
-     * /
+     * 레거시 ClaimTrigger 정합:
+     *   - 제조일자 미래 차단
+     *   - 요청사항 최대 4개
+     *   - 접수사원·부서 자동 채움 (Employee → costCenter/orgName)
+     *   - CC코드 자동 복사 (Account.branchCode → costCenterCode)
+     *
+     * @param userId UserPrincipal.userId — Employee.id 와 동일 (조회 정책: ClaimQueryService 와 정합)
+     */
     @Transactional
     fun createClaim(
         userId: Long,
@@ -52,208 +70,274 @@ class ClaimService(
         labelPhoto: MultipartFile,
         receiptPhoto: MultipartFile?
     ): ClaimCreateResponse {
-        // 1. 사용자 조회
-        val user = userRepository.findByIdOrNull(userId)
-            ?: throw InvalidParameterException("사용자를 찾을 수 없습니다")
+        val employee = employeeRepository.findByIdOrNull(userId)
+            ?: throw ClaimInvalidParameterException("사원을 찾을 수 없습니다")
 
-        // 2. 거래처 존재 여부 확인
-        val account = accountRepository.findByIdOrNull(request.accountId!!)
+        val account = accountRepository.findByIdOrNull(request.accountId!!.toInt())
             ?: throw AccountNotFoundException()
 
-        // 3. 제품 존재 여부 확인
         val product = productRepository.findByProductCode(request.productCode!!)
-            ?: throw ProductNotFoundException()
+            ?: throw ProductNotFoundException(request.productCode)
 
-        // 4. 기한 종류 유효성 검증
-        val dateType = try {
-            ClaimDateType.valueOf(request.dateType!!)
-        } catch (e: IllegalArgumentException) {
-            throw InvalidDateTypeException()
+        val dateType = parseDateType(request.dateType!!)
+        val date = parseDate(request.date!!)
+        validateClaimDate(date, dateType)
+
+        val claimType1 = ClaimType1.fromValueOrNull(request.claimType1)
+            ?: throw InvalidClaimType1Exception()
+        val claimType2 = ClaimType2.fromValueOrNull(request.claimType2)
+            ?: throw InvalidClaimType2Exception()
+        if (claimType2.parent != claimType1) {
+            throw ClaimTypeHierarchyMismatchException()
         }
 
-        // 5. 기한 날짜 파싱
-        val date = try {
-            LocalDate.parse(request.date!!)
-        } catch (e: Exception) {
-            throw InvalidParameterException("유효하지 않은 날짜 형식입니다")
-        }
+        val purchaseMethod = resolvePurchaseMethod(request.purchaseMethodCode, request.purchaseAmount, receiptPhoto)
+        val requestTypes = resolveRequestTypes(request.requestTypeCode)
 
-        // 6. 클레임 종류1 존재 여부 확인
-        val category = claimCategoryRepository.findByIdOrNull(request.categoryId!!)
-            ?: throw ClaimCategoryNotFoundException()
-
-        if (!category.isActive) {
-            throw ClaimCategoryNotFoundException()
-        }
-
-        // 7. 클레임 종류2 존재 여부 확인
-        val subcategory = claimSubcategoryRepository.findByIdOrNull(request.subcategoryId!!)
-            ?: throw ClaimSubcategoryNotFoundException()
-
-        if (!subcategory.isActive) {
-            throw ClaimSubcategoryNotFoundException()
-        }
-
-        // 8. 종류2가 종류1에 속하는지 확인
-        if (subcategory.category.id != category.id) {
-            throw InvalidParameterException("클레임 세부 종류가 선택한 종류에 속하지 않습니다")
-        }
-
-        // 9. 구매 정보 조건부 검증
-        var purchaseMethodName: String? = null
-        if (request.purchaseAmount != null && request.purchaseAmount > 0) {
-            // 구매 금액이 있으면 구매 방법과 영수증 사진 필수
-            if (request.purchaseMethodCode.isNullOrBlank() || receiptPhoto == null) {
-                throw PurchaseInfoRequiredException()
-            }
-
-            // 구매 방법 유효성 확인
-            val purchaseMethod = claimPurchaseMethodRepository.findByIdOrNull(request.purchaseMethodCode)
-                ?: throw PurchaseMethodNotFoundException()
-
-            if (!purchaseMethod.isActive) {
-                throw PurchaseMethodNotFoundException()
-            }
-
-            purchaseMethodName = purchaseMethod.name
-        }
-
-        // 10. 요청사항 유효성 확인 (선택)
-        var requestTypeName: String? = null
-        if (!request.requestTypeCode.isNullOrBlank()) {
-            val requestType = claimRequestTypeRepository.findByIdOrNull(request.requestTypeCode)
-                ?: throw RequestTypeNotFoundException()
-
-            if (!requestType.isActive) {
-                throw RequestTypeNotFoundException()
-            }
-
-            requestTypeName = requestType.name
-        }
-
-        // 11. Claim 엔티티 생성 및 저장
         val claim = Claim(
-            user = user,
+            employee = employee,
             account = account,
-            accountName = account.accountName,
+            accountName = account.name,
             productCode = product.productCode,
-            productName = product.productName,
+            productName = product.name,
             dateType = dateType,
             date = date,
-            category = category,
-            subcategory = subcategory,
+            claimType1 = claimType1,
+            claimType2 = claimType2,
             defectDescription = request.defectDescription!!,
             defectQuantity = request.defectQuantity!!,
             purchaseAmount = request.purchaseAmount,
-            purchaseMethodCode = request.purchaseMethodCode,
-            purchaseMethodName = purchaseMethodName,
-            requestTypeCode = request.requestTypeCode,
-            requestTypeName = requestTypeName,
-            status = ClaimStatus.DRAFT
+            purchaseMethodCode = purchaseMethod,
+            purchaseMethodName = purchaseMethod?.displayName,
+            requestTypeCode = requestTypes,
+            requestTypeName = requestTypes.joinToString(";") { it.displayName }.ifBlank { null },
+            status = ClaimStatus.DRAFT,
+            product = product,
+            // 레거시 Trigger 정합: 접수사원·부서 자동 채움 (HR 코드 미러)
+            // CC코드 자동 복사: Employee.costCenterCode 우선, 없으면 Account.branchCode
+            costCenterCode = employee.costCenterCode ?: account.branchCode,
+            division = employee.orgName
         )
 
         val savedClaim = claimRepository.save(claim)
 
-        // 12. 사진 업로드 및 ClaimPhoto 엔티티 생성
-        val photos = mutableListOf<ClaimPhoto>()
-
-        // 불량 사진 (필수)
-        val defectPhotoUrl = fileStorageService.uploadClaimPhoto(
-            file = defectPhoto,
-            userId = userId,
-            claimId = savedClaim.id,
-            photoType = ClaimPhotoType.DEFECT.name
-        )
-        photos.add(
-            ClaimPhoto(
-                claim = savedClaim,
-                photoType = ClaimPhotoType.DEFECT,
-                url = defectPhotoUrl,
-                originalFileName = defectPhoto.originalFilename ?: "unknown",
-                fileSize = defectPhoto.size,
-                contentType = defectPhoto.contentType ?: "image/jpeg"
-            )
-        )
-
-        // 일부인 사진 (필수)
-        val labelPhotoUrl = fileStorageService.uploadClaimPhoto(
-            file = labelPhoto,
-            userId = userId,
-            claimId = savedClaim.id,
-            photoType = ClaimPhotoType.LABEL.name
-        )
-        photos.add(
-            ClaimPhoto(
-                claim = savedClaim,
-                photoType = ClaimPhotoType.LABEL,
-                url = labelPhotoUrl,
-                originalFileName = labelPhoto.originalFilename ?: "unknown",
-                fileSize = labelPhoto.size,
-                contentType = labelPhoto.contentType ?: "image/jpeg"
-            )
-        )
-
-        // 구매 영수증 사진 (선택)
-        if (receiptPhoto != null) {
-            val receiptPhotoUrl = fileStorageService.uploadClaimPhoto(
-                file = receiptPhoto,
-                userId = userId,
-                claimId = savedClaim.id,
-                photoType = ClaimPhotoType.RECEIPT.name
-            )
-            photos.add(
-                ClaimPhoto(
-                    claim = savedClaim,
-                    photoType = ClaimPhotoType.RECEIPT,
-                    url = receiptPhotoUrl,
-                    originalFileName = receiptPhoto.originalFilename ?: "unknown",
-                    fileSize = receiptPhoto.size,
-                    contentType = receiptPhoto.contentType ?: "image/jpeg"
-                )
-            )
-        }
-
+        val photos = uploadPhotos(savedClaim, userId, defectPhoto, labelPhoto, receiptPhoto)
         claimPhotoRepository.saveAll(photos)
 
-        // 13. 응답 생성
         return ClaimCreateResponse.from(savedClaim)
     }
 
-    / **
-     * 폼 초기화 데이터 조회
-     * 종류1+종류2, 구매방법, 요청사항을 한 번에 반환
-     *
-     * @return 폼 초기화 데이터
-     * /
-    fun getFormData(): ClaimFormDataResponse {
-        // 1. 활성 종류1 목록 조회 (sortOrder 순)
-        val categories = claimCategoryRepository.findByIsActiveTrueOrderBySortOrderAsc()
+    /**
+     * 클레임 수정 (UC-03).
+     * 상태가 DRAFT(임시저장) 일 때만 허용. 권한: 작성자 본인만.
+     */
+    @Transactional
+    fun updateClaim(
+        userId: Long,
+        claimId: Long,
+        request: ClaimUpdateRequest
+    ): ClaimCreateResponse {
+        val claim = findEditableClaim(userId, claimId)
 
-        // 2. 각 종류1에 속하는 활성 종류2 목록 조회 및 중첩
-        val categoriesWithSubcategories = categories.map { category ->
-            val subcategories = claimSubcategoryRepository
-                .findByCategoryIdAndIsActiveTrueOrderBySortOrderAsc(category.id)
-                .map { ClaimSubcategoryResponse.from(it) }
-
-            ClaimCategoryWithSubcategoriesResponse.from(category, subcategories)
+        request.accountId?.let {
+            val account = accountRepository.findByIdOrNull(it.toInt())
+                ?: throw AccountNotFoundException()
+            claim.account = account
+            claim.accountName = account.name
+            // CC코드 자동 복사 — Account 변경 시 branchCode 로 재복사
+            claim.costCenterCode = claim.employee?.costCenterCode ?: account.branchCode
+        }
+        request.productCode?.let {
+            val product = productRepository.findByProductCode(it)
+                ?: throw ProductNotFoundException(it)
+            claim.productCode = product.productCode
+            claim.productName = product.name
+            claim.product = product
+        }
+        request.dateType?.let { claim.dateType = parseDateType(it) }
+        request.date?.let {
+            val newDate = parseDate(it)
+            validateClaimDate(newDate, claim.dateType)
+            claim.date = newDate
+        }
+        request.claimType1?.let {
+            val t1 = ClaimType1.fromValueOrNull(it) ?: throw InvalidClaimType1Exception()
+            claim.claimType1 = t1
+            if (claim.claimType2.parent != t1) {
+                throw ClaimTypeHierarchyMismatchException()
+            }
+        }
+        request.claimType2?.let {
+            val t2 = ClaimType2.fromValueOrNull(it) ?: throw InvalidClaimType2Exception()
+            if (t2.parent != claim.claimType1) {
+                throw ClaimTypeHierarchyMismatchException()
+            }
+            claim.claimType2 = t2
+        }
+        request.defectDescription?.let { claim.defectDescription = it }
+        request.defectQuantity?.let { claim.defectQuantity = it }
+        request.purchaseAmount?.let { claim.purchaseAmount = it }
+        request.purchaseMethodCode?.let {
+            val pm = PurchaseMethod.fromSfValueOrNull(it) ?: throw InvalidPurchaseMethodException()
+            claim.purchaseMethodCode = pm
+            claim.purchaseMethodName = pm.displayName
+        }
+        request.requestTypeCode?.let {
+            val rts = resolveRequestTypes(it)
+            claim.requestTypeCode = rts
+            claim.requestTypeName = rts.joinToString(";") { rt -> rt.displayName }.ifBlank { null }
         }
 
-        // 3. 활성 구매 방법 목록 조회 (sortOrder 순)
-        val purchaseMethods = claimPurchaseMethodRepository
-            .findByIsActiveTrueOrderBySortOrderAsc()
-            .map { PurchaseMethodResponse.from(it) }
+        return ClaimCreateResponse.from(claim)
+    }
 
-        // 4. 활성 요청사항 목록 조회 (sortOrder 순)
-        val requestTypes = claimRequestTypeRepository
-            .findByIsActiveTrueOrderBySortOrderAsc()
-            .map { ClaimRequestTypeResponse.from(it) }
+    /**
+     * 클레임 삭제 (UC-11).
+     * 상태가 DRAFT 일 때만 허용. 첨부 사진 cascade 삭제 + S3 파일 일괄 삭제.
+     */
+    @Transactional
+    fun deleteClaim(userId: Long, claimId: Long) {
+        val claim = findEditableClaim(userId, claimId)
 
-        // 5. 통합 응답 생성
-        return ClaimFormDataResponse(
-            categories = categoriesWithSubcategories,
-            purchaseMethods = purchaseMethods,
-            requestTypes = requestTypes
+        val photos = claimPhotoRepository.findByClaimId(claimId)
+        photos.forEach { fileStorageService.deleteClaimPhoto(it.url) }
+
+        claimPhotoRepository.deleteAll(photos)
+        claimRepository.delete(claim)
+    }
+
+    /**
+     * 클레임 사진 삭제 (UC-06).
+     * 상태가 DRAFT 일 때만 허용. S3 파일 삭제 + ClaimPhoto 레코드 삭제.
+     */
+    @Transactional
+    fun deletePhoto(userId: Long, claimId: Long, photoId: Long) {
+        val claim = findEditableClaim(userId, claimId)
+
+        val photo = claimPhotoRepository.findByIdOrNull(photoId)
+            ?: throw ClaimPhotoNotFoundException(photoId)
+        if (photo.claim?.id != claim.id) {
+            throw ClaimPhotoNotFoundException(photoId)
+        }
+
+        fileStorageService.deleteClaimPhoto(photo.url)
+        claimPhotoRepository.delete(photo)
+    }
+
+    // ───── private helpers ─────
+
+    private fun findEditableClaim(userId: Long, claimId: Long): Claim {
+        val claim = claimRepository.findByIdOrNull(claimId)
+            ?: throw ClaimNotFoundException(claimId)
+        if (claim.employee?.id != userId) {
+            throw ClaimAccessDeniedException()
+        }
+        if (claim.status != ClaimStatus.DRAFT) {
+            throw ClaimNotEditableException()
+        }
+        return claim
+    }
+
+    private fun parseDateType(raw: String): ClaimDateType =
+        try {
+            ClaimDateType.valueOf(raw)
+        } catch (e: IllegalArgumentException) {
+            throw InvalidDateTypeException()
+        }
+
+    private fun parseDate(raw: String): LocalDate =
+        try {
+            LocalDate.parse(raw)
+        } catch (e: Exception) {
+            throw InvalidDateFormatException()
+        }
+
+    /**
+     * 레거시 ClaimTrigger 정합: 제조일자 미래 차단.
+     * "제조일자를 다시한번 확인해주십시오."
+     */
+    private fun validateClaimDate(date: LocalDate, dateType: ClaimDateType?) {
+        if (dateType == ClaimDateType.MANUFACTURE_DATE && date.isAfter(LocalDate.now())) {
+            throw InvalidClaimDateException("제조일자를 다시한번 확인해주십시오.")
+        }
+    }
+
+    private fun resolvePurchaseMethod(
+        sfValue: String?,
+        purchaseAmount: Long?,
+        receiptPhoto: MultipartFile?
+    ): PurchaseMethod? {
+        if (purchaseAmount != null && purchaseAmount > 0) {
+            if (sfValue.isNullOrBlank() || receiptPhoto == null) {
+                throw PurchaseInfoRequiredException()
+            }
+            return PurchaseMethod.fromSfValueOrNull(sfValue) ?: throw InvalidPurchaseMethodException()
+        }
+        if (sfValue.isNullOrBlank()) return null
+        return PurchaseMethod.fromSfValueOrNull(sfValue) ?: throw InvalidPurchaseMethodException()
+    }
+
+    /**
+     * 레거시 Validation Rule (RequestTypeRule) 정합: 최대 4개.
+     */
+    private fun resolveRequestTypes(raw: String?): Set<RequestType> {
+        if (raw.isNullOrBlank()) return emptySet()
+        val tokens = raw.split(";", ",").map { it.trim() }.filter { it.isNotBlank() }
+        if (tokens.size > 4) {
+            throw RequestTypeMaxExceededException()
+        }
+        return tokens.map {
+            RequestType.fromDisplayNameOrNull(it) ?: throw InvalidRequestTypeException()
+        }.toSet()
+    }
+
+    private fun uploadPhotos(
+        claim: Claim,
+        userId: Long,
+        defectPhoto: MultipartFile,
+        labelPhoto: MultipartFile,
+        receiptPhoto: MultipartFile?
+    ): List<ClaimPhoto> {
+        val list = mutableListOf<ClaimPhoto>()
+        list += buildPhoto(claim, userId, defectPhoto, ClaimPhotoType.DEFECT)
+        list += buildPhoto(claim, userId, labelPhoto, ClaimPhotoType.LABEL)
+        if (receiptPhoto != null) {
+            list += buildPhoto(claim, userId, receiptPhoto, ClaimPhotoType.RECEIPT)
+        }
+        return list
+    }
+
+    private fun buildPhoto(
+        claim: Claim,
+        userId: Long,
+        file: MultipartFile,
+        photoType: ClaimPhotoType
+    ): ClaimPhoto {
+        val url = fileStorageService.uploadClaimPhoto(file, userId, claim.id, photoType.name)
+        return ClaimPhoto(
+            claim = claim,
+            photoType = photoType,
+            url = url,
+            originalFileName = file.originalFilename ?: "unknown",
+            fileSize = file.size,
+            contentType = file.contentType ?: "image/jpeg"
         )
     }
 }
-*/
+
+/**
+ * UC-03 클레임 수정 요청. 부분 업데이트 — 변경 필드만 non-null.
+ */
+data class ClaimUpdateRequest(
+    val accountId: Long? = null,
+    val productCode: String? = null,
+    val dateType: String? = null,
+    val date: String? = null,
+    val claimType1: String? = null,
+    val claimType2: String? = null,
+    val defectDescription: String? = null,
+    val defectQuantity: Long? = null,
+    val purchaseAmount: Long? = null,
+    val purchaseMethodCode: String? = null,
+    val requestTypeCode: String? = null
+)

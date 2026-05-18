@@ -65,27 +65,27 @@ class Claim(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
-    val account: Account? = null,
+    var account: Account? = null,
 
     @Column(name = "store_name", length = 100)
-    val accountName: String? = null,
+    var accountName: String? = null,
 
     // Spec sf-meta-diff Q1 옵션 (a): SF Formula 필드 (`DKRetail__ProductId__r.DKRetail__ProductCode__c`).
     // §6.7 정책상 DB 컬럼 추가 금지 대상이나 application 신규 작성 시 product FK 미연결 (SAP 코드만 있는)
     // 케이스 회피용 입력값 캐시로 컬럼 유지. SF API 마이그레이션 대상에서는 제외 — `@SFField` 제거.
     @Column(name = "product_code", length = 1300)
-    val productCode: String? = null,
+    var productCode: String? = null,
 
     @Column(name = "product_name", length = 200)
-    val productName: String? = null,
+    var productName: String? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "date_type", length = 20)
-    val dateType: ClaimDateType? = null,
+    var dateType: ClaimDateType? = null,
 
     @SFField("DKRetail__ClaimDate__c")
     @Column(name = "date", nullable = false)
-    val date: LocalDate,
+    var date: LocalDate,
 
     // Spec #743: SF picklist `DKRetail__ClaimType1__c`/`ClaimType2__c` 직접 enum 매핑.
     // 기존 ClaimCategory/ClaimSubcategory FK 제거 (#741 옵션 C 적용).
@@ -93,47 +93,47 @@ class Claim(
     @SFField("DKRetail__ClaimType1__c")
     @Convert(converter = ClaimType1Converter::class)
     @Column(name = "claim_type1", nullable = false, length = 10)
-    val claimType1: ClaimType1,
+    var claimType1: ClaimType1,
 
     @SFField("DKRetail__ClaimType2__c")
     @Convert(converter = ClaimType2Converter::class)
     @Column(name = "claim_type2", nullable = false, length = 10)
-    val claimType2: ClaimType2,
+    var claimType2: ClaimType2,
 
     @SFField("DKRetail__Description__c")
     @Column(name = "defect_description", nullable = false, length = 4000)
-    val defectDescription: String,
+    var defectDescription: String,
 
     @SFField("DKRetail__Quantity__c")
     @Column(name = "defect_quantity", nullable = false)
-    val defectQuantity: Long,
+    var defectQuantity: Long,
 
     @SFField("DKRetail__Amount__c")
     @Column(name = "purchase_amount")
-    val purchaseAmount: Long? = null,
+    var purchaseAmount: Long? = null,
 
     @SFField("DKRetail__PurchaseMethod__c")
     @Column(name = "purchase_method_code", length = 255)
     @Convert(converter = PurchaseMethodConverter::class)
-    val purchaseMethodCode: PurchaseMethod? = null,
+    var purchaseMethodCode: PurchaseMethod? = null,
 
     @Column(name = "purchase_method_name", length = 50)
-    val purchaseMethodName: String? = null,
+    var purchaseMethodName: String? = null,
 
     @SFField("DKRetail__RequestType__c")
     @Column(name = "request_type_code", length = 4099)
     @Convert(converter = RequestTypeSetConverter::class)
-    val requestTypeCode: Set<RequestType> = emptySet(),
+    var requestTypeCode: Set<RequestType> = emptySet(),
 
     @Column(name = "request_type_name", length = 50)
-    val requestTypeName: String? = null,
+    var requestTypeName: String? = null,
 
     // Spec #705: SF Status picklist 정합 — DB 저장값 = SF 한국어 원본 (임시저장/전송완료/전송실패).
     // 신규 application 신규 클레임 디폴트 = DRAFT (임시저장).
     @SFField("DKRetail__Status__c")
     @Convert(converter = ClaimStatusConverter::class)
     @Column(name = "status", nullable = false, length = 20)
-    val status: ClaimStatus = ClaimStatus.DRAFT,
+    var status: ClaimStatus = ClaimStatus.DRAFT,
 
     // -- SAP 인바운드 갱신 컬럼 (Spec #561) --
 

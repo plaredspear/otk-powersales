@@ -1,39 +1,39 @@
-/*
 package com.otoki.powersales.claim.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.claim.dto.request.ClaimCreateRequest
 import com.otoki.powersales.claim.dto.response.ClaimCreateResponse
-import com.otoki.powersales.claim.dto.response.ClaimFormDataResponse
-import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.claim.service.ClaimService
+import com.otoki.powersales.claim.service.ClaimUpdateRequest
+import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.common.security.UserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.ModelAttribute
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 
-/ **
- * 클레임 API Controller
- * /
+/**
+ * 클레임 등록/수정/삭제 API (모바일).
+ * 조회는 [ClaimQueryController] 에 분리.
+ */
 @RestController
 @RequestMapping("/api/v1/mobile/claims")
 class ClaimController(
     private val claimService: ClaimService
 ) {
 
-    / **
-     * 클레임 등록
-     * POST /api/v1/mobile/claims
-     *
-     * @param principal 인증된 사용자
-     * @param request 클레임 등록 요청 (multipart form fields)
-     * @param defectPhoto 불량 사진 (필수)
-     * @param labelPhoto 일부인 사진 (필수)
-     * @param receiptPhoto 구매 영수증 사진 (선택)
-     * @return 클레임 등록 결과
-     * /
+    /**
+     * UC-02 / UC-10: 클레임 신규 등록.
+     */
     @PostMapping(consumes = ["multipart/form-data"])
     fun createClaim(
         @AuthenticationPrincipal principal: UserPrincipal,
@@ -54,19 +54,41 @@ class ClaimController(
             .body(ApiResponse.success(result, "클레임이 등록되었습니다"))
     }
 
-    / **
-     * 폼 초기화 데이터 조회
-     * GET /api/v1/mobile/claims/form-data
-     *
-     * @param principal 인증된 사용자
-     * @return 종류1+종류2, 구매방법, 요청사항 통합 데이터
-     * /
-    @GetMapping("/form-data")
-    fun getFormData(
-        @AuthenticationPrincipal principal: UserPrincipal
-    ): ResponseEntity<ApiResponse<ClaimFormDataResponse>> {
-        val result = claimService.getFormData()
-        return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
+    /**
+     * UC-03: 클레임 수정. 상태가 DRAFT 일 때만 허용.
+     */
+    @PutMapping("/{claimId}")
+    fun updateClaim(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable claimId: Long,
+        @RequestBody request: ClaimUpdateRequest
+    ): ResponseEntity<ApiResponse<ClaimCreateResponse>> {
+        val result = claimService.updateClaim(principal.userId, claimId, request)
+        return ResponseEntity.ok(ApiResponse.success(result, "클레임이 수정되었습니다"))
+    }
+
+    /**
+     * UC-11: 클레임 삭제. 상태가 DRAFT 일 때만 허용. 첨부 사진 일괄 삭제.
+     */
+    @DeleteMapping("/{claimId}")
+    fun deleteClaim(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable claimId: Long
+    ): ResponseEntity<ApiResponse<Unit>> {
+        claimService.deleteClaim(principal.userId, claimId)
+        return ResponseEntity.ok(ApiResponse.success(Unit, "클레임이 삭제되었습니다"))
+    }
+
+    /**
+     * UC-06: 클레임 사진 삭제. 상태가 DRAFT 일 때만 허용.
+     */
+    @DeleteMapping("/{claimId}/photos/{photoId}")
+    fun deleteClaimPhoto(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable claimId: Long,
+        @PathVariable photoId: Long
+    ): ResponseEntity<ApiResponse<Unit>> {
+        claimService.deletePhoto(principal.userId, claimId, photoId)
+        return ResponseEntity.ok(ApiResponse.success(Unit, "사진이 삭제되었습니다"))
     }
 }
-*/
