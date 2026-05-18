@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:58806",
+    "url" : "http://localhost:60328",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1936,6 +1936,63 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePromotionDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/inventory-search" : {
+      "post" : {
+        "tags" : [ "admin-product-controller" ],
+        "operationId" : "searchInventory",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InventorySearchRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseInventorySearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/export-excel" : {
+      "post" : {
+        "tags" : [ "admin-product-controller" ],
+        "operationId" : "exportSelectedProductsExcel",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProductExportRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
                 }
               }
             }
@@ -4919,6 +4976,32 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseProductListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/products/{productCode}" : {
+      "get" : {
+        "tags" : [ "admin-product-controller" ],
+        "operationId" : "getProductDetail",
+        "parameters" : [ {
+          "name" : "productCode",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProductDetail"
                 }
               }
             }
@@ -8214,6 +8297,110 @@
           }
         }
       },
+      "InventorySearchRequest" : {
+        "type" : "object",
+        "properties" : {
+          "accountId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "productCodes" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string"
+            },
+            "maxItems" : 50,
+            "minItems" : 0
+          },
+          "deliveryRequestDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          }
+        },
+        "required" : [ "accountId", "deliveryRequestDate", "productCodes" ]
+      },
+      "ApiResponseInventorySearchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/InventorySearchResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "InventorySearchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "results" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/InventorySearchResultItem"
+            }
+          }
+        }
+      },
+      "InventorySearchResultItem" : {
+        "type" : "object",
+        "properties" : {
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "unit" : {
+            "type" : [ "string", "null" ]
+          },
+          "conversionQuantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "supplyLimitQuantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "unitPrice" : {
+            "type" : "number"
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ProductExportRequest" : {
+        "type" : "object",
+        "properties" : {
+          "productCodes" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "productCodes" ]
+      },
       "AdminProductExpirationCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -11397,15 +11584,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -11429,6 +11616,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "paged" : {
             "type" : "boolean"
           },
@@ -11442,9 +11632,6 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -11503,10 +11690,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -12555,6 +12742,21 @@
           },
           "launchDate" : {
             "type" : [ "string", "null" ]
+          },
+          "superTax" : {
+            "type" : [ "number", "null" ]
+          },
+          "shelfLife" : {
+            "type" : [ "string", "null" ]
+          },
+          "shelfLifeUnit" : {
+            "type" : [ "string", "null" ]
+          },
+          "tasteGift" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastModifiedAt" : {
+            "type" : [ "string", "null" ]
           }
         }
       },
@@ -12582,6 +12784,156 @@
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "ApiResponseProductDetail" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ProductDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ProductDetail" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "barcode" : {
+            "type" : [ "string", "null" ]
+          },
+          "logisticsBarcode" : {
+            "type" : [ "string", "null" ]
+          },
+          "category1" : {
+            "type" : [ "string", "null" ]
+          },
+          "category2" : {
+            "type" : [ "string", "null" ]
+          },
+          "category3" : {
+            "type" : [ "string", "null" ]
+          },
+          "categoryCode1" : {
+            "type" : [ "string", "null" ]
+          },
+          "categoryCode2" : {
+            "type" : [ "string", "null" ]
+          },
+          "categoryCode3" : {
+            "type" : [ "string", "null" ]
+          },
+          "unit" : {
+            "type" : [ "string", "null" ]
+          },
+          "orderingUnit" : {
+            "type" : [ "string", "null" ]
+          },
+          "conversionQuantity" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "boxReceivingQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "standardUnitPrice" : {
+            "type" : [ "number", "null" ]
+          },
+          "superTax" : {
+            "type" : [ "number", "null" ]
+          },
+          "launchDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "storageCondition" : {
+            "type" : [ "string", "null" ]
+          },
+          "productStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "productType" : {
+            "type" : [ "string", "null" ]
+          },
+          "shelfLife" : {
+            "type" : [ "string", "null" ]
+          },
+          "shelfLifeUnit" : {
+            "type" : [ "string", "null" ]
+          },
+          "tasteGift" : {
+            "type" : [ "string", "null" ]
+          },
+          "productFeatures" : {
+            "type" : [ "string", "null" ]
+          },
+          "sellingPoint" : {
+            "type" : [ "string", "null" ]
+          },
+          "purpose" : {
+            "type" : [ "string", "null" ]
+          },
+          "targetAccountType" : {
+            "type" : [ "string", "null" ]
+          },
+          "allergen" : {
+            "type" : [ "string", "null" ]
+          },
+          "crossContamination" : {
+            "type" : [ "string", "null" ]
+          },
+          "imgRefPathFront" : {
+            "type" : [ "string", "null" ]
+          },
+          "imgRefPathBack" : {
+            "type" : [ "string", "null" ]
+          },
+          "pallet" : {
+            "type" : [ "number", "null" ]
+          },
+          "manufacture" : {
+            "type" : [ "string", "null" ]
+          },
+          "manufactureDetail" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimManagement" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string"
+          },
+          "lastModifiedAt" : {
+            "type" : "string"
           }
         }
       },
@@ -14285,15 +14637,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
