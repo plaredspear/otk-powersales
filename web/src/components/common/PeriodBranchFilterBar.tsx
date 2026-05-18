@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { Button, InputNumber, Space, Transfer } from 'antd';
-import type { TransferProps } from 'antd';
+import { useMemo } from 'react';
+import { Button, Checkbox, InputNumber, Select, Space } from 'antd';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
 
@@ -39,13 +39,17 @@ export default function PeriodBranchFilterBar({
 }: PeriodBranchFilterBarProps) {
   const { data: branches = [] } = useTeamScheduleBranches();
 
-  const transferDataSource = branches.map((b) => ({
-    key: b.branchCode,
-    title: b.branchName,
-  }));
+  const branchOptions = useMemo(
+    () => branches.map((b) => ({ value: b.branchCode, label: b.branchName })),
+    [branches],
+  );
 
-  const handleTransferChange: TransferProps['onChange'] = (nextTargetKeys) => {
-    onCodesChange(nextTargetKeys.map((key) => String(key)));
+  const allCodes = useMemo(() => branches.map((b) => b.branchCode), [branches]);
+  const allSelected = allCodes.length > 0 && selectedCodes.length === allCodes.length;
+  const someSelected = selectedCodes.length > 0 && !allSelected;
+
+  const handleToggleAll = () => {
+    onCodesChange(allSelected ? [] : allCodes);
   };
 
   return (
@@ -78,21 +82,35 @@ export default function PeriodBranchFilterBar({
         {extraFilters}
         <Space direction="vertical" size={4}>
           <span>지점명:</span>
-          <Transfer
-            dataSource={transferDataSource}
-            targetKeys={selectedCodes}
-            onChange={handleTransferChange}
-            render={(item) => item.title ?? ''}
-            titles={['선택가능', '선택완료']}
-            listStyle={{ width: 220, height: 220 }}
+          <Select
+            mode="multiple"
+            value={selectedCodes}
+            onChange={(values) => onCodesChange(values as string[])}
+            options={branchOptions}
+            placeholder="지점 선택"
+            style={{ minWidth: 320, maxWidth: 520 }}
+            maxTagCount="responsive"
+            allowClear
             showSearch
-            filterOption={(input, item) => (item.title ?? '').includes(input)}
-            locale={{
-              itemUnit: '개',
-              itemsUnit: '개',
-              searchPlaceholder: '검색',
-              notFoundContent: '항목 없음',
-            }}
+            optionFilterProp="label"
+            filterOption={(input, option) =>
+              (option?.label ?? '').toString().includes(input)
+            }
+            dropdownRender={(menu) => (
+              <>
+                <div style={{ padding: '4px 12px', borderBottom: '1px solid #f0f0f0' }}>
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    onChange={handleToggleAll}
+                  >
+                    전체 ({selectedCodes.length}/{allCodes.length})
+                  </Checkbox>
+                </div>
+                {menu}
+              </>
+            )}
+            notFoundContent="항목 없음"
           />
         </Space>
       </Space>
