@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, message, Spin, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import ScheduleFilterBar from '@/components/schedules/ScheduleFilterBar';
+import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useCategorySchedule } from '@/hooks/schedules/useCategorySchedule';
 import { useCategoryExport } from '@/hooks/schedules/useCategoryExport';
 import type { CategoryScheduleItem } from '@/api/monthlyIntegration';
@@ -103,7 +103,7 @@ export default function CategorySchedulePage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <ScheduleFilterBar
+      <PeriodBranchFilterBar
         year={year}
         month={month}
         selectedCodes={selectedCodes}

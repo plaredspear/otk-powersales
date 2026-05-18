@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
-import { Button, Checkbox, InputNumber, Space, Transfer } from 'antd';
+import { Button, InputNumber, Space, Transfer } from 'antd';
 import type { TransferProps } from 'antd';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
 
-interface ScheduleFilterBarProps {
+interface PeriodBranchFilterBarProps {
   year: number;
   month?: number;
   selectedCodes: string[];
@@ -21,7 +21,7 @@ interface ScheduleFilterBarProps {
   extraFilters?: ReactNode;
 }
 
-export default function ScheduleFilterBar({
+export default function PeriodBranchFilterBar({
   year,
   month,
   selectedCodes,
@@ -36,15 +36,8 @@ export default function ScheduleFilterBar({
   hideExport = false,
   showMonth = true,
   extraFilters,
-}: ScheduleFilterBarProps) {
+}: PeriodBranchFilterBarProps) {
   const { data: branches = [] } = useTeamScheduleBranches();
-
-  const allCodes = branches.map((b) => b.branchCode);
-  const isAllSelected = allCodes.length > 0 && selectedCodes.length === allCodes.length;
-
-  const handleSelectAll = (checked: boolean) => {
-    onCodesChange(checked ? allCodes : []);
-  };
 
   const transferDataSource = branches.map((b) => ({
     key: b.branchCode,
@@ -91,7 +84,6 @@ export default function ScheduleFilterBar({
             onChange={handleTransferChange}
             render={(item) => item.title ?? ''}
             titles={['선택가능', '선택완료']}
-            disabled={isAllSelected}
             listStyle={{ width: 220, height: 220 }}
             showSearch
             filterOption={(input, item) => (item.title ?? '').includes(input)}
@@ -104,10 +96,7 @@ export default function ScheduleFilterBar({
           />
         </Space>
       </Space>
-      <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Checkbox checked={isAllSelected} onChange={(e) => handleSelectAll(e.target.checked)}>
-          소속지점 전체선택
-        </Checkbox>
+      <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <Space>
           <Button
             type="primary"

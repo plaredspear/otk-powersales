@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Empty, Radio, Space, Spin, Table, Typography, message } from 'antd';
+import { Alert, Radio, Space, Spin, Table, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -7,9 +7,9 @@ import {
   exportMatrix as apiExportMatrix,
   type MonthlyInputAdequacyItem,
 } from '@/api/monthlyInputAdequacy';
-import ScheduleFilterBar from '@/components/schedules/ScheduleFilterBar';
+import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const WORKING_CATEGORY_3_OPTIONS = ['전체', '고정', '격고', '순회'];
 
@@ -96,8 +96,6 @@ export default function MonthlyInputAdequacyPage() {
     return [...base, ...monthCols];
   }, []);
 
-  const showEmpty = matrixQuery.data != null && matrixQuery.data.items.length === 0;
-
   const workingCategory3Filter = (
     <Space direction="vertical" size={4}>
       <span>근무형태3:</span>
@@ -116,7 +114,7 @@ export default function MonthlyInputAdequacyPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <ScheduleFilterBar
+      <PeriodBranchFilterBar
         year={year}
         selectedCodes={selectedCodes}
         onYearChange={setYear}
@@ -129,34 +127,40 @@ export default function MonthlyInputAdequacyPage() {
         extraFilters={workingCategory3Filter}
       />
 
-      <Title level={4} style={{ marginTop: 0 }}>월별 진열사원 투입적합성 현황</Title>
-
-      {queryParams == null && <Empty description="조회 조건을 설정하고 조회 버튼을 눌러주세요." />}
-
       {queryParams != null && (
-        <>
-          <div style={{ marginBottom: 8 }}>
-            <Text type="secondary">
-              {queryParams.year}년 · {queryParams.codes.length}개 지점
-              {queryParams.workingCategory3 !== '전체' && ` · 근무형태3: ${queryParams.workingCategory3}`}
-            </Text>
-          </div>
-          {matrixQuery.isLoading && <Spin />}
-          {matrixQuery.isError && (
-            <Alert type="error" message={(matrixQuery.error as Error)?.message ?? '조회 실패'} />
-          )}
-          {showEmpty && <Alert type="warning" message="검색결과가 없습니다." showIcon />}
-          {matrixQuery.data && matrixQuery.data.items.length > 0 && (
-            <Table
-              rowKey={(r) => `${r.employeeCode}-${r.accountCode}`}
-              size="small"
-              columns={columns}
-              dataSource={matrixQuery.data.items}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-            />
-          )}
-        </>
+        <div style={{ marginBottom: 8 }}>
+          <Text type="secondary">
+            {queryParams.year}년 · {queryParams.codes.length}개 지점
+            {queryParams.workingCategory3 !== '전체' && ` · 근무형태3: ${queryParams.workingCategory3}`}
+          </Text>
+        </div>
+      )}
+
+      {matrixQuery.isError && (
+        <Alert
+          type="error"
+          message={(matrixQuery.error as Error)?.message ?? '조회 실패'}
+          style={{ marginBottom: 8 }}
+        />
+      )}
+
+      {matrixQuery.isLoading ? (
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <Spin size="large" />
+        </div>
+      ) : (
+        <Table
+          rowKey={(r) => `${r.employeeCode}-${r.accountCode}`}
+          size="small"
+          columns={columns}
+          dataSource={matrixQuery.data?.items ?? []}
+          pagination={false}
+          scroll={{ x: 'max-content' }}
+          locale={{
+            emptyText:
+              queryParams == null ? '조회 조건을 설정하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',
+          }}
+        />
       )}
     </div>
   );

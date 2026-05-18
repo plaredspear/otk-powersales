@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Card, Empty, Grid, message, Space, Spin, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import ScheduleFilterBar from '@/components/schedules/ScheduleFilterBar';
+import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useMonthlyIntegrationSchedule } from '@/hooks/schedules/useMonthlyIntegrationSchedule';
 import { useMonthlyIntegrationExport } from '@/hooks/schedules/useMonthlyIntegrationExport';
 import type { MonthlyIntegrationScheduleItem } from '@/api/monthlyIntegration';
@@ -144,7 +144,7 @@ export default function MonthlyIntegrationSchedulePage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <ScheduleFilterBar
+      <PeriodBranchFilterBar
         year={year}
         month={month}
         selectedCodes={selectedCodes}
