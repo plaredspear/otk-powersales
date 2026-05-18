@@ -137,6 +137,23 @@ sap:
       max-attempts: ${SAP_OUTBOUND_RETRY_MAX_ATTEMPTS:3}
       delay-ms: ${SAP_OUTBOUND_RETRY_DELAY_MS:1000}
 
+# ---------------------------------------------------------------------------
+# SF 인바운드 OAuth 2.0 인프라 (Spec #774)
+# SAP 와 격리된 별도 시스템 — client_credentials grant 만 지원, IP allowlist 없음.
+# ---------------------------------------------------------------------------
+sf:
+  auth:
+    client-id: ${SF_INBOUND_CLIENT_ID:}
+    client-secret-hash: ${SF_INBOUND_CLIENT_SECRET_HASH:}
+    jwt-signing-key: ${SF_INBOUND_JWT_SIGNING_KEY:otoki-sf-inbound-dev-signing-key-change-in-production-256-bits}
+    token-ttl-seconds: 86400
+    allowed-scopes:
+      - sf.write
+  inbound:
+    sales:
+      chunk-size: 1000
+      max-rows: 50000
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

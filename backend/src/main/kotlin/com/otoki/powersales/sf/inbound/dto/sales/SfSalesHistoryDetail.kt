@@ -1,0 +1,44 @@
+package com.otoki.powersales.sf.inbound.dto.sales
+
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.otoki.powersales.sf.inbound.dto.SfInboundChunkedResult
+import tools.jackson.databind.PropertyNamingStrategies
+import tools.jackson.databind.annotation.JsonNaming
+
+/**
+ * SF 매출 이력 인바운드 응답의 RESULT_DETAIL 페이로드 (Spec #775).
+ *
+ * SAP 호환 보존을 위해 RESULT_DETAIL 내부 키는 SnakeCase 로 직렬화된다.
+ * [SfInboundChunkedResult] 구현 — `chunkCount` 는 `chunks.size` 에서 파생되며 외부 응답 JSON 에는
+ * 포함되지 않는다 (`@get:JsonIgnore` — 본 필드는 SfInboundAuditAspect 의 audit reason 추출 전용).
+ */
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+data class SfSalesHistoryDetail(
+    override val successCount: Int,
+    override val failureCount: Int,
+    val failures: List<SfFailureItem>,
+    val chunks: List<SfChunkResult>
+) : SfInboundChunkedResult {
+    @get:JsonIgnore
+    override val chunkCount: Int get() = chunks.size
+}
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+data class SfFailureItem(
+    val identifier: String?,
+    val reason: String
+)
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+data class SfChunkResult(
+    val index: Int,
+    val status: String,
+    val count: Int,
+    val reason: String? = null
+) {
+    companion object {
+        const val STATUS_SUCCESS: String = "success"
+        const val STATUS_PARTIAL: String = "partial"
+        const val STATUS_FAILED: String = "failed"
+    }
+}
