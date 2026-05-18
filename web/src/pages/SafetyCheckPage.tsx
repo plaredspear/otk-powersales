@@ -168,10 +168,12 @@ export default function SafetyCheckPage() {
       </div>
 
       <Spin spinning={isLoading}>
-        {data && data.totalCount === 0 ? (
-          <Empty description="해당 날짜에 근무 스케줄이 없습니다" />
-        ) : isMobile ? (
-          <MemberCardList members={data?.members ?? []} equipmentLabels={equipmentLabels} />
+        {isMobile ? (
+          data && data.totalCount === 0 ? (
+            <Empty description="해당 날짜에 근무 스케줄이 없습니다" />
+          ) : (
+            <MemberCardList members={data?.members ?? []} equipmentLabels={equipmentLabels} />
+          )
         ) : (
           <Table
             rowKey="id"
@@ -181,6 +183,7 @@ export default function SafetyCheckPage() {
             pagination={false}
             scroll={{ x: 2000 }}
             size="small"
+            locale={{ emptyText: '해당 날짜에 근무 스케줄이 없습니다' }}
           />
         )}
       </Spin>
