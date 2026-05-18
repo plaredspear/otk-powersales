@@ -152,20 +152,24 @@ class Claim(
     @Column(name = "action_code", length = 40)
     var actionCode: String? = null,
 
+    // SF DKRetail__ActionStatus__c (string 10) 정합 — VARCHAR(50) → VARCHAR(10).
     @SFField("DKRetail__ActionStatus__c")
-    @Column(name = "action_status", length = 50)
+    @Column(name = "action_status", length = 10)
     var actionStatus: String? = null,
 
+    // SF ActContent__c (textarea 2000) 정합 — TEXT → VARCHAR(2000).
     @SFField("ActContent__c")
-    @Column(name = "act_content", columnDefinition = "text")
+    @Column(name = "act_content", length = 2000)
     var actContent: String? = null,
 
+    // SF DKRetail__ReasonType__c (string 100) 정합 — 절단 위험 회피 (was VARCHAR(20)).
     @SFField("DKRetail__ReasonType__c")
-    @Column(name = "reason_type", length = 20)
+    @Column(name = "reason_type", length = 100)
     var reasonType: String? = null,
 
+    // SF DKRetail__CosmosKey__c (string 40) 정합 — VARCHAR(50) → VARCHAR(40).
     @SFField("DKRetail__CosmosKey__c")
-    @Column(name = "cosmos_key", length = 50)
+    @Column(name = "cosmos_key", length = 40)
     var cosmosKey: String? = null,
 
     // -- Spec #606: SF 누락 컬럼 16개 신규 도입 --
