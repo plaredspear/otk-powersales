@@ -2,8 +2,10 @@ package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.dto.response.Category2Node
 import com.otoki.powersales.product.dto.response.CategoryTree
+import com.otoki.powersales.product.dto.response.ProductDetail
 import com.otoki.powersales.product.dto.response.ProductListItem
 import com.otoki.powersales.product.dto.response.ProductListResponse
+import com.otoki.powersales.product.exception.ProductNotFoundException
 import com.otoki.powersales.product.repository.ProductRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -42,6 +44,12 @@ class AdminProductService(
             totalElements = productPage.totalElements,
             totalPages = productPage.totalPages
         )
+    }
+
+    fun getProductDetail(productCode: String): ProductDetail {
+        val product = productRepository.findByProductCode(productCode)
+            ?: throw ProductNotFoundException(productCode)
+        return ProductDetail.from(product)
     }
 
     fun getCategories(): List<CategoryTree> {
