@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:55214",
+    "url" : "http://localhost:64860",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -11687,10 +11687,6 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "unpaged" : {
             "type" : "boolean"
           },
@@ -11703,6 +11699,10 @@
           },
           "paged" : {
             "type" : "boolean"
+          },
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "offset" : {
             "type" : "integer",
