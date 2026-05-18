@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Button, Checkbox, InputNumber, Space, Transfer } from 'antd';
 import type { TransferProps } from 'antd';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
@@ -5,10 +6,10 @@ import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBr
 
 interface ScheduleFilterBarProps {
   year: number;
-  month: number;
+  month?: number;
   selectedCodes: string[];
   onYearChange: (value: number) => void;
-  onMonthChange: (value: number) => void;
+  onMonthChange?: (value: number) => void;
   onCodesChange: (codes: string[]) => void;
   onSearch: () => void;
   onExport: () => void;
@@ -16,6 +17,8 @@ interface ScheduleFilterBarProps {
   exportLoading?: boolean;
   searchLoading?: boolean;
   hideExport?: boolean;
+  showMonth?: boolean;
+  extraFilters?: ReactNode;
 }
 
 export default function ScheduleFilterBar({
@@ -31,6 +34,8 @@ export default function ScheduleFilterBar({
   exportLoading = false,
   searchLoading = false,
   hideExport = false,
+  showMonth = true,
+  extraFilters,
 }: ScheduleFilterBarProps) {
   const { data: branches = [] } = useTeamScheduleBranches();
 
@@ -64,17 +69,20 @@ export default function ScheduleFilterBar({
             parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
           />
         </Space>
-        <Space direction="vertical" size={4}>
-          <span>월:</span>
-          <InputNumber
-            value={month}
-            min={1}
-            max={12}
-            onChange={(v) => v != null && onMonthChange(v)}
-            style={{ width: 80 }}
-            parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
-          />
-        </Space>
+        {showMonth && (
+          <Space direction="vertical" size={4}>
+            <span>월:</span>
+            <InputNumber
+              value={month}
+              min={1}
+              max={12}
+              onChange={(v) => v != null && onMonthChange?.(v)}
+              style={{ width: 80 }}
+              parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
+            />
+          </Space>
+        )}
+        {extraFilters}
         <Space direction="vertical" size={4}>
           <span>지점명:</span>
           <Transfer
