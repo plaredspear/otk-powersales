@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50249",
+    "url" : "http://localhost:54193",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1271,6 +1271,94 @@
         }
       }
     },
+    "/api/v1/sf/oauth/token" : {
+      "post" : {
+        "tags" : [ "sf-token-controller" ],
+        "operationId" : "issueTokenForm",
+        "parameters" : [ {
+          "name" : "Authorization",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "grant_type" : {
+                    "type" : "string"
+                  },
+                  "client_id" : {
+                    "type" : "string"
+                  },
+                  "client_secret" : {
+                    "type" : "string"
+                  },
+                  "scope" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            },
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TokenRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sf/inbound/monthly-sales-history" : {
+      "post" : {
+        "tags" : [ "sf-monthly-sales-history-controller" ],
+        "summary" : "[SF inbound] 월 매출 이력 적재 (청크 UPSERT)",
+        "description" : "\n            SF Apex 측에서 신규 backend 로 월 매출 이력을 (SAPAccountCode + SalesYearMonth) 기준으로 UPSERT.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **인증**: client_credentials grant 으로 발급받은 token + `scope=sf.write`.\n            **도메인 service**: SAP / SF 공유 (`MonthlySalesHistoryUpsertService`).\n        ",
+        "operationId" : "upsertMonthly",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SfMonthlySalesHistoryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SfResultWrapperSfSalesHistoryDetail"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "Bearer" : [ ]
+        } ]
+      }
+    },
     "/api/v1/sap/system-code" : {
       "post" : {
         "tags" : [ "sap-product-master-controller" ],
@@ -1394,7 +1482,7 @@
     "/api/v1/sap/oauth/token" : {
       "post" : {
         "tags" : [ "sap-token-controller" ],
-        "operationId" : "issueTokenForm",
+        "operationId" : "issueTokenForm_1",
         "parameters" : [ {
           "name" : "Authorization",
           "in" : "header",
@@ -1451,7 +1539,7 @@
         "tags" : [ "sap-sales-history-controller" ],
         "summary" : "월 매출 이력 적재 (청크 UPSERT)",
         "description" : "\n            SAP 월 매출 이력을 (SAPAccountCode + SalesYearMonth) 기준으로 UPSERT 합니다.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/MonthlySalesHistory`\n            - 레거시 Apex 클래스: `IF_REST_SAP_MonthlySalesHistory`\n        ",
-        "operationId" : "upsertMonthly",
+        "operationId" : "upsertMonthly_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4266,6 +4354,29 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/sf/inbound/health" : {
+      "get" : {
+        "tags" : [ "sf-inbound-health-controller" ],
+        "summary" : "SF 인바운드 health check",
+        "description" : "SF Apex 가 토큰 발급 + Bearer 인증 + sf.write scope 검증 전체 흐름이 정상 동작하는지 확인.",
+        "operationId" : "health",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "Bearer" : [ ]
+        } ]
       }
     },
     "/api/v1/mobile/sales/monthly" : {
@@ -7161,7 +7272,7 @@
     "/api/health" : {
       "get" : {
         "tags" : [ "health-controller" ],
-        "operationId" : "health",
+        "operationId" : "health_1",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -7307,12 +7418,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
-          "expired" : {
-            "type" : "boolean"
-          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "expired" : {
+            "type" : "boolean"
           }
         }
       },
@@ -7977,10 +8088,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -9340,6 +9451,151 @@
           }
         }
       },
+      "TokenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "access_token" : {
+            "type" : "string"
+          },
+          "token_type" : {
+            "type" : "string"
+          },
+          "expires_in" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "scope" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TokenRequest" : {
+        "type" : "object",
+        "properties" : {
+          "grant_type" : {
+            "type" : "string"
+          },
+          "client_id" : {
+            "type" : "string"
+          },
+          "client_secret" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "SfMonthlySalesHistoryRequest" : {
+        "type" : "object",
+        "properties" : {
+          "reqItemList" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/SfMonthlySalesHistoryRequestItem"
+            }
+          }
+        },
+        "required" : [ "reqItemList" ]
+      },
+      "SfMonthlySalesHistoryRequestItem" : {
+        "type" : "object",
+        "properties" : {
+          "SAPAccountCode" : {
+            "type" : "string"
+          },
+          "SalesYearMonth" : {
+            "type" : "string"
+          },
+          "ABCClosingAmount1" : {
+            "type" : "string"
+          },
+          "ABCClosingAmount2" : {
+            "type" : "string"
+          },
+          "ABCClosingAmount3" : {
+            "type" : "string"
+          },
+          "TotalLedgerAmount" : {
+            "type" : "string"
+          },
+          "ShipClosingAmount" : {
+            "type" : "string"
+          },
+          "rlsales" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "SfChunkResult" : {
+        "type" : "object",
+        "properties" : {
+          "index" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "SfFailureItem" : {
+        "type" : "object",
+        "properties" : {
+          "identifier" : {
+            "type" : [ "string", "null" ]
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SfResultWrapperSfSalesHistoryDetail" : {
+        "type" : "object",
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/SfSalesHistoryDetail"
+          }
+        }
+      },
+      "SfSalesHistoryDetail" : {
+        "type" : "object",
+        "properties" : {
+          "successCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "failureCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "failures" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SfFailureItem"
+            }
+          },
+          "chunks" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SfChunkResult"
+            }
+          }
+        }
+      },
       "SystemCodeMasterRequest" : {
         "type" : "object",
         "properties" : {
@@ -9620,41 +9876,6 @@
           },
           "RESULT_DETAIL" : {
             "$ref" : "#/components/schemas/OrganizeMasterDetail"
-          }
-        }
-      },
-      "TokenResponse" : {
-        "type" : "object",
-        "properties" : {
-          "access_token" : {
-            "type" : "string"
-          },
-          "token_type" : {
-            "type" : "string"
-          },
-          "expires_in" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "scope" : {
-            "type" : "string"
-          }
-        }
-      },
-      "TokenRequest" : {
-        "type" : "object",
-        "properties" : {
-          "grant_type" : {
-            "type" : "string"
-          },
-          "client_id" : {
-            "type" : "string"
-          },
-          "client_secret" : {
-            "type" : "string"
-          },
-          "scope" : {
-            "type" : [ "string", "null" ]
           }
         }
       },
@@ -13727,6 +13948,21 @@
           }
         }
       },
+      "HealthResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "MonthlySalesRequest" : {
         "type" : "object",
         "properties" : {
@@ -14374,17 +14610,17 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -14408,22 +14644,22 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "paged" : {
+          "unpaged" : {
             "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "unpaged" : {
+          "paged" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "offset" : {
             "type" : "integer",
@@ -14460,10 +14696,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -17774,17 +18010,17 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -18447,10 +18683,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -20342,44 +20578,6 @@
           "timestamp" : {
             "type" : "string",
             "format" : "date-time"
-          }
-        }
-      },
-      "Components" : {
-        "type" : "object",
-        "properties" : {
-          "db" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/Indicator"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "redis" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/Indicator"
-            }, {
-              "type" : "null"
-            } ]
-          }
-        }
-      },
-      "HealthResponse" : {
-        "type" : "object",
-        "properties" : {
-          "status" : {
-            "type" : "string"
-          },
-          "components" : {
-            "$ref" : "#/components/schemas/Components"
-          }
-        }
-      },
-      "Indicator" : {
-        "type" : "object",
-        "properties" : {
-          "status" : {
-            "type" : "string"
           }
         }
       },

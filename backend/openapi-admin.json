@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50249",
+    "url" : "http://localhost:54193",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -6010,10 +6010,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -11044,17 +11044,17 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -11078,22 +11078,22 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "paged" : {
+          "unpaged" : {
             "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "unpaged" : {
+          "paged" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "offset" : {
             "type" : "integer",
@@ -11152,10 +11152,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -11883,10 +11883,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }

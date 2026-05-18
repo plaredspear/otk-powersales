@@ -129,7 +129,7 @@ tasks.test {
 
 tasks.register<Test>("generateOpenApiDocs") {
 	group = "documentation"
-	description = "OpenAPI spec JSON 파일 생성 (backend/openapi.json). 실 DB(local Postgres 또는 dev RDS) 가 활성 상태여야 컨텍스트가 기동된다."
+	description = "OpenAPI spec JSON 파일 생성 (backend/openapi.json + group 별 3종). 외부 DB/Redis/AWS 불필요 — test 프로파일의 H2 in-memory + create-drop 로 컨텍스트가 기동된다. 단 셸 환경에 SPRING_DATASOURCE_* 등이 export 돼 있으면 H2 설정을 override 해서 부팅이 실패할 수 있으니, 자동화에서는 env 를 stripping 해서 호출할 것."
 	testClassesDirs = sourceSets.test.get().output.classesDirs
 	classpath = sourceSets.test.get().runtimeClasspath
 	filter {
