@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:62505",
+    "url" : "http://localhost:60872",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -68,6 +68,93 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/claims/{claimId}" : {
+      "get" : {
+        "tags" : [ "claim-query-controller" ],
+        "operationId" : "getClaimDetail",
+        "parameters" : [ {
+          "name" : "claimId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseClaimDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "claim-controller" ],
+        "operationId" : "updateClaim",
+        "parameters" : [ {
+          "name" : "claimId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClaimUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseClaimCreateResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "claim-controller" ],
+        "operationId" : "deleteClaim",
+        "parameters" : [ {
+          "name" : "claimId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
                 }
               }
             }
@@ -343,6 +430,64 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseLeaderScheduleCreateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile/claims" : {
+      "get" : {
+        "tags" : [ "claim-query-controller" ],
+        "operationId" : "getClaims",
+        "parameters" : [ {
+          "name" : "startDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListClaimListItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "claim-controller" ],
+        "operationId" : "createClaim",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClaimCreateRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseClaimCreateResponse"
                 }
               }
             }
@@ -1262,66 +1407,6 @@
         }
       }
     },
-    "/api/v1/mobile/claims" : {
-      "get" : {
-        "tags" : [ "claim-query-controller" ],
-        "operationId" : "getClaims",
-        "parameters" : [ {
-          "name" : "startDate",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "endDate",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListClaimListItemResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/mobile/claims/{claimId}" : {
-      "get" : {
-        "tags" : [ "claim-query-controller" ],
-        "operationId" : "getClaimDetail",
-        "parameters" : [ {
-          "name" : "claimId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseClaimDetailResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/mobile/auth/gps-consent/terms" : {
       "get" : {
         "tags" : [ "auth-controller" ],
@@ -1429,6 +1514,41 @@
           }
         }
       }
+    },
+    "/api/v1/mobile/claims/{claimId}/photos/{photoId}" : {
+      "delete" : {
+        "tags" : [ "claim-controller" ],
+        "operationId" : "deleteClaimPhoto",
+        "parameters" : [ {
+          "name" : "claimId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "photoId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components" : {
@@ -1526,12 +1646,107 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
+          "expired" : {
+            "type" : "boolean"
+          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "ClaimUpdateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "accountId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
           },
-          "expired" : {
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "dateType" : {
+            "type" : [ "string", "null" ]
+          },
+          "date" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimType1" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimType2" : {
+            "type" : [ "string", "null" ]
+          },
+          "defectDescription" : {
+            "type" : [ "string", "null" ]
+          },
+          "defectQuantity" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "purchaseAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "purchaseMethodCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestTypeCode" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ApiResponseClaimCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
             "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ClaimCreateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ClaimCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string"
           }
         }
       },
@@ -2094,6 +2309,55 @@
             "format" : "int64"
           }
         }
+      },
+      "ClaimCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "accountId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ],
+            "minLength" : 1
+          },
+          "dateType" : {
+            "type" : [ "string", "null" ],
+            "minLength" : 1
+          },
+          "date" : {
+            "type" : [ "string", "null" ],
+            "minLength" : 1
+          },
+          "claimType1" : {
+            "type" : [ "string", "null" ],
+            "minLength" : 1
+          },
+          "claimType2" : {
+            "type" : [ "string", "null" ],
+            "minLength" : 1
+          },
+          "defectDescription" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 4000,
+            "minLength" : 0
+          },
+          "defectQuantity" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "purchaseAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "purchaseMethodCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestTypeCode" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "accountId", "claimType1", "claimType2", "date", "dateType", "defectDescription", "defectQuantity", "productCode" ]
       },
       "VerifyPasswordRequest" : {
         "type" : "object",
@@ -3223,12 +3487,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -3238,6 +3496,12 @@
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "size" : {
             "type" : "integer",
@@ -3261,9 +3525,6 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
@@ -3277,6 +3538,9 @@
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -5197,6 +5461,28 @@
           "totalCount" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "ApiResponseUnit" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       }

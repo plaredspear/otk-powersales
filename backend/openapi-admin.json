@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:62505",
+    "url" : "http://localhost:60872",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -6250,10 +6250,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -11578,12 +11578,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -11593,6 +11587,12 @@
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "size" : {
             "type" : "integer",
@@ -11616,9 +11616,6 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
@@ -11632,6 +11629,9 @@
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -12421,10 +12421,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -13239,7 +13239,7 @@
             "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "newValue" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ]
           },
           "changedAt" : {
@@ -14631,12 +14631,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -14646,6 +14640,12 @@
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "size" : {
             "type" : "integer",
