@@ -95,7 +95,12 @@ export const router = createBrowserRouter(
             { path: '/sales/pos', element: <LazyWrapper><SalesQueryPage /></LazyWrapper> },
             { path: '/schedule', element: <LazyWrapper><SchedulePage /></LazyWrapper> },
             { path: '/deployment', element: <LazyWrapper><DeploymentPage /></LazyWrapper> },
-            { path: '/attendance', element: <LazyWrapper><AttendancePage /></LazyWrapper> },
+            {
+              element: <PermissionRoute requiredPermission="ATTENDANCE_LOG_READ" />,
+              children: [
+                { path: '/attendance', element: <LazyWrapper><AttendancePage /></LazyWrapper> },
+              ],
+            },
             {
               element: <PermissionRoute requiredPermission="ATTEND_INFO_READ" />,
               children: [

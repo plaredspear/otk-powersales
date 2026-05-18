@@ -12,6 +12,12 @@ class TeamMemberScheduleNotFoundException : BusinessException(
     httpStatus = HttpStatus.NOT_FOUND
 )
 
+class AttendanceLogNotFoundException : BusinessException(
+    errorCode = "ATTENDANCE_LOG_NOT_FOUND",
+    message = "출근 등록을 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
 /**
  * 이미 출근 등록된 거래처
  */
