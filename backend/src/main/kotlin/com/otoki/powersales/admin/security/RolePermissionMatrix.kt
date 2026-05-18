@@ -45,6 +45,7 @@ object RolePermissionMatrix {
             AdminPermission.SCHEDULED_JOB_READ,
             AdminPermission.EMPLOYEE_INPUT_CRITERIA_READ,
             AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE,
+            AdminPermission.SAP_INTEGRATION_READ,
         ),
         UserRole.SALES_SUPPORT to setOf(
             AdminPermission.DASHBOARD_READ,

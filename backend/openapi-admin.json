@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:53737",
+    "url" : "http://localhost:50249",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -4330,6 +4330,274 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePageScheduleListItemDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/outbox-pending" : {
+      "get" : {
+        "tags" : [ "admin-sap-integration-controller" ],
+        "operationId" : "getOutboxPending",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 1
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboxPendingListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/logs" : {
+      "get" : {
+        "tags" : [ "admin-sap-integration-controller" ],
+        "operationId" : "searchOutboundLogs",
+        "parameters" : [ {
+          "name" : "interfaceId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "resultCode",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 1
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundLogListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/logs/{id}" : {
+      "get" : {
+        "tags" : [ "admin-sap-integration-controller" ],
+        "operationId" : "getOutboundLogDetail",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundLogDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/catalog" : {
+      "get" : {
+        "tags" : [ "admin-sap-integration-controller" ],
+        "operationId" : "getOutboundCatalog",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListSapOutboundCatalogItemDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sap-integration/inbound/catalog" : {
+      "get" : {
+        "tags" : [ "admin-sap-integration-controller" ],
+        "operationId" : "getInboundCatalog",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListSapInboundCatalogItemDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sap-integration/inbound/audits" : {
+      "get" : {
+        "tags" : [ "admin-sap-integration-controller" ],
+        "operationId" : "searchInboundAudits",
+        "parameters" : [ {
+          "name" : "clientId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "eventType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "endpoint",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 1
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapInboundAuditListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sap-integration/inbound/audits/{id}" : {
+      "get" : {
+        "tags" : [ "admin-sap-integration-controller" ],
+        "operationId" : "getInboundAuditDetail",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapInboundAuditDetail"
                 }
               }
             }
@@ -10772,21 +11040,21 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -10810,15 +11078,15 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "paged" : {
-            "type" : "boolean"
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
+          "paged" : {
+            "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
@@ -10892,6 +11160,534 @@
           },
           "empty" : {
             "type" : "boolean"
+          }
+        }
+      },
+      "ApiResponseSapOutboxPendingListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SapOutboxPendingListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SapOutboxPendingListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SapOutboxPendingRow"
+            }
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "currentPage" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "SapOutboxPendingRow" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "domainType" : {
+            "type" : "string"
+          },
+          "aggregateId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "interfaceId" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "retryCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "lastError" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "sentAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseSapOutboundLogListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SapOutboundLogListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SapOutboundLogListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SapOutboundLogRow"
+            }
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "currentPage" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "SapOutboundLogRow" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "interfaceId" : {
+            "type" : "string"
+          },
+          "endpointPath" : {
+            "type" : "string"
+          },
+          "requestCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "httpStatus" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "resultCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "resultMsg" : {
+            "type" : [ "string", "null" ]
+          },
+          "attemptCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "durationMs" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "requestedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "completedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseSapOutboundLogDetail" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SapOutboundLogDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SapOutboundLogDetail" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "interfaceId" : {
+            "type" : "string"
+          },
+          "endpointPath" : {
+            "type" : "string"
+          },
+          "requestCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "httpStatus" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "resultCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "resultMsg" : {
+            "type" : [ "string", "null" ]
+          },
+          "attemptCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "durationMs" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "errorDetail" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "completedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseListSapOutboundCatalogItemDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/SapOutboundCatalogItemDto"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SapOutboundCatalogItemDto" : {
+        "type" : "object",
+        "properties" : {
+          "interfaceId" : {
+            "type" : "string"
+          },
+          "koreanName" : {
+            "type" : "string"
+          },
+          "triggerType" : {
+            "type" : "string",
+            "enum" : [ "BATCH", "REALTIME", "OUTBOX" ]
+          },
+          "senderClass" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiResponseListSapInboundCatalogItemDto" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/SapInboundCatalogItemDto"
+            }
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SapInboundCatalogItemDto" : {
+        "type" : "object",
+        "properties" : {
+          "endpointPath" : {
+            "type" : "string"
+          },
+          "koreanName" : {
+            "type" : "string"
+          },
+          "requiredScope" : {
+            "type" : "string"
+          },
+          "targetEntity" : {
+            "type" : "string"
+          },
+          "controllerClass" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiResponseSapInboundAuditListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SapInboundAuditListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SapInboundAuditListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SapInboundAuditRow"
+            }
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "currentPage" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "SapInboundAuditRow" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "eventType" : {
+            "type" : "string"
+          },
+          "clientId" : {
+            "type" : [ "string", "null" ]
+          },
+          "endpoint" : {
+            "type" : [ "string", "null" ]
+          },
+          "httpMethod" : {
+            "type" : [ "string", "null" ]
+          },
+          "clientIp" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : [ "string", "null" ]
+          },
+          "receivedCount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "previousCount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseSapInboundAuditDetail" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SapInboundAuditDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SapInboundAuditDetail" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "eventType" : {
+            "type" : "string"
+          },
+          "clientId" : {
+            "type" : [ "string", "null" ]
+          },
+          "endpoint" : {
+            "type" : [ "string", "null" ]
+          },
+          "httpMethod" : {
+            "type" : [ "string", "null" ]
+          },
+          "clientIp" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : [ "string", "null" ]
+          },
+          "receivedCount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "previousCount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       },
