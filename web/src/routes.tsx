@@ -9,6 +9,7 @@ import AdminLayout from '@/layouts/AdminLayout';
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
 const SalesQueryPage = lazy(() => import('@/pages/SalesQueryPage'));
+const MonthlySalesDashboardPage = lazy(() => import('@/pages/MonthlySalesDashboardPage'));
 const SchedulePage = lazy(() => import('@/pages/schedule/SchedulePage'));
 const DeploymentPage = lazy(() => import('@/pages/DeploymentPage'));
 const AttendancePage = lazy(() => import('@/pages/AttendancePage'));
@@ -90,7 +91,12 @@ export const router = createBrowserRouter(
           element: <AdminLayout />,
           children: [
             { path: '/', element: <LazyWrapper><DashboardPage /></LazyWrapper> },
-            { path: '/sales/monthly', element: <LazyWrapper><SalesQueryPage /></LazyWrapper> },
+            {
+              element: <PermissionRoute requiredPermission="MONTHLY_SALES_DASHBOARD_READ" />,
+              children: [
+                { path: '/sales/monthly', element: <LazyWrapper><MonthlySalesDashboardPage /></LazyWrapper> },
+              ],
+            },
             { path: '/sales/electronic', element: <LazyWrapper><SalesQueryPage /></LazyWrapper> },
             { path: '/sales/pos', element: <LazyWrapper><SalesQueryPage /></LazyWrapper> },
             { path: '/schedule', element: <LazyWrapper><SchedulePage /></LazyWrapper> },

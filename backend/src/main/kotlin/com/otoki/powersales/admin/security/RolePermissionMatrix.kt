@@ -50,6 +50,7 @@ object RolePermissionMatrix {
             AdminPermission.ATTEND_INFO_WRITE,
             AdminPermission.ATTEND_INFO_DELETE,
             AdminPermission.ATTENDANCE_LOG_READ,
+            AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
         UserRole.SALES_SUPPORT to setOf(
             AdminPermission.DASHBOARD_READ,
@@ -71,6 +72,7 @@ object RolePermissionMatrix {
             AdminPermission.ATTEND_INFO_READ,
             AdminPermission.ATTEND_INFO_WRITE,
             AdminPermission.ATTENDANCE_LOG_READ,
+            AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
         UserRole.LEADER to setOf(
             AdminPermission.DASHBOARD_READ,
@@ -85,6 +87,7 @@ object RolePermissionMatrix {
             AdminPermission.MONTHLY_INPUT_ADEQUACY_READ,
             AdminPermission.PRODUCT_EXPIRATION_READ,
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
+            AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
         UserRole.BRANCH_MANAGER to setOf(
             AdminPermission.DASHBOARD_READ,
@@ -98,6 +101,7 @@ object RolePermissionMatrix {
             AdminPermission.MONTHLY_INPUT_ADEQUACY_READ,
             AdminPermission.PRODUCT_EXPIRATION_READ,
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
+            AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
         UserRole.SALES_MANAGER to setOf(
             AdminPermission.DASHBOARD_READ,
@@ -111,6 +115,7 @@ object RolePermissionMatrix {
             AdminPermission.MONTHLY_INPUT_ADEQUACY_READ,
             AdminPermission.PRODUCT_EXPIRATION_READ,
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
+            AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
         UserRole.BUSINESS_MANAGER to setOf(
             AdminPermission.DASHBOARD_READ,
@@ -124,6 +129,7 @@ object RolePermissionMatrix {
             AdminPermission.MONTHLY_INPUT_ADEQUACY_READ,
             AdminPermission.PRODUCT_EXPIRATION_READ,
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
+            AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
         UserRole.HEADQUARTERS_MANAGER to setOf(
             AdminPermission.DASHBOARD_READ,
@@ -137,6 +143,7 @@ object RolePermissionMatrix {
             AdminPermission.MONTHLY_INPUT_ADEQUACY_READ,
             AdminPermission.PRODUCT_EXPIRATION_READ,
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
+            AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
     )
 

@@ -52,6 +52,7 @@ class AdminPermissionMatrixService(
         AdminPermission.ATTEND_INFO_WRITE to ("근태정보 등록/수정" to listOf("인사/근무 > 근태정보 (보정 등록 / 수정)")),
         AdminPermission.ATTEND_INFO_DELETE to ("근태정보 삭제" to listOf("인사/근무 > 근태정보 (삭제)")),
         AdminPermission.ATTENDANCE_LOG_READ to ("근무 등록현황 조회" to listOf("인사/근무 > 근무 등록현황")),
+        AdminPermission.MONTHLY_SALES_DASHBOARD_READ to ("월매출 조회 대시보드" to listOf("매출/실적 > 월매출 조회")),
     )
 
     init {
