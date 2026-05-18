@@ -50,6 +50,8 @@ const EmployeePermissionPage = lazy(() => import('@/pages/settings/EmployeePermi
 const AdminAccountRegisterPage = lazy(() => import('@/pages/settings/AdminAccountRegisterPage'));
 const NaverGeocodeTestPage = lazy(() => import('@/pages/admin/NaverGeocodeTestPage'));
 const ScheduledJobsPage = lazy(() => import('@/pages/admin/scheduled-jobs/ScheduledJobsPage'));
+const SapInboundPage = lazy(() => import('@/pages/admin/tools/sap-inbound/SapInboundPage'));
+const SapOutboundPage = lazy(() => import('@/pages/admin/tools/sap-outbound/SapOutboundPage'));
 const AgreementWordsPage = lazy(() => import('@/pages/admin/agreement-words/AgreementWordsPage'));
 const UserListPage = lazy(() => import('@/pages/users/UserListPage'));
 const UserDetailPage = lazy(() => import('@/pages/users/UserDetailPage'));
@@ -180,6 +182,13 @@ export const router = createBrowserRouter(
               element: <PermissionRoute requiredPermission="SCHEDULED_JOB_READ" />,
               children: [
                 { path: '/admin/tools/scheduled-jobs', element: <LazyWrapper><ScheduledJobsPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute requiredPermission="SAP_INTEGRATION_READ" />,
+              children: [
+                { path: '/admin/tools/sap-inbound', element: <LazyWrapper><SapInboundPage /></LazyWrapper> },
+                { path: '/admin/tools/sap-outbound', element: <LazyWrapper><SapOutboundPage /></LazyWrapper> },
               ],
             },
             {
