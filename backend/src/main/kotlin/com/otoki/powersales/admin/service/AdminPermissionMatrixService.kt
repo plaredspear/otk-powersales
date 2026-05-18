@@ -42,6 +42,12 @@ class AdminPermissionMatrixService(
         AdminPermission.USER_WRITE to ("사용자 관리 (비밀번호 리셋 / 활성화)" to listOf("시스템 > 사용자 관리 (비밀번호 초기화 / 활성-비활성 토글)")),
         AdminPermission.EMPLOYEE_INPUT_CRITERIA_READ to ("진열사원 투입기준 마스터 조회" to listOf("기준정보 > 진열사원 투입기준 마스터")),
         AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE to ("진열사원 투입기준 마스터 등록/수정/확정/삭제" to listOf("기준정보 > 진열사원 투입기준 마스터 (등록 / 수정 / 확정 / 일괄 확정 / 삭제)")),
+        AdminPermission.SAP_INTEGRATION_READ to (
+            "SAP 연동 운영 모니터링 조회" to listOf(
+                "운영 도구 > SAP Inbound",
+                "운영 도구 > SAP Outbound",
+            )
+        ),
     )
 
     init {

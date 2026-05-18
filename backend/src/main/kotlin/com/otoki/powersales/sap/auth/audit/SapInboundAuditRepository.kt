@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-interface SapInboundAuditRepository : JpaRepository<SapInboundAudit, Long> {
+interface SapInboundAuditRepository :
+    JpaRepository<SapInboundAudit, Long>,
+    SapInboundAuditRepositoryCustom {
 
     @Query(
         """

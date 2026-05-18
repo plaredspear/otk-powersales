@@ -117,6 +117,8 @@ export const menuRoute: MenuRoute = {
       children: [
         { path: '/admin/tools/naver-geocode', name: 'Naver Geocode 변환 테스트', requiredPermission: 'NAVER_GEOCODE_TEST' },
         { path: '/admin/tools/scheduled-jobs', name: '스케줄 잡 실행 이력', requiredPermission: 'SCHEDULED_JOB_READ' },
+        { path: '/admin/tools/sap-inbound', name: 'SAP Inbound', requiredPermission: 'SAP_INTEGRATION_READ' },
+        { path: '/admin/tools/sap-outbound', name: 'SAP Outbound', requiredPermission: 'SAP_INTEGRATION_READ' },
       ],
     },
   ],
