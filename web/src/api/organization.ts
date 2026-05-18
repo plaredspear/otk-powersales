@@ -4,18 +4,18 @@ import type { ApiResponse } from './types';
 
 export interface Organization {
   id: number;
-  ccCd2: string | null;
-  orgCd2: string | null;
-  orgNm2: string | null;
-  ccCd3: string | null;
-  orgCd3: string | null;
-  orgNm3: string | null;
-  ccCd4: string | null;
-  orgCd4: string | null;
-  orgNm4: string | null;
-  ccCd5: string | null;
-  orgCd5: string | null;
-  orgNm5: string | null;
+  costCenterLevel2: string | null;
+  orgCodeLevel2: string | null;
+  orgNameLevel2: string | null;
+  costCenterLevel3: string | null;
+  orgCodeLevel3: string | null;
+  orgNameLevel3: string | null;
+  costCenterLevel4: string | null;
+  orgCodeLevel4: string | null;
+  orgNameLevel4: string | null;
+  costCenterLevel5: string | null;
+  orgCodeLevel5: string | null;
+  orgNameLevel5: string | null;
   createdAt: string;
 }
 

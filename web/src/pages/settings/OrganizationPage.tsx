@@ -21,14 +21,14 @@ export default function OrganizationPage() {
   const { data, isLoading, isError, error, refetch } = useOrganizations({ keyword, level });
 
   const columns: ColumnsType<Organization> = [
-    { title: 'L2 조직명', dataIndex: 'org_nm2', width: 120, render: renderNull },
-    { title: 'L2 CC코드', dataIndex: 'cc_cd2', width: 80, align: 'center', render: renderNull },
-    { title: 'L3 조직명', dataIndex: 'org_nm3', width: 120, render: renderNull },
-    { title: 'L3 CC코드', dataIndex: 'cc_cd3', width: 80, align: 'center', render: renderNull },
-    { title: 'L4 조직명', dataIndex: 'org_nm4', width: 120, render: renderNull },
-    { title: 'L4 CC코드', dataIndex: 'cc_cd4', width: 80, align: 'center', render: renderNull },
-    { title: 'L5 조직명', dataIndex: 'org_nm5', width: 120, render: renderNull },
-    { title: 'L5 CC코드', dataIndex: 'cc_cd5', width: 80, align: 'center', render: renderNull },
+    { title: 'L2 조직명', dataIndex: 'orgNameLevel2', width: 120, render: renderNull },
+    { title: 'L2 CC코드', dataIndex: 'costCenterLevel2', width: 80, align: 'center', render: renderNull },
+    { title: 'L3 조직명', dataIndex: 'orgNameLevel3', width: 120, render: renderNull },
+    { title: 'L3 CC코드', dataIndex: 'costCenterLevel3', width: 80, align: 'center', render: renderNull },
+    { title: 'L4 조직명', dataIndex: 'orgNameLevel4', width: 120, render: renderNull },
+    { title: 'L4 CC코드', dataIndex: 'costCenterLevel4', width: 80, align: 'center', render: renderNull },
+    { title: 'L5 조직명', dataIndex: 'orgNameLevel5', width: 120, render: renderNull },
+    { title: 'L5 CC코드', dataIndex: 'costCenterLevel5', width: 80, align: 'center', render: renderNull },
   ];
 
   if (isError) {
