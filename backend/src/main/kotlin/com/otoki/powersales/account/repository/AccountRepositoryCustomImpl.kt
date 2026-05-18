@@ -74,6 +74,33 @@ class AccountRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun existsActiveByName(name: String): Boolean {
+        val found = queryFactory
+            .selectOne()
+            .from(account)
+            .where(account.name.eq(name), notDeleted())
+            .fetchFirst()
+        return found != null
+    }
+
+    override fun findActiveById(id: Int): Account? {
+        return queryFactory
+            .selectFrom(account)
+            .where(account.id.eq(id), notDeleted())
+            .fetchOne()
+    }
+
+    override fun existsActiveByNameAndIdNot(name: String, id: Int): Boolean {
+        val found = queryFactory
+            .selectOne()
+            .from(account)
+            .where(account.name.eq(name), account.id.ne(id), notDeleted())
+            .fetchFirst()
+        return found != null
+    }
+
+    private fun notDeleted() = account.isDeleted.isNull.or(account.isDeleted.eq(false))
+
     companion object {
         private const val ACCOUNT_STATUS_ACTIVE = "거래"
     }

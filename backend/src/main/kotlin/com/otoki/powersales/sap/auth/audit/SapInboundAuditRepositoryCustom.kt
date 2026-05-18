@@ -14,4 +14,11 @@ interface SapInboundAuditRepositoryCustom {
         to: LocalDateTime?,
         pageable: Pageable,
     ): Page<SapInboundAudit>
+
+    fun findLatestByEndpointAndClientAndEvent(
+        endpoint: String,
+        clientId: String,
+        eventType: String,
+        pageable: Pageable,
+    ): List<SapInboundAudit>
 }

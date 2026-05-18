@@ -42,4 +42,23 @@ open class SapInboundAuditRepositoryCustomImpl(
 
         return PageableExecutionUtils.getPage(content, pageable) { countQuery.fetchOne() ?: 0L }
     }
+
+    override fun findLatestByEndpointAndClientAndEvent(
+        endpoint: String,
+        clientId: String,
+        eventType: String,
+        pageable: Pageable,
+    ): List<SapInboundAudit> {
+        return queryFactory
+            .selectFrom(sapInboundAudit)
+            .where(
+                sapInboundAudit.endpoint.eq(endpoint),
+                sapInboundAudit.clientId.eq(clientId),
+                sapInboundAudit.eventType.eq(eventType),
+            )
+            .orderBy(sapInboundAudit.createdAt.desc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+    }
 }
