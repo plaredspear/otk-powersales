@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:64860",
+    "url" : "http://localhost:49809",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -6877,6 +6877,309 @@
         }
       }
     },
+    "/api/v1/admin/sales/monthly/summary" : {
+      "get" : {
+        "tags" : [ "admin-monthly-sales-dashboard-controller" ],
+        "operationId" : "getSummary_2",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "customerKeyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "accountGroup",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMonthlySalesDashboardSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sales/monthly/list" : {
+      "get" : {
+        "tags" : [ "admin-monthly-sales-dashboard-controller" ],
+        "operationId" : "getList_1",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "accountIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        }, {
+          "name" : "accountGroup",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "customerKeyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        }, {
+          "name" : "sort",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMonthlySalesDashboardListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sales/monthly/list/export" : {
+      "get" : {
+        "tags" : [ "admin-monthly-sales-dashboard-controller" ],
+        "operationId" : "exportList",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "costCenterCodes",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "accountIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        }, {
+          "name" : "accountGroup",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "customerKeyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "sort",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sales/monthly/detail/{customerId}" : {
+      "get" : {
+        "tags" : [ "admin-monthly-sales-dashboard-controller" ],
+        "operationId" : "getDetail_2",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "customerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMonthlySalesDashboardDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/safety-check/status" : {
       "get" : {
         "tags" : [ "admin-safety-check-controller" ],
@@ -7088,7 +7391,7 @@
     "/api/v1/admin/product-expiration/summary" : {
       "get" : {
         "tags" : [ "admin-product-expiration-controller" ],
-        "operationId" : "getSummary_2",
+        "operationId" : "getSummary_3",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -7617,7 +7920,7 @@
     "/api/v1/admin/annual-leave/summary" : {
       "get" : {
         "tags" : [ "admin-annual-leave-controller" ],
-        "operationId" : "getSummary_3",
+        "operationId" : "getSummary_4",
         "parameters" : [ {
           "name" : "yearMonth",
           "in" : "query",
@@ -15456,15 +15759,15 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -18856,15 +19159,15 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -19458,6 +19761,315 @@
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }
+      },
+      "ApiResponseMonthlySalesDashboardSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MonthlySalesDashboardSummaryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "MonthlySalesDashboardSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "salesYear" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "salesMonth" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalTargetAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalAchievedAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "overallAchievementRate" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "referenceAchievementRate" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "totalLastYearAchievedAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "lastYearComparisonRatio" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "monthlyTrend" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MonthlyTrendPoint"
+            }
+          }
+        }
+      },
+      "MonthlyTrendPoint" : {
+        "type" : "object",
+        "properties" : {
+          "salesYear" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "salesMonth" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "targetAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "achievedAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "lastYearAchievedAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        }
+      },
+      "ApiResponseMonthlySalesDashboardListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MonthlySalesDashboardListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "MonthlySalesDashboardListItem" : {
+        "type" : "object",
+        "properties" : {
+          "accountId" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "accountSfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "salesYear" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "salesMonth" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "targetAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "totalAchievedAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "achievementRate" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "ambientAchievedAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "noodleAchievedAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "frozenRefrigeratedAchievedAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "oilFatAchievedAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "lastYearAchievedAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "lastYearComparisonRatio" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "confirmed" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "MonthlySalesDashboardListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MonthlySalesDashboardListItem"
+            }
+          },
+          "pageInfo" : {
+            "$ref" : "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "PageInfo" : {
+        "type" : "object",
+        "properties" : {
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ApiResponseMonthlySalesDashboardDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MonthlySalesDashboardDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "MonthlySalesDashboardDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "customerId" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "customerName" : {
+            "type" : [ "string", "null" ]
+          },
+          "salesYear" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "salesMonth" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "targetAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "achievedAmount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "achievementRate" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "referenceAchievementRate" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "categorySales" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CategorySalesInfo"
+            }
+          },
+          "yearComparison" : {
+            "$ref" : "#/components/schemas/YearComparisonInfo"
+          },
+          "monthlyAverage" : {
+            "$ref" : "#/components/schemas/MonthlyAverageInfo"
           }
         }
       },
@@ -21534,15 +22146,15 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -21801,15 +22413,15 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",

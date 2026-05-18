@@ -1,0 +1,118 @@
+package com.otoki.powersales.admin.controller
+
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.sales.dto.request.MonthlySalesDashboardListRequest
+import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardDetailResponse
+import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardListResponse
+import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardSummaryResponse
+import com.otoki.powersales.sales.service.MonthlySalesAdminQueryService
+import com.otoki.powersales.sales.service.MonthlySalesDashboardExcelExporter
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
+@RestController
+@RequestMapping("/api/v1/admin/sales/monthly")
+class AdminMonthlySalesDashboardController(
+    private val queryService: MonthlySalesAdminQueryService,
+    private val excelExporter: MonthlySalesDashboardExcelExporter,
+) {
+
+    /** 상단 KPI + 최근 6개월 월별 추이. */
+    @RequiresPermission(AdminPermission.MONTHLY_SALES_DASHBOARD_READ)
+    @GetMapping("/summary")
+    fun getSummary(
+        @CurrentDataScope scope: DataScope,
+        @RequestParam year: Int,
+        @RequestParam month: Int,
+        @RequestParam costCenterCodes: List<String>,
+        @RequestParam(required = false) customerKeyword: String?,
+        @RequestParam(required = false) accountGroup: String?,
+    ): ResponseEntity<ApiResponse<MonthlySalesDashboardSummaryResponse>> {
+        val response = queryService.getSummary(scope, year, month, costCenterCodes, customerKeyword, accountGroup)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 거래처별 명세 — 페이징 + 정렬 + 필터. */
+    @RequiresPermission(AdminPermission.MONTHLY_SALES_DASHBOARD_READ)
+    @GetMapping("/list")
+    fun getList(
+        @CurrentDataScope scope: DataScope,
+        @RequestParam year: Int,
+        @RequestParam month: Int,
+        @RequestParam costCenterCodes: List<String>,
+        @RequestParam(required = false) accountIds: List<Int>?,
+        @RequestParam(required = false) accountGroup: String?,
+        @RequestParam(required = false) customerKeyword: String?,
+        @RequestParam(required = false, defaultValue = "0") page: Int,
+        @RequestParam(required = false, defaultValue = "20") size: Int,
+        @RequestParam(required = false) sort: String?,
+    ): ResponseEntity<ApiResponse<MonthlySalesDashboardListResponse>> {
+        val request = MonthlySalesDashboardListRequest(
+            year = year, month = month, costCenterCodes = costCenterCodes,
+            accountIds = accountIds ?: emptyList(),
+            accountGroup = accountGroup, customerKeyword = customerKeyword,
+            page = page, size = size, sort = sort,
+        )
+        val response = queryService.getList(scope, request)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 거래처별 명세 엑셀 다운로드. 페이징 미적용 (권한 범위 전체 export). */
+    @RequiresPermission(AdminPermission.MONTHLY_SALES_DASHBOARD_READ)
+    @GetMapping("/list/export")
+    fun exportList(
+        @CurrentDataScope scope: DataScope,
+        @RequestParam year: Int,
+        @RequestParam month: Int,
+        @RequestParam costCenterCodes: List<String>,
+        @RequestParam(required = false) accountIds: List<Int>?,
+        @RequestParam(required = false) accountGroup: String?,
+        @RequestParam(required = false) customerKeyword: String?,
+        @RequestParam(required = false) sort: String?,
+    ): ResponseEntity<ByteArray> {
+        val request = MonthlySalesDashboardListRequest(
+            year = year, month = month, costCenterCodes = costCenterCodes,
+            accountIds = accountIds ?: emptyList(),
+            accountGroup = accountGroup, customerKeyword = customerKeyword,
+            page = 0, size = Int.MAX_VALUE, sort = sort,
+        )
+        val items = queryService.getListForExport(scope, request)
+        val excel = excelExporter.export(year, month, items)
+        return buildExcelResponse(excel)
+    }
+
+    /** 단건 거래처 상세 — 모바일 동등 6 영역. */
+    @RequiresPermission(AdminPermission.MONTHLY_SALES_DASHBOARD_READ)
+    @GetMapping("/detail/{customerId}")
+    fun getDetail(
+        @CurrentDataScope scope: DataScope,
+        @PathVariable customerId: Int,
+        @RequestParam year: Int,
+        @RequestParam month: Int,
+    ): ResponseEntity<ApiResponse<MonthlySalesDashboardDetailResponse>> {
+        val response = queryService.getDetail(scope, customerId, year, month)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    private fun buildExcelResponse(result: MonthlySalesDashboardExcelExporter.ExcelResult): ResponseEntity<ByteArray> {
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
+        return ResponseEntity.ok().headers(headers).body(result.bytes)
+    }
+}
