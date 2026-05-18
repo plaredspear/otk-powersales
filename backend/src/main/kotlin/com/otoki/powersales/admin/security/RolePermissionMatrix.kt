@@ -49,6 +49,7 @@ object RolePermissionMatrix {
             AdminPermission.ATTEND_INFO_READ,
             AdminPermission.ATTEND_INFO_WRITE,
             AdminPermission.ATTEND_INFO_DELETE,
+            AdminPermission.ATTENDANCE_LOG_READ,
         ),
         UserRole.SALES_SUPPORT to setOf(
             AdminPermission.DASHBOARD_READ,
@@ -69,6 +70,7 @@ object RolePermissionMatrix {
             AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE,
             AdminPermission.ATTEND_INFO_READ,
             AdminPermission.ATTEND_INFO_WRITE,
+            AdminPermission.ATTENDANCE_LOG_READ,
         ),
         UserRole.LEADER to setOf(
             AdminPermission.DASHBOARD_READ,

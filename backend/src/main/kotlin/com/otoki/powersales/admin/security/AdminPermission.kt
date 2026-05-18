@@ -29,4 +29,5 @@ enum class AdminPermission {
     ATTEND_INFO_READ,
     ATTEND_INFO_WRITE,
     ATTEND_INFO_DELETE,
+    ATTENDANCE_LOG_READ,
 }
