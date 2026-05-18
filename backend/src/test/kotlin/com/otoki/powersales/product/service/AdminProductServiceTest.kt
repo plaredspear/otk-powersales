@@ -3,9 +3,11 @@ package com.otoki.powersales.product.service
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.product.enums.ProductStatus
 import com.otoki.powersales.product.enums.StorageCondition
+import com.otoki.powersales.product.exception.ProductNotFoundException
 import com.otoki.powersales.product.repository.CategoryRow
 import com.otoki.powersales.product.repository.ProductRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -157,6 +159,37 @@ class AdminProductServiceTest {
             assertThat(result.content).isEmpty()
             assertThat(result.totalElements).isEqualTo(0)
             assertThat(result.totalPages).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("getProductDetail - 제품 상세 조회")
+    inner class GetProductDetailTests {
+
+        @Test
+        @DisplayName("존재하는 제품코드 -> ProductDetail 반환")
+        fun getProductDetail_success() {
+            // Given
+            val product = createProduct(id = 10L, productCode = "P100", name = "꿀배청 680G")
+            whenever(productRepository.findByProductCode(eq("P100"))).thenReturn(product)
+
+            // When
+            val result = adminProductService.getProductDetail("P100")
+
+            // Then
+            assertThat(result.productCode).isEqualTo("P100")
+            assertThat(result.name).isEqualTo("꿀배청 680G")
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 제품코드 -> ProductNotFoundException")
+        fun getProductDetail_notFound() {
+            // Given
+            whenever(productRepository.findByProductCode(eq("X-NONE"))).thenReturn(null)
+
+            // When + Then
+            assertThatThrownBy { adminProductService.getProductDetail("X-NONE") }
+                .isInstanceOf(ProductNotFoundException::class.java)
         }
     }
 

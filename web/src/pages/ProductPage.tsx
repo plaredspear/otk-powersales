@@ -1,12 +1,17 @@
-import { useState } from 'react';
-import { Alert, Button, Input, Select, Table, Tag } from 'antd';
+import { useMemo, useState } from 'react';
+import { Alert, Button, Input, Select, Space, Table, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useNavigate } from 'react-router-dom';
 import { useProducts, useProductCategories } from '@/hooks/product/useProducts';
-import type { Product } from '@/api/product';
+import { downloadProductsExcel, type Product } from '@/api/product';
+import { useProductInventorySearchStore } from '@/stores/productInventorySearchStore';
+import InventorySearchModal from '@/components/product/InventorySearchModal';
+import SelectedProductsCompareModal from '@/components/product/SelectedProductsCompareModal';
 
 const STATUS_TAG: Record<string, string> = {
   판매중: 'green',
   단종: 'red',
+  출고중지: 'red',
 };
 
 const STATUS_OPTIONS = [
@@ -16,14 +21,21 @@ const STATUS_OPTIONS = [
 ];
 
 const PAGE_SIZE = 20;
+const INVENTORY_SEARCH_MAX = 50;
 
 export default function ProductPage() {
+  const navigate = useNavigate();
   const [keyword, setKeyword] = useState<string | undefined>();
   const [category1, setCategory1] = useState<string | undefined>();
   const [category2, setCategory2] = useState<string | undefined>();
   const [category3, setCategory3] = useState<string | undefined>();
   const [productStatus, setProductStatus] = useState<string | undefined>();
   const [page, setPage] = useState(0);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const setInventoryTargets = useProductInventorySearchStore((s) => s.setTargets);
 
   const { data, isLoading, isError, error, refetch } = useProducts({
     keyword,
@@ -41,21 +53,21 @@ export default function ProductPage() {
     ? categories.map((c) => ({ value: c.category1, label: c.category1 }))
     : [];
 
-  const category2Options = (() => {
+  const category2Options = useMemo(() => {
     if (!categories || !category1) return [];
     const node = categories.find((c) => c.category1 === category1);
     if (!node) return [];
     return node.children.map((c) => ({ value: c.category2, label: c.category2 }));
-  })();
+  }, [categories, category1]);
 
-  const category3Options = (() => {
+  const category3Options = useMemo(() => {
     if (!categories || !category1 || !category2) return [];
     const node1 = categories.find((c) => c.category1 === category1);
     if (!node1) return [];
     const node2 = node1.children.find((c) => c.category2 === category2);
     if (!node2) return [];
     return node2.children.map((v) => ({ value: v, label: v }));
-  })();
+  }, [categories, category1, category2]);
 
   const handleCategory1Change = (val: string) => {
     setCategory1(val || undefined);
@@ -70,12 +82,118 @@ export default function ProductPage() {
     setPage(0);
   };
 
+  const selectedProducts = useMemo(() => {
+    if (!data?.content) return [];
+    const keySet = new Set(selectedRowKeys);
+    return data.content.filter((p) => keySet.has(p.productCode ?? ''));
+  }, [data?.content, selectedRowKeys]);
+
+  const handleOpenInventory = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('선택하신 제품이 없습니다. 조회 할 제품을 선택해주세요.');
+      return;
+    }
+    if (selectedRowKeys.length > INVENTORY_SEARCH_MAX) {
+      message.warning(`최대 ${INVENTORY_SEARCH_MAX}건까지만 조회가 가능합니다. 조회 할 제품을 줄여주세요.`);
+      return;
+    }
+    setInventoryTargets(selectedProducts.map((p) => ({
+      productCode: p.productCode ?? '',
+      name: p.name,
+      category1: p.category1,
+      category2: p.category2,
+      unit: p.unit,
+    })));
+    setInventoryModalOpen(true);
+  };
+
+  const handleOpenCompare = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('선택된 제품이 없습니다.');
+      return;
+    }
+    setCompareModalOpen(true);
+  };
+
+  const handleDownloadExcel = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('선택된 제품이 없습니다.');
+      return;
+    }
+    setDownloading(true);
+    try {
+      const blob = await downloadProductsExcel(selectedRowKeys.map(String));
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = '선택제품.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      message.error((err as Error)?.message || '엑셀 다운로드에 실패했습니다');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const columns: ColumnsType<Product> = [
-    { title: '제품코드', dataIndex: 'productCode', width: 110, render: (val: string | null) => val ?? '-' },
-    { title: '제품명', dataIndex: 'name', width: 200, ellipsis: true, render: (val: string | null) => val ?? '-' },
+    {
+      title: '제품코드',
+      dataIndex: 'productCode',
+      width: 110,
+      render: (val: string | null) =>
+        val ? (
+          <a
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/product/${encodeURIComponent(val)}`);
+            }}
+          >
+            {val}
+          </a>
+        ) : (
+          '-'
+        ),
+    },
+    {
+      title: '제품명',
+      dataIndex: 'name',
+      width: 200,
+      ellipsis: true,
+      render: (val: string | null, record) =>
+        val ? (
+          <a
+            onClick={(e) => {
+              e.stopPropagation();
+              if (record.productCode) {
+                navigate(`/product/${encodeURIComponent(record.productCode)}`);
+              }
+            }}
+          >
+            {val}
+          </a>
+        ) : (
+          '-'
+        ),
+    },
     { title: '카테고리1', dataIndex: 'category1', width: 100, render: (val: string | null) => val ?? '-' },
     { title: '카테고리2', dataIndex: 'category2', width: 100, render: (val: string | null) => val ?? '-' },
     { title: '카테고리3', dataIndex: 'category3', width: 100, render: (val: string | null) => val ?? '-' },
+    {
+      title: '보관방법',
+      dataIndex: 'storageCondition',
+      width: 100,
+      render: (val: string | null) => val ?? '-',
+    },
+    { title: '단위', dataIndex: 'unit', width: 60, align: 'center', render: (val: string | null) => val ?? '-' },
+    {
+      title: '출시일',
+      dataIndex: 'launchDate',
+      width: 110,
+      render: (val: string | null) => val ?? '-',
+    },
     {
       title: '표준가(원)',
       dataIndex: 'standardUnitPrice',
@@ -83,7 +201,19 @@ export default function ProductPage() {
       align: 'right',
       render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
     },
-    { title: '단위', dataIndex: 'unit', width: 60, align: 'center', render: (val: string | null) => val ?? '-' },
+    {
+      title: '부가세',
+      dataIndex: 'superTax',
+      width: 80,
+      align: 'right',
+      render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
+    },
+    {
+      title: '유통기한',
+      width: 110,
+      render: (_: unknown, record) =>
+        record.shelfLife ? `${record.shelfLife}${record.shelfLifeUnit ?? ''}` : '-',
+    },
     {
       title: '상태',
       dataIndex: 'productStatus',
@@ -91,6 +221,23 @@ export default function ProductPage() {
       align: 'center',
       render: (val: string | null) =>
         val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
+    },
+    {
+      title: '증정/시식',
+      dataIndex: 'tasteGift',
+      width: 80,
+      align: 'center',
+      render: (val: string | null) => {
+        if (val === '1') return '전용';
+        if (val === '2') return '범용';
+        return val ?? '-';
+      },
+    },
+    {
+      title: '최종수정',
+      dataIndex: 'lastModifiedAt',
+      width: 160,
+      render: (val: string | null) => (val ? val.replace('T', ' ').slice(0, 19) : '-'),
     },
   ];
 
@@ -109,7 +256,6 @@ export default function ProductPage() {
 
   return (
     <div style={{ padding: 16 }}>
-
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select
           style={{ width: 140 }}
@@ -145,12 +291,40 @@ export default function ProductPage() {
         />
       </div>
 
+      <Space style={{ marginBottom: 12 }}>
+        <Button
+          type="primary"
+          disabled={selectedRowKeys.length === 0}
+          onClick={handleOpenInventory}
+        >
+          재고조회 ({selectedRowKeys.length})
+        </Button>
+        <Button
+          disabled={selectedRowKeys.length === 0}
+          onClick={handleOpenCompare}
+        >
+          선택제품 보기 ({selectedRowKeys.length})
+        </Button>
+        <Button
+          disabled={selectedRowKeys.length === 0}
+          loading={downloading}
+          onClick={handleDownloadExcel}
+        >
+          엑셀변환
+        </Button>
+      </Space>
+
       <Table
         rowKey="productCode"
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
         locale={{ emptyText: '검색 결과가 없습니다' }}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
+          preserveSelectedRowKeys: true,
+        }}
         pagination={{
           current: (data?.page ?? 0) + 1,
           total: data?.totalElements ?? 0,
@@ -159,6 +333,18 @@ export default function ProductPage() {
           showTotal: (total) => `총 ${total}건`,
           onChange: (p) => setPage(p - 1),
         }}
+        scroll={{ x: 1500 }}
+      />
+
+      <InventorySearchModal
+        open={inventoryModalOpen}
+        onClose={() => setInventoryModalOpen(false)}
+      />
+
+      <SelectedProductsCompareModal
+        open={compareModalOpen}
+        onClose={() => setCompareModalOpen(false)}
+        products={selectedProducts}
       />
     </div>
   );

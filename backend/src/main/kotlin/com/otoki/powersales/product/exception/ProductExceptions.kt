@@ -21,3 +21,12 @@ class InvalidSearchTypeException : BusinessException(
     message = "유효하지 않은 검색 유형입니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+/**
+ * 제품을 찾을 수 없음
+ */
+class ProductNotFoundException(productCode: String) : BusinessException(
+    errorCode = "PRODUCT_NOT_FOUND",
+    message = "제품을 찾을 수 없습니다: $productCode",
+    httpStatus = HttpStatus.NOT_FOUND
+)
