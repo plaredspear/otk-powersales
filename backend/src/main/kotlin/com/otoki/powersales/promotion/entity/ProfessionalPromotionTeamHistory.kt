@@ -50,7 +50,7 @@ class ProfessionalPromotionTeamHistory(
     @HCColumn("newvalue__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @Column(name = "new_value", nullable = false, length = 255)
-    val newValue: ProfessionalPromotionTeamType,
+    val newValue: ProfessionalPromotionTeamType?,
 
     @SFField("updateTime__c")
     @HCColumn("updatetime__c")

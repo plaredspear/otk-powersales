@@ -79,7 +79,7 @@ data class PPTMasterHistoryResponse(
     val orgName: String?,
     val status: String?,
     val oldValue: ProfessionalPromotionTeamType?,
-    val newValue: ProfessionalPromotionTeamType,
+    val newValue: ProfessionalPromotionTeamType?,
     val changedAt: LocalDateTime
 ) {
     companion object {
