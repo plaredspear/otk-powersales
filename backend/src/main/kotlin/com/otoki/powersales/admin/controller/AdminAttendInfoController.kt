@@ -1,0 +1,77 @@
+package com.otoki.powersales.admin.controller
+
+import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.schedule.dto.request.AdminAttendInfoCreateRequest
+import com.otoki.powersales.schedule.dto.request.AdminAttendInfoSearchRequest
+import com.otoki.powersales.schedule.dto.request.AdminAttendInfoUpdateRequest
+import com.otoki.powersales.schedule.dto.response.AdminAttendInfoDeleteResponse
+import com.otoki.powersales.schedule.dto.response.AdminAttendInfoDetailResponse
+import com.otoki.powersales.schedule.dto.response.AdminAttendInfoListItemResponse
+import com.otoki.powersales.schedule.service.AdminAttendInfoService
+import jakarta.validation.Valid
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.ModelAttribute
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+@RequestMapping("/api/v1/admin/attend-info")
+class AdminAttendInfoController(
+    private val service: AdminAttendInfoService,
+) {
+
+    @GetMapping
+    @RequiresPermission(AdminPermission.ATTEND_INFO_READ)
+    fun list(
+        @ModelAttribute filter: AdminAttendInfoSearchRequest,
+        @RequestParam(name = "page", defaultValue = "0") page: Int,
+        @RequestParam(name = "size", defaultValue = "20") size: Int,
+    ): ResponseEntity<ApiResponse<Page<AdminAttendInfoListItemResponse>>> {
+        val pageable = AdminAttendInfoService.normalizePageable(
+            PageRequest.of(page.coerceAtLeast(0), size.coerceAtLeast(1))
+        )
+        return ResponseEntity.ok(ApiResponse.success(service.search(filter, pageable)))
+    }
+
+    @GetMapping("/{id}")
+    @RequiresPermission(AdminPermission.ATTEND_INFO_READ)
+    fun get(@PathVariable id: Long): ResponseEntity<ApiResponse<AdminAttendInfoDetailResponse>> {
+        return ResponseEntity.ok(ApiResponse.success(service.get(id)))
+    }
+
+    @PostMapping
+    @RequiresPermission(AdminPermission.ATTEND_INFO_WRITE)
+    fun create(
+        @Valid @RequestBody request: AdminAttendInfoCreateRequest,
+    ): ResponseEntity<ApiResponse<AdminAttendInfoDetailResponse>> {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(ApiResponse.success(service.create(request)))
+    }
+
+    @PutMapping("/{id}")
+    @RequiresPermission(AdminPermission.ATTEND_INFO_WRITE)
+    fun update(
+        @PathVariable id: Long,
+        @Valid @RequestBody request: AdminAttendInfoUpdateRequest,
+    ): ResponseEntity<ApiResponse<AdminAttendInfoDetailResponse>> {
+        return ResponseEntity.ok(ApiResponse.success(service.update(id, request)))
+    }
+
+    @DeleteMapping("/{id}")
+    @RequiresPermission(AdminPermission.ATTEND_INFO_DELETE)
+    fun delete(@PathVariable id: Long): ResponseEntity<ApiResponse<AdminAttendInfoDeleteResponse>> {
+        return ResponseEntity.ok(ApiResponse.success(service.delete(id)))
+    }
+}

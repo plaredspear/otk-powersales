@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:58800",
+    "url" : "http://localhost:54770",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1209,6 +1209,93 @@
         }
       }
     },
+    "/api/v1/admin/attend-info/{id}" : {
+      "get" : {
+        "tags" : [ "admin-attend-info-controller" ],
+        "operationId" : "get_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminAttendInfoDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "admin-attend-info-controller" ],
+        "operationId" : "update_2",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminAttendInfoUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminAttendInfoDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "admin-attend-info-controller" ],
+        "operationId" : "delete_2",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminAttendInfoDeleteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/accounts/{id}" : {
       "put" : {
         "tags" : [ "admin-account-controller" ],
@@ -1269,94 +1356,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/sf/oauth/token" : {
-      "post" : {
-        "tags" : [ "sf-token-controller" ],
-        "operationId" : "issueTokenForm",
-        "parameters" : [ {
-          "name" : "Authorization",
-          "in" : "header",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/x-www-form-urlencoded" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "grant_type" : {
-                    "type" : "string"
-                  },
-                  "client_id" : {
-                    "type" : "string"
-                  },
-                  "client_secret" : {
-                    "type" : "string"
-                  },
-                  "scope" : {
-                    "type" : "string"
-                  }
-                }
-              }
-            },
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/TokenRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/TokenResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sf/inbound/monthly-sales-history" : {
-      "post" : {
-        "tags" : [ "sf-monthly-sales-history-controller" ],
-        "summary" : "[SF inbound] 월 매출 이력 적재 (청크 UPSERT)",
-        "description" : "\n            SF Apex 측에서 신규 backend 로 월 매출 이력을 (SAPAccountCode + SalesYearMonth) 기준으로 UPSERT.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **인증**: client_credentials grant 으로 발급받은 token + `scope=sf.write`.\n            **도메인 service**: SAP / SF 공유 (`MonthlySalesHistoryUpsertService`).\n        ",
-        "operationId" : "upsertMonthly",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/SfMonthlySalesHistoryRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SfResultWrapperSfSalesHistoryDetail"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "Bearer" : [ ]
-        } ]
       }
     },
     "/api/v1/sap/system-code" : {
@@ -1482,7 +1481,7 @@
     "/api/v1/sap/oauth/token" : {
       "post" : {
         "tags" : [ "sap-token-controller" ],
-        "operationId" : "issueTokenForm_1",
+        "operationId" : "issueTokenForm",
         "parameters" : [ {
           "name" : "Authorization",
           "in" : "header",
@@ -1539,7 +1538,7 @@
         "tags" : [ "sap-sales-history-controller" ],
         "summary" : "월 매출 이력 적재 (청크 UPSERT)",
         "description" : "\n            SAP 월 매출 이력을 (SAPAccountCode + SalesYearMonth) 기준으로 UPSERT 합니다.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/MonthlySalesHistory`\n            - 레거시 Apex 클래스: `IF_REST_SAP_MonthlySalesHistory`\n        ",
-        "operationId" : "upsertMonthly_1",
+        "operationId" : "upsertMonthly",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1929,7 +1928,7 @@
     "/api/v1/mobile/orders/draft" : {
       "get" : {
         "tags" : [ "order-draft-controller" ],
-        "operationId" : "get_1",
+        "operationId" : "get_2",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -1971,7 +1970,7 @@
       },
       "delete" : {
         "tags" : [ "order-draft-controller" ],
-        "operationId" : "delete_2",
+        "operationId" : "delete_3",
         "responses" : {
           "200" : {
             "description" : "OK"
@@ -2965,63 +2964,6 @@
         }
       }
     },
-    "/api/v1/admin/products/inventory-search" : {
-      "post" : {
-        "tags" : [ "admin-product-controller" ],
-        "operationId" : "searchInventory",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/InventorySearchRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseInventorySearchResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/products/export-excel" : {
-      "post" : {
-        "tags" : [ "admin-product-controller" ],
-        "operationId" : "exportSelectedProductsExcel",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ProductExportRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "string",
-                  "format" : "binary"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/admin/product-expiration" : {
       "get" : {
         "tags" : [ "admin-product-expiration-controller" ],
@@ -4008,6 +3950,76 @@
         }
       }
     },
+    "/api/v1/admin/attend-info" : {
+      "get" : {
+        "tags" : [ "admin-attend-info-controller" ],
+        "operationId" : "list_1",
+        "parameters" : [ {
+          "name" : "filter",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/AdminAttendInfoSearchRequest"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePageAdminAttendInfoListItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "admin-attend-info-controller" ],
+        "operationId" : "create_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminAttendInfoCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminAttendInfoDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/alternative-holidays" : {
       "get" : {
         "tags" : [ "admin-alternative-holiday-controller" ],
@@ -4411,29 +4423,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/sf/inbound/health" : {
-      "get" : {
-        "tags" : [ "sf-inbound-health-controller" ],
-        "summary" : "SF 인바운드 health check",
-        "description" : "SF Apex 가 토큰 발급 + Bearer 인증 + sf.write scope 검증 전체 흐름이 정상 동작하는지 확인.",
-        "operationId" : "health",
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/HealthResponse"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "Bearer" : [ ]
-        } ]
       }
     },
     "/api/v1/mobile/sales/monthly" : {
@@ -6367,274 +6356,6 @@
         }
       }
     },
-    "/api/v1/admin/sap-integration/outbound/outbox-pending" : {
-      "get" : {
-        "tags" : [ "admin-sap-integration-controller" ],
-        "operationId" : "getOutboxPending",
-        "parameters" : [ {
-          "name" : "page",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 1
-          }
-        }, {
-          "name" : "size",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 20
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseSapOutboxPendingListResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/sap-integration/outbound/logs" : {
-      "get" : {
-        "tags" : [ "admin-sap-integration-controller" ],
-        "operationId" : "searchOutboundLogs",
-        "parameters" : [ {
-          "name" : "interfaceId",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "resultCode",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "from",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }, {
-          "name" : "to",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }, {
-          "name" : "page",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 1
-          }
-        }, {
-          "name" : "size",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 20
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseSapOutboundLogListResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/sap-integration/outbound/logs/{id}" : {
-      "get" : {
-        "tags" : [ "admin-sap-integration-controller" ],
-        "operationId" : "getOutboundLogDetail",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseSapOutboundLogDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/sap-integration/outbound/catalog" : {
-      "get" : {
-        "tags" : [ "admin-sap-integration-controller" ],
-        "operationId" : "getOutboundCatalog",
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListSapOutboundCatalogItemDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/sap-integration/inbound/catalog" : {
-      "get" : {
-        "tags" : [ "admin-sap-integration-controller" ],
-        "operationId" : "getInboundCatalog",
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListSapInboundCatalogItemDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/sap-integration/inbound/audits" : {
-      "get" : {
-        "tags" : [ "admin-sap-integration-controller" ],
-        "operationId" : "searchInboundAudits",
-        "parameters" : [ {
-          "name" : "clientId",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "eventType",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "endpoint",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "from",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }, {
-          "name" : "to",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }, {
-          "name" : "page",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 1
-          }
-        }, {
-          "name" : "size",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 20
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseSapInboundAuditListResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/sap-integration/inbound/audits/{id}" : {
-      "get" : {
-        "tags" : [ "admin-sap-integration-controller" ],
-        "operationId" : "getInboundAuditDetail",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseSapInboundAuditDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/admin/safety-check/status" : {
       "get" : {
         "tags" : [ "admin-safety-check-controller" ],
@@ -6792,32 +6513,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseProductListResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/products/{productCode}" : {
-      "get" : {
-        "tags" : [ "admin-product-controller" ],
-        "operationId" : "getProductDetail",
-        "parameters" : [ {
-          "name" : "productCode",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseProductDetail"
                 }
               }
             }
@@ -7355,7 +7050,7 @@
     "/api/health" : {
       "get" : {
         "tags" : [ "health-controller" ],
-        "operationId" : "health_1",
+        "operationId" : "health",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -7501,12 +7196,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
-          "expired" : {
-            "type" : "boolean"
-          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "expired" : {
+            "type" : "boolean"
           }
         }
       },
@@ -8171,10 +7866,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -9155,6 +8850,169 @@
           }
         }
       },
+      "AdminAttendInfoUpdateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "attendType" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : [ "string", "null" ]
+          },
+          "reason" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 2147483647,
+            "minLength" : 5
+          }
+        }
+      },
+      "AdminAttendInfoDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeJobCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "attendType" : {
+            "type" : [ "string", "null" ]
+          },
+          "attendTypeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : "string"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lastModifiedByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "linkedScheduleCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "linkedSchedules" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LinkedSchedulePreview"
+            }
+          },
+          "conversionSummary" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ScheduleConversionSummary"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        }
+      },
+      "ApiResponseAdminAttendInfoDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminAttendInfoDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "LinkedSchedulePreview" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "workingDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "workingType" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ScheduleConversionSummary" : {
+        "type" : "object",
+        "properties" : {
+          "convertedScheduleCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "deletedScheduleCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "skippedEmployeeNotFound" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "skippedJobFilter" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "skippedAttendTypeFilter" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "skippedIdempotent" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "AdminAccountUpdateRequest" : {
         "type" : "object",
         "properties" : {
@@ -9534,151 +9392,6 @@
           }
         }
       },
-      "TokenResponse" : {
-        "type" : "object",
-        "properties" : {
-          "access_token" : {
-            "type" : "string"
-          },
-          "token_type" : {
-            "type" : "string"
-          },
-          "expires_in" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "scope" : {
-            "type" : "string"
-          }
-        }
-      },
-      "TokenRequest" : {
-        "type" : "object",
-        "properties" : {
-          "grant_type" : {
-            "type" : "string"
-          },
-          "client_id" : {
-            "type" : "string"
-          },
-          "client_secret" : {
-            "type" : "string"
-          },
-          "scope" : {
-            "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "SfMonthlySalesHistoryRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/SfMonthlySalesHistoryRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "SfMonthlySalesHistoryRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "SAPAccountCode" : {
-            "type" : "string"
-          },
-          "SalesYearMonth" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount1" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount2" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount3" : {
-            "type" : "string"
-          },
-          "TotalLedgerAmount" : {
-            "type" : "string"
-          },
-          "ShipClosingAmount" : {
-            "type" : "string"
-          },
-          "rlsales" : {
-            "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "SfChunkResult" : {
-        "type" : "object",
-        "properties" : {
-          "index" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "status" : {
-            "type" : "string"
-          },
-          "count" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "reason" : {
-            "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "SfFailureItem" : {
-        "type" : "object",
-        "properties" : {
-          "identifier" : {
-            "type" : [ "string", "null" ]
-          },
-          "reason" : {
-            "type" : "string"
-          }
-        }
-      },
-      "SfResultWrapperSfSalesHistoryDetail" : {
-        "type" : "object",
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/SfSalesHistoryDetail"
-          }
-        }
-      },
-      "SfSalesHistoryDetail" : {
-        "type" : "object",
-        "properties" : {
-          "successCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failureCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failures" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SfFailureItem"
-            }
-          },
-          "chunks" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SfChunkResult"
-            }
-          }
-        }
-      },
       "SystemCodeMasterRequest" : {
         "type" : "object",
         "properties" : {
@@ -9959,6 +9672,41 @@
           },
           "RESULT_DETAIL" : {
             "$ref" : "#/components/schemas/OrganizeMasterDetail"
+          }
+        }
+      },
+      "TokenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "access_token" : {
+            "type" : "string"
+          },
+          "token_type" : {
+            "type" : "string"
+          },
+          "expires_in" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "scope" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TokenRequest" : {
+        "type" : "object",
+        "properties" : {
+          "grant_type" : {
+            "type" : "string"
+          },
+          "client_id" : {
+            "type" : "string"
+          },
+          "client_secret" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : [ "string", "null" ]
           }
         }
       },
@@ -10531,35 +10279,6 @@
           },
           "RESULT_DETAIL" : {
             "$ref" : "#/components/schemas/AttendInfoDetail"
-          }
-        }
-      },
-      "ScheduleConversionSummary" : {
-        "type" : "object",
-        "properties" : {
-          "convertedScheduleCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "deletedScheduleCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "skippedEmployeeNotFound" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "skippedJobFilter" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "skippedAttendTypeFilter" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "skippedIdempotent" : {
-            "type" : "integer",
-            "format" : "int32"
           }
         }
       },
@@ -12365,110 +12084,6 @@
           }
         }
       },
-      "InventorySearchRequest" : {
-        "type" : "object",
-        "properties" : {
-          "accountId" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "productCodes" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "type" : "string"
-            },
-            "maxItems" : 50,
-            "minItems" : 0
-          },
-          "deliveryRequestDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          }
-        },
-        "required" : [ "accountId", "deliveryRequestDate", "productCodes" ]
-      },
-      "ApiResponseInventorySearchResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/InventorySearchResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "InventorySearchResponse" : {
-        "type" : "object",
-        "properties" : {
-          "results" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/InventorySearchResultItem"
-            }
-          }
-        }
-      },
-      "InventorySearchResultItem" : {
-        "type" : "object",
-        "properties" : {
-          "productCode" : {
-            "type" : "string"
-          },
-          "productName" : {
-            "type" : [ "string", "null" ]
-          },
-          "unit" : {
-            "type" : [ "string", "null" ]
-          },
-          "conversionQuantity" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "supplyLimitQuantity" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "unitPrice" : {
-            "type" : "number"
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "ProductExportRequest" : {
-        "type" : "object",
-        "properties" : {
-          "productCodes" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "type" : "string"
-            },
-            "maxItems" : 200,
-            "minItems" : 0
-          }
-        },
-        "required" : [ "productCodes" ]
-      },
       "AdminProductExpirationCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -13670,6 +13285,37 @@
           }
         }
       },
+      "AdminAttendInfoCreateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "employeeCode" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "attendType" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "startDate" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "endDate" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "status" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "reason" : {
+            "type" : "string",
+            "maxLength" : 2147483647,
+            "minLength" : 5
+          }
+        },
+        "required" : [ "attendType", "employeeCode", "endDate", "reason", "startDate", "status" ]
+      },
       "AlternativeHolidayCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -14132,21 +13778,6 @@
           },
           "usedAnnualLeave" : {
             "type" : [ "number", "null" ]
-          }
-        }
-      },
-      "HealthResponse" : {
-        "type" : "object",
-        "properties" : {
-          "status" : {
-            "type" : "string"
-          },
-          "scope" : {
-            "type" : "string"
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
           }
         }
       },
@@ -14793,9 +14424,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "first" : {
             "type" : "boolean"
@@ -14803,11 +14436,9 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -14831,22 +14462,22 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
           "unpaged" : {
             "type" : "boolean"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "offset" : {
             "type" : "integer",
@@ -14883,10 +14514,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -18193,9 +17824,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "first" : {
             "type" : "boolean"
@@ -18203,11 +17836,9 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -18273,534 +17904,6 @@
           "lastMonthRevenue" : {
             "type" : [ "integer", "null" ],
             "format" : "int64"
-          }
-        }
-      },
-      "ApiResponseSapOutboxPendingListResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/SapOutboxPendingListResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "SapOutboxPendingListResponse" : {
-        "type" : "object",
-        "properties" : {
-          "items" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SapOutboxPendingRow"
-            }
-          },
-          "totalCount" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "currentPage" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }
-      },
-      "SapOutboxPendingRow" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "domainType" : {
-            "type" : "string"
-          },
-          "aggregateId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "interfaceId" : {
-            "type" : "string"
-          },
-          "status" : {
-            "type" : "string"
-          },
-          "retryCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "lastError" : {
-            "type" : [ "string", "null" ]
-          },
-          "createdAt" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time"
-          },
-          "sentAt" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time"
-          }
-        }
-      },
-      "ApiResponseSapOutboundLogListResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/SapOutboundLogListResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "SapOutboundLogListResponse" : {
-        "type" : "object",
-        "properties" : {
-          "items" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SapOutboundLogRow"
-            }
-          },
-          "totalCount" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "currentPage" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }
-      },
-      "SapOutboundLogRow" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "interfaceId" : {
-            "type" : "string"
-          },
-          "endpointPath" : {
-            "type" : "string"
-          },
-          "requestCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "httpStatus" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "resultCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "resultMsg" : {
-            "type" : [ "string", "null" ]
-          },
-          "attemptCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "durationMs" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "requestedAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "completedAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "ApiResponseSapOutboundLogDetail" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/SapOutboundLogDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "SapOutboundLogDetail" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "interfaceId" : {
-            "type" : "string"
-          },
-          "endpointPath" : {
-            "type" : "string"
-          },
-          "requestCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "httpStatus" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "resultCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "resultMsg" : {
-            "type" : [ "string", "null" ]
-          },
-          "attemptCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "durationMs" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "errorDetail" : {
-            "type" : [ "string", "null" ]
-          },
-          "requestedAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "completedAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "ApiResponseListSapOutboundCatalogItemDto" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/SapOutboundCatalogItemDto"
-            }
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "SapOutboundCatalogItemDto" : {
-        "type" : "object",
-        "properties" : {
-          "interfaceId" : {
-            "type" : "string"
-          },
-          "koreanName" : {
-            "type" : "string"
-          },
-          "triggerType" : {
-            "type" : "string",
-            "enum" : [ "BATCH", "REALTIME", "OUTBOX" ]
-          },
-          "senderClass" : {
-            "type" : "string"
-          },
-          "description" : {
-            "type" : "string"
-          }
-        }
-      },
-      "ApiResponseListSapInboundCatalogItemDto" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/SapInboundCatalogItemDto"
-            }
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "SapInboundCatalogItemDto" : {
-        "type" : "object",
-        "properties" : {
-          "endpointPath" : {
-            "type" : "string"
-          },
-          "koreanName" : {
-            "type" : "string"
-          },
-          "requiredScope" : {
-            "type" : "string"
-          },
-          "targetEntity" : {
-            "type" : "string"
-          },
-          "controllerClass" : {
-            "type" : "string"
-          },
-          "description" : {
-            "type" : "string"
-          }
-        }
-      },
-      "ApiResponseSapInboundAuditListResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/SapInboundAuditListResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "SapInboundAuditListResponse" : {
-        "type" : "object",
-        "properties" : {
-          "items" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SapInboundAuditRow"
-            }
-          },
-          "totalCount" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "currentPage" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }
-      },
-      "SapInboundAuditRow" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "eventType" : {
-            "type" : "string"
-          },
-          "clientId" : {
-            "type" : [ "string", "null" ]
-          },
-          "endpoint" : {
-            "type" : [ "string", "null" ]
-          },
-          "httpMethod" : {
-            "type" : [ "string", "null" ]
-          },
-          "clientIp" : {
-            "type" : "string"
-          },
-          "scope" : {
-            "type" : [ "string", "null" ]
-          },
-          "receivedCount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "previousCount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "reason" : {
-            "type" : [ "string", "null" ]
-          },
-          "createdAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "ApiResponseSapInboundAuditDetail" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/SapInboundAuditDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "SapInboundAuditDetail" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "eventType" : {
-            "type" : "string"
-          },
-          "clientId" : {
-            "type" : [ "string", "null" ]
-          },
-          "endpoint" : {
-            "type" : [ "string", "null" ]
-          },
-          "httpMethod" : {
-            "type" : [ "string", "null" ]
-          },
-          "clientIp" : {
-            "type" : "string"
-          },
-          "scope" : {
-            "type" : [ "string", "null" ]
-          },
-          "receivedCount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "previousCount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "reason" : {
-            "type" : [ "string", "null" ]
-          },
-          "createdAt" : {
-            "type" : "string",
-            "format" : "date-time"
           }
         }
       },
@@ -18870,10 +17973,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -19191,21 +18294,6 @@
           },
           "launchDate" : {
             "type" : [ "string", "null" ]
-          },
-          "superTax" : {
-            "type" : [ "number", "null" ]
-          },
-          "shelfLife" : {
-            "type" : [ "string", "null" ]
-          },
-          "shelfLifeUnit" : {
-            "type" : [ "string", "null" ]
-          },
-          "tasteGift" : {
-            "type" : [ "string", "null" ]
-          },
-          "lastModifiedAt" : {
-            "type" : [ "string", "null" ]
           }
         }
       },
@@ -19233,156 +18321,6 @@
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
-          }
-        }
-      },
-      "ApiResponseProductDetail" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ProductDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "ProductDetail" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "productCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "name" : {
-            "type" : [ "string", "null" ]
-          },
-          "barcode" : {
-            "type" : [ "string", "null" ]
-          },
-          "logisticsBarcode" : {
-            "type" : [ "string", "null" ]
-          },
-          "category1" : {
-            "type" : [ "string", "null" ]
-          },
-          "category2" : {
-            "type" : [ "string", "null" ]
-          },
-          "category3" : {
-            "type" : [ "string", "null" ]
-          },
-          "categoryCode1" : {
-            "type" : [ "string", "null" ]
-          },
-          "categoryCode2" : {
-            "type" : [ "string", "null" ]
-          },
-          "categoryCode3" : {
-            "type" : [ "string", "null" ]
-          },
-          "unit" : {
-            "type" : [ "string", "null" ]
-          },
-          "orderingUnit" : {
-            "type" : [ "string", "null" ]
-          },
-          "conversionQuantity" : {
-            "type" : [ "number", "null" ],
-            "format" : "double"
-          },
-          "boxReceivingQuantity" : {
-            "type" : [ "number", "null" ]
-          },
-          "standardUnitPrice" : {
-            "type" : [ "number", "null" ]
-          },
-          "superTax" : {
-            "type" : [ "number", "null" ]
-          },
-          "launchDate" : {
-            "type" : [ "string", "null" ]
-          },
-          "storageCondition" : {
-            "type" : [ "string", "null" ]
-          },
-          "productStatus" : {
-            "type" : [ "string", "null" ]
-          },
-          "productType" : {
-            "type" : [ "string", "null" ]
-          },
-          "shelfLife" : {
-            "type" : [ "string", "null" ]
-          },
-          "shelfLifeUnit" : {
-            "type" : [ "string", "null" ]
-          },
-          "tasteGift" : {
-            "type" : [ "string", "null" ]
-          },
-          "productFeatures" : {
-            "type" : [ "string", "null" ]
-          },
-          "sellingPoint" : {
-            "type" : [ "string", "null" ]
-          },
-          "purpose" : {
-            "type" : [ "string", "null" ]
-          },
-          "targetAccountType" : {
-            "type" : [ "string", "null" ]
-          },
-          "allergen" : {
-            "type" : [ "string", "null" ]
-          },
-          "crossContamination" : {
-            "type" : [ "string", "null" ]
-          },
-          "imgRefPathFront" : {
-            "type" : [ "string", "null" ]
-          },
-          "imgRefPathBack" : {
-            "type" : [ "string", "null" ]
-          },
-          "pallet" : {
-            "type" : [ "number", "null" ]
-          },
-          "manufacture" : {
-            "type" : [ "string", "null" ]
-          },
-          "manufactureDetail" : {
-            "type" : [ "string", "null" ]
-          },
-          "claimManagement" : {
-            "type" : [ "string", "null" ]
-          },
-          "createdAt" : {
-            "type" : "string"
-          },
-          "lastModifiedAt" : {
-            "type" : "string"
           }
         }
       },
@@ -20746,6 +19684,153 @@
           }
         }
       },
+      "AdminAttendInfoSearchRequest" : {
+        "type" : "object",
+        "properties" : {
+          "employeeId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "attendType" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDateFrom" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "startDateTo" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "status" : {
+            "type" : [ "string", "null" ]
+          },
+          "keyword" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "AdminAttendInfoListItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeJobCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "attendType" : {
+            "type" : [ "string", "null" ]
+          },
+          "attendTypeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : "string"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdByName" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ApiResponsePageAdminAttendInfoListItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PageAdminAttendInfoListItemResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "PageAdminAttendInfoListItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AdminAttendInfoListItemResponse"
+            }
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "empty" : {
+            "type" : "boolean"
+          }
+        }
+      },
       "AnnualLeaveDayDto" : {
         "type" : "object",
         "properties" : {
@@ -20933,6 +20018,44 @@
           }
         }
       },
+      "Components" : {
+        "type" : "object",
+        "properties" : {
+          "db" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Indicator"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "redis" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Indicator"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        }
+      },
+      "HealthResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "string"
+          },
+          "components" : {
+            "$ref" : "#/components/schemas/Components"
+          }
+        }
+      },
+      "Indicator" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "string"
+          }
+        }
+      },
       "PromotionScheduleBulkDeleteRequest" : {
         "type" : "object",
         "properties" : {
@@ -20983,6 +20106,44 @@
           "deletedCount" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "AdminAttendInfoDeleteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "deletedScheduleCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ApiResponseAdminAttendInfoDeleteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminAttendInfoDeleteResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       }

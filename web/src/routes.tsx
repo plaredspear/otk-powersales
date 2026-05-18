@@ -40,6 +40,7 @@ const HolidayMasterListPage = lazy(() => import('@/pages/holiday-masters/Holiday
 const EmployeeInputCriteriaMasterListPage = lazy(
   () => import('@/pages/employee-input-criteria-masters/EmployeeInputCriteriaMasterListPage'),
 );
+const AttendInfoPage = lazy(() => import('@/pages/attend-info/AttendInfoPage'));
 const MonthlyIntegrationSchedulePage = lazy(() => import('@/pages/schedules/MonthlyIntegrationSchedulePage'));
 const CategorySchedulePage = lazy(() => import('@/pages/schedules/CategorySchedulePage'));
 const MonthlyInputAdequacyPage = lazy(() => import('@/pages/MonthlyInputAdequacyPage'));
@@ -95,6 +96,12 @@ export const router = createBrowserRouter(
             { path: '/schedule', element: <LazyWrapper><SchedulePage /></LazyWrapper> },
             { path: '/deployment', element: <LazyWrapper><DeploymentPage /></LazyWrapper> },
             { path: '/attendance', element: <LazyWrapper><AttendancePage /></LazyWrapper> },
+            {
+              element: <PermissionRoute requiredPermission="ATTEND_INFO_READ" />,
+              children: [
+                { path: '/attend-info', element: <LazyWrapper><AttendInfoPage /></LazyWrapper> },
+              ],
+            },
             { path: '/claims', element: <LazyWrapper><ClaimListPage /></LazyWrapper> },
             { path: '/claims/:claimId', element: <LazyWrapper><ClaimDetailPage /></LazyWrapper> },
             { path: '/suggestion', element: <LazyWrapper><SuggestionPage /></LazyWrapper> },

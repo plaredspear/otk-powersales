@@ -43,22 +43,22 @@ class AttendInfo(
     @SFField("StartDate__c")
     @HCColumn("startdate__c")
     @Column(name = "start_date", nullable = false, length = 100)
-    val startDate: String,
+    var startDate: String,
 
     @SFField("EndDate__c")
     @HCColumn("enddate__c")
     @Column(name = "end_date", length = 100)
-    val endDate: String? = null,
+    var endDate: String? = null,
 
     @SFField("AttendType__c")
     @HCColumn("attendtype__c")
     @Column(name = "attend_type", length = 100)
-    val attendType: String? = null,
+    var attendType: String? = null,
 
     @SFField("Status__c")
     @HCColumn("status__c")
     @Column(name = "status", length = 100)
-    val status: String? = null,
+    var status: String? = null,
 
     @SFField("OwnerId")
     @HCColumn("ownerid")

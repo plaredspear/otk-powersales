@@ -46,6 +46,9 @@ object RolePermissionMatrix {
             AdminPermission.EMPLOYEE_INPUT_CRITERIA_READ,
             AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE,
             AdminPermission.SAP_INTEGRATION_READ,
+            AdminPermission.ATTEND_INFO_READ,
+            AdminPermission.ATTEND_INFO_WRITE,
+            AdminPermission.ATTEND_INFO_DELETE,
         ),
         UserRole.SALES_SUPPORT to setOf(
             AdminPermission.DASHBOARD_READ,
@@ -64,6 +67,8 @@ object RolePermissionMatrix {
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
             AdminPermission.EMPLOYEE_INPUT_CRITERIA_READ,
             AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE,
+            AdminPermission.ATTEND_INFO_READ,
+            AdminPermission.ATTEND_INFO_WRITE,
         ),
         UserRole.LEADER to setOf(
             AdminPermission.DASHBOARD_READ,
