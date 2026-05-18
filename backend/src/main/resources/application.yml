@@ -185,6 +185,10 @@ app:
       display:
         cron: ${APP_SAP_OUTBOUND_DISPLAY_CRON:0 0 1 * * *}
         page-size: ${APP_SAP_OUTBOUND_DISPLAY_PAGE_SIZE:100}
+      ppt-master:
+        # Spec #765 — 매시간 34분 0초 KST (SF Scheduled Jobs `IF_REST_SAP_PPTMToSAP` 운영 실측 정합)
+        cron: ${APP_SAP_OUTBOUND_PPT_MASTER_CRON:0 34 * * * ?}
+        page-size: ${APP_SAP_OUTBOUND_PPT_MASTER_PAGE_SIZE:100}
 
   # ---------------------------------------------------------------------------
   # Account Naver Geocode 보강 daily batch (Spec #637)
