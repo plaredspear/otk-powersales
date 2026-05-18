@@ -18,6 +18,7 @@ const SuggestionPage = lazy(() => import('@/pages/SuggestionPage'));
 const LeavePage = lazy(() => import('@/pages/LeavePage'));
 const SafetyCheckPage = lazy(() => import('@/pages/SafetyCheckPage'));
 const ProductPage = lazy(() => import('@/pages/ProductPage'));
+const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'));
 const AccountPage = lazy(() => import('@/pages/AccountPage'));
 const EmployeePage = lazy(() => import('@/pages/EmployeePage'));
 const EmployeeDetailPage = lazy(() => import('@/pages/EmployeeDetailPage'));
@@ -99,6 +100,7 @@ export const router = createBrowserRouter(
             { path: '/suggestion', element: <LazyWrapper><SuggestionPage /></LazyWrapper> },
             { path: '/leave', element: <LazyWrapper><LeavePage /></LazyWrapper> },
             { path: '/product', element: <LazyWrapper><ProductPage /></LazyWrapper> },
+            { path: '/product/:productCode', element: <LazyWrapper><ProductDetailPage /></LazyWrapper> },
             { path: '/field-inspection', element: <LazyWrapper><FieldInspectionPage /></LazyWrapper> },
             { path: '/report', element: <LazyWrapper><ReportPage /></LazyWrapper> },
             { path: '/notices', element: <LazyWrapper><NoticeListPage /></LazyWrapper> },
