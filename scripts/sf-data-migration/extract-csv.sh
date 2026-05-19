@@ -298,7 +298,7 @@ SELECT
     OrderEndTime__c, FirstInstalled__c,
     Description, Website, Fax,
     AnnualRevenue, NumberOfEmployees,
-    ParentId, Rating, Ownership, IsPriorityRecord,
+    ParentId, Rating, Ownership,
     OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM Account
 WHERE IsDeleted = FALSE
