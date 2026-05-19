@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50069",
+    "url" : "http://localhost:65440",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -11952,9 +11952,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "first" : {
             "type" : "boolean"
@@ -11962,11 +11964,9 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -12064,10 +12064,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -15381,9 +15381,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "first" : {
             "type" : "boolean"
@@ -15391,11 +15393,9 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -15648,9 +15648,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "first" : {
             "type" : "boolean"
@@ -15658,11 +15660,9 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
