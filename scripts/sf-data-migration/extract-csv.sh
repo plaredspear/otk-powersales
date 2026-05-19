@@ -686,7 +686,7 @@ EOF
 
 GROUP_SOQL=$(cat <<'EOF'
 SELECT
-    Id, Name, DeveloperName, Type, RelatedId, OwnerId, Description,
+    Id, Name, DeveloperName, Type, RelatedId, OwnerId,
     Email, DoesSendEmailToMembers, DoesIncludeBosses,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM Group

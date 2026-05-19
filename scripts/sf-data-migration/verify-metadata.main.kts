@@ -49,9 +49,10 @@ val EXPECTED_META_ONLY: Set<String> = setOf(
 
 val EXPECTED_ENTITY_ONLY: Set<String> = setOf(
     "User:IsDeleted",
-    // SF Account 에 정의는 되어 있으나 운영 org 에서 SOQL queryable 이 아님 (export 실패).
+    // SF describe 에는 정의되어 있으나 운영 org 에서 SOQL 거부 (export 실패).
     // entity / DB 컬럼 / common.kts METADATA 는 SF 정합 유지, SOQL 만 우회.
-    "Account:IsPriorityRecord"
+    "Account:IsPriorityRecord",
+    "Group:Description"
 )
 
 val SF_FIELD_REGEX = Regex("""@SFField\("([^"]+)"\)""")
