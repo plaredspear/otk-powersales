@@ -153,7 +153,7 @@ class ScheduledJobRunnerIntegrationTest {
         @DisplayName("90일 초과 row 삭제 - cleanup 자기 row 1건만 SUCCESS 로 남고 metadata.deleted 기록")
         fun cleanupRemovesExpiredRows() {
             // 90일을 초과한 오래된 row 5건을 직접 INSERT (Runner 우회)
-            val oldThreshold = LocalDateTime.now().minusDays(ScheduledJobRunner.RETENTION_DAYS + 1)
+            val oldThreshold = LocalDateTime.now().minus(ScheduledJobRunner.RETENTION_DAYS + 1, java.time.temporal.ChronoUnit.DAYS)
             repeat(5) {
                 repository.save(
                     ScheduledJobRun(
@@ -166,7 +166,7 @@ class ScheduledJobRunnerIntegrationTest {
                 )
             }
             // 보존 기간 이내(최근) row 1건도 추가 — 삭제 대상이 아님을 검증
-            val recent = LocalDateTime.now().minusDays(1)
+            val recent = LocalDateTime.now().minus(1, java.time.temporal.ChronoUnit.DAYS)
             repository.save(
                 ScheduledJobRun(
                     jobName = "recent.job",

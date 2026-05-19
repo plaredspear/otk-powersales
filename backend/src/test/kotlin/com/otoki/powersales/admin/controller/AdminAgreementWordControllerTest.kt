@@ -102,7 +102,7 @@ class AdminAgreementWordControllerTest {
                 afterActiveDate = futureDate,
                 active = false,
                 activeDate = null,
-                createdAt = LocalDateTime.of(2026, 5, 11, 14, 23, 51)
+                createdAt = java.time.LocalDateTime.of(2026, 5, 11, 14, 23, 51)
             )
             whenever(adminAgreementWordService.createAgreementWord(any())).thenReturn(response)
 
@@ -212,7 +212,7 @@ class AdminAgreementWordControllerTest {
                 afterActiveDate = futureDate,
                 active = false,
                 activeDate = null,
-                createdAt = LocalDateTime.of(2026, 5, 11, 14, 23, 51)
+                createdAt = java.time.LocalDateTime.of(2026, 5, 11, 14, 23, 51)
             )
             whenever(adminAgreementWordService.createAgreementWord(any())).thenReturn(response)
 
@@ -266,7 +266,7 @@ class AdminAgreementWordControllerTest {
                 afterActiveDate = futureDate,
                 active = false,
                 activeDate = null,
-                createdAt = LocalDateTime.of(2026, 5, 11, 14, 23, 51)
+                createdAt = java.time.LocalDateTime.of(2026, 5, 11, 14, 23, 51)
             )
             whenever(adminAgreementWordService.createAgreementWord(any())).thenReturn(response)
 

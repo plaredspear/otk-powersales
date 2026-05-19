@@ -118,7 +118,7 @@ class OrderRequestCreatePostTest {
     @DisplayName("입력 검증 실패 — 라인 누락 시 400")
     fun emptyLines() {
         val invalidJson = """
-            {"accountId": 5678, "deliveryDate": "${LocalDate.now().plusDays(2)}", "totalAmount": 1, "lines": []}
+            {"accountId": 5678, "deliveryDate": "${LocalDate.now().plus(2, java.time.temporal.ChronoUnit.DAYS)}", "totalAmount": 1, "lines": []}
         """.trimIndent()
 
         mockMvc.perform(
@@ -131,7 +131,7 @@ class OrderRequestCreatePostTest {
 
     private fun sampleRequest() = OrderRequestCreateRequest(
         accountId = 5678L,
-        deliveryDate = LocalDate.now().plusDays(2),
+        deliveryDate = LocalDate.now().plus(2, java.time.temporal.ChronoUnit.DAYS),
         totalAmount = 100_000L,
         lines = listOf(
             OrderRequestCreateLine(

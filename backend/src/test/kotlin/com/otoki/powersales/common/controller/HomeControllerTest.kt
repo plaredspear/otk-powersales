@@ -72,7 +72,7 @@ class HomeControllerTest {
         @DisplayName("여사원 홈 조회 성공 - role=USER, 안전점검 필요, 출근현황 포함")
         fun getHomeData_user_success() {
             // Given
-            val commuteTime = LocalDateTime.of(2026, 2, 25, 8, 30, 0)
+            val commuteTime = java.time.LocalDateTime.of(2026, 2, 25, 8, 30, 0)
             val mockResponse = HomeResponse(
                 todaySchedules = listOf(
                     HomeResponse.TeamMemberScheduleInfo(
@@ -104,14 +104,14 @@ class HomeControllerTest {
                         title = "2월 영업 목표 달성 현황",
                         category = "BRANCH",
                         categoryName = "지점공지",
-                        createdAt = LocalDateTime.of(2026, 2, 5, 10, 0, 0)
+                        createdAt = java.time.LocalDateTime.of(2026, 2, 5, 10, 0, 0)
                     ),
                     HomeResponse.NoticeInfo(
                         id = 2L,
                         title = "신제품 출시 안내",
                         category = "COMPANY",
                         categoryName = "회사공지",
-                        createdAt = LocalDateTime.of(2026, 2, 4, 9, 0, 0)
+                        createdAt = java.time.LocalDateTime.of(2026, 2, 4, 9, 0, 0)
                     )
                 ),
                 currentDate = "2026-02-25"
@@ -175,7 +175,7 @@ class HomeControllerTest {
             )
             SecurityContextHolder.getContext().authentication = leaderAuth
 
-            val commuteTime1 = LocalDateTime.of(2026, 2, 25, 8, 15, 0)
+            val commuteTime1 = java.time.LocalDateTime.of(2026, 2, 25, 8, 15, 0)
             val mockResponse = HomeResponse(
                 todaySchedules = listOf(
                     HomeResponse.TeamMemberScheduleInfo(
@@ -224,7 +224,7 @@ class HomeControllerTest {
                         title = "3월 근태 관리 안내",
                         category = "COMPANY",
                         categoryName = "회사공지",
-                        createdAt = LocalDateTime.of(2026, 2, 24, 14, 0, 0)
+                        createdAt = java.time.LocalDateTime.of(2026, 2, 24, 14, 0, 0)
                     )
                 ),
                 currentDate = "2026-02-25"

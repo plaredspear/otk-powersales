@@ -59,7 +59,7 @@ class EducationServiceTest {
             eduCode = "TASTING_MANUAL",
             empCode = "10000001"
         ).apply {
-            createdAt = LocalDateTime.of(2020, 8, 10, 0, 0, 0)
+            createdAt = java.time.LocalDateTime.of(2020, 8, 10, 0, 0, 0)
         }
     }
 
@@ -94,7 +94,7 @@ class EducationServiceTest {
             assertThat(result.size).isEqualTo(10)
             assertThat(result.content[0].id).isEqualTo("EDU001")
             assertThat(result.content[0].title).isEqualTo("진짬뽕 시식 매뉴얼")
-            assertThat(result.content[0].createdAt).isEqualTo("2020-08-10T00:00:00")
+            assertThat(result.content[0].createdAt).isEqualTo(java.time.LocalDateTime.parse("2020-08-10T00:00:00"))
         }
 
         @Test
@@ -200,7 +200,7 @@ class EducationServiceTest {
             assertThat(result.categoryName).isEqualTo("시식 매뉴얼")
             assertThat(result.title).isEqualTo("진짬뽕 시식 매뉴얼")
             assertThat(result.content).isEqualTo("진짬뽕 시식 방법을 안내합니다.")
-            assertThat(result.createdAt).isEqualTo("2020-08-10T00:00:00")
+            assertThat(result.createdAt).isEqualTo(java.time.LocalDateTime.parse("2020-08-10T00:00:00"))
             assertThat(result.attachments).hasSize(1)
             assertThat(result.attachments[0].fileName).isEqualTo("guide.pdf")
         }

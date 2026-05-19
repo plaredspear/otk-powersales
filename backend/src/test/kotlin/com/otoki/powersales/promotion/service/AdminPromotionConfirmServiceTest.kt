@@ -49,8 +49,8 @@ class AdminPromotionConfirmServiceTest {
             val promotion = createPromotion()
             val employees = listOf(
                 createPE(id = 1L, employeeId = 1L, scheduleDate = startDate),
-                createPE(id = 2L, employeeId = 2L, scheduleDate = startDate.plusDays(1)),
-                createPE(id = 3L, employeeId = 3L, scheduleDate = startDate.plusDays(2))
+                createPE(id = 2L, employeeId = 2L, scheduleDate = startDate.plus(1, java.time.temporal.ChronoUnit.DAYS)),
+                createPE(id = 3L, employeeId = 3L, scheduleDate = startDate.plus(2, java.time.temporal.ChronoUnit.DAYS))
             )
 
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
@@ -276,7 +276,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_dateAfterEnd() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeId = 1L, scheduleDate = endDate.plusDays(1))
+                createPE(id = 1L, employeeId = 1L, scheduleDate = endDate.plus(1, java.time.temporal.ChronoUnit.DAYS))
             )
             setupMocks(promotion, employees)
 
@@ -289,7 +289,7 @@ class AdminPromotionConfirmServiceTest {
         fun confirm_dateBeforeStart() {
             val promotion = createPromotion()
             val employees = listOf(
-                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate.minusDays(1))
+                createPE(id = 1L, employeeId = 1L, scheduleDate = startDate.minus(1, java.time.temporal.ChronoUnit.DAYS))
             )
             setupMocks(promotion, employees)
 

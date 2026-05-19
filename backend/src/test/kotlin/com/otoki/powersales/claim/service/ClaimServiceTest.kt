@@ -167,7 +167,7 @@ class ClaimServiceTest {
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
             whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
             whenever(productRepository.findByProductCode("P0001")).thenReturn(product)
-            val futureDate = LocalDate.now().plusDays(1).toString()
+            val futureDate = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS).toString()
 
             assertThatThrownBy {
                 claimService.createClaim(
@@ -183,7 +183,7 @@ class ClaimServiceTest {
         @DisplayName("유통기한 미래 - 허용")
         fun allowsFutureExpiryDate() {
             stubCreateDeps()
-            val futureDate = LocalDate.now().plusDays(30).toString()
+            val futureDate = LocalDate.now().plus(30, java.time.temporal.ChronoUnit.DAYS).toString()
 
             claimService.createClaim(
                 userId,

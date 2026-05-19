@@ -402,7 +402,7 @@ class AdminSafetyCheckServiceTest {
             displayWorkScheduleId = 1L,
             employeeId = employeeId,
             workingDate = workingDate,
-            completeTime = LocalDateTime.of(2026, 3, 17, 9, 15, 30),
+            completeTime = java.time.LocalDateTime.of(2026, 3, 17, 9, 15, 30),
             yesCheckCount = 7,
             noCheckCount = 2,
             equipment1 = "예",

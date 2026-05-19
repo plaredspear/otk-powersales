@@ -115,6 +115,7 @@ allOpen {
 tasks.withType<Test> {
 	useJUnitPlatform()
 	systemProperty("spring.profiles.active", "test")
+	systemProperty("user.timezone", "Asia/Seoul")
 	maxHeapSize = "3g"
 	jvmArgs = listOf("-XX:MaxMetaspaceSize=512m")
 	forkEvery = 100

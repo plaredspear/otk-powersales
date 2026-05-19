@@ -45,7 +45,7 @@ class AdminProductInventoryServiceTest {
     @DisplayName("정상 케이스 — 1~50건 + 거래처 존재 + 납기일 내일 -> SAP 응답 매핑")
     fun searchInventory_success() {
         // Given
-        val tomorrow = LocalDate.now().plusDays(1)
+        val tomorrow = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS)
         val request = InventorySearchRequest(
             accountId = 1,
             productCodes = listOf("P001", "P002"),
@@ -82,7 +82,7 @@ class AdminProductInventoryServiceTest {
     @DisplayName("SAP 응답 누락 케이스 — products 는 있으나 SAP 응답에 없는 경우 message 노출")
     fun searchInventory_sapMissing() {
         // Given
-        val tomorrow = LocalDate.now().plusDays(1)
+        val tomorrow = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS)
         val request = InventorySearchRequest(
             accountId = 1,
             productCodes = listOf("P001"),
@@ -122,7 +122,7 @@ class AdminProductInventoryServiceTest {
         val request = InventorySearchRequest(
             accountId = 999,
             productCodes = listOf("P001"),
-            deliveryRequestDate = LocalDate.now().plusDays(1)
+            deliveryRequestDate = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS)
         )
         whenever(accountRepository.findById(eq(999))).thenReturn(Optional.empty())
 

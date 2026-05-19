@@ -183,7 +183,7 @@ class AdminSapIntegrationServiceTest {
                 receivedCount = 10,
                 previousCount = 9,
                 reason = null,
-                createdAt = LocalDateTime.of(2026, 5, 18, 0, 0),
+                createdAt = java.time.LocalDateTime.of(2026, 5, 18, 0, 0),
             )
             whenever(inboundAuditRepository.search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
                 .thenReturn(PageImpl(listOf(audit)))
@@ -215,7 +215,7 @@ class AdminSapIntegrationServiceTest {
                 receivedCount = null,
                 previousCount = null,
                 reason = "IP not allowed",
-                createdAt = LocalDateTime.of(2026, 5, 18, 3, 14, 0),
+                createdAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 14, 0),
             )
             whenever(inboundAuditRepository.findById(42L)).thenReturn(Optional.of(audit))
 
@@ -257,8 +257,8 @@ class AdminSapIntegrationServiceTest {
                 attemptCount = 1,
                 durationMs = 1234L,
                 errorDetail = null,
-                requestedAt = LocalDateTime.of(2026, 5, 18, 3, 0, 0),
-                completedAt = LocalDateTime.of(2026, 5, 18, 3, 0, 1),
+                requestedAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 0, 0),
+                completedAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 0, 1),
             )
             whenever(outboundLogRepository.search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
                 .thenReturn(PageImpl(listOf(log)))
@@ -316,7 +316,7 @@ class AdminSapIntegrationServiceTest {
                 retryCount = 0,
                 lastError = null,
                 sentAt = null,
-            ).apply { createdAt = LocalDateTime.of(2026, 5, 18, 2, 45, 11) }
+            ).apply { createdAt = java.time.LocalDateTime.of(2026, 5, 18, 2, 45, 11) }
             whenever(outboxRepository.pagePendingOrRetry(any())).thenReturn(PageImpl(listOf(pending)))
 
             val result = service.searchOutboxPending(1, 20)

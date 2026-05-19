@@ -96,7 +96,7 @@ class AdminEmployeeRegisterControllerTest {
         origin = EmployeeOrigin.MANUAL,
         appLoginActive = false,
         passwordChangeRequired = true,
-        createdAt = LocalDateTime.of(2026, 5, 3, 14, 30, 0)
+        createdAt = java.time.LocalDateTime.of(2026, 5, 3, 14, 30, 0)
     )
 
     @Nested

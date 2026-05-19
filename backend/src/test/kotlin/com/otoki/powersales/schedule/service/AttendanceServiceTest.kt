@@ -429,10 +429,10 @@ class AttendanceServiceTest {
 
             val masters = listOf(
                 createDisplayWorkSchedule(id = 100L, confirmed = true,
-                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS), endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS),
                     employeeId = userId, accountId = 9001, accountName = "롯데마트 송파점"),
                 createDisplayWorkSchedule(id = 101L, confirmed = true,
-                    startDate = today.minusDays(5), endDate = today.plusDays(5),
+                    startDate = today.minus(5, java.time.temporal.ChronoUnit.DAYS), endDate = today.plus(5, java.time.temporal.ChronoUnit.DAYS),
                     employeeId = userId, accountId = 9002, accountName = "홈플러스 서초점")
             )
 
@@ -469,7 +469,7 @@ class AttendanceServiceTest {
             // 진열마스터에도 동일 accountId=8938 존재
             val masters = listOf(
                 createDisplayWorkSchedule(id = 100L, confirmed = true,
-                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS), endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS),
                     employeeId = userId, accountId = 8938, accountName = "이마트 강남점")
             )
 
@@ -563,7 +563,7 @@ class AttendanceServiceTest {
             )
             val masters = listOf(
                 createDisplayWorkSchedule(id = 100L, confirmed = true,
-                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS), endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS),
                     employeeId = userId, accountId = 9002, accountName = "임시거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
@@ -598,7 +598,7 @@ class AttendanceServiceTest {
             )
             val masters = listOf(
                 createDisplayWorkSchedule(id = 100L, confirmed = true,
-                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS), endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS),
                     employeeId = userId, accountId = 9003, accountName = "임시거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
@@ -634,10 +634,10 @@ class AttendanceServiceTest {
             )
             val masters = listOf(
                 createDisplayWorkSchedule(id = 100L, confirmed = true,
-                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS), endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS),
                     employeeId = userId, accountId = 9002, accountName = "마스터거래처A", typeOfWork5 = TypeOfWork5.REGULAR),
                 createDisplayWorkSchedule(id = 101L, confirmed = true,
-                    startDate = today.minusDays(5), endDate = today.plusDays(5),
+                    startDate = today.minus(5, java.time.temporal.ChronoUnit.DAYS), endDate = today.plus(5, java.time.temporal.ChronoUnit.DAYS),
                     employeeId = userId, accountId = 9003, accountName = "마스터거래처B", typeOfWork5 = TypeOfWork5.REGULAR)
             )
 
@@ -670,7 +670,7 @@ class AttendanceServiceTest {
             )
             val masters = listOf(
                 createDisplayWorkSchedule(id = 100L, confirmed = true,
-                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS), endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS),
                     employeeId = userId, accountId = 9002, accountName = "마스터거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
@@ -703,7 +703,7 @@ class AttendanceServiceTest {
             )
             val masters = listOf(
                 createDisplayWorkSchedule(id = 100L, confirmed = true,
-                    startDate = today.minusDays(10), endDate = today.plusDays(10),
+                    startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS), endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS),
                     employeeId = userId, accountId = 9002, accountName = "임시거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
@@ -1558,8 +1558,8 @@ class AttendanceServiceTest {
             val master = createDisplayWorkSchedule(
                 id = displayWorkScheduleId,
                 confirmed = true,
-                startDate = today.minusDays(30),
-                endDate = today.plusDays(30),
+                startDate = today.minus(30, java.time.temporal.ChronoUnit.DAYS),
+                endDate = today.plus(30, java.time.temporal.ChronoUnit.DAYS),
                 typeOfWork3 = TypeOfWork3.FIXED,
                 typeOfWork5 = TypeOfWork5.REGULAR,
                 employeeId = userId,
@@ -1628,8 +1628,8 @@ class AttendanceServiceTest {
             val master = createDisplayWorkSchedule(
                 id = displayWorkScheduleId,
                 confirmed = true,
-                startDate = today.minusDays(30),
-                endDate = today.plusDays(30),
+                startDate = today.minus(30, java.time.temporal.ChronoUnit.DAYS),
+                endDate = today.plus(30, java.time.temporal.ChronoUnit.DAYS),
                 employeeId = userId,
                 accountId = 8938,
                 accountName = "테스트 거래처",
@@ -1696,8 +1696,8 @@ class AttendanceServiceTest {
             val master = createDisplayWorkSchedule(
                 id = displayWorkScheduleId,
                 confirmed = false,
-                startDate = today.minusDays(30),
-                endDate = today.plusDays(30)
+                startDate = today.minus(30, java.time.temporal.ChronoUnit.DAYS),
+                endDate = today.plus(30, java.time.temporal.ChronoUnit.DAYS)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -1722,8 +1722,8 @@ class AttendanceServiceTest {
             val master = createDisplayWorkSchedule(
                 id = displayWorkScheduleId,
                 confirmed = true,
-                startDate = today.plusDays(10),  // 미래 시작일
-                endDate = today.plusDays(40)
+                startDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS),  // 미래 시작일
+                endDate = today.plus(40, java.time.temporal.ChronoUnit.DAYS)
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -1771,8 +1771,8 @@ class AttendanceServiceTest {
             val userId = 1L
             val displayWorkScheduleId = 100L
             val today = LocalDate.now()
-            val startDate = today.minusDays(10)
-            val endDate = today.plusDays(20)
+            val startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS)
+            val endDate = today.plus(20, java.time.temporal.ChronoUnit.DAYS)
 
             val employee = createEmployee(id = userId, sfid = "USR001", costCenterCode = "CC001")
             val master = createDisplayWorkSchedule(
@@ -1831,8 +1831,8 @@ class AttendanceServiceTest {
             val master = createDisplayWorkSchedule(
                 id = displayWorkScheduleId,
                 confirmed = true,
-                startDate = today.minusDays(10),
-                endDate = today.plusDays(10),
+                startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS),
+                endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS),
                 employeeId = otherUserId, // 타인 할당
             )
 
@@ -1860,8 +1860,8 @@ class AttendanceServiceTest {
             val master = createDisplayWorkSchedule(
                 id = displayWorkScheduleId,
                 confirmed = true,
-                startDate = today.minusDays(10),
-                endDate = today.plusDays(10),
+                startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS),
+                endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS),
                 typeOfWork3 = TypeOfWork3.FIXED,
                 employeeId = userId,
                 accountId = 8938,
@@ -2015,7 +2015,7 @@ class AttendanceServiceTest {
             val employee = createEmployee(id = userId, sfid = "USR001")
             val tms = createTeamMemberSchedule(
                 id = eventScheduleId, employeeId = userId, accountId = 8938,
-                workingDate = today.plusDays(1), // 미래 일자
+                workingDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS), // 미래 일자
             )
 
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
@@ -2088,8 +2088,8 @@ class AttendanceServiceTest {
                 equipment2 = "해당없음",
                 yesCheckCount = 7,
                 noCheckCount = 2,
-                startTime = LocalDateTime.of(2026, 4, 1, 8, 0),
-                completeTime = LocalDateTime.of(2026, 4, 1, 8, 10),
+                startTime = java.time.LocalDateTime.of(2026, 4, 1, 8, 0),
+                completeTime = java.time.LocalDateTime.of(2026, 4, 1, 8, 10),
                 precaution = "항목1;항목2",
                 precautionCheckCount = 2,
                 traversalFlag = "Y"
@@ -2132,8 +2132,8 @@ class AttendanceServiceTest {
                 equipment9 = null,
                 yesChkCnt = 7.0,
                 noChkCnt = 2.0,
-                startTime = LocalDateTime.of(2026, 4, 1, 8, 0),
-                completeTime = LocalDateTime.of(2026, 4, 1, 8, 10),
+                startTime = java.time.LocalDateTime.of(2026, 4, 1, 8, 0),
+                completeTime = java.time.LocalDateTime.of(2026, 4, 1, 8, 10),
                 precaution = "항목1;항목2",
                 precautionChk = 2.0,
                 traversalFlag = "Y"
@@ -2545,8 +2545,8 @@ class AttendanceServiceTest {
     private fun createDisplayWorkSchedule(
         id: Long = 100L,
         confirmed: Boolean? = true,
-        startDate: LocalDate? = LocalDate.now().minusDays(30),
-        endDate: LocalDate? = LocalDate.now().plusDays(30),
+        startDate: LocalDate? = LocalDate.now().minus(30, java.time.temporal.ChronoUnit.DAYS),
+        endDate: LocalDate? = LocalDate.now().plus(30, java.time.temporal.ChronoUnit.DAYS),
         typeOfWork3: TypeOfWork3? = TypeOfWork3.FIXED,
         typeOfWork5: TypeOfWork5? = TypeOfWork5.REGULAR,
         employeeId: Long? = 1L,

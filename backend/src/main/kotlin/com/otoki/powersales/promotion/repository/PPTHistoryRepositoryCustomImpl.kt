@@ -40,11 +40,20 @@ class PPTHistoryRepositoryCustomImpl(
         }
 
         if (changedAtFrom != null) {
-            builder.and(professionalPromotionTeamHistory.changedAt.goe(changedAtFrom.atStartOfDay()))
+            builder.and(
+                professionalPromotionTeamHistory.changedAt.goe(
+                    changedAtFrom.atStartOfDay()
+                )
+            )
         }
 
         if (changedAtTo != null) {
-            builder.and(professionalPromotionTeamHistory.changedAt.loe(changedAtTo.atTime(LocalTime.MAX)))
+            builder.and(
+                professionalPromotionTeamHistory.changedAt.loe(
+                    changedAtTo.atTime(LocalTime.MAX)
+                        
+                )
+            )
         }
 
         builder.and(isNotDeleted())

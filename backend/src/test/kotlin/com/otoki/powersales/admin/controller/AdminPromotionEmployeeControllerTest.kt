@@ -308,8 +308,8 @@ class AdminPromotionEmployeeControllerTest {
         otherSalesAmount = null,
         otherSalesQuantity = null,
         s3ImageUniqueKey = null,
-        createdAt = LocalDateTime.of(2026, 3, 10, 10, 0, 0),
-        updatedAt = LocalDateTime.of(2026, 3, 10, 10, 0, 0)
+        createdAt = java.time.LocalDateTime.of(2026, 3, 10, 10, 0, 0),
+        updatedAt = java.time.LocalDateTime.of(2026, 3, 10, 10, 0, 0)
     )
 
     private fun createRequest() = PromotionEmployeeRequest(

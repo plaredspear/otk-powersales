@@ -227,7 +227,7 @@ class AdminEmployeeControllerTest {
                 employeeCode = "100123",
                 name = "홍길동",
                 previousDeviceBound = true,
-                resetAt = LocalDateTime.of(2026, 5, 4, 14, 30, 0)
+                resetAt = java.time.LocalDateTime.of(2026, 5, 4, 14, 30, 0)
             )
             whenever(adminEmployeeCredentialService.resetDevice(eq(12345L))).thenReturn(response)
 
@@ -276,7 +276,7 @@ class AdminEmployeeControllerTest {
                 name = "홍길동",
                 temporaryPasswordIssued = true,
                 passwordChangeRequired = true,
-                resetAt = LocalDateTime.of(2026, 5, 4, 14, 30, 0)
+                resetAt = java.time.LocalDateTime.of(2026, 5, 4, 14, 30, 0)
             )
             whenever(adminEmployeeCredentialService.resetPassword(eq(12345L))).thenReturn(response)
 

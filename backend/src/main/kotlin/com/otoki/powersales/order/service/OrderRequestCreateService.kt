@@ -90,7 +90,9 @@ class OrderRequestCreateService(
 
         // 5. order_request 헤더 INSERT
         val now = LocalDateTime.now()
-        val orderRequestNumber = nextOrderRequestNumber(now.toLocalDate())
+        val orderRequestNumber = nextOrderRequestNumber(
+            now.toLocalDate()
+        )
         val header = OrderRequest(
             orderRequestNumber = orderRequestNumber,
             clientRequestId = request.clientRequestId,

@@ -11,33 +11,33 @@ import java.time.ZoneOffset
 class OroraTimestampConverterTest {
 
     @Test
-    @DisplayName("toUtcLocalDateTime(OffsetDateTime) - KST 입력 UTC 변환")
-    fun kstToUtc() {
+    @DisplayName("toLocalDateTime(OffsetDateTime) - KST 입력 wall clock 그대로")
+    fun kstPassthrough() {
         val kst = OffsetDateTime.of(2026, 4, 28, 15, 30, 0, 0, ZoneOffset.ofHours(9))
-        assertThat(OroraTimestampConverter.toUtcLocalDateTime(kst))
-            .isEqualTo(LocalDateTime.of(2026, 4, 28, 6, 30))
+        assertThat(OroraTimestampConverter.toLocalDateTime(kst))
+            .isEqualTo(LocalDateTime.of(2026, 4, 28, 15, 30))
     }
 
     @Test
-    @DisplayName("toUtcLocalDateTime(String) - ISO 문자열 파싱")
-    fun isoStringToUtc() {
-        assertThat(OroraTimestampConverter.toUtcLocalDateTime("2026-04-28T15:30:00+09:00"))
-            .isEqualTo(LocalDateTime.of(2026, 4, 28, 6, 30))
+    @DisplayName("toLocalDateTime(String) - ISO 문자열 파싱")
+    fun isoString() {
+        assertThat(OroraTimestampConverter.toLocalDateTime("2026-04-28T15:30:00+09:00"))
+            .isEqualTo(LocalDateTime.of(2026, 4, 28, 15, 30))
     }
 
     @Test
-    @DisplayName("toSeoulOffsetDateTime - UTC → KST")
-    fun utcToSeoul() {
-        val utc = LocalDateTime.of(2026, 4, 28, 6, 30)
-        assertThat(OroraTimestampConverter.toSeoulOffsetDateTime(utc))
+    @DisplayName("toSeoulOffsetDateTime - KST LocalDateTime → +09:00 offset")
+    fun toSeoulOffset() {
+        val kst = LocalDateTime.of(2026, 4, 28, 15, 30)
+        assertThat(OroraTimestampConverter.toSeoulOffsetDateTime(kst))
             .isEqualTo(OffsetDateTime.of(2026, 4, 28, 15, 30, 0, 0, ZoneOffset.ofHours(9)))
     }
 
     @Test
-    @DisplayName("toSeoulIsoString - UTC → KST ISO 문자열")
-    fun utcToSeoulIso() {
-        val utc = LocalDateTime.of(2026, 4, 28, 6, 30)
-        assertThat(OroraTimestampConverter.toSeoulIsoString(utc))
+    @DisplayName("toSeoulIsoString - KST LocalDateTime → ISO 문자열")
+    fun toSeoulIso() {
+        val kst = LocalDateTime.of(2026, 4, 28, 15, 30)
+        assertThat(OroraTimestampConverter.toSeoulIsoString(kst))
             .isEqualTo("2026-04-28T15:30:00+09:00")
     }
 }

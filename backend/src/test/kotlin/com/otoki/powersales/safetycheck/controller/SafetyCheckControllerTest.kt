@@ -146,7 +146,7 @@ class SafetyCheckControllerTest {
         @DisplayName("정상 제출 - 200 OK")
         fun submit_success() {
             // Given
-            val submittedAt = LocalDateTime.of(2026, 3, 15, 9, 2, 30)
+            val submittedAt = java.time.LocalDateTime.of(2026, 3, 15, 9, 2, 30)
             val mockResponse = SafetyCheckSubmitResponse(
                 submittedAt = submittedAt,
                 safetyCheckCompleted = true
@@ -156,8 +156,8 @@ class SafetyCheckControllerTest {
 
             val requestJson = """
             {
-                "startTime": "2026-03-15T09:00:00",
-                "completeTime": "2026-03-15T09:02:30",
+                "startTime": "2026-03-15T09:00:00Z",
+                "completeTime": "2026-03-15T09:02:30Z",
                 "equipments": [
                     {"seqNum": 1, "answer": "예"},
                     {"seqNum": 2, "answer": "해당없음"},
@@ -191,8 +191,8 @@ class SafetyCheckControllerTest {
         fun submit_emptyEquipments() {
             val requestJson = """
             {
-                "startTime": "2026-03-15T09:00:00",
-                "completeTime": "2026-03-15T09:02:30",
+                "startTime": "2026-03-15T09:00:00Z",
+                "completeTime": "2026-03-15T09:02:30Z",
                 "equipments": [],
                 "precautions": []
             }
@@ -216,8 +216,8 @@ class SafetyCheckControllerTest {
 
             val requestJson = """
             {
-                "startTime": "2026-03-15T09:00:00",
-                "completeTime": "2026-03-15T09:02:30",
+                "startTime": "2026-03-15T09:00:00Z",
+                "completeTime": "2026-03-15T09:02:30Z",
                 "equipments": [{"seqNum": 1, "answer": "예"}, {"seqNum": 2, "answer": "예"}],
                 "precautions": []
             }
@@ -241,8 +241,8 @@ class SafetyCheckControllerTest {
 
             val requestJson = """
             {
-                "startTime": "2026-03-15T09:00:00",
-                "completeTime": "2026-03-15T09:02:30",
+                "startTime": "2026-03-15T09:00:00Z",
+                "completeTime": "2026-03-15T09:02:30Z",
                 "equipments": [{"seqNum": 1, "answer": "예"}],
                 "precautions": []
             }
@@ -279,8 +279,8 @@ class SafetyCheckControllerTest {
                         accountCode = "1234567890",
                         accountName = "이마트 강남점",
                         submitted = true,
-                        submittedAt = LocalDateTime.of(2026, 3, 21, 8, 30, 0),
-                        startTime = LocalDateTime.of(2026, 3, 21, 8, 25, 0),
+                        submittedAt = java.time.LocalDateTime.of(2026, 3, 21, 8, 30, 0),
+                        startTime = java.time.LocalDateTime.of(2026, 3, 21, 8, 25, 0),
                         equipments = listOf(
                             EquipmentStatus(1, "손목보호대 착용", "예"),
                             EquipmentStatus(2, "숨수건 소지", "예")
@@ -360,7 +360,7 @@ class SafetyCheckControllerTest {
         @Test
         @DisplayName("오늘 완료 - 200 OK, completed=true")
         fun getTodayStatus_completed() {
-            val submittedAt = LocalDateTime.of(2026, 3, 15, 9, 2, 30)
+            val submittedAt = java.time.LocalDateTime.of(2026, 3, 15, 9, 2, 30)
             val mockResponse = SafetyCheckTodayResponse(
                 completed = true,
                 submittedAt = submittedAt

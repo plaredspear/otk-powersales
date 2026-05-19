@@ -112,7 +112,7 @@ class AdminOrganizationControllerTest {
                     costCenterLevel5 = "1101A",
                     orgCodeLevel5 = "A111A",
                     orgNameLevel5 = "강남1조",
-                    createdAt = LocalDateTime.of(2026, 1, 15, 9, 0)
+                    createdAt = java.time.LocalDateTime.of(2026, 1, 15, 9, 0)
                 )
             )
             whenever(adminOrganizationService.getOrganizations(any(), anyOrNull(), anyOrNull()))

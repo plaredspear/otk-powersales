@@ -1,11 +1,10 @@
 package com.otoki.powersales.order.util
 
-import com.otoki.powersales.common.util.TimeZones
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.ZonedDateTime
 
 /**
  * 주문 취소 마감 시각 판정 (Spec #597 §2.2).
@@ -17,13 +16,13 @@ import java.time.ZonedDateTime
  */
 @Component
 class OrderDeadlineCalculator(
-    private val clock: Clock = Clock.system(TimeZones.SEOUL_ZONE),
+    private val clock: Clock = Clock.systemDefaultZone(),
 ) {
 
     fun isCancellable(deliveryDate: LocalDate): Boolean {
-        val nowSeoul = ZonedDateTime.now(clock).withZoneSameInstant(TimeZones.SEOUL_ZONE)
-        val deadline = deliveryDate.atTime(CUTOFF_TIME).atZone(TimeZones.SEOUL_ZONE)
-        return nowSeoul.plusDays(1).isBefore(deadline)
+        val now = LocalDateTime.now(clock)
+        val deadline = deliveryDate.atTime(CUTOFF_TIME)
+        return now.plusDays(1).isBefore(deadline)
     }
 
     companion object {

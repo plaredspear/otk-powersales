@@ -107,7 +107,7 @@ class AdminUserControllerTest {
                         branch = "서울1지점",
                         department = "영업1부",
                         isActive = true,
-                        lastLoginAt = LocalDateTime.of(2026, 5, 14, 10, 0)
+                        lastLoginAt = java.time.LocalDateTime.of(2026, 5, 14, 10, 0)
                     )
                 ),
                 page = 0,
@@ -185,9 +185,9 @@ class AdminUserControllerTest {
                 isSalesSupport = false,
                 isActive = true,
                 passwordChangeRequired = false,
-                lastLoginAt = LocalDateTime.of(2026, 5, 14, 10, 0),
-                createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
-                lastModifiedAt = LocalDateTime.of(2026, 5, 14, 10, 0)
+                lastLoginAt = java.time.LocalDateTime.of(2026, 5, 14, 10, 0),
+                createdAt = java.time.LocalDateTime.of(2026, 1, 1, 0, 0),
+                lastModifiedAt = java.time.LocalDateTime.of(2026, 5, 14, 10, 0)
             )
             whenever(adminUserService.findUserDetail(eq(1L))).thenReturn(response)
 
@@ -224,7 +224,7 @@ class AdminUserControllerTest {
                 username = "kim@otokims.co.kr",
                 temporaryPasswordIssued = true,
                 passwordChangeRequired = true,
-                resetAt = LocalDateTime.of(2026, 5, 14, 14, 30)
+                resetAt = java.time.LocalDateTime.of(2026, 5, 14, 14, 30)
             )
             whenever(adminUserService.resetPassword(eq(5L))).thenReturn(response)
 

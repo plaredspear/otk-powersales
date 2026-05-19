@@ -88,7 +88,7 @@ class OrderDraftControllerTest {
         @DisplayName("H1 - 정상 등록 → 200 + draftId")
         fun success() {
             whenever(orderDraftService.save(any(), any())).thenReturn(
-                OrderDraftSaveResponse(draftId = 99L, savedAt = LocalDateTime.of(2026, 5, 4, 10, 0)),
+                OrderDraftSaveResponse(draftId = 99L, savedAt = java.time.LocalDateTime.of(2026, 5, 4, 10, 0)),
             )
 
             mockMvc.perform(
@@ -171,7 +171,7 @@ class OrderDraftControllerTest {
                 accountName = "홍길동상회",
                 accountExternalKey = "EK001",
                 totalAmount = 1234567,
-                savedAt = LocalDateTime.of(2026, 5, 4, 10, 0),
+                savedAt = java.time.LocalDateTime.of(2026, 5, 4, 10, 0),
                 lines = listOf(
                     OrderDraftLineResponse(
                         lineNumber = 10,

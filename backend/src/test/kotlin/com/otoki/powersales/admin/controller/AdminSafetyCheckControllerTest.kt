@@ -83,8 +83,8 @@ class AdminSafetyCheckControllerTest {
                         accountCode = "1234567890",
                         accountName = "이마트 강남점",
                         submitted = true,
-                        submittedAt = LocalDateTime.of(2026, 3, 17, 9, 15, 30),
-                        startTime = LocalDateTime.of(2026, 3, 17, 9, 10, 0),
+                        submittedAt = java.time.LocalDateTime.of(2026, 3, 17, 9, 15, 30),
+                        startTime = java.time.LocalDateTime.of(2026, 3, 17, 9, 10, 0),
                         equipments = listOf(
                             EquipmentStatus(1, "손목보호대 착용", "예"),
                             EquipmentStatus(2, "숨수건 소지", "예")

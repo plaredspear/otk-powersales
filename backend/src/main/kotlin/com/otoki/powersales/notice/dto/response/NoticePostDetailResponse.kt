@@ -1,5 +1,7 @@
 package com.otoki.powersales.notice.dto.response
 
+import java.time.LocalDateTime
+
 /**
  * 공지사항 게시물 상세 Response
  */
@@ -11,6 +13,6 @@ data class NoticePostDetailResponse(
     val content: String,
     val branch: String?,
     val branchCode: String?,
-    val createdAt: String,
+    val createdAt: LocalDateTime?,
     val images: List<NoticeImageResponse>
 )

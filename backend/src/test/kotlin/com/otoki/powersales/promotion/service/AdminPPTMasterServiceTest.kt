@@ -482,7 +482,7 @@ class AdminPPTMasterServiceTest {
         @Test
         @DisplayName("성공 - 시작일이 미래인 레코드 -> 직원 갱신 호출 안 됨")
         fun confirmByIds_skipImmediateSyncWhenFuture() {
-            val futureDate = LocalDate.now().plusDays(7)
+            val futureDate = LocalDate.now().plus(7, java.time.temporal.ChronoUnit.DAYS)
             val master = createMaster(id = 1L, startDate = futureDate, isConfirmed = false)
             whenever(pptMasterRepository.findAllById(listOf(1L))).thenReturn(listOf(master))
             whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))

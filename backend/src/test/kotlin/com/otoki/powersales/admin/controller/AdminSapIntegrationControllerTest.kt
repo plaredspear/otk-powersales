@@ -91,7 +91,7 @@ class AdminSapIntegrationControllerTest {
                         receivedCount = 142,
                         previousCount = 140,
                         reason = null,
-                        createdAt = LocalDateTime.of(2026, 5, 18, 3, 15, 22),
+                        createdAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 15, 22),
                     )
                 ),
                 totalCount = 1L,
@@ -119,8 +119,8 @@ class AdminSapIntegrationControllerTest {
                 .param("clientId", "sap-prod")
                 .param("eventType", "REQUEST_REJECTED_IP")
                 .param("endpoint", "/api/v1/sap/organization")
-                .param("from", "2026-05-17T00:00:00")
-                .param("to", "2026-05-18T00:00:00")
+                .param("from", "2026-05-17T00:00:00Z")
+                .param("to", "2026-05-18T00:00:00Z")
                 .param("page", "2")
                 .param("size", "50")
         )
@@ -134,8 +134,8 @@ class AdminSapIntegrationControllerTest {
         assert(q.clientId == "sap-prod")
         assert(q.eventType == "REQUEST_REJECTED_IP")
         assert(q.endpoint == "/api/v1/sap/organization")
-        assert(q.from == LocalDateTime.of(2026, 5, 17, 0, 0, 0))
-        assert(q.to == LocalDateTime.of(2026, 5, 18, 0, 0, 0))
+        assert(q.from == java.time.LocalDateTime.of(2026, 5, 17, 0, 0, 0))
+        assert(q.to == java.time.LocalDateTime.of(2026, 5, 18, 0, 0, 0))
         assert(q.page == 2)
         assert(q.size == 50)
     }
@@ -155,7 +155,7 @@ class AdminSapIntegrationControllerTest {
                 receivedCount = null,
                 previousCount = null,
                 reason = "IP not allowed",
-                createdAt = LocalDateTime.of(2026, 5, 18, 3, 14, 0),
+                createdAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 14, 0),
             )
         )
 
@@ -220,8 +220,8 @@ class AdminSapIntegrationControllerTest {
             get("/api/v1/admin/sap-integration/outbound/logs")
                 .param("interfaceId", "TeamMemberSchedule")
                 .param("resultCode", "FAIL")
-                .param("from", "2026-05-17T00:00:00")
-                .param("to", "2026-05-18T00:00:00")
+                .param("from", "2026-05-17T00:00:00Z")
+                .param("to", "2026-05-18T00:00:00Z")
         )
             .andExpect(status().isOk)
 
@@ -230,8 +230,8 @@ class AdminSapIntegrationControllerTest {
         val q = captor.firstValue
         assert(q.interfaceId == "TeamMemberSchedule")
         assert(q.resultCode == "FAIL")
-        assert(q.from == LocalDateTime.of(2026, 5, 17, 0, 0, 0))
-        assert(q.to == LocalDateTime.of(2026, 5, 18, 0, 0, 0))
+        assert(q.from == java.time.LocalDateTime.of(2026, 5, 17, 0, 0, 0))
+        assert(q.to == java.time.LocalDateTime.of(2026, 5, 18, 0, 0, 0))
     }
 
     @Test
@@ -249,8 +249,8 @@ class AdminSapIntegrationControllerTest {
                 attemptCount = 3,
                 durationMs = 30024L,
                 errorDetail = "java.net.SocketTimeoutException: Read timed out at ...",
-                requestedAt = LocalDateTime.of(2026, 5, 18, 2, 0, 0),
-                completedAt = LocalDateTime.of(2026, 5, 18, 2, 0, 30),
+                requestedAt = java.time.LocalDateTime.of(2026, 5, 18, 2, 0, 0),
+                completedAt = java.time.LocalDateTime.of(2026, 5, 18, 2, 0, 30),
             )
         )
 
@@ -275,7 +275,7 @@ class AdminSapIntegrationControllerTest {
                         status = "RETRY",
                         retryCount = 2,
                         lastError = "Connection timeout after 30s",
-                        createdAt = LocalDateTime.of(2026, 5, 18, 2, 45, 11),
+                        createdAt = java.time.LocalDateTime.of(2026, 5, 18, 2, 45, 11),
                         sentAt = null,
                     )
                 ),

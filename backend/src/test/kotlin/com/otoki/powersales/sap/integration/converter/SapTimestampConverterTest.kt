@@ -12,61 +12,61 @@ import java.time.ZoneOffset
 class SapTimestampConverterTest {
 
     @Nested
-    @DisplayName("toUtcLocalDateTime(OffsetDateTime)")
-    inner class ToUtcFromOffset {
+    @DisplayName("toLocalDateTime(OffsetDateTime) - 외부 OffsetDateTime → KST LocalDateTime")
+    inner class ToLocalDateTimeFromOffset {
 
         @Test
-        @DisplayName("KST(+09:00) 입력 - UTC wall clock 으로 변환")
-        fun kstToUtc() {
+        @DisplayName("KST(+09:00) 입력 - wall clock 그대로")
+        fun kstPassthrough() {
             val kst = OffsetDateTime.of(2026, 4, 28, 15, 30, 0, 0, ZoneOffset.ofHours(9))
-            assertThat(SapTimestampConverter.toUtcLocalDateTime(kst))
-                .isEqualTo(LocalDateTime.of(2026, 4, 28, 6, 30))
+            assertThat(SapTimestampConverter.toLocalDateTime(kst))
+                .isEqualTo(LocalDateTime.of(2026, 4, 28, 15, 30))
         }
 
         @Test
-        @DisplayName("UTC 입력 - wall clock 보존")
-        fun utcPassthrough() {
+        @DisplayName("UTC 입력 - KST wall clock 으로 변환 (+9h)")
+        fun utcToKst() {
             val utc = OffsetDateTime.of(2026, 4, 28, 6, 30, 0, 0, ZoneOffset.UTC)
-            assertThat(SapTimestampConverter.toUtcLocalDateTime(utc))
-                .isEqualTo(LocalDateTime.of(2026, 4, 28, 6, 30))
+            assertThat(SapTimestampConverter.toLocalDateTime(utc))
+                .isEqualTo(LocalDateTime.of(2026, 4, 28, 15, 30))
         }
     }
 
     @Nested
-    @DisplayName("toUtcLocalDateTime(String) - ISO offset 파싱")
-    inner class ToUtcFromString {
+    @DisplayName("toLocalDateTime(String) - ISO offset 문자열 파싱")
+    inner class ToLocalDateTimeFromString {
 
         @Test
-        @DisplayName("KST ISO 문자열 - UTC wall clock 으로")
-        fun isoKstToUtc() {
+        @DisplayName("KST ISO 문자열 - KST wall clock")
+        fun kstIso() {
             val text = "2026-04-28T15:30:00+09:00"
-            assertThat(SapTimestampConverter.toUtcLocalDateTime(text))
-                .isEqualTo(LocalDateTime.of(2026, 4, 28, 6, 30))
+            assertThat(SapTimestampConverter.toLocalDateTime(text))
+                .isEqualTo(LocalDateTime.of(2026, 4, 28, 15, 30))
         }
     }
 
     @Nested
-    @DisplayName("toSeoulOffsetDateTime - UTC → KST")
+    @DisplayName("toSeoulOffsetDateTime - KST LocalDateTime → KST OffsetDateTime")
     inner class ToSeoulOffset {
 
         @Test
-        @DisplayName("UTC 06:30 - KST 15:30 (+09:00)")
-        fun utcToSeoul() {
-            val utc = LocalDateTime.of(2026, 4, 28, 6, 30)
-            assertThat(SapTimestampConverter.toSeoulOffsetDateTime(utc))
+        @DisplayName("KST 15:30 - +09:00 offset 부착")
+        fun kstToOffset() {
+            val kst = LocalDateTime.of(2026, 4, 28, 15, 30)
+            assertThat(SapTimestampConverter.toSeoulOffsetDateTime(kst))
                 .isEqualTo(OffsetDateTime.of(2026, 4, 28, 15, 30, 0, 0, ZoneOffset.ofHours(9)))
         }
     }
 
     @Nested
-    @DisplayName("toSeoulIsoString - UTC → KST ISO 문자열")
+    @DisplayName("toSeoulIsoString - KST LocalDateTime → KST ISO 문자열")
     inner class ToSeoulIsoString {
 
         @Test
-        @DisplayName("UTC 06:30 - '2026-04-28T15:30:00+09:00'")
-        fun utcToSeoulIso() {
-            val utc = LocalDateTime.of(2026, 4, 28, 6, 30)
-            assertThat(SapTimestampConverter.toSeoulIsoString(utc))
+        @DisplayName("KST 15:30 - '2026-04-28T15:30:00+09:00'")
+        fun kstIso() {
+            val kst = LocalDateTime.of(2026, 4, 28, 15, 30)
+            assertThat(SapTimestampConverter.toSeoulIsoString(kst))
                 .isEqualTo("2026-04-28T15:30:00+09:00")
         }
     }

@@ -75,7 +75,7 @@ class EducationService(
             EducationPostSummaryResponse(
                 id = post.eduId ?: "",
                 title = post.eduTitle ?: "",
-                createdAt = post.createdAt?.format(DATE_TIME_FORMATTER) ?: ""
+                createdAt = post.createdAt
             )
         }
 
@@ -134,7 +134,7 @@ class EducationService(
             categoryName = categoryName,
             title = post.eduTitle ?: "",
             content = post.eduContent ?: "",
-            createdAt = post.createdAt?.format(DATE_TIME_FORMATTER) ?: "",
+            createdAt = post.createdAt,
             images = images,
             attachments = attachments
         )
@@ -172,7 +172,7 @@ class EducationService(
                 eduTitle = post.eduTitle ?: "",
                 eduCode = post.eduCode ?: "",
                 eduCodeNm = categoryName,
-                instDate = post.createdAt?.format(DATE_TIME_FORMATTER) ?: "",
+                instDate = post.createdAt,
                 attachmentCount = attachmentCounts[post.eduId] ?: 0
             )
         }
@@ -204,7 +204,7 @@ class EducationService(
             .orElseThrow { InvalidEducationParameterException("사용자를 찾을 수 없습니다") }
 
         val now = LocalDateTime.now()
-        val eduId = "edu" + now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+        val eduId = "edu" + EDU_ID_FORMATTER.format(now)
 
         val post = EducationPost(
             eduId = eduId,
@@ -386,8 +386,8 @@ class EducationService(
             eduCode = post.eduCode ?: "",
             eduCodeNm = categoryName,
             employeeId = post.employee?.id,
-            instDate = post.createdAt?.format(DATE_TIME_FORMATTER) ?: "",
-            updDate = post.updatedAt?.format(DATE_TIME_FORMATTER),
+            instDate = post.createdAt,
+            updDate = post.updatedAt,
             attachments = attachments.map {
                 AttachmentInfo(
                     fileKey = it.fileKey,
@@ -399,8 +399,9 @@ class EducationService(
     }
 
     companion object {
-        private val DATE_TIME_FORMATTER: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+        private val EDU_ID_FORMATTER: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                .withZone(com.otoki.powersales.common.util.TimeZones.SEOUL_ZONE)
         private const val MAX_ATTACHMENTS = 20
         private const val MAX_FILE_SIZE = 50 * 1024 * 1024L // 50MB
     }

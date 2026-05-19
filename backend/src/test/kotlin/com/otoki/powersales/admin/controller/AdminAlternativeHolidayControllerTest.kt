@@ -83,7 +83,7 @@ class AdminAlternativeHolidayControllerTest {
                     actualWorkDate = LocalDate.of(2026, 3, 7),
                     targetAltHolidayDate = LocalDate.of(2026, 3, 9),
                     confirmAltHolidayDate = null, status = AltHolidayStatus.NEW, changeReason = null,
-                    createdByEmpNo = "admin01", createdAt = LocalDateTime.of(2026, 3, 8, 10, 0)
+                    createdByEmpNo = "admin01", createdAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0)
                 )
             )
             whenever(adminAlternativeHolidayService.getAlternativeHolidays(

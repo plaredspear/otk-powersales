@@ -89,7 +89,7 @@ class AdminEducationControllerTest {
                         eduTitle = "3월 신제품 교육",
                         eduCode = "c00004",
                         eduCodeNm = "신제품소개",
-                        instDate = "2026-03-09T10:00:00",
+                        instDate = java.time.LocalDateTime.parse("2026-03-09T10:00:00"),
                         attachmentCount = 3
                     )
                 ),
@@ -154,7 +154,7 @@ class AdminEducationControllerTest {
                 categoryName = "신제품소개",
                 title = "3월 신제품 교육",
                 content = "<p>내용</p>",
-                createdAt = "2026-03-09T10:00:00",
+                createdAt = java.time.LocalDateTime.parse("2026-03-09T10:00:00"),
                 attachments = listOf(
                     EducationAttachmentResponse(
                         id = "abc123",
@@ -199,7 +199,7 @@ class AdminEducationControllerTest {
                 eduCode = "c00001",
                 eduCodeNm = "시식매뉴얼",
                 employeeId = 1L,
-                instDate = "2026-03-09T10:00:00",
+                instDate = java.time.LocalDateTime.parse("2026-03-09T10:00:00"),
                 updDate = null,
                 attachments = emptyList()
             )
@@ -230,7 +230,7 @@ class AdminEducationControllerTest {
                 eduCode = "c00004",
                 eduCodeNm = "신제품소개",
                 employeeId = 1L,
-                instDate = "2026-03-09T10:00:00",
+                instDate = java.time.LocalDateTime.parse("2026-03-09T10:00:00"),
                 updDate = null,
                 attachments = listOf(
                     AttachmentInfo(fileKey = "uuid.pdf", fileType = "f00003", fileOriginalName = "test.pdf")
@@ -298,8 +298,8 @@ class AdminEducationControllerTest {
                 eduCode = "c00001",
                 eduCodeNm = "시식매뉴얼",
                 employeeId = 1L,
-                instDate = "2026-03-09T10:00:00",
-                updDate = "2026-03-09T14:00:00",
+                instDate = java.time.LocalDateTime.parse("2026-03-09T10:00:00"),
+                updDate = java.time.LocalDateTime.parse("2026-03-09T14:00:00"),
                 attachments = emptyList()
             )
 

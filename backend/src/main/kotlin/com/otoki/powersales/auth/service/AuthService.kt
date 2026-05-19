@@ -350,7 +350,7 @@ class AuthService(
             AgreementHistory(
                 employeeId = employee.id,
                 agreementFlag = true,
-                agreementDate = LocalDate.now(TimeZones.SEOUL_ZONE),
+                agreementDate = LocalDate.now(),
                 agreementWordId = terms.id.toLong()
             )
         )

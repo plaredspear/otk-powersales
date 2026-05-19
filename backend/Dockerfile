@@ -32,14 +32,15 @@ USER appuser
 
 EXPOSE 8080
 
-# 시각 처리 컨벤션 (스펙 #564): 컨테이너 timezone 을 UTC 로 명시.
-# JVM `user.timezone` 도 명시하여 베이스 이미지 / 호스트 변동에 무관하게 UTC 보장.
-ENV TZ=UTC
+# 시각 처리 컨벤션: 단일 KST 서비스 — JVM/컨테이너 TZ 를 Asia/Seoul 로 일관.
+# 도메인 코드는 LocalDateTime / LocalDate / LocalTime 으로 KST wall-clock 작성,
+# DB 컬럼 TIMESTAMPTZ 가 JDBC 매핑 시 JVM TZ(KST) 기준으로 자동 변환된다.
+ENV TZ=Asia/Seoul
 
 ENV JAVA_OPTS="-XX:+UseContainerSupport \
   -XX:MaxRAMPercentage=75.0 \
   -XX:InitialRAMPercentage=50.0 \
-  -Duser.timezone=UTC \
+  -Duser.timezone=Asia/Seoul \
   -Djava.security.egd=file:/dev/./urandom"
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

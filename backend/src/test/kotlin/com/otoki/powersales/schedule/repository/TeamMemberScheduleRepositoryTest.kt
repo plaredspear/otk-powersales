@@ -75,7 +75,7 @@ class TeamMemberScheduleRepositoryTest {
     fun findByEmployeeIdAndWorkingDate_differentDate() {
         // Given
         val today = LocalDate.now()
-        val tomorrow = today.plusDays(1)
+        val tomorrow = today.plus(1, java.time.temporal.ChronoUnit.DAYS)
         val teamMemberSchedule = TeamMemberSchedule(
             employee = testEmployee,
             workingDate = tomorrow,

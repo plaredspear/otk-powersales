@@ -1,5 +1,7 @@
 package com.otoki.powersales.education.dto.response
 
+import java.time.LocalDateTime
+
 /**
  * 교육 자료 작성/수정 응답 DTO
  */
@@ -10,8 +12,8 @@ data class EducationMutationResponse(
     val eduCode: String,
     val eduCodeNm: String,
     val employeeId: Long?,
-    val instDate: String,
-    val updDate: String?,
+    val instDate: LocalDateTime?,
+    val updDate: LocalDateTime?,
     val attachments: List<AttachmentInfo>
 )
 

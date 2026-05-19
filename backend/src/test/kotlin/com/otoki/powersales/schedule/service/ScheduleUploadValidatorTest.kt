@@ -103,7 +103,7 @@ class ScheduleUploadValidatorTest {
             val futureRetireMap = mapOf(
                 "99999999" to createEmployee(
                     "99999999", "퇴직예정", "USR999", "퇴직",
-                    endDate = LocalDate.now().plusDays(30)
+                    endDate = LocalDate.now().plus(30, java.time.temporal.ChronoUnit.DAYS)
                 )
             )
             val rows = listOf(

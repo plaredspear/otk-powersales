@@ -42,7 +42,7 @@ class OrderRequestServiceTest {
     private val orderRequestDetailMapper = com.otoki.powersales.order.service.OrderRequestDetailMapper()
 
     private val fixedClock: Clock = Clock.fixed(
-        LocalDateTime.of(2026, 5, 5, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+        java.time.LocalDateTime.of(2026, 5, 5, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
         ZoneId.of("Asia/Seoul"),
     )
 
@@ -359,7 +359,7 @@ class OrderRequestServiceTest {
         return OrderRequest(
             id = id,
             orderRequestNumber = "OR-${id.toString().padStart(7, '0')}",
-            orderDate = LocalDateTime.of(2026, 5, 4, 10, 0),
+            orderDate = java.time.LocalDateTime.of(2026, 5, 4, 10, 0),
             deliveryDate = LocalDate.of(2026, 5, 6),
             totalAmount = BigDecimal("1234567.00"),
             orderRequestStatus = OrderRequestStatus.APPROVED,
@@ -377,7 +377,7 @@ class OrderRequestServiceTest {
         return OrderRequest(
             id = 100L,
             orderRequestNumber = "OR-0000100",
-            orderDate = LocalDateTime.of(2026, 5, 4, 10, 0),
+            orderDate = java.time.LocalDateTime.of(2026, 5, 4, 10, 0),
             deliveryDate = deliveryDate,
             totalAmount = BigDecimal("1234567.00"),
             orderRequestStatus = OrderRequestStatus.APPROVED,

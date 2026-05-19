@@ -153,7 +153,10 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         return when (preset) {
             SchedulePreset.INPUT_TODAY ->
                 BooleanBuilder(
-                    displayWorkSchedule.createdAt.between(today.atStartOfDay(), today.atTime(LocalTime.MAX))
+                    displayWorkSchedule.createdAt.between(
+                        today.atStartOfDay(),
+                        today.atTime(LocalTime.MAX)
+                    )
                 )
             SchedulePreset.ALL -> null
             SchedulePreset.VALID ->

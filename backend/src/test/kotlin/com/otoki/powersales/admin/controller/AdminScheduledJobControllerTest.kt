@@ -46,8 +46,8 @@ class AdminScheduledJobControllerTest {
                 ScheduledJobRunDto(
                     id = 1L,
                     jobName = "sap-outbox-worker",
-                    startedAt = LocalDateTime.of(2026, 5, 18, 1, 0, 0),
-                    endedAt = LocalDateTime.of(2026, 5, 18, 1, 0, 5),
+                    startedAt = java.time.LocalDateTime.of(2026, 5, 18, 1, 0, 0),
+                    endedAt = java.time.LocalDateTime.of(2026, 5, 18, 1, 0, 5),
                     durationMs = 5000L,
                     status = "SUCCESS",
                     errorMessage = null,
@@ -80,8 +80,8 @@ class AdminScheduledJobControllerTest {
             get("/api/v1/admin/scheduled-jobs/runs")
                 .param("jobName", "sap-outbox-worker")
                 .param("status", "FAILURE")
-                .param("from", "2026-05-17T00:00:00")
-                .param("to", "2026-05-18T00:00:00")
+                .param("from", "2026-05-17T00:00:00Z")
+                .param("to", "2026-05-18T00:00:00Z")
                 .param("page", "2")
                 .param("size", "50")
         )
@@ -94,8 +94,8 @@ class AdminScheduledJobControllerTest {
         val q = captor.firstValue
         assert(q.jobName == "sap-outbox-worker")
         assert(q.status == "FAILURE")
-        assert(q.from == LocalDateTime.of(2026, 5, 17, 0, 0, 0))
-        assert(q.to == LocalDateTime.of(2026, 5, 18, 0, 0, 0))
+        assert(q.from == java.time.LocalDateTime.of(2026, 5, 17, 0, 0, 0))
+        assert(q.to == java.time.LocalDateTime.of(2026, 5, 18, 0, 0, 0))
         assert(q.page == 2)
         assert(q.size == 50)
     }
@@ -119,8 +119,8 @@ class AdminScheduledJobControllerTest {
     @Test
     @DisplayName("GET /summary - default windowHours=24 응답")
     fun summary_default() {
-        val to = LocalDateTime.of(2026, 5, 18, 12, 0, 0)
-        val from = to.minusHours(24)
+        val to = java.time.LocalDateTime.of(2026, 5, 18, 12, 0, 0)
+        val from = to.minus(24, java.time.temporal.ChronoUnit.HOURS)
         whenever(adminScheduledJobService.summary(eq(24L))).thenReturn(
             ScheduledJobSummaryResponse(
                 windowFrom = from,

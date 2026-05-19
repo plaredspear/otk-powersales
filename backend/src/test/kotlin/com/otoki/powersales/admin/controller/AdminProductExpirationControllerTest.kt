@@ -103,8 +103,8 @@ class AdminProductExpirationControllerTest {
         dDay = 26,
         status = "NORMAL",
         description = "테스트 설명",
-        createdAt = LocalDateTime.of(2026, 4, 1, 10, 0, 0),
-        updatedAt = LocalDateTime.of(2026, 4, 1, 10, 0, 0)
+        createdAt = java.time.LocalDateTime.of(2026, 4, 1, 10, 0, 0),
+        updatedAt = java.time.LocalDateTime.of(2026, 4, 1, 10, 0, 0)
     )
 
     @Nested

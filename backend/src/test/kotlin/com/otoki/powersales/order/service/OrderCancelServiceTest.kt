@@ -61,7 +61,7 @@ class OrderCancelServiceTest {
         employeeRepository = mock()
         deadlineCalculator = OrderDeadlineCalculator(
             Clock.fixed(
-                LocalDateTime.of(2026, 5, 1, 10, 0).atZone(TimeZones.SEOUL_ZONE).toInstant(),
+                java.time.LocalDateTime.of(2026, 5, 1, 10, 0).atZone(TimeZones.SEOUL_ZONE).toInstant(),
                 TimeZones.SEOUL_ZONE,
             ),
         )
@@ -276,7 +276,7 @@ class OrderCancelServiceTest {
     ) = OrderRequest(
         id = orderRequestId,
         orderRequestNumber = "ORD-20260504-000001",
-        orderDate = LocalDateTime.of(2026, 4, 28, 10, 0),
+        orderDate = java.time.LocalDateTime.of(2026, 4, 28, 10, 0),
         deliveryDate = deliveryDate,
         totalAmount = BigDecimal("100000"),
         orderRequestStatus = status,

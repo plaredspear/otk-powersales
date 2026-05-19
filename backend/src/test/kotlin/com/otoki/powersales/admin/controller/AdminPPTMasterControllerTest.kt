@@ -80,8 +80,8 @@ class AdminPPTMasterControllerTest {
         endDate = null,
         isConfirmed = true,
         branchCode = "1100",
-        createdAt = LocalDateTime.of(2026, 3, 22, 9, 0),
-        updatedAt = LocalDateTime.of(2026, 3, 22, 9, 0)
+        createdAt = java.time.LocalDateTime.of(2026, 3, 22, 9, 0),
+        updatedAt = java.time.LocalDateTime.of(2026, 3, 22, 9, 0)
     )
 
     @Nested
@@ -272,7 +272,7 @@ class AdminPPTMasterControllerTest {
                         id = 1L, employeeId = 1L, employeeName = "홍길동",
                         employeeCode = "12345678", orgName = "서울지점", status = "재직",
                         oldValue = null, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
-                        changedAt = LocalDateTime.of(2026, 3, 22, 9, 0)
+                        changedAt = java.time.LocalDateTime.of(2026, 3, 22, 9, 0)
                     )
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
@@ -303,7 +303,7 @@ class AdminPPTMasterControllerTest {
                         employeeCode = "EMP005", orgName = "서울지점", status = "재직",
                         oldValue = ProfessionalPromotionTeamType.RAMEN_SALE,
                         newValue = ProfessionalPromotionTeamType.CURRY_PROMOTION,
-                        changedAt = LocalDateTime.of(2026, 5, 18, 14, 30)
+                        changedAt = java.time.LocalDateTime.of(2026, 5, 18, 14, 30)
                     )
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
@@ -353,7 +353,7 @@ class AdminPPTMasterControllerTest {
                         id = 99L, employeeId = 999L,
                         employeeName = null, employeeCode = null, orgName = null, status = null,
                         oldValue = null, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
-                        changedAt = LocalDateTime.of(2026, 5, 18, 14, 30)
+                        changedAt = java.time.LocalDateTime.of(2026, 5, 18, 14, 30)
                     )
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20

@@ -11,7 +11,7 @@ class AttendancePayloadFactoryTest {
 
     private val factory = AttendancePayloadFactory()
     private val today: LocalDate = LocalDate.of(2026, 5, 4)
-    private val yesterday: LocalDate = today.minusDays(1)
+    private val yesterday: LocalDate = today.minus(1, java.time.temporal.ChronoUnit.DAYS)
 
     @Test
     @DisplayName("페이로드 키 셋 정합성 — 모든 키 8개가 정해진 매핑으로 출력된다")

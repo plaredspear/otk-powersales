@@ -93,7 +93,7 @@ class SafetyCheckServiceTest {
         @DisplayName("오늘 제출 있음 - completed=true, submittedAt 반환")
         fun getTodayStatus_completed() {
             // Given
-            val completeTime = LocalDateTime.now().minusHours(2)
+            val completeTime = LocalDateTime.now().minus(2, java.time.temporal.ChronoUnit.HOURS)
             val submission = createSubmission(completeTime = completeTime)
             whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
             whenever(submissionRepository.findByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
@@ -295,8 +295,8 @@ class SafetyCheckServiceTest {
             )
         }
         return SafetyCheckSubmitRequest(
-            startTime = LocalDateTime.of(2026, 3, 15, 9, 0, 0),
-            completeTime = LocalDateTime.of(2026, 3, 15, 9, 2, 30),
+            startTime = java.time.LocalDateTime.of(2026, 3, 15, 9, 0, 0),
+            completeTime = java.time.LocalDateTime.of(2026, 3, 15, 9, 2, 30),
             equipments = equipments,
             precautions = precautions
         )

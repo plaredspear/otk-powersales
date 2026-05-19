@@ -39,7 +39,7 @@ class AdminAttendanceLogServiceTest {
             name = "AL-001",
             employeeId = 10L,
             accountId = 20,
-            attendanceDate = LocalDateTime.of(2026, 5, 18, 9, 0),
+            attendanceDate = java.time.LocalDateTime.of(2026, 5, 18, 9, 0),
             attendanceType = AttendanceType.REGULAR,
             reason = "정상 출근",
         )

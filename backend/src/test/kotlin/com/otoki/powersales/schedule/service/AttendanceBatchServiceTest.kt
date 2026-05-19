@@ -43,7 +43,7 @@ class AttendanceBatchServiceTest {
     @DisplayName("페이지 100건씩 분할 송신 — 250건 → SAP 호출 3회 (100/100/50)")
     fun runDaily_pagesArePushedSequentially() {
         val today = LocalDate.of(2026, 5, 4)
-        val yesterday = today.minusDays(1)
+        val yesterday = today.minus(1, java.time.temporal.ChronoUnit.DAYS)
         whenever(repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(0))).thenReturn(rows(100, today))
         whenever(repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(pageSize))).thenReturn(rows(100, today))
         whenever(repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(2 * pageSize))).thenReturn(rows(50, today))

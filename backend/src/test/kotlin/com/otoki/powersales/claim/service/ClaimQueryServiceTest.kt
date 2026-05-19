@@ -211,7 +211,7 @@ class ClaimQueryServiceTest {
             requestTypeName = requestTypeName,
             status = ClaimStatus.DRAFT
         ).apply {
-            createdAt = LocalDateTime.of(2026, 4, 8, 10, 30, 0)
+            createdAt = java.time.LocalDateTime.of(2026, 4, 8, 10, 30, 0)
         }
     }
 

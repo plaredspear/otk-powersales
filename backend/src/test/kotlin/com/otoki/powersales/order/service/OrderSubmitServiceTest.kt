@@ -111,7 +111,7 @@ class OrderSubmitServiceTest {
 
     private fun createValidRequest(
         clientId: Long = 1L,
-        deliveryDate: String = LocalDate.now().plusDays(3).toString(),
+        deliveryDate: String = LocalDate.now().plus(3, java.time.temporal.ChronoUnit.DAYS).toString(),
         boxQuantity: Int = 5,
         pieceQuantity: Int = 10
     ): OrderDraftRequest {
@@ -377,7 +377,7 @@ class OrderSubmitServiceTest {
         fun submitOrder_pastDeliveryDate_throwsException() {
             // given
             val request = createValidRequest(
-                deliveryDate = LocalDate.now().minusDays(1).toString()
+                deliveryDate = LocalDate.now().minus(1, java.time.temporal.ChronoUnit.DAYS).toString()
             )
 
             // when & then

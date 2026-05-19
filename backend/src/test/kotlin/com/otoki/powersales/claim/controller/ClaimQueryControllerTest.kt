@@ -80,7 +80,7 @@ class ClaimQueryControllerTest {
                     defectQuantity = 3L,
                     status = "DRAFT",
                     statusLabel = "임시저장",
-                    createdAt = LocalDateTime.of(2026, 4, 8, 10, 30, 0)
+                    createdAt = java.time.LocalDateTime.of(2026, 4, 8, 10, 30, 0)
                 )
             )
             whenever(claimQueryService.getClaims(eq(1L), isNull(), isNull())).thenReturn(items)
@@ -168,7 +168,7 @@ class ClaimQueryControllerTest {
                 requestTypeName = "교환",
                 status = "DRAFT",
                 statusLabel = "임시저장",
-                createdAt = LocalDateTime.of(2026, 4, 8, 10, 30, 0),
+                createdAt = java.time.LocalDateTime.of(2026, 4, 8, 10, 30, 0),
                 photos = listOf(
                     ClaimPhotoItem(
                         photoId = 1L,

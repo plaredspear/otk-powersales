@@ -43,7 +43,7 @@ class DeviceVersionRepositoryTest {
         @DisplayName("DeviceVersion 저장 및 복합 키로 조회 - version/device 저장 후 8개 필드 일치 확인")
         fun saveAndFindByCompositeKey() {
             // Given
-            val now = LocalDateTime.of(2026, 2, 24, 10, 0, 0)
+            val now = java.time.LocalDateTime.of(2026, 2, 24, 10, 0, 0)
             val deviceVersion = DeviceVersion(
                 version = "1.0.0",
                 device = "AOS",

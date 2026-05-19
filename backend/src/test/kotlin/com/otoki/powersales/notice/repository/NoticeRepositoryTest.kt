@@ -75,9 +75,9 @@ class NoticeRepositoryTest {
         fun branchAndAll() {
             // Given
             val now = LocalDateTime.now()
-            persistNotice(name = "부산1지점 공지", category = NoticeCategory.BRANCH, branch = "부산1지점", createdDate = now.minusHours(1))
-            persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY, createdDate = now.minusHours(2))
-            persistNotice(name = "서울1지점 공지", category = NoticeCategory.BRANCH, branch = "서울1지점", createdDate = now.minusHours(3))
+            persistNotice(name = "부산1지점 공지", category = NoticeCategory.BRANCH, branch = "부산1지점", createdDate = now.minus(1, java.time.temporal.ChronoUnit.HOURS))
+            persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY, createdDate = now.minus(2, java.time.temporal.ChronoUnit.HOURS))
+            persistNotice(name = "서울1지점 공지", category = NoticeCategory.BRANCH, branch = "서울1지점", createdDate = now.minus(3, java.time.temporal.ChronoUnit.HOURS))
 
             // When
             val result = noticeRepository.findRecentNotices("부산1지점")
@@ -92,8 +92,8 @@ class NoticeRepositoryTest {
         fun includesEducation() {
             // Given
             val now = LocalDateTime.now()
-            persistNotice(name = "교육 공지", category = NoticeCategory.EDUCATION, createdDate = now.minusHours(1))
-            persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY, createdDate = now.minusHours(2))
+            persistNotice(name = "교육 공지", category = NoticeCategory.EDUCATION, createdDate = now.minus(1, java.time.temporal.ChronoUnit.HOURS))
+            persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY, createdDate = now.minus(2, java.time.temporal.ChronoUnit.HOURS))
 
             // When
             val result = noticeRepository.findRecentNotices("부산1지점")
@@ -108,9 +108,9 @@ class NoticeRepositoryTest {
         fun orderedByCreatedDateDesc() {
             // Given
             val now = LocalDateTime.now()
-            persistNotice(name = "가장 오래된 공지", category = NoticeCategory.COMPANY, createdDate = now.minusDays(3))
-            persistNotice(name = "중간 공지", category = NoticeCategory.COMPANY, createdDate = now.minusDays(1))
-            persistNotice(name = "최신 공지", category = NoticeCategory.COMPANY, createdDate = now.minusHours(1))
+            persistNotice(name = "가장 오래된 공지", category = NoticeCategory.COMPANY, createdDate = now.minus(3, java.time.temporal.ChronoUnit.DAYS))
+            persistNotice(name = "중간 공지", category = NoticeCategory.COMPANY, createdDate = now.minus(1, java.time.temporal.ChronoUnit.DAYS))
+            persistNotice(name = "최신 공지", category = NoticeCategory.COMPANY, createdDate = now.minus(1, java.time.temporal.ChronoUnit.HOURS))
 
             // When
             val result = noticeRepository.findRecentNotices("부산1지점")
@@ -128,7 +128,7 @@ class NoticeRepositoryTest {
             // Given
             val now = LocalDateTime.now()
             for (i in 1..8) {
-                persistNotice(name = "공지 $i", category = NoticeCategory.COMPANY, createdDate = now.minusHours(i.toLong()))
+                persistNotice(name = "공지 $i", category = NoticeCategory.COMPANY, createdDate = now.minus(i.toLong(), java.time.temporal.ChronoUnit.HOURS))
             }
 
             // When
@@ -143,8 +143,8 @@ class NoticeRepositoryTest {
         fun returnsLatestRegardlessOfDate() {
             // Given
             val now = LocalDateTime.now()
-            persistNotice(name = "오래된 공지", category = NoticeCategory.COMPANY, createdDate = now.minusDays(30))
-            persistNotice(name = "최근 공지", category = NoticeCategory.COMPANY, createdDate = now.minusDays(1))
+            persistNotice(name = "오래된 공지", category = NoticeCategory.COMPANY, createdDate = now.minus(30, java.time.temporal.ChronoUnit.DAYS))
+            persistNotice(name = "최근 공지", category = NoticeCategory.COMPANY, createdDate = now.minus(1, java.time.temporal.ChronoUnit.DAYS))
 
             // When
             val result = noticeRepository.findRecentNotices("부산1지점")
@@ -170,7 +170,7 @@ class NoticeRepositoryTest {
         fun otherBranchExcluded() {
             // Given
             val now = LocalDateTime.now()
-            persistNotice(name = "서울1지점 전용 공지", category = NoticeCategory.BRANCH, branch = "서울1지점", createdDate = now.minusHours(1))
+            persistNotice(name = "서울1지점 전용 공지", category = NoticeCategory.BRANCH, branch = "서울1지점", createdDate = now.minus(1, java.time.temporal.ChronoUnit.HOURS))
 
             // When
             val result = noticeRepository.findRecentNotices("부산1지점")
@@ -299,7 +299,7 @@ class NoticeRepositoryTest {
             // Given
             val now = LocalDateTime.now()
             for (i in 1..15) {
-                persistNotice(name = "공지 $i", category = NoticeCategory.COMPANY, createdDate = now.minusMinutes(i.toLong()))
+                persistNotice(name = "공지 $i", category = NoticeCategory.COMPANY, createdDate = now.minus(i.toLong(), java.time.temporal.ChronoUnit.MINUTES))
             }
 
             // When

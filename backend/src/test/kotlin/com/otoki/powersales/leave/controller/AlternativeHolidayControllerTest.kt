@@ -65,7 +65,7 @@ class AlternativeHolidayControllerTest {
                 actualWorkDate = LocalDate.of(2026, 3, 7),
                 targetAltHolidayDate = LocalDate.of(2026, 3, 9),
                 status = "신규",
-                createdAt = LocalDateTime.of(2026, 3, 9, 10, 30)
+                createdAt = java.time.LocalDateTime.of(2026, 3, 9, 10, 30)
             )
             whenever(alternativeHolidayService.createAlternativeHoliday(eq(1L), any(), any()))
                 .thenReturn(response)
@@ -157,7 +157,7 @@ class AlternativeHolidayControllerTest {
                     confirmAltHolidayDate = LocalDate.of(2026, 3, 9),
                     status = "승인",
                     changeReason = null,
-                    createdAt = LocalDateTime.of(2026, 3, 9, 10, 30)
+                    createdAt = java.time.LocalDateTime.of(2026, 3, 9, 10, 30)
                 )
             )
             whenever(alternativeHolidayService.getAlternativeHolidays(eq(1L), any(), any()))

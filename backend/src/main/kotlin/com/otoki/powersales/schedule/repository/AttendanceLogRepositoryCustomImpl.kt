@@ -20,8 +20,16 @@ open class AttendanceLogRepositoryCustomImpl(
         filter.employeeId?.let { where.and(attendanceLog.employeeId.eq(it)) }
         filter.accountId?.let { where.and(attendanceLog.accountId.eq(it)) }
         filter.attendanceType?.let { where.and(attendanceLog.attendanceType.eq(it)) }
-        filter.attendanceDateFrom?.let { where.and(attendanceLog.attendanceDate.goe(it.atStartOfDay())) }
-        filter.attendanceDateTo?.let { where.and(attendanceLog.attendanceDate.lt(it.plusDays(1).atStartOfDay())) }
+        filter.attendanceDateFrom?.let {
+            where.and(attendanceLog.attendanceDate.goe(
+                it.atStartOfDay()
+            ))
+        }
+        filter.attendanceDateTo?.let {
+            where.and(attendanceLog.attendanceDate.lt(
+                it.plusDays(1).atStartOfDay()
+            ))
+        }
 
         filter.keyword?.takeIf { it.isNotBlank() }?.let { keyword ->
             val employeeIds = queryFactory

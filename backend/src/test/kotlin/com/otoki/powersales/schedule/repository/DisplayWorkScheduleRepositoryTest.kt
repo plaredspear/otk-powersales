@@ -67,7 +67,7 @@ class DisplayWorkScheduleRepositoryTest {
     @DisplayName("findByEmployeeAndStartDate - 다른 날짜 스케줄만 있으면 빈 목록 반환")
     fun findByEmployeeAndStartDate_differentDate() {
         // Given
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plusDays(1)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS)))
         testEntityManager.clear()
 
         // When
@@ -107,11 +107,11 @@ class DisplayWorkScheduleRepositoryTest {
     fun findByEmployeeAndStartDateBetween_withinRange() {
         // Given
         val startDate = today
-        val endDate = today.plusDays(6)
+        val endDate = today.plus(6, java.time.temporal.ChronoUnit.DAYS)
 
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plusDays(3)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plusDays(6)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plus(3, java.time.temporal.ChronoUnit.DAYS)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plus(6, java.time.temporal.ChronoUnit.DAYS)))
         testEntityManager.clear()
 
         // When
@@ -126,12 +126,12 @@ class DisplayWorkScheduleRepositoryTest {
     @DisplayName("findByEmployeeAndStartDateBetween - 기간 외 스케줄은 제외")
     fun findByEmployeeAndStartDateBetween_outsideRange() {
         // Given
-        val startDate = today.plusDays(1)
-        val endDate = today.plusDays(3)
+        val startDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS)
+        val endDate = today.plus(3, java.time.temporal.ChronoUnit.DAYS)
 
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plusDays(2)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plusDays(5)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plus(2, java.time.temporal.ChronoUnit.DAYS)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plus(5, java.time.temporal.ChronoUnit.DAYS)))
         testEntityManager.clear()
 
         // When
@@ -147,14 +147,14 @@ class DisplayWorkScheduleRepositoryTest {
     fun findDistinctAccounts_removeDuplicates() {
         // Given
         val startDate = today
-        val endDate = today.plusDays(10)
+        val endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS)
 
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plusDays(3)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plusDays(7)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plusDays(2)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plusDays(5)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plusDays(9)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plus(3, java.time.temporal.ChronoUnit.DAYS)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plus(7, java.time.temporal.ChronoUnit.DAYS)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plus(2, java.time.temporal.ChronoUnit.DAYS)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today.plus(5, java.time.temporal.ChronoUnit.DAYS)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plus(9, java.time.temporal.ChronoUnit.DAYS)))
         testEntityManager.clear()
 
         // When
@@ -170,7 +170,7 @@ class DisplayWorkScheduleRepositoryTest {
     fun findDistinctAccounts_noSchedules() {
         // Given
         val startDate = today
-        val endDate = today.plusDays(10)
+        val endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS)
         val otherEmployeeId = 99999L
 
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
@@ -188,7 +188,7 @@ class DisplayWorkScheduleRepositoryTest {
     fun findByEmployeeAndStartDateBetween_noSchedules() {
         // Given
         val startDate = today.plusMonths(1)
-        val endDate = today.plusMonths(1).plusDays(10)
+        val endDate = today.plusMonths(1).plus(10, java.time.temporal.ChronoUnit.DAYS)
 
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
         testEntityManager.clear()
@@ -205,12 +205,12 @@ class DisplayWorkScheduleRepositoryTest {
     fun findDistinctStartDates_success() {
         // Given
         val startDate = today
-        val endDate = today.plusDays(10)
+        val endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS)
 
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plusDays(3)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plusDays(7)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plus(3, java.time.temporal.ChronoUnit.DAYS)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plus(7, java.time.temporal.ChronoUnit.DAYS)))
         testEntityManager.clear()
 
         // When
@@ -220,8 +220,8 @@ class DisplayWorkScheduleRepositoryTest {
         assertThat(result).hasSize(3)
         assertThat(result).containsExactly(
             today,
-            today.plusDays(3),
-            today.plusDays(7)
+            today.plus(3, java.time.temporal.ChronoUnit.DAYS),
+            today.plus(7, java.time.temporal.ChronoUnit.DAYS)
         )
     }
 
@@ -230,7 +230,7 @@ class DisplayWorkScheduleRepositoryTest {
     fun findDistinctStartDates_removeDuplicates() {
         // Given
         val startDate = today
-        val endDate = today.plusDays(1)
+        val endDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS)
 
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today))
@@ -249,11 +249,11 @@ class DisplayWorkScheduleRepositoryTest {
     fun findDistinctStartDates_orderedByDate() {
         // Given
         val startDate = today
-        val endDate = today.plusDays(10)
+        val endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS)
 
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plusDays(7)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plus(7, java.time.temporal.ChronoUnit.DAYS)))
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plusDays(3)))
+        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plus(3, java.time.temporal.ChronoUnit.DAYS)))
         testEntityManager.clear()
 
         // When
@@ -264,8 +264,8 @@ class DisplayWorkScheduleRepositoryTest {
         assertThat(result).isSorted()
         assertThat(result).containsExactly(
             today,
-            today.plusDays(3),
-            today.plusDays(7)
+            today.plus(3, java.time.temporal.ChronoUnit.DAYS),
+            today.plus(7, java.time.temporal.ChronoUnit.DAYS)
         )
     }
 
@@ -274,7 +274,7 @@ class DisplayWorkScheduleRepositoryTest {
     fun findDistinctStartDates_noSchedules() {
         // Given
         val startDate = today.plusMonths(1)
-        val endDate = today.plusMonths(1).plusDays(10)
+        val endDate = today.plusMonths(1).plus(10, java.time.temporal.ChronoUnit.DAYS)
 
         // When
         val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployee.id, startDate, endDate)
@@ -289,7 +289,7 @@ class DisplayWorkScheduleRepositoryTest {
         // Given
         val otherEmployeeId = 99999L
         val startDate = today
-        val endDate = today.plusDays(10)
+        val endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS)
 
         testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
         testEntityManager.clear()
@@ -324,7 +324,7 @@ class DisplayWorkScheduleRepositoryTest {
         @DisplayName("퇴직 + Employee.endDate >= today → 조회됨 (SF formula '유효' 분기 B)")
         fun resignedButEmployeeEndDateFuture_returns() {
             val resignedFuture = persistEmployee(
-                "RES001", status = "퇴직", endDate = today.plusDays(1)
+                "RES001", status = "퇴직", endDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS)
             )
             testEntityManager.persistAndFlush(createSapDws(employee = resignedFuture))
             testEntityManager.clear()
@@ -339,7 +339,7 @@ class DisplayWorkScheduleRepositoryTest {
         @DisplayName("퇴직 + Employee.endDate < today → 제외됨 ('종료' 분기)")
         fun resignedAndEmployeeEndDatePast_excluded() {
             val resignedPast = persistEmployee(
-                "RES002", status = "퇴직", endDate = today.minusDays(1)
+                "RES002", status = "퇴직", endDate = today.minus(1, java.time.temporal.ChronoUnit.DAYS)
             )
             testEntityManager.persistAndFlush(createSapDws(employee = resignedPast))
             testEntityManager.clear()
@@ -365,7 +365,7 @@ class DisplayWorkScheduleRepositoryTest {
         @DisplayName("appLoginActive=false + Employee.endDate >= today → 조회됨")
         fun appLoginInactiveButEmployeeEndDateFuture_returns() {
             val inactive = persistEmployee(
-                "INA001", status = "재직", appLoginActive = false, endDate = today.plusDays(7)
+                "INA001", status = "재직", appLoginActive = false, endDate = today.plus(7, java.time.temporal.ChronoUnit.DAYS)
             )
             testEntityManager.persistAndFlush(createSapDws(employee = inactive))
             testEntityManager.clear()
@@ -381,7 +381,7 @@ class DisplayWorkScheduleRepositoryTest {
         fun startDateFuture_excluded() {
             val activeEmp = persistEmployee("ACT002", status = "재직")
             testEntityManager.persistAndFlush(
-                createSapDws(employee = activeEmp, startDate = today.plusDays(1))
+                createSapDws(employee = activeEmp, startDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS))
             )
             testEntityManager.clear()
 

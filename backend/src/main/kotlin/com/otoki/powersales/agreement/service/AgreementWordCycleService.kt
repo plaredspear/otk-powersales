@@ -51,7 +51,7 @@ class AgreementWordCycleService(
      */
     @Transactional
     fun runCycle(): Result {
-        val today = LocalDate.now(TimeZones.SEOUL_ZONE)
+        val today = LocalDate.now()
         val candidates = agreementWordRepository.findActiveOrDueCandidates(today)
 
         val (oldActive, dueCandidate) = classifyCandidates(candidates, today)

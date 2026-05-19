@@ -192,7 +192,7 @@ class OrderRequestCreateServiceTest {
         @DisplayName("미래 일자 위반 (과거 납기일) → ORD_INVALID_REQUEST")
         fun pastDeliveryDate() {
             val request = baseRequest(
-                deliveryDate = LocalDate.now().minusDays(1),
+                deliveryDate = LocalDate.now().minus(1, java.time.temporal.ChronoUnit.DAYS),
                 lines = listOf(line()),
             )
             assertThatThrownBy { service.create(userId, request) }
@@ -223,7 +223,7 @@ class OrderRequestCreateServiceTest {
 
     private fun baseRequest(
         clientRequestId: String? = null,
-        deliveryDate: LocalDate = LocalDate.now().plusDays(2),
+        deliveryDate: LocalDate = LocalDate.now().plus(2, java.time.temporal.ChronoUnit.DAYS),
         totalAmount: Long = 100_000,
         lines: List<OrderRequestCreateLine> = listOf(line()),
     ) = OrderRequestCreateRequest(
@@ -264,7 +264,7 @@ class OrderRequestCreateServiceTest {
         orderRequestNumber = orderRequestNumber,
         clientRequestId = "idem-1",
         orderDate = java.time.LocalDateTime.now(),
-        deliveryDate = LocalDate.now().plusDays(2),
+        deliveryDate = LocalDate.now().plus(2, java.time.temporal.ChronoUnit.DAYS),
         totalAmount = BigDecimal.valueOf(100_000),
         orderRequestStatus = status,
         employee = employee(employeeCode = employeeCode),

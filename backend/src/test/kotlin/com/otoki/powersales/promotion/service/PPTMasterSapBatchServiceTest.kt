@@ -45,7 +45,7 @@ class PPTMasterSapBatchServiceTest {
     fun runHourly_pagesArePushedSequentially() {
         val today = LocalDate.of(2026, 5, 18)
         val monthFirstDay = today.withDayOfMonth(1)
-        val monthLastDay = monthFirstDay.plusMonths(1).minusDays(1)
+        val monthLastDay = monthFirstDay.plusMonths(1).minus(1, java.time.temporal.ChronoUnit.DAYS)
         whenever(repository.findSapOutboundTargets(eq(monthFirstDay), eq(monthLastDay))).thenReturn(masters(250))
         whenever(sender.sendPage(any())).thenReturn(true)
 
@@ -116,8 +116,8 @@ class PPTMasterSapBatchServiceTest {
                 teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 accountSfid = "001A$idx",
                 isConfirmed = true,
-                startDate = today.minusDays(1),
-                endDate = today.plusDays(1),
+                startDate = today.minus(1, java.time.temporal.ChronoUnit.DAYS),
+                endDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS),
                 branchCode = "BR$idx"
             )
         }

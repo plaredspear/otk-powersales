@@ -87,11 +87,11 @@ class NoticeServiceTest {
                 name = "2026년 상반기 영업 목표 안내",
                 category = NoticeCategory.COMPANY,
                 contents = "상반기 영업 목표가 확정되었습니다.",
-                createdDate = LocalDateTime.of(2026, 2, 28, 10, 30, 0)
+                createdDate = java.time.LocalDateTime.of(2026, 2, 28, 10, 30, 0)
             )
             val files = listOf(
-                createUploadFile(id = 101L, uniqueKey = "notices/img1.jpg", createdDate = LocalDateTime.of(2026, 2, 28, 10, 30, 0)),
-                createUploadFile(id = 102L, uniqueKey = "notices/img2.jpg", createdDate = LocalDateTime.of(2026, 2, 28, 11, 0, 0))
+                createUploadFile(id = 101L, uniqueKey = "notices/img1.jpg", createdDate = java.time.LocalDateTime.of(2026, 2, 28, 10, 30, 0)),
+                createUploadFile(id = 102L, uniqueKey = "notices/img2.jpg", createdDate = java.time.LocalDateTime.of(2026, 2, 28, 11, 0, 0))
             )
 
             whenever(noticeRepository.findById(42L)).thenReturn(Optional.of(notice))
@@ -106,7 +106,7 @@ class NoticeServiceTest {
             assertThat(result.categoryName).isEqualTo("회사공지")
             assertThat(result.title).isEqualTo("2026년 상반기 영업 목표 안내")
             assertThat(result.content).isEqualTo("상반기 영업 목표가 확정되었습니다.")
-            assertThat(result.createdAt).isEqualTo("2026-02-28T10:30:00")
+            assertThat(result.createdAt).isEqualTo(java.time.LocalDateTime.parse("2026-02-28T10:30:00"))
             assertThat(result.images).hasSize(2)
             assertThat(result.images[0].id).isEqualTo(101L)
             assertThat(result.images[0].url).isEqualTo("https://test-bucket.s3.ap-northeast-2.amazonaws.com/notices/img1.jpg")
@@ -136,10 +136,10 @@ class NoticeServiceTest {
             // Given
             val notice = createNotice(id = 10L, category = NoticeCategory.COMPANY)
             val files = listOf(
-                createUploadFile(id = 1L, uniqueKey = "valid/img.jpg", createdDate = LocalDateTime.of(2026, 1, 1, 0, 0)),
-                createUploadFile(id = 2L, uniqueKey = null, createdDate = LocalDateTime.of(2026, 1, 2, 0, 0)),
-                createUploadFile(id = 3L, uniqueKey = "", createdDate = LocalDateTime.of(2026, 1, 3, 0, 0)),
-                createUploadFile(id = 4L, uniqueKey = "valid/img2.jpg", createdDate = LocalDateTime.of(2026, 1, 4, 0, 0))
+                createUploadFile(id = 1L, uniqueKey = "valid/img.jpg", createdDate = java.time.LocalDateTime.of(2026, 1, 1, 0, 0)),
+                createUploadFile(id = 2L, uniqueKey = null, createdDate = java.time.LocalDateTime.of(2026, 1, 2, 0, 0)),
+                createUploadFile(id = 3L, uniqueKey = "", createdDate = java.time.LocalDateTime.of(2026, 1, 3, 0, 0)),
+                createUploadFile(id = 4L, uniqueKey = "valid/img2.jpg", createdDate = java.time.LocalDateTime.of(2026, 1, 4, 0, 0))
             )
 
             whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(notice))
@@ -864,7 +864,7 @@ class NoticeServiceTest {
         contents: String? = "본문 내용",
         branch: String? = null,
         isDeleted: Boolean? = false,
-        createdDate: LocalDateTime? = LocalDateTime.of(2026, 1, 1, 0, 0, 0)
+        createdDate: LocalDateTime? = java.time.LocalDateTime.of(2026, 1, 1, 0, 0, 0)
     ): Notice = Notice(
         id = id,
         sfid = sfid,
@@ -882,7 +882,7 @@ class NoticeServiceTest {
         uniqueKey: String? = "test/file.jpg",
         parentType: String = "NOTICE",
         parentId: Long? = null,
-        createdDate: LocalDateTime? = LocalDateTime.of(2026, 1, 1, 0, 0, 0)
+        createdDate: LocalDateTime? = java.time.LocalDateTime.of(2026, 1, 1, 0, 0, 0)
     ): UploadFile = UploadFile(
         id = id,
         uniqueKey = uniqueKey,

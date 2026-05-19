@@ -1,7 +1,7 @@
 package com.otoki.powersales.notice.dto.response
 
 import com.otoki.powersales.notice.entity.Notice
-import java.time.format.DateTimeFormatter
+import java.time.LocalDateTime
 
 data class NoticeMutationResponse(
     val id: Long,
@@ -11,12 +11,9 @@ data class NoticeMutationResponse(
     val content: String,
     val branch: String?,
     val branchCode: String?,
-    val createdAt: String
+    val createdAt: LocalDateTime?
 ) {
     companion object {
-        private val DATE_TIME_FORMATTER: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-
         fun from(entity: Notice): NoticeMutationResponse {
             return NoticeMutationResponse(
                 id = entity.id,
@@ -26,7 +23,7 @@ data class NoticeMutationResponse(
                 content = entity.contents ?: "",
                 branch = entity.branch,
                 branchCode = entity.branchCode,
-                createdAt = entity.createdAt?.format(DATE_TIME_FORMATTER) ?: ""
+                createdAt = entity.createdAt
             )
         }
     }

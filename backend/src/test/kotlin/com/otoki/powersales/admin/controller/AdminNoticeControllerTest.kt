@@ -100,7 +100,7 @@ class AdminNoticeControllerTest {
         fun getPosts_success() {
             val response = NoticePostListResponse(
                 content = listOf(
-                    NoticePostSummaryResponse(1L, "COMPANY", "회사공지", "테스트 공지", "2026-03-04T10:00:00")
+                    NoticePostSummaryResponse(1L, "COMPANY", "회사공지", "테스트 공지", java.time.LocalDateTime.parse("2026-03-04T10:00:00"))
                 ),
                 totalCount = 1,
                 totalPages = 1,
@@ -164,7 +164,7 @@ class AdminNoticeControllerTest {
                 content = "<p>본문</p>",
                 branch = null,
                 branchCode = null,
-                createdAt = "2026-03-04T10:00:00",
+                createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00"),
                 images = emptyList()
             )
             whenever(noticeService.getNoticeDetail(1L)).thenReturn(response)
@@ -198,7 +198,7 @@ class AdminNoticeControllerTest {
                 content = "<p>내용</p>",
                 branch = null,
                 branchCode = null,
-                createdAt = "2026-03-04T10:00:00"
+                createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00")
             )
             whenever(noticeService.createNotice(any(), eq(1L))).thenReturn(mutationResponse)
 
@@ -289,7 +289,7 @@ class AdminNoticeControllerTest {
                 content = "<p>수정 내용</p>",
                 branch = null,
                 branchCode = null,
-                createdAt = "2026-03-04T10:00:00"
+                createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00")
             )
             whenever(noticeService.updateNotice(eq(10L), any())).thenReturn(mutationResponse)
 

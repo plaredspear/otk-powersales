@@ -49,7 +49,7 @@ class AdminScheduledJobService(
 
     fun summary(windowHours: Long): ScheduledJobSummaryResponse {
         val to = LocalDateTime.now()
-        val from = to.minusHours(windowHours.coerceIn(1L, MAX_WINDOW_HOURS))
+        val from = to.minus(windowHours.coerceIn(1L, MAX_WINDOW_HOURS), java.time.temporal.ChronoUnit.HOURS)
         val counts = scheduledJobRunRepository.countByStatusWithin(from, to)
         val running = counts[ScheduledJobRun.STATUS_RUNNING] ?: 0L
         val success = counts[ScheduledJobRun.STATUS_SUCCESS] ?: 0L

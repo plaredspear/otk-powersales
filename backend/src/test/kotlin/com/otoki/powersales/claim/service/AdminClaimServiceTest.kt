@@ -201,7 +201,7 @@ class AdminClaimServiceTest {
             requestTypeName = "교환",
             status = status
         ).apply {
-            createdAt = LocalDateTime.of(2026, 4, 1, 9, 30, 0)
+            createdAt = java.time.LocalDateTime.of(2026, 4, 1, 9, 30, 0)
         }
     }
 

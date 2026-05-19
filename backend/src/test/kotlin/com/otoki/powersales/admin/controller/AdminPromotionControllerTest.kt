@@ -132,7 +132,7 @@ class AdminPromotionControllerTest {
                         isClosed = false,
                         costCenterCode = "1101",
                         isDeleted = false,
-                        createdAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0)
+                        createdAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0, 0)
                     )
                 ),
                 page = 0, size = 20, totalElements = 1, totalPages = 1
@@ -566,8 +566,8 @@ class AdminPromotionControllerTest {
         category1 = null,
         isClosed = false,
         isDeleted = false,
-        createdAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0),
-        updatedAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0),
+        createdAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0, 0),
+        updatedAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0, 0),
         remark = remark
     )
 

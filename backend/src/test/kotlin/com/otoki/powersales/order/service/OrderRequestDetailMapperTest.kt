@@ -331,7 +331,7 @@ class OrderRequestDetailMapperTest {
         val order = OrderRequest(
             id = 100L,
             orderRequestNumber = "OR-0001234",
-            orderDate = LocalDateTime.of(2026, 5, 4, 10, 0),
+            orderDate = java.time.LocalDateTime.of(2026, 5, 4, 10, 0),
             deliveryDate = LocalDate.of(2026, 5, 6),
             totalAmount = BigDecimal.ZERO,
             orderRequestStatus = OrderRequestStatus.APPROVED,

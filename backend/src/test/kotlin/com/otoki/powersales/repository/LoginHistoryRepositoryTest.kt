@@ -47,7 +47,7 @@ class LoginHistoryRepositoryTest {
         @DisplayName("LoginHistory 저장 및 surrogate PK로 조회 - 저장 후 ID로 재조회 -> 일치")
         fun saveAndFindById() {
             // Given
-            val now = LocalDateTime.of(2026, 2, 24, 10, 0, 0)
+            val now = java.time.LocalDateTime.of(2026, 2, 24, 10, 0, 0)
             val history = LoginHistory(empCode = "E001", instDate = now)
             val saved = testEntityManager.persistAndFlush(history)
             testEntityManager.clear()
@@ -75,7 +75,7 @@ class LoginHistoryRepositoryTest {
         @DisplayName("동일 사번 다중 로그인 이력 저장 - PK 충돌 없이 각각 별도 행으로 저장")
         fun saveMultipleForSameEmployee() {
             // Given
-            val now = LocalDateTime.of(2026, 2, 24, 10, 0, 0)
+            val now = java.time.LocalDateTime.of(2026, 2, 24, 10, 0, 0)
             val history1 = LoginHistory(empCode = "E001", instDate = now)
             val history2 = LoginHistory(empCode = "E001", instDate = now)
             testEntityManager.persistAndFlush(history1)

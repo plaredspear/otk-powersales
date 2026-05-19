@@ -30,7 +30,6 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
-import java.time.format.DateTimeFormatter
 
 @Service
 @Transactional(readOnly = true)
@@ -44,11 +43,6 @@ class NoticeService(
     @Value("\${app.aws.s3.bucket:otoki-bucket}")
     private val s3BucketName: String
 ) {
-
-    companion object {
-        private val DATE_TIME_FORMATTER: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-    }
 
     fun getNoticeDetail(noticeId: Long): NoticePostDetailResponse {
         val notice = noticeRepository.findById(noticeId)
@@ -74,7 +68,7 @@ class NoticeService(
             content = notice.contents ?: "",
             branch = notice.branch,
             branchCode = notice.branchCode,
-            createdAt = notice.createdAt?.format(DATE_TIME_FORMATTER) ?: "",
+            createdAt = notice.createdAt,
             images = images
         )
     }
@@ -96,7 +90,7 @@ class NoticeService(
                 category = notice.category?.apiCode ?: "",
                 categoryName = notice.category?.displayName ?: "",
                 title = notice.name ?: "",
-                createdAt = notice.createdAt?.format(DATE_TIME_FORMATTER) ?: ""
+                createdAt = notice.createdAt
             )
         }
 
@@ -122,7 +116,7 @@ class NoticeService(
                 category = notice.category?.apiCode ?: "",
                 categoryName = notice.category?.displayName ?: "",
                 title = notice.name ?: "",
-                createdAt = notice.createdAt?.format(DATE_TIME_FORMATTER) ?: ""
+                createdAt = notice.createdAt
             )
         }
 

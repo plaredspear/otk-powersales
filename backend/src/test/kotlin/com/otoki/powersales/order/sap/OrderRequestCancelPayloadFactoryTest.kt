@@ -56,7 +56,7 @@ class OrderRequestCancelPayloadFactoryTest {
     ) = OrderRequest(
         id = id,
         orderRequestNumber = number,
-        orderDate = LocalDateTime.of(2026, 5, 4, 10, 0),
+        orderDate = java.time.LocalDateTime.of(2026, 5, 4, 10, 0),
         deliveryDate = LocalDate.of(2026, 5, 6),
         totalAmount = BigDecimal("100000"),
         orderRequestStatus = OrderRequestStatus.APPROVED,

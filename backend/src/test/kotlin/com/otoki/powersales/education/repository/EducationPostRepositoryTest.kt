@@ -51,13 +51,13 @@ class EducationPostRepositoryTest {
                 eduId = "EDU001",
                 eduCode = "TASTING_MANUAL",
                 eduTitle = "진짬뽕 시식 매뉴얼",
-                createdAt = LocalDateTime.of(2020, 8, 10, 0, 0)
+                createdAt = java.time.LocalDateTime.of(2020, 8, 10, 0, 0)
             )
             val post2 = persistPost(
                 eduId = "EDU002",
                 eduCode = "TASTING_MANUAL",
                 eduTitle = "미숫가루 시식 매뉴얼",
-                createdAt = LocalDateTime.of(2020, 8, 11, 0, 0)
+                createdAt = java.time.LocalDateTime.of(2020, 8, 11, 0, 0)
             )
             // 다른 카테고리 (조회 대상 아님)
             persistPost(

@@ -129,7 +129,7 @@ class AdminOrganizationServiceTest {
         costCenterLevel5: String? = null,
         orgCodeLevel5: String? = null,
         orgNameLevel5: String? = null,
-        createdAt: LocalDateTime = LocalDateTime.of(2026, 1, 15, 9, 0)
+        createdAt: LocalDateTime = java.time.LocalDateTime.of(2026, 1, 15, 9, 0)
     ): Organization = Organization(
         id = id,
         costCenterLevel2 = costCenterLevel2,

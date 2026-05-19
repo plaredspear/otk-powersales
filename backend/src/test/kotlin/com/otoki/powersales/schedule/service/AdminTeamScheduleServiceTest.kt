@@ -1005,7 +1005,7 @@ class AdminTeamScheduleServiceTest {
         fun updateSchedule_pastDate_displaySchedule_dateChange() {
             // Given
             val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
-            val yesterday = LocalDate.now().minusDays(1)
+            val yesterday = LocalDate.now().minus(1, java.time.temporal.ChronoUnit.DAYS)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -1017,7 +1017,7 @@ class AdminTeamScheduleServiceTest {
             )
 
             val request = TeamScheduleUpdateRequest(
-                workingDate = LocalDate.now().plusDays(1).toString(),
+                workingDate = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS).toString(),
                 workingType = WorkingType.WORK,
                 workingCategory1 = WorkingCategory1.DISPLAY,
                 workingCategory3 = WorkingCategory3.FIXED,
@@ -1035,7 +1035,7 @@ class AdminTeamScheduleServiceTest {
         fun updateSchedule_pastDate_nullCategory_dateChange() {
             // Given
             val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
-            val threeDaysAgo = LocalDate.now().minusDays(3)
+            val threeDaysAgo = LocalDate.now().minus(3, java.time.temporal.ChronoUnit.DAYS)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -1046,7 +1046,7 @@ class AdminTeamScheduleServiceTest {
             )
 
             val request = TeamScheduleUpdateRequest(
-                workingDate = LocalDate.now().plusDays(1).toString(),
+                workingDate = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS).toString(),
                 workingType = WorkingType.WORK,
                 accountId = 1
             )
@@ -1062,8 +1062,8 @@ class AdminTeamScheduleServiceTest {
         fun updateSchedule_pastDate_eventSchedule_dateChange_success() {
             // Given
             val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
-            val yesterday = LocalDate.now().minusDays(1)
-            val tomorrow = LocalDate.now().plusDays(1)
+            val yesterday = LocalDate.now().minus(1, java.time.temporal.ChronoUnit.DAYS)
+            val tomorrow = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -1093,7 +1093,7 @@ class AdminTeamScheduleServiceTest {
         fun updateSchedule_pastDate_nonDateFieldChange_success() {
             // Given
             val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
-            val yesterday = LocalDate.now().minusDays(1)
+            val yesterday = LocalDate.now().minus(1, java.time.temporal.ChronoUnit.DAYS)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -1125,7 +1125,7 @@ class AdminTeamScheduleServiceTest {
             // Given
             val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
             val today = LocalDate.now()
-            val tomorrow = LocalDate.now().plusDays(1)
+            val tomorrow = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,
@@ -1159,8 +1159,8 @@ class AdminTeamScheduleServiceTest {
         fun updateSchedule_futureDate_dateChange_success() {
             // Given
             val currentUser = createEmployee(id = 10L, role = UserRole.LEADER)
-            val tomorrow = LocalDate.now().plusDays(1)
-            val dayAfter = LocalDate.now().plusDays(2)
+            val tomorrow = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS)
+            val dayAfter = LocalDate.now().plus(2, java.time.temporal.ChronoUnit.DAYS)
             val schedule = createSchedule(
                 id = 100L,
                 employeeId = 1L,

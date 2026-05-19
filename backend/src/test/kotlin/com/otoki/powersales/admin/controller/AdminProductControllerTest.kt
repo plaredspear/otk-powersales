@@ -285,7 +285,7 @@ class AdminProductControllerTest {
             val request = InventorySearchRequest(
                 accountId = 1,
                 productCodes = listOf("P001", "P002"),
-                deliveryRequestDate = LocalDate.now().plusDays(1)
+                deliveryRequestDate = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS)
             )
             val response = InventorySearchResponse(
                 results = listOf(
@@ -319,7 +319,7 @@ class AdminProductControllerTest {
         @Test
         @DisplayName("실패 - 제품 0건 -> 400 (validation)")
         fun searchInventory_emptyProducts() {
-            val body = """{"accountId":1,"productCodes":[],"deliveryRequestDate":"${LocalDate.now().plusDays(1)}"}"""
+            val body = """{"accountId":1,"productCodes":[],"deliveryRequestDate":"${LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS)}"}"""
             mockMvc.perform(
                 post("/api/v1/admin/products/inventory-search")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -332,7 +332,7 @@ class AdminProductControllerTest {
         @DisplayName("실패 - 제품 51건 -> 400 (validation)")
         fun searchInventory_tooManyProducts() {
             val codes = (1..51).map { "\"P$it\"" }.joinToString(",")
-            val body = """{"accountId":1,"productCodes":[$codes],"deliveryRequestDate":"${LocalDate.now().plusDays(1)}"}"""
+            val body = """{"accountId":1,"productCodes":[$codes],"deliveryRequestDate":"${LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS)}"}"""
             mockMvc.perform(
                 post("/api/v1/admin/products/inventory-search")
                     .contentType(MediaType.APPLICATION_JSON)

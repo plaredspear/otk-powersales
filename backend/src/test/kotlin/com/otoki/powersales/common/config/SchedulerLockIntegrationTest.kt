@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.datasource.DriverManagerDataSource
 import java.time.Duration
-import java.time.Instant
+import java.time.LocalDateTime
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -74,7 +74,7 @@ class SchedulerLockIntegrationTest {
         name: String = "pptMaster.syncValid",
         lockAtMostFor: Duration = Duration.ofMinutes(30),
         lockAtLeastFor: Duration = Duration.ofMinutes(1)
-    ) = LockConfiguration(Instant.now(), name, lockAtMostFor, lockAtLeastFor)
+    ) = LockConfiguration(java.time.Instant.now(), name, lockAtMostFor, lockAtLeastFor)
 
     @Nested
     @DisplayName("동시 호출 차단 - 두 인스턴스가 동일 잡을 동시 트리거")

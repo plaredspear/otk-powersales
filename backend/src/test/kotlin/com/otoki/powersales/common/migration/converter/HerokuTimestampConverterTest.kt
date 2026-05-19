@@ -12,58 +12,57 @@ import java.time.ZoneOffset
 class HerokuTimestampConverterTest {
 
     @Nested
-    @DisplayName("asUtcLocalDateTime - JDBC 매핑 LocalDateTime 식별 함수")
-    inner class AsUtcLocalDateTime {
+    @DisplayName("fromHerokuUtcWallClock - Heroku UTC wall-clock → KST LocalDateTime")
+    inner class FromHerokuUtcWallClock {
 
         @Test
-        @DisplayName("LocalDateTime 입력 - 동일 값 반환")
-        fun identity() {
-            val input = LocalDateTime.of(2026, 4, 28, 15, 30)
-            assertThat(HerokuTimestampConverter.asUtcLocalDateTime(input)).isEqualTo(input)
+        @DisplayName("UTC 06:30 입력 - KST 15:30 으로 변환 (+9h)")
+        fun utcToKst() {
+            val utcWallClock = LocalDateTime.of(2026, 4, 28, 6, 30)
+            assertThat(HerokuTimestampConverter.fromHerokuUtcWallClock(utcWallClock))
+                .isEqualTo(LocalDateTime.of(2026, 4, 28, 15, 30))
         }
     }
 
     @Nested
-    @DisplayName("toUtcLocalDateTime(OffsetDateTime) - UTC 정규화")
-    inner class ToUtcFromOffset {
+    @DisplayName("toLocalDateTime(OffsetDateTime) - 외부 OffsetDateTime → KST LocalDateTime")
+    inner class ToLocalDateTimeFromOffset {
 
         @Test
-        @DisplayName("KST(+09:00) 입력 - UTC wall clock 으로 변환 (-9시간)")
-        fun kstToUtc() {
+        @DisplayName("KST(+09:00) 입력 - wall clock 그대로")
+        fun kstPassthrough() {
             val kst = OffsetDateTime.of(2026, 4, 28, 15, 30, 0, 0, ZoneOffset.ofHours(9))
-            val result = HerokuTimestampConverter.toUtcLocalDateTime(kst)
-            assertThat(result).isEqualTo(LocalDateTime.of(2026, 4, 28, 6, 30))
+            assertThat(HerokuTimestampConverter.toLocalDateTime(kst))
+                .isEqualTo(LocalDateTime.of(2026, 4, 28, 15, 30))
         }
 
         @Test
-        @DisplayName("UTC 입력 - wall clock 그대로")
-        fun utcPassthrough() {
+        @DisplayName("UTC 입력 - KST wall clock 으로 변환 (+9h)")
+        fun utcToKst() {
             val utc = OffsetDateTime.of(2026, 4, 28, 6, 30, 0, 0, ZoneOffset.UTC)
-            assertThat(HerokuTimestampConverter.toUtcLocalDateTime(utc))
-                .isEqualTo(LocalDateTime.of(2026, 4, 28, 6, 30))
+            assertThat(HerokuTimestampConverter.toLocalDateTime(utc))
+                .isEqualTo(LocalDateTime.of(2026, 4, 28, 15, 30))
         }
 
         @Test
-        @DisplayName("+05:30 (인도) 입력 - UTC wall clock 으로 정확 변환")
-        fun indiaToUtc() {
+        @DisplayName("+05:30 (인도) 입력 - KST wall clock 으로 정확 변환")
+        fun indiaToKst() {
             val ist = OffsetDateTime.of(2026, 4, 28, 12, 0, 0, 0, ZoneOffset.ofHoursMinutes(5, 30))
-            val result = HerokuTimestampConverter.toUtcLocalDateTime(ist)
-            assertThat(result).isEqualTo(LocalDateTime.of(2026, 4, 28, 6, 30))
+            assertThat(HerokuTimestampConverter.toLocalDateTime(ist))
+                .isEqualTo(LocalDateTime.of(2026, 4, 28, 15, 30))
         }
     }
 
     @Nested
-    @DisplayName("toSeoulOffsetDateTime - UTC LocalDateTime 을 KST OffsetDateTime 으로")
+    @DisplayName("toSeoulOffsetDateTime - KST LocalDateTime 을 KST OffsetDateTime 으로")
     inner class ToSeoulOffset {
 
         @Test
-        @DisplayName("UTC 06:30 - KST 15:30 (+09:00)")
-        fun utcToSeoul() {
-            val utc = LocalDateTime.of(2026, 4, 28, 6, 30)
-            val result = HerokuTimestampConverter.toSeoulOffsetDateTime(utc)
-            assertThat(result).isEqualTo(
-                OffsetDateTime.of(2026, 4, 28, 15, 30, 0, 0, ZoneOffset.ofHours(9))
-            )
+        @DisplayName("KST 15:30 - +09:00 offset 부착")
+        fun kstToOffset() {
+            val kst = LocalDateTime.of(2026, 4, 28, 15, 30)
+            assertThat(HerokuTimestampConverter.toSeoulOffsetDateTime(kst))
+                .isEqualTo(OffsetDateTime.of(2026, 4, 28, 15, 30, 0, 0, ZoneOffset.ofHours(9)))
         }
     }
 }

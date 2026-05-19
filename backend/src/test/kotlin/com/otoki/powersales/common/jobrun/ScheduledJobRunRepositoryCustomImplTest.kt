@@ -52,32 +52,32 @@ class ScheduledJobRunRepositoryCustomImplTest {
     @Test
     @DisplayName("search - jobName + status + 기간 필터 조합 시 결과가 좁혀지고 startedAt DESC 정렬")
     fun search_filterCombination() {
-        val baseTime = LocalDateTime.of(2026, 5, 18, 0, 0, 0)
-        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plusHours(1))
-        persist("jobA", ScheduledJobRun.STATUS_FAILURE, baseTime.plusHours(2))
-        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plusHours(3))
-        persist("jobB", ScheduledJobRun.STATUS_SUCCESS, baseTime.plusHours(4))
+        val baseTime = java.time.LocalDateTime.of(2026, 5, 18, 0, 0, 0)
+        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(1, java.time.temporal.ChronoUnit.HOURS))
+        persist("jobA", ScheduledJobRun.STATUS_FAILURE, baseTime.plus(2, java.time.temporal.ChronoUnit.HOURS))
+        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(3, java.time.temporal.ChronoUnit.HOURS))
+        persist("jobB", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(4, java.time.temporal.ChronoUnit.HOURS))
 
         val page = repository.search(
             jobName = "jobA",
             status = ScheduledJobRun.STATUS_SUCCESS,
             from = baseTime,
-            to = baseTime.plusHours(5),
+            to = baseTime.plus(5, java.time.temporal.ChronoUnit.HOURS),
             pageable = PageRequest.of(0, 10),
         )
 
         assertThat(page.totalElements).isEqualTo(2L)
         assertThat(page.content).hasSize(2)
-        assertThat(page.content[0].startedAt).isEqualTo(baseTime.plusHours(3))
-        assertThat(page.content[1].startedAt).isEqualTo(baseTime.plusHours(1))
+        assertThat(page.content[0].startedAt).isEqualTo(baseTime.plus(3, java.time.temporal.ChronoUnit.HOURS))
+        assertThat(page.content[1].startedAt).isEqualTo(baseTime.plus(1, java.time.temporal.ChronoUnit.HOURS))
     }
 
     @Test
     @DisplayName("search - 페이지네이션 동작 (size=2 인 경우 첫 페이지 2건 / totalCount 정확)")
     fun search_pagination() {
-        val baseTime = LocalDateTime.of(2026, 5, 18, 0, 0, 0)
+        val baseTime = java.time.LocalDateTime.of(2026, 5, 18, 0, 0, 0)
         repeat(5) { i ->
-            persist("jobC", ScheduledJobRun.STATUS_SUCCESS, baseTime.plusMinutes(i.toLong()))
+            persist("jobC", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(i.toLong(), java.time.temporal.ChronoUnit.MINUTES))
         }
 
         val page = repository.search(
@@ -90,21 +90,21 @@ class ScheduledJobRunRepositoryCustomImplTest {
 
         assertThat(page.totalElements).isEqualTo(5L)
         assertThat(page.content).hasSize(2)
-        assertThat(page.content[0].startedAt).isEqualTo(baseTime.plusMinutes(4))
+        assertThat(page.content[0].startedAt).isEqualTo(baseTime.plus(4, java.time.temporal.ChronoUnit.MINUTES))
     }
 
     @Test
     @DisplayName("countByStatusWithin - status 별 group-by 카운트가 정확하다")
     fun countByStatusWithin_groupBy() {
-        val baseTime = LocalDateTime.of(2026, 5, 18, 0, 0, 0)
-        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plusHours(1))
-        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plusHours(2))
-        persist("jobB", ScheduledJobRun.STATUS_FAILURE, baseTime.plusHours(3))
-        persist("jobB", ScheduledJobRun.STATUS_RUNNING, baseTime.plusHours(4))
+        val baseTime = java.time.LocalDateTime.of(2026, 5, 18, 0, 0, 0)
+        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(1, java.time.temporal.ChronoUnit.HOURS))
+        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(2, java.time.temporal.ChronoUnit.HOURS))
+        persist("jobB", ScheduledJobRun.STATUS_FAILURE, baseTime.plus(3, java.time.temporal.ChronoUnit.HOURS))
+        persist("jobB", ScheduledJobRun.STATUS_RUNNING, baseTime.plus(4, java.time.temporal.ChronoUnit.HOURS))
         // 윈도우 밖
-        persist("jobC", ScheduledJobRun.STATUS_SUCCESS, baseTime.minusHours(1))
+        persist("jobC", ScheduledJobRun.STATUS_SUCCESS, baseTime.minus(1, java.time.temporal.ChronoUnit.HOURS))
 
-        val counts = repository.countByStatusWithin(baseTime, baseTime.plusHours(24))
+        val counts = repository.countByStatusWithin(baseTime, baseTime.plus(24, java.time.temporal.ChronoUnit.HOURS))
 
         assertThat(counts[ScheduledJobRun.STATUS_SUCCESS]).isEqualTo(2L)
         assertThat(counts[ScheduledJobRun.STATUS_FAILURE]).isEqualTo(1L)
@@ -114,11 +114,11 @@ class ScheduledJobRunRepositoryCustomImplTest {
     @Test
     @DisplayName("findDistinctJobNames - 중복 제거 + 가나다순 정렬")
     fun findDistinctJobNames_distinctSorted() {
-        val baseTime = LocalDateTime.of(2026, 5, 18, 0, 0, 0)
-        persist("zeta-job", ScheduledJobRun.STATUS_SUCCESS, baseTime.plusMinutes(1))
-        persist("alpha-job", ScheduledJobRun.STATUS_SUCCESS, baseTime.plusMinutes(2))
-        persist("alpha-job", ScheduledJobRun.STATUS_FAILURE, baseTime.plusMinutes(3))
-        persist("beta-job", ScheduledJobRun.STATUS_SUCCESS, baseTime.plusMinutes(4))
+        val baseTime = java.time.LocalDateTime.of(2026, 5, 18, 0, 0, 0)
+        persist("zeta-job", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(1, java.time.temporal.ChronoUnit.MINUTES))
+        persist("alpha-job", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(2, java.time.temporal.ChronoUnit.MINUTES))
+        persist("alpha-job", ScheduledJobRun.STATUS_FAILURE, baseTime.plus(3, java.time.temporal.ChronoUnit.MINUTES))
+        persist("beta-job", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(4, java.time.temporal.ChronoUnit.MINUTES))
 
         val names = repository.findDistinctJobNames()
 

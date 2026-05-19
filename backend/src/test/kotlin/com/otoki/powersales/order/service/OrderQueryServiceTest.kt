@@ -61,7 +61,7 @@ class OrderQueryServiceTest {
                 "냉장",
                 "소스",
                 "양념소스",
-                today.minusDays(1),
+                today.minus(1, java.time.temporal.ChronoUnit.DAYS),
                 3L
             )
 
@@ -139,7 +139,7 @@ class OrderQueryServiceTest {
                 storeName = "롯데마트 응암점",
                 creditLimit = 100_000_000,
                 usedCredit = 45_000_000,
-                creditUpdatedAt = LocalDateTime.of(2026, 2, 10, 10, 0)
+                creditUpdatedAt = java.time.LocalDateTime.of(2026, 2, 10, 10, 0)
             )
             whenever(storeRepository.findById(1L)).thenReturn(Optional.of(store))
 

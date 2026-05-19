@@ -31,7 +31,7 @@ class OrderRequestService(
     private val orderRequestProductRepository: OrderRequestProductRepository,
     private val orderRequestDetailSapSender: OrderRequestDetailSapSender,
     private val orderRequestDetailMapper: OrderRequestDetailMapper,
-    private val clock: Clock = Clock.system(TimeZones.SEOUL_ZONE),
+    private val clock: Clock = Clock.systemDefaultZone(),
 ) {
 
     companion object {

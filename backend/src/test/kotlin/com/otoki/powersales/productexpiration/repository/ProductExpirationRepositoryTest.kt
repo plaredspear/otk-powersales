@@ -58,8 +58,8 @@ class ProductExpirationRepositoryTest {
                 alarmDate = LocalDate.of(2026, 5, 25),
                 description = "테스트 설명"
             ).apply {
-                createdAt = LocalDateTime.of(2026, 2, 23, 10, 0)
-                updatedAt = LocalDateTime.of(2026, 2, 23, 10, 0)
+                createdAt = java.time.LocalDateTime.of(2026, 2, 23, 10, 0)
+                updatedAt = java.time.LocalDateTime.of(2026, 2, 23, 10, 0)
             }
 
             // When
@@ -150,7 +150,7 @@ class ProductExpirationRepositoryTest {
         fun count_excludesDifferentDate() {
             // Given
             val today = LocalDate.now()
-            val yesterday = today.minusDays(1)
+            val yesterday = today.minus(1, java.time.temporal.ChronoUnit.DAYS)
             val employeeId = 100L
 
             testEntityManager.persistAndFlush(

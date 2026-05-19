@@ -77,8 +77,8 @@ class PPTMasterPayloadFactoryTest {
     fun build_validData_valid() {
         val master = master(
             isConfirmed = true,
-            startDate = today.minusDays(1),
-            endDate = today.plusDays(1)
+            startDate = today.minus(1, java.time.temporal.ChronoUnit.DAYS),
+            endDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS)
         )
         val payload = factory.build(listOf(master), today)
         assertThat(payload.REQUEST.single().ValidData).isEqualTo("유효")
@@ -89,8 +89,8 @@ class PPTMasterPayloadFactoryTest {
     fun build_validData_upcoming() {
         val master = master(
             isConfirmed = true,
-            startDate = today.plusDays(1),
-            endDate = today.plusDays(10)
+            startDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS),
+            endDate = today.plus(10, java.time.temporal.ChronoUnit.DAYS)
         )
         val payload = factory.build(listOf(master), today)
         assertThat(payload.REQUEST.single().ValidData).isEqualTo("예정")
@@ -101,8 +101,8 @@ class PPTMasterPayloadFactoryTest {
     fun build_validData_ended() {
         val master = master(
             isConfirmed = true,
-            startDate = today.minusDays(10),
-            endDate = today.minusDays(1)
+            startDate = today.minus(10, java.time.temporal.ChronoUnit.DAYS),
+            endDate = today.minus(1, java.time.temporal.ChronoUnit.DAYS)
         )
         val payload = factory.build(listOf(master), today)
         assertThat(payload.REQUEST.single().ValidData).isEqualTo("종료")
@@ -130,7 +130,7 @@ class PPTMasterPayloadFactoryTest {
     @Test
     @DisplayName("ValidConditionData — 퇴직 + endDate > TODAY → \"퇴직예정YYYY-MM-DD\"")
     fun build_validConditionData_resignedFuture() {
-        val empEnd = today.plusDays(10)
+        val empEnd = today.plus(10, java.time.temporal.ChronoUnit.DAYS)
         val emp = employee(status = "퇴직", appLogin = false, endDate = empEnd)
         val master = master(employee = emp)
         val payload = factory.build(listOf(master), today)
@@ -199,8 +199,8 @@ class PPTMasterPayloadFactoryTest {
         teamType: ProfessionalPromotionTeamType = ProfessionalPromotionTeamType.RAMEN_SALE,
         accountSfid: String? = "001ABC",
         isConfirmed: Boolean = true,
-        startDate: LocalDate = today.minusDays(1),
-        endDate: LocalDate? = today.plusDays(1),
+        startDate: LocalDate = today.minus(1, java.time.temporal.ChronoUnit.DAYS),
+        endDate: LocalDate? = today.plus(1, java.time.temporal.ChronoUnit.DAYS),
         branchCode: String? = "BR001",
         employee: Employee? = employee(),
         account: Account? = account()
