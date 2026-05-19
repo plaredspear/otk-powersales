@@ -110,6 +110,9 @@ allOpen {
 tasks.withType<Test> {
 	useJUnitPlatform()
 	systemProperty("spring.profiles.active", "test")
+	maxHeapSize = "3g"
+	jvmArgs = listOf("-XX:MaxMetaspaceSize=512m")
+	forkEvery = 100
 }
 
 tasks.named<Jar>("jar") {
