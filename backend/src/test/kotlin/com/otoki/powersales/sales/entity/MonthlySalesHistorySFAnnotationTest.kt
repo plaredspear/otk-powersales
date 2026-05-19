@@ -42,9 +42,9 @@ class MonthlySalesHistorySFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(MonthlySalesHistory::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 34 (Spec #740: Formula 8건 제거. 29 + R-2 3 + CreatedDate/LastModifiedDate 2)")
+        @DisplayName("매핑 키 수 = 34 (HQReviews__c 1건 제거. 28 + R-2 3 + CreatedDate/LastModifiedDate 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(35)
+            assertThat(mapping).hasSize(34)
         }
 
         @Test
@@ -77,7 +77,6 @@ class MonthlySalesHistorySFAnnotationTest {
             assertThat(mapping["SalesDate__c"]).isEqualTo("sales_date")
             assertThat(mapping["LastMonthlySalesHistory__c"]).isEqualTo("last_monthly_sales_history_sfid")
             assertThat(mapping["Confirm__c"]).isEqualTo("is_confirmed")
-            assertThat(mapping["HQReviews__c"]).isEqualTo("hq_review_sfid")
             assertThat(mapping["Remark__c"]).isEqualTo("remark")
             assertThat(mapping["ShipClosingAmountNH__c"]).isEqualTo("ship_closing_amount_nh")
             assertThat(mapping["ShipClosingAmount1__c"]).isEqualTo("ship_closing_amount1")
@@ -148,7 +147,6 @@ class MonthlySalesHistorySFAnnotationTest {
             assertThat(hcMapping["salesdate__c"]).isEqualTo("sales_date")
             assertThat(hcMapping["lastmonthlysaleshistory__c"]).isEqualTo("last_monthly_sales_history_sfid")
             assertThat(hcMapping["confirm__c"]).isEqualTo("is_confirmed")
-            assertThat(hcMapping["hqreviews__c"]).isEqualTo("hq_review_sfid")
             assertThat(hcMapping["remark__c"]).isEqualTo("remark")
             assertThat(hcMapping["thismonthtarget__c"]).isEqualTo("this_month_target")
         }

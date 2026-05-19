@@ -132,11 +132,6 @@ class MonthlySalesHistory(
     @Column(name = "is_confirmed")
     var isConfirmed: Boolean? = null,
 
-    @SFField("HQReviews__c")
-    @HCColumn("hqreviews__c")
-    @Column(name = "hq_review_sfid", length = 18)
-    var hqReviewSfid: String? = null,
-
     @SFField("Remark__c")
     @HCColumn("remark__c")
     @Column(name = "remark", columnDefinition = "TEXT")
@@ -231,10 +226,6 @@ class MonthlySalesHistory(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hq_review_id")
-    var hqReview: com.otoki.powersales.common.entity.HqReview? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_monthly_sales_history_id")
