@@ -45,6 +45,11 @@ dependencies {
 	implementation("org.flywaydb:flyway-core")
 	implementation("org.flywaydb:flyway-database-postgresql")
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+	// Spring Boot 4 에서 Cache autoconfig 가 spring-boot-autoconfigure 에서 분리되어
+	// 별도 모듈(spring-boot-cache)로 제공된다. starter-cache 없이 @EnableCaching 만
+	// 켜면 CacheManager Bean 자동 등록 / NoOp fallback / cache abstraction 인프라가
+	// 모두 비활성이라 "CacheManager bean not found" 로 부팅 실패한다.
+	implementation("org.springframework.boot:spring-boot-starter-cache")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
