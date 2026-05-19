@@ -29,7 +29,7 @@ class PromotionEmployee(
     @Column(name = "promotion_employee_id")
     val id: Long = 0,
 
-    @Column(name = "sfid", length = 18)
+    @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 
     @SFField("Name")

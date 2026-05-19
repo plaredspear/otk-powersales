@@ -24,7 +24,7 @@ class ProfessionalPromotionTeamHistory(
     @Column(name = "professional_promotion_team_history_id")
     val id: Long = 0,
 
-    @Column(name = "sfid", length = 18)
+    @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 
     @SFField("Name")

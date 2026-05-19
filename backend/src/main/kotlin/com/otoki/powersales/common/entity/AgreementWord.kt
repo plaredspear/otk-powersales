@@ -62,7 +62,7 @@ class AgreementWord(
     val isDeleted: Boolean? = null,
 
     @HCColumn("sfid")
-    @Column(name = "sfid", length = 18)
+    @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 
     // -- Spec #707: Group A — CreatedDate (BaseEntity 미상속 자체 매핑) --

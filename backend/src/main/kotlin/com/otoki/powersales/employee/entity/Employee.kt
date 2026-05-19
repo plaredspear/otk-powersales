@@ -43,7 +43,7 @@ class Employee(
     val id: Long = 0,
 
     @HCColumn("sfid")
-    @Column(name = "sfid", length = 18)
+    @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 
     @SFField("DKRetail__EmpCode__c")

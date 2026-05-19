@@ -28,7 +28,7 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @Column(name = "monthly_female_employee_integration_schedule_id")
     val id: Long = 0,
 
-    @Column(name = "sfid", length = 18)
+    @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 
     @SFField("Name")
