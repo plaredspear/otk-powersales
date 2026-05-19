@@ -73,6 +73,8 @@ val ORGANIZATION_METADATA = EntityMetadata(
         FieldMapping("ExternalKey__c", "external_key"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -127,6 +129,8 @@ val EMPLOYEE_METADATA = EntityMetadata(
         FieldMapping("DKRetail__CRM_WorkType__c", "crm_work_type"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     ),
     rawColumnsAsString = listOf("role", "professional_promotion_team")
@@ -160,6 +164,8 @@ val USER_METADATA = EntityMetadata(
         FieldMapping("ProfileId", "profile_sfid"),
         FieldMapping("UserRoleId", "user_role_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("Profile.Name", "profile_type")
     ),
@@ -244,6 +250,8 @@ val ACCOUNT_METADATA = EntityMetadata(
         FieldMapping("IsPriorityRecord", "is_priority_record", isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -298,6 +306,8 @@ val PRODUCT_METADATA = EntityMetadata(
         FieldMapping("StoreCondition__c", "store_condition_text"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -322,8 +332,11 @@ val PROMOTION_METADATA = EntityMetadata(
         FieldMapping("CostCenterCode__c", "cost_center_code"),
         FieldMapping("DKRetail__Remark__c", "remark"),
         FieldMapping("DKRetail__ProductType__c", "product_type"),
+        FieldMapping("Category1__c", "category1"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false),
         FieldMapping("DKRetail__ActualAmount__c", "dk_actual_amount", isString = false),
@@ -354,6 +367,8 @@ val NOTICE_METADATA = EntityMetadata(
         FieldMapping("IsDeleted", "is_deleted", isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -374,8 +389,10 @@ val GROUP_METADATA = EntityMetadata(
         FieldMapping("Email", "email"),
         FieldMapping("DoesSendEmailToMembers", "does_send_email_to_members", isString = false),
         FieldMapping("DoesIncludeBosses", "does_include_bosses", isString = false),
-        // SF Group 에 Description 컬럼 없음 — backend group.description 은 SF 매핑 외 (수기 입력용)
+        FieldMapping("Description", "description"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -393,6 +410,8 @@ val ACCOUNT_CATEGORY_MASTER_METADATA = EntityMetadata(
         FieldMapping("useSearch__c", "use_search", nullable = false, isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -414,6 +433,8 @@ val AGREEMENT_HISTORY_METADATA = EntityMetadata(
         FieldMapping("Name", "name"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -457,6 +478,8 @@ val ALTERNATIVE_HOLIDAY_METADATA = EntityMetadata(
         FieldMapping("DKRetail__ChangeReason__c", "change_reason"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -489,6 +512,8 @@ val APPOINTMENT_METADATA = EntityMetadata(
         FieldMapping("OrdDetailNode__c", "ord_detail_node"),
         FieldMapping("IsDeleted", "is_deleted", isString = false),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("OwnerId", "owner_sfid")
     )
@@ -510,6 +535,8 @@ val ATTENDANCE_LOG_METADATA = EntityMetadata(
         FieldMapping("DKRetail__Reason__c", "reason"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -531,28 +558,10 @@ val ATTEND_INFO_METADATA = EntityMetadata(
         FieldMapping("Status__c", "status"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
-    )
-)
-
-val BRANCH_REVIEW_METADATA = EntityMetadata(
-    targetName = "BranchReview",
-    sObjectName = "BranchReview__c",
-    tableName = "branch_review",
-    pkColumn = "branch_review_id",
-    conflictKey = "sfid",
-    fields = listOf(
-        FieldMapping("Id", "sfid", nullable = false),
-        FieldMapping("Name", "name"),
-        FieldMapping("BranchName__c", "branch_name"),
-        FieldMapping("CostCenterCode__c", "cost_center_code"),
-        FieldMapping("FirstDayofMonth__c", "first_day_of_month", isString = false),
-        FieldMapping("Confirmed__c", "confirmed", isString = false),
-        FieldMapping("IsDeleted", "is_deleted", isString = false),
-        FieldMapping("OwnerId", "owner_sfid"),
-        FieldMapping("CreatedById", "created_by_sfid"),
-        FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
 
@@ -601,6 +610,8 @@ val CLAIM_METADATA = EntityMetadata(
         FieldMapping("IsDeleted", "is_deleted", nullable = false, isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -625,6 +636,8 @@ val DISPLAY_WORK_SCHEDULE_METADATA = EntityMetadata(
         FieldMapping("TypeOfWork5__c", "type_of_work5"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("CostCenterCode__c", "cost_center_code"),
         FieldMapping("LastMonthRevenue__c", "last_month_revenue", isString = false),
@@ -651,6 +664,8 @@ val EMPLOYEE_INPUT_CRITERIA_MASTER_METADATA = EntityMetadata(
         FieldMapping("TypeOfWork1__c", "type_of_work_1"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -678,6 +693,8 @@ val ERP_ORDER_METADATA = EntityMetadata(
         FieldMapping("OrderType_NM__c", "order_type_nm"),
         FieldMapping("AccountId__c", "account_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -722,6 +739,8 @@ val ERP_ORDER_PRODUCT_METADATA = EntityMetadata(
         FieldMapping("BoxQuantity__c", "box_quantity", isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -740,30 +759,10 @@ val HOLIDAY_MASTER_METADATA = EntityMetadata(
         FieldMapping("Type__c", "type", nullable = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
-    )
-)
-
-val HQ_REVIEW_METADATA = EntityMetadata(
-    targetName = "HqReview",
-    sObjectName = "HQReview__c",
-    tableName = "hq_review",
-    pkColumn = "hq_review_id",
-    conflictKey = "sfid",
-    fields = listOf(
-        FieldMapping("Id", "sfid", nullable = false),
-        FieldMapping("Name", "name"),
-        FieldMapping("BranchCode__c", "branch_code"),
-        FieldMapping("BranchName__c", "branch_name"),
-        FieldMapping("FirstDayofMonth__c", "first_day_of_month", isString = false),
-        FieldMapping("EvaluationyType__c", "evaluation_type"),
-        FieldMapping("ABCTypeCode__c", "abc_type_code"),
-        FieldMapping("HR_Code_c__c", "hr_code"),
-        FieldMapping("IsDeleted", "is_deleted", isString = false),
-        FieldMapping("OwnerId", "owner_sfid"),
-        FieldMapping("CreatedById", "created_by_sfid"),
-        FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
 
@@ -785,6 +784,8 @@ val INSPECTION_THEME_METADATA = EntityMetadata(
         FieldMapping("IsDeleted", "is_deleted", isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -820,6 +821,8 @@ val MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA = EntityMetadata(
         FieldMapping("EmployeeInputCriteriaMaster__c", "employee_input_criteria_master_sfid"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -851,7 +854,6 @@ val MONTHLY_SALES_HISTORY_METADATA = EntityMetadata(
         FieldMapping("SalesDate__c", "sales_date", isString = false),
         FieldMapping("LastMonthlySalesHistory__c", "last_monthly_sales_history_sfid"),
         FieldMapping("Confirm__c", "is_confirmed", isString = false),
-        FieldMapping("HQReviews__c", "hq_review_sfid"),
         FieldMapping("Remark__c", "remark"),
         FieldMapping("ShipClosingAmountNH__c", "ship_closing_amount_nh", isString = false),
         FieldMapping("ShipClosingAmount1__c", "ship_closing_amount1", isString = false),
@@ -865,6 +867,8 @@ val MONTHLY_SALES_HISTORY_METADATA = EntityMetadata(
         FieldMapping("ThisMonthTarget__c", "this_month_target", isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -897,6 +901,8 @@ val NEW_PRODUCT_METADATA = EntityMetadata(
         FieldMapping("RecordTypeId", "record_type_sfid"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -919,6 +925,8 @@ val ORDER_REQUEST_METADATA = EntityMetadata(
         FieldMapping("DKRetail__RequestStatus__c", "order_request_status", nullable = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -951,6 +959,8 @@ val ORDER_REQUEST_PRODUCT_METADATA = EntityMetadata(
         FieldMapping("TotalCount__c", "total_count", isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -975,6 +985,8 @@ val PRODUCT_BARCODE_METADATA = EntityMetadata(
         FieldMapping("IsDeleted", "is_deleted", isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -994,6 +1006,8 @@ val PROFESSIONAL_PROMOTION_TEAM_HISTORY_METADATA = EntityMetadata(
         FieldMapping("updateTime__c", "changed_at", nullable = false, isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -1017,6 +1031,8 @@ val PROFESSIONAL_PROMOTION_TEAM_MASTER_METADATA = EntityMetadata(
         FieldMapping("CostCenterCode__c", "branch_code"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -1053,6 +1069,8 @@ val PROMOTION_EMPLOYEE_METADATA = EntityMetadata(
         FieldMapping("Description__c", "description"),
         FieldMapping("DKRetail__WorkType2__c", "dk_work_type2"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     )
@@ -1076,6 +1094,8 @@ val PUSH_MESSAGE_METADATA = EntityMetadata(
         FieldMapping("IsDeleted", "is_deleted", isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -1093,45 +1113,9 @@ val PUSH_MESSAGE_RECEIVER_METADATA = EntityMetadata(
         FieldMapping("MessageId__c", "push_message_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
-    )
-)
-
-val STAFF_REVIEW_METADATA = EntityMetadata(
-    targetName = "StaffReview",
-    sObjectName = "StaffReview__c",
-    tableName = "staff_review",
-    pkColumn = "staff_review_id",
-    conflictKey = "sfid",
-    fields = listOf(
-        FieldMapping("Id", "sfid", nullable = false),
-        FieldMapping("Name", "name"),
-        FieldMapping("DKRetail_EmployeeId__c", "employee_sfid"),
-        FieldMapping("EmployeeName__c", "employee_name"),
-        FieldMapping("EmployeeNumber__c", "employee_code"),
-        FieldMapping("Branch__c", "branch"),
-        FieldMapping("BranchReviews__c", "branch_review_sfid"),
-        FieldMapping("CostCenterCode__c", "cost_center_code"),
-        FieldMapping("EmployeeTotalScore__c", "employee_total_score", isString = false),
-        FieldMapping("Attendance__c", "attendance_score", isString = false),
-        FieldMapping("InstructionsDefault__c", "instruction_disobedience_score", isString = false),
-        FieldMapping("Priority_EventItemManage__c", "priority_item_event_score", isString = false),
-        FieldMapping("DisplayManageEventGoals__c", "display_event_goal_score", isString = false),
-        FieldMapping("BusinessPartnerTies__c", "account_partnership_score", isString = false),
-        FieldMapping("ClothesSatellite__c", "clothes_hygiene_score", isString = false),
-        FieldMapping("ProductManageCallment__c", "product_manage_callment_score", isString = false),
-        FieldMapping("EducationalEvaluation__c", "education_evaluation_score", isString = false),
-        FieldMapping("DKRetail_WorkingCategory1__c", "working_category1"),
-        FieldMapping("DKRetail_WorkingCategory2__c", "working_category2"),
-        FieldMapping("DKRetail_WorkingCategory3__c", "working_category3"),
-        FieldMapping("JobCode__c", "job_code"),
-        FieldMapping("FirstDayofMonth__c", "first_day_of_month", isString = false),
-        FieldMapping("IsDeleted", "is_deleted", isString = false),
-        FieldMapping("CreatedById", "created_by_sfid"),
-        FieldMapping("LastModifiedById", "last_modified_by_sfid"),
-        FieldMapping("EmployeeType__c", "employee_type"),
-        FieldMapping("EntryDate__c", "entry_date", isString = false),
-        FieldMapping("Jikwee__c", "jikwee")
     )
 )
 
@@ -1187,6 +1171,8 @@ val TEAM_MEMBER_SCHEDULE_METADATA = EntityMetadata(
         FieldMapping("CostCenterCode__c", "cost_center_code"),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     )
 )
@@ -1432,14 +1418,12 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "Appointment" to TargetSpec(APPOINTMENT_METADATA, "Appointment__c", "appointments.csv", "schedule/entity/Appointment"),
     "AttendanceLog" to TargetSpec(ATTENDANCE_LOG_METADATA, "DKRetail__CommuteLog__c", "attendance_logs.csv", "schedule/entity/AttendanceLog"),
     "AttendInfo" to TargetSpec(ATTEND_INFO_METADATA, "AttendInfo__c", "attend_infos.csv", "schedule/entity/AttendInfo"),
-    "BranchReview" to TargetSpec(BRANCH_REVIEW_METADATA, "BranchReview__c", "branch_reviews.csv", "common/entity/BranchReview"),
     "Claim" to TargetSpec(CLAIM_METADATA, "DKRetail__Claim__c", "claims.csv", "claim/entity/Claim"),
     "DisplayWorkSchedule" to TargetSpec(DISPLAY_WORK_SCHEDULE_METADATA, "DisplayWorkScheduleMaster__c", "display_work_schedules.csv", "schedule/entity/DisplayWorkSchedule"),
     "EmployeeInputCriteriaMaster" to TargetSpec(EMPLOYEE_INPUT_CRITERIA_MASTER_METADATA, "EmployeeInputCriteriaMaster__c", "employee_input_criteria_masters.csv", "schedule/entity/EmployeeInputCriteriaMaster"),
     "ErpOrder" to TargetSpec(ERP_ORDER_METADATA, "ERP_Order__c", "erp_orders.csv", "order/entity/ErpOrder"),
     "ErpOrderProduct" to TargetSpec(ERP_ORDER_PRODUCT_METADATA, "ERP_OrderProduct__c", "erp_order_products.csv", "order/entity/ErpOrderProduct"),
     "HolidayMaster" to TargetSpec(HOLIDAY_MASTER_METADATA, "HolidayMaster__c", "holiday_masters.csv", "leave/entity/HolidayMaster"),
-    "HqReview" to TargetSpec(HQ_REVIEW_METADATA, "HQReview__c", "hq_reviews.csv", "common/entity/HqReview"),
     "InspectionTheme" to TargetSpec(INSPECTION_THEME_METADATA, "Theme__c", "inspection_themes.csv", "inspection/entity/InspectionTheme"),
     "MonthlyFemaleEmployeeIntegrationSchedule" to TargetSpec(MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA, "MonthlyFemaleEmployeeIntegrationSchedule__c", "monthly_female_employee_integration_schedules.csv", "schedule/entity/MonthlyFemaleEmployeeIntegrationSchedule"),
     "MonthlySalesHistory" to TargetSpec(MONTHLY_SALES_HISTORY_METADATA, "MonthlySalesHistory__c", "monthly_sales_historys.csv", "sales/entity/MonthlySalesHistory"),
@@ -1452,7 +1436,6 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "PromotionEmployee" to TargetSpec(PROMOTION_EMPLOYEE_METADATA, "DKRetail__PromotionEmployee__c", "promotion_employees.csv", "promotion/entity/PromotionEmployee"),
     "PushMessage" to TargetSpec(PUSH_MESSAGE_METADATA, "PushMessage__c", "push_messages.csv", "common/entity/PushMessage"),
     "PushMessageReceiver" to TargetSpec(PUSH_MESSAGE_RECEIVER_METADATA, "PushMessageReceiver__c", "push_message_receivers.csv", "common/entity/PushMessageReceiver"),
-    "StaffReview" to TargetSpec(STAFF_REVIEW_METADATA, "StaffReview__c", "staff_reviews.csv", "common/entity/StaffReview"),
     "TeamMemberSchedule" to TargetSpec(TEAM_MEMBER_SCHEDULE_METADATA, "DKRetail__TeamMemberSchedule__c", "team_member_schedules.csv", "schedule/entity/TeamMemberSchedule"),
     "UploadFile" to TargetSpec(UPLOAD_FILE_METADATA, "UploadFile__c", "upload_files.csv", "common/entity/UploadFile"),
     "Permission"   to TargetSpec(PERMISSION_METADATA, "PermissionSetAssignment", "permission_set_assignments.csv", null)
@@ -1478,14 +1461,12 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "Appointment",
     "AttendanceLog",
     "AttendInfo",
-    "BranchReview",
     "Claim",
     "DisplayWorkSchedule",
     "EmployeeInputCriteriaMaster",
     "ErpOrder",
     "ErpOrderProduct",
     "HolidayMaster",
-    "HqReview",
     "InspectionTheme",
     "MonthlyFemaleEmployeeIntegrationSchedule",
     "MonthlySalesHistory",
@@ -1498,7 +1479,6 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "PromotionEmployee",
     "PushMessage",
     "PushMessageReceiver",
-    "StaffReview",
     "TeamMemberSchedule",
     "UploadFile",
     "Permission"
@@ -1508,11 +1488,11 @@ val SUPPORTED_TARGETS = setOf(
     "Organization", "Account", "Product", "Promotion", "Group",
     "Employee", "User", "Notice", "Permission", "AccountCategoryMaster",
     "AgreementHistory", "AgreementWord", "AlternativeHoliday", "Appointment", "AttendanceLog",
-    "AttendInfo", "BranchReview", "Claim", "DisplayWorkSchedule", "EmployeeInputCriteriaMaster",
-    "ErpOrder", "ErpOrderProduct", "HolidayMaster", "HqReview", "InspectionTheme",
+    "AttendInfo", "Claim", "DisplayWorkSchedule", "EmployeeInputCriteriaMaster",
+    "ErpOrder", "ErpOrderProduct", "HolidayMaster", "InspectionTheme",
     "MonthlyFemaleEmployeeIntegrationSchedule", "MonthlySalesHistory", "NewProduct", "OrderRequest", "OrderRequestProduct",
     "ProductBarcode", "ProfessionalPromotionTeamHistory", "ProfessionalPromotionTeamMaster", "PromotionEmployee", "PushMessage",
-    "PushMessageReceiver", "StaffReview", "TeamMemberSchedule", "UploadFile"
+    "PushMessageReceiver", "TeamMemberSchedule", "UploadFile"
 )
 
 fun sortTargetsByDependency(targets: List<String>): List<String> {

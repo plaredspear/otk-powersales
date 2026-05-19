@@ -33,7 +33,6 @@ ALTER TABLE powersales.attend_info ALTER COLUMN updated_at TYPE TIMESTAMPTZ USIN
 ALTER TABLE powersales.attendance_log ALTER COLUMN attendance_date TYPE TIMESTAMPTZ USING attendance_date AT TIME ZONE 'UTC';
 ALTER TABLE powersales.attendance_log ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
 ALTER TABLE powersales.attendance_log ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
-ALTER TABLE powersales.claim ALTER COLUMN commute_date TYPE TIMESTAMPTZ USING commute_date AT TIME ZONE 'UTC';
 ALTER TABLE powersales.claim ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
 ALTER TABLE powersales.claim ALTER COLUMN interface_date TYPE TIMESTAMPTZ USING interface_date AT TIME ZONE 'UTC';
 ALTER TABLE powersales.claim ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';

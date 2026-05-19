@@ -60,11 +60,13 @@ class PushMessageReceiver(
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
+    @SFField("CreatedDate")
     @HCColumn("createddate")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 
+    @SFField("LastModifiedDate")
     @HCColumn("systemmodstamp")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)

@@ -3,7 +3,7 @@
 /**
  * EntityMetadata ↔ backend Entity @SFField 정합 검증 (Spec #764).
  *
- * 책임 (v2 — K2 cache 무효화):
+ * 책임 (v3 — K2 cache 무효화 + BaseEntity 상속 처리):
  *  - common.kts 의 TARGET_SPECS 를 순회
  *  - 각 target 의 entityRelPath 가 가리키는 backend Entity 파일에서 @SFField 정규식 추출
  *  - 해당 target 의 EntityMetadata 의 FieldMapping.sfFieldName 과 set 비교
@@ -32,35 +32,42 @@ import java.io.File
  *
  * Entity 에만 존재:
  *  - User.IsDeleted: SF User SObject 에 컬럼 없음 (export 불가).
- *  - Group.Description: SF Group SObject 에 컬럼 없음.
  */
 val EXPECTED_META_ONLY: Set<String> = setOf(
     "Organization:Id", "Account:Id", "Product:Id", "Promotion:Id",
     "Group:Id", "Employee:Id", "User:Id", "Notice:Id",
     "AccountCategoryMaster:Id", "AgreementHistory:Id", "AgreementWord:Id", "AlternativeHoliday:Id",
-    "Appointment:Id", "AttendanceLog:Id", "AttendInfo:Id", "BranchReview:Id",
+    "Appointment:Id", "AttendanceLog:Id", "AttendInfo:Id",
     "Claim:Id", "DisplayWorkSchedule:Id", "EmployeeInputCriteriaMaster:Id", "ErpOrder:Id",
-    "ErpOrderProduct:Id", "HolidayMaster:Id", "HqReview:Id", "InspectionTheme:Id",
+    "ErpOrderProduct:Id", "HolidayMaster:Id", "InspectionTheme:Id",
     "MonthlyFemaleEmployeeIntegrationSchedule:Id", "MonthlySalesHistory:Id", "NewProduct:Id", "OrderRequest:Id",
     "OrderRequestProduct:Id", "ProductBarcode:Id", "ProfessionalPromotionTeamHistory:Id", "ProfessionalPromotionTeamMaster:Id",
-    "PromotionEmployee:Id", "PushMessage:Id", "PushMessageReceiver:Id", "StaffReview:Id",
+    "PromotionEmployee:Id", "PushMessage:Id", "PushMessageReceiver:Id",
     "TeamMemberSchedule:Id", "UploadFile:Id",
     "User:Profile.Name"
 )
 
 val EXPECTED_ENTITY_ONLY: Set<String> = setOf(
-    "User:IsDeleted",
-    "Group:Description"
+    "User:IsDeleted"
 )
 
 val SF_FIELD_REGEX = Regex("""@SFField\("([^"]+)"\)""")
 
 /**
  * Entity 파일에서 @SFField("...") 의 인자를 모두 추출.
+ *
+ * BaseEntity 를 상속하는 entity 는 BaseEntity 의 @SFField("CreatedDate") +
+ * @SFField("LastModifiedDate") 도 함께 보유한 것으로 간주 (상속).
+ * BaseEntity 미상속 entity (예: AgreementWord, UploadFile) 는 자체 @SFField 만 카운트.
  */
+val BASE_ENTITY_INHERITED_SF_FIELDS: Set<String> = setOf("CreatedDate", "LastModifiedDate")
+val BASE_ENTITY_INHERIT_REGEX = Regex("""\)\s*:\s*BaseEntity\b""")
+
 fun extractSfFieldsFromEntity(file: File): Set<String> {
     val text = file.readText()
-    return SF_FIELD_REGEX.findAll(text).map { it.groupValues[1] }.toSet()
+    val own = SF_FIELD_REGEX.findAll(text).map { it.groupValues[1] }.toSet()
+    val inheritsBaseEntity = BASE_ENTITY_INHERIT_REGEX.containsMatchIn(text)
+    return if (inheritsBaseEntity) own + BASE_ENTITY_INHERITED_SF_FIELDS else own
 }
 
 /**

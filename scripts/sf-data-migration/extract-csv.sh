@@ -54,7 +54,7 @@ set -euo pipefail
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,BranchReview,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,HqReview,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PushMessage,PushMessageReceiver,StaffReview,TeamMemberSchedule,UploadFile,Permission"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PushMessage,PushMessageReceiver,TeamMemberSchedule,UploadFile,Permission"
 SKIP_GROUP_MEMBERS=0
 SKIP_VERIFY=0
 # SF CLI 기본 query 결과 limit 은 50,000 — Account 등 대용량 SObject 대응 위해 상향.
@@ -192,7 +192,8 @@ SELECT
     CostCenterLevel3__c, OrgCodeLevel3__c, OrgNameLevel3__c,
     CostCenterLevel4__c, OrgCodeLevel4__c, OrgNameLevel4__c,
     CostCenterLevel5__c, OrgCodeLevel5__c, OrgNameLevel5__c,
-    ExternalKey__c, OwnerId, CreatedById, LastModifiedById, IsDeleted
+    ExternalKey__c, OwnerId, CreatedDate, LastModifiedDate,
+    CreatedById, LastModifiedById, IsDeleted
 FROM Org__c
 WHERE IsDeleted = FALSE
 EOF
@@ -217,7 +218,7 @@ SELECT
     DKRetail__UsedAnnualLeave__c, DKRetail__ManagerId__c,
     PostponedAppointment__c, LockingFlag__c, OfficePhone__c,
     DKRetail__CRM_WorkType__c,
-    OwnerId, CreatedById, LastModifiedById
+    OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM DKRetail__Employee__c
 WHERE IsDeleted = FALSE
   AND DKRetail__Status__c = '재직'
@@ -233,7 +234,7 @@ SELECT
     MobilePhone, Phone, HR_Code__c, Branch__c,
     LastLoginDate, ManagerId,
     ProfileId, UserRoleId,
-    CreatedById, LastModifiedById,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
     Profile.Name
 FROM User
 WHERE IsActive = TRUE
@@ -298,7 +299,7 @@ SELECT
     Description, Website, Fax,
     AnnualRevenue, NumberOfEmployees,
     ParentId, Rating, Ownership, IsPriorityRecord,
-    OwnerId, CreatedById, LastModifiedById
+    OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM Account
 WHERE IsDeleted = FALSE
 EOF
@@ -320,7 +321,7 @@ SELECT
     IsDeleted, Pallet__c, DKRetail__Barcode__c,
     manufacture__c, manufacture_detail__c,
     Claim_Management__c, New_Product__c, StoreCondition__c,
-    OwnerId, CreatedById, LastModifiedById
+    OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM DKRetail__Product__c
 WHERE IsDeleted = FALSE
 EOF
@@ -333,7 +334,8 @@ SELECT
     DKRetail__PrimaryProductId__c, DKRetail__OtherProduct__c,
     DKRetail__Message__c, DKRetail__StandLocation__c,
     CostCenterCode__c, DKRetail__Remark__c, DKRetail__ProductType__c,
-    OwnerId, CreatedById, LastModifiedById,
+    Category1__c,
+    OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
     IsDeleted, DKRetail__ActualAmount__c, DKRetail__TargetAmount__c
 FROM DKRetail__Promotion__c
 WHERE IsDeleted = FALSE
@@ -345,15 +347,16 @@ SELECT
     Id, Name, Title__c, EmployeeId__c,
     DKRetail__Scope__c, DKRetail__Category__c, DKRetail__Contents__c,
     DKRetail__Jeejum__c, DKRetail__JeejumCode__c,
-    IsDeleted, OwnerId, CreatedById, LastModifiedById
+    IsDeleted, OwnerId, CreatedDate, LastModifiedDate,
+    CreatedById, LastModifiedById
 FROM DKRetail__Notice__c
 WHERE IsDeleted = FALSE
 EOF
 )
 ACCOUNT_CATEGORY_MASTER_SOQL=$(cat <<'EOF'
 SELECT
-    Id, AccountCode__c, Name, useSearch__c, OwnerId, CreatedById,
-    LastModifiedById, IsDeleted
+    Id, AccountCode__c, Name, useSearch__c, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM AccountCategoryMaster__c
 WHERE IsDeleted = FALSE
 EOF
@@ -362,7 +365,8 @@ EOF
 AGREEMENT_HISTORY_SOQL=$(cat <<'EOF'
 SELECT
     Id, EmployeeId__c, AgreementFlag__c, AgreementDate__c, AgreementWordId__c,
-    IsDeleted, Name, OwnerId, CreatedById, LastModifiedById
+    IsDeleted, Name, OwnerId, CreatedDate, LastModifiedDate,
+    CreatedById, LastModifiedById
 FROM AgreementHistory__c
 WHERE IsDeleted = FALSE
 EOF
@@ -382,8 +386,8 @@ ALTERNATIVE_HOLIDAY_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, DKRetail__EmployeeId__c, DKRetail__ActualWorkDate__c,
     DKRetail__TargetAltHolidayDate__c, DKRetail__ConfirmAltHolidayDate__c,
-    DKRetail__Status__c, DKRetail__ChangeReason__c, OwnerId, CreatedById,
-    LastModifiedById, IsDeleted
+    DKRetail__Status__c, DKRetail__ChangeReason__c, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM DKRetail__AlternativeHoliday__c
 WHERE IsDeleted = FALSE
 EOF
@@ -394,7 +398,8 @@ SELECT
     Id, Name, EmployeeCode__c, isEmpCodeExist__c, OrgCode__c, OrgName__c,
     Jikchak__c, Jikwee__c, Jikgub__c, WorkType__c, ManageType__c, JobCode__c,
     WorkArea__c, Jikjong__c, AppointmentDate__c, JobName__c, OrdDetailCode__c,
-    OrdDetailNode__c, IsDeleted, CreatedById, LastModifiedById, OwnerId
+    OrdDetailNode__c, IsDeleted, CreatedDate, LastModifiedDate,
+    CreatedById, LastModifiedById, OwnerId
 FROM Appointment__c
 WHERE IsDeleted = FALSE
 EOF
@@ -404,7 +409,8 @@ ATTENDANCE_LOG_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, DKRetail__EmployeeId__c, DKRetail__CommuteDate__c,
     DKRetail__AccId__c, DKRetail__SecondWorkType__c, DKRetail__Reason__c,
-    OwnerId, CreatedById, LastModifiedById, IsDeleted
+    OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
+    IsDeleted
 FROM DKRetail__CommuteLog__c
 WHERE IsDeleted = FALSE
 EOF
@@ -413,17 +419,9 @@ EOF
 ATTEND_INFO_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, EmployeeCode__c, StartDate__c, EndDate__c, AttendType__c,
-    Status__c, OwnerId, CreatedById, LastModifiedById, IsDeleted
+    Status__c, OwnerId, CreatedDate, LastModifiedDate,
+    CreatedById, LastModifiedById, IsDeleted
 FROM AttendInfo__c
-WHERE IsDeleted = FALSE
-EOF
-)
-
-BRANCH_REVIEW_SOQL=$(cat <<'EOF'
-SELECT
-    Id, Name, BranchName__c, CostCenterCode__c, FirstDayofMonth__c,
-    Confirmed__c, IsDeleted, OwnerId, CreatedById, LastModifiedById
-FROM BranchReview__c
 WHERE IsDeleted = FALSE
 EOF
 )
@@ -442,7 +440,8 @@ SELECT
     DKRetail__InitialClaim__c, DKRetail__LogisticsCenter__c, ClaimSequence__c,
     DKRetail__DetailSNSName__c, CostCenterCode__c, division__c,
     DKRetail__Channel__c, DKRetail__SampleCollectionFlag__c, ImageCount__c,
-    DKRetail__ActionDate__c, IsDeleted, OwnerId, CreatedById, LastModifiedById
+    DKRetail__ActionDate__c, IsDeleted, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM DKRetail__Claim__c
 WHERE IsDeleted = FALSE
 EOF
@@ -452,8 +451,8 @@ DISPLAY_WORK_SCHEDULE_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, Account__c, FullName__c, StartDate__c, EndDate__c, Confirmed__c,
     TypeOfWork1__c, TypeOfWork3__c, TypeOfWork4__c, TypeOfWork5__c, OwnerId,
-    CreatedById, LastModifiedById, CostCenterCode__c, LastMonthRevenue__c,
-    IsDeleted
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
+    CostCenterCode__c, LastMonthRevenue__c, IsDeleted
 FROM DisplayWorkScheduleMaster__c
 WHERE IsDeleted = FALSE
 EOF
@@ -463,7 +462,8 @@ EMPLOYEE_INPUT_CRITERIA_MASTER_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, BifurcationHalfPersonStandard__c, Boundary__c, Category__c,
     Confirmed__c, StartDate__c, EndDate__c, Fixed1PersonStandardAmount__c,
-    TypeOfWork1__c, OwnerId, CreatedById, LastModifiedById, IsDeleted
+    TypeOfWork1__c, OwnerId, CreatedDate, LastModifiedDate,
+    CreatedById, LastModifiedById, IsDeleted
 FROM EmployeeInputCriteriaMaster__c
 WHERE IsDeleted = FALSE
 EOF
@@ -474,7 +474,8 @@ SELECT
     Id, Name, SAPAccountCode__c, SAPAccountName__c, DeliveryRequestDate__c,
     OrderDate__c, EmployeeCode__c, EmployeeName__c, TotalOrderAmount__c,
     OrderChannel__c, OrderChannel_NM__c, OrderType__c, OrderType_NM__c,
-    AccountId__c, CreatedById, LastModifiedById, IsDeleted
+    AccountId__c, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
+    IsDeleted
 FROM ERP_Order__c
 WHERE IsDeleted = FALSE
 EOF
@@ -489,8 +490,8 @@ SELECT
     ShippingVehicle__c, ShippingDriverPhone__c, ShippingScheduleTime__c,
     ShippingCompleteTime__c, ShippingQuantity_Box__c, ShippingQuantity__c,
     OrderSalesLineAmount__c, ShippingAmount__c, Plant__c, Plant_NM__c,
-    ReleaseQuantity__c, ReleaseAmount__c, BoxQuantity__c, OwnerId, CreatedById,
-    LastModifiedById, IsDeleted
+    ReleaseQuantity__c, ReleaseAmount__c, BoxQuantity__c, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM ERP_OrderProduct__c
 WHERE IsDeleted = FALSE
 EOF
@@ -498,19 +499,9 @@ EOF
 
 HOLIDAY_MASTER_SOQL=$(cat <<'EOF'
 SELECT
-    Id, HolidayDate__c, Name, Type__c, OwnerId, CreatedById, LastModifiedById,
-    IsDeleted
+    Id, HolidayDate__c, Name, Type__c, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM HolidayMaster__c
-WHERE IsDeleted = FALSE
-EOF
-)
-
-HQ_REVIEW_SOQL=$(cat <<'EOF'
-SELECT
-    Id, Name, BranchCode__c, BranchName__c, FirstDayofMonth__c,
-    EvaluationyType__c, ABCTypeCode__c, HR_Code_c__c, IsDeleted, OwnerId,
-    CreatedById, LastModifiedById
-FROM HQReview__c
 WHERE IsDeleted = FALSE
 EOF
 )
@@ -518,7 +509,8 @@ EOF
 INSPECTION_THEME_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, Title__c, StartDate__c, EndDate__c, Department__c, BranchCode__c,
-    PublicFlag__c, IsDeleted, OwnerId, CreatedById, LastModifiedById
+    PublicFlag__c, IsDeleted, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM Theme__c
 WHERE IsDeleted = FALSE
 EOF
@@ -532,8 +524,8 @@ SELECT
     ProfessionalPromotionTeam__c, WorkingDaysMonth__c, NumberOfInputs__c,
     EquivalentNumberOfWorkingDays__c, ConvertedHeadcount__c, EDI_POS__c,
     ThisMonthAmount__c, AccountConvertedHeadcount__c,
-    EmployeeInputCriteriaMaster__c, OwnerId, CreatedById, LastModifiedById,
-    IsDeleted
+    EmployeeInputCriteriaMaster__c, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM MonthlyFemaleEmployeeIntegrationSchedule__c
 WHERE IsDeleted = FALSE
 EOF
@@ -545,12 +537,12 @@ SELECT
     ShipClosingAmount__c, ABCClosingAmount1__c, ABCClosingAmount2__c,
     ABCClosingAmount3__c, AmbientPurpose__c, FridgePurpose__c, IsDeleted,
     Externalkey__c, TotalLedgerAmount__c, AccountId__c, SAPAccountCode__c,
-    SalesDate__c, LastMonthlySalesHistory__c, Confirm__c, HQReviews__c,
+    SalesDate__c, LastMonthlySalesHistory__c, Confirm__c,
     Remark__c, ShipClosingAmountNH__c, ShipClosingAmount1__c,
     ShipClosingAmount2__c, ShipClosingAmount3__c, ShipClosingAmount4__c,
     ShipClosingSumAmount__c, ABCClosingAmount4__c, ABCClosingSumAmount__c,
-    LastMonthTargetByHand__c, ThisMonthTarget__c, OwnerId, CreatedById,
-    LastModifiedById
+    LastMonthTargetByHand__c, ThisMonthTarget__c, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM MonthlySalesHistory__c
 WHERE IsDeleted = FALSE
 EOF
@@ -562,8 +554,8 @@ SELECT
     Marketability_Review_Report__c, Product_Code__c, Product_Name__c,
     Product_code1__c, Purpose__c, Release_Review_Report__c, Release__c,
     Status__c, firstpropose__c, friday_taste__c, Upload_Description__c,
-    MarketingTeam__c, IsDeleted, RecordTypeId, OwnerId, CreatedById,
-    LastModifiedById
+    MarketingTeam__c, IsDeleted, RecordTypeId, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM NewProduct__c
 WHERE IsDeleted = FALSE
 EOF
@@ -573,8 +565,8 @@ ORDER_REQUEST_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, DKRetail__EmployeeId__c, DKRetail__AccountId__c, OrderDate__c,
     DKRetail__OrderDate__c, DKRetail__RequestDate__c, TotalOrderAmount__c,
-    DKRetail__RequestStatus__c, OwnerId, CreatedById, LastModifiedById,
-    IsDeleted
+    DKRetail__RequestStatus__c, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM DKRetail__OrderRequest__c
 WHERE IsDeleted = FALSE
 EOF
@@ -587,8 +579,8 @@ SELECT
     TotalQuantity_Each__c, DKRetail__OrderingUnit__c, DKRetail__TotalAmount__c,
     DKRetail__LineChangeType__c, Status__c, DKRetail__ProductId__c,
     DKRetail__Box__c, DKRetail__Piece__c, DKRetail__BoxQuantity__c,
-    DKRetail__TotalCount__c, TotalCount__c, OwnerId, CreatedById,
-    LastModifiedById, IsDeleted
+    DKRetail__TotalCount__c, TotalCount__c, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM DKRetail__OrderRequestProduct__c
 WHERE IsDeleted = FALSE
 EOF
@@ -598,7 +590,7 @@ PRODUCT_BARCODE_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, ProductName__c, ProductBarcode__c, ProductUnit__c,
     ProductSequence__c, Product__c, ProductCode__c, CustomKey__c, IsDeleted,
-    OwnerId, CreatedById, LastModifiedById
+    OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM ProductBarcode__c
 WHERE IsDeleted = FALSE
 EOF
@@ -607,7 +599,7 @@ EOF
 PROFESSIONAL_PROMOTION_TEAM_HISTORY_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, EmployeeId__c, oldValue__c, newValue__c, updateTime__c, OwnerId,
-    CreatedById, LastModifiedById, IsDeleted
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM ProfessionalPromotionTeamHistory__c
 WHERE IsDeleted = FALSE
 EOF
@@ -617,7 +609,7 @@ PROFESSIONAL_PROMOTION_TEAM_MASTER_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, Account__c, FullName__c, ProfessionalPromotionTeam__c,
     StartDate__c, EndDate__c, Confirmed__c, CostCenterCode__c, OwnerId,
-    CreatedById, LastModifiedById, IsDeleted
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM ProfessionalPromotionTeamMaster__c
 WHERE IsDeleted = FALSE
 EOF
@@ -632,7 +624,8 @@ SELECT
     PrimaryProductAmount__c, DKRetail__PrimarySalesQuantity__c,
     DKRetail__PrimarySalesPrice__c, DKRetail__OtherSalesAmount__c,
     DKRetail__OtherSalesQuantity__c, S3ImageUniqueKey__c, Description__c,
-    DKRetail__WorkType2__c, CreatedById, LastModifiedById, IsDeleted
+    DKRetail__WorkType2__c, CreatedDate, LastModifiedDate,
+    CreatedById, LastModifiedById, IsDeleted
 FROM DKRetail__PromotionEmployee__c
 WHERE IsDeleted = FALSE
 EOF
@@ -641,8 +634,8 @@ EOF
 PUSH_MESSAGE_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, Message__c, ScheduleDate__c, EmployeeId__c, Branch__c,
-    BranchCode__c, SObjectRecordId__c, IsDeleted, OwnerId, CreatedById,
-    LastModifiedById
+    BranchCode__c, SObjectRecordId__c, IsDeleted, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM PushMessage__c
 WHERE IsDeleted = FALSE
 EOF
@@ -650,24 +643,9 @@ EOF
 
 PUSH_MESSAGE_RECEIVER_SOQL=$(cat <<'EOF'
 SELECT
-    Id, Name, EmployeeId__c, MessageId__c, IsDeleted, CreatedById,
-    LastModifiedById
+    Id, Name, EmployeeId__c, MessageId__c, IsDeleted,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM PushMessageReceiver__c
-WHERE IsDeleted = FALSE
-EOF
-)
-
-STAFF_REVIEW_SOQL=$(cat <<'EOF'
-SELECT
-    Id, Name, DKRetail_EmployeeId__c, EmployeeName__c, EmployeeNumber__c,
-    Branch__c, BranchReviews__c, CostCenterCode__c, EmployeeTotalScore__c,
-    Attendance__c, InstructionsDefault__c, Priority_EventItemManage__c,
-    DisplayManageEventGoals__c, BusinessPartnerTies__c, ClothesSatellite__c,
-    ProductManageCallment__c, EducationalEvaluation__c,
-    DKRetail_WorkingCategory1__c, DKRetail_WorkingCategory2__c,
-    DKRetail_WorkingCategory3__c, JobCode__c, FirstDayofMonth__c, IsDeleted,
-    CreatedById, LastModifiedById, EmployeeType__c, EntryDate__c, Jikwee__c
-FROM StaffReview__c
 WHERE IsDeleted = FALSE
 EOF
 )
@@ -687,7 +665,8 @@ SELECT
     CompleteTime__c, IsDeleted, HRCode__c, DKRetail__PromotionEmpIdExt__c,
     SecondWorkType__c, WorkingCategory5__c, ref_accountName__c,
     MonthlyFemaleEmployeeIntegrationSchedule__c, ProfessionalPromotionTeam__c,
-    CostCenterCode__c, OwnerId, CreatedById, LastModifiedById
+    CostCenterCode__c, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM DKRetail__TeamMemberSchedule__c
 WHERE IsDeleted = FALSE
 EOF
@@ -707,9 +686,9 @@ EOF
 
 GROUP_SOQL=$(cat <<'EOF'
 SELECT
-    Id, Name, DeveloperName, Type, RelatedId, OwnerId,
+    Id, Name, DeveloperName, Type, RelatedId, OwnerId, Description,
     Email, DoesSendEmailToMembers, DoesIncludeBosses,
-    CreatedById, LastModifiedById
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM Group
 WHERE Type IN ('Regular', 'Queue')
 EOF
@@ -1026,10 +1005,6 @@ if contains_target "AttendInfo"; then
     run_query "AttendInfo (AttendInfo__c)" "$ATTEND_INFO_SOQL" "$OUT_DIR/attend_infos.csv"
 fi
 
-if contains_target "BranchReview"; then
-    run_query "BranchReview (BranchReview__c)" "$BRANCH_REVIEW_SOQL" "$OUT_DIR/branch_reviews.csv"
-fi
-
 if contains_target "Claim"; then
     run_query "Claim (DKRetail__Claim__c)" "$CLAIM_SOQL" "$OUT_DIR/claims.csv"
 fi
@@ -1052,10 +1027,6 @@ fi
 
 if contains_target "HolidayMaster"; then
     run_query "HolidayMaster (HolidayMaster__c)" "$HOLIDAY_MASTER_SOQL" "$OUT_DIR/holiday_masters.csv"
-fi
-
-if contains_target "HqReview"; then
-    run_query "HqReview (HQReview__c)" "$HQ_REVIEW_SOQL" "$OUT_DIR/hq_reviews.csv"
 fi
 
 if contains_target "InspectionTheme"; then
@@ -1104,10 +1075,6 @@ fi
 
 if contains_target "PushMessageReceiver"; then
     run_query "PushMessageReceiver (PushMessageReceiver__c)" "$PUSH_MESSAGE_RECEIVER_SOQL" "$OUT_DIR/push_message_receivers.csv"
-fi
-
-if contains_target "StaffReview"; then
-    run_query "StaffReview (StaffReview__c)" "$STAFF_REVIEW_SOQL" "$OUT_DIR/staff_reviews.csv"
 fi
 
 if contains_target "TeamMemberSchedule"; then
