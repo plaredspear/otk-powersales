@@ -163,6 +163,22 @@ class AdminProductExpirationServiceTest {
         whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
     }
 
+    // findForAdmin stubbing 을 헬퍼로 추출 — mockito-kotlin 의 inline reified any()/anyOrNull() 가
+    // 한 테스트 메서드에 8개 모이면 K2 컴파일러의 RedundantNullCheckMethodTransformer 가
+    // OutOfMemory (GC overhead limit exceeded) 로 폭발한다. 호출을 헬퍼로 옮기면 각 테스트
+    // 메서드의 bytecode frame 분석은 단순 함수 호출 1줄만 다루게 되어 폭발이 사라진다.
+    private fun stubFindForAdmin(
+        page: org.springframework.data.domain.Page<ProductExpiration>,
+        employeeIds: List<Long>? = null
+    ) {
+        whenever(
+            productExpirationRepository.findForAdmin(
+                anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(),
+                if (employeeIds == null) anyOrNull() else eq(employeeIds)
+            )
+        ).thenReturn(page)
+    }
+
     // ── getList ─────────────────────────────────────────────────────
 
     @Nested
@@ -180,11 +196,7 @@ class AdminProductExpirationServiceTest {
             val entity = createProductExpiration(employee = testEmployee)
             val page = PageImpl(listOf(entity), pageable, 1L)
 
-            whenever(
-                productExpirationRepository.findForAdmin(
-                    anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), anyOrNull()
-                )
-            ).thenReturn(page)
+            stubFindForAdmin(page)
 
             // When
             val result = adminProductExpirationService.getList(
@@ -215,11 +227,7 @@ class AdminProductExpirationServiceTest {
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(emptyList<ProductExpiration>(), pageable, 0L)
 
-            whenever(
-                productExpirationRepository.findForAdmin(
-                    anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), eq(listOf(2L, 3L))
-                )
-            ).thenReturn(page)
+            stubFindForAdmin(page, employeeIds = listOf(2L, 3L))
 
             // When
             val result = adminProductExpirationService.getList(
@@ -240,11 +248,7 @@ class AdminProductExpirationServiceTest {
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(emptyList<ProductExpiration>(), pageable, 0L)
 
-            whenever(
-                productExpirationRepository.findForAdmin(
-                    anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), eq(listOf(4L))
-                )
-            ).thenReturn(page)
+            stubFindForAdmin(page, employeeIds = listOf(4L))
 
             // When
             val result = adminProductExpirationService.getList(
