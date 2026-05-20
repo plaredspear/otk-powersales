@@ -1,5 +1,5 @@
 /**
- * SF 데이터 마이그레이션 공통 모듈 (Spec #764, v3 — K2 cache 무효화 / COPY helper + useCopyStrategy).
+ * SF 데이터 마이그레이션 공통 모듈 (Spec #764, v4 — K2 cache 무효화 / 50MB+ entity 9개 useCopyStrategy 일괄).
  *
  * Stage 1 / Stage 2 entry script 가 @file:Import 로 로드.
  * - data class + 단순 helper 함수 + 상수 매핑 표만 위치.
@@ -551,7 +551,9 @@ val ATTENDANCE_LOG_METADATA = EntityMetadata(
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
-    )
+    ),
+    // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
+    useCopyStrategy = true
 )
 
 val ATTEND_INFO_METADATA = EntityMetadata(
@@ -709,7 +711,9 @@ val ERP_ORDER_METADATA = EntityMetadata(
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
-    )
+    ),
+    // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
+    useCopyStrategy = true
 )
 
 val ERP_ORDER_PRODUCT_METADATA = EntityMetadata(
@@ -839,7 +843,9 @@ val MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA = EntityMetadata(
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
-    )
+    ),
+    // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
+    useCopyStrategy = true
 )
 
 val MONTHLY_SALES_HISTORY_METADATA = EntityMetadata(
@@ -884,7 +890,9 @@ val MONTHLY_SALES_HISTORY_METADATA = EntityMetadata(
         FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
-    )
+    ),
+    // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
+    useCopyStrategy = true
 )
 
 val NEW_PRODUCT_METADATA = EntityMetadata(
@@ -943,7 +951,9 @@ val ORDER_REQUEST_METADATA = EntityMetadata(
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
-    )
+    ),
+    // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
+    useCopyStrategy = true
 )
 
 val ORDER_REQUEST_PRODUCT_METADATA = EntityMetadata(
@@ -977,7 +987,9 @@ val ORDER_REQUEST_PRODUCT_METADATA = EntityMetadata(
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
-    )
+    ),
+    // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
+    useCopyStrategy = true
 )
 
 val PRODUCT_BARCODE_METADATA = EntityMetadata(
@@ -1087,7 +1099,9 @@ val PROMOTION_EMPLOYEE_METADATA = EntityMetadata(
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
-    )
+    ),
+    // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
+    useCopyStrategy = true
 )
 
 val PUSH_MESSAGE_METADATA = EntityMetadata(
@@ -1130,7 +1144,9 @@ val PUSH_MESSAGE_RECEIVER_METADATA = EntityMetadata(
         FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
-    )
+    ),
+    // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
+    useCopyStrategy = true
 )
 
 val TEAM_MEMBER_SCHEDULE_METADATA = EntityMetadata(
@@ -1188,7 +1204,9 @@ val TEAM_MEMBER_SCHEDULE_METADATA = EntityMetadata(
         FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
-    )
+    ),
+    // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
+    useCopyStrategy = true
 )
 
 val UPLOAD_FILE_METADATA = EntityMetadata(
