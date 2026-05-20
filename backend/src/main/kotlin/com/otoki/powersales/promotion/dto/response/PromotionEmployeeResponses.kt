@@ -3,6 +3,7 @@ package com.otoki.powersales.promotion.dto.response
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.math.BigDecimal
 
 data class PromotionEmployeeListResponse(
     val id: Long,
@@ -16,15 +17,15 @@ data class PromotionEmployeeListResponse(
     val workType3: String?,
     val teamMemberScheduleId: Long?,
     val promoCloseByTm: Boolean,
-    val basePrice: Long?,
-    val dailyTargetCount: Long?,
+    val basePrice: BigDecimal?,
+    val dailyTargetCount: BigDecimal?,
     val targetAmount: Long?,
     val actualAmount: Long?,
-    val primaryProductAmount: Long?,
-    val primarySalesQuantity: Long?,
-    val primarySalesPrice: Long?,
-    val otherSalesAmount: Long?,
-    val otherSalesQuantity: Long?,
+    val primaryProductAmount: BigDecimal?,
+    val primarySalesQuantity: BigDecimal?,
+    val primarySalesPrice: BigDecimal?,
+    val otherSalesAmount: BigDecimal?,
+    val otherSalesQuantity: BigDecimal?,
     val s3ImageUniqueKey: String?
 ) {
     companion object {
@@ -67,15 +68,15 @@ data class PromotionEmployeeDetailResponse(
     val workType3: String?,
     val teamMemberScheduleId: Long?,
     val promoCloseByTm: Boolean,
-    val basePrice: Long?,
-    val dailyTargetCount: Long?,
+    val basePrice: BigDecimal?,
+    val dailyTargetCount: BigDecimal?,
     val targetAmount: Long?,
     val actualAmount: Long?,
-    val primaryProductAmount: Long?,
-    val primarySalesQuantity: Long?,
-    val primarySalesPrice: Long?,
-    val otherSalesAmount: Long?,
-    val otherSalesQuantity: Long?,
+    val primaryProductAmount: BigDecimal?,
+    val primarySalesQuantity: BigDecimal?,
+    val primarySalesPrice: BigDecimal?,
+    val otherSalesAmount: BigDecimal?,
+    val otherSalesQuantity: BigDecimal?,
     val s3ImageUniqueKey: String?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime

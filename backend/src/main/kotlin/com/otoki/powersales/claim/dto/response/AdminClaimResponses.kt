@@ -4,6 +4,7 @@ import com.otoki.powersales.claim.entity.Claim
 import com.otoki.powersales.claim.entity.ClaimPhoto
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.math.BigDecimal
 
 data class AdminClaimListResponse(
     val content: List<AdminClaimListItem>,
@@ -24,7 +25,7 @@ data class AdminClaimListItem(
     val categoryLabel: String?,
     val subcategoryValue: String?,
     val subcategoryLabel: String?,
-    val defectQuantity: Long?,
+    val defectQuantity: BigDecimal?,
     val status: String,
     val createdAt: LocalDateTime
 ) {
@@ -61,8 +62,8 @@ data class AdminClaimDetailResponse(
     val subcategoryValue: String?,
     val subcategoryLabel: String?,
     val defectDescription: String?,
-    val defectQuantity: Long?,
-    val purchaseAmount: Long?,
+    val defectQuantity: BigDecimal?,
+    val purchaseAmount: BigDecimal?,
     val purchaseMethodName: String?,
     val requestTypeName: String?,
     val status: String,

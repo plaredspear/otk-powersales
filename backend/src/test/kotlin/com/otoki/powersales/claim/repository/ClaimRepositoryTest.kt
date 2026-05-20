@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.common.config.QueryDslConfig
 import java.time.LocalDate
+import java.math.BigDecimal
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -183,7 +184,7 @@ class ClaimRepositoryTest {
             category = testCategory1,
             subcategory = testSubcategory1,
             defectDescription = "벌레가 발견되었습니다",
-            defectQuantity = 2L,
+            defectQuantity = BigDecimal.valueOf(2L),
             status = ClaimStatus.DRAFT
         )
 
@@ -214,7 +215,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory1,
                 defectDescription = "벌레 발견",
-                defectQuantity = 1L,
+                defectQuantity = BigDecimal.valueOf(1L),
                 status = ClaimStatus.DRAFT
             )
         )
@@ -233,7 +234,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory2,
                 defectDescription = "금속 발견",
-                defectQuantity = 1L,
+                defectQuantity = BigDecimal.valueOf(1L),
                 status = ClaimStatus.DRAFT
             )
         )
@@ -251,7 +252,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory1,
                 defectDescription = "변질",
-                defectQuantity = 1L,
+                defectQuantity = BigDecimal.valueOf(1L),
                 status = ClaimStatus.DRAFT
             )
         )
@@ -281,7 +282,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory1,
                 defectDescription = "벌레 발견",
-                defectQuantity = 1L,
+                defectQuantity = BigDecimal.valueOf(1L),
                 status = ClaimStatus.DRAFT
             )
         )
@@ -300,7 +301,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory2,
                 defectDescription = "금속 발견",
-                defectQuantity = 1L,
+                defectQuantity = BigDecimal.valueOf(1L),
                 status = ClaimStatus.DRAFT
             )
         )
@@ -318,7 +319,7 @@ class ClaimRepositoryTest {
                 category = testCategory1,
                 subcategory = testSubcategory1,
                 defectDescription = "변질",
-                defectQuantity = 1L,
+                defectQuantity = BigDecimal.valueOf(1L),
                 status = ClaimStatus.DRAFT
             )
         )

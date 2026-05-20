@@ -85,8 +85,8 @@ class OrderCancelServiceTest {
     fun hp1_fullCancel() {
         val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
         val lines = listOf(
-            product(101, 10L, "P001", orderRequest),
-            product(102, 20L, "P002", orderRequest),
+            product(101, BigDecimal.valueOf(10L), "P001", orderRequest),
+            product(102, BigDecimal.valueOf(20L), "P002", orderRequest),
         )
         stubLoad(orderRequest, lines)
         stubEmployee()
@@ -109,9 +109,9 @@ class OrderCancelServiceTest {
     fun hp2_partialCancel() {
         val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
         val lines = listOf(
-            product(101, 10L, "P001", orderRequest),
-            product(102, 20L, "P002", orderRequest),
-            product(103, 30L, "P003", orderRequest),
+            product(101, BigDecimal.valueOf(10L), "P001", orderRequest),
+            product(102, BigDecimal.valueOf(20L), "P002", orderRequest),
+            product(103, BigDecimal.valueOf(30L), "P003", orderRequest),
         )
         stubLoad(orderRequest, lines)
         stubEmployee()
@@ -132,7 +132,7 @@ class OrderCancelServiceTest {
     @DisplayName("HP3 — SEND_FAILED 상태에서 전체 취소 → 헤더 CANCELED")
     fun hp3_sendFailed() {
         val orderRequest = orderRequest(status = OrderRequestStatus.SEND_FAILED)
-        val lines = listOf(product(101, 10L, "P001", orderRequest))
+        val lines = listOf(product(101, BigDecimal.valueOf(10L), "P001", orderRequest))
         stubLoad(orderRequest, lines)
         stubEmployee()
         whenever(committer.commit(eq(orderRequestId), any(), eq(employeeCode)))
@@ -202,7 +202,7 @@ class OrderCancelServiceTest {
     @DisplayName("EP5/EP6 — 미존재 라인 PK → ORD_CANCEL_LINE_NOT_FOUND, SAP 미호출")
     fun ep5_lineNotInOrder() {
         val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
-        val lines = listOf(product(101, 10L, "P001", orderRequest))
+        val lines = listOf(product(101, BigDecimal.valueOf(10L), "P001", orderRequest))
         stubLoad(orderRequest, lines)
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, listOf(101L, 999L)) }
@@ -215,7 +215,7 @@ class OrderCancelServiceTest {
     @DisplayName("EP7 — SAP 응답 'E' → ORD_CANCEL_SAP_FAILED, 커미터 미호출")
     fun ep7_sapResultCodeE() {
         val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
-        val lines = listOf(product(101, 10L, "P001", orderRequest))
+        val lines = listOf(product(101, BigDecimal.valueOf(10L), "P001", orderRequest))
         stubLoad(orderRequest, lines)
         doThrow(OrderCancelSapFailedException("SAP error")).whenever(sender).send(any())
 
@@ -286,7 +286,7 @@ class OrderCancelServiceTest {
 
     private fun product(
         id: Long,
-        lineNumber: Long,
+        lineNumber: BigDecimal,
         productCode: String,
         orderRequest: OrderRequest,
     ) = OrderRequestProduct(

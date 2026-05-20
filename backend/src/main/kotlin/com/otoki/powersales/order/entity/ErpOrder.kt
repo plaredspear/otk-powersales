@@ -7,6 +7,7 @@ import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.LocalDate
 
 @Entity
@@ -53,7 +54,7 @@ class ErpOrder(
 
     @SFField("TotalOrderAmount__c")
     @Column(name = "order_sales_amount")
-    var orderSalesAmount: Long? = null,
+    var orderSalesAmount: BigDecimal? = null,
 
     @SFField("OrderChannel__c")
     @Column(name = "order_channel", length = 10)

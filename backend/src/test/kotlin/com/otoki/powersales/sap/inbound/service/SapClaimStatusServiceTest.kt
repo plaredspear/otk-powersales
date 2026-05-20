@@ -24,6 +24,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
+import java.math.BigDecimal
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("SapClaimStatusService 테스트")
@@ -52,7 +53,7 @@ class SapClaimStatusServiceTest {
         claimType1 = ClaimType1.B,
         claimType2 = ClaimType2.BD,
         defectDescription = "변질",
-        defectQuantity = 1,
+        defectQuantity = BigDecimal.valueOf(1L),
         name = name,
         actionStatus = actionStatus
     )

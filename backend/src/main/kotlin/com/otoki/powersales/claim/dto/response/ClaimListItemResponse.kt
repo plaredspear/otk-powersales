@@ -2,6 +2,7 @@ package com.otoki.powersales.claim.dto.response
 
 import com.otoki.powersales.claim.entity.Claim
 import java.time.LocalDateTime
+import java.math.BigDecimal
 
 data class ClaimListItemResponse(
     val claimId: Long,
@@ -12,7 +13,7 @@ data class ClaimListItemResponse(
     val categoryLabel: String?,
     val subcategoryValue: String?,
     val subcategoryLabel: String?,
-    val defectQuantity: Long?,
+    val defectQuantity: BigDecimal?,
     val status: String,
     val statusLabel: String,
     val createdAt: LocalDateTime

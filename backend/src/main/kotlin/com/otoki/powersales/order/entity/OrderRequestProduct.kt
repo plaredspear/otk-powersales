@@ -64,7 +64,7 @@ class OrderRequestProduct(
     @SFField("LineNumber__c")
     @HCColumn("linenumber__c")
     @Column(name = "line_number", nullable = false)
-    val lineNumber: Long,
+    val lineNumber: BigDecimal,
 
     @SFField("DKRetail__LineNumber__c")
     @HCColumn("dkretail__linenumber__c")
@@ -87,7 +87,7 @@ class OrderRequestProduct(
     @SFField("TotalQuantity_Each__c")
     @HCColumn("totalquantity_each__c")
     @Column(name = "quantity_pieces", nullable = false)
-    val quantityPieces: Long = 0,
+    val quantityPieces: BigDecimal = BigDecimal.ZERO,
 
     @SFField("DKRetail__OrderingUnit__c")
     @HCColumn("dkretail__orderingunit__c")

@@ -226,15 +226,16 @@ class ErpOrderUpsertService(
         }
 
         /**
-         * SF `double` scale=0 정수 도메인 컬럼용. 빈 입력 → 0, 소수점 잔존값은 반올림 (HALF_UP).
+         * SF Number 컬럼용 — 빈 입력 → 0, parse 실패 → 0. V168 이후 numeric 컬럼은 NUMERIC 으로
+         * 통일되어 소수점 보존 (이전: scale=0 가정으로 BIGINT 반환).
          */
-        fun parseAmountLong(value: String?): Long? {
+        fun parseAmountLong(value: String?): BigDecimal? {
             val trimmed = value?.trim()
-            if (trimmed.isNullOrEmpty()) return 0L
+            if (trimmed.isNullOrEmpty()) return BigDecimal.ZERO
             return try {
-                BigDecimal(trimmed).setScale(0, RoundingMode.HALF_UP).toLong()
+                BigDecimal(trimmed)
             } catch (_: NumberFormatException) {
-                0L
+                BigDecimal.ZERO
             }
         }
 

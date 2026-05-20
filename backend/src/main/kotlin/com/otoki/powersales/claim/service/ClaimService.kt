@@ -39,6 +39,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
+import java.math.BigDecimal
 
 @Service
 @Transactional(readOnly = true)
@@ -264,10 +265,10 @@ class ClaimService(
 
     private fun resolvePurchaseMethod(
         sfValue: String?,
-        purchaseAmount: Long?,
+        purchaseAmount: BigDecimal?,
         receiptPhoto: MultipartFile?
     ): PurchaseMethod? {
-        if (purchaseAmount != null && purchaseAmount > 0) {
+        if (purchaseAmount != null && purchaseAmount > BigDecimal.ZERO) {
             if (sfValue.isNullOrBlank() || receiptPhoto == null) {
                 throw PurchaseInfoRequiredException()
             }
@@ -336,8 +337,8 @@ data class ClaimUpdateRequest(
     val claimType1: String? = null,
     val claimType2: String? = null,
     val defectDescription: String? = null,
-    val defectQuantity: Long? = null,
-    val purchaseAmount: Long? = null,
+    val defectQuantity: BigDecimal? = null,
+    val purchaseAmount: BigDecimal? = null,
     val purchaseMethodCode: String? = null,
     val requestTypeCode: String? = null
 )

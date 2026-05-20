@@ -22,7 +22,7 @@ data class ClientOrderDetailResponse(
     val clientDeadlineTime: String?,
     val orderDate: LocalDate?,
     val deliveryDate: LocalDate?,
-    val totalApprovedAmount: Long?,
+    val totalApprovedAmount: BigDecimal?,
     val orderedItemCount: Int,
     val orderedItems: List<ClientOrderItemResponse>
 ) {

@@ -7,6 +7,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 
 /**
  * Spec #626 — PromotionEmployee ↔ Salesforce `DKRetail__PromotionEmployee__c` 어노테이션 검증.
@@ -108,9 +109,9 @@ class PromotionEmployeeSFAnnotationTest {
         @Test
         @DisplayName("SF 원본 공식: (price × primaryQty) + (otherQty × otherQty)")
         fun originalFormulaIncludingSemanticError() {
-            val pe = newPe(price = 1000, primaryQty = 5, otherQty = 3)
+            val pe = newPe(price = BigDecimal.valueOf(1000L), primaryQty = BigDecimal.valueOf(5L), otherQty = BigDecimal.valueOf(3L))
             // (1000 × 5) + (3 × 3) = 5000 + 9 = 5009 — otherQty 를 두 번 곱하는 의미 오류 그대로 보존
-            assertThat(pe.dkDailyActualSalesAmount).isEqualTo(5009L)
+            assertThat(pe.dkDailyActualSalesAmount).isEqualByComparingTo(BigDecimal.valueOf(5009L))
         }
 
         @Test
@@ -123,20 +124,20 @@ class PromotionEmployeeSFAnnotationTest {
         @Test
         @DisplayName("일부 입력이 null 이면 null 항은 0 으로 계산")
         fun partialNullTreatedAsZero() {
-            val pe = newPe(price = 1000, primaryQty = 5, otherQty = null)
+            val pe = newPe(price = BigDecimal.valueOf(1000L), primaryQty = BigDecimal.valueOf(5L), otherQty = null)
             // (1000 × 5) + (0 × 0) = 5000
-            assertThat(pe.dkDailyActualSalesAmount).isEqualTo(5000L)
+            assertThat(pe.dkDailyActualSalesAmount).isEqualByComparingTo(BigDecimal.valueOf(5000L))
         }
 
         @Test
         @DisplayName("otherQty 만 있으면 otherQty² 결과")
         fun otherQuantityOnly() {
-            val pe = newPe(price = null, primaryQty = null, otherQty = 7)
+            val pe = newPe(price = null, primaryQty = null, otherQty = BigDecimal.valueOf(7L))
             // (0 × 0) + (7 × 7) = 49 — 의미 오류 (수량 제곱)
-            assertThat(pe.dkDailyActualSalesAmount).isEqualTo(49L)
+            assertThat(pe.dkDailyActualSalesAmount).isEqualByComparingTo(BigDecimal.valueOf(49L))
         }
 
-        private fun newPe(price: Long?, primaryQty: Long?, otherQty: Long?) = PromotionEmployee(
+        private fun newPe(price: BigDecimal?, primaryQty: BigDecimal?, otherQty: BigDecimal?) = PromotionEmployee(
             promotionId = 1L,
             primarySalesPrice = price,
             primarySalesQuantity = primaryQty,

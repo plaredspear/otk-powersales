@@ -37,6 +37,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import java.time.LocalDate
 import java.util.*
+import java.math.BigDecimal
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("AdminPromotionService 테스트")
@@ -825,10 +826,10 @@ class AdminPromotionServiceTest {
                 PromotionEmployee(
                     id = 100L, promotionId = 1L, employeeId = 10L,
                     scheduleDate = LocalDate.of(2026, 3, 15),
-                    basePrice = 1500L, dailyTargetCount = 100L,
-                    primarySalesPrice = 1200L, primarySalesQuantity = 80L,
-                    otherSalesAmount = 50000L, otherSalesQuantity = 30L,
-                    primaryProductAmount = 96000L,
+                    basePrice = BigDecimal.valueOf(1500L), dailyTargetCount = BigDecimal.valueOf(100L),
+                    primarySalesPrice = BigDecimal.valueOf(1200L), primarySalesQuantity = BigDecimal.valueOf(80L),
+                    otherSalesAmount = BigDecimal.valueOf(50000L), otherSalesQuantity = BigDecimal.valueOf(30L),
+                    primaryProductAmount = BigDecimal.valueOf(96000L),
                     description = "원본 비고",
                     s3ImageUniqueKey = "uniqueKey1",
                     teamMemberScheduleId = 5000L,
@@ -837,7 +838,7 @@ class AdminPromotionServiceTest {
                 PromotionEmployee(
                     id = 101L, promotionId = 1L, employeeId = 11L,
                     scheduleDate = LocalDate.of(2026, 3, 16),
-                    basePrice = 1500L, dailyTargetCount = 100L
+                    basePrice = BigDecimal.valueOf(1500L), dailyTargetCount = BigDecimal.valueOf(100L)
                 )
             )
             whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(sourceEmployees)
@@ -969,10 +970,10 @@ class AdminPromotionServiceTest {
                     workType1 = WorkingCategory1.EVENT,
                     workType3 = WorkingCategory3.FIXED,
                     scheduleDate = LocalDate.of(2026, 3, 15),
-                    basePrice = 1500L, dailyTargetCount = 100L,
-                    primarySalesPrice = 1200L, primarySalesQuantity = 80L,
-                    otherSalesAmount = 50000L, otherSalesQuantity = 30L,
-                    primaryProductAmount = 96000L,
+                    basePrice = BigDecimal.valueOf(1500L), dailyTargetCount = BigDecimal.valueOf(100L),
+                    primarySalesPrice = BigDecimal.valueOf(1200L), primarySalesQuantity = BigDecimal.valueOf(80L),
+                    otherSalesAmount = BigDecimal.valueOf(50000L), otherSalesQuantity = BigDecimal.valueOf(30L),
+                    primaryProductAmount = BigDecimal.valueOf(96000L),
                     description = "원본 비고",
                     s3ImageUniqueKey = "uniqueKey1",
                     teamMemberScheduleId = 5000L,

@@ -16,6 +16,7 @@ import com.otoki.powersales.common.entity.converter.WorkingTypeConverter
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.LocalDate
 
 @Entity
@@ -92,12 +93,12 @@ class PromotionEmployee(
     @SFField("DKRetail__BasePrice__c")
     @HCColumn("dkretail__baseprice__c")
     @Column(name = "base_price")
-    var basePrice: Long? = null,
+    var basePrice: BigDecimal? = null,
 
     @SFField("DKRetail__DailyTargetCount__c")
     @HCColumn("dkretail__dailytargetcount__c")
     @Column(name = "daily_target_count")
-    var dailyTargetCount: Long? = null,
+    var dailyTargetCount: BigDecimal? = null,
 
     @Column(name = "target_amount")
     var targetAmount: Long? = 0,
@@ -108,27 +109,27 @@ class PromotionEmployee(
     @SFField("PrimaryProductAmount__c")
     @HCColumn("primaryproductamount__c")
     @Column(name = "primary_product_amount")
-    var primaryProductAmount: Long? = null,
+    var primaryProductAmount: BigDecimal? = null,
 
     @SFField("DKRetail__PrimarySalesQuantity__c")
     @HCColumn("dkretail__primarysalesquantity__c")
     @Column(name = "primary_sales_quantity")
-    var primarySalesQuantity: Long? = null,
+    var primarySalesQuantity: BigDecimal? = null,
 
     @SFField("DKRetail__PrimarySalesPrice__c")
     @HCColumn("dkretail__primarysalesprice__c")
     @Column(name = "primary_sales_price")
-    var primarySalesPrice: Long? = null,
+    var primarySalesPrice: BigDecimal? = null,
 
     @SFField("DKRetail__OtherSalesAmount__c")
     @HCColumn("dkretail__othersalesamount__c")
     @Column(name = "other_sales_amount")
-    var otherSalesAmount: Long? = null,
+    var otherSalesAmount: BigDecimal? = null,
 
     @SFField("DKRetail__OtherSalesQuantity__c")
     @HCColumn("dkretail__othersalesquantity__c")
     @Column(name = "other_sales_quantity")
-    var otherSalesQuantity: Long? = null,
+    var otherSalesQuantity: BigDecimal? = null,
 
     @SFField("S3ImageUniqueKey__c")
     @HCColumn("s3imageuniquekey__c")
@@ -186,14 +187,14 @@ class PromotionEmployee(
 
     // SF Formula `DKRetail__DailyActualSalesAmount__c` 원본 공식 재현 (sf-meta-diff Q8 — 의미 오류 포함 그대로 보존, SF UI/리포트 동등성 목적).
     // 공식: (DKRetail__PrimarySalesPrice__c * DKRetail__PrimarySalesQuantity__c) + (DKRetail__OtherSalesQuantity__c * DKRetail__OtherSalesQuantity__c)
-    val dkDailyActualSalesAmount: Long?
+    val dkDailyActualSalesAmount: BigDecimal?
         get() {
             val price = primarySalesPrice
             val primaryQty = primarySalesQuantity
             val otherQty = otherSalesQuantity
             if (price == null && primaryQty == null && otherQty == null) return null
-            val primaryTerm = (price ?: 0) * (primaryQty ?: 0)
-            val otherTerm = (otherQty ?: 0) * (otherQty ?: 0)
+            val primaryTerm = (price ?: BigDecimal.ZERO) * (primaryQty ?: BigDecimal.ZERO)
+            val otherTerm = (otherQty ?: BigDecimal.ZERO) * (otherQty ?: BigDecimal.ZERO)
             return primaryTerm + otherTerm
         }
 
@@ -203,15 +204,15 @@ class PromotionEmployee(
         workStatus: WorkingType?,
         workType1: WorkingCategory1?,
         workType3: WorkingCategory3?,
-        basePrice: Long?,
-        dailyTargetCount: Long?,
+        basePrice: BigDecimal?,
+        dailyTargetCount: BigDecimal?,
         targetAmount: Long?,
         actualAmount: Long?,
-        primaryProductAmount: Long? = null,
-        primarySalesQuantity: Long? = null,
-        primarySalesPrice: Long? = null,
-        otherSalesAmount: Long? = null,
-        otherSalesQuantity: Long? = null,
+        primaryProductAmount: BigDecimal? = null,
+        primarySalesQuantity: BigDecimal? = null,
+        primarySalesPrice: BigDecimal? = null,
+        otherSalesAmount: BigDecimal? = null,
+        otherSalesQuantity: BigDecimal? = null,
         s3ImageUniqueKey: String? = null
     ) {
         this.employeeId = employeeId

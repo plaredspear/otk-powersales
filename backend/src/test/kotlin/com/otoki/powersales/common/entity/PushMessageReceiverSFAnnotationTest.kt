@@ -42,9 +42,9 @@ class PushMessageReceiverSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(PushMessageReceiver::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 6 (기존 3 + Spec #710 신규 3)")
+        @DisplayName("매핑 키 수 = 8 (기존 3 + Spec #710 신규 3 + CreatedDate/LastModifiedDate)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(6)
+            assertThat(mapping).hasSize(8)
         }
 
         @Test

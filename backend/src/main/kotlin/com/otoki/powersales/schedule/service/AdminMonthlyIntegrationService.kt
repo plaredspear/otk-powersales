@@ -248,7 +248,7 @@ class AdminMonthlyIntegrationService(
         }
 
         val workingDaysMonth = schedules.map { it.workingDate!! }.distinct().size
-        val numberOfInputs = schedules.size.toLong()
+        val numberOfInputs = BigDecimal.valueOf(schedules.size.toLong())
 
         var equivalentWorkingDays = BigDecimal.ZERO
         for (schedule in schedules) {

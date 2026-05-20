@@ -31,6 +31,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.math.BigDecimal
 
 @WebMvcTest(ClaimQueryController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -77,7 +78,7 @@ class ClaimQueryControllerTest {
                     categoryLabel = "포장불량",
                     subcategoryValue = "AB",
                     subcategoryLabel = "누수/누유",
-                    defectQuantity = 3L,
+                    defectQuantity = BigDecimal.valueOf(3L),
                     status = "DRAFT",
                     statusLabel = "임시저장",
                     createdAt = java.time.LocalDateTime.of(2026, 4, 8, 10, 30, 0)
@@ -162,8 +163,8 @@ class ClaimQueryControllerTest {
                 subcategoryValue = "AB",
                 subcategoryLabel = "누수/누유",
                 defectDescription = "포장 파손으로 내용물 누유 확인",
-                defectQuantity = 3L,
-                purchaseAmount = 3500L,
+                defectQuantity = BigDecimal.valueOf(3L),
+                purchaseAmount = BigDecimal.valueOf(3500L),
                 purchaseMethodName = "개인카드",
                 requestTypeName = "교환",
                 status = "DRAFT",

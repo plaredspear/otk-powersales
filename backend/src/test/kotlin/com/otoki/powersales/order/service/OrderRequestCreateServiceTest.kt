@@ -152,7 +152,7 @@ class OrderRequestCreateServiceTest {
             stubAuthAndAccount()
             stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000)))
 
-            // BOX × 10 × conv 30 = 300, 그러나 quantityPieces=999 송신
+            // BOX × 10 × conv 30 = 300, 그러나 quantityPieces = 999 송신
             val request = baseRequest(
                 lines = listOf(line(productCode = "P001", quantity = 10, unit = "BOX", quantityPieces = 999, quantityBoxes = 10))
             )

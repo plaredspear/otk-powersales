@@ -61,7 +61,7 @@ class ErpOrderProduct(
 
     @SFField("OrderQuantity__c")
     @Column(name = "order_quantity")
-    var orderQuantity: Long? = null,
+    var orderQuantity: BigDecimal? = null,
 
     @SFField("Unit__c")
     @Column(name = "unit", length = 10)
@@ -117,15 +117,15 @@ class ErpOrderProduct(
 
     @SFField("ShippingQuantity__c")
     @Column(name = "shipping_quantity")
-    var shippingQuantity: Long? = null,
+    var shippingQuantity: BigDecimal? = null,
 
     @SFField("OrderSalesLineAmount__c")
     @Column(name = "order_sales_line_amount")
-    var orderSalesLineAmount: Long? = null,
+    var orderSalesLineAmount: BigDecimal? = null,
 
     @SFField("ShippingAmount__c")
     @Column(name = "shipping_amount")
-    var shippingAmount: Long? = null,
+    var shippingAmount: BigDecimal? = null,
 
     @SFField("Plant__c")
     @Column(name = "plant", length = 4)
@@ -137,11 +137,11 @@ class ErpOrderProduct(
 
     @SFField("ReleaseQuantity__c")
     @Column(name = "release_quantity")
-    var releaseQuantity: Long? = null,
+    var releaseQuantity: BigDecimal? = null,
 
     @SFField("ReleaseAmount__c")
     @Column(name = "release_amount")
-    var releaseAmount: Long? = null,
+    var releaseAmount: BigDecimal? = null,
 
     @SFField("BoxQuantity__c")
     @Column(name = "box_quantity", precision = 18, scale = 4)

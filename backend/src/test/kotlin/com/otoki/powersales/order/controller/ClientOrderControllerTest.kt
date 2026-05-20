@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDate
+import java.math.BigDecimal
 
 @WebMvcTest(ClientOrderController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -79,7 +80,7 @@ class ClientOrderControllerTest {
                 clientDeadlineTime = "13:50",
                 orderDate = LocalDate.of(2026, 5, 4),
                 deliveryDate = LocalDate.of(2026, 5, 6),
-                totalApprovedAmount = 1_250_000L,
+                totalApprovedAmount = BigDecimal.valueOf(1_250_000L),
                 orderedItemCount = 1,
                 orderedItems = listOf(
                     ClientOrderItemResponse(

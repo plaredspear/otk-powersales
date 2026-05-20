@@ -62,7 +62,7 @@ class ClientOrderQueryServiceTest {
             assertThat(result.clientDeadlineTime).isEqualTo("13:50")
             assertThat(result.orderDate).isEqualTo(LocalDate.of(2026, 5, 4))
             assertThat(result.deliveryDate).isEqualTo(LocalDate.of(2026, 5, 6))
-            assertThat(result.totalApprovedAmount).isEqualTo(1_250_000L)
+            assertThat(result.totalApprovedAmount).isEqualByComparingTo(BigDecimal.valueOf(1_250_000L))
             assertThat(result.orderedItemCount).isEqualTo(2)
             assertThat(result.orderedItems).hasSize(2)
             assertThat(result.orderedItems[0].deliveryStatus).isEqualTo(DeliveryStatus.SHIPPING)
@@ -195,7 +195,7 @@ class ClientOrderQueryServiceTest {
         orderDate = java.time.LocalDate.of(2026, 5, 4),
         employeeCode = employeeCode,
         employeeName = "사원1",
-        orderSalesAmount = 1_250_000L,
+        orderSalesAmount = BigDecimal.valueOf(1_250_000L),
     )
 
     private fun createProduct(

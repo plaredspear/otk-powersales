@@ -28,6 +28,7 @@ import org.springframework.data.domain.PageRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
+import java.math.BigDecimal
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("AdminClaimService 테스트")
@@ -195,8 +196,8 @@ class AdminClaimServiceTest {
             claimType1 = ClaimType1.C,
             claimType2 = ClaimType2.CA,
             defectDescription = "제품 개봉 시 이물질 발견",
-            defectQuantity = 5,
-            purchaseAmount = 4500,
+            defectQuantity = BigDecimal.valueOf(5L),
+            purchaseAmount = BigDecimal.valueOf(4500L),
             purchaseMethodName = "매장구매",
             requestTypeName = "교환",
             status = status

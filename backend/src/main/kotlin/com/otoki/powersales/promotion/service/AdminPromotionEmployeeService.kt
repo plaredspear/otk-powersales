@@ -20,6 +20,7 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 
 @Service
 @Transactional(readOnly = true)
@@ -287,13 +288,13 @@ class AdminPromotionEmployeeService(
         return ResolvedEmployee(id = employee.id, name = employee.name, employeeCode = employee.employeeCode)
     }
 
-    private fun calculateTargetAmount(basePrice: Long?, dailyTargetCount: Long?): Long? {
-        return if (basePrice != null && dailyTargetCount != null) basePrice * dailyTargetCount else null
+    private fun calculateTargetAmount(basePrice: BigDecimal?, dailyTargetCount: BigDecimal?): Long? {
+        return if (basePrice != null && dailyTargetCount != null) (basePrice * dailyTargetCount).toLong() else null
     }
 
-    private fun calculateActualAmount(primaryProductAmount: Long?, otherSalesAmount: Long?): Long? {
+    private fun calculateActualAmount(primaryProductAmount: BigDecimal?, otherSalesAmount: BigDecimal?): Long? {
         return if (primaryProductAmount == null && otherSalesAmount == null) null
-        else (primaryProductAmount ?: 0) + (otherSalesAmount ?: 0)
+        else ((primaryProductAmount ?: BigDecimal.ZERO) + (otherSalesAmount ?: BigDecimal.ZERO)).toLong()
     }
 
     private fun validateBatchItem(
@@ -432,8 +433,8 @@ class AdminPromotionEmployeeService(
         newEmployeeId: Long?,
         scheduleDate: java.time.LocalDate?,
         workType3: String?,
-        basePrice: Long?,
-        dailyTargetCount: Long?,
+        basePrice: BigDecimal?,
+        dailyTargetCount: BigDecimal?,
         isAdmin: Boolean
     ) {
         if (pe.teamMemberScheduleId == null || !pe.promoCloseByTm) return

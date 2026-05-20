@@ -303,7 +303,7 @@ class Account(
 
     @SFField("NumberOfEmployees")
     @Column(name = "number_of_employees")
-    var numberOfEmployees: Int? = null,
+    var numberOfEmployees: BigDecimal? = null,
 
     @SFField("ParentId")
     @Column(name = "parent_sfid", length = 18)

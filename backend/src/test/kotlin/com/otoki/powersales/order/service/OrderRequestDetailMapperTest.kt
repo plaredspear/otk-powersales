@@ -340,11 +340,11 @@ class OrderRequestDetailMapperTest {
         )
         return OrderRequestProduct(
             id = 1L,
-            lineNumber = 1L,
+            lineNumber = BigDecimal.valueOf(1L),
             productCode = productCode,
             productName = productName,
             quantityBoxes = quantityBoxes,
-            quantityPieces = 0L,
+            quantityPieces = BigDecimal.valueOf(0L),
             unit = "BOX",
             unitPrice = BigDecimal.ZERO,
             amount = BigDecimal.ZERO,

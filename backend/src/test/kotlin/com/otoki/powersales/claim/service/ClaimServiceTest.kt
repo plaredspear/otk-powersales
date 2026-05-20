@@ -43,6 +43,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.mock.web.MockMultipartFile
 import java.time.LocalDate
 import java.util.Optional
+import java.math.BigDecimal
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("ClaimService 테스트")
@@ -83,7 +84,7 @@ class ClaimServiceTest {
         claimType2: String = "AA",
         date: String = "2026-01-01",
         dateType: String = ClaimDateType.EXPIRY_DATE.name,
-        purchaseAmount: Long? = null,
+        purchaseAmount: BigDecimal? = null,
         purchaseMethodCode: String? = null,
         requestTypeCode: String? = null
     ) = ClaimCreateRequest(
@@ -94,7 +95,7 @@ class ClaimServiceTest {
         claimType1 = claimType1,
         claimType2 = claimType2,
         defectDescription = "포장이 찢어져 있음",
-        defectQuantity = 2L,
+        defectQuantity = BigDecimal.valueOf(2L),
         purchaseAmount = purchaseAmount,
         purchaseMethodCode = purchaseMethodCode,
         requestTypeCode = requestTypeCode
@@ -204,7 +205,7 @@ class ClaimServiceTest {
             assertThatThrownBy {
                 claimService.createClaim(
                     userId,
-                    validRequest(purchaseAmount = 10000, purchaseMethodCode = "A"),
+                    validRequest(purchaseAmount = BigDecimal.valueOf(10000L), purchaseMethodCode = "A"),
                     mockPhoto("d"), mockPhoto("l"), null
                 )
             }.isInstanceOf(PurchaseInfoRequiredException::class.java)
@@ -261,7 +262,7 @@ class ClaimServiceTest {
             claimType1 = ClaimType1.A,
             claimType2 = ClaimType2.AA,
             defectDescription = "원본 설명",
-            defectQuantity = 1L,
+            defectQuantity = BigDecimal.valueOf(1L),
             status = status
         )
 
@@ -273,11 +274,11 @@ class ClaimServiceTest {
 
             val result = claimService.updateClaim(
                 userId, claimId,
-                ClaimUpdateRequest(defectDescription = "수정된 설명", defectQuantity = 5L)
+                ClaimUpdateRequest(defectDescription = "수정된 설명", defectQuantity = BigDecimal.valueOf(5L))
             )
 
             assertThat(existing.defectDescription).isEqualTo("수정된 설명")
-            assertThat(existing.defectQuantity).isEqualTo(5L)
+            assertThat(existing.defectQuantity).isEqualByComparingTo(BigDecimal.valueOf(5L))
             assertThat(result.id).isEqualTo(claimId)
         }
 
@@ -304,7 +305,7 @@ class ClaimServiceTest {
                 claimType1 = ClaimType1.A,
                 claimType2 = ClaimType2.AA,
                 defectDescription = "x",
-                defectQuantity = 1L,
+                defectQuantity = BigDecimal.valueOf(1L),
                 status = ClaimStatus.DRAFT
             )
             whenever(claimRepository.findById(claimId)).thenReturn(Optional.of(foreign))
@@ -325,7 +326,7 @@ class ClaimServiceTest {
             val claim = Claim(
                 id = claimId, employee = employee, account = account,
                 date = LocalDate.now(), claimType1 = ClaimType1.A, claimType2 = ClaimType2.AA,
-                defectDescription = "x", defectQuantity = 1L, status = ClaimStatus.DRAFT
+                defectDescription = "x", defectQuantity = BigDecimal.valueOf(1L), status = ClaimStatus.DRAFT
             )
             val photo = ClaimPhoto(
                 id = 1L, claim = claim, photoType = ClaimPhotoType.DEFECT,
@@ -348,7 +349,7 @@ class ClaimServiceTest {
             val claim = Claim(
                 id = claimId, employee = employee, account = account,
                 date = LocalDate.now(), claimType1 = ClaimType1.A, claimType2 = ClaimType2.AA,
-                defectDescription = "x", defectQuantity = 1L, status = ClaimStatus.SENT
+                defectDescription = "x", defectQuantity = BigDecimal.valueOf(1L), status = ClaimStatus.SENT
             )
             whenever(claimRepository.findById(claimId)).thenReturn(Optional.of(claim))
 
@@ -368,7 +369,7 @@ class ClaimServiceTest {
             val claim = Claim(
                 id = claimId, employee = employee, account = account,
                 date = LocalDate.now(), claimType1 = ClaimType1.A, claimType2 = ClaimType2.AA,
-                defectDescription = "x", defectQuantity = 1L, status = ClaimStatus.DRAFT
+                defectDescription = "x", defectQuantity = BigDecimal.valueOf(1L), status = ClaimStatus.DRAFT
             )
             val photo = ClaimPhoto(
                 id = 7L, claim = claim, photoType = ClaimPhotoType.RECEIPT,

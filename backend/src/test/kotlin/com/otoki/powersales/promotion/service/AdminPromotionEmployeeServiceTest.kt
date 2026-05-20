@@ -31,6 +31,7 @@ import org.mockito.kotlin.*
 import org.mockito.quality.Strictness
 import java.time.LocalDate
 import java.util.*
+import java.math.BigDecimal
 
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -372,7 +373,7 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
-        @DisplayName("목표금액 자동 계산 - basePrice=5000, dailyTargetCount=10 -> targetAmount=50000")
+        @DisplayName("목표금액 자동 계산 - basePrice = BigDecimal.valueOf(5000L), dailyTargetCount = BigDecimal.valueOf(10L) -> targetAmount=50000")
         fun createEmployee_targetAmountCalculated() {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -381,13 +382,13 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(
-                basePrice = 5000, dailyTargetCount = 10L, targetAmount = 99999
+                basePrice = BigDecimal.valueOf(5000L), dailyTargetCount = BigDecimal.valueOf(10L), targetAmount = 99999
             ))
             assertThat(result.targetAmount).isEqualTo(50000)
         }
 
         @Test
-        @DisplayName("실적금액 자동 계산 - primaryProductAmount=30000, otherSalesAmount=5000 -> actualAmount=35000")
+        @DisplayName("실적금액 자동 계산 - primaryProductAmount = BigDecimal.valueOf(30000L), otherSalesAmount = BigDecimal.valueOf(5000L) -> actualAmount=35000")
         fun createEmployee_actualAmountCalculated() {
             whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(createPromotion()))
             whenever(promotionEmployeeRepository.save(any<PromotionEmployee>()))
@@ -396,7 +397,7 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(
-                primaryProductAmount = 30000, otherSalesAmount = 5000, actualAmount = 99999
+                primaryProductAmount = BigDecimal.valueOf(30000L), otherSalesAmount = BigDecimal.valueOf(5000L), actualAmount = 99999
             ))
             assertThat(result.actualAmount).isEqualTo(35000)
         }
@@ -410,7 +411,7 @@ class AdminPromotionEmployeeServiceTest {
 
             stubRollup()
 
-            val result = service.createEmployee(10L, createRequest(basePrice = null, dailyTargetCount = 10L))
+            val result = service.createEmployee(10L, createRequest(basePrice = null, dailyTargetCount = BigDecimal.valueOf(10L)))
             assertThat(result.targetAmount).isNull()
         }
 
@@ -423,7 +424,7 @@ class AdminPromotionEmployeeServiceTest {
 
             stubRollup()
 
-            val result = service.createEmployee(10L, createRequest(basePrice = 5000, dailyTargetCount = null))
+            val result = service.createEmployee(10L, createRequest(basePrice = BigDecimal.valueOf(5000L), dailyTargetCount = null))
             assertThat(result.targetAmount).isNull()
         }
 
@@ -436,7 +437,7 @@ class AdminPromotionEmployeeServiceTest {
 
             stubRollup()
 
-            val result = service.createEmployee(10L, createRequest(basePrice = 5000, dailyTargetCount = 0L))
+            val result = service.createEmployee(10L, createRequest(basePrice = BigDecimal.valueOf(5000L), dailyTargetCount = BigDecimal.valueOf(0L)))
             assertThat(result.targetAmount).isEqualTo(0)
         }
 
@@ -465,7 +466,7 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.createEmployee(10L, createRequest(
-                primaryProductAmount = 30000, otherSalesAmount = null
+                primaryProductAmount = BigDecimal.valueOf(30000L), otherSalesAmount = null
             ))
             assertThat(result.actualAmount).isEqualTo(30000)
         }
@@ -785,7 +786,7 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.updateEmployee(1L, 1L, createRequest(
-                basePrice = 3000, dailyTargetCount = 20L, targetAmount = 99999
+                basePrice = BigDecimal.valueOf(3000L), dailyTargetCount = BigDecimal.valueOf(20L), targetAmount = 99999
             ))
             assertThat(result.targetAmount).isEqualTo(60000)
         }
@@ -803,7 +804,7 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             val result = service.updateEmployee(1L, 1L, createRequest(
-                primaryProductAmount = 20000, otherSalesAmount = 10000, actualAmount = 99999
+                primaryProductAmount = BigDecimal.valueOf(20000L), otherSalesAmount = BigDecimal.valueOf(10000L), actualAmount = 99999
             ))
             assertThat(result.actualAmount).isEqualTo(30000)
         }
@@ -1297,9 +1298,9 @@ class AdminPromotionEmployeeServiceTest {
 
             val request = BatchUpdatePromotionEmployeeRequest(listOf(
                 createBatchItem(
-                    id = 1L, basePrice = 5000, dailyTargetCount = 10L,
+                    id = 1L, basePrice = BigDecimal.valueOf(5000L), dailyTargetCount = BigDecimal.valueOf(10L),
                     targetAmount = 99999, actualAmount = 99999,
-                    primaryProductAmount = 30000, otherSalesAmount = 5000
+                    primaryProductAmount = BigDecimal.valueOf(30000L), otherSalesAmount = BigDecimal.valueOf(5000L)
                 )
             ))
 
@@ -1357,7 +1358,7 @@ class AdminPromotionEmployeeServiceTest {
         workStatus = workStatus?.let { WorkingType.fromDisplayName(it) },
         workType1 = workType1?.let { WorkingCategory1.fromDisplayName(it) },
         workType3 = WorkingCategory3.FIXED,
-        basePrice = 1500, dailyTargetCount = 100L,
+        basePrice = BigDecimal.valueOf(1500L), dailyTargetCount = BigDecimal.valueOf(100L),
         teamMemberScheduleId = teamMemberScheduleId, promoCloseByTm = promoCloseByTm
     ).also {
         it.promotion = createPromotion()
@@ -1371,9 +1372,9 @@ class AdminPromotionEmployeeServiceTest {
     private fun createBatchItem(
         id: Long = 1L, employeeId: Long? = 1L, scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
         workStatus: String? = "근무", workType1: String? = "행사", workType3: String? = "고정",
-        basePrice: Long? = 1500, dailyTargetCount: Long? = 100,
+        basePrice: BigDecimal? = BigDecimal.valueOf(1500L), dailyTargetCount: BigDecimal? = BigDecimal.valueOf(100L),
         targetAmount: Long? = 0, actualAmount: Long? = 0,
-        primaryProductAmount: Long? = null, otherSalesAmount: Long? = null
+        primaryProductAmount: BigDecimal? = null, otherSalesAmount: BigDecimal? = null
     ) = BatchUpdatePromotionEmployeeItem(
         id = id, employeeId = employeeId, scheduleDate = scheduleDate, workStatus = workStatus,
         workType1 = workType1, workType3 = workType3,
@@ -1385,9 +1386,9 @@ class AdminPromotionEmployeeServiceTest {
     private fun createRequest(
         employeeId: Long? = 1L, scheduleDate: LocalDate = LocalDate.of(2026, 3, 15),
         workStatus: String? = "근무", workType1: String? = "행사", workType3: String? = "고정",
-        basePrice: Long? = 1500, dailyTargetCount: Long? = 100,
+        basePrice: BigDecimal? = BigDecimal.valueOf(1500L), dailyTargetCount: BigDecimal? = BigDecimal.valueOf(100L),
         targetAmount: Long? = 0, actualAmount: Long? = 0,
-        primaryProductAmount: Long? = null, otherSalesAmount: Long? = null
+        primaryProductAmount: BigDecimal? = null, otherSalesAmount: BigDecimal? = null
     ) = PromotionEmployeeRequest(
         employeeId = employeeId, scheduleDate = scheduleDate, workStatus = workStatus,
         workType1 = workType1, workType3 = workType3,

@@ -1,7 +1,7 @@
 #!/usr/bin/env kotlin
 
 /**
- * Stage 1 — Raw INSERT (Spec #764, v9 — K2 cache 무효화 / BatchUpdateException root cause 만 출력).
+ * Stage 1 — Raw INSERT (Spec #764, v10 — K2 cache 무효화 / isIntegerScale 제거 + NUMERIC 통일).
  *
  * 책임: 추출된 CSV 를 staging 영역에 1:1 로 JDBC batch INSERT.
  *       - enum 변환 / transform 일체 수행하지 않음 (Stage 2 의 책임).
@@ -150,19 +150,10 @@ fun applyStageOneStreamingInsert(
                 val raw = row[f.sfFieldName]
                 if (raw == null) {
                     ps.setNull(idx + 1, Types.NULL)
-                } else if (f.isIntegerScale) {
-                    // SF Number(int 또는 scale=0 double) + backend Int/Long 컬럼 — type-safe casting.
-                    // SF export 가 "2456830.0" 형식으로 내보내는 .0 접미사를 BigDecimal 정확 파싱 후
-                    // BigIntegerExact 로 정수성 검증 (소수 입력은 ArithmeticException 으로 즉시 실패).
-                    val asLong = try {
-                        raw.toBigDecimal().toBigIntegerExact().toLong()
-                    } catch (e: ArithmeticException) {
-                        error("Integer column expects exact integer but got '$raw' at ${meta.targetName}.${f.sfFieldName}")
-                    } catch (e: NumberFormatException) {
-                        error("Integer column expects numeric but got '$raw' at ${meta.targetName}.${f.sfFieldName}")
-                    }
-                    ps.setLong(idx + 1, asLong)
                 } else {
+                    // PostgreSQL `stringtype=unspecified` 로 모든 컬럼 타입 (NUMERIC / DATE / BOOLEAN
+                    // 등) 자동 cast. SF describe scale=0 은 강제력 없음 (운영 데이터에 소수 가능) —
+                    // 정수 도메인 가정 코드를 제거하고 모든 numeric 컬럼을 NUMERIC 으로 통일 (V168).
                     ps.setString(idx + 1, raw)
                 }
             }

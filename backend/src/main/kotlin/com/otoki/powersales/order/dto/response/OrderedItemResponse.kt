@@ -10,7 +10,7 @@ data class OrderedItemResponse(
     val productCode: String,
     val productName: String,
     val totalQuantityBoxes: BigDecimal,
-    val totalQuantityPieces: Long,
+    val totalQuantityPieces: BigDecimal,
     val isCancelled: Boolean,
 ) {
     companion object {

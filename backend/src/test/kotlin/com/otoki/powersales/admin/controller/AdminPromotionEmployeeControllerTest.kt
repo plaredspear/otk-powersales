@@ -33,6 +33,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.math.BigDecimal
 
 @WebMvcTest(AdminPromotionEmployeeController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -274,8 +275,8 @@ class AdminPromotionEmployeeControllerTest {
         workType3 = "고정",
         teamMemberScheduleId = null,
         promoCloseByTm = false,
-        basePrice = 1500,
-        dailyTargetCount = 100,
+        basePrice = BigDecimal.valueOf(1500L),
+        dailyTargetCount = BigDecimal.valueOf(100L),
         targetAmount = 100000,
         actualAmount = 80000,
         primaryProductAmount = null,
@@ -298,8 +299,8 @@ class AdminPromotionEmployeeControllerTest {
         workType3 = "고정",
         teamMemberScheduleId = null,
         promoCloseByTm = false,
-        basePrice = 1500,
-        dailyTargetCount = 100,
+        basePrice = BigDecimal.valueOf(1500L),
+        dailyTargetCount = BigDecimal.valueOf(100L),
         targetAmount = 100000,
         actualAmount = 80000,
         primaryProductAmount = null,
@@ -318,7 +319,7 @@ class AdminPromotionEmployeeControllerTest {
         workStatus = "근무",
         workType1 = "행사",
         workType3 = "고정",
-        basePrice = 1500,
-        dailyTargetCount = 100
+        basePrice = BigDecimal.valueOf(1500L),
+        dailyTargetCount = BigDecimal.valueOf(100L)
     )
 }

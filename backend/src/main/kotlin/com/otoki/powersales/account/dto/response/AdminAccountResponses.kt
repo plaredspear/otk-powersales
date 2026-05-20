@@ -126,7 +126,7 @@ data class AdminAccountUpdateResponse(
     val remainingCredit: BigDecimal?,
     val totalCredit: BigDecimal?,
     val annualRevenue: BigDecimal?,
-    val numberOfEmployees: Int?,
+    val numberOfEmployees: BigDecimal?,
     val consignmentAcc: String?,
     val distribution: String?
 ) {

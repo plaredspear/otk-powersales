@@ -131,7 +131,7 @@ data class AdminAccountUpdateRequest(
 
     val annualRevenue: BigDecimal? = null,
 
-    val numberOfEmployees: Int? = null,
+    val numberOfEmployees: BigDecimal? = null,
 
     @field:Size(max = 20, message = "담당 영업사원 사번은 20자 이하여야 합니다.")
     val employeeCode: String? = null,

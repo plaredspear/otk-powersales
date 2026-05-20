@@ -23,6 +23,7 @@ import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -106,11 +107,11 @@ class Claim(
 
     @SFField("DKRetail__Quantity__c")
     @Column(name = "defect_quantity", nullable = false)
-    var defectQuantity: Long,
+    var defectQuantity: BigDecimal,
 
     @SFField("DKRetail__Amount__c")
     @Column(name = "purchase_amount")
-    var purchaseAmount: Long? = null,
+    var purchaseAmount: BigDecimal? = null,
 
     @SFField("DKRetail__PurchaseMethod__c")
     @Column(name = "purchase_method_code", length = 255)

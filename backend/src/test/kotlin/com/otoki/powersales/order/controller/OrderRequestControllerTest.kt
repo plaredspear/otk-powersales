@@ -190,7 +190,7 @@ class OrderRequestControllerTest {
                         productCode = "1000023",
                         productName = "진라면 매운맛",
                         totalQuantityBoxes = BigDecimal("10"),
-                        totalQuantityPieces = 300L,
+                        totalQuantityPieces = BigDecimal.valueOf(300L),
                         isCancelled = false,
                     ),
                 ),
@@ -267,7 +267,7 @@ class OrderRequestControllerTest {
                         cancelledLines = listOf(
                             CancelledLineResponse(
                                 orderProductId = 101L,
-                                lineNumber = 10,
+                                lineNumber = BigDecimal.valueOf(10L),
                                 productCode = "P001",
                                 cancelledAt = java.time.LocalDateTime.of(2026, 5, 4, 13, 25),
                             ),
@@ -294,7 +294,7 @@ class OrderRequestControllerTest {
                         orderRequestNumber = "ORD-20260504-12345",
                         orderRequestStatus = OrderRequestStatus.APPROVED,
                         cancelledLines = listOf(
-                            CancelledLineResponse(101L, 10, "P001", java.time.LocalDateTime.of(2026, 5, 4, 13, 25)),
+                            CancelledLineResponse(101L, BigDecimal.valueOf(10L), "P001", java.time.LocalDateTime.of(2026, 5, 4, 13, 25)),
                         ),
                     ),
                 )

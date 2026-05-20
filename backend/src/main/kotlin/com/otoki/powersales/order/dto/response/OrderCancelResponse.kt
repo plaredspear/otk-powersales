@@ -4,6 +4,7 @@ import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
 import com.otoki.powersales.order.enums.OrderRequestStatus
 import java.time.LocalDateTime
+import java.math.BigDecimal
 
 /**
  * 주문 취소 응답 DTO (Spec #597 §5).
@@ -28,7 +29,7 @@ data class OrderCancelResponse(
 
 data class CancelledLineResponse(
     val orderProductId: Long,
-    val lineNumber: Long,
+    val lineNumber: BigDecimal,
     val productCode: String,
     val cancelledAt: LocalDateTime?,
 ) {

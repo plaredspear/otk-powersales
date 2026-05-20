@@ -105,7 +105,7 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @SFField("NumberOfInputs__c")
     @HCColumn("numberofinputs__c")
     @Column(name = "number_of_inputs")
-    val numberOfInputs: Long? = null,
+    val numberOfInputs: BigDecimal? = null,
 
     @SFField("EquivalentNumberOfWorkingDays__c")
     @HCColumn("equivalentnumberofworkingdays__c")
@@ -120,12 +120,12 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @SFField("EDI_POS__c")
     @HCColumn("edi_pos__c")
     @Column(name = "edi_pos")
-    val ediPos: Long? = null,
+    val ediPos: BigDecimal? = null,
 
     @SFField("ThisMonthAmount__c")
     @HCColumn("thismonthamount__c")
     @Column(name = "this_month_amount")
-    val thisMonthAmount: Long? = null,
+    val thisMonthAmount: BigDecimal? = null,
 
     @SFField("AccountConvertedHeadcount__c")
     @HCColumn("accountconvertedheadcount__c")

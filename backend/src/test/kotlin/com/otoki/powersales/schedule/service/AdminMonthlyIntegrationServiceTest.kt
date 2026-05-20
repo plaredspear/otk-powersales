@@ -235,7 +235,7 @@ class AdminMonthlyIntegrationServiceTest {
                 this.year == "2026" &&
                     this.month == "04" &&
                     this.workingDaysMonth?.compareTo(BigDecimal.ONE) == 0 &&
-                    this.numberOfInputs == 1L &&
+                    this.numberOfInputs?.compareTo(BigDecimal.ONE) == 0 &&
                     this.equivalentNumberOfWorkingDays?.compareTo(BigDecimal.ONE) == 0
             })
         }

@@ -143,13 +143,13 @@ class UserEntityTest {
         }
 
         @Test
-        @DisplayName("employee_code 컬럼은 unique=true + nullable=false")
+        @DisplayName("employee_code 컬럼은 unique=true + nullable=true (V167 부서 공용 계정 적재 허용)")
         fun employeeCodeUnique() {
             val field = User::class.java.getDeclaredField("employeeCode")
             val column = field.getAnnotation(Column::class.java)
             assertThat(column.name).isEqualTo("employee_code")
             assertThat(column.unique).isTrue()
-            assertThat(column.nullable).isFalse()
+            assertThat(column.nullable).isTrue()
             assertThat(column.length).isEqualTo(20)
         }
 

@@ -22,6 +22,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.math.BigDecimal
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("ErpOrderUpsertService 테스트")
@@ -142,7 +143,7 @@ class ErpOrderUpsertServiceTest {
         fun upsert_updateExistingHeader() {
             val existing = ErpOrder(sapOrderNumber = "0010012345").also {
                 it.sapAccountName = "이전이름"
-                it.orderSalesAmount = 0L
+                it.orderSalesAmount = BigDecimal.valueOf(0L)
             }
             whenever(accountRepository.findByExternalKeyIn(listOf("1032619")))
                 .thenReturn(listOf(account("1032619")))
@@ -157,7 +158,7 @@ class ErpOrderUpsertServiceTest {
             val saved = captor.firstValue.single()
             assertThat(saved).isSameAs(existing)
             assertThat(saved.sapAccountName).isEqualTo("새이름")
-            assertThat(saved.orderSalesAmount).isEqualTo(2000000L)
+            assertThat(saved.orderSalesAmount).isEqualByComparingTo(BigDecimal.valueOf(2000000L))
         }
 
         @Test

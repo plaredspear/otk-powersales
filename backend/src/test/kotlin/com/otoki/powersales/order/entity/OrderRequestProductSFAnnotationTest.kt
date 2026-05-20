@@ -8,6 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 
 /**
  * Spec #623 — OrderRequestProduct ↔ Salesforce `DKRetail__OrderRequestProduct__c` 어노테이션 검증.
@@ -140,10 +141,10 @@ class OrderRequestProductSFAnnotationTest {
             )
             return OrderRequestProduct(
                 id = 100L,
-                lineNumber = 1L,
+                lineNumber = BigDecimal.valueOf(1L),
                 productCode = "P001",
                 productName = "test",
-                quantityPieces = 1L,
+                quantityPieces = BigDecimal.valueOf(1L),
                 unit = "EA",
                 orderRequest = orderRequest,
             )

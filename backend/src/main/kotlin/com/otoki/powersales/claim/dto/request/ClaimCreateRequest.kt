@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
 import jakarta.validation.constraints.Size
+import java.math.BigDecimal
 
 /**
  * 클레임 등록 요청 DTO (multipart/form-data).
@@ -37,10 +38,10 @@ data class ClaimCreateRequest(
 
     @field:NotNull(message = "불량 수량은 필수입니다")
     @field:Positive(message = "불량 수량은 양수여야 합니다")
-    val defectQuantity: Long?,
+    val defectQuantity: BigDecimal?,
 
     @field:Positive(message = "구매 금액은 양수여야 합니다")
-    val purchaseAmount: Long? = null,
+    val purchaseAmount: BigDecimal? = null,
 
     /** SF PurchaseMethod value (A/B/C) */
     val purchaseMethodCode: String? = null,
