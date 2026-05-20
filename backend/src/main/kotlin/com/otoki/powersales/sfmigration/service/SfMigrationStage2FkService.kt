@@ -22,6 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate
 class SfMigrationStage2FkService(
     @PersistenceContext private val em: EntityManager,
     private val transactionTemplate: TransactionTemplate,
+    private val progress: SfFkResolveProgress,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -36,24 +37,36 @@ class SfMigrationStage2FkService(
         // 1. 테이블 단위 groupBy (sfid 컬럼 + FK spec 도출).
         val plansByTable = buildPlansByTable(errors)
         log.info("[fk] start — {} tables to resolve", plansByTable.size)
+        progress.begin(totalTables = plansByTable.size)
+        errors.forEach { progress.addError(it) }
 
         // 2. 테이블 단위 처리.
         var totalUpdated = 0
-        for ((tableName, plan) in plansByTable) {
-            val updated = applyOneTableFkResolve(tableName, plan, errors)
-            totalUpdated += updated
-            results += SubstepResult(
-                label = "$tableName (${plan.columns.size} FK${if (plan.polymorphicOwner) " + polymorphic owner" else ""})",
-                rowsAffected = updated,
-            )
+        try {
+            for ((tableName, plan) in plansByTable) {
+                val updated = applyOneTableFkResolve(tableName, plan, errors)
+                totalUpdated += updated
+                val result = SubstepResult(
+                    label = "$tableName (${plan.columns.size} FK${if (plan.polymorphicOwner) " + polymorphic owner" else ""})",
+                    rowsAffected = updated,
+                )
+                results += result
+                progress.finishTable(result)
+            }
+
+            if (errors.isNotEmpty()) {
+                errors.forEach { log.warn("[fk] WARNING: {}", it) }
+                results += SubstepResult(label = "WARNINGS", rowsAffected = errors.size)
+            }
+
+            log.info("[fk] done — total {} rows updated across {} tables", totalUpdated, plansByTable.size)
+            progress.finishOk()
+        } catch (e: Exception) {
+            log.error("[fk] aborted with unhandled exception", e)
+            progress.finishWithFailure(e.message ?: e.javaClass.simpleName)
+            throw e
         }
 
-        if (errors.isNotEmpty()) {
-            errors.forEach { log.warn("[fk] WARNING: {}", it) }
-            results += SubstepResult(label = "WARNINGS", rowsAffected = errors.size)
-        }
-
-        log.info("[fk] done — total {} rows updated across {} tables", totalUpdated, plansByTable.size)
         return SfMigrationStage2Response(
             substep = "fk",
             results = results,
@@ -141,6 +154,7 @@ class SfMigrationStage2FkService(
             plan.columns.size,
             if (plan.polymorphicOwner) " + polymorphic owner" else "",
         )
+        progress.beginTable(tableName, chunkCount.toInt())
 
         while (lastPk < maxPk) {
             val upperPk = lastPk + chunkSize
@@ -153,8 +167,11 @@ class SfMigrationStage2FkService(
                         .executeUpdate()
                 } ?: 0
             } catch (e: Exception) {
-                errors.add("[$tableName] chunk #${chunkNo + 1} (pk ${lastPk + 1}~$upperPk) 실패: ${e.message}")
+                val message = "[$tableName] chunk #${chunkNo + 1} (pk ${lastPk + 1}~$upperPk) 실패: ${e.message}"
+                errors.add(message)
+                progress.addError(message)
                 log.error("[fk] {} chunk #{} 실패 — pk {}~{}", tableName, chunkNo + 1, lastPk + 1, upperPk, e)
+                progress.advanceChunk(0)
                 lastPk = upperPk
                 chunkNo++
                 continue
@@ -162,6 +179,7 @@ class SfMigrationStage2FkService(
 
             totalUpdated += n
             chunkNo++
+            progress.advanceChunk(n)
             log.info(
                 "[fk] {} chunk {}/{} pk {}~{} → {} rows ({} ms, total {})",
                 tableName, chunkNo, chunkCount, lastPk + 1, upperPk, n,

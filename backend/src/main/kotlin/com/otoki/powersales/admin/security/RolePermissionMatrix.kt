@@ -51,6 +51,7 @@ object RolePermissionMatrix {
             AdminPermission.ATTEND_INFO_DELETE,
             AdminPermission.ATTENDANCE_LOG_READ,
             AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
+            AdminPermission.SF_MIGRATION_RUN,
         ),
         UserRole.SALES_SUPPORT to setOf(
             AdminPermission.DASHBOARD_READ,

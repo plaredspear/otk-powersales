@@ -15,7 +15,11 @@ import org.springframework.transaction.support.TransactionTemplate
 @DisplayName("SfMigrationStage2FkService SQL builder 단위 테스트")
 class SfMigrationStage2FkServiceTest {
 
-    private val service = SfMigrationStage2FkService(mock<EntityManager>(), mock<TransactionTemplate>())
+    private val service = SfMigrationStage2FkService(
+        em = mock<EntityManager>(),
+        transactionTemplate = mock<TransactionTemplate>(),
+        progress = SfFkResolveProgress(),
+    )
 
     @Test
     @DisplayName("단일 FK — UPDATE FROM + LEFT JOIN 1개 + WHERE 절 NULL 조건 포함")

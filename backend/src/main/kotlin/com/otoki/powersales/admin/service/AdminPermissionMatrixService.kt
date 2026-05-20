@@ -53,6 +53,7 @@ class AdminPermissionMatrixService(
         AdminPermission.ATTEND_INFO_DELETE to ("근태정보 삭제" to listOf("인사/근무 > 근태정보 (삭제)")),
         AdminPermission.ATTENDANCE_LOG_READ to ("근무 등록현황 조회" to listOf("인사/근무 > 근무 등록현황")),
         AdminPermission.MONTHLY_SALES_DASHBOARD_READ to ("월매출 조회 대시보드" to listOf("매출/실적 > 월매출 조회")),
+        AdminPermission.SF_MIGRATION_RUN to ("SF 데이터 마이그레이션 Stage 2 실행" to listOf("운영 도구 > SF Migration")),
     )
 
     init {
