@@ -101,6 +101,9 @@ dependencies {
 	// 문제를 회피하기 위해 도메인별 점진적 전환 진행 중. 마이그레이션 현황은
 	// .claude/guides/mockk-migration-guide.md 참조.
 	testImplementation("io.mockk:mockk:1.13.13")
+	// springmockk 5.0.x — Spring Framework 7 (Boot 4) 지원. @MockitoBean 대체용
+	// @MockkBean 어노테이션 제공. Spring 의 MockitoBean 인프라 위에 MockK 를 얹는다.
+	testImplementation("com.ninja-squad:springmockk:5.0.1")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

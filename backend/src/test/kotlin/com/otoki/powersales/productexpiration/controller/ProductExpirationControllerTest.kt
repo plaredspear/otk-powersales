@@ -1,10 +1,9 @@
 package com.otoki.powersales.productexpiration.controller
 
-import tools.jackson.databind.ObjectMapper
+import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.productexpiration.dto.response.ProductExpirationBatchDeleteResponse
 import com.otoki.powersales.productexpiration.dto.response.ProductExpirationItemResponse
@@ -13,22 +12,25 @@ import com.otoki.powersales.productexpiration.exception.InvalidProductExpiration
 import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
 import com.otoki.powersales.productexpiration.service.ProductExpirationService
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -40,19 +42,16 @@ class ProductExpirationControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
-    @MockitoBean
+    @MockkBean
     private lateinit var productExpirationService: ProductExpirationService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @BeforeEach
@@ -96,8 +95,7 @@ class ProductExpirationControllerTest {
         @DisplayName("성공 - 전체 거래처 조회")
         fun getList_success() {
             val items = listOf(createItemResponse(seq = 1), createItemResponse(seq = 2))
-            whenever(productExpirationService.getProductExpirationList(eq(1L), eq(null), any(), any()))
-                .thenReturn(items)
+            every { productExpirationService.getProductExpirationList(1L, null, any(), any()) } returns items
 
             mockMvc.perform(
                 get("/api/v1/mobile/product-expiration")
@@ -116,8 +114,7 @@ class ProductExpirationControllerTest {
         @DisplayName("성공 - 특정 거래처 조회")
         fun getList_withAccountCode() {
             val items = listOf(createItemResponse())
-            whenever(productExpirationService.getProductExpirationList(eq(1L), eq("1025172"), any(), any()))
-                .thenReturn(items)
+            every { productExpirationService.getProductExpirationList(1L, "1025172", any(), any()) } returns items
 
             mockMvc.perform(
                 get("/api/v1/mobile/product-expiration")
@@ -132,8 +129,9 @@ class ProductExpirationControllerTest {
         @Test
         @DisplayName("실패 - 날짜 범위 초과")
         fun getList_dateRangeExceeded() {
-            whenever(productExpirationService.getProductExpirationList(eq(1L), eq(null), any(), any()))
-                .thenThrow(InvalidProductExpirationDateRangeException("날짜 범위가 올바르지 않습니다"))
+            every {
+                productExpirationService.getProductExpirationList(1L, null, any(), any())
+            } throws InvalidProductExpirationDateRangeException("날짜 범위가 올바르지 않습니다")
 
             mockMvc.perform(
                 get("/api/v1/mobile/product-expiration")
@@ -154,7 +152,7 @@ class ProductExpirationControllerTest {
         @DisplayName("성공 - 유통기한 등록")
         fun create_success() {
             val response = createItemResponse(dDay = 7, isExpired = false)
-            whenever(productExpirationService.createProductExpiration(eq(1L), any())).thenReturn(response)
+            every { productExpirationService.createProductExpiration(1L, any()) } returns response
 
             val requestJson = """
                 {
@@ -201,8 +199,7 @@ class ProductExpirationControllerTest {
         @Test
         @DisplayName("실패 - 알림일 오류")
         fun create_invalidAlertDate() {
-            whenever(productExpirationService.createProductExpiration(eq(1L), any()))
-                .thenThrow(InvalidAlertDateException())
+            every { productExpirationService.createProductExpiration(1L, any()) } throws InvalidAlertDateException()
 
             val requestJson = """
                 {
@@ -233,7 +230,7 @@ class ProductExpirationControllerTest {
         @DisplayName("성공 - 유통기한 수정")
         fun update_success() {
             val response = createItemResponse(expirationDate = "2026-04-10", alarmDate = "2026-04-09")
-            whenever(productExpirationService.updateProductExpiration(eq(1L), eq(1), any())).thenReturn(response)
+            every { productExpirationService.updateProductExpiration(1L, 1, any()) } returns response
 
             val requestJson = """
                 {
@@ -256,8 +253,9 @@ class ProductExpirationControllerTest {
         @Test
         @DisplayName("실패 - 타인 데이터")
         fun update_forbidden() {
-            whenever(productExpirationService.updateProductExpiration(eq(1L), eq(1), any()))
-                .thenThrow(ProductExpirationForbiddenException())
+            every {
+                productExpirationService.updateProductExpiration(1L, 1, any())
+            } throws ProductExpirationForbiddenException()
 
             val requestJson = """
                 {
@@ -283,6 +281,8 @@ class ProductExpirationControllerTest {
         @Test
         @DisplayName("성공 - 유통기한 삭제")
         fun delete_success() {
+            every { productExpirationService.deleteProductExpiration(1L, 1) } just Runs
+
             mockMvc.perform(delete("/api/v1/mobile/product-expiration/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -292,8 +292,9 @@ class ProductExpirationControllerTest {
         @Test
         @DisplayName("실패 - 존재하지 않는 seq")
         fun delete_notFound() {
-            whenever(productExpirationService.deleteProductExpiration(eq(1L), eq(999)))
-                .thenThrow(ProductExpirationNotFoundException())
+            every {
+                productExpirationService.deleteProductExpiration(1L, 999)
+            } throws ProductExpirationNotFoundException()
 
             mockMvc.perform(delete("/api/v1/mobile/product-expiration/999"))
                 .andExpect(status().isNotFound)
@@ -309,7 +310,7 @@ class ProductExpirationControllerTest {
         @DisplayName("성공 - 일괄 삭제 3건")
         fun batchDelete_success() {
             val response = ProductExpirationBatchDeleteResponse(deletedCount = 3)
-            whenever(productExpirationService.deleteProductExpirationBatch(eq(1L), any())).thenReturn(response)
+            every { productExpirationService.deleteProductExpirationBatch(1L, any()) } returns response
 
             val requestJson = """{"ids": [1, 2, 3]}"""
 
@@ -327,8 +328,9 @@ class ProductExpirationControllerTest {
         @Test
         @DisplayName("실패 - 타인 데이터 포함")
         fun batchDelete_forbidden() {
-            whenever(productExpirationService.deleteProductExpirationBatch(eq(1L), any()))
-                .thenThrow(ProductExpirationForbiddenException())
+            every {
+                productExpirationService.deleteProductExpirationBatch(1L, any())
+            } throws ProductExpirationForbiddenException()
 
             val requestJson = """{"ids": [1, 2]}"""
 
