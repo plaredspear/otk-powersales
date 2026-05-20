@@ -3,29 +3,20 @@ package com.otoki.powersales.schedule.service
 import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.schedule.repository.AttendInfoRepository
 import com.otoki.powersales.schedule.service.dto.AttendInfoInsertCommand
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AttendInfoInsertService 테스트")
 class AttendInfoInsertServiceTest {
 
-    @Mock
-    private lateinit var attendInfoRepository: AttendInfoRepository
-
-    @InjectMocks
-    private lateinit var service: AttendInfoInsertService
+    private val attendInfoRepository: AttendInfoRepository = mockk(relaxUnitFun = true)
+    private val service = AttendInfoInsertService(attendInfoRepository)
 
     private fun command(
         employeeCode: String? = "100123",
@@ -42,8 +33,7 @@ class AttendInfoInsertServiceTest {
     )
 
     private fun mockSaveAll() {
-        whenever(attendInfoRepository.saveAll(any<List<AttendInfo>>()))
-            .thenAnswer { it.getArgument<List<AttendInfo>>(0) }
+        every { attendInfoRepository.saveAll(any<List<AttendInfo>>()) } answers { firstArg<List<AttendInfo>>() }
     }
 
     @Nested
@@ -54,12 +44,13 @@ class AttendInfoInsertServiceTest {
         @DisplayName("정상 1건 - INSERT, success_count=1")
         fun insert_success() {
             mockSaveAll()
+            val savedSlot = slot<List<AttendInfo>>()
+            every { attendInfoRepository.saveAll(capture(savedSlot)) } answers { firstArg<List<AttendInfo>>() }
 
             val result = service.insert(listOf(command()))
 
-            val captor = argumentCaptor<List<AttendInfo>>()
-            verify(attendInfoRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            verify { attendInfoRepository.saveAll(any<List<AttendInfo>>()) }
+            val saved = savedSlot.captured.single()
             assertThat(saved.employeeCode).isEqualTo("100123")
             assertThat(saved.startDate).isEqualTo("20260427")
             assertThat(saved.endDate).isEqualTo("20260427")
@@ -72,13 +63,13 @@ class AttendInfoInsertServiceTest {
         @Test
         @DisplayName("AttendType 미매칭 - 원본 코드 그대로 저장 (D3 결정), 거부 안 함")
         fun insert_unknownAttendType() {
-            mockSaveAll()
+            val savedSlot = slot<List<AttendInfo>>()
+            every { attendInfoRepository.saveAll(capture(savedSlot)) } answers { firstArg<List<AttendInfo>>() }
 
             val result = service.insert(listOf(command(attendType = "ZZ_UNKNOWN")))
 
-            val captor = argumentCaptor<List<AttendInfo>>()
-            verify(attendInfoRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().attendType).isEqualTo("ZZ_UNKNOWN")
+            verify { attendInfoRepository.saveAll(any<List<AttendInfo>>()) }
+            assertThat(savedSlot.captured.single().attendType).isEqualTo("ZZ_UNKNOWN")
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
         }
@@ -96,7 +87,7 @@ class AttendInfoInsertServiceTest {
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().identifier).isNull()
             assertThat(result.failures.single().reason).contains("EmployeeCode 필수")
-            verify(attendInfoRepository, never()).saveAll(any<List<AttendInfo>>())
+            verify(exactly = 0) { attendInfoRepository.saveAll(any<List<AttendInfo>>()) }
         }
 
         @Test

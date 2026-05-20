@@ -21,35 +21,29 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.util.Optional
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminAttendInfoService 테스트")
 class AdminAttendInfoServiceTest {
 
-    @Mock
-    private lateinit var attendInfoRepository: AttendInfoRepository
+    private val attendInfoRepository: AttendInfoRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var attendInfoToScheduleConverter: AttendInfoToScheduleConverter
+    private val attendInfoToScheduleConverter: AttendInfoToScheduleConverter = mockk(relaxUnitFun = true)
 
-    @InjectMocks
-    private lateinit var service: AdminAttendInfoService
+    private val service = AdminAttendInfoService(
+        attendInfoRepository,
+        employeeRepository,
+        teamMemberScheduleRepository,
+        attendInfoToScheduleConverter,
+    )
 
     @Nested
     @DisplayName("create - 보정 등록")
@@ -59,19 +53,16 @@ class AdminAttendInfoServiceTest {
         @DisplayName("정상 등록 + Converter 호출")
         fun create_success_callsConverter() {
             val employee = newEmployee()
-            whenever(employeeRepository.findByEmployeeCode("E001"))
-                .thenReturn(Optional.of(employee))
-            whenever(attendInfoRepository.save(any<AttendInfo>())).thenAnswer { invocation ->
-                invocation.getArgument<AttendInfo>(0)
+            every { employeeRepository.findByEmployeeCode("E001") } returns Optional.of(employee)
+            every { attendInfoRepository.save(any<AttendInfo>()) } answers { invocation ->
+                firstArg<AttendInfo>()
             }
-            whenever(attendInfoToScheduleConverter.convert(any()))
-                .thenReturn(ScheduleConversionSummary(3, 0, 0, 0, 0, 0))
-            whenever(
+            every { attendInfoToScheduleConverter.convert(any()) } returns ScheduleConversionSummary(3, 0, 0, 0, 0, 0)
+            every {
                 teamMemberScheduleRepository.findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
                     any(), any(), any(), any()
                 )
-            ).thenReturn(emptyList())
-
+} returns emptyList()
             val request = AdminAttendInfoCreateRequest(
                 employeeCode = "E001",
                 attendType = "14",
@@ -87,7 +78,7 @@ class AdminAttendInfoServiceTest {
             assertThat(result.attendType).isEqualTo("14")
             assertThat(result.attendTypeName).isEqualTo("연차")
             assertThat(result.conversionSummary?.convertedScheduleCount).isEqualTo(3)
-            verify(attendInfoToScheduleConverter).convert(any())
+            verify { attendInfoToScheduleConverter.convert(any()) }
         }
 
         @Test
@@ -167,25 +158,23 @@ class AdminAttendInfoServiceTest {
                 endDate = "20260522",
                 status = "N",
             )
-            whenever(attendInfoRepository.findById(1L)).thenReturn(Optional.of(existing))
-            whenever(employeeRepository.findByEmployeeCode("E001"))
-                .thenReturn(Optional.of(employee))
+            every { attendInfoRepository.findById(1L) } returns Optional.of(existing)
+            every { employeeRepository.findByEmployeeCode("E001") } returns Optional.of(employee)
             val oldSchedules = listOf(
                 newSchedule(101L, employee, LocalDate.of(2026, 5, 18)),
                 newSchedule(102L, employee, LocalDate.of(2026, 5, 19)),
             )
-            whenever(
+            every {
                 teamMemberScheduleRepository.findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
                     employee, LocalDate.of(2026, 5, 18), LocalDate.of(2026, 5, 22), WorkingType.ANNUAL_LEAVE
                 )
-            ).thenReturn(oldSchedules)
-            whenever(
+} returns oldSchedules
+            every {
                 teamMemberScheduleRepository.findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
                     employee, LocalDate.of(2026, 5, 25), LocalDate.of(2026, 5, 27), WorkingType.ANNUAL_LEAVE
                 )
-            ).thenReturn(emptyList())
-            whenever(attendInfoToScheduleConverter.convert(any()))
-                .thenReturn(ScheduleConversionSummary(3, 0, 0, 0, 0, 0))
+} returns emptyList()
+            every { attendInfoToScheduleConverter.convert(any()) } returns ScheduleConversionSummary(3, 0, 0, 0, 0, 0)
 
             val request = AdminAttendInfoUpdateRequest(
                 startDate = "20260525",
@@ -197,8 +186,8 @@ class AdminAttendInfoServiceTest {
 
             assertThat(result.startDate).isEqualTo("20260525")
             assertThat(result.endDate).isEqualTo("20260527")
-            verify(teamMemberScheduleRepository).deleteAll(oldSchedules)
-            verify(attendInfoToScheduleConverter).convert(any())
+            verify { teamMemberScheduleRepository.deleteAll(oldSchedules) }
+            verify { attendInfoToScheduleConverter.convert(any()) }
             assertThat(result.conversionSummary?.deletedScheduleCount).isEqualTo(2)
             assertThat(result.conversionSummary?.convertedScheduleCount).isEqualTo(3)
         }
@@ -206,7 +195,7 @@ class AdminAttendInfoServiceTest {
         @Test
         @DisplayName("미존재 id - 404")
         fun update_notFound_throws() {
-            whenever(attendInfoRepository.findById(999L)).thenReturn(Optional.empty())
+            every { attendInfoRepository.findById(999L) } returns Optional.empty()
             assertThatThrownBy {
                 service.update(999L, AdminAttendInfoUpdateRequest(status = "Y"))
             }.isInstanceOf(AttendInfoNotFoundException::class.java)
@@ -229,25 +218,23 @@ class AdminAttendInfoServiceTest {
                 endDate = "20260522",
                 status = "N",
             )
-            whenever(attendInfoRepository.findById(5L)).thenReturn(Optional.of(existing))
-            whenever(employeeRepository.findByEmployeeCode("E001"))
-                .thenReturn(Optional.of(employee))
+            every { attendInfoRepository.findById(5L) } returns Optional.of(existing)
+            every { employeeRepository.findByEmployeeCode("E001") } returns Optional.of(employee)
             val oldSchedules = listOf(
                 newSchedule(201L, employee, LocalDate.of(2026, 5, 18)),
                 newSchedule(202L, employee, LocalDate.of(2026, 5, 19)),
                 newSchedule(203L, employee, LocalDate.of(2026, 5, 20)),
             )
-            whenever(
+            every {
                 teamMemberScheduleRepository.findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
                     employee, LocalDate.of(2026, 5, 18), LocalDate.of(2026, 5, 22), WorkingType.ANNUAL_LEAVE
                 )
-            ).thenReturn(oldSchedules)
-
+} returns oldSchedules
             val result = service.delete(5L)
 
             assertThat(result.deletedScheduleCount).isEqualTo(3)
-            verify(teamMemberScheduleRepository).deleteAll(oldSchedules)
-            verify(attendInfoRepository).delete(existing)
+            verify { teamMemberScheduleRepository.deleteAll(oldSchedules) }
+            verify { attendInfoRepository.delete(existing) }
         }
 
         @Test
@@ -261,13 +248,13 @@ class AdminAttendInfoServiceTest {
                 endDate = "20260522",
                 status = "N",
             )
-            whenever(attendInfoRepository.findById(6L)).thenReturn(Optional.of(existing))
+            every { attendInfoRepository.findById(6L) } returns Optional.of(existing)
 
             val result = service.delete(6L)
 
             assertThat(result.deletedScheduleCount).isEqualTo(0)
-            verify(teamMemberScheduleRepository, never()).deleteAll(any<List<TeamMemberSchedule>>())
-            verify(attendInfoRepository).delete(existing)
+            verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any<List<TeamMemberSchedule>>()) }
+            verify { attendInfoRepository.delete(existing) }
         }
     }
 

@@ -11,35 +11,23 @@ import com.otoki.powersales.schedule.exception.EmployeeInputCriteriaDateRangeInv
 import com.otoki.powersales.schedule.exception.EmployeeInputCriteriaMasterNotFoundException
 import com.otoki.powersales.schedule.exception.EmployeeInputCriteriaPeriodOverlapException
 import com.otoki.powersales.schedule.repository.EmployeeInputCriteriaMasterRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminEmployeeInputCriteriaMasterService 테스트")
 class AdminEmployeeInputCriteriaMasterServiceTest {
 
-    @Mock
-    private lateinit var repository: EmployeeInputCriteriaMasterRepository
-
-    @Mock
-    private lateinit var categoryRepository: AccountCategoryMasterRepository
-
-    @InjectMocks
-    private lateinit var service: AdminEmployeeInputCriteriaMasterService
+    private val repository: EmployeeInputCriteriaMasterRepository = mockk()
+    private val categoryRepository: AccountCategoryMasterRepository = mockk()
+    private val service = AdminEmployeeInputCriteriaMasterService(repository, categoryRepository)
 
     @Nested
     @DisplayName("create - 신규 등록")
@@ -49,15 +37,11 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
         @DisplayName("정상 등록 - 시작일/종료일 월 단위 자동 보정")
         fun create_success_normalizeDates() {
             val category = newCategory(id = 10L)
-            whenever(categoryRepository.findById(10L)).thenReturn(Optional.of(category))
-            whenever(
-                repository.existsOverlapping(
-                    eq(10L), eq(TypeOfWork1.DISPLAY), any(), anyOrNull(), eq(-1L)
-                )
-            ).thenReturn(false)
-            whenever(repository.save(any<EmployeeInputCriteriaMaster>())).thenAnswer { invocation ->
-                invocation.getArgument<EmployeeInputCriteriaMaster>(0)
-            }
+            every { categoryRepository.findById(10L) } returns Optional.of(category)
+            every {
+                repository.existsOverlapping(eq(10L), eq(TypeOfWork1.DISPLAY), any(), any(), eq(-1L))
+            } returns false
+            every { repository.save(any<EmployeeInputCriteriaMaster>()) } answers { firstArg<EmployeeInputCriteriaMaster>() }
 
             val request = EmployeeInputCriteriaMasterCreateRequest(
                 categoryId = 10L,
@@ -80,7 +64,7 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
         @DisplayName("종료일 < 시작일 - 차단")
         fun create_endBeforeStart_throws() {
             val category = newCategory(id = 10L)
-            whenever(categoryRepository.findById(10L)).thenReturn(Optional.of(category))
+            every { categoryRepository.findById(10L) } returns Optional.of(category)
 
             val request = EmployeeInputCriteriaMasterCreateRequest(
                 categoryId = 10L,
@@ -100,10 +84,10 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
         @DisplayName("기간 중복 - 차단")
         fun create_overlap_throws() {
             val category = newCategory(id = 10L)
-            whenever(categoryRepository.findById(10L)).thenReturn(Optional.of(category))
-            whenever(
-                repository.existsOverlapping(eq(10L), eq(TypeOfWork1.DISPLAY), any(), anyOrNull(), eq(-1L))
-            ).thenReturn(true)
+            every { categoryRepository.findById(10L) } returns Optional.of(category)
+            every {
+                repository.existsOverlapping(eq(10L), eq(TypeOfWork1.DISPLAY), any(), any(), eq(-1L))
+            } returns true
 
             val request = EmployeeInputCriteriaMasterCreateRequest(
                 categoryId = 10L,
@@ -122,7 +106,7 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
         @Test
         @DisplayName("카테고리 없음 - 차단")
         fun create_categoryMissing_throws() {
-            whenever(categoryRepository.findById(99L)).thenReturn(Optional.empty())
+            every { categoryRepository.findById(99L) } returns Optional.empty()
 
             val request = EmployeeInputCriteriaMasterCreateRequest(
                 categoryId = 99L,
@@ -148,11 +132,11 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
         fun update_success() {
             val category = newCategory(id = 10L)
             val existing = newEntity(id = 1L, category = category)
-            whenever(repository.findById(1L)).thenReturn(Optional.of(existing))
-            whenever(categoryRepository.findById(10L)).thenReturn(Optional.of(category))
-            whenever(
-                repository.existsOverlapping(eq(10L), eq(TypeOfWork1.DISPLAY), any(), anyOrNull(), eq(1L))
-            ).thenReturn(false)
+            every { repository.findById(1L) } returns Optional.of(existing)
+            every { categoryRepository.findById(10L) } returns Optional.of(category)
+            every {
+                repository.existsOverlapping(eq(10L), eq(TypeOfWork1.DISPLAY), any(), any(), eq(1L))
+            } returns false
 
             val request = EmployeeInputCriteriaMasterUpdateRequest(
                 categoryId = 10L,
@@ -173,7 +157,7 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
         @Test
         @DisplayName("존재하지 않는 id - 차단")
         fun update_notFound() {
-            whenever(repository.findById(99L)).thenReturn(Optional.empty())
+            every { repository.findById(99L) } returns Optional.empty()
 
             val request = EmployeeInputCriteriaMasterUpdateRequest(
                 categoryId = 10L,
@@ -198,7 +182,7 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
         @DisplayName("단건 확정")
         fun confirm_success() {
             val entity = newEntity(id = 1L, confirmed = false)
-            whenever(repository.findById(1L)).thenReturn(Optional.of(entity))
+            every { repository.findById(1L) } returns Optional.of(entity)
 
             val result = service.confirm(1L)
 
@@ -218,7 +202,7 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
         fun bulkConfirm_multiple() {
             val e1 = newEntity(id = 1L, confirmed = false)
             val e2 = newEntity(id = 2L, confirmed = false)
-            whenever(repository.findAllById(listOf(1L, 2L))).thenReturn(listOf(e1, e2))
+            every { repository.findAllById(listOf(1L, 2L)) } returns listOf(e1, e2)
 
             val result = service.bulkConfirm(listOf(1L, 2L))
 
@@ -240,7 +224,7 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
             val valid = newEntity(id = 1L, category = cat, startDate = LocalDate.of(2026, 5, 1), endDate = LocalDate.of(2026, 12, 31))
             val planned = newEntity(id = 2L, category = cat, startDate = LocalDate.of(2026, 8, 1), endDate = LocalDate.of(2026, 12, 31))
             val ended = newEntity(id = 3L, category = cat, startDate = LocalDate.of(2025, 1, 1), endDate = LocalDate.of(2025, 12, 31))
-            whenever(repository.findAllNotDeleted()).thenReturn(listOf(valid, planned, ended))
+            every { repository.findAllNotDeleted() } returns listOf(valid, planned, ended)
 
             val result = service.list(AdminEmployeeInputCriteriaMasterService.ValidStatusFilter.VALID, today)
 
@@ -255,7 +239,7 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
             val cat = newCategory(id = 10L)
             val valid = newEntity(id = 1L, category = cat, startDate = LocalDate.of(2026, 5, 1), endDate = null)
             val planned = newEntity(id = 2L, category = cat, startDate = LocalDate.of(2026, 8, 1), endDate = null)
-            whenever(repository.findAllNotDeleted()).thenReturn(listOf(valid, planned))
+            every { repository.findAllNotDeleted() } returns listOf(valid, planned)
 
             val result = service.list(AdminEmployeeInputCriteriaMasterService.ValidStatusFilter.PLANNED, today)
 
@@ -271,7 +255,7 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
         @Test
         @DisplayName("존재하지 않는 id - 차단")
         fun delete_notFound() {
-            whenever(repository.findById(99L)).thenReturn(Optional.empty())
+            every { repository.findById(99L) } returns Optional.empty()
 
             assertThatThrownBy { service.delete(99L) }
                 .isInstanceOf(EmployeeInputCriteriaMasterNotFoundException::class.java)

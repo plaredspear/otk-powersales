@@ -10,28 +10,20 @@ import com.otoki.powersales.schedule.exception.LeaderScheduleCategory3LimitExcee
 import com.otoki.powersales.schedule.exception.LeaderScheduleDuplicateLeaveException
 import com.otoki.powersales.schedule.exception.LeaderScheduleDuplicateWorkException
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("ScheduleConflictValidator 테스트 (spec.md §1.4.1)")
 class ScheduleConflictValidatorTest {
 
-    @Mock
-    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
-
-    @InjectMocks
-    private lateinit var validator: ScheduleConflictValidator
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+    private val validator = ScheduleConflictValidator(teamMemberScheduleRepository)
 
     private val targetEmployeeId = 5012L
     private val workingDate = LocalDate.of(2026, 5, 15)
@@ -172,8 +164,7 @@ class ScheduleConflictValidatorTest {
     // ========== Helpers ==========
 
     private fun stubExisting(schedules: List<TeamMemberSchedule>) {
-        whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
-            .thenReturn(schedules)
+        every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()) } returns schedules
     }
 
     private fun workSchedule(category3: WorkingCategory3, accountIdValue: Int? = null): TeamMemberSchedule {

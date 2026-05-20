@@ -21,21 +21,18 @@ import com.otoki.powersales.schedule.exception.LeaderScheduleNotTeamMemberExcept
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeInactiveException
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeNotFoundException
 import com.otoki.powersales.schedule.service.LeaderScheduleService
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -50,12 +47,12 @@ class LeaderScheduleControllerTest {
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean private lateinit var leaderScheduleService: LeaderScheduleService
+    @MockkBean private lateinit var leaderScheduleService: LeaderScheduleService
 
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val leaderId = 4001L
     private val testPrincipal = UserPrincipal(userId = leaderId, role = UserRole.LEADER)
@@ -82,8 +79,7 @@ class LeaderScheduleControllerTest {
                 workingCategory3 = "고정",
                 proxyRegisteredBy = leaderId
             )
-            whenever(leaderScheduleService.createTeamMemberSchedule(eq(leaderId), any()))
-                .thenReturn(response)
+            every { leaderScheduleService.createTeamMemberSchedule(eq(leaderId), any()) } returns response
 
             mockMvc.perform(
                 post("/api/v1/mobile/leader/team-member-schedule")
@@ -203,8 +199,7 @@ class LeaderScheduleControllerTest {
         }
 
         private fun stubServiceThrows(ex: RuntimeException) {
-            whenever(leaderScheduleService.createTeamMemberSchedule(eq(leaderId), any()))
-                .thenThrow(ex)
+            every { leaderScheduleService.createTeamMemberSchedule(eq(leaderId), any()) } throws ex
         }
 
         private fun postValid() = post("/api/v1/mobile/leader/team-member-schedule")
@@ -218,16 +213,14 @@ class LeaderScheduleControllerTest {
         @Test
         @DisplayName("성공 - 팀원 목록 반환")
         fun success() {
-            whenever(leaderScheduleService.getTeamMembers(eq(leaderId))).thenReturn(
-                listOf(
-                    LeaderTeamMemberListResponse(
-                        id = 5012, employeeCode = "20300001", name = "팀원1",
-                        status = "활동", costCenterCode = "C001"
-                    ),
-                    LeaderTeamMemberListResponse(
-                        id = 5013, employeeCode = "20300002", name = "팀원2",
-                        status = "휴직", costCenterCode = "C001"
-                    )
+            every { leaderScheduleService.getTeamMembers(eq(leaderId)) } returns listOf(
+                LeaderTeamMemberListResponse(
+                    id = 5012, employeeCode = "20300001", name = "팀원1",
+                    status = "활동", costCenterCode = "C001"
+                ),
+                LeaderTeamMemberListResponse(
+                    id = 5013, employeeCode = "20300002", name = "팀원2",
+                    status = "휴직", costCenterCode = "C001"
                 )
             )
 
@@ -243,8 +236,7 @@ class LeaderScheduleControllerTest {
         @Test
         @DisplayName("실패 - 비조장 -> 403 NOT_LEADER")
         fun notLeader() {
-            whenever(leaderScheduleService.getTeamMembers(eq(leaderId)))
-                .thenThrow(LeaderScheduleNotLeaderException())
+            every { leaderScheduleService.getTeamMembers(eq(leaderId)) } throws LeaderScheduleNotLeaderException()
 
             mockMvc.perform(get("/api/v1/mobile/leader/team-members"))
                 .andExpect(status().isForbidden)
@@ -258,12 +250,10 @@ class LeaderScheduleControllerTest {
         @Test
         @DisplayName("성공 - 거래처 목록 반환")
         fun success() {
-            whenever(leaderScheduleService.getAccounts(eq(leaderId), eq(null))).thenReturn(
-                listOf(
-                    LeaderAccountListResponse(
-                        id = 90234, name = "AlphaMart", address1 = "Seoul",
-                        branchCode = "C001", accountGroup = "1000", accountType = "TYPE_A"
-                    )
+            every { leaderScheduleService.getAccounts(eq(leaderId), null) } returns listOf(
+                LeaderAccountListResponse(
+                    id = 90234, name = "AlphaMart", address1 = "Seoul",
+                    branchCode = "C001", accountGroup = "1000", accountType = "TYPE_A"
                 )
             )
 
@@ -279,7 +269,7 @@ class LeaderScheduleControllerTest {
         @Test
         @DisplayName("성공 - keyword 파라미터 전달")
         fun withKeyword() {
-            whenever(leaderScheduleService.getAccounts(eq(leaderId), eq("alpha"))).thenReturn(emptyList())
+            every { leaderScheduleService.getAccounts(eq(leaderId), eq("alpha")) } returns emptyList()
 
             mockMvc.perform(get("/api/v1/mobile/leader/accounts").param("keyword", "alpha"))
                 .andExpect(status().isOk)
@@ -289,8 +279,7 @@ class LeaderScheduleControllerTest {
         @Test
         @DisplayName("실패 - 비조장 -> 403 NOT_LEADER")
         fun notLeader() {
-            whenever(leaderScheduleService.getAccounts(eq(leaderId), anyOrNull()))
-                .thenThrow(LeaderScheduleNotLeaderException())
+            every { leaderScheduleService.getAccounts(eq(leaderId), any()) } throws LeaderScheduleNotLeaderException()
 
             mockMvc.perform(get("/api/v1/mobile/leader/accounts"))
                 .andExpect(status().isForbidden)

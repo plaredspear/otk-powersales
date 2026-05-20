@@ -33,27 +33,20 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.util.Optional
+import io.mockk.mockk
+import io.mockk.every
+import io.mockk.verify
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminPromotionScheduleService 테스트")
 class AdminPromotionScheduleServiceTest {
 
-    @Mock private lateinit var promotionRepository: PromotionRepository
-    @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
-    @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
-    @Mock private lateinit var accountRepository: AccountRepository
-    @Mock private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
+    private val promotionRepository: PromotionRepository = mockk(relaxUnitFun = true)
+    private val promotionEmployeeRepository: PromotionEmployeeRepository = mockk(relaxUnitFun = true)
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
+    private val accountRepository: AccountRepository = mockk(relaxUnitFun = true)
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk(relaxUnitFun = true)
 
     private lateinit var service: AdminPromotionScheduleService
 
@@ -100,11 +93,9 @@ class AdminPromotionScheduleServiceTest {
                 promotionEmployee = pe
             )
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId))
-                .thenReturn(listOf(pe))
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(50L)), eq(startDate), eq(endDate), anyOrNull()))
-                .thenReturn(listOf(schedule))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId) } returns listOf(pe)
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(50L)), eq(startDate), eq(endDate), any()) } returns listOf(schedule)
 
             // When
             val result = service.getSchedules(promotionId, null, null)
@@ -125,7 +116,7 @@ class AdminPromotionScheduleServiceTest {
         @Test
         @DisplayName("미존재 행사 - PromotionNotFoundException")
         fun getSchedules_promotionNotFound() {
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.empty())
+            every { promotionRepository.findById(promotionId) } returns Optional.empty()
 
             assertThatThrownBy { service.getSchedules(promotionId, null, null) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -148,11 +139,9 @@ class AdminPromotionScheduleServiceTest {
                 workingDate = LocalDate.of(2026, 5, 1), promotionEmployee = peOther
             )
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId))
-                .thenReturn(listOf(peThis))
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(any(), any(), any(), anyOrNull()))
-                .thenReturn(listOf(scheduleThis, scheduleOther))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId) } returns listOf(peThis)
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(any(), any(), any(), any()) } returns listOf(scheduleThis, scheduleOther)
 
             val result = service.getSchedules(promotionId, null, null)
 
@@ -188,14 +177,11 @@ class AdminPromotionScheduleServiceTest {
                 promotionEmployee = pe2
             )
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(teamMemberScheduleRepository.findAllById(listOf(1001L, 1002L)))
-                .thenReturn(listOf(schedule1, schedule2))
-            whenever(accountRepository.findAllById(listOf(301))).thenReturn(listOf(newAccount))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()))
-                .thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { teamMemberScheduleRepository.findAllById(listOf(1001L, 1002L)) } returns listOf(schedule1, schedule2)
+            every { accountRepository.findAllById(listOf(301)) } returns listOf(newAccount)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(any(), any()) } returns emptyList()
+            every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers { firstArg<List<TeamMemberSchedule>>() }
 
             val request = PromotionScheduleBulkUpdateRequest(items = listOf(
                 PromotionScheduleBulkUpdateItem(
@@ -222,7 +208,7 @@ class AdminPromotionScheduleServiceTest {
         @Test
         @DisplayName("미존재 행사 - PromotionNotFoundException")
         fun bulkUpdate_promotionNotFound() {
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.empty())
+            every { promotionRepository.findById(promotionId) } returns Optional.empty()
 
             val request = singleItemRequest()
             assertThatThrownBy { service.bulkUpdate(promotionId, request) }
@@ -232,8 +218,8 @@ class AdminPromotionScheduleServiceTest {
         @Test
         @DisplayName("미존재 schedule_id - TeamScheduleNotFoundException, 전체 롤백")
         fun bulkUpdate_scheduleNotFound() {
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(createPromotion()))
-            whenever(teamMemberScheduleRepository.findAllById(listOf(9999L))).thenReturn(emptyList())
+            every { promotionRepository.findById(promotionId) } returns Optional.of(createPromotion())
+            every { teamMemberScheduleRepository.findAllById(listOf(9999L)) } returns emptyList()
 
             val request = PromotionScheduleBulkUpdateRequest(items = listOf(
                 bulkItem(scheduleId = 9999L)
@@ -241,7 +227,7 @@ class AdminPromotionScheduleServiceTest {
 
             assertThatThrownBy { service.bulkUpdate(promotionId, request) }
                 .isInstanceOf(TeamScheduleNotFoundException::class.java)
-            verify(teamMemberScheduleRepository, never()).saveAll(any<List<TeamMemberSchedule>>())
+            verify(exactly = 0) { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) }
         }
 
         @Test
@@ -255,8 +241,8 @@ class AdminPromotionScheduleServiceTest {
                 workingDate = LocalDate.of(2026, 5, 1), promotionEmployee = peOther
             )
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(teamMemberScheduleRepository.findAllById(listOf(1001L))).thenReturn(listOf(schedule))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { teamMemberScheduleRepository.findAllById(listOf(1001L)) } returns listOf(schedule)
 
             val request = PromotionScheduleBulkUpdateRequest(items = listOf(bulkItem(scheduleId = 1001L)))
 
@@ -275,9 +261,9 @@ class AdminPromotionScheduleServiceTest {
                 workingDate = LocalDate.of(2026, 5, 1), promotionEmployee = pe
             )
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(teamMemberScheduleRepository.findAllById(listOf(1001L))).thenReturn(listOf(schedule))
-            whenever(accountRepository.findAllById(listOf(9999))).thenReturn(emptyList())
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { teamMemberScheduleRepository.findAllById(listOf(1001L)) } returns listOf(schedule)
+            every { accountRepository.findAllById(listOf(9999)) } returns emptyList()
 
             val request = PromotionScheduleBulkUpdateRequest(items = listOf(
                 bulkItem(scheduleId = 1001L, accountId = 9999)
@@ -298,8 +284,8 @@ class AdminPromotionScheduleServiceTest {
                 workingDate = LocalDate.of(2026, 5, 1), promotionEmployee = pe
             )
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(teamMemberScheduleRepository.findAllById(listOf(1001L))).thenReturn(listOf(schedule))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { teamMemberScheduleRepository.findAllById(listOf(1001L)) } returns listOf(schedule)
 
             val request = PromotionScheduleBulkUpdateRequest(items = listOf(
                 bulkItem(scheduleId = 1001L, workingDate = LocalDate.of(2026, 6, 15))
@@ -312,7 +298,7 @@ class AdminPromotionScheduleServiceTest {
         @Test
         @DisplayName("invalid working_category1 - PromotionScheduleInvalidWorkingCategoryException")
         fun bulkUpdate_invalidCategory() {
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(createPromotion()))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(createPromotion())
 
             val request = PromotionScheduleBulkUpdateRequest(items = listOf(
                 bulkItem(scheduleId = 1001L, workingCategory1 = "외근")
@@ -338,9 +324,8 @@ class AdminPromotionScheduleServiceTest {
                 workingDate = LocalDate.of(2026, 5, 2), promotionEmployee = pe
             )
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(teamMemberScheduleRepository.findAllById(listOf(1001L, 1002L)))
-                .thenReturn(listOf(schedule1, schedule2))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { teamMemberScheduleRepository.findAllById(listOf(1001L, 1002L)) } returns listOf(schedule1, schedule2)
 
             val sameDate = LocalDate.of(2026, 5, 3)
             val request = PromotionScheduleBulkUpdateRequest(items = listOf(
@@ -371,11 +356,10 @@ class AdminPromotionScheduleServiceTest {
                 promotionEmployee = createPromotionEmployee(id = 201L, employee = emp)
             )
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(teamMemberScheduleRepository.findAllById(listOf(1001L))).thenReturn(listOf(schedule))
-            whenever(accountRepository.findAllById(listOf(300))).thenReturn(listOf(account))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(50L, LocalDate.of(2026, 5, 5)))
-                .thenReturn(listOf(conflicting))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { teamMemberScheduleRepository.findAllById(listOf(1001L)) } returns listOf(schedule)
+            every { accountRepository.findAllById(listOf(300)) } returns listOf(account)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(50L, LocalDate.of(2026, 5, 5)) } returns listOf(conflicting)
 
             val request = PromotionScheduleBulkUpdateRequest(items = listOf(
                 bulkItem(scheduleId = 1001L, accountId = 300, workingDate = LocalDate.of(2026, 5, 5))
@@ -388,7 +372,7 @@ class AdminPromotionScheduleServiceTest {
         @Test
         @DisplayName("500건 초과 - PromotionScheduleBulkInvalidSizeException")
         fun bulkUpdate_tooManyItems() {
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(createPromotion()))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(createPromotion())
 
             val items = (1L..501L).map { bulkItem(scheduleId = it, workingDate = LocalDate.of(2026, 5, 1)) }
             val request = PromotionScheduleBulkUpdateRequest(items = items)
@@ -417,14 +401,13 @@ class AdminPromotionScheduleServiceTest {
                 createSchedule(id = 1003L, employee = emp, account = account, workingDate = LocalDate.of(2026, 5, 3), promotionEmployee = pe)
             )
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(teamMemberScheduleRepository.findAllById(listOf(1001L, 1002L, 1003L)))
-                .thenReturn(schedules)
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { teamMemberScheduleRepository.findAllById(listOf(1001L, 1002L, 1003L)) } returns schedules
 
             val result = service.bulkDelete(promotionId, PromotionScheduleBulkDeleteRequest(listOf(1001L, 1002L, 1003L)))
 
             assertThat(result.deletedCount).isEqualTo(3)
-            verify(teamMemberScheduleRepository).deleteAll(schedules)
+            verify { teamMemberScheduleRepository.deleteAll(schedules) }
         }
 
         @Test
@@ -436,9 +419,8 @@ class AdminPromotionScheduleServiceTest {
             val schedule1 = createSchedule(id = 1001L, employee = emp, account = createAccount(id = 300),
                 workingDate = LocalDate.of(2026, 5, 1), promotionEmployee = pe)
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(teamMemberScheduleRepository.findAllById(listOf(1001L, 9999L)))
-                .thenReturn(listOf(schedule1))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { teamMemberScheduleRepository.findAllById(listOf(1001L, 9999L)) } returns listOf(schedule1)
 
             assertThatThrownBy {
                 service.bulkDelete(promotionId, PromotionScheduleBulkDeleteRequest(listOf(1001L, 9999L)))
@@ -448,7 +430,7 @@ class AdminPromotionScheduleServiceTest {
                     assertThat(partial.missingIds).containsExactly(9999L)
                 })
 
-            verify(teamMemberScheduleRepository, never()).deleteAll(any<List<TeamMemberSchedule>>())
+            verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any<List<TeamMemberSchedule>>()) }
         }
 
         @Test
@@ -462,19 +444,19 @@ class AdminPromotionScheduleServiceTest {
                 workingDate = LocalDate.of(2026, 5, 1), promotionEmployee = peOther
             )
 
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotion))
-            whenever(teamMemberScheduleRepository.findAllById(listOf(1001L))).thenReturn(listOf(schedule))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { teamMemberScheduleRepository.findAllById(listOf(1001L)) } returns listOf(schedule)
 
             assertThatThrownBy {
                 service.bulkDelete(promotionId, PromotionScheduleBulkDeleteRequest(listOf(1001L)))
             }.isInstanceOf(PromotionScheduleNotInPromotionException::class.java)
-            verify(teamMemberScheduleRepository, never()).deleteAll(any<List<TeamMemberSchedule>>())
+            verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any<List<TeamMemberSchedule>>()) }
         }
 
         @Test
         @DisplayName("500건 초과 - PromotionScheduleBulkDeleteInvalidSizeException")
         fun bulkDelete_tooMany() {
-            whenever(promotionRepository.findById(promotionId)).thenReturn(Optional.of(createPromotion()))
+            every { promotionRepository.findById(promotionId) } returns Optional.of(createPromotion())
 
             val ids = (1L..501L).toList()
 

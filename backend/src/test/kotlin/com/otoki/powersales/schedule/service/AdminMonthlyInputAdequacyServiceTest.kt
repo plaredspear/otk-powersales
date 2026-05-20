@@ -12,25 +12,18 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
-import org.mockito.quality.Strictness
 import java.math.BigDecimal
+import io.mockk.every
+import io.mockk.mockk
 
-@ExtendWith(MockitoExtension::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("AdminMonthlyInputAdequacyService 테스트")
 class AdminMonthlyInputAdequacyServiceTest {
 
-    @Mock private lateinit var adminSalesComparisonService: AdminSalesComparisonService
+    private val adminSalesComparisonService: AdminSalesComparisonService = mockk()
 
-    @InjectMocks private lateinit var service: AdminMonthlyInputAdequacyService
+    private val service = AdminMonthlyInputAdequacyService(
+        adminSalesComparisonService,
+    )
 
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
@@ -146,25 +139,22 @@ class AdminMonthlyInputAdequacyServiceTest {
                 workingCategory5 = "상시"
             )
             // 1월만 데이터, 2~12월은 빈 리스트
-            whenever(adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(1), any()))
-                .thenReturn(listOf(suitability(acc, listOf(empItem))))
+            every { adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(1), any()) } returns listOf(suitability(acc, listOf(empItem)))
             (2..12).forEach { m ->
-                whenever(adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(m), any()))
-                    .thenReturn(emptyList())
+                every { adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(m), any()) } returns emptyList()
             }
             // 1월 fixed 비교 1_000_000 / 1 = 1_000_000 >= 800_000 → 적합
-            whenever(
+            every {
                 adminSalesComparisonService.judgeSuitability(
                     workingCategory3 = eq("고정"),
                     avgClosingAmount = eq(1_000_000L),
                     totalDisplayConverted = eq(BigDecimal.ONE),
                     fixedStandard = eq(BigDecimal(800_000)),
                     fixedMin = eq(BigDecimal(400_000)),
-                    bifurcationStandard = eq<BigDecimal?>(null),
-                    bifurcationMin = eq<BigDecimal?>(null)
+                    bifurcationStandard = null,
+                    bifurcationMin = null
                 )
-            ).thenReturn(Suitability.FIT.displayName)
-
+} returns Suitability.FIT.displayName
             val response = service.getMatrix(allScope, year = 2025, costCenterCodes = listOf("CC001"), workingCategory3Filter = null)
 
             assertThat(response.year).isEqualTo(2025)
@@ -193,8 +183,7 @@ class AdminMonthlyInputAdequacyServiceTest {
                 workingCategory5 = "임시"
             )
             (1..12).forEach { m ->
-                whenever(adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(m), any()))
-                    .thenReturn(listOf(suitability(acc, listOf(eventItem))))
+                every { adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(m), any()) } returns listOf(suitability(acc, listOf(eventItem)))
             }
 
             val response = service.getMatrix(allScope, year = 2025, costCenterCodes = listOf("CC001"), workingCategory3Filter = null)
@@ -223,13 +212,11 @@ class AdminMonthlyInputAdequacyServiceTest {
                 workingCategory3 = "격고",
                 workingCategory5 = "상시"
             )
-            whenever(adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(1), any()))
-                .thenReturn(listOf(suitability(acc, listOf(fixedItem, bifurcationItem))))
+            every { adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(1), any()) } returns listOf(suitability(acc, listOf(fixedItem, bifurcationItem)))
             (2..12).forEach { m ->
-                whenever(adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(m), any()))
-                    .thenReturn(emptyList())
+                every { adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(m), any()) } returns emptyList()
             }
-            whenever(
+            every {
                 adminSalesComparisonService.judgeSuitability(
                     workingCategory3 = any(),
                     avgClosingAmount = any(),
@@ -239,8 +226,7 @@ class AdminMonthlyInputAdequacyServiceTest {
                     bifurcationStandard = any(),
                     bifurcationMin = any()
                 )
-            ).thenReturn(Suitability.FIT.displayName)
-
+} returns Suitability.FIT.displayName
             val response = service.getMatrix(allScope, year = 2025, costCenterCodes = listOf("CC001"), workingCategory3Filter = "고정")
 
             assertThat(response.items).hasSize(1)

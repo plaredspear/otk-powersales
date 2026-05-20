@@ -16,28 +16,24 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
-import org.mockito.quality.Strictness
 import java.math.BigDecimal
+import io.mockk.every
+import io.mockk.mockk
 
-@ExtendWith(MockitoExtension::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("AdminSalesComparisonService 테스트")
 class AdminSalesComparisonServiceTest {
 
-    @Mock private lateinit var adminMonthlyIntegrationService: AdminMonthlyIntegrationService
-    @Mock private lateinit var accountRepository: AccountRepository
-    @Mock private lateinit var employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository
-    @Mock private lateinit var accountCategoryMasterRepository: com.otoki.powersales.account.repository.AccountCategoryMasterRepository
+    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService = mockk()
+    private val accountRepository: AccountRepository = mockk()
+    private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository = mockk()
+    private val accountCategoryMasterRepository: com.otoki.powersales.account.repository.AccountCategoryMasterRepository = mockk()
 
-    @InjectMocks private lateinit var service: AdminSalesComparisonService
+    private val service = AdminSalesComparisonService(
+        adminMonthlyIntegrationService,
+        accountRepository,
+        employeeInputCriteriaMasterRepository,
+        accountCategoryMasterRepository,
+    )
 
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
@@ -103,8 +99,7 @@ class AdminSalesComparisonServiceTest {
 
     @BeforeEach
     fun setup() {
-        whenever(employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()))
-            .thenReturn(emptyList())
+        every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns emptyList()
     }
 
     @Nested
@@ -149,8 +144,7 @@ class AdminSalesComparisonServiceTest {
         fun `useSearch=true 항목을 accountCode 정렬로 반환`() {
             val cm1 = com.otoki.powersales.account.entity.AccountCategoryMaster(accountCode = "01", name = "대형마트")
             val cm2 = com.otoki.powersales.account.entity.AccountCategoryMaster(accountCode = "02", name = "체인")
-            whenever(accountCategoryMasterRepository.findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(eq(true)))
-                .thenReturn(listOf(cm1, cm2))
+            every { accountCategoryMasterRepository.findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(eq(true)) } returns listOf(cm1, cm2)
 
             val result = service.getSearchCategories()
 
@@ -163,8 +157,7 @@ class AdminSalesComparisonServiceTest {
 
         @Test
         fun `useSearch=true 항목 없으면 빈 리스트`() {
-            whenever(accountCategoryMasterRepository.findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(eq(true)))
-                .thenReturn(emptyList())
+            every { accountCategoryMasterRepository.findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(eq(true)) } returns emptyList()
 
             val result = service.getSearchCategories()
 
@@ -307,8 +300,7 @@ class AdminSalesComparisonServiceTest {
 
         @Test
         fun `통합일정 결과가 비어있으면 빈 응답`() {
-            whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
-                .thenReturn(emptyList())
+            every { adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()) } returns emptyList()
 
             val response = service.getSummary(allScope, 2026, 5, listOf("CC001"))
 
@@ -348,11 +340,9 @@ class AdminSalesComparisonServiceTest {
                 category = cm
             )
 
-            whenever(adminMonthlyIntegrationService.buildIntegrationItems(eq(2026), eq(5), eq(listOf("CC001"))))
-                .thenReturn(listOf(itm))
-            whenever(accountRepository.findByExternalKeyIn(listOf("A001"))).thenReturn(listOf(acc))
-            whenever(employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()))
-                .thenReturn(listOf(crit))
+            every { adminMonthlyIntegrationService.buildIntegrationItems(eq(2026), eq(5), eq(listOf("CC001"))) } returns listOf(itm)
+            every { accountRepository.findByExternalKeyIn(listOf("A001")) } returns listOf(acc)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit)
 
             val response = service.getSummary(allScope, 2026, 5, listOf("CC001"))
 
@@ -375,9 +365,8 @@ class AdminSalesComparisonServiceTest {
             val accA = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
             val accB = account(2, "B001", "거래처B", AccountType.DISCOUNT_STORE)
 
-            whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
-                .thenReturn(listOf(itmA, itmB))
-            whenever(accountRepository.findByExternalKeyIn(any())).thenReturn(listOf(accA, accB))
+            every { adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()) } returns listOf(itmA, itmB)
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(accA, accB)
 
             val response = service.getMiddle(allScope, 2026, 5, listOf("CC001"), listOf(1))
 
@@ -396,9 +385,8 @@ class AdminSalesComparisonServiceTest {
             val eventItm = item("A001", "거래처A", "E002", "사원B", "행사", null, null, BigDecimal.ONE, 1_500_000L)
             val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
 
-            whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
-                .thenReturn(listOf(displayItm, eventItm))
-            whenever(accountRepository.findByExternalKeyIn(any())).thenReturn(listOf(acc))
+            every { adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()) } returns listOf(displayItm, eventItm)
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
 
             val response = service.getDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), "진열", null)
 
@@ -412,9 +400,8 @@ class AdminSalesComparisonServiceTest {
             val eventItm = item("A001", "거래처A", "E002", "사원B", "행사", null, null, BigDecimal.ONE, 1_500_000L)
             val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
 
-            whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
-                .thenReturn(listOf(displayItm, eventItm))
-            whenever(accountRepository.findByExternalKeyIn(any())).thenReturn(listOf(acc))
+            every { adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()) } returns listOf(displayItm, eventItm)
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
 
             val response = service.getDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), null, null)
 
@@ -429,8 +416,7 @@ class AdminSalesComparisonServiceTest {
 
         @Test
         fun `집계 export 결과는 xlsx 파일명 + 비어있지 않은 바이트`() {
-            whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
-                .thenReturn(emptyList())
+            every { adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()) } returns emptyList()
 
             val result = service.exportSummary(allScope, 2026, 5, listOf("CC001"))
 
@@ -441,8 +427,7 @@ class AdminSalesComparisonServiceTest {
 
         @Test
         fun `중간집계 export 결과는 xlsx 파일명 + 비어있지 않은 바이트`() {
-            whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
-                .thenReturn(emptyList())
+            every { adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()) } returns emptyList()
 
             val result = service.exportMiddle(allScope, 2026, 5, listOf("CC001"), emptyList())
 
@@ -453,8 +438,7 @@ class AdminSalesComparisonServiceTest {
 
         @Test
         fun `상세 export 결과는 xlsx 파일명 + 비어있지 않은 바이트`() {
-            whenever(adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()))
-                .thenReturn(emptyList())
+            every { adminMonthlyIntegrationService.buildIntegrationItems(any(), any(), any()) } returns emptyList()
 
             val result = service.exportDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), null, null)
 

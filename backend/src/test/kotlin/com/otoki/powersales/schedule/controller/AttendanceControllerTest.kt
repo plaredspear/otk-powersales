@@ -14,21 +14,18 @@ import com.otoki.powersales.schedule.dto.response.AttendanceStatusItem
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusResponse
 import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.schedule.service.AttendanceService
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -46,19 +43,19 @@ class AttendanceControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var attendanceService: AttendanceService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -90,11 +87,11 @@ class AttendanceControllerTest {
                 registeredCount = 2
             )
 
-            whenever(
+            every {
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), eq("ROOM_TEMP")
+                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), eq("ROOM_TEMP")
                 )
-            ).thenReturn(mockResponse)
+            } returns mockResponse
 
             val requestJson = """
                 {
@@ -126,11 +123,11 @@ class AttendanceControllerTest {
         @DisplayName("안전점검 미완료 - 400 SAFETY_CHECK_REQUIRED")
         fun register_safetyCheckRequired() {
             // Given
-            whenever(
+            every {
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), any()
                 )
-            ).thenThrow(SafetyCheckRequiredException())
+} throws SafetyCheckRequiredException()
 
             val requestJson = """
                 {
@@ -155,11 +152,11 @@ class AttendanceControllerTest {
         @DisplayName("거리 초과 - 400 ATT_GPS_DISTANCE_EXCEEDED")
         fun register_distanceExceeded() {
             // Given
-            whenever(
+            every {
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), any()
                 )
-            ).thenThrow(DistanceExceededException())
+} throws DistanceExceededException()
 
             val requestJson = """
                 {
@@ -184,11 +181,11 @@ class AttendanceControllerTest {
         @DisplayName("거래처 좌표 누락 - 400 ATT_ACCOUNT_COORDS_MISSING")
         fun register_accountCoordsMissing() {
             // Given
-            whenever(
+            every {
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), any()
                 )
-            ).thenThrow(AccountCoordsMissingException())
+} throws AccountCoordsMissingException()
 
             val requestJson = """
                 {
@@ -213,11 +210,11 @@ class AttendanceControllerTest {
         @DisplayName("사원 위치 좌표 무효 - 400 ATT_INVALID_COORDS")
         fun register_invalidCoords() {
             // Given
-            whenever(
+            every {
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(null), eq(91.0), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), null, null, eq(91.0), eq(129.0567), any()
                 )
-            ).thenThrow(InvalidCoordsException())
+} throws InvalidCoordsException()
 
             val requestJson = """
                 {
@@ -242,11 +239,11 @@ class AttendanceControllerTest {
         @DisplayName("schedule_id, display_work_schedule_id 둘 다 없음 - 400 ATTENDANCE_TARGET_REQUIRED")
         fun register_bothNull_targetRequired() {
             // Given - 둘 다 누락 → 서비스에서 AttendanceTargetRequiredException
-            whenever(
+            every {
                 attendanceService.register(
-                    eq(1L), eq(null), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), null, null, null, eq(35.1234), eq(129.0567), any()
                 )
-            ).thenThrow(AttendanceTargetRequiredException())
+} throws AttendanceTargetRequiredException()
 
             val requestJson = """
                 {
@@ -270,11 +267,11 @@ class AttendanceControllerTest {
         @DisplayName("이미 등록 - 409 ALREADY_REGISTERED")
         fun register_alreadyRegistered() {
             // Given
-            whenever(
+            every {
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), any()
                 )
-            ).thenThrow(AlreadyRegisteredException())
+} throws AlreadyRegisteredException()
 
             val requestJson = """
                 {
@@ -299,11 +296,11 @@ class AttendanceControllerTest {
         @DisplayName("17시 이후 등록 - 400 ATTENDANCE_TIME_EXCEEDED")
         fun register_timeExceeded() {
             // Given
-            whenever(
+            every {
                 attendanceService.register(
-                    eq(1L), eq(10L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), any()
                 )
-            ).thenThrow(AttendanceTimeExceededException())
+} throws AttendanceTimeExceededException()
 
             val requestJson = """
                 {
@@ -328,11 +325,11 @@ class AttendanceControllerTest {
         @DisplayName("스케줄 없음 - 404 SCHEDULE_NOT_FOUND")
         fun register_scheduleNotFound() {
             // Given
-            whenever(
+            every {
                 attendanceService.register(
-                    eq(1L), eq(99999L), eq(null), eq(null), eq(35.1234), eq(129.0567), anyOrNull()
+                    eq(1L), eq(99999L), null, null, eq(35.1234), eq(129.0567), any()
                 )
-            ).thenThrow(TeamMemberScheduleNotFoundException())
+} throws TeamMemberScheduleNotFoundException()
 
             val requestJson = """
                 {
@@ -395,7 +392,7 @@ class AttendanceControllerTest {
                 currentDate = "2026-02-25"
             )
 
-            whenever(attendanceService.getAccountList(eq(1L), eq(null))).thenReturn(mockResponse)
+            every { attendanceService.getAccountList(eq(1L), null) } returns mockResponse
 
             // When & Then
             mockMvc.perform(
@@ -447,7 +444,7 @@ class AttendanceControllerTest {
                 currentDate = "2026-02-25"
             )
 
-            whenever(attendanceService.getAccountList(eq(1L), eq("이마트"))).thenReturn(mockResponse)
+            every { attendanceService.getAccountList(eq(1L), eq("이마트")) } returns mockResponse
 
             // When & Then
             mockMvc.perform(
@@ -501,7 +498,7 @@ class AttendanceControllerTest {
                 currentDate = "2026-02-25"
             )
 
-            whenever(attendanceService.getStatus(1L)).thenReturn(mockResponse)
+            every { attendanceService.getStatus(1L) } returns mockResponse
 
             // When & Then
             mockMvc.perform(

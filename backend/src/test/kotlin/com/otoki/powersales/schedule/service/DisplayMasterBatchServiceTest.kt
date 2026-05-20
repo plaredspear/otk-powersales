@@ -10,25 +10,20 @@ import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.sap.DisplayMasterPayloadFactory
 import com.otoki.powersales.schedule.sap.DisplayMasterSapPayload
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
 @DisplayName("DisplayMasterBatchService — daily SAP outbound 처리 (#588 P2-B / #692)")
 class DisplayMasterBatchServiceTest {
 
-    private val repository: DisplayWorkScheduleRepository = mock()
-    private val sender: DisplayMasterSapSender = mock()
+    private val repository: DisplayWorkScheduleRepository = mockk()
+    private val sender: DisplayMasterSapSender = mockk()
     private val payloadFactory = DisplayMasterPayloadFactory()
 
     private val pageSize = 100
@@ -48,41 +43,41 @@ class DisplayMasterBatchServiceTest {
     @DisplayName("페이지 100건씩 분할 송신 — 250건 → SAP 호출 3회 (100/100/50)")
     fun runDaily_pagesArePushedSequentially() {
         val today = LocalDate.of(2026, 5, 4)
-        whenever(repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(0))).thenReturn(entities(100))
-        whenever(repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(pageSize))).thenReturn(entities(100))
-        whenever(repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(2 * pageSize))).thenReturn(entities(50))
-        whenever(sender.sendPage(any())).thenReturn(true)
+        every { repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(0)) } returns entities(100)
+        every { repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(pageSize)) } returns entities(100)
+        every { repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(2 * pageSize)) } returns entities(50)
+        val captured = mutableListOf<DisplayMasterSapPayload>()
+        every { sender.sendPage(capture(captured)) } returns true
 
         service.runDaily(today)
 
-        val captor = argumentCaptor<DisplayMasterSapPayload>()
-        verify(sender, times(3)).sendPage(captor.capture())
-        assertThat(captor.allValues.map { it.request.size }).containsExactly(100, 100, 50)
+        verify(exactly = 3) { sender.sendPage(any()) }
+        assertThat(captured.map { it.request.size }).containsExactly(100, 100, 50)
     }
 
     @Test
     @DisplayName("빈 결과 — sender 호출 없음")
     fun runDaily_emptyResultSkipsSender() {
         val today = LocalDate.of(2026, 5, 4)
-        whenever(repository.findValidForDisplayMasterSapPaged(any(), any(), any())).thenReturn(emptyList())
+        every { repository.findValidForDisplayMasterSapPaged(any(), any(), any()) } returns emptyList()
 
         service.runDaily(today)
 
-        verify(sender, never()).sendPage(any())
+        verify(exactly = 0) { sender.sendPage(any()) }
     }
 
     @Test
     @DisplayName("페이지 실패 시 다음 페이지 진행")
     fun runDaily_failedPageDoesNotStopBatch() {
         val today = LocalDate.of(2026, 5, 4)
-        whenever(repository.findValidForDisplayMasterSapPaged(any(), eq(pageSize), eq(0))).thenReturn(entities(100))
-        whenever(repository.findValidForDisplayMasterSapPaged(any(), eq(pageSize), eq(pageSize))).thenReturn(entities(100))
-        whenever(repository.findValidForDisplayMasterSapPaged(any(), eq(pageSize), eq(2 * pageSize))).thenReturn(entities(50))
-        whenever(sender.sendPage(any())).thenReturn(true, false, true)
+        every { repository.findValidForDisplayMasterSapPaged(any(), eq(pageSize), eq(0)) } returns entities(100)
+        every { repository.findValidForDisplayMasterSapPaged(any(), eq(pageSize), eq(pageSize)) } returns entities(100)
+        every { repository.findValidForDisplayMasterSapPaged(any(), eq(pageSize), eq(2 * pageSize)) } returns entities(50)
+        every { sender.sendPage(any()) } returnsMany listOf(true, false, true)
 
         service.runDaily(today)
 
-        verify(sender, times(3)).sendPage(any())
+        verify(exactly = 3) { sender.sendPage(any()) }
     }
 
     @Test
@@ -97,14 +92,14 @@ class DisplayMasterBatchServiceTest {
             employee = Employee(id = 1L, employeeCode = "EMP777", name = "홍길동"),
             account = Account(id = 1, externalKey = "ACC777")
         )
-        whenever(repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(0))).thenReturn(listOf(entity))
-        whenever(sender.sendPage(any())).thenReturn(true)
+        every { repository.findValidForDisplayMasterSapPaged(eq(today), eq(pageSize), eq(0)) } returns listOf(entity)
+        val captured = mutableListOf<DisplayMasterSapPayload>()
+        every { sender.sendPage(capture(captured)) } returns true
 
         service.runDaily(today)
 
-        val captor = argumentCaptor<DisplayMasterSapPayload>()
-        verify(sender, times(1)).sendPage(captor.capture())
-        val item = captor.firstValue.request.single()
+        verify(exactly = 1) { sender.sendPage(any()) }
+        val item = captured.first().request.single()
         assertThat(item.EmployeeCode).isEqualTo("EMP777")
         assertThat(item.SAPAccountCode).isEqualTo("ACC777")
         assertThat(item.WorkingCategory1).isEqualTo("진열")

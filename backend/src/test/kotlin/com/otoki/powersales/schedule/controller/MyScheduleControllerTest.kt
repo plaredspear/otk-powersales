@@ -9,19 +9,17 @@ import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.schedule.service.MyScheduleService
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -39,19 +37,19 @@ class MyScheduleControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var myScheduleService: MyScheduleService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -82,8 +80,7 @@ class MyScheduleControllerTest {
             annualLeaveCount = 0,
             substituteHolidayCount = 0
         )
-        whenever(myScheduleService.getMonthlySchedule(eq(1L), eq(2020), eq(8)))
-            .thenReturn(mockResponse)
+        every { myScheduleService.getMonthlySchedule(eq(1L), eq(2020), eq(8)) } returns mockResponse
 
         // When & Then
         mockMvc.perform(
@@ -154,8 +151,7 @@ class MyScheduleControllerTest {
                 )
             )
         )
-        whenever(myScheduleService.getDailySchedule(eq(1L), any()))
-            .thenReturn(mockResponse)
+        every { myScheduleService.getDailySchedule(eq(1L), any()) } returns mockResponse
 
         // When & Then
         mockMvc.perform(

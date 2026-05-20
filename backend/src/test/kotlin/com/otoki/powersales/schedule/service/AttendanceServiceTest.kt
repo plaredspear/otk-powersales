@@ -47,65 +47,51 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.Spy
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.Mockito
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.never
-import org.mockito.kotlin.whenever
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.*
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.spyk
+import io.mockk.verify
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AttendanceService 테스트")
 class AttendanceServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk()
+    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository = mockk(relaxUnitFun = true)
+    private val ororaApiService: OroraApiService = mockk()
+    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService = mockk(relaxUnitFun = true)
+    private val clock: Clock = mockk()
+    private val attendanceProperties: AttendanceProperties = spyk(AttendanceProperties(gpsThresholdMeters = 500))
 
-    @Mock
-    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
-
-    @Mock
-    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
-
-    @Mock
-    private lateinit var safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository
-
-    @Mock
-    private lateinit var ororaApiService: OroraApiService
-
-    @Mock
-    private lateinit var adminMonthlyIntegrationService: AdminMonthlyIntegrationService
-
-    @Mock
-    private lateinit var clock: Clock
-
-    @Spy
-    private var attendanceProperties: AttendanceProperties = AttendanceProperties(gpsThresholdMeters = 500)
-
-    @InjectMocks
-    private lateinit var attendanceService: AttendanceService
+    private val attendanceService = AttendanceService(
+        employeeRepository,
+        teamMemberScheduleRepository,
+        displayWorkScheduleRepository,
+        safetyCheckSubmissionRepository,
+        ororaApiService,
+        adminMonthlyIntegrationService,
+        attendanceProperties,
+        clock,
+    )
 
     @BeforeEach
     fun setUpClock() {
-        // 기본: 오전 10시 (마감 전) — lenient로 설정하여 clock 미사용 테스트에서도 에러 방지
+        // 기본: 오전 10시 (마감 전) — 기본 stub (개별 테스트에서 override 가능)
         val fixedClock = Clock.fixed(
             LocalDate.now().atTime(10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
             ZoneId.of("Asia/Seoul")
         )
-        Mockito.lenient().`when`(clock.withZone(any())).thenReturn(fixedClock)
+        every { clock.withZone(any()) } returns fixedClock
+        // 부수 호출 — 개별 테스트가 override 가능 (MockK 는 마지막 stub 우선)
+        every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(any(), any(), any()) } returns false
+        every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(any(), any(), any()) } returns false
     }
 
     // ========== getAccountList Tests ==========
@@ -131,10 +117,10 @@ class AttendanceServiceTest {
                     accountName = "롯데마트 송파점", accountLatitude = "37.5100", accountLongitude = "127.0500", accountAddress = "서울시 송파구")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -168,10 +154,10 @@ class AttendanceServiceTest {
                 createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 8938, accountName = "이마트 강남점")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(false)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns false
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -196,10 +182,10 @@ class AttendanceServiceTest {
                     accountName = "테스트 거래처B")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -223,10 +209,10 @@ class AttendanceServiceTest {
                 createTeamMemberSchedule(sfid = "SCH003", employeeId = userId, accountId = 8940, accountName = "이마트 송파점")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, "이마트")
@@ -251,10 +237,10 @@ class AttendanceServiceTest {
                 createTeamMemberSchedule(sfid = "SCH003", employeeId = userId, accountId = 8940, accountName = "롯데마트 송파점", accountAddress = "서울시 송파구 잠실동")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, "강남")
@@ -278,10 +264,10 @@ class AttendanceServiceTest {
                 createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, accountName = "홈플러스 서초점", accountAbcTypeCode = "3001")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, "2001")
@@ -306,10 +292,10 @@ class AttendanceServiceTest {
                 createTeamMemberSchedule(sfid = "SCH003", employeeId = userId, accountId = 8940, accountName = "롯데마트 대전점", accountAddress = "대전시 유성구")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, "서울")
@@ -332,10 +318,10 @@ class AttendanceServiceTest {
                 createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, accountName = "홈플러스", accountAddress = "부산시", accountAbcTypeCode = "1234")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, "1234")
@@ -350,7 +336,7 @@ class AttendanceServiceTest {
         fun getAccountList_userNotFound_throwsException() {
             // Given
             val userId = 999L
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(userId) } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy { attendanceService.getAccountList(userId, null) }
@@ -365,10 +351,10 @@ class AttendanceServiceTest {
             val employee = createEmployee(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(false)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns false
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -392,10 +378,10 @@ class AttendanceServiceTest {
                 createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogSfid = null, accountName = "홈플러스 서초점")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -436,10 +422,10 @@ class AttendanceServiceTest {
                     employeeId = userId, accountId = 9002, accountName = "홈플러스 서초점")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns masters
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -473,10 +459,10 @@ class AttendanceServiceTest {
                     employeeId = userId, accountId = 8938, accountName = "이마트 강남점")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns masters
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -498,12 +484,12 @@ class AttendanceServiceTest {
                 today.atTime(16, 59).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
                 ZoneId.of("Asia/Seoul")
             )
-            whenever(clock.withZone(any())).thenReturn(beforeDeadlineClock)
+            every { clock.withZone(any()) } returns beforeDeadlineClock
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -525,12 +511,12 @@ class AttendanceServiceTest {
                 today.atTime(17, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
                 ZoneId.of("Asia/Seoul")
             )
-            whenever(clock.withZone(any())).thenReturn(afterDeadlineClock)
+            every { clock.withZone(any()) } returns afterDeadlineClock
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -567,10 +553,10 @@ class AttendanceServiceTest {
                     employeeId = userId, accountId = 9002, accountName = "임시거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns masters
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -602,10 +588,10 @@ class AttendanceServiceTest {
                     employeeId = userId, accountId = 9003, accountName = "임시거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns masters
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -641,10 +627,10 @@ class AttendanceServiceTest {
                     employeeId = userId, accountId = 9003, accountName = "마스터거래처B", typeOfWork5 = TypeOfWork5.REGULAR)
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns masters
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -674,10 +660,10 @@ class AttendanceServiceTest {
                     employeeId = userId, accountId = 9002, accountName = "마스터거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns masters
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -707,10 +693,10 @@ class AttendanceServiceTest {
                     employeeId = userId, accountId = 9002, accountName = "임시거래처", typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today)).thenReturn(masters)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns masters
 
             // When
             val result = attendanceService.getAccountList(userId, null)
@@ -758,14 +744,12 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
@@ -787,8 +771,8 @@ class AttendanceServiceTest {
             val employee = createEmployee(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(false)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns false
 
             // When & Then
             assertThatThrownBy {
@@ -812,9 +796,9 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
 
             // When & Then
             assertThatThrownBy {
@@ -838,14 +822,12 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // 5km 떨어진 좌표 사용 (면제이므로 성공해야 함)
             val farLat = 37.5429  // ~5km north
@@ -879,14 +861,12 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // 10km 떨어진 좌표 사용 (면제이므로 성공해야 함)
             val veryFarLat = 37.5879  // ~10km north
@@ -920,14 +900,12 @@ class AttendanceServiceTest {
                 accountLatitude = null, accountLongitude = null
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When — 좌표 누락이지만 면제 코드이므로 ATT_ACCOUNT_COORDS_MISSING 미발생
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
@@ -954,14 +932,12 @@ class AttendanceServiceTest {
                 accountLatitude = "invalid", accountLongitude = "invalid"
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
@@ -987,14 +963,12 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
@@ -1020,9 +994,9 @@ class AttendanceServiceTest {
                 accountLatitude = null, accountLongitude = null
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
 
             // When & Then
             assertThatThrownBy {
@@ -1046,9 +1020,9 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
 
             // When & Then
             assertThatThrownBy {
@@ -1070,9 +1044,9 @@ class AttendanceServiceTest {
                 commuteLogSfid = "OK"
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
 
             // When & Then
             assertThatThrownBy {
@@ -1089,9 +1063,9 @@ class AttendanceServiceTest {
             val employee = createEmployee(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy {
@@ -1104,7 +1078,7 @@ class AttendanceServiceTest {
         fun register_userNotFound_throwsException() {
             // Given
             val userId = 999L
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(userId) } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy {
@@ -1120,9 +1094,8 @@ class AttendanceServiceTest {
             val employee = createEmployee(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(employee, today, WorkingType.ALT_HOLIDAY))
-                .thenReturn(true)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(employee, today, WorkingType.ALT_HOLIDAY) } returns true
 
             // When & Then
             assertThatThrownBy {
@@ -1130,7 +1103,7 @@ class AttendanceServiceTest {
             }.isInstanceOf(AttendanceDayOffConflictException::class.java)
 
             // 안전점검 검증까지 도달하지 않아야 한다
-            verify(safetyCheckSubmissionRepository, never()).existsByEmployeeIdAndWorkingDate(any(), any())
+            verify(exactly = 0) { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(any(), any()) }
         }
 
         @Test
@@ -1149,16 +1122,13 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(employee, today, WorkingType.ALT_HOLIDAY))
-                .thenReturn(false)
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(employee, today, WorkingType.ALT_HOLIDAY) } returns false
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
@@ -1183,14 +1153,12 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, "냉장")
@@ -1222,14 +1190,12 @@ class AttendanceServiceTest {
                 createTeamMemberSchedule(id = 30L, sfid = "SCH003", employeeId = userId, accountId = 8940, commuteLogSfid = null)
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(targetTeamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(allTeamMemberSchedules)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(targetTeamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns allTeamMemberSchedules
 
             // When
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
@@ -1248,7 +1214,7 @@ class AttendanceServiceTest {
                 LocalDate.now().atTime(17, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
                 ZoneId.of("Asia/Seoul")
             )
-            whenever(clock.withZone(any())).thenReturn(afterDeadlineClock)
+            every { clock.withZone(any()) } returns afterDeadlineClock
 
             // When & Then
             assertThatThrownBy {
@@ -1264,7 +1230,7 @@ class AttendanceServiceTest {
                 LocalDate.now().atTime(23, 59).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
                 ZoneId.of("Asia/Seoul")
             )
-            whenever(clock.withZone(any())).thenReturn(lateNightClock)
+            every { clock.withZone(any()) } returns lateNightClock
 
             // When & Then
             assertThatThrownBy {
@@ -1280,14 +1246,14 @@ class AttendanceServiceTest {
                 LocalDate.now().atTime(16, 59).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
                 ZoneId.of("Asia/Seoul")
             )
-            whenever(clock.withZone(any())).thenReturn(beforeDeadlineClock)
+            every { clock.withZone(any()) } returns beforeDeadlineClock
 
             val userId = 1L
             val employee = createEmployee(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(false)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns false
 
             // When & Then — 시간은 통과하고 안전점검 예외 발생 (시간 이후 로직까지 도달 확인)
             assertThatThrownBy {
@@ -1313,9 +1279,9 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
 
             // When & Then
             val ex = assertThatThrownBy {
@@ -1329,7 +1295,7 @@ class AttendanceServiceTest {
         @DisplayName("Spec #585 §7-#2 — 임계값(=277m) 정확 일치 시 등록 통과 (> 비교)")
         fun register_exactlyAtThreshold_passes() {
             // Given (계산 거리 ~277m, threshold = 277m → distanceMeters > thresholdMeters 거짓 → 통과)
-            whenever(attendanceProperties.gpsThresholdMeters).thenReturn(277)
+            every { attendanceProperties.gpsThresholdMeters } returns 277
 
             val userId = 1L
             val scheduleId = 10L
@@ -1343,14 +1309,12 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
@@ -1376,9 +1340,9 @@ class AttendanceServiceTest {
                 accountLatitude = null, accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
 
             // When & Then
             assertThatThrownBy {
@@ -1402,9 +1366,9 @@ class AttendanceServiceTest {
                 accountLatitude = "   ", accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
 
             // When & Then
             assertThatThrownBy {
@@ -1428,9 +1392,9 @@ class AttendanceServiceTest {
                 accountLatitude = "abc", accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
 
             // When & Then
             assertThatThrownBy {
@@ -1454,9 +1418,9 @@ class AttendanceServiceTest {
                 accountLatitude = "91.0", accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
 
             // When & Then
             assertThatThrownBy {
@@ -1480,9 +1444,9 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
 
             // When & Then
             assertThatThrownBy {
@@ -1494,7 +1458,7 @@ class AttendanceServiceTest {
         @DisplayName("Spec #585 — 임계값 환경 override(1000m)로 ~1.2km 거리 통과 가능")
         fun register_thresholdOverride_passesAtFarDistance() {
             // Given — threshold 를 1500m 로 override 하면 ~1212m 거리는 통과
-            whenever(attendanceProperties.gpsThresholdMeters).thenReturn(1500)
+            every { attendanceProperties.gpsThresholdMeters } returns 1500
 
             val userId = 1L
             val scheduleId = 10L
@@ -1508,14 +1472,12 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
             val result = attendanceService.register(userId, scheduleId, null, null, farUserLat, farUserLon, null)
@@ -1580,31 +1542,31 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
-            whenever(teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today))).thenReturn(null)
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), UserRole.LEADER)).thenReturn(listOf(teamLeader))
-            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenAnswer { it.getArgument<TeamMemberSchedule>(0).also { tms ->
-                // simulate saved entity with id
-            } }.thenReturn(newTms)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(newTms))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
+            every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), UserRole.LEADER) } returns listOf(teamLeader)
+            every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } answers {
+                firstArg<TeamMemberSchedule>().also { _ ->
+                    // simulate saved entity with id
+                }
+            } andThen newTms
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(newTms)
 
             // When
             val result = attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.accountName).isEqualTo("테스트 거래처")
-            verify(teamMemberScheduleRepository).save(any<TeamMemberSchedule>())
-            verify(adminMonthlyIntegrationService).refreshIntegration(
+            verify { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
+            verify { adminMonthlyIntegrationService.refreshIntegration(
                 employeeId = userId,
                 accountId = 8938,
                 yearMonth = YearMonth.from(today)
-            )
+            ) }
         }
 
         @Test
@@ -1646,23 +1608,21 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
-            whenever(teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today))).thenReturn(existingTms)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(existingTms))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
+            every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns existingTms
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(existingTms)
 
             // When
             val result = attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
 
             // Then
             assertThat(result.scheduleId).isEqualTo(50L)
-            verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
-            verify(adminMonthlyIntegrationService, never()).refreshIntegration(any(), any(), any())
+            verify(exactly = 0) { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
+            verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(any(), any(), any()) }
         }
 
         @Test
@@ -1674,9 +1634,9 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
             val employee = createEmployee(id = userId, sfid = "USR001")
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy {
@@ -1700,9 +1660,9 @@ class AttendanceServiceTest {
                 endDate = today.plus(30, java.time.temporal.ChronoUnit.DAYS)
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
 
             // When & Then
             assertThatThrownBy {
@@ -1726,9 +1686,9 @@ class AttendanceServiceTest {
                 endDate = today.plus(40, java.time.temporal.ChronoUnit.DAYS)
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
 
             // When & Then
             assertThatThrownBy {
@@ -1796,17 +1756,16 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
-            whenever(teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today))).thenReturn(null)
-            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED))).thenReturn(false)
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), UserRole.LEADER)).thenReturn(emptyList())
-            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(newTms)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(listOf(newTms))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
+            every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
+            every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns false
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), UserRole.LEADER) } returns emptyList()
+            every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns newTms
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(newTms)
 
             // When
             val result = attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
@@ -1836,16 +1795,16 @@ class AttendanceServiceTest {
                 employeeId = otherUserId, // 타인 할당
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
 
             // When & Then
             assertThatThrownBy {
                 attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(DisplayScheduleNotAssignedException::class.java)
 
-            verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
+            verify(exactly = 0) { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
         }
 
         @Test
@@ -1867,20 +1826,20 @@ class AttendanceServiceTest {
                 accountId = 8938,
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(displayWorkScheduleRepository.findById(displayWorkScheduleId)).thenReturn(Optional.of(master))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
             // 동일 사원+거래처+오늘은 없음 → step 4-1 통과
-            whenever(teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today))).thenReturn(null)
+            every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
             // 다른 거래처에 동일 working_category3=고정 일정 존재 → step 4-2 차단
-            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED))).thenReturn(true)
+            every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns true
 
             // When & Then
             assertThatThrownBy {
                 attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
             }.isInstanceOf(DisplayAttendanceDuplicateException::class.java)
 
-            verify(teamMemberScheduleRepository, never()).save(any<TeamMemberSchedule>())
+            verify(exactly = 0) { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
         }
 
         @Test
@@ -1898,13 +1857,12 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(tms))
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(listOf(tms))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(tms)
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(tms)
 
             // When
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
@@ -1943,13 +1901,12 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(eventScheduleId)).thenReturn(Optional.of(tms))
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(listOf(tms))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(eventScheduleId) } returns Optional.of(tms)
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(tms)
 
             // When
             val result = attendanceService.register(userId, null, null, eventScheduleId, nearUserLat, nearUserLon, null)
@@ -1971,9 +1928,9 @@ class AttendanceServiceTest {
             val today = LocalDate.now()
             val employee = createEmployee(id = userId, sfid = "USR001")
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(eventScheduleId)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(eventScheduleId) } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy {
@@ -1995,9 +1952,9 @@ class AttendanceServiceTest {
                 id = eventScheduleId, employeeId = otherUserId, accountId = 8938, workingDate = today
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(eventScheduleId)).thenReturn(Optional.of(tms))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(eventScheduleId) } returns Optional.of(tms)
 
             // When & Then
             assertThatThrownBy {
@@ -2018,9 +1975,9 @@ class AttendanceServiceTest {
                 workingDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS), // 미래 일자
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(eventScheduleId)).thenReturn(Optional.of(tms))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(eventScheduleId) } returns Optional.of(tms)
 
             // When & Then
             assertThatThrownBy {
@@ -2041,9 +1998,9 @@ class AttendanceServiceTest {
                 workingDate = today, commuteLogSfid = "OK"
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(teamMemberScheduleRepository.findById(eventScheduleId)).thenReturn(Optional.of(tms))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findById(eventScheduleId) } returns Optional.of(tms)
 
             // When & Then
             assertThatThrownBy {
@@ -2101,25 +2058,23 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.of(safetyCheck))
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>())).thenAnswer { it.getArgument<SafetyCheckSubmission>(0) }
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.of(safetyCheck)
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg<SafetyCheckSubmission>() }
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
             attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then - completeWorkYn 업데이트 검증
             assertThat(safetyCheck.completeWorkYn).isEqualTo("Y")
-            verify(safetyCheckSubmissionRepository).save(safetyCheck)
+            verify { safetyCheckSubmissionRepository.save(safetyCheck) }
 
             // Then - TMS 안전점검 데이터 반영 검증
-            verify(teamMemberScheduleRepository).updateSafetyCheckData(
+            verify { teamMemberScheduleRepository.updateSafetyCheckData(
                 id = 10L,
                 equipment1 = "예",
                 equipment2 = "해당없음",
@@ -2137,7 +2092,7 @@ class AttendanceServiceTest {
                 precaution = "항목1;항목2",
                 precautionChk = 2.0,
                 traversalFlag = "Y"
-            )
+            ) }
         }
 
         @Test
@@ -2155,14 +2110,12 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.empty())
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
@@ -2171,11 +2124,11 @@ class AttendanceServiceTest {
             assertThat(result.scheduleId).isEqualTo(scheduleId)
 
             // Then - 데이터 연동 스킵 검증
-            verify(safetyCheckSubmissionRepository, never()).save(any())
-            verify(teamMemberScheduleRepository, never()).updateSafetyCheckData(
+            verify(exactly = 0) { safetyCheckSubmissionRepository.save(any()) }
+            verify(exactly = 0) { teamMemberScheduleRepository.updateSafetyCheckData(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
-            )
+                any(), any(), any(), any(), any(), any(), any()
+            ) }
         }
 
         @Test
@@ -2202,15 +2155,13 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.of(safetyCheck))
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>())).thenAnswer { it.getArgument<SafetyCheckSubmission>(0) }
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.of(safetyCheck)
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg<SafetyCheckSubmission>() }
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When - 에러 없이 성공
             val result = attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
@@ -2218,8 +2169,8 @@ class AttendanceServiceTest {
             // Then
             assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(safetyCheck.completeWorkYn).isEqualTo("Y")
-            verify(safetyCheckSubmissionRepository).save(safetyCheck)
-            verify(teamMemberScheduleRepository).updateSafetyCheckData(
+            verify { safetyCheckSubmissionRepository.save(safetyCheck) }
+            verify { teamMemberScheduleRepository.updateSafetyCheckData(
                 id = 10L,
                 equipment1 = "예",
                 equipment2 = null,
@@ -2237,7 +2188,7 @@ class AttendanceServiceTest {
                 precaution = null,
                 precautionChk = null,
                 traversalFlag = null
-            )
+            ) }
         }
 
         @Test
@@ -2263,21 +2214,19 @@ class AttendanceServiceTest {
                 accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today)).thenReturn(true)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(Optional.of(safetyCheck))
-            whenever(teamMemberScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(teamMemberSchedule))
-            doReturn(OroraWorkReportResult("200", "SUCCESS"))
-                .whenever(ororaApiService).sendWorkReport(any())
-            whenever(safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>())).thenAnswer { it.getArgument<SafetyCheckSubmission>(0) }
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today))
-                .thenReturn(listOf(teamMemberSchedule))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.of(safetyCheck)
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg<SafetyCheckSubmission>() }
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
             attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then - null → null 변환 검증
-            verify(teamMemberScheduleRepository).updateSafetyCheckData(
+            verify { teamMemberScheduleRepository.updateSafetyCheckData(
                 id = 10L,
                 equipment1 = null,
                 equipment2 = null,
@@ -2295,7 +2244,7 @@ class AttendanceServiceTest {
                 precaution = null,
                 precautionChk = null,
                 traversalFlag = null
-            )
+            ) }
         }
     }
 
@@ -2322,8 +2271,8 @@ class AttendanceServiceTest {
                     accountName = "롯데마트 송파점")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
 
             // When
             val result = attendanceService.getStatus(userId)
@@ -2362,8 +2311,8 @@ class AttendanceServiceTest {
                 createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogSfid = "OK", accountName = "홈플러스 서초점")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
 
             // When
             val result = attendanceService.getStatus(userId)
@@ -2387,8 +2336,8 @@ class AttendanceServiceTest {
                 createTeamMemberSchedule(sfid = "SCH002", employeeId = userId, accountId = 8939, commuteLogSfid = null, accountName = "홈플러스 서초점")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(teamMemberSchedules)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
 
             // When
             val result = attendanceService.getStatus(userId)
@@ -2404,7 +2353,7 @@ class AttendanceServiceTest {
         fun getStatus_userNotFound_throwsException() {
             // Given
             val userId = 999L
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(userId) } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy { attendanceService.getStatus(userId) }
@@ -2419,8 +2368,8 @@ class AttendanceServiceTest {
             val employee = createEmployee(id = userId, sfid = "USR001")
             val today = LocalDate.now()
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today)).thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns emptyList()
 
             // When
             val result = attendanceService.getStatus(userId)

@@ -22,34 +22,27 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.*
 import java.time.LocalDate
 import java.util.*
+import io.mockk.Called
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminTeamScheduleService 테스트")
 class AdminTeamScheduleServiceTest {
 
-    @Mock
-    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var accountRepository: AccountRepository
+    private val accountRepository: AccountRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
+    private val organizationRepository: OrganizationRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var adminMonthlyIntegrationService: AdminMonthlyIntegrationService
+    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService = mockk(relaxUnitFun = true)
 
     private lateinit var service: AdminTeamScheduleService
 
@@ -68,10 +61,8 @@ class AdminTeamScheduleServiceTest {
             teamScheduleValidator = teamScheduleValidator
         )
         // createSchedule 이 service 내부에서 leader entity 영속화를 위해 호출하는 findById(principal.employeeId).
-        // 인증 컨텍스트 분기와 무관한 부수 호출이므로 lenient stub.
-        org.mockito.Mockito.lenient()
-            .`when`(employeeRepository.findById(any<Long>()))
-            .thenReturn(Optional.of(createEmployee(id = 10L, sfid = "LEADER_SFID")))
+        // 인증 컨텍스트 분기와 무관한 부수 호출이므로 기본 stub (개별 테스트에서 override 가능).
+        every { employeeRepository.findById(any<Long>()) } returns Optional.of(createEmployee(id = 10L, sfid = "LEADER_SFID"))
     }
 
     // 인증된 현재 사용자 = WebUserPrincipal. fixture 는 분기에 영향 안 주는 케이스용 더미.
@@ -196,8 +187,7 @@ class AdminTeamScheduleServiceTest {
             val m1 = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = UserRole.WOMAN)
             val m2 = createEmployee(id = 3L, employeeCode = "20030003", name = "이수진", role = UserRole.WOMAN)
 
-            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")))
-                .thenReturn(listOf(m1, m2))
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")) } returns listOf(m1, m2)
 
             val result = service.getMembers(principalOf(leader))
 
@@ -211,35 +201,34 @@ class AdminTeamScheduleServiceTest {
         fun getMembers_systemAdmin_usesOwnCostCenter() {
             val admin = createEmployee(id = 10L, employeeCode = "99990001", costCenterCode = "9999", role = UserRole.SYSTEM_ADMIN)
             val m1 = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = UserRole.WOMAN)
-            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("9999"))).thenReturn(listOf(m1))
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("9999")) } returns listOf(m1)
 
             val result = service.getMembers(principalOf(admin))
 
             assertThat(result).hasSize(1)
-            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("9999"))
+            verify { employeeRepository.findActiveWomenByCostCenterCodes(listOf("9999")) }
         }
 
         @Test
         @DisplayName("특수 사번 (19951029) - cost center IN ('3233','3234','3235','3236','5691','5694')")
         fun getMembers_specialEmployeeCode() {
             val leader = createEmployee(id = 10L, employeeCode = "19951029", costCenterCode = "9999", role = UserRole.LEADER)
-            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("3233", "3234", "3235", "3236", "5691", "5694")))
-                .thenReturn(emptyList())
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3233", "3234", "3235", "3236", "5691", "5694")) } returns emptyList()
 
             service.getMembers(principalOf(leader))
 
-            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("3233", "3234", "3235", "3236", "5691", "5694"))
+            verify { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3233", "3234", "3235", "3236", "5691", "5694")) }
         }
 
         @Test
         @DisplayName("영업지원1팀 (cost_center_code=4888) - 본인 costCenterCode 단일 조회 (SF 정합)")
         fun getMembers_salesSupport1Team() {
             val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "4888", role = UserRole.SALES_SUPPORT)
-            whenever(employeeRepository.findActiveWomenByCostCenterCodes(listOf("4888"))).thenReturn(emptyList())
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("4888")) } returns emptyList()
 
             service.getMembers(principalOf(supporter))
 
-            verify(employeeRepository).findActiveWomenByCostCenterCodes(listOf("4888"))
+            verify { employeeRepository.findActiveWomenByCostCenterCodes(listOf("4888")) }
         }
 
         @Test
@@ -250,7 +239,7 @@ class AdminTeamScheduleServiceTest {
             val result = service.getMembers(principalOf(leader))
 
             assertThat(result).isEmpty()
-            verify(employeeRepository, never()).findActiveWomenByCostCenterCodes(any())
+            verify(exactly = 0) { employeeRepository.findActiveWomenByCostCenterCodes(any()) }
         }
     }
 
@@ -268,8 +257,7 @@ class AdminTeamScheduleServiceTest {
             val account1 = createAccount(id = 1, sfid = "ACC_001", name = "이마트 강남점", branchCode = "1234")
             val account2 = createAccount(id = 2, sfid = "ACC_002", name = "홈플러스 역삼점", branchCode = "1234")
 
-            whenever(accountRepository.findByBranchCodeAndAccountGroupIn("1234", listOf("1010", "1000")))
-                .thenReturn(listOf(account1, account2))
+            every { accountRepository.findByBranchCodeAndAccountGroupIn("1234", listOf("1010", "1000")) } returns listOf(account1, account2)
 
             // When
             val result = service.getAccounts(principalOf(employee), null)
@@ -286,8 +274,7 @@ class AdminTeamScheduleServiceTest {
             // Given
             val account = createAccount(id = 1, sfid = "ACC_001", name = "롯데마트 잠실점", branchCode = "5678")
 
-            whenever(accountRepository.findByBranchCodeAndAccountGroupIn("5678", listOf("1010", "1000")))
-                .thenReturn(listOf(account))
+            every { accountRepository.findByBranchCodeAndAccountGroupIn("5678", listOf("1010", "1000")) } returns listOf(account)
 
             // When
             val result = service.getAccounts(currentEmployeeFixture, "5678")
@@ -295,7 +282,7 @@ class AdminTeamScheduleServiceTest {
             // Then
             assertThat(result).hasSize(1)
             assertThat(result[0].accountId).isEqualTo(1)
-            verify(employeeRepository, never()).findWithEmployeeInfoById(any())
+            verify(exactly = 0) { employeeRepository.findWithEmployeeInfoById(any()) }
         }
     }
 
@@ -313,13 +300,13 @@ class AdminTeamScheduleServiceTest {
                 com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"),
                 com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점")
             )
-            whenever(organizationRepository.findAllTeamScheduleBranches()).thenReturn(branches)
+            every { organizationRepository.findAllTeamScheduleBranches() } returns branches
 
             val result = service.getBranches(principalOf(admin))
 
             assertThat(result).hasSize(2)
             assertThat(result[0].branchCode).isEqualTo("5460")
-            verify(organizationRepository, never()).findTeamScheduleBranches(any(), any())
+            verify(exactly = 0) { organizationRepository.findTeamScheduleBranches(any(), any()) }
         }
 
         @Test
@@ -327,14 +314,14 @@ class AdminTeamScheduleServiceTest {
         fun getBranches_allBranchesRole() {
             val supporter = createEmployee(id = 10L, role = UserRole.SALES_SUPPORT, costCenterCode = "3475")
             val branches = listOf(com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"))
-            whenever(organizationRepository.findTeamScheduleBranches(null, true)).thenReturn(branches)
+            every { organizationRepository.findTeamScheduleBranches(null, true) } returns branches
 
             val result = service.getBranches(principalOf(supporter))
 
             assertThat(result).hasSize(1)
             assertThat(result[0].branchCode).isEqualTo("5460")
-            verify(organizationRepository, never()).findAllTeamScheduleBranches()
-            verify(organizationRepository).findTeamScheduleBranches(null, true)
+            verify(exactly = 0) { organizationRepository.findAllTeamScheduleBranches() }
+            verify { organizationRepository.findTeamScheduleBranches(null, true) }
         }
 
         @Test
@@ -342,13 +329,13 @@ class AdminTeamScheduleServiceTest {
         fun getBranches_scopedRole() {
             val leader = createEmployee(id = 10L, role = UserRole.LEADER, costCenterCode = "5457")
             val branches = listOf(com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점"))
-            whenever(organizationRepository.findTeamScheduleBranches("5457", false)).thenReturn(branches)
+            every { organizationRepository.findTeamScheduleBranches("5457", false) } returns branches
 
             val result = service.getBranches(principalOf(leader))
 
             assertThat(result).hasSize(1)
             assertThat(result[0].branchCode).isEqualTo("5457")
-            verify(organizationRepository).findTeamScheduleBranches("5457", false)
+            verify { organizationRepository.findTeamScheduleBranches("5457", false) }
         }
     }
 
@@ -373,8 +360,7 @@ class AdminTeamScheduleServiceTest {
 
             val allSchedules = listOf(displaySchedule, displayWithCommute, promotionSchedule, promotionWithCommute, annualLeave, compensatoryLeave)
 
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(1L)), eq(from), eq(to), eq(null)))
-                .thenReturn(allSchedules)
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(1L)), eq(from), eq(to), null) } returns allSchedules
 
             val result = service.getSchedulesWithSummary(from, to, listOf(1L), null)
 
@@ -400,8 +386,7 @@ class AdminTeamScheduleServiceTest {
             val to = LocalDate.of(2026, 4, 30)
             val schedule = createSchedule(id = 1L, accountId = 10)
 
-            whenever(teamMemberScheduleRepository.findMonthlyByAccountIds(eq(listOf(10)), eq(from), eq(to), eq(null)))
-                .thenReturn(listOf(schedule))
+            every { teamMemberScheduleRepository.findMonthlyByAccountIds(eq(listOf(10)), eq(from), eq(to), null) } returns listOf(schedule)
 
             val result = service.getSchedulesWithSummary(from, to, null, listOf(10))
 
@@ -416,12 +401,11 @@ class AdminTeamScheduleServiceTest {
             val from = LocalDate.of(2026, 4, 1)
             val to = LocalDate.of(2026, 4, 30)
             val teams = listOf("라면세일조", "카레행사조")
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(1L)), eq(from), eq(to), eq(teams)))
-                .thenReturn(emptyList())
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(1L)), eq(from), eq(to), eq(teams)) } returns emptyList()
 
             service.getSchedulesWithSummary(from, to, listOf(1L), null, teams)
 
-            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to, teams)
+            verify { teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, teams) }
         }
 
         @Test
@@ -429,19 +413,17 @@ class AdminTeamScheduleServiceTest {
         fun getSchedulesWithSummary_promotionTeamsBlankFiltered() {
             val from = LocalDate.of(2026, 4, 1)
             val to = LocalDate.of(2026, 4, 30)
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(1L)), eq(from), eq(to), eq(null)))
-                .thenReturn(emptyList())
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(eq(listOf(1L)), eq(from), eq(to), null) } returns emptyList()
 
             service.getSchedulesWithSummary(from, to, listOf(1L), null, listOf("", "  "))
 
-            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to, null)
+            verify { teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null) }
         }
 
         @Test
         @DisplayName("getProfessionalPromotionTeams - repository 결과 그대로 반환")
         fun getProfessionalPromotionTeams_returnsRepoResult() {
-            whenever(teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams())
-                .thenReturn(listOf("라면세일조", "카레행사조"))
+            every { teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams() } returns listOf("라면세일조", "카레행사조")
 
             val result = service.getProfessionalPromotionTeams()
 
@@ -455,7 +437,7 @@ class AdminTeamScheduleServiceTest {
 
             assertThat(result.schedules).isEmpty()
             assertThat(result.dailySummary).isEmpty()
-            verifyNoInteractions(teamMemberScheduleRepository)
+            verify { teamMemberScheduleRepository wasNot Called }
         }
 
         @Test
@@ -463,13 +445,12 @@ class AdminTeamScheduleServiceTest {
         fun getSchedulesWithSummary_xor_employeePrefers() {
             val from = LocalDate.of(2026, 4, 1)
             val to = LocalDate.of(2026, 4, 30)
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null))
-                .thenReturn(emptyList())
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null) } returns emptyList()
 
             service.getSchedulesWithSummary(from, to, listOf(1L), listOf(10))
 
-            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to, null)
-            verify(teamMemberScheduleRepository, never()).findMonthlyByAccountIds(any(), any(), any(), anyOrNull())
+            verify { teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null) }
+            verify(exactly = 0) { teamMemberScheduleRepository.findMonthlyByAccountIds(any(), any(), any(), any()) }
         }
 
         @Test
@@ -477,12 +458,11 @@ class AdminTeamScheduleServiceTest {
         fun getSchedulesWithSummary_customRange() {
             val from = LocalDate.of(2026, 4, 15)
             val to = LocalDate.of(2026, 7, 14)
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null))
-                .thenReturn(emptyList())
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null) } returns emptyList()
 
             service.getSchedulesWithSummary(from, to, listOf(1L), null)
 
-            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to, null)
+            verify { teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null) }
         }
 
         @Test
@@ -494,7 +474,7 @@ class AdminTeamScheduleServiceTest {
             org.junit.jupiter.api.assertThrows<com.otoki.powersales.schedule.exception.TeamScheduleRangeTooWideException> {
                 service.getSchedulesWithSummary(from, to, listOf(1L), null)
             }
-            verifyNoInteractions(teamMemberScheduleRepository)
+            verify { teamMemberScheduleRepository wasNot Called }
         }
 
         @Test
@@ -502,12 +482,11 @@ class AdminTeamScheduleServiceTest {
         fun getSchedulesWithSummary_rangeExactly92Days() {
             val from = LocalDate.of(2026, 5, 1)
             val to = LocalDate.of(2026, 7, 31) // between = 91일 → 92일 분량
-            whenever(teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null))
-                .thenReturn(emptyList())
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null) } returns emptyList()
 
             service.getSchedulesWithSummary(from, to, listOf(1L), null)
 
-            verify(teamMemberScheduleRepository).findMonthlyByEmployeeIds(listOf(1L), from, to, null)
+            verify { teamMemberScheduleRepository.findMonthlyByEmployeeIds(listOf(1L), from, to, null) }
         }
 
         @Test
@@ -519,7 +498,7 @@ class AdminTeamScheduleServiceTest {
             org.junit.jupiter.api.assertThrows<com.otoki.powersales.schedule.exception.TeamScheduleInvalidRangeException> {
                 service.getSchedulesWithSummary(from, to, listOf(1L), null)
             }
-            verifyNoInteractions(teamMemberScheduleRepository)
+            verify { teamMemberScheduleRepository wasNot Called }
         }
     }
 
@@ -547,18 +526,17 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
-                .thenReturn(emptyList())
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
-            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(savedSchedule)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)) } returns emptyList()
+            every { accountRepository.findById(1) } returns Optional.of(account)
+            every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns savedSchedule
 
             // When
             val result = service.createSchedule(currentEmployeeFixture, request)
 
             // Then
             assertThat(result.id).isEqualTo(100L)
-            verify(teamMemberScheduleRepository).save(any<TeamMemberSchedule>())
+            verify { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
         }
 
         @Test
@@ -572,7 +550,7 @@ class AdminTeamScheduleServiceTest {
                 workingType = WorkingType.WORK
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
 
             // When & Then
             assertThatThrownBy { service.createSchedule(principalOf(employee), request) }
@@ -590,7 +568,7 @@ class AdminTeamScheduleServiceTest {
                 workingType = WorkingType.WORK
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
 
             // When & Then
             assertThatThrownBy { service.createSchedule(principalOf(employee), request) }
@@ -613,9 +591,8 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
-                .thenReturn(listOf(existingSchedule))
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)) } returns listOf(existingSchedule)
 
             // When & Then
             assertThatThrownBy { service.createSchedule(principalOf(employee), request) }
@@ -638,9 +615,8 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
-                .thenReturn(listOf(existingSchedule))
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)) } returns listOf(existingSchedule)
 
             // When & Then
             assertThatThrownBy { service.createSchedule(principalOf(employee), request) }
@@ -664,9 +640,8 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
-                .thenReturn(listOf(existing1, existing2))
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)) } returns listOf(existing1, existing2)
 
             // When & Then
             assertThatThrownBy { service.createSchedule(principalOf(employee), request) }
@@ -690,9 +665,8 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
-                .thenReturn(listOf(existingPatrol, existingAlternate))
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)) } returns listOf(existingPatrol, existingAlternate)
 
             // When & Then
             assertThatThrownBy { service.createSchedule(principalOf(employee), request) }
@@ -719,11 +693,10 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
-                .thenReturn(listOf(existingPatrol))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
-            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(savedSchedule)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)) } returns listOf(existingPatrol)
+            every { accountRepository.findById(1) } returns Optional.of(account)
+            every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns savedSchedule
 
             // When
             val result = service.createSchedule(currentEmployeeFixture, request)
@@ -751,11 +724,10 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)))
-                .thenReturn(listOf(existingAlternate))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(account))
-            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(savedSchedule)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, LocalDate.of(2026, 4, 1)) } returns listOf(existingAlternate)
+            every { accountRepository.findById(1) } returns Optional.of(account)
+            every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns savedSchedule
 
             // When
             val result = service.createSchedule(currentEmployeeFixture, request)
@@ -776,7 +748,7 @@ class AdminTeamScheduleServiceTest {
                 accountId = null
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
 
             // When & Then
             assertThatThrownBy { service.createSchedule(principalOf(employee), request) }
@@ -798,8 +770,8 @@ class AdminTeamScheduleServiceTest {
                 accountId = null
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(savedSchedule)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns savedSchedule
 
             // When
             val result = service.createSchedule(principalOf(leader), request)
@@ -823,8 +795,8 @@ class AdminTeamScheduleServiceTest {
                 accountId = null
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.save(any<TeamMemberSchedule>())).thenReturn(savedSchedule)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns savedSchedule
 
             // When
             val result = service.createSchedule(principalOf(leader), request)
@@ -843,7 +815,7 @@ class AdminTeamScheduleServiceTest {
                 workingType = WorkingType.WORK
             )
 
-            whenever(employeeRepository.findByEmployeeCode("NONEXISTENT")).thenReturn(Optional.empty())
+            every { employeeRepository.findByEmployeeCode("NONEXISTENT") } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy { service.createSchedule(currentEmployeeFixture, request) }
@@ -881,8 +853,8 @@ class AdminTeamScheduleServiceTest {
                 accountId = 2
             )
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(accountRepository.findById(2)).thenReturn(Optional.of(newAccount))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
+            every { accountRepository.findById(2) } returns Optional.of(newAccount)
 
             // When
             service.updateSchedule(currentEmployeeFixture, 100L, request)
@@ -901,7 +873,7 @@ class AdminTeamScheduleServiceTest {
                 workingType = WorkingType.WORK
             )
 
-            whenever(teamMemberScheduleRepository.findById(999L)).thenReturn(Optional.empty())
+            every { teamMemberScheduleRepository.findById(999L) } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy { service.updateSchedule(principalOf(currentUser), 999L, request) }
@@ -931,7 +903,7 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When & Then
             assertThatThrownBy { service.updateSchedule(principalOf(currentUser), 100L, request) }
@@ -961,7 +933,7 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.updateSchedule(currentEmployeeFixture, 100L, request)
@@ -992,7 +964,7 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.updateSchedule(currentEmployeeFixture, 100L, request)
@@ -1023,7 +995,7 @@ class AdminTeamScheduleServiceTest {
                 workingCategory3 = WorkingCategory3.FIXED,
                 accountId = 1
             )
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When & Then
             assertThatThrownBy { service.updateSchedule(currentEmployeeFixture, 100L, request) }
@@ -1050,7 +1022,7 @@ class AdminTeamScheduleServiceTest {
                 workingType = WorkingType.WORK,
                 accountId = 1
             )
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When & Then
             assertThatThrownBy { service.updateSchedule(principalOf(currentUser), 100L, request) }
@@ -1079,7 +1051,7 @@ class AdminTeamScheduleServiceTest {
                 workingCategory1 = WorkingCategory1.EVENT,
                 accountId = 1
             )
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.updateSchedule(currentEmployeeFixture, 100L, request)
@@ -1110,7 +1082,7 @@ class AdminTeamScheduleServiceTest {
                 workingCategory1 = WorkingCategory1.EVENT,
                 accountId = 1
             )
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.updateSchedule(currentEmployeeFixture, 100L, request)
@@ -1143,9 +1115,8 @@ class AdminTeamScheduleServiceTest {
                 workingCategory3 = WorkingCategory3.FIXED,
                 accountId = 1
             )
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, tomorrow))
-                .thenReturn(emptyList())
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, tomorrow) } returns emptyList()
 
             // When
             service.updateSchedule(currentEmployeeFixture, 100L, request)
@@ -1178,9 +1149,8 @@ class AdminTeamScheduleServiceTest {
                 workingCategory3 = WorkingCategory3.FIXED,
                 accountId = 1
             )
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
-            whenever(teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, dayAfter))
-                .thenReturn(emptyList())
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
+            every { teamMemberScheduleRepository.findActiveByEmployeeIdAndDate(1L, dayAfter) } returns emptyList()
 
             // When
             service.updateSchedule(currentEmployeeFixture, 100L, request)
@@ -1210,7 +1180,7 @@ class AdminTeamScheduleServiceTest {
                 accountId = 1
             )
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.updateSchedule(currentEmployeeFixture, 100L, request)
@@ -1239,7 +1209,7 @@ class AdminTeamScheduleServiceTest {
                 accountId = null
             )
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When & Then
             assertThatThrownBy { service.updateSchedule(currentEmployeeFixture, 100L, request) }
@@ -1267,7 +1237,7 @@ class AdminTeamScheduleServiceTest {
                 accountId = null
             )
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When & Then
             assertThatThrownBy { service.updateSchedule(currentEmployeeFixture, 100L, request) }
@@ -1295,7 +1265,7 @@ class AdminTeamScheduleServiceTest {
                 accountId = null
             )
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.updateSchedule(currentEmployeeFixture, 100L, request)
@@ -1319,13 +1289,13 @@ class AdminTeamScheduleServiceTest {
             val leader = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(id = 100L)
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.deleteSchedule(principalOf(leader), 100L)
 
             // Then
-            verify(teamMemberScheduleRepository).delete(schedule)
+            verify { teamMemberScheduleRepository.delete(schedule) }
         }
 
         @Test
@@ -1337,7 +1307,7 @@ class AdminTeamScheduleServiceTest {
             // When & Then
             assertThatThrownBy { service.deleteSchedule(principalOf(branchManager), 100L) }
                 .isInstanceOf(TeamScheduleDeleteForbiddenException::class.java)
-            verify(teamMemberScheduleRepository, never()).delete(any())
+            verify(exactly = 0) { teamMemberScheduleRepository.delete(any()) }
         }
 
         @Test
@@ -1345,7 +1315,7 @@ class AdminTeamScheduleServiceTest {
         fun deleteSchedule_notFound() {
             // Given
             val leader = createEmployee(id = 10L, role = UserRole.LEADER)
-            whenever(teamMemberScheduleRepository.findById(999L)).thenReturn(Optional.empty())
+            every { teamMemberScheduleRepository.findById(999L) } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy { service.deleteSchedule(principalOf(leader), 999L) }
@@ -1359,12 +1329,12 @@ class AdminTeamScheduleServiceTest {
             val leader = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(id = 100L, commuteLogSfid = "CL001")
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When & Then
             assertThatThrownBy { service.deleteSchedule(principalOf(leader), 100L) }
                 .isInstanceOf(TeamScheduleWorkReportDeleteException::class.java)
-            verify(teamMemberScheduleRepository, never()).delete(any())
+            verify(exactly = 0) { teamMemberScheduleRepository.delete(any()) }
         }
 
         @Test
@@ -1374,13 +1344,13 @@ class AdminTeamScheduleServiceTest {
             val admin = createEmployee(id = 10L, role = UserRole.SYSTEM_ADMIN)
             val schedule = createSchedule(id = 100L, commuteLogSfid = "CL001")
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.deleteSchedule(principalOf(admin), 100L)
 
             // Then
-            verify(teamMemberScheduleRepository).delete(schedule)
+            verify { teamMemberScheduleRepository.delete(schedule) }
         }
 
         @Test
@@ -1390,13 +1360,13 @@ class AdminTeamScheduleServiceTest {
             val leader = createEmployee(id = 10L, role = UserRole.LEADER)
             val schedule = createSchedule(id = 100L, commuteLogSfid = null)
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.deleteSchedule(principalOf(leader), 100L)
 
             // Then
-            verify(teamMemberScheduleRepository).delete(schedule)
+            verify { teamMemberScheduleRepository.delete(schedule) }
         }
 
         @Test
@@ -1410,12 +1380,12 @@ class AdminTeamScheduleServiceTest {
                 displayWorkSchedule = dummyDisplayMaster()
             )
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When & Then
             assertThatThrownBy { service.deleteSchedule(principalOf(leader), 100L) }
                 .isInstanceOf(TeamScheduleDisplayMasterLinkException::class.java)
-            verify(teamMemberScheduleRepository, never()).delete(any())
+            verify(exactly = 0) { teamMemberScheduleRepository.delete(any()) }
         }
 
         @Test
@@ -1425,13 +1395,13 @@ class AdminTeamScheduleServiceTest {
             val admin = createEmployee(id = 10L, role = UserRole.SYSTEM_ADMIN)
             val schedule = createSchedule(id = 100L, commuteLogSfid = null, workingCategory1 = WorkingCategory1.DISPLAY)
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.deleteSchedule(principalOf(admin), 100L)
 
             // Then
-            verify(teamMemberScheduleRepository).delete(schedule)
+            verify { teamMemberScheduleRepository.delete(schedule) }
         }
 
         @Test
@@ -1441,13 +1411,13 @@ class AdminTeamScheduleServiceTest {
             val salesSupport = createEmployee(id = 10L, role = UserRole.SALES_SUPPORT)
             val schedule = createSchedule(id = 100L, commuteLogSfid = null, workingCategory1 = WorkingCategory1.DISPLAY)
 
-            whenever(teamMemberScheduleRepository.findById(100L)).thenReturn(Optional.of(schedule))
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
             service.deleteSchedule(principalOf(salesSupport), 100L)
 
             // Then
-            verify(teamMemberScheduleRepository).delete(schedule)
+            verify { teamMemberScheduleRepository.delete(schedule) }
         }
     }
 }

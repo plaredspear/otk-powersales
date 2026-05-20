@@ -31,12 +31,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.Spy
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.*
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -46,57 +40,64 @@ import org.springframework.mock.web.MockMultipartFile
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.*
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminScheduleService 테스트")
 class AdminScheduleServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var accountRepository: AccountRepository
+    private val accountRepository: AccountRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
+    private val organizationRepository: OrganizationRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var templateGenerator: ScheduleTemplateGenerator
+    private val templateGenerator: ScheduleTemplateGenerator = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var exportGenerator: ScheduleExportGenerator
+    private val exportGenerator: ScheduleExportGenerator = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var excelParser: ScheduleExcelParser
+    private val excelParser: ScheduleExcelParser = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var uploadValidator: ScheduleUploadValidator
+    private val uploadValidator: ScheduleUploadValidator = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var scheduleRepository: DisplayWorkScheduleRepository
+    private val scheduleRepository: DisplayWorkScheduleRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var monthlySalesHistoryRepository: MonthlySalesHistoryRepository
+    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var userRepository: UserRepository
+    private val userRepository: UserRepository = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var redisTemplate: RedisTemplate<String, String>
+    private val redisTemplate: RedisTemplate<String, String> = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var valueOperations: ValueOperations<String, String>
+    private val valueOperations: ValueOperations<String, String> = mockk(relaxUnitFun = true)
 
-    @Spy
-    private var objectMapper: ObjectMapper = JsonMapper.builder()
+    private val objectMapper: ObjectMapper = JsonMapper.builder()
         .findAndAddModules()
         .build()
 
-    @InjectMocks
-    private lateinit var adminScheduleService: AdminScheduleService
+    private val adminScheduleService = AdminScheduleService(
+        employeeRepository,
+        accountRepository,
+        organizationRepository,
+        templateGenerator,
+        exportGenerator,
+        excelParser,
+        uploadValidator,
+        scheduleRepository,
+        teamMemberScheduleRepository,
+        monthlySalesHistoryRepository,
+        userRepository,
+        redisTemplate,
+        objectMapper,
+    )
+
+    @org.junit.jupiter.api.BeforeEach
+    fun setUpDefaults() {
+        // 부수 호출 default — 개별 테스트가 override 가능 (MockK 는 마지막 stub 우선)
+        every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), any()) } returns emptyList()
+    }
 
     @Nested
     @DisplayName("generateTemplate - 양식 다운로드")
@@ -113,15 +114,14 @@ class AdminScheduleServiceTest {
                 createEmployee(employeeCode = "20030002", name = "김철수", orgName = "B팀")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode))
-                .thenReturn(orgCacheDto())
-            whenever(
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns orgCacheDto()
+            every {
                 employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                     costCenterCode, UserRole.WOMAN, "재직"
                 )
-            ).thenReturn(employees)
-            whenever(templateGenerator.generate(employees)).thenReturn(ByteArray(100))
+} returns employees
+            every { templateGenerator.generate(employees) } returns ByteArray(100)
 
             val result = adminScheduleService.generateTemplate(userId)
 
@@ -134,7 +134,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("사용자 미존재 - EmployeeNotFoundException")
         fun generateTemplate_userNotFound() {
-            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { adminScheduleService.generateTemplate(999L) }
                 .isInstanceOf(EmployeeNotFoundException::class.java)
@@ -144,7 +144,7 @@ class AdminScheduleServiceTest {
         @DisplayName("소속 지점 미설정 - MissingCostCenterException")
         fun generateTemplate_missingCostCenter() {
             val employee = createEmployee(costCenterCode = null)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
 
             assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
                 .isInstanceOf(MissingCostCenterException::class.java)
@@ -154,7 +154,7 @@ class AdminScheduleServiceTest {
         @DisplayName("소속 지점 빈 문자열 - MissingCostCenterException")
         fun generateTemplate_emptyCostCenter() {
             val employee = createEmployee(costCenterCode = "")
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
 
             assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
                 .isInstanceOf(MissingCostCenterException::class.java)
@@ -165,9 +165,9 @@ class AdminScheduleServiceTest {
         fun generateTemplate_orgNotFound() {
             val costCenterCode = "0000"
             val employee = createEmployee(costCenterCode = costCenterCode)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
             // cascade Level5→4 모두 miss → null. Service 는 OrganizationNotFoundException.
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(null)
+            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns null
 
             assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
                 .isInstanceOf(OrganizationNotFoundException::class.java)
@@ -180,15 +180,14 @@ class AdminScheduleServiceTest {
             val costCenterCode = "1234"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode))
-                .thenReturn(orgCacheDto())
-            whenever(
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns orgCacheDto()
+            every {
                 employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                     costCenterCode, UserRole.WOMAN, "재직"
                 )
-            ).thenReturn(emptyList())
-            whenever(templateGenerator.generate(emptyList())).thenReturn(ByteArray(50))
+} returns emptyList()
+            every { templateGenerator.generate(emptyList()) } returns ByteArray(50)
 
             val result = adminScheduleService.generateTemplate(userId)
 
@@ -213,25 +212,25 @@ class AdminScheduleServiceTest {
             val emp2 = createEmployee(employeeCode = "20030002", name = "이여사", orgName = "A지점", costCenterCode = "2222")
             val emp3 = createEmployee(employeeCode = "20030003", name = "박여사", orgName = "B지점", costCenterCode = "3333")
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(orgCache)
-            whenever(organizationRepository.findByCostCenterLevel3("CC3")).thenReturn(listOf(org, orgA, orgB))
-            whenever(
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns orgCache
+            every { organizationRepository.findByCostCenterLevel3("CC3") } returns listOf(org, orgA, orgB)
+            every {
                 employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
                     listOf("1111", "2222", "3333"), UserRole.WOMAN, "재직"
                 )
-            ).thenReturn(listOf(emp1, emp2, emp3))
-            whenever(templateGenerator.generate(any())).thenReturn(ByteArray(200))
+} returns listOf(emp1, emp2, emp3)
+            every { templateGenerator.generate(any()) } returns ByteArray(200)
 
             val result = adminScheduleService.generateTemplate(userId)
 
             assertThat(result.bytes).hasSize(200)
-            verify(employeeRepository).findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
+            verify { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
                 listOf("1111", "2222", "3333"), UserRole.WOMAN, "재직"
-            )
-            verify(employeeRepository, never()).findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
+            ) }
+            verify(exactly = 0) { employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                 any(), any(), any()
-            )
+            ) }
         }
 
         @Test
@@ -245,29 +244,28 @@ class AdminScheduleServiceTest {
                 createEmployee(employeeCode = "20030002", name = "김철수", orgName = "B팀")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode))
-                .thenReturn(orgCacheDto())
-            whenever(
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns orgCacheDto()
+            every {
                 employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
                     costCenterCode, UserRole.WOMAN, "재직"
                 )
-            ).thenReturn(employees)
-            whenever(templateGenerator.generate(employees)).thenReturn(ByteArray(100))
+} returns employees
+            every { templateGenerator.generate(employees) } returns ByteArray(100)
 
             val result = adminScheduleService.generateTemplate(userId)
 
             assertThat(result.bytes).hasSize(100)
-            verify(employeeRepository, never()).findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
+            verify(exactly = 0) { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
                 any(), any(), any()
-            )
+            ) }
         }
 
         @Test
         @DisplayName("영업지원실이지만 코스트센터 없음 - MissingCostCenterException")
         fun generateTemplate_salesSupport_missingCostCenter() {
             val employee = createEmployee(costCenterCode = null, role = UserRole.SALES_SUPPORT)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
 
             assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
                 .isInstanceOf(MissingCostCenterException::class.java)
@@ -283,15 +281,15 @@ class AdminScheduleServiceTest {
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
             val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(organizationRepository.findFirstByCostCenterCascade(costCenterCode)).thenReturn(orgCache)
-            whenever(organizationRepository.findByCostCenterLevel3("CC3")).thenReturn(listOf(org, orgA))
-            whenever(
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns orgCache
+            every { organizationRepository.findByCostCenterLevel3("CC3") } returns listOf(org, orgA)
+            every {
                 employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
                     listOf("1111", "2222"), UserRole.WOMAN, "재직"
                 )
-            ).thenReturn(emptyList())
-            whenever(templateGenerator.generate(emptyList())).thenReturn(ByteArray(50))
+} returns emptyList()
+            every { templateGenerator.generate(emptyList()) } returns ByteArray(50)
 
             val result = adminScheduleService.generateTemplate(userId)
 
@@ -314,17 +312,17 @@ class AdminScheduleServiceTest {
             val scope = mockAdminScope()
             val s1 = createSchedule(id = 11L)
             val s2 = createSchedule(id = 12L)
-            whenever(scheduleRepository.findAllById(listOf(12L, 11L))).thenReturn(listOf(s1, s2))
-            whenever(exportGenerator.generate(any())).thenReturn(ByteArray(500))
+            every { scheduleRepository.findAllById(listOf(12L, 11L)) } returns listOf(s1, s2)
+            every { exportGenerator.generate(any()) } returns ByteArray(500)
 
             val result = adminScheduleService.exportSchedules(scope, listOf(12L, 11L))
 
             assertThat(result.bytes).hasSize(500)
             assertThat(result.filename).startsWith("진열스케줄_").endsWith(".xlsx")
             // 입력 순서대로 (12, 11) entity 가 generator 에 전달되었는지 확인
-            verify(exportGenerator).generate(argThat<List<DisplayWorkSchedule>> {
-                this.size == 2 && this[0].id == 12L && this[1].id == 11L
-            })
+            verify { exportGenerator.generate(match<List<DisplayWorkSchedule>> {
+                it.size == 2 && it[0].id == 12L && it[1].id == 11L
+            }) }
         }
 
         @Test
@@ -333,14 +331,14 @@ class AdminScheduleServiceTest {
             val scope = mockAdminScope()
             val active = createSchedule(id = 11L)
             val deletedSchedule = createSchedule(id = 12L, isDeleted = true)
-            whenever(scheduleRepository.findAllById(listOf(11L, 12L))).thenReturn(listOf(active, deletedSchedule))
-            whenever(exportGenerator.generate(any())).thenReturn(ByteArray(200))
+            every { scheduleRepository.findAllById(listOf(11L, 12L)) } returns listOf(active, deletedSchedule)
+            every { exportGenerator.generate(any()) } returns ByteArray(200)
 
             adminScheduleService.exportSchedules(scope, listOf(11L, 12L))
 
-            verify(exportGenerator).generate(argThat<List<DisplayWorkSchedule>> {
-                this.size == 1 && this[0].id == 11L
-            })
+            verify { exportGenerator.generate(match<List<DisplayWorkSchedule>> {
+                it.size == 1 && it[0].id == 11L
+            }) }
         }
 
         @Test
@@ -349,14 +347,14 @@ class AdminScheduleServiceTest {
             val scope = com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             val inScope = DisplayWorkSchedule(id = 11L, costCenterCode = "A10010")
             val outOfScope = DisplayWorkSchedule(id = 12L, costCenterCode = "B20020")
-            whenever(scheduleRepository.findAllById(listOf(11L, 12L))).thenReturn(listOf(inScope, outOfScope))
-            whenever(exportGenerator.generate(any())).thenReturn(ByteArray(200))
+            every { scheduleRepository.findAllById(listOf(11L, 12L)) } returns listOf(inScope, outOfScope)
+            every { exportGenerator.generate(any()) } returns ByteArray(200)
 
             adminScheduleService.exportSchedules(scope, listOf(11L, 12L))
 
-            verify(exportGenerator).generate(argThat<List<DisplayWorkSchedule>> {
-                this.size == 1 && this[0].id == 11L
-            })
+            verify { exportGenerator.generate(match<List<DisplayWorkSchedule>> {
+                it.size == 1 && it[0].id == 11L
+            }) }
         }
     }
 
@@ -376,11 +374,11 @@ class AdminScheduleServiceTest {
             val employee = createEmployee(employeeCode = "20030001", name = "홍길동", sfid = "USR001")
             val account = createAccount(externalKey = "ACC001", sfid = "ACC_SFID_001", name = "이마트 강남점")
 
-            whenever(excelParser.parse(any())).thenReturn(parseResult)
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("20030001"))).thenReturn(listOf(employee))
-            whenever(accountRepository.findByExternalKeyIn(listOf("ACC001"))).thenReturn(listOf(account))
-            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
-            whenever(uploadValidator.validate(eq(parsedRows), any(), any(), any())).thenReturn(
+            every { excelParser.parse(any()) } returns parseResult
+            every { employeeRepository.findByEmployeeCodeIn(listOf("20030001")) } returns listOf(employee)
+            every { accountRepository.findByExternalKeyIn(listOf("ACC001")) } returns listOf(account)
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
+            every { uploadValidator.validate(eq(parsedRows), any(), any(), any()) } returns 
                 ScheduleUploadValidator.ValidationResult(
                     errors = emptyList(),
                     previews = listOf(
@@ -390,8 +388,8 @@ class AdminScheduleServiceTest {
                         ScheduleUploadValidator.ValidatedRow(1L, "20030001", 1, "고정", "상온", "상시", LocalDate.of(2026, 4, 1), null)
                     )
                 )
-            )
-            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
+            
+            every { redisTemplate.opsForValue() } returns valueOperations
 
             // When
             val result = adminScheduleService.uploadAndValidate(file)
@@ -402,14 +400,14 @@ class AdminScheduleServiceTest {
             assertThat(result.errorRows).isEqualTo(0)
             assertThat(result.uploadId).isNotBlank()
             assertThat(result.previews).hasSize(1)
-            verify(valueOperations).set(any(), any(), eq(30L), any())
+            verify { valueOperations.set(any(), any(), eq(30L), any()) }
         }
 
         @Test
         @DisplayName("빈 파일 - EMPTY_FILE 에러")
         fun uploadAndValidate_emptyFile() {
             val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(100))
-            whenever(excelParser.parse(any())).thenReturn(ScheduleExcelParser.ParseResult(emptyList(), 0))
+            every { excelParser.parse(any()) } returns ScheduleExcelParser.ParseResult(emptyList(), 0)
 
             assertThatThrownBy { adminScheduleService.uploadAndValidate(file) }
                 .isInstanceOf(ScheduleEmptyFileException::class.java)
@@ -420,7 +418,7 @@ class AdminScheduleServiceTest {
         fun uploadAndValidate_rowLimitExceeded() {
             val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(100))
             val rows = (1..501).map { ScheduleExcelParser.ParsedRow(it + 3, "emp$it", "name$it", "acc$it", null, "고정", "상온", "상시", "2026-04-01", null) }
-            whenever(excelParser.parse(any())).thenReturn(ScheduleExcelParser.ParseResult(rows, 501))
+            every { excelParser.parse(any()) } returns ScheduleExcelParser.ParseResult(rows, 501)
 
             assertThatThrownBy { adminScheduleService.uploadAndValidate(file) }
                 .isInstanceOf(ScheduleRowLimitExceededException::class.java)
@@ -471,33 +469,33 @@ class AdminScheduleServiceTest {
             )
             val json = objectMapper.writeValueAsString(cacheData)
 
-            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
-            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
-            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
-            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
-            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get("schedule:upload:$uploadId") } returns json
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(createEmployee(id = 1L))
+            every { accountRepository.findByIdIn(listOf(1)) } returns listOf(createAccount(id = 1))
+            every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
+            every { redisTemplate.delete(any<String>()) } returns true
 
             // When
             val result = adminScheduleService.confirmUpload(uploadId)
 
             // Then
             assertThat(result.insertedCount).isEqualTo(1)
-            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+            verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 &&
                     list[0].employee?.id == 1L &&
                     list[0].account?.id == 1 &&
                     list[0].typeOfWork1 == TypeOfWork1.DISPLAY &&
                     list[0].confirmed == false
-            })
-            verify(redisTemplate).delete("schedule:upload:$uploadId")
+            }) }
+            verify { redisTemplate.delete("schedule:upload:$uploadId") }
         }
 
         @Test
         @DisplayName("만료된 upload_id - UPLOAD_NOT_FOUND")
         fun confirmUpload_notFound() {
-            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
-            whenever(valueOperations.get(any())).thenReturn(null)
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get(any()) } returns null
 
             assertThatThrownBy { adminScheduleService.confirmUpload("expired-id") }
                 .isInstanceOf(ScheduleUploadNotFoundException::class.java)
@@ -512,8 +510,8 @@ class AdminScheduleServiceTest {
             )
             val json = objectMapper.writeValueAsString(cacheData)
 
-            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
-            whenever(valueOperations.get(any())).thenReturn(json)
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get(any()) } returns json
 
             assertThatThrownBy { adminScheduleService.confirmUpload("error-upload-id") }
                 .isInstanceOf(ScheduleHasValidationErrorsException::class.java)
@@ -535,20 +533,19 @@ class AdminScheduleServiceTest {
             )
             val json = objectMapper.writeValueAsString(cacheData)
 
-            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
-            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
-            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(emptyList())
-            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
-            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get("schedule:upload:$uploadId") } returns json
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(createEmployee(id = 1L))
+            every { accountRepository.findByIdIn(listOf(1)) } returns listOf(createAccount(id = 1))
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns emptyList()
+            every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
+            every { redisTemplate.delete(any<String>()) } returns true
 
             adminScheduleService.confirmUpload(uploadId)
 
-            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+            verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].costCenterCode == "A10010"
-            })
+            }) }
         }
 
         @Test
@@ -569,21 +566,20 @@ class AdminScheduleServiceTest {
             val manager = createEmployee(employeeCode = "20030099", name = "조장사원", costCenterCode = "A10010", role = UserRole.LEADER)
             val leaderUser = createUser(id = 1099L, employeeCode = "20030099")
 
-            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
-            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
-            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(listOf(manager))
-            whenever(userRepository.findByEmployeeCodeIn(listOf("20030099"))).thenReturn(listOf(leaderUser))
-            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
-            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get("schedule:upload:$uploadId") } returns json
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(createEmployee(id = 1L))
+            every { accountRepository.findByIdIn(listOf(1)) } returns listOf(createAccount(id = 1))
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns listOf(manager)
+            every { userRepository.findByEmployeeCodeIn(listOf("20030099")) } returns listOf(leaderUser)
+            every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
+            every { redisTemplate.delete(any<String>()) } returns true
 
             adminScheduleService.confirmUpload(uploadId)
 
-            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+            verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].ownerUser?.id == leaderUser.id
-            })
+            }) }
         }
 
         @Test
@@ -602,20 +598,19 @@ class AdminScheduleServiceTest {
             )
             val json = objectMapper.writeValueAsString(cacheData)
 
-            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
-            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
-            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(emptyList())
-            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
-            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get("schedule:upload:$uploadId") } returns json
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(createEmployee(id = 1L))
+            every { accountRepository.findByIdIn(listOf(1)) } returns listOf(createAccount(id = 1))
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns emptyList()
+            every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
+            every { redisTemplate.delete(any<String>()) } returns true
 
             adminScheduleService.confirmUpload(uploadId)
 
-            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+            verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].ownerUser == null
-            })
+            }) }
         }
 
         @Test
@@ -640,22 +635,20 @@ class AdminScheduleServiceTest {
                 lastMonthResults = BigDecimal("5000000")
             )
 
-            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
-            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(emptyList())
-            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(account))
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))))
-                .thenReturn(listOf(salesHistory))
-            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
-            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get("schedule:upload:$uploadId") } returns json
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(createEmployee(id = 1L))
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns emptyList()
+            every { accountRepository.findByIdIn(listOf(1)) } returns listOf(account)
+            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))) } returns listOf(salesHistory)
+            every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
+            every { redisTemplate.delete(any<String>()) } returns true
 
             adminScheduleService.confirmUpload(uploadId)
 
-            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+            verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].lastMonthRevenue?.compareTo(BigDecimal("5000000")) == 0
-            })
+            }) }
         }
 
         @Test
@@ -674,20 +667,19 @@ class AdminScheduleServiceTest {
             )
             val json = objectMapper.writeValueAsString(cacheData)
 
-            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
-            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(emptyList())
-            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(emptyList())
-            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
-            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get("schedule:upload:$uploadId") } returns json
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(createEmployee(id = 1L))
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns emptyList()
+            every { accountRepository.findByIdIn(listOf(1)) } returns emptyList()
+            every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
+            every { redisTemplate.delete(any<String>()) } returns true
 
             adminScheduleService.confirmUpload(uploadId)
 
-            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+            verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].lastMonthRevenue == null
-            })
+            }) }
         }
 
         @Test
@@ -706,18 +698,18 @@ class AdminScheduleServiceTest {
             )
             val json = objectMapper.writeValueAsString(cacheData)
 
-            whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
-            whenever(valueOperations.get("schedule:upload:$uploadId")).thenReturn(json)
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(createEmployee(id = 1L)))
-            whenever(accountRepository.findByIdIn(listOf(1))).thenReturn(listOf(createAccount(id = 1)))
-            whenever(scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>())).thenAnswer { it.getArgument<List<DisplayWorkSchedule>>(0) }
-            whenever(redisTemplate.delete(any<String>())).thenReturn(true)
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get("schedule:upload:$uploadId") } returns json
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(createEmployee(id = 1L))
+            every { accountRepository.findByIdIn(listOf(1)) } returns listOf(createAccount(id = 1))
+            every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
+            every { redisTemplate.delete(any<String>()) } returns true
 
             adminScheduleService.confirmUpload(uploadId)
 
-            verify(scheduleRepository).saveAll(argThat<List<DisplayWorkSchedule>> { list ->
+            verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].ownerUser == null && list[0].costCenterCode == null
-            })
+            }) }
         }
     }
 
@@ -739,8 +731,7 @@ class AdminScheduleServiceTest {
             val schedule = createSchedule(id = 1L, confirmed = false, employee = employee, account = account)
             val page = PageImpl(listOf(schedule), PageRequest.of(0, 20), 1)
 
-            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
-                .thenReturn(page)
+            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any()) } returns page
 
             val result = adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, Sort.unsorted())
 
@@ -756,8 +747,7 @@ class AdminScheduleServiceTest {
         fun listSchedules_empty() {
             val scope = mockAdminScope()
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
-            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
-                .thenReturn(emptyPage)
+            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any()) } returns emptyPage
 
             val result = adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, Sort.unsorted())
 
@@ -770,14 +760,13 @@ class AdminScheduleServiceTest {
         fun listSchedules_accountNameFilter() {
             val scope = mockAdminScope()
             val account = createAccount(id = 100, name = "이마트 성수점")
-            whenever(accountRepository.findByNameContainingIgnoreCase("이마트")).thenReturn(listOf(account))
+            every { accountRepository.findByNameContainingIgnoreCase("이마트") } returns listOf(account)
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
-            whenever(scheduleRepository.findScheduleList(isNull(), eq(listOf(100)), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
-                .thenReturn(emptyPage)
+            every { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, any()) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 20, null, "이마트", null, null, null, null, null, Sort.unsorted())
 
-            verify(scheduleRepository).findScheduleList(isNull(), eq(listOf(100)), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any())
+            verify { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, any()) }
         }
 
         @Test
@@ -785,14 +774,13 @@ class AdminScheduleServiceTest {
         fun listSchedules_pageSizeLimit() {
             val scope = mockAdminScope()
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 100), 0)
-            whenever(scheduleRepository.findScheduleList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
-                .thenReturn(emptyPage)
+            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any()) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 200, null, null, null, null, null, null, null, Sort.unsorted())
 
-            verify(scheduleRepository).findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), argThat { pageSize == 100 }
-            )
+            verify { scheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, match<org.springframework.data.domain.Pageable> { it.pageSize == 100 }
+            ) }
         }
 
         @Test
@@ -800,15 +788,15 @@ class AdminScheduleServiceTest {
         fun listSchedules_presetEnd() {
             val scope = mockAdminScope()
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
-            whenever(scheduleRepository.findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(SchedulePreset.END), isNull(), any()
-            )).thenReturn(emptyPage)
+            every { scheduleRepository.findScheduleList(
+                null, null, null, null, null, null, eq(SchedulePreset.END), null, any()
+            ) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, SchedulePreset.END, Sort.unsorted())
 
-            verify(scheduleRepository).findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(SchedulePreset.END), isNull(), any()
-            )
+            verify { scheduleRepository.findScheduleList(
+                null, null, null, null, null, null, eq(SchedulePreset.END), null, any()
+            ) }
         }
 
         @Test
@@ -817,16 +805,16 @@ class AdminScheduleServiceTest {
             val scope = mockAdminScope()
             val sort = Sort.by(Sort.Direction.DESC, "endDate")
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20, sort), 0)
-            whenever(scheduleRepository.findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()
-            )).thenReturn(emptyPage)
+            every { scheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, any()
+            ) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, sort)
 
-            verify(scheduleRepository).findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
-                argThat { this.sort == sort }
-            )
+            verify { scheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null,
+                match { it.sort == sort }
+            ) }
         }
 
         @Test
@@ -834,15 +822,15 @@ class AdminScheduleServiceTest {
         fun listSchedules_leaderScope() {
             val scope = com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
-            whenever(scheduleRepository.findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(listOf("A10010")), any()
-            )).thenReturn(emptyPage)
+            every { scheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, eq(listOf("A10010")), any()
+            ) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, Sort.unsorted())
 
-            verify(scheduleRepository).findScheduleList(
-                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(listOf("A10010")), any()
-            )
+            verify { scheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, eq(listOf("A10010")), any()
+            ) }
         }
     }
 
@@ -858,7 +846,7 @@ class AdminScheduleServiceTest {
                 createSchedule(id = 2L, confirmed = false),
                 createSchedule(id = 3L, confirmed = false)
             )
-            whenever(scheduleRepository.findAllById(listOf(1L, 2L, 3L))).thenReturn(schedules)
+            every { scheduleRepository.findAllById(listOf(1L, 2L, 3L)) } returns schedules
 
             val result = adminScheduleService.batchConfirm(listOf(1L, 2L, 3L))
 
@@ -874,7 +862,7 @@ class AdminScheduleServiceTest {
                 createSchedule(id = 2L, confirmed = false),
                 createSchedule(id = 3L, confirmed = true)
             )
-            whenever(scheduleRepository.findAllById(listOf(1L, 2L, 3L))).thenReturn(schedules)
+            every { scheduleRepository.findAllById(listOf(1L, 2L, 3L)) } returns schedules
 
             val result = adminScheduleService.batchConfirm(listOf(1L, 2L, 3L))
 
@@ -888,7 +876,7 @@ class AdminScheduleServiceTest {
                 createSchedule(id = 1L, confirmed = true),
                 createSchedule(id = 2L, confirmed = true)
             )
-            whenever(scheduleRepository.findAllById(listOf(1L, 2L))).thenReturn(schedules)
+            every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns schedules
 
             val result = adminScheduleService.batchConfirm(listOf(1L, 2L))
 
@@ -898,9 +886,9 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("미존재 ID 포함 - ScheduleNotFoundException")
         fun batchConfirm_notFound() {
-            whenever(scheduleRepository.findAllById(listOf(1L, 999L))).thenReturn(
+            every { scheduleRepository.findAllById(listOf(1L, 999L)) } returns 
                 listOf(createSchedule(id = 1L))
-            )
+            
 
             assertThatThrownBy { adminScheduleService.batchConfirm(listOf(1L, 999L)) }
                 .isInstanceOf(ScheduleNotFoundException::class.java)
@@ -913,7 +901,7 @@ class AdminScheduleServiceTest {
                 createSchedule(id = 1L),
                 createSchedule(id = 2L, isDeleted = true)
             )
-            whenever(scheduleRepository.findAllById(listOf(1L, 2L))).thenReturn(schedules)
+            every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns schedules
 
             assertThatThrownBy { adminScheduleService.batchConfirm(listOf(1L, 2L)) }
                 .isInstanceOf(ScheduleNotFoundException::class.java)
@@ -931,7 +919,7 @@ class AdminScheduleServiceTest {
                 createSchedule(id = 1L, confirmed = true),
                 createSchedule(id = 2L, confirmed = true)
             )
-            whenever(scheduleRepository.findAllById(listOf(1L, 2L))).thenReturn(schedules)
+            every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns schedules
 
             val result = adminScheduleService.batchUnconfirm(listOf(1L, 2L))
 
@@ -946,7 +934,7 @@ class AdminScheduleServiceTest {
                 createSchedule(id = 1L, confirmed = true),
                 createSchedule(id = 2L, confirmed = false)
             )
-            whenever(scheduleRepository.findAllById(listOf(1L, 2L))).thenReturn(schedules)
+            every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns schedules
 
             val result = adminScheduleService.batchUnconfirm(listOf(1L, 2L))
 
@@ -956,9 +944,9 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("미존재 ID 포함 - ScheduleNotFoundException")
         fun batchUnconfirm_notFound() {
-            whenever(scheduleRepository.findAllById(listOf(1L, 999L))).thenReturn(
+            every { scheduleRepository.findAllById(listOf(1L, 999L)) } returns 
                 listOf(createSchedule(id = 1L))
-            )
+            
 
             assertThatThrownBy { adminScheduleService.batchUnconfirm(listOf(1L, 999L)) }
                 .isInstanceOf(ScheduleNotFoundException::class.java)
@@ -1000,20 +988,18 @@ class AdminScheduleServiceTest {
                 costCenterCode = "A10010", accountExternalKey = "ACC001"
             )
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(originalEmployee))
-            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(originalAccount)
-            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(listOf(schedule))
-            whenever(uploadValidator.validateSingle(
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(user)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
+            every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(baseRequest.startDate), eq(baseRequest.endDate),
+                eq(baseRequest.startDate), eq(baseRequest.endDate!!),
                 eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
-            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(emptyList())
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))))
-                .thenReturn(emptyList())
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns emptyList()
+            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))) } returns emptyList()
 
             val result = adminScheduleService.updateSchedule(scope, userId, scheduleId, baseRequest)
 
@@ -1033,16 +1019,16 @@ class AdminScheduleServiceTest {
             val schedule = createSchedule(id = scheduleId, confirmed = true, employee = originalEmployee, account = originalAccount)
             val user = createEmployee(id = userId, role = UserRole.LEADER)
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(user)
 
             assertThatThrownBy {
                 adminScheduleService.updateSchedule(scope, userId, scheduleId, baseRequest.copy(accountCode = "ACC001"))
             }.isInstanceOf(ScheduleEditBlockedAfterConfirmException::class.java)
 
-            verify(uploadValidator, never()).validateSingle(
+            verify(exactly = 0) { uploadValidator.validateSingle(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
-            )
+            ) }
         }
 
         @Test
@@ -1060,20 +1046,18 @@ class AdminScheduleServiceTest {
                 costCenterCode = "A10010", accountExternalKey = "ACC001"
             )
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(adminUser))
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(originalEmployee))
-            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(originalAccount)
-            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(listOf(schedule))
-            whenever(uploadValidator.validateSingle(
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(adminUser)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
+            every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(baseRequest.startDate), eq(baseRequest.endDate),
+                eq(baseRequest.startDate), eq(baseRequest.endDate!!),
                 eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
-            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(emptyList())
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))))
-                .thenReturn(emptyList())
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns emptyList()
+            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))) } returns emptyList()
 
             adminScheduleService.updateSchedule(scope, userId, scheduleId, baseRequest.copy(typeOfWork3 = "고정"))
 
@@ -1107,20 +1091,18 @@ class AdminScheduleServiceTest {
                 costCenterCode = "A10010", accountExternalKey = "ACC001"
             )
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(originalEmployee))
-            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(originalAccount)
-            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(listOf(schedule))
-            whenever(uploadValidator.validateSingle(
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(user)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
+            every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
                 eq(baseRequest.startDate), eq(LocalDate.of(2026, 5, 31)),
                 eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
-            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(emptyList())
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))))
-                .thenReturn(emptyList())
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns emptyList()
+            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))) } returns emptyList()
 
             adminScheduleService.updateSchedule(
                 scope, userId, scheduleId,
@@ -1133,7 +1115,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("미존재 스케줄 — ScheduleNotFoundException")
         fun updateSchedule_notFound() {
-            whenever(scheduleRepository.findById(999L)).thenReturn(Optional.empty())
+            every { scheduleRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { adminScheduleService.updateSchedule(mockAdminScope(), userId, 999L, baseRequest) }
                 .isInstanceOf(ScheduleNotFoundException::class.java)
@@ -1148,18 +1130,18 @@ class AdminScheduleServiceTest {
             val schedule = createSchedule(id = scheduleId, confirmed = false, employee = originalEmployee, account = originalAccount)
             val user = createEmployee(id = userId, role = UserRole.LEADER)
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(originalEmployee))
-            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(originalAccount)
-            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(listOf(schedule))
-            whenever(uploadValidator.validateSingle(
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(user)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
+            every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(baseRequest.startDate), eq(baseRequest.endDate),
+                eq(baseRequest.startDate), eq(baseRequest.endDate!!),
                 eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
-            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(
+            ) } returns ScheduleUploadValidator.SingleValidationResult(
                 listOf("시작일이 종료일보다 이후입니다"), null
-            ))
+            )
 
             assertThatThrownBy { adminScheduleService.updateSchedule(scope, userId, scheduleId, baseRequest) }
                 .isInstanceOf(ScheduleValidationException::class.java)
@@ -1186,8 +1168,8 @@ class AdminScheduleServiceTest {
             val s1 = createSchedule(id = 11L, confirmed = true)
             val s2 = createSchedule(id = 12L, confirmed = false)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(admin))
-            whenever(scheduleRepository.findAllById(listOf(11L, 12L))).thenReturn(listOf(s1, s2))
+            every { employeeRepository.findById(userId) } returns Optional.of(admin)
+            every { scheduleRepository.findAllById(listOf(11L, 12L)) } returns listOf(s1, s2)
 
             val result = adminScheduleService.batchDelete(scope, userId, listOf(11L, 12L))
 
@@ -1196,7 +1178,7 @@ class AdminScheduleServiceTest {
             assertThat(result.failures).isEmpty()
             assertThat(s1.isDeleted).isTrue()
             assertThat(s2.isDeleted).isTrue()
-            verify(teamMemberScheduleRepository, never()).existsByDisplayWorkSchedule(any())
+            verify(exactly = 0) { teamMemberScheduleRepository.existsByDisplayWorkSchedule(any()) }
         }
 
         @Test
@@ -1208,11 +1190,10 @@ class AdminScheduleServiceTest {
             val confirmedNoLink = createSchedule(id = 22L, confirmed = true)
             val unconfirmed = createSchedule(id = 23L, confirmed = false)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
-            whenever(scheduleRepository.findAllById(listOf(21L, 22L, 23L)))
-                .thenReturn(listOf(blocked, confirmedNoLink, unconfirmed))
-            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(blocked))).thenReturn(true)
-            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(confirmedNoLink))).thenReturn(false)
+            every { employeeRepository.findById(userId) } returns Optional.of(leader)
+            every { scheduleRepository.findAllById(listOf(21L, 22L, 23L)) } returns listOf(blocked, confirmedNoLink, unconfirmed)
+            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(blocked)) } returns true
+            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(confirmedNoLink)) } returns false
 
             val result = adminScheduleService.batchDelete(scope, userId, listOf(21L, 22L, 23L))
 
@@ -1230,12 +1211,12 @@ class AdminScheduleServiceTest {
         @DisplayName("BRANCH_MANAGER - 전체 거부 (ScheduleDeleteForbiddenException)")
         fun batchDelete_branchManagerRejected() {
             val branch = createEmployee(id = userId, role = UserRole.BRANCH_MANAGER)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(branch))
+            every { employeeRepository.findById(userId) } returns Optional.of(branch)
 
             assertThatThrownBy { adminScheduleService.batchDelete(mockAdminScopeForUser(branch), userId, listOf(11L, 12L)) }
                 .isInstanceOf(ScheduleDeleteForbiddenException::class.java)
 
-            verify(scheduleRepository, never()).findAllById(any<List<Long>>())
+            verify(exactly = 0) { scheduleRepository.findAllById(any<List<Long>>()) }
         }
 
         @Test
@@ -1246,9 +1227,8 @@ class AdminScheduleServiceTest {
             val valid = createSchedule(id = 31L, confirmed = false)
             val deletedAlready = createSchedule(id = 32L, confirmed = false, isDeleted = true)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
-            whenever(scheduleRepository.findAllById(listOf(31L, 32L, 99L)))
-                .thenReturn(listOf(valid, deletedAlready))
+            every { employeeRepository.findById(userId) } returns Optional.of(leader)
+            every { scheduleRepository.findAllById(listOf(31L, 32L, 99L)) } returns listOf(valid, deletedAlready)
 
             val result = adminScheduleService.batchDelete(scope, userId, listOf(31L, 32L, 99L))
 
@@ -1266,10 +1246,9 @@ class AdminScheduleServiceTest {
             val blocked1 = createSchedule(id = 41L, confirmed = true)
             val blocked2 = createSchedule(id = 42L, confirmed = true)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
-            whenever(scheduleRepository.findAllById(listOf(41L, 42L)))
-                .thenReturn(listOf(blocked1, blocked2))
-            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(any())).thenReturn(true)
+            every { employeeRepository.findById(userId) } returns Optional.of(leader)
+            every { scheduleRepository.findAllById(listOf(41L, 42L)) } returns listOf(blocked1, blocked2)
+            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(any()) } returns true
 
             val result = adminScheduleService.batchDelete(scope, userId, listOf(41L, 42L))
 
@@ -1295,8 +1274,8 @@ class AdminScheduleServiceTest {
             val employee = createEmployee(id = userId, role = UserRole.SYSTEM_ADMIN)
             val schedule = createSchedule(id = scheduleId, confirmed = true)
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
             adminScheduleService.deleteSchedule(scope, userId, scheduleId)
 
@@ -1310,8 +1289,8 @@ class AdminScheduleServiceTest {
             val employee = createEmployee(id = userId, role = UserRole.SALES_SUPPORT)
             val schedule = createSchedule(id = scheduleId, confirmed = true)
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
             adminScheduleService.deleteSchedule(scope, userId, scheduleId)
 
@@ -1325,8 +1304,8 @@ class AdminScheduleServiceTest {
             val employee = createEmployee(id = userId, role = UserRole.LEADER)
             val schedule = createSchedule(id = scheduleId, confirmed = false)
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
             adminScheduleService.deleteSchedule(scope, userId, scheduleId)
 
@@ -1345,9 +1324,9 @@ class AdminScheduleServiceTest {
             )
             val employee = createEmployee(id = userId, role = UserRole.LEADER)
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule))).thenReturn(false)
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule)) } returns false
 
             adminScheduleService.deleteSchedule(scope, userId, scheduleId)
 
@@ -1357,7 +1336,7 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("미존재 스케줄 - ScheduleNotFoundException")
         fun deleteSchedule_notFound() {
-            whenever(scheduleRepository.findById(999L)).thenReturn(Optional.empty())
+            every { scheduleRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { adminScheduleService.deleteSchedule(mockAdminScope(), userId, 999L) }
                 .isInstanceOf(ScheduleNotFoundException::class.java)
@@ -1368,7 +1347,7 @@ class AdminScheduleServiceTest {
         fun deleteSchedule_alreadyDeleted() {
             val schedule = createSchedule(id = scheduleId, isDeleted = true)
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
 
             assertThatThrownBy { adminScheduleService.deleteSchedule(mockAdminScope(), userId, scheduleId) }
                 .isInstanceOf(ScheduleNotFoundException::class.java)
@@ -1381,8 +1360,8 @@ class AdminScheduleServiceTest {
             val employee = createEmployee(id = userId, role = UserRole.BRANCH_MANAGER)
             val schedule = createSchedule(id = scheduleId)
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
             assertThatThrownBy { adminScheduleService.deleteSchedule(scope, userId, scheduleId) }
                 .isInstanceOf(ScheduleDeleteForbiddenException::class.java)
@@ -1400,9 +1379,9 @@ class AdminScheduleServiceTest {
             )
             val employee = createEmployee(id = userId, role = UserRole.LEADER)
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule))).thenReturn(true)
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule)) } returns true
 
             assertThatThrownBy { adminScheduleService.deleteSchedule(scope, userId, scheduleId) }
                 .isInstanceOf(ScheduleDeleteConstraintException::class.java)
@@ -1414,8 +1393,8 @@ class AdminScheduleServiceTest {
             val scope = com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             val user = createEmployee(id = userId, role = UserRole.LEADER, costCenterCode = "A10010")
             val schedule = DisplayWorkSchedule(id = scheduleId, costCenterCode = "B20020")
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(user))
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(user)
 
             assertThatThrownBy { adminScheduleService.deleteSchedule(scope, userId, scheduleId) }
                 .isInstanceOf(ScheduleForbiddenException::class.java)
@@ -1437,10 +1416,10 @@ class AdminScheduleServiceTest {
             )
             val employee = createEmployee(id = userId, role = UserRole.LEADER)
 
-            whenever(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
             // FK 매칭 — FK null 인 일정은 매치되지 않으므로 false 반환
-            whenever(teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule))).thenReturn(false)
+            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule)) } returns false
 
             adminScheduleService.deleteSchedule(scope, userId, scheduleId)
 
@@ -1479,18 +1458,16 @@ class AdminScheduleServiceTest {
                 costCenterCode = "A10010", accountExternalKey = "ACC001"
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
-            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
-            whenever(uploadValidator.validateSingle(
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { accountRepository.findByExternalKey("ACC001") } returns account
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
+            every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList()), isNull()
-            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(emptyList())
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))))
-                .thenReturn(emptyList())
-            whenever(scheduleRepository.save(any<DisplayWorkSchedule>())).thenAnswer { it.getArgument<DisplayWorkSchedule>(0) }
+                eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns emptyList()
+            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))) } returns emptyList()
+            every { scheduleRepository.save(any<DisplayWorkSchedule>()) } answers { firstArg<DisplayWorkSchedule>() }
 
             val result = adminScheduleService.createSchedule(scope, userId, baseRequest)
 
@@ -1498,13 +1475,13 @@ class AdminScheduleServiceTest {
             assertThat(result.accountCode).isEqualTo("ACC001")
             assertThat(result.typeOfWork3).isEqualTo("고정")
             assertThat(result.costCenterCode).isEqualTo("A10010")
-            verify(scheduleRepository).save(argThat<DisplayWorkSchedule> {
-                this.employee?.id == 1L &&
-                    this.account?.id == 1 &&
-                    this.typeOfWork1 == TypeOfWork1.DISPLAY &&
-                    this.confirmed == false &&
-                    this.costCenterCode == "A10010"
-            })
+            verify { scheduleRepository.save(match<DisplayWorkSchedule> {
+                it.employee?.id == 1L &&
+                    it.account?.id == 1 &&
+                    it.typeOfWork1 == TypeOfWork1.DISPLAY &&
+                    it.confirmed == false &&
+                    it.costCenterCode == "A10010"
+            }) }
         }
 
         @Test
@@ -1514,21 +1491,21 @@ class AdminScheduleServiceTest {
             val employee = createEmployee(id = 1L, employeeCode = "20030001")
             val account = createAccount(id = 1, externalKey = "ACC001")
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
-            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
-            whenever(uploadValidator.validateSingle(
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { accountRepository.findByExternalKey("ACC001") } returns account
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
+            every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList()), isNull()
-            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(
+                eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
+            ) } returns ScheduleUploadValidator.SingleValidationResult(
                 listOf("기간내에 동일한 거래처가 등록되어 있습니다"), null
-            ))
+            )
 
             assertThatThrownBy { adminScheduleService.createSchedule(scope, userId, baseRequest) }
                 .isInstanceOf(ScheduleValidationException::class.java)
                 .hasMessageContaining("기간내에 동일한 거래처가 등록되어 있습니다")
 
-            verify(scheduleRepository, never()).save(any<DisplayWorkSchedule>())
+            verify(exactly = 0) { scheduleRepository.save(any<DisplayWorkSchedule>()) }
         }
 
         @Test
@@ -1536,14 +1513,14 @@ class AdminScheduleServiceTest {
         fun createSchedule_employeeNotFound() {
             // employee 가 null 이면 scope 검증 skip 되므로 mockAdminScope 호출 불필요
             val account = createAccount(id = 1, externalKey = "ACC001")
-            whenever(employeeRepository.findByEmployeeCode("99999999")).thenReturn(Optional.empty())
-            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
-            whenever(uploadValidator.validateSingle(
+            every { employeeRepository.findByEmployeeCode("99999999") } returns Optional.empty()
+            every { accountRepository.findByExternalKey("ACC001") } returns account
+            every { uploadValidator.validateSingle(
                 eq("99999999"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), isNull(), isNull(), eq(account), eq(emptyList()), isNull()
-            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(
+                eq(LocalDate.of(2026, 5, 1)), null, null, eq(account), eq(emptyList()), null
+            ) } returns ScheduleUploadValidator.SingleValidationResult(
                 listOf("사원번호 99999999: 존재하지 않는 사원"), null
-            ))
+            )
 
             assertThatThrownBy {
                 adminScheduleService.createSchedule(mockAdminScope(), userId, baseRequest.copy(employeeCode = "99999999"))
@@ -1566,25 +1543,23 @@ class AdminScheduleServiceTest {
             val leaderEmp = createEmployee(employeeCode = "20030099", costCenterCode = "A10010", role = UserRole.LEADER)
             val leaderUser = createUser(id = 1099L, employeeCode = "20030099")
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
-            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
-            whenever(uploadValidator.validateSingle(
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { accountRepository.findByExternalKey("ACC001") } returns account
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
+            every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList()), isNull()
-            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(listOf(leaderEmp))
-            whenever(userRepository.findByEmployeeCodeIn(listOf("20030099"))).thenReturn(listOf(leaderUser))
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))))
-                .thenReturn(emptyList())
-            whenever(scheduleRepository.save(any<DisplayWorkSchedule>())).thenAnswer { it.getArgument<DisplayWorkSchedule>(0) }
+                eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns listOf(leaderEmp)
+            every { userRepository.findByEmployeeCodeIn(listOf("20030099")) } returns listOf(leaderUser)
+            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))) } returns emptyList()
+            every { scheduleRepository.save(any<DisplayWorkSchedule>()) } answers { firstArg<DisplayWorkSchedule>() }
 
             adminScheduleService.createSchedule(scope, userId, baseRequest)
 
-            verify(scheduleRepository).save(argThat<DisplayWorkSchedule> {
-                this.ownerUser?.id == 1099L
-            })
+            verify { scheduleRepository.save(match<DisplayWorkSchedule> {
+                it.ownerUser?.id == 1099L
+            }) }
         }
 
         @Test
@@ -1593,15 +1568,15 @@ class AdminScheduleServiceTest {
             val scope = com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "B20020")
             val account = createAccount(id = 1, externalKey = "ACC001")
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { accountRepository.findByExternalKey("ACC001") } returns account
 
             assertThatThrownBy { adminScheduleService.createSchedule(scope, userId, baseRequest) }
                 .isInstanceOf(ScheduleForbiddenException::class.java)
 
-            verify(uploadValidator, never()).validateSingle(
+            verify(exactly = 0) { uploadValidator.validateSingle(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
-            )
+            ) }
         }
 
         @Test
@@ -1620,25 +1595,23 @@ class AdminScheduleServiceTest {
                 id = 1, account = account, lastMonthResults = BigDecimal("3500000")
             )
 
-            whenever(employeeRepository.findByEmployeeCode("20030001")).thenReturn(Optional.of(employee))
-            whenever(accountRepository.findByExternalKey("ACC001")).thenReturn(account)
-            whenever(scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L))).thenReturn(emptyList())
-            whenever(uploadValidator.validateSingle(
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { accountRepository.findByExternalKey("ACC001") } returns account
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
+            every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), isNull(), eq(employee), eq(account), eq(emptyList()), isNull()
-            )).thenReturn(ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow))
-            whenever(employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER))
-                .thenReturn(emptyList())
-            whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))))
-                .thenReturn(listOf(salesHistory))
-            whenever(scheduleRepository.save(any<DisplayWorkSchedule>())).thenAnswer { it.getArgument<DisplayWorkSchedule>(0) }
+                eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRole.LEADER) } returns emptyList()
+            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))) } returns listOf(salesHistory)
+            every { scheduleRepository.save(any<DisplayWorkSchedule>()) } answers { firstArg<DisplayWorkSchedule>() }
 
             val result = adminScheduleService.createSchedule(scope, userId, baseRequest)
 
             assertThat(result.lastMonthRevenue).isEqualTo(3500000L)
-            verify(scheduleRepository).save(argThat<DisplayWorkSchedule> {
-                this.lastMonthRevenue?.compareTo(BigDecimal("3500000")) == 0
-            })
+            verify { scheduleRepository.save(match<DisplayWorkSchedule> {
+                it.lastMonthRevenue?.compareTo(BigDecimal("3500000")) == 0
+            }) }
         }
     }
 

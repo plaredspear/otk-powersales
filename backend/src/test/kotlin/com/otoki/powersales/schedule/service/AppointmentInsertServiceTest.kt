@@ -5,33 +5,27 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.schedule.repository.AppointmentRepository
 import com.otoki.powersales.schedule.service.dto.AppointmentInsertCommand
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AppointmentInsertService 테스트")
 class AppointmentInsertServiceTest {
 
-    @Mock
-    private lateinit var appointmentRepository: AppointmentRepository
+    private val appointmentRepository: AppointmentRepository = mockk(relaxUnitFun = true)
+    private val employeeRepository: EmployeeRepository = mockk(relaxUnitFun = true)
+    private val service = AppointmentInsertService(appointmentRepository, employeeRepository)
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @InjectMocks
-    private lateinit var service: AppointmentInsertService
+    @org.junit.jupiter.api.BeforeEach
+    fun setUpDefaults() {
+        every { employeeRepository.findByEmployeeCodeIn(any()) } returns emptyList()
+    }
 
     private fun command(
         employeeCode: String? = "100123",
@@ -59,8 +53,7 @@ class AppointmentInsertServiceTest {
     )
 
     private fun mockSaveAll() {
-        whenever(appointmentRepository.saveAll(any<List<Appointment>>()))
-            .thenAnswer { it.getArgument<List<Appointment>>(0) }
+        every { appointmentRepository.saveAll(any<List<Appointment>>()) } answers { firstArg<List<Appointment>>() }
     }
 
     private fun employee(empCode: String): Employee = Employee(employeeCode = empCode, name = "테스트사원")
@@ -72,15 +65,14 @@ class AppointmentInsertServiceTest {
         @Test
         @DisplayName("정상 1건 - INSERT, success_count=1, empCodeExist=true")
         fun insert_success_empCodeExists() {
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123")))
-                .thenReturn(listOf(employee("100123")))
-            mockSaveAll()
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(employee("100123"))
+            val savedSlot = slot<List<Appointment>>()
+            every { appointmentRepository.saveAll(capture(savedSlot)) } answers { firstArg<List<Appointment>>() }
 
             val result = service.insert(listOf(command()))
 
-            val captor = argumentCaptor<List<Appointment>>()
-            verify(appointmentRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            verify { appointmentRepository.saveAll(any<List<Appointment>>()) }
+            val saved = savedSlot.captured.single()
             assertThat(saved.employeeCode).isEqualTo("100123")
             assertThat(saved.empCodeExist).isTrue()
             assertThat(saved.appointDate).isEqualTo(LocalDate.of(2026, 4, 1))
@@ -94,28 +86,27 @@ class AppointmentInsertServiceTest {
         @Test
         @DisplayName("EmployeeCode 미매칭 - empCodeExist=false, INSERT 진행")
         fun insert_success_empCodeMissing() {
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("999999")))
-                .thenReturn(emptyList())
-            mockSaveAll()
+            every { employeeRepository.findByEmployeeCodeIn(listOf("999999")) } returns emptyList()
+            val savedSlot = slot<List<Appointment>>()
+            every { appointmentRepository.saveAll(capture(savedSlot)) } answers { firstArg<List<Appointment>>() }
 
             val result = service.insert(listOf(command(employeeCode = "999999")))
 
-            val captor = argumentCaptor<List<Appointment>>()
-            verify(appointmentRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().empCodeExist).isFalse()
+            verify { appointmentRepository.saveAll(any<List<Appointment>>()) }
+            assertThat(savedSlot.captured.single().empCodeExist).isFalse()
             assertThat(result.successCount).isEqualTo(1)
         }
 
         @Test
         @DisplayName("같은 페이로드 재호출 - 중복 INSERT (멱등성 미보장, 의도된 동작)")
         fun insert_duplicateAllowed() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any())).thenReturn(emptyList())
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns emptyList()
             mockSaveAll()
 
             service.insert(listOf(command()))
             service.insert(listOf(command()))
 
-            verify(appointmentRepository, org.mockito.Mockito.times(2)).saveAll(any<List<Appointment>>())
+            verify(exactly = 2) { appointmentRepository.saveAll(any<List<Appointment>>()) }
         }
     }
 
@@ -132,7 +123,7 @@ class AppointmentInsertServiceTest {
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().identifier).isNull()
             assertThat(result.failures.single().reason).contains("EmployeeCode 필수")
-            verify(appointmentRepository, never()).saveAll(any<List<Appointment>>())
+            verify(exactly = 0) { appointmentRepository.saveAll(any<List<Appointment>>()) }
         }
 
         @Test
@@ -156,8 +147,7 @@ class AppointmentInsertServiceTest {
         @Test
         @DisplayName("부분 실패 - 정상 1건 + JobCode 누락 1건")
         fun insert_partialFailure() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any()))
-                .thenReturn(listOf(employee("100123")))
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(employee("100123"))
             mockSaveAll()
 
             val result = service.insert(listOf(command(), command(employeeCode = "100456", jobCode = null)))

@@ -5,31 +5,21 @@ import com.otoki.powersales.schedule.entity.AttendanceLog
 import com.otoki.powersales.schedule.enums.AttendanceType
 import com.otoki.powersales.schedule.exception.AttendanceLogNotFoundException
 import com.otoki.powersales.schedule.repository.AttendanceLogRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
-import java.time.LocalDateTime
 import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminAttendanceLogService 테스트")
 class AdminAttendanceLogServiceTest {
 
-    @Mock
-    private lateinit var attendanceLogRepository: AttendanceLogRepository
-
-    @InjectMocks
-    private lateinit var service: AdminAttendanceLogService
+    private val attendanceLogRepository: AttendanceLogRepository = mockk()
+    private val service = AdminAttendanceLogService(attendanceLogRepository)
 
     @Test
     @DisplayName("search - Repository 결과를 ListItem 로 매핑")
@@ -45,8 +35,8 @@ class AdminAttendanceLogServiceTest {
         )
         val filter = AdminAttendanceLogSearchRequest()
         val pageable = PageRequest.of(0, 20)
-        whenever(attendanceLogRepository.searchByFilter(eq(filter), any()))
-            .thenReturn(PageImpl(listOf(log), pageable, 1))
+        every { attendanceLogRepository.searchByFilter(eq(filter), any()) } returns
+            PageImpl(listOf(log), pageable, 1)
 
         val result = service.search(filter, pageable)
 
@@ -60,7 +50,7 @@ class AdminAttendanceLogServiceTest {
     @Test
     @DisplayName("get - id 미존재 시 AttendanceLogNotFoundException")
     fun get_missing_throws() {
-        whenever(attendanceLogRepository.findById(999L)).thenReturn(Optional.empty())
+        every { attendanceLogRepository.findById(999L) } returns Optional.empty()
 
         assertThatThrownBy { service.get(999L) }
             .isInstanceOf(AttendanceLogNotFoundException::class.java)
@@ -75,7 +65,7 @@ class AdminAttendanceLogServiceTest {
             sfid = "001000000000005",
             attendanceType = AttendanceType.DISPLAY,
         )
-        whenever(attendanceLogRepository.findById(5L)).thenReturn(Optional.of(log))
+        every { attendanceLogRepository.findById(5L) } returns Optional.of(log)
 
         val detail = service.get(5L)
 
