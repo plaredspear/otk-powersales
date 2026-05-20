@@ -1,33 +1,30 @@
 package com.otoki.powersales.notice.controller
 
+import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.common.security.GpsConsentFilter
+import com.otoki.powersales.common.security.JwtAuthenticationFilter
+import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.notice.dto.response.NoticeImageResponse
 import com.otoki.powersales.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.notice.dto.response.NoticePostListResponse
 import com.otoki.powersales.notice.dto.response.NoticePostSummaryResponse
 import com.otoki.powersales.notice.exception.InvalidNoticeCategoryException
-import com.otoki.powersales.notice.exception.InvalidNoticeIdException
 import com.otoki.powersales.notice.exception.NoticePostNotFoundException
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.notice.service.NoticeService
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -41,19 +38,19 @@ class NoticeControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var noticeService: NoticeService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -73,7 +70,6 @@ class NoticeControllerTest {
         @Test
         @DisplayName("성공 - 전체 목록 조회")
         fun getPosts_success() {
-            // Given
             val response = NoticePostListResponse(
                 content = listOf(
                     NoticePostSummaryResponse(id = 42L, category = "COMPANY", categoryName = "회사공지", title = "전체공지 제목", createdAt = java.time.LocalDateTime.parse("2026-02-28T10:30:00")),
@@ -84,9 +80,8 @@ class NoticeControllerTest {
                 currentPage = 1,
                 size = 10
             )
-            whenever(noticeService.getPosts(eq(1L), eq(null), eq(null), eq(1), eq(10))).thenReturn(response)
+            every { noticeService.getPosts(1L, null, null, 1, 10) } returns response
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/notices")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -109,7 +104,6 @@ class NoticeControllerTest {
         @Test
         @DisplayName("성공 - 카테고리 + 검색 + 페이지네이션")
         fun getPosts_withParams() {
-            // Given
             val response = NoticePostListResponse(
                 content = listOf(
                     NoticePostSummaryResponse(id = 1L, category = "COMPANY", categoryName = "회사공지", title = "영업 목표", createdAt = java.time.LocalDateTime.parse("2026-02-28T10:30:00"))
@@ -119,9 +113,8 @@ class NoticeControllerTest {
                 currentPage = 1,
                 size = 5
             )
-            whenever(noticeService.getPosts(eq(1L), eq("COMPANY"), eq("영업"), eq(1), eq(5))).thenReturn(response)
+            every { noticeService.getPosts(1L, "COMPANY", "영업", 1, 5) } returns response
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/notices")
                     .param("category", "COMPANY")
@@ -139,7 +132,6 @@ class NoticeControllerTest {
         @Test
         @DisplayName("성공 - 빈 결과")
         fun getPosts_emptyResult() {
-            // Given
             val response = NoticePostListResponse(
                 content = emptyList(),
                 totalCount = 0,
@@ -147,9 +139,8 @@ class NoticeControllerTest {
                 currentPage = 1,
                 size = 10
             )
-            whenever(noticeService.getPosts(eq(1L), eq(null), eq(null), eq(1), eq(10))).thenReturn(response)
+            every { noticeService.getPosts(1L, null, null, 1, 10) } returns response
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/notices")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -162,11 +153,10 @@ class NoticeControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 카테고리 -> 400")
         fun getPosts_invalidCategory() {
-            // Given
-            whenever(noticeService.getPosts(eq(1L), eq("INVALID"), eq(null), eq(1), eq(10)))
-                .thenThrow(InvalidNoticeCategoryException())
+            every {
+                noticeService.getPosts(1L, "INVALID", null, 1, 10)
+            } throws InvalidNoticeCategoryException()
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/notices")
                     .param("category", "INVALID")
@@ -185,7 +175,6 @@ class NoticeControllerTest {
         @Test
         @DisplayName("성공 - 공지사항 상세 조회")
         fun getNoticeDetail_success() {
-            // Given
             val response = NoticePostDetailResponse(
                 id = 42L,
                 category = "COMPANY",
@@ -199,9 +188,8 @@ class NoticeControllerTest {
                     NoticeImageResponse(id = 101L, url = "https://bucket.s3.ap-northeast-2.amazonaws.com/img.jpg", sortOrder = 0)
                 )
             )
-            whenever(noticeService.getNoticeDetail(42L)).thenReturn(response)
+            every { noticeService.getNoticeDetail(42L) } returns response
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/notices/42")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -223,7 +211,6 @@ class NoticeControllerTest {
         @Test
         @DisplayName("성공 - 이미지 없는 공지 조회")
         fun getNoticeDetail_noImages() {
-            // Given
             val response = NoticePostDetailResponse(
                 id = 10L,
                 category = "BRANCH",
@@ -235,9 +222,8 @@ class NoticeControllerTest {
                 createdAt = java.time.LocalDateTime.parse("2026-01-01T00:00:00"),
                 images = emptyList()
             )
-            whenever(noticeService.getNoticeDetail(10L)).thenReturn(response)
+            every { noticeService.getNoticeDetail(10L) } returns response
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/notices/10")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -249,11 +235,8 @@ class NoticeControllerTest {
         @Test
         @DisplayName("실패 - 존재하지 않는 공지 ID -> 404")
         fun getNoticeDetail_notFound() {
-            // Given
-            whenever(noticeService.getNoticeDetail(999L))
-                .thenThrow(NoticePostNotFoundException())
+            every { noticeService.getNoticeDetail(999L) } throws NoticePostNotFoundException()
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/notices/999")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -266,7 +249,6 @@ class NoticeControllerTest {
         @Test
         @DisplayName("실패 - noticeId 0 이하 -> 400")
         fun getNoticeDetail_invalidId() {
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/notices/0")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -279,7 +261,6 @@ class NoticeControllerTest {
         @Test
         @DisplayName("실패 - 음수 noticeId -> 400")
         fun getNoticeDetail_negativeId() {
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/notices/-1")
                     .contentType(MediaType.APPLICATION_JSON)

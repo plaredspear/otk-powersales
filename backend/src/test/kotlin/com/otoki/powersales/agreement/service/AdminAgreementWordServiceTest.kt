@@ -3,29 +3,24 @@ package com.otoki.powersales.agreement.service
 import com.otoki.powersales.agreement.dto.request.AdminAgreementWordCreateRequest
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.common.repository.AgreementWordRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminAgreementWordService 테스트 (Spec #658 P1-B)")
 class AdminAgreementWordServiceTest {
 
-    @Mock
-    private lateinit var agreementWordRepository: AgreementWordRepository
+    private val agreementWordRepository: AgreementWordRepository = mockk()
 
-    @InjectMocks
-    private lateinit var service: AdminAgreementWordService
+    private val service = AdminAgreementWordService(
+        agreementWordRepository,
+    )
 
     private val futureDate: LocalDate = LocalDate.now().plusMonths(6)
 
@@ -48,7 +43,8 @@ class AdminAgreementWordServiceTest {
     @Test
     @DisplayName("U1 정상 등록 — Service 단 fallback 으로 active=false / activeDate=null 강제 적재")
     fun u1_normalCreate() {
-        whenever(agreementWordRepository.save(any<AgreementWord>())).thenReturn(seedSavedEntity())
+        val savedSlot = slot<AgreementWord>()
+        every { agreementWordRepository.save(capture(savedSlot)) } returns seedSavedEntity()
 
         val response = service.createAgreementWord(
             AdminAgreementWordCreateRequest(
@@ -58,9 +54,8 @@ class AdminAgreementWordServiceTest {
             )
         )
 
-        val captor = argumentCaptor<AgreementWord>()
-        verify(agreementWordRepository).save(captor.capture())
-        val saved = captor.firstValue
+        verify { agreementWordRepository.save(any()) }
+        val saved = savedSlot.captured
         assertThat(saved.active).isFalse
         assertThat(saved.activeDate).isNull()
         assertThat(saved.afterActiveDate).isEqualTo(futureDate)
@@ -75,7 +70,8 @@ class AdminAgreementWordServiceTest {
     @Test
     @DisplayName("U2 active=true 입력 시 fallback — DTO 검증 우회 케이스에서도 Service 단이 false 강제")
     fun u2_activeTrueFallback() {
-        whenever(agreementWordRepository.save(any<AgreementWord>())).thenReturn(seedSavedEntity())
+        val savedSlot = slot<AgreementWord>()
+        every { agreementWordRepository.save(capture(savedSlot)) } returns seedSavedEntity()
 
         service.createAgreementWord(
             AdminAgreementWordCreateRequest(
@@ -86,15 +82,15 @@ class AdminAgreementWordServiceTest {
             )
         )
 
-        val captor = argumentCaptor<AgreementWord>()
-        verify(agreementWordRepository).save(captor.capture())
-        assertThat(captor.firstValue.active).isFalse
+        verify { agreementWordRepository.save(any()) }
+        assertThat(savedSlot.captured.active).isFalse
     }
 
     @Test
     @DisplayName("U3 activeDate 입력 시 fallback — DTO 검증 우회 케이스에서도 Service 단이 null 강제")
     fun u3_activeDateFallback() {
-        whenever(agreementWordRepository.save(any<AgreementWord>())).thenReturn(seedSavedEntity())
+        val savedSlot = slot<AgreementWord>()
+        every { agreementWordRepository.save(capture(savedSlot)) } returns seedSavedEntity()
 
         service.createAgreementWord(
             AdminAgreementWordCreateRequest(
@@ -105,9 +101,8 @@ class AdminAgreementWordServiceTest {
             )
         )
 
-        val captor = argumentCaptor<AgreementWord>()
-        verify(agreementWordRepository).save(captor.capture())
-        assertThat(captor.firstValue.activeDate).isNull()
+        verify { agreementWordRepository.save(any()) }
+        assertThat(savedSlot.captured.activeDate).isNull()
     }
 
     @Test
@@ -123,8 +118,7 @@ class AdminAgreementWordServiceTest {
             afterActiveDate = today.plusMonths(6),
             isDeleted = false
         )
-        whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-            .thenReturn(Optional.of(active))
+        every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(active)
 
         val response = service.getActiveAgreementWord()
 
@@ -138,8 +132,7 @@ class AdminAgreementWordServiceTest {
     @Test
     @DisplayName("U5 활성 약관 조회 — 부재 시 null 반환")
     fun u5_activeAbsent() {
-        whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-            .thenReturn(Optional.empty())
+        every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.empty()
 
         val response = service.getActiveAgreementWord()
 

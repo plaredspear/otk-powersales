@@ -3,17 +3,13 @@ package com.otoki.powersales.agreement.service
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
 /**
@@ -23,18 +19,16 @@ import java.time.LocalDate
  * cycle 도메인 분기는 candidates 의 `active` / `activeDate` / `afterActiveDate` 조합으로만 결정되므로
  * candidates 를 SEOUL_ZONE today 기준으로 구성하면 분기 검증에 충분하다.
  */
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AgreementWordCycleService — GPS 재동의 cycle 처리 (#654)")
 class AgreementWordCycleServiceTest {
 
-    @Mock
-    private lateinit var agreementWordRepository: AgreementWordRepository
+    private val agreementWordRepository: AgreementWordRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @InjectMocks
-    private lateinit var service: AgreementWordCycleService
+    private val service = AgreementWordCycleService(
+        agreementWordRepository,
+        employeeRepository,
+    )
 
     private val today: LocalDate = LocalDate.now(com.otoki.powersales.common.util.TimeZones.SEOUL_ZONE)
 
@@ -51,9 +45,9 @@ class AgreementWordCycleServiceTest {
             val newDue = createAgreementWord(
                 id = 2, active = false, activeDate = null, afterActiveDate = today
             )
-            whenever(agreementWordRepository.findActiveOrDueCandidates(today))
-                .thenReturn(listOf(oldActive, newDue))
-            whenever(employeeRepository.resetAgreementFlagForActiveConsents()).thenReturn(42L)
+            every { agreementWordRepository.findActiveOrDueCandidates(today) } returns
+                listOf(oldActive, newDue)
+            every { employeeRepository.resetAgreementFlagForActiveConsents() } returns 42L
 
             val result = service.runCycle()
 
@@ -64,7 +58,7 @@ class AgreementWordCycleServiceTest {
             assertThat(newDue.active).isTrue()
             assertThat(newDue.activeDate).isEqualTo(today)
             assertThat(newDue.afterActiveDate).isEqualTo(today.plusMonths(6))
-            verify(employeeRepository).resetAgreementFlagForActiveConsents()
+            verify { employeeRepository.resetAgreementFlagForActiveConsents() }
         }
 
         @Test
@@ -73,9 +67,8 @@ class AgreementWordCycleServiceTest {
             val newDue = createAgreementWord(
                 id = 2, active = false, activeDate = null, afterActiveDate = today
             )
-            whenever(agreementWordRepository.findActiveOrDueCandidates(today))
-                .thenReturn(listOf(newDue))
-            whenever(employeeRepository.resetAgreementFlagForActiveConsents()).thenReturn(7L)
+            every { agreementWordRepository.findActiveOrDueCandidates(today) } returns listOf(newDue)
+            every { employeeRepository.resetAgreementFlagForActiveConsents() } returns 7L
 
             val result = service.runCycle()
 
@@ -84,7 +77,7 @@ class AgreementWordCycleServiceTest {
             assertThat(newDue.active).isTrue()
             assertThat(newDue.activeDate).isEqualTo(today)
             assertThat(newDue.afterActiveDate).isEqualTo(today.plusMonths(6))
-            verify(employeeRepository).resetAgreementFlagForActiveConsents()
+            verify { employeeRepository.resetAgreementFlagForActiveConsents() }
         }
 
         @Test
@@ -93,9 +86,8 @@ class AgreementWordCycleServiceTest {
             val oldActive = createAgreementWord(
                 id = 1, active = true, activeDate = today.minusMonths(6), afterActiveDate = today
             )
-            whenever(agreementWordRepository.findActiveOrDueCandidates(today))
-                .thenReturn(listOf(oldActive))
-            whenever(employeeRepository.resetAgreementFlagForActiveConsents()).thenReturn(15L)
+            every { agreementWordRepository.findActiveOrDueCandidates(today) } returns listOf(oldActive)
+            every { employeeRepository.resetAgreementFlagForActiveConsents() } returns 15L
 
             val result = service.runCycle()
 
@@ -104,7 +96,7 @@ class AgreementWordCycleServiceTest {
             assertThat(oldActive.active).isTrue()
             assertThat(oldActive.activeDate).isEqualTo(today)
             assertThat(oldActive.afterActiveDate).isEqualTo(today.plusMonths(6))
-            verify(employeeRepository).resetAgreementFlagForActiveConsents()
+            verify { employeeRepository.resetAgreementFlagForActiveConsents() }
         }
 
         @Test
@@ -113,8 +105,7 @@ class AgreementWordCycleServiceTest {
             val oldActive = createAgreementWord(
                 id = 1, active = true, activeDate = today.minusMonths(3), afterActiveDate = today.plusMonths(3)
             )
-            whenever(agreementWordRepository.findActiveOrDueCandidates(today))
-                .thenReturn(listOf(oldActive))
+            every { agreementWordRepository.findActiveOrDueCandidates(today) } returns listOf(oldActive)
 
             val result = service.runCycle()
 
@@ -123,19 +114,19 @@ class AgreementWordCycleServiceTest {
             assertThat(oldActive.active).isTrue()
             assertThat(oldActive.activeDate).isEqualTo(today.minusMonths(3))
             assertThat(oldActive.afterActiveDate).isEqualTo(today.plusMonths(3))
-            verify(employeeRepository, never()).resetAgreementFlagForActiveConsents()
+            verify(exactly = 0) { employeeRepository.resetAgreementFlagForActiveConsents() }
         }
 
         @Test
         @DisplayName("후보 0건 - DML 0건 + cascade 미발화")
         fun emptyCandidates() {
-            whenever(agreementWordRepository.findActiveOrDueCandidates(today)).thenReturn(emptyList())
+            every { agreementWordRepository.findActiveOrDueCandidates(today) } returns emptyList()
 
             val result = service.runCycle()
 
             assertThat(result.branch).isEqualTo(AgreementWordCycleService.Branch.NO_OP)
             assertThat(result.resetCount).isEqualTo(0L)
-            verify(employeeRepository, never()).resetAgreementFlagForActiveConsents()
+            verify(exactly = 0) { employeeRepository.resetAgreementFlagForActiveConsents() }
         }
     }
 
@@ -147,10 +138,9 @@ class AgreementWordCycleServiceTest {
         @DisplayName("T4 partial-fail - cascade reset 도중 예외 -> 전체 rollback (Q3 all-or-nothing)")
         fun cascadeFailurePropagates() {
             val newDue = createAgreementWord(id = 2, active = false, activeDate = null, afterActiveDate = today)
-            whenever(agreementWordRepository.findActiveOrDueCandidates(today))
-                .thenReturn(listOf(newDue))
-            whenever(employeeRepository.resetAgreementFlagForActiveConsents())
-                .thenThrow(RuntimeException("DB connection lost"))
+            every { agreementWordRepository.findActiveOrDueCandidates(today) } returns listOf(newDue)
+            every { employeeRepository.resetAgreementFlagForActiveConsents() } throws
+                RuntimeException("DB connection lost")
 
             org.assertj.core.api.Assertions.assertThatThrownBy { service.runCycle() }
                 .isInstanceOf(RuntimeException::class.java)
@@ -161,9 +151,8 @@ class AgreementWordCycleServiceTest {
         @DisplayName("cascade reset 0건 - 활성 사원 없는 환경에서도 정상 종료")
         fun cascadeZeroRowsOk() {
             val newDue = createAgreementWord(id = 2, active = false, activeDate = null, afterActiveDate = today)
-            whenever(agreementWordRepository.findActiveOrDueCandidates(today))
-                .thenReturn(listOf(newDue))
-            whenever(employeeRepository.resetAgreementFlagForActiveConsents()).thenReturn(0L)
+            every { agreementWordRepository.findActiveOrDueCandidates(today) } returns listOf(newDue)
+            every { employeeRepository.resetAgreementFlagForActiveConsents() } returns 0L
 
             val result = service.runCycle()
 

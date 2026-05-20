@@ -1,52 +1,52 @@
 package com.otoki.powersales.education.service
 
 import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.education.entity.*
-import com.otoki.powersales.common.entity.*
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.education.exception.*
+import com.otoki.powersales.education.entity.EducationCode
+import com.otoki.powersales.education.entity.EducationPost
+import com.otoki.powersales.education.entity.EducationPostAttachment
+import com.otoki.powersales.education.exception.EducationPostNotFoundException
+import com.otoki.powersales.education.exception.FileLimitExceededException
+import com.otoki.powersales.education.exception.FileSizeExceededException
+import com.otoki.powersales.education.exception.InvalidEducationCategoryException
+import com.otoki.powersales.education.exception.InvalidEducationParameterException
+import com.otoki.powersales.education.exception.InvalidFileKeyException
 import com.otoki.powersales.education.repository.EducationCodeRepository
 import com.otoki.powersales.education.repository.EducationPostAttachmentRepository
 import com.otoki.powersales.education.repository.EducationPostRepository
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.*
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.mock.web.MockMultipartFile
-import java.time.LocalDateTime
-import java.util.*
+import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("EducationService 테스트")
 class EducationServiceTest {
 
-    @InjectMocks
-    private lateinit var educationService: EducationService
+    private val educationPostRepository: EducationPostRepository = mockk()
+    private val educationPostAttachmentRepository: EducationPostAttachmentRepository = mockk()
+    private val educationCodeRepository: EducationCodeRepository = mockk()
+    private val fileStorageService: FileStorageService = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
 
-    @Mock
-    private lateinit var educationPostRepository: EducationPostRepository
-
-    @Mock
-    private lateinit var educationPostAttachmentRepository: EducationPostAttachmentRepository
-
-    @Mock
-    private lateinit var educationCodeRepository: EducationCodeRepository
-
-    @Mock
-    private lateinit var fileStorageService: FileStorageService
-
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private val educationService = EducationService(
+        educationPostRepository,
+        educationPostAttachmentRepository,
+        educationCodeRepository,
+        fileStorageService,
+        employeeRepository,
+    )
 
     private lateinit var testPost: EducationPost
 
@@ -70,15 +70,12 @@ class EducationServiceTest {
         @Test
         @DisplayName("정상 조회 - 카테고리별 게시물 목록 반환")
         fun getPosts_success() {
-            // Given
             val posts = listOf(testPost)
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
 
-            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostRepository.findByEduCodeOrderByCreatedAtDesc(any(), any()))
-                .thenReturn(page)
+            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
+            every { educationPostRepository.findByEduCodeOrderByCreatedAtDesc(any(), any()) } returns page
 
-            // When
             val result = educationService.getPosts(
                 category = "TASTING_MANUAL",
                 search = null,
@@ -86,7 +83,6 @@ class EducationServiceTest {
                 size = 10
             )
 
-            // Then
             assertThat(result.content).hasSize(1)
             assertThat(result.totalCount).isEqualTo(1)
             assertThat(result.totalPages).isEqualTo(1)
@@ -100,15 +96,12 @@ class EducationServiceTest {
         @Test
         @DisplayName("검색 조회 - 검색 키워드로 게시물 목록 반환")
         fun getPosts_withSearch() {
-            // Given
             val posts = listOf(testPost)
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
 
-            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostRepository.findByEduCodeAndSearchWithPaging(any(), any(), any()))
-                .thenReturn(page)
+            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
+            every { educationPostRepository.findByEduCodeAndSearchWithPaging(any(), any(), any()) } returns page
 
-            // When
             val result = educationService.getPosts(
                 category = "TASTING_MANUAL",
                 search = "시식",
@@ -116,7 +109,6 @@ class EducationServiceTest {
                 size = 10
             )
 
-            // Then
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].title).isEqualTo("진짬뽕 시식 매뉴얼")
         }
@@ -124,10 +116,8 @@ class EducationServiceTest {
         @Test
         @DisplayName("유효하지 않은 카테고리 - InvalidEducationCategoryException")
         fun getPosts_invalidCategory() {
-            // Given
-            whenever(educationCodeRepository.existsByEduCode("INVALID_CATEGORY")).thenReturn(false)
+            every { educationCodeRepository.existsByEduCode("INVALID_CATEGORY") } returns false
 
-            // When & Then
             assertThatThrownBy {
                 educationService.getPosts(
                     category = "INVALID_CATEGORY",
@@ -141,14 +131,11 @@ class EducationServiceTest {
         @Test
         @DisplayName("빈 결과 - 조회 결과 없을 때 빈 리스트 반환")
         fun getPosts_emptyResult() {
-            // Given
             val emptyPage = PageImpl<EducationPost>(emptyList(), PageRequest.of(0, 10), 0)
 
-            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostRepository.findByEduCodeOrderByCreatedAtDesc(any(), any()))
-                .thenReturn(emptyPage)
+            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
+            every { educationPostRepository.findByEduCodeOrderByCreatedAtDesc(any(), any()) } returns emptyPage
 
-            // When
             val result = educationService.getPosts(
                 category = "TASTING_MANUAL",
                 search = null,
@@ -156,7 +143,6 @@ class EducationServiceTest {
                 size = 10
             )
 
-            // Then
             assertThat(result.content).isEmpty()
             assertThat(result.totalCount).isEqualTo(0)
         }
@@ -169,7 +155,6 @@ class EducationServiceTest {
         @Test
         @DisplayName("정상 조회 - 게시물 상세 + 첨부파일 반환")
         fun getPostDetail_success() {
-            // Given
             val attachments = listOf(
                 EducationPostAttachment(
                     educationPost = testPost,
@@ -184,17 +169,12 @@ class EducationServiceTest {
                 eduCodeNm = "시식 매뉴얼"
             )
 
-            whenever(educationPostRepository.findByEduId("EDU001"))
-                .thenReturn(testPost)
-            whenever(educationPostAttachmentRepository.findByEducationPost(testPost))
-                .thenReturn(attachments)
-            whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
-                .thenReturn(eduCode)
+            every { educationPostRepository.findByEduId("EDU001") } returns testPost
+            every { educationPostAttachmentRepository.findByEducationPost(testPost) } returns attachments
+            every { educationCodeRepository.findByEduCode("TASTING_MANUAL") } returns eduCode
 
-            // When
             val result = educationService.getPostDetail("EDU001")
 
-            // Then
             assertThat(result.id).isEqualTo("EDU001")
             assertThat(result.category).isEqualTo("TASTING_MANUAL")
             assertThat(result.categoryName).isEqualTo("시식 매뉴얼")
@@ -208,11 +188,8 @@ class EducationServiceTest {
         @Test
         @DisplayName("게시물 미존재 - EducationPostNotFoundException")
         fun getPostDetail_notFound() {
-            // Given
-            whenever(educationPostRepository.findByEduId("NONEXIST"))
-                .thenReturn(null)
+            every { educationPostRepository.findByEduId("NONEXIST") } returns null
 
-            // When & Then
             assertThatThrownBy {
                 educationService.getPostDetail("NONEXIST")
             }.isInstanceOf(EducationPostNotFoundException::class.java)
@@ -230,12 +207,11 @@ class EducationServiceTest {
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
             val eduCode = EducationCode(eduCode = "TASTING_MANUAL", eduCodeNm = "시식 매뉴얼")
 
-            whenever(educationPostRepository.findByOptionalEduCodeAndSearchWithPaging(isNull(), isNull(), any()))
-                .thenReturn(page)
-            whenever(educationPostAttachmentRepository.findByEducationPost(testPost))
-                .thenReturn(emptyList())
-            whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
-                .thenReturn(eduCode)
+            every {
+                educationPostRepository.findByOptionalEduCodeAndSearchWithPaging(null, null, any())
+            } returns page
+            every { educationPostAttachmentRepository.findByEducationPost(testPost) } returns emptyList()
+            every { educationCodeRepository.findByEduCode("TASTING_MANUAL") } returns eduCode
 
             val result = educationService.getPostsForAdmin(null, null, 1, 10)
 
@@ -251,15 +227,14 @@ class EducationServiceTest {
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
             val eduCode = EducationCode(eduCode = "TASTING_MANUAL", eduCodeNm = "시식 매뉴얼")
 
-            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostRepository.findByOptionalEduCodeAndSearchWithPaging(eq("TASTING_MANUAL"), isNull(), any()))
-                .thenReturn(page)
-            whenever(educationPostAttachmentRepository.findByEducationPost(testPost))
-                .thenReturn(listOf(
-                    EducationPostAttachment(educationPost = testPost, fileKey = "key1", fileType = "f00003", fileOriginalName = "doc.pdf")
-                ))
-            whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
-                .thenReturn(eduCode)
+            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
+            every {
+                educationPostRepository.findByOptionalEduCodeAndSearchWithPaging("TASTING_MANUAL", null, any())
+            } returns page
+            every { educationPostAttachmentRepository.findByEducationPost(testPost) } returns listOf(
+                EducationPostAttachment(educationPost = testPost, fileKey = "key1", fileType = "f00003", fileOriginalName = "doc.pdf")
+            )
+            every { educationCodeRepository.findByEduCode("TASTING_MANUAL") } returns eduCode
 
             val result = educationService.getPostsForAdmin("TASTING_MANUAL", null, 1, 10)
 
@@ -270,7 +245,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("유효하지 않은 카테고리 - InvalidEducationCategoryException")
         fun getPostsForAdmin_invalidCategory() {
-            whenever(educationCodeRepository.existsByEduCode("INVALID")).thenReturn(false)
+            every { educationCodeRepository.existsByEduCode("INVALID") } returns false
 
             assertThatThrownBy {
                 educationService.getPostsForAdmin("INVALID", null, 1, 10)
@@ -287,11 +262,11 @@ class EducationServiceTest {
         @Test
         @DisplayName("정상 작성 - 파일 없이 교육 자료 생성")
         fun createPost_success_noFiles() {
-            whenever(educationCodeRepository.existsByEduCode("c00001")).thenReturn(true)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(testEmployee))
-            whenever(educationPostRepository.save(any<EducationPost>())).thenAnswer { it.getArgument<EducationPost>(0) }
-            whenever(educationCodeRepository.findByEduCode("c00001"))
-                .thenReturn(EducationCode(eduCode = "c00001", eduCodeNm = "시식매뉴얼"))
+            every { educationCodeRepository.existsByEduCode("c00001") } returns true
+            every { employeeRepository.findById(1L) } returns Optional.of(testEmployee)
+            every { educationPostRepository.save(any<EducationPost>()) } answers { firstArg() }
+            every { educationCodeRepository.findByEduCode("c00001") } returns
+                EducationCode(eduCode = "c00001", eduCodeNm = "시식매뉴얼")
 
             val result = educationService.createPost(1L, "테스트 교육", "교육 내용", "c00001", null)
 
@@ -308,14 +283,13 @@ class EducationServiceTest {
         fun createPost_success_withFiles() {
             val file = MockMultipartFile("files", "test.pdf", "application/pdf", ByteArray(100))
 
-            whenever(educationCodeRepository.existsByEduCode("c00004")).thenReturn(true)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(testEmployee))
-            whenever(educationPostRepository.save(any<EducationPost>())).thenAnswer { it.getArgument<EducationPost>(0) }
-            whenever(fileStorageService.uploadEducationFile(any(), any())).thenReturn("uuid-file.pdf")
-            whenever(educationPostAttachmentRepository.save(any<EducationPostAttachment>()))
-                .thenAnswer { it.getArgument<EducationPostAttachment>(0) }
-            whenever(educationCodeRepository.findByEduCode("c00004"))
-                .thenReturn(EducationCode(eduCode = "c00004", eduCodeNm = "신제품소개"))
+            every { educationCodeRepository.existsByEduCode("c00004") } returns true
+            every { employeeRepository.findById(1L) } returns Optional.of(testEmployee)
+            every { educationPostRepository.save(any<EducationPost>()) } answers { firstArg() }
+            every { fileStorageService.uploadEducationFile(any(), any()) } returns "uuid-file.pdf"
+            every { educationPostAttachmentRepository.save(any<EducationPostAttachment>()) } answers { firstArg() }
+            every { educationCodeRepository.findByEduCode("c00004") } returns
+                EducationCode(eduCode = "c00004", eduCodeNm = "신제품소개")
 
             val result = educationService.createPost(1L, "신제품 교육", "내용", "c00004", listOf(file))
 
@@ -343,7 +317,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("잘못된 카테고리 - InvalidEducationCategoryException")
         fun createPost_invalidCategory() {
-            whenever(educationCodeRepository.existsByEduCode("c99999")).thenReturn(false)
+            every { educationCodeRepository.existsByEduCode("c99999") } returns false
 
             assertThatThrownBy {
                 educationService.createPost(1L, "제목", "내용", "c99999", null)
@@ -353,7 +327,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("파일 수 초과 - FileLimitExceededException")
         fun createPost_fileLimitExceeded() {
-            whenever(educationCodeRepository.existsByEduCode("c00001")).thenReturn(true)
+            every { educationCodeRepository.existsByEduCode("c00001") } returns true
             val files = (1..21).map { MockMultipartFile("files", "file$it.txt", "text/plain", ByteArray(10)) }
 
             assertThatThrownBy {
@@ -364,7 +338,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("파일 크기 초과 - FileSizeExceededException")
         fun createPost_fileSizeExceeded() {
-            whenever(educationCodeRepository.existsByEduCode("c00001")).thenReturn(true)
+            every { educationCodeRepository.existsByEduCode("c00001") } returns true
             val largeFile = MockMultipartFile("files", "big.pdf", "application/pdf", ByteArray(51 * 1024 * 1024))
 
             assertThatThrownBy {
@@ -384,14 +358,14 @@ class EducationServiceTest {
                 educationPost = testPost, fileKey = "existing-key", fileType = "f00003", fileOriginalName = "old.pdf"
             )
 
-            whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
-            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()))
-                .thenReturn(listOf(existingAttachment))
-                .thenReturn(listOf(existingAttachment)) // second call after save
-            whenever(educationPostRepository.save(any<EducationPost>())).thenAnswer { it.getArgument<EducationPost>(0) }
-            whenever(educationCodeRepository.findByEduCode("TASTING_MANUAL"))
-                .thenReturn(EducationCode(eduCode = "TASTING_MANUAL", eduCodeNm = "시식 매뉴얼"))
+            every { educationPostRepository.findByEduId("EDU001") } returns testPost
+            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
+            // 동일 인자에 대해 호출 횟수만큼 같은 결과 반환 — MockK 는 default 가 모든 호출에 동일 응답
+            every { educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()) } returns
+                listOf(existingAttachment)
+            every { educationPostRepository.save(any<EducationPost>()) } answers { firstArg() }
+            every { educationCodeRepository.findByEduCode("TASTING_MANUAL") } returns
+                EducationCode(eduCode = "TASTING_MANUAL", eduCodeNm = "시식 매뉴얼")
 
             val result = educationService.updatePost(
                 "EDU001", "수정된 제목", "수정된 내용", "TASTING_MANUAL", null, listOf("existing-key")
@@ -404,7 +378,7 @@ class EducationServiceTest {
         @Test
         @DisplayName("미존재 교육 수정 - EducationPostNotFoundException")
         fun updatePost_notFound() {
-            whenever(educationPostRepository.findByEduId("NONEXIST")).thenReturn(null)
+            every { educationPostRepository.findByEduId("NONEXIST") } returns null
 
             assertThatThrownBy {
                 educationService.updatePost("NONEXIST", "제목", "내용", "c00001", null, null)
@@ -418,10 +392,10 @@ class EducationServiceTest {
                 educationPost = testPost, fileKey = "existing-key", fileType = "f00003", fileOriginalName = "old.pdf"
             )
 
-            whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
-            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()))
-                .thenReturn(listOf(existingAttachment))
+            every { educationPostRepository.findByEduId("EDU001") } returns testPost
+            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
+            every { educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()) } returns
+                listOf(existingAttachment)
 
             assertThatThrownBy {
                 educationService.updatePost("EDU001", "제목", "내용", "TASTING_MANUAL", null, listOf("wrong-key"))
@@ -436,10 +410,10 @@ class EducationServiceTest {
             }
             val newFiles = (1..6).map { MockMultipartFile("files", "new$it.pdf", "application/pdf", ByteArray(10)) }
 
-            whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
-            whenever(educationCodeRepository.existsByEduCode("TASTING_MANUAL")).thenReturn(true)
-            whenever(educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()))
-                .thenReturn(existingAttachments)
+            every { educationPostRepository.findByEduId("EDU001") } returns testPost
+            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
+            every { educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()) } returns
+                existingAttachments
 
             assertThatThrownBy {
                 educationService.updatePost(
@@ -461,20 +435,23 @@ class EducationServiceTest {
                 EducationPostAttachment(educationPost = testPost, fileKey = "key1", fileType = "f00003", fileOriginalName = "doc.pdf")
             )
 
-            whenever(educationPostRepository.findByEduId("EDU001")).thenReturn(testPost)
-            whenever(educationPostAttachmentRepository.findByEducationPost(testPost)).thenReturn(attachments)
+            every { educationPostRepository.findByEduId("EDU001") } returns testPost
+            every { educationPostAttachmentRepository.findByEducationPost(testPost) } returns attachments
+            every { fileStorageService.deleteEducationFile(any(), any()) } just Runs
+            every { educationPostAttachmentRepository.deleteAll(attachments) } just Runs
+            every { educationPostRepository.delete(testPost) } just Runs
 
             educationService.deletePost("EDU001")
 
-            verify(fileStorageService).deleteEducationFile("EDU001", "key1")
-            verify(educationPostAttachmentRepository).deleteAll(attachments)
-            verify(educationPostRepository).delete(testPost)
+            verify { fileStorageService.deleteEducationFile("EDU001", "key1") }
+            verify { educationPostAttachmentRepository.deleteAll(attachments) }
+            verify { educationPostRepository.delete(testPost) }
         }
 
         @Test
         @DisplayName("미존재 교육 삭제 - EducationPostNotFoundException")
         fun deletePost_notFound() {
-            whenever(educationPostRepository.findByEduId("NONEXIST")).thenReturn(null)
+            every { educationPostRepository.findByEduId("NONEXIST") } returns null
 
             assertThatThrownBy {
                 educationService.deletePost("NONEXIST")
@@ -493,7 +470,7 @@ class EducationServiceTest {
                 EducationCode(eduCode = "c00002", eduCodeNm = "CS/안전"),
                 EducationCode(eduCode = "c00001", eduCodeNm = "시식매뉴얼")
             )
-            whenever(educationCodeRepository.findAll()).thenReturn(categories)
+            every { educationCodeRepository.findAll() } returns categories
 
             val result = educationService.getCategories()
 

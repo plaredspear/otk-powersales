@@ -18,46 +18,32 @@ import com.otoki.powersales.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.notice.repository.NoticeRepository
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
-import org.springframework.mock.web.MockMultipartFile
-import org.springframework.web.multipart.MultipartFile
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.mock.web.MockMultipartFile
+import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDateTime
-import java.util.*
+import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("NoticeService 테스트")
 class NoticeServiceTest {
 
-    @Mock
-    private lateinit var noticeRepository: NoticeRepository
-
-    @Mock
-    private lateinit var uploadFileRepository: UploadFileRepository
-
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
-
-    @Mock
-    private lateinit var fileStorageService: FileStorageService
-
-    @Mock
-    private lateinit var storageService: StorageService
+    private val noticeRepository: NoticeRepository = mockk()
+    private val uploadFileRepository: UploadFileRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val organizationRepository: OrganizationRepository = mockk()
+    private val fileStorageService: FileStorageService = mockk()
+    private val storageService: StorageService = mockk()
 
     private lateinit var noticeService: NoticeService
 
@@ -81,7 +67,6 @@ class NoticeServiceTest {
         @Test
         @DisplayName("정상 조회 - 이미지 포함 공지 -> 상세 정보 반환")
         fun getNoticeDetail_withImages() {
-            // Given
             val notice = createNotice(
                 id = 42L,
                 name = "2026년 상반기 영업 목표 안내",
@@ -94,13 +79,11 @@ class NoticeServiceTest {
                 createUploadFile(id = 102L, uniqueKey = "notices/img2.jpg", createdDate = java.time.LocalDateTime.of(2026, 2, 28, 11, 0, 0))
             )
 
-            whenever(noticeRepository.findById(42L)).thenReturn(Optional.of(notice))
-            whenever(uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 42L)).thenReturn(files)
+            every { noticeRepository.findById(42L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 42L) } returns files
 
-            // When
             val result = noticeService.getNoticeDetail(42L)
 
-            // Then
             assertThat(result.id).isEqualTo(42L)
             assertThat(result.category).isEqualTo("COMPANY")
             assertThat(result.categoryName).isEqualTo("회사공지")
@@ -117,23 +100,19 @@ class NoticeServiceTest {
         @Test
         @DisplayName("이미지 없음 - 매칭 파일 없음 -> images 빈 배열 반환")
         fun getNoticeDetail_noMatchingFiles() {
-            // Given
             val notice = createNotice(id = 10L, name = "공지", category = NoticeCategory.COMPANY)
 
-            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(notice))
-            whenever(uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 10L)).thenReturn(emptyList())
+            every { noticeRepository.findById(10L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 10L) } returns emptyList()
 
-            // When
             val result = noticeService.getNoticeDetail(10L)
 
-            // Then
             assertThat(result.images).isEmpty()
         }
 
         @Test
         @DisplayName("이미지 URL 무효 - uniqueKey null/빈 문자열인 이미지 제외")
         fun getNoticeDetail_filterInvalidImages() {
-            // Given
             val notice = createNotice(id = 10L, category = NoticeCategory.COMPANY)
             val files = listOf(
                 createUploadFile(id = 1L, uniqueKey = "valid/img.jpg", createdDate = java.time.LocalDateTime.of(2026, 1, 1, 0, 0)),
@@ -142,13 +121,11 @@ class NoticeServiceTest {
                 createUploadFile(id = 4L, uniqueKey = "valid/img2.jpg", createdDate = java.time.LocalDateTime.of(2026, 1, 4, 0, 0))
             )
 
-            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(notice))
-            whenever(uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 10L)).thenReturn(files)
+            every { noticeRepository.findById(10L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 10L) } returns files
 
-            // When
             val result = noticeService.getNoticeDetail(10L)
 
-            // Then
             assertThat(result.images).hasSize(2)
             assertThat(result.images[0].id).isEqualTo(1L)
             assertThat(result.images[1].id).isEqualTo(4L)
@@ -157,10 +134,8 @@ class NoticeServiceTest {
         @Test
         @DisplayName("존재하지 않는 공지 ID -> NoticePostNotFoundException")
         fun getNoticeDetail_notFound() {
-            // Given
-            whenever(noticeRepository.findById(999L)).thenReturn(Optional.empty())
+            every { noticeRepository.findById(999L) } returns Optional.empty()
 
-            // When & Then
             assertThatThrownBy { noticeService.getNoticeDetail(999L) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
         }
@@ -168,12 +143,10 @@ class NoticeServiceTest {
         @Test
         @DisplayName("삭제된 공지 조회 -> NoticePostNotFoundException")
         fun getNoticeDetail_deleted() {
-            // Given
             val notice = createNotice(id = 10L, isDeleted = true)
 
-            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(notice))
+            every { noticeRepository.findById(10L) } returns Optional.of(notice)
 
-            // When & Then
             assertThatThrownBy { noticeService.getNoticeDetail(10L) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
         }
@@ -181,14 +154,12 @@ class NoticeServiceTest {
         @Test
         @DisplayName("카테고리 매핑 - COMPANY -> COMPANY/회사공지")
         fun getNoticeDetail_categoryMapping_company() {
-            // Given
             val notice = createNotice(id = 1L, category = NoticeCategory.COMPANY)
-            whenever(noticeRepository.findById(1L)).thenReturn(Optional.of(notice))
+            every { noticeRepository.findById(1L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 1L) } returns emptyList()
 
-            // When
             val result = noticeService.getNoticeDetail(1L)
 
-            // Then
             assertThat(result.category).isEqualTo("COMPANY")
             assertThat(result.categoryName).isEqualTo("회사공지")
         }
@@ -196,14 +167,12 @@ class NoticeServiceTest {
         @Test
         @DisplayName("카테고리 매핑 - BRANCH -> BRANCH/지점공지")
         fun getNoticeDetail_categoryMapping_branch() {
-            // Given
             val notice = createNotice(id = 1L, category = NoticeCategory.BRANCH)
-            whenever(noticeRepository.findById(1L)).thenReturn(Optional.of(notice))
+            every { noticeRepository.findById(1L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 1L) } returns emptyList()
 
-            // When
             val result = noticeService.getNoticeDetail(1L)
 
-            // Then
             assertThat(result.category).isEqualTo("BRANCH")
             assertThat(result.categoryName).isEqualTo("지점공지")
         }
@@ -211,14 +180,12 @@ class NoticeServiceTest {
         @Test
         @DisplayName("카테고리 매핑 - EDUCATION -> EDUCATION/교육")
         fun getNoticeDetail_categoryMapping_education() {
-            // Given
             val notice = createNotice(id = 1L, category = NoticeCategory.EDUCATION)
-            whenever(noticeRepository.findById(1L)).thenReturn(Optional.of(notice))
+            every { noticeRepository.findById(1L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 1L) } returns emptyList()
 
-            // When
             val result = noticeService.getNoticeDetail(1L)
 
-            // Then
             assertThat(result.category).isEqualTo("EDUCATION")
             assertThat(result.categoryName).isEqualTo("교육")
         }
@@ -226,14 +193,12 @@ class NoticeServiceTest {
         @Test
         @DisplayName("카테고리 null -> 빈 문자열 반환")
         fun getNoticeDetail_categoryNull() {
-            // Given
             val notice = createNotice(id = 1L, category = null)
-            whenever(noticeRepository.findById(1L)).thenReturn(Optional.of(notice))
+            every { noticeRepository.findById(1L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 1L) } returns emptyList()
 
-            // When
             val result = noticeService.getNoticeDetail(1L)
 
-            // Then
             assertThat(result.category).isEqualTo("")
             assertThat(result.categoryName).isEqualTo("")
         }
@@ -248,24 +213,21 @@ class NoticeServiceTest {
 
         @BeforeEach
         fun setUpUser() {
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(testEmployee))
+            every { employeeRepository.findById(userId) } returns Optional.of(testEmployee)
         }
 
         @Test
         @DisplayName("전체 목록 조회 - category null -> COMPANY + 사용자 지점 BRANCH 공지 반환")
         fun getPosts_allCategories() {
-            // Given
             val notices = listOf(
                 createNotice(id = 1L, category = NoticeCategory.COMPANY, name = "전체공지 제목"),
                 createNotice(id = 2L, category = NoticeCategory.BRANCH, name = "지점공지 제목", branch = "테스트지점")
             )
             val page = PageImpl(notices, PageRequest.of(0, 10), 2)
-            whenever(noticeRepository.findNotices(eq(null), eq(null), eq("테스트지점"), any())).thenReturn(page)
+            every { noticeRepository.findNotices(null, null, "테스트지점", any()) } returns page
 
-            // When
             val result = noticeService.getPosts(userId, null, null, 1, 10)
 
-            // Then
             assertThat(result.content).hasSize(2)
             assertThat(result.totalCount).isEqualTo(2)
             assertThat(result.totalPages).isEqualTo(1)
@@ -276,15 +238,12 @@ class NoticeServiceTest {
         @Test
         @DisplayName("회사공지만 조회 - category=COMPANY -> COMPANY 공지만 반환")
         fun getPosts_companyOnly() {
-            // Given
             val notices = listOf(createNotice(id = 1L, category = NoticeCategory.COMPANY, name = "전체공지"))
             val page = PageImpl(notices, PageRequest.of(0, 10), 1)
-            whenever(noticeRepository.findNotices(eq(NoticeCategory.COMPANY), eq(null), eq("테스트지점"), any())).thenReturn(page)
+            every { noticeRepository.findNotices(NoticeCategory.COMPANY, null, "테스트지점", any()) } returns page
 
-            // When
             val result = noticeService.getPosts(userId, "COMPANY", null, 1, 10)
 
-            // Then
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].category).isEqualTo("COMPANY")
             assertThat(result.content[0].categoryName).isEqualTo("회사공지")
@@ -293,15 +252,12 @@ class NoticeServiceTest {
         @Test
         @DisplayName("지점공지만 조회 - category=BRANCH -> 사용자 지점 BRANCH 공지만 반환")
         fun getPosts_branchOnly() {
-            // Given
             val notices = listOf(createNotice(id = 2L, category = NoticeCategory.BRANCH, name = "지점공지", branch = "테스트지점"))
             val page = PageImpl(notices, PageRequest.of(0, 10), 1)
-            whenever(noticeRepository.findNotices(eq(NoticeCategory.BRANCH), eq(null), eq("테스트지점"), any())).thenReturn(page)
+            every { noticeRepository.findNotices(NoticeCategory.BRANCH, null, "테스트지점", any()) } returns page
 
-            // When
             val result = noticeService.getPosts(userId, "BRANCH", null, 1, 10)
 
-            // Then
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].category).isEqualTo("BRANCH")
             assertThat(result.content[0].categoryName).isEqualTo("지점공지")
@@ -310,15 +266,12 @@ class NoticeServiceTest {
         @Test
         @DisplayName("검색 조회 - search 키워드로 필터링")
         fun getPosts_withSearch() {
-            // Given
             val notices = listOf(createNotice(id = 1L, category = NoticeCategory.COMPANY, name = "영업 목표 안내"))
             val page = PageImpl(notices, PageRequest.of(0, 10), 1)
-            whenever(noticeRepository.findNotices(eq(null), eq("영업"), eq("테스트지점"), any())).thenReturn(page)
+            every { noticeRepository.findNotices(null, "영업", "테스트지점", any()) } returns page
 
-            // When
             val result = noticeService.getPosts(userId, null, "영업", 1, 10)
 
-            // Then
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].title).isEqualTo("영업 목표 안내")
         }
@@ -326,15 +279,12 @@ class NoticeServiceTest {
         @Test
         @DisplayName("페이지네이션 - page=2, size=2 -> 올바른 페이지 정보 반환")
         fun getPosts_pagination() {
-            // Given
             val notices = listOf(createNotice(id = 3L, category = NoticeCategory.COMPANY))
             val page = PageImpl(notices, PageRequest.of(1, 2), 5)
-            whenever(noticeRepository.findNotices(eq(null), eq(null), eq("테스트지점"), any())).thenReturn(page)
+            every { noticeRepository.findNotices(null, null, "테스트지점", any()) } returns page
 
-            // When
             val result = noticeService.getPosts(userId, null, null, 2, 2)
 
-            // Then
             assertThat(result.currentPage).isEqualTo(2)
             assertThat(result.size).isEqualTo(2)
             assertThat(result.totalCount).isEqualTo(5)
@@ -344,14 +294,11 @@ class NoticeServiceTest {
         @Test
         @DisplayName("빈 결과 - 매칭 없는 검색어 -> 빈 배열, totalCount=0")
         fun getPosts_emptyResult() {
-            // Given
             val page = PageImpl<Notice>(emptyList(), PageRequest.of(0, 10), 0)
-            whenever(noticeRepository.findNotices(eq(null), eq("없는검색어"), eq("테스트지점"), any())).thenReturn(page)
+            every { noticeRepository.findNotices(null, "없는검색어", "테스트지점", any()) } returns page
 
-            // When
             val result = noticeService.getPosts(userId, null, "없는검색어", 1, 10)
 
-            // Then
             assertThat(result.content).isEmpty()
             assertThat(result.totalCount).isEqualTo(0)
         }
@@ -359,7 +306,6 @@ class NoticeServiceTest {
         @Test
         @DisplayName("잘못된 카테고리 - INVALID -> InvalidNoticeCategoryException")
         fun getPosts_invalidCategory() {
-            // When & Then
             assertThatThrownBy { noticeService.getPosts(userId, "INVALID", null, 1, 10) }
                 .isInstanceOf(InvalidNoticeCategoryException::class.java)
         }
@@ -367,16 +313,13 @@ class NoticeServiceTest {
         @Test
         @DisplayName("검색 키워드 100자 제한 - 101자 -> 100자로 잘림")
         fun getPosts_searchTruncated() {
-            // Given
             val longSearch = "가".repeat(101)
             val truncated = "가".repeat(100)
             val page = PageImpl<Notice>(emptyList(), PageRequest.of(0, 10), 0)
-            whenever(noticeRepository.findNotices(eq(null), eq(truncated), eq("테스트지점"), any())).thenReturn(page)
+            every { noticeRepository.findNotices(null, truncated, "테스트지점", any()) } returns page
 
-            // When
             val result = noticeService.getPosts(userId, null, longSearch, 1, 10)
 
-            // Then
             assertThat(result.content).isEmpty()
         }
     }
@@ -393,7 +336,7 @@ class NoticeServiceTest {
                 createNotice(id = 2L, category = NoticeCategory.BRANCH, name = "지점공지", branch = "서울지점")
             )
             val page = PageImpl(notices, PageRequest.of(0, 10), 2)
-            whenever(noticeRepository.findAllNotices(eq(null), eq(null), any())).thenReturn(page)
+            every { noticeRepository.findAllNotices(null, null, any()) } returns page
 
             val result = noticeService.getPostsForAdmin(null, null, 1, 10)
 
@@ -413,6 +356,12 @@ class NoticeServiceTest {
     @DisplayName("createNotice - 공지사항 작성")
     inner class CreateNoticeTests {
 
+        @BeforeEach
+        fun stubEmployeeReference() {
+            every { employeeRepository.getReferenceById(1L) } returns
+                Employee(id = 1L, employeeCode = "10000001", name = "작성자")
+        }
+
         @Test
         @DisplayName("회사공지 작성 성공 - category=COMPANY -> DB에 회사공지로 저장")
         fun createNotice_company_success() {
@@ -421,7 +370,7 @@ class NoticeServiceTest {
                 category = "COMPANY",
                 content = "<p>내용</p>"
             )
-            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
             val result = noticeService.createNotice(request, 1L)
 
@@ -442,7 +391,7 @@ class NoticeServiceTest {
                 branch = "서울1지점",
                 branchCode = "1101"
             )
-            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
             val result = noticeService.createNotice(request, 1L)
 
@@ -460,7 +409,7 @@ class NoticeServiceTest {
                 category = "EDUCATION",
                 content = "<p>교육 내용</p>"
             )
-            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
             val result = noticeService.createNotice(request, 1L)
 
@@ -480,7 +429,7 @@ class NoticeServiceTest {
                 branch = "잘못된지점",
                 branchCode = "9999"
             )
-            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
             val result = noticeService.createNotice(request, 1L)
 
@@ -521,8 +470,8 @@ class NoticeServiceTest {
         @DisplayName("수정 성공 - 제목/내용 변경")
         fun updateNotice_success() {
             val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY, name = "원래 제목")
-            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
-            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
             val request = NoticeUpdateRequest(
                 title = "수정된 제목",
@@ -540,8 +489,8 @@ class NoticeServiceTest {
         @DisplayName("카테고리 변경 - COMPANY -> BRANCH + branch/branchCode 포함")
         fun updateNotice_changeCategoryToBranch() {
             val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY, name = "전체 공지")
-            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
-            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
             val request = NoticeUpdateRequest(
                 title = "지점 공지로 변경",
@@ -570,7 +519,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("존재하지 않는 공지 -> NoticePostNotFoundException")
         fun updateNotice_notFound() {
-            whenever(noticeRepository.findById(999L)).thenReturn(Optional.empty())
+            every { noticeRepository.findById(999L) } returns Optional.empty()
             val request = NoticeUpdateRequest(title = "제목", category = "COMPANY", content = "내용")
 
             assertThatThrownBy { noticeService.updateNotice(999L, request) }
@@ -581,7 +530,7 @@ class NoticeServiceTest {
         @DisplayName("삭제된 공지 수정 -> NoticePostNotFoundException")
         fun updateNotice_deleted() {
             val existing = createNotice(id = 10L, isDeleted = true)
-            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
             val request = NoticeUpdateRequest(title = "제목", category = "COMPANY", content = "내용")
 
             assertThatThrownBy { noticeService.updateNotice(10L, request) }
@@ -597,8 +546,8 @@ class NoticeServiceTest {
         @DisplayName("삭제 성공 - isDeleted=true 설정")
         fun deleteNotice_success() {
             val existing = createNotice(id = 10L)
-            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
-            whenever(noticeRepository.save(any<Notice>())).thenAnswer { it.getArgument<Notice>(0) }
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
             noticeService.deleteNotice(10L)
 
@@ -615,7 +564,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("존재하지 않는 공지 -> NoticePostNotFoundException")
         fun deleteNotice_notFound() {
-            whenever(noticeRepository.findById(999L)).thenReturn(Optional.empty())
+            every { noticeRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { noticeService.deleteNotice(999L) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
@@ -625,7 +574,7 @@ class NoticeServiceTest {
         @DisplayName("이미 삭제된 공지 -> NoticePostNotFoundException")
         fun deleteNotice_alreadyDeleted() {
             val existing = createNotice(id = 10L, isDeleted = true)
-            whenever(noticeRepository.findById(10L)).thenReturn(Optional.of(existing))
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
 
             assertThatThrownBy { noticeService.deleteNotice(10L) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
@@ -643,7 +592,7 @@ class NoticeServiceTest {
                 createOrg(orgNameLevel3 = "제1사업부", orgNameLevel4 = "1영업부", orgNameLevel5 = "서울1지점", costCenterLevel4 = "1100", costCenterLevel5 = "1101"),
                 createOrg(orgNameLevel3 = "제1사업부", orgNameLevel4 = "1영업부", orgNameLevel5 = "서울2지점", costCenterLevel4 = "1100", costCenterLevel5 = "1102")
             )
-            whenever(organizationRepository.findAll()).thenReturn(orgs)
+            every { organizationRepository.findAll() } returns orgs
 
             val result = noticeService.getNoticeFormMeta()
 
@@ -668,7 +617,7 @@ class NoticeServiceTest {
             val orgs = listOf(
                 createOrg(orgNameLevel3 = "e-Biz", orgNameLevel4 = "영업지원", orgNameLevel5 = null, costCenterLevel4 = "2100", costCenterLevel5 = null)
             )
-            whenever(organizationRepository.findAll()).thenReturn(orgs)
+            every { organizationRepository.findAll() } returns orgs
 
             val result = noticeService.getNoticeFormMeta()
 
@@ -685,7 +634,7 @@ class NoticeServiceTest {
                 createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = null, orgNameLevel5 = "지점"),
                 createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점", costCenterLevel5 = "3001")
             )
-            whenever(organizationRepository.findAll()).thenReturn(orgs)
+            every { organizationRepository.findAll() } returns orgs
 
             val result = noticeService.getNoticeFormMeta()
 
@@ -700,7 +649,7 @@ class NoticeServiceTest {
                 createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점A", costCenterLevel5 = "1001"),
                 createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점A", costCenterLevel5 = "1001")
             )
-            whenever(organizationRepository.findAll()).thenReturn(orgs)
+            every { organizationRepository.findAll() } returns orgs
 
             val result = noticeService.getNoticeFormMeta()
 
@@ -710,7 +659,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("빈 org 테이블 - branches 빈 배열")
         fun getNoticeFormMeta_empty() {
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { organizationRepository.findAll() } returns emptyList()
 
             val result = noticeService.getNoticeFormMeta()
 
@@ -729,13 +678,11 @@ class NoticeServiceTest {
         @Test
         @DisplayName("정상 업로드 - 활성 공지 + 유효 파일 -> NoticeImageResponse 반환 + UploadFile 적재")
         fun uploadNoticeImage_success() {
-            // Given
             val notice = createNotice(id = 100L, category = NoticeCategory.COMPANY)
-            whenever(noticeRepository.findById(100L)).thenReturn(Optional.of(notice))
-            whenever(fileStorageService.uploadNoticeImage(any(), eq(100L)))
-                .thenReturn("uploads/notice/2026/05/11/abc-uuid.png")
-            whenever(uploadFileRepository.save(any<UploadFile>())).thenAnswer {
-                val arg = it.getArgument<UploadFile>(0)
+            every { noticeRepository.findById(100L) } returns Optional.of(notice)
+            every { fileStorageService.uploadNoticeImage(any(), 100L) } returns "uploads/notice/2026/05/11/abc-uuid.png"
+            every { uploadFileRepository.save(any<UploadFile>()) } answers {
+                val arg = firstArg<UploadFile>()
                 UploadFile(
                     id = 555L,
                     name = arg.name,
@@ -747,10 +694,8 @@ class NoticeServiceTest {
                 )
             }
 
-            // When
             val result = noticeService.uploadNoticeImage(100L, mockImage())
 
-            // Then
             assertThat(result.id).isEqualTo(555L)
             assertThat(result.url).isEqualTo("https://test-bucket.s3.ap-northeast-2.amazonaws.com/uploads/notice/2026/05/11/abc-uuid.png")
             assertThat(result.sortOrder).isEqualTo(0)
@@ -766,7 +711,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("존재하지 않는 공지 -> NoticePostNotFoundException")
         fun uploadNoticeImage_noticeNotFound() {
-            whenever(noticeRepository.findById(999L)).thenReturn(Optional.empty())
+            every { noticeRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { noticeService.uploadNoticeImage(999L, mockImage()) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
@@ -776,7 +721,7 @@ class NoticeServiceTest {
         @DisplayName("삭제된 공지 -> NoticePostNotFoundException")
         fun uploadNoticeImage_deletedNotice() {
             val notice = createNotice(id = 50L, isDeleted = true)
-            whenever(noticeRepository.findById(50L)).thenReturn(Optional.of(notice))
+            every { noticeRepository.findById(50L) } returns Optional.of(notice)
 
             assertThatThrownBy { noticeService.uploadNoticeImage(50L, mockImage()) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
@@ -790,16 +735,14 @@ class NoticeServiceTest {
         @Test
         @DisplayName("정상 삭제 - parent 일치 -> S3 DELETE + soft-delete")
         fun deleteNoticeImage_success() {
-            // Given
             val uploadFile = createUploadFile(id = 200L, uniqueKey = "uploads/notice/2026/05/11/abc.png", parentId = 42L)
-            whenever(
+            every {
                 uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(200L, "NOTICE", 42L)
-            ).thenReturn(uploadFile)
+            } returns uploadFile
+            every { storageService.delete(any()) } just Runs
 
-            // When
             noticeService.deleteNoticeImage(42L, 200L)
 
-            // Then
             assertThat(uploadFile.isDeleted).isTrue()
         }
 
@@ -820,9 +763,9 @@ class NoticeServiceTest {
         @Test
         @DisplayName("imageId 미존재 또는 parent 불일치 -> InvalidImageIdException")
         fun deleteNoticeImage_notFoundOrMismatch() {
-            whenever(
+            every {
                 uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(999L, "NOTICE", 42L)
-            ).thenReturn(null)
+            } returns null
 
             assertThatThrownBy { noticeService.deleteNoticeImage(42L, 999L) }
                 .isInstanceOf(InvalidImageIdException::class.java)
@@ -832,9 +775,9 @@ class NoticeServiceTest {
         @DisplayName("uniqueKey 빈값 - S3 DELETE 호출 생략 + soft-delete만 수행")
         fun deleteNoticeImage_blankUniqueKey() {
             val uploadFile = createUploadFile(id = 200L, uniqueKey = "", parentId = 42L)
-            whenever(
+            every {
                 uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(200L, "NOTICE", 42L)
-            ).thenReturn(uploadFile)
+            } returns uploadFile
 
             noticeService.deleteNoticeImage(42L, 200L)
 

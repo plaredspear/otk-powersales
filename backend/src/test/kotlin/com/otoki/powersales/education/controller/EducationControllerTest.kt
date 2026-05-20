@@ -1,28 +1,26 @@
 package com.otoki.powersales.education.controller
 
-import com.otoki.powersales.education.dto.response.*
-import com.otoki.powersales.common.dto.response.*
+import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.education.exception.EducationPostNotFoundException
-import com.otoki.powersales.education.exception.InvalidEducationCategoryException
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.education.exception.EducationPostNotFoundException
+import com.otoki.powersales.education.exception.InvalidEducationCategoryException
 import com.otoki.powersales.education.service.EducationService
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -36,19 +34,19 @@ class EducationControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var educationService: EducationService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -78,8 +76,7 @@ class EducationControllerTest {
         @Test
         @DisplayName("유효하지 않은 category로 요청 시 400 Bad Request 반환")
         fun getPosts_invalidCategory() {
-            whenever(educationService.getPosts("INVALID", null, 1, 10))
-                .thenThrow(InvalidEducationCategoryException())
+            every { educationService.getPosts("INVALID", null, 1, 10) } throws InvalidEducationCategoryException()
 
             mockMvc.perform(
                 get("/api/v1/mobile/education/posts")
@@ -99,8 +96,7 @@ class EducationControllerTest {
         @Test
         @DisplayName("존재하지 않는 게시물 조회 시 404 Not Found 반환")
         fun getPostDetail_notFound() {
-            whenever(educationService.getPostDetail("NONEXIST"))
-                .thenThrow(EducationPostNotFoundException())
+            every { educationService.getPostDetail("NONEXIST") } throws EducationPostNotFoundException()
 
             mockMvc.perform(
                 get("/api/v1/mobile/education/posts/NONEXIST")
