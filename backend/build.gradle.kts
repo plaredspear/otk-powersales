@@ -96,10 +96,8 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-restclient")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.springframework.security:spring-security-test")
-//	testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
 	// MockK — mockito-kotlin 의 inline reified matcher 가 K2 컴파일러를 폭발시키는
-	// 문제를 회피하기 위해 도메인별 점진적 전환 진행 중. 마이그레이션 현황은
-	// .claude/guides/mockk-migration-guide.md 참조.
+	// 문제 (RedundantNullCheckMethodTransformer OOM) 를 회피하기 위해 채택.
 	testImplementation("io.mockk:mockk:1.13.13")
 	// springmockk 5.0.x — Spring Framework 7 (Boot 4) 지원. @MockitoBean 대체용
 	// @MockkBean 어노테이션 제공. Spring 의 MockitoBean 인프라 위에 MockK 를 얹는다.
