@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:58625",
+    "url" : "http://localhost:59231",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -14572,7 +14572,7 @@
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "profileType" : {
             "type" : "string",
@@ -15794,6 +15794,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -15807,9 +15810,6 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -17732,7 +17732,7 @@
             "type" : "string"
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "name" : {
             "type" : [ "string", "null" ]
@@ -17828,7 +17828,7 @@
             "type" : "string"
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "name" : {
             "type" : [ "string", "null" ]
