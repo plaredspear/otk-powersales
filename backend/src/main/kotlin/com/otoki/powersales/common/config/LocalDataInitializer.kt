@@ -107,6 +107,7 @@ class LocalDataInitializer(
                 birthDate = seed.birthDate,
                 role = seed.role,
                 appLoginActive = true,
+                costCenterCode = seed.costCenterCode,
                 encodedPassword = encodedPassword,
                 passwordChangeRequired = false,
             )

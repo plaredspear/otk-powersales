@@ -129,6 +129,16 @@ class User(
     @Column(name = "is_sales_support")
     var isSalesSupport: Boolean? = false,
 
+    /**
+     * Employee.cost_center_code derived 캐시 (Spec #759 패턴 — profile_type / is_sales_support 와 동일).
+     *
+     * 인증/권한 hot path 에서 Employee lookup 없이 데이터 스코프 (조장 → 같은 부서 여사원 등) 판정용.
+     * SoT 는 Employee.cost_center_code. 쓰기 site (SAP 발령 / 사원 마스터 upsert / 운영자 사원 수정 / 유예 발령 배치)
+     * 에서 동기 갱신. 변경 빈도 매우 낮음 (사원당 1~2년/회, 대부분 SAP 사원 마스터 매일 upsert 의 no-op).
+     */
+    @Column(name = "cost_center_code", length = 20)
+    var costCenterCode: String? = null,
+
     // -- Web 인증 (Mobile 은 Employee.password 별도 운영) --
 
     @Column(name = "password", nullable = false, length = 255)

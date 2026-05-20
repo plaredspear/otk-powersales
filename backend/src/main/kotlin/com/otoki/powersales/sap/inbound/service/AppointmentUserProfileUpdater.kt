@@ -178,5 +178,6 @@ class AppointmentUserProfileUpdater(
         val user = userRepository.findByEmployeeCode(employee.employeeCode) ?: return
         user.profileType = employeeProfileResolver.resolve(employee)
         user.isSalesSupport = userRoleResolver.isSalesSupport(employee)
+        user.costCenterCode = employee.costCenterCode
     }
 }

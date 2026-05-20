@@ -81,6 +81,7 @@ class LocalDataInitializerTest {
                 birthDate = any(),
                 role = any(),
                 appLoginActive = any(),
+                costCenterCode = any(),
                 encodedPassword = any(),
                 passwordChangeRequired = any(),
             )

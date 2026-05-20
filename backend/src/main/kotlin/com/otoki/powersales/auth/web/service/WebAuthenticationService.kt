@@ -220,7 +220,7 @@ class WebAuthenticationService(
             role = role,
             roleLabel = role?.toKorean(),
             orgName = employee?.orgName,
-            costCenterCode = employee?.costCenterCode,
+            costCenterCode = user.costCenterCode,
             permissions = permissions.map { it.name }
         )
     }
@@ -231,7 +231,7 @@ class WebAuthenticationService(
         employeeCode = user.employeeCode,
         employeeId = employee?.id,
         role = employee?.role,
-        costCenterCode = employee?.costCenterCode,
+        costCenterCode = user.costCenterCode,
         profileType = user.profileType,
         isSalesSupport = user.isSalesSupport ?: false,
         passwordChangeRequired = user.passwordChangeRequired ?: true,

@@ -1,8 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getFkResolveProgress,
+  runPicklistAll,
+  runPicklistColumn,
   startFkResolve,
   type FkResolveProgress,
+  type PicklistColumn,
+  type PicklistResponse,
 } from '@/api/admin/sfMigration';
 
 const KEY_BASE = ['admin', 'sf-migration'] as const;
@@ -27,5 +31,17 @@ export function useStartFkResolve() {
     onSuccess: (data) => {
       queryClient.setQueryData(PROGRESS_KEY, data);
     },
+  });
+}
+
+export function useRunPicklistAll() {
+  return useMutation<PicklistResponse>({
+    mutationFn: runPicklistAll,
+  });
+}
+
+export function useRunPicklistColumn() {
+  return useMutation<PicklistResponse, Error, PicklistColumn>({
+    mutationFn: runPicklistColumn,
   });
 }

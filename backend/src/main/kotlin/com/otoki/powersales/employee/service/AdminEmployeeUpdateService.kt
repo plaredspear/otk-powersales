@@ -7,6 +7,7 @@ import com.otoki.powersales.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.user.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class AdminEmployeeUpdateService(
     private val employeeRepository: EmployeeRepository,
+    private val userRepository: UserRepository,
 ) {
 
     private val logger = LoggerFactory.getLogger(AdminEmployeeUpdateService::class.java)
@@ -49,8 +51,20 @@ class AdminEmployeeUpdateService(
         applyTriggerEffects(employee)
 
         val saved = employeeRepository.save(employee)
+        syncUserCache(saved)
         logger.info("EMPLOYEE_UPDATED id={} code={} role={}", saved.id, saved.employeeCode, saved.role)
         return EmployeeDetailResponse.from(saved)
+    }
+
+    /**
+     * Employee 의 derived 캐시 컬럼을 매칭 User 행에 반영. 매칭 user 부재 시 silent skip.
+     *
+     * 현 시점 캐시 대상: `cost_center_code`. profile_type / is_sales_support 는 SAP 발령
+     * 후처리(AppointmentUserProfileUpdater) 에서 별도 갱신하므로 본 경로에서 동기화하지 않는다.
+     */
+    private fun syncUserCache(employee: Employee) {
+        val user = userRepository.findByEmployeeCode(employee.employeeCode) ?: return
+        user.costCenterCode = employee.costCenterCode
     }
 
     private fun applyMutableFields(entity: Employee, request: AdminEmployeeUpdateRequest) {

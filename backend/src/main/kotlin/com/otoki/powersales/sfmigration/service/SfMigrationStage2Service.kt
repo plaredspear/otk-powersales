@@ -30,36 +30,17 @@ class SfMigrationStage2Service(
     /**
      * Stage 2-B — 한글 picklist 값을 enum 값으로 일괄 UPDATE.
      *
-     * Employee.role / Employee.professional_promotion_team / User.profile_type 3개 컬럼을
-     * 매핑 표 (한글 → enum) 로 변환한다. 매칭 실패 row 는 fallback 값 또는 NULL 로 처리.
+     * 4개 컬럼 (Employee.role / Employee.professional_promotion_team / User.profile_type /
+     * User.cost_center_code derived 캐시) 을 순차 호출. admin UI 의 "일괄 실행" 진입점.
+     * 매칭 실패 row 는 fallback 값 또는 NULL 로 처리.
      */
     @Transactional
     fun runPicklistMapping(): SfMigrationStage2Response {
         val results = mutableListOf<SubstepResult>()
-
-        val roleRows = applyMapping(
-            tableName = "employee",
-            columnName = "role",
-            mapping = APP_AUTHORITY_TO_USER_ROLE,
-            fallbackValue = USER_ROLE_FALLBACK,
-        )
-        results += SubstepResult(label = "Employee.role", rowsAffected = roleRows)
-
-        val pptRows = applyMapping(
-            tableName = "employee",
-            columnName = "professional_promotion_team",
-            mapping = PPT_KOREAN_TO_ENUM,
-            fallbackValue = null,
-        )
-        results += SubstepResult(label = "Employee.professional_promotion_team", rowsAffected = pptRows)
-
-        val profileRows = applyMapping(
-            tableName = "user",
-            columnName = "profile_type",
-            mapping = PROFILE_NAME_TO_PROFILE_TYPE,
-            fallbackValue = PROFILE_TYPE_FALLBACK,
-        )
-        results += SubstepResult(label = "User.profile_type", rowsAffected = profileRows)
+        results += runPicklistEmployeeRole().results
+        results += runPicklistEmployeePpt().results
+        results += runPicklistUserProfileType().results
+        results += runUserCostCenterCodeSync().results
 
         return SfMigrationStage2Response(
             substep = "picklist",
@@ -67,6 +48,89 @@ class SfMigrationStage2Service(
             totalRowsAffected = results.sumOf { it.rowsAffected },
         )
     }
+
+    /** Stage 2-B (employee.role) — 한글 AppAuthority → UserRole enum.name */
+    @Transactional
+    fun runPicklistEmployeeRole(): SfMigrationStage2Response {
+        val rows = applyMapping(
+            tableName = "employee",
+            columnName = "role",
+            mapping = APP_AUTHORITY_TO_USER_ROLE,
+            fallbackValue = USER_ROLE_FALLBACK,
+        )
+        return singleResultResponse(
+            substep = "picklist.employee_role",
+            label = "Employee.role",
+            rows = rows,
+        )
+    }
+
+    /** Stage 2-B (employee.professional_promotion_team) — 한글 → ProfessionalPromotionTeamType enum.name */
+    @Transactional
+    fun runPicklistEmployeePpt(): SfMigrationStage2Response {
+        val rows = applyMapping(
+            tableName = "employee",
+            columnName = "professional_promotion_team",
+            mapping = PPT_KOREAN_TO_ENUM,
+            fallbackValue = null,
+        )
+        return singleResultResponse(
+            substep = "picklist.employee_ppt",
+            label = "Employee.professional_promotion_team",
+            rows = rows,
+        )
+    }
+
+    /** Stage 2-B (user.profile_type) — 한글 Profile.Name → ProfileType enum.name */
+    @Transactional
+    fun runPicklistUserProfileType(): SfMigrationStage2Response {
+        val rows = applyMapping(
+            tableName = "user",
+            columnName = "profile_type",
+            mapping = PROFILE_NAME_TO_PROFILE_TYPE,
+            fallbackValue = PROFILE_TYPE_FALLBACK,
+        )
+        return singleResultResponse(
+            substep = "picklist.user_profile_type",
+            label = "User.profile_type",
+            rows = rows,
+        )
+    }
+
+    /**
+     * Stage 2-B (user.cost_center_code) — Employee.cost_center_code → User.cost_center_code derived 캐시 동기화.
+     *
+     * 상관 서브쿼리 형태 — H2 / PostgreSQL 양쪽 모두 표준 SQL 로 동작.
+     */
+    @Transactional
+    fun runUserCostCenterCodeSync(): SfMigrationStage2Response {
+        val rows = em.createNativeQuery(
+            """
+            UPDATE powersales."user"
+            SET cost_center_code = (
+                SELECT e.cost_center_code FROM powersales.employee e
+                WHERE e.employee_code = powersales."user".employee_code
+            )
+            WHERE employee_code IS NOT NULL
+              AND EXISTS (
+                SELECT 1 FROM powersales.employee e
+                WHERE e.employee_code = powersales."user".employee_code
+              )
+            """.trimIndent()
+        ).executeUpdate()
+        return singleResultResponse(
+            substep = "picklist.user_cost_center_code",
+            label = "User.cost_center_code (sync from Employee)",
+            rows = rows,
+        )
+    }
+
+    private fun singleResultResponse(substep: String, label: String, rows: Int): SfMigrationStage2Response =
+        SfMigrationStage2Response(
+            substep = substep,
+            results = listOf(SubstepResult(label = label, rowsAffected = rows)),
+            totalRowsAffected = rows,
+        )
 
     /**
      * Stage 2-C — BCrypt password hash.

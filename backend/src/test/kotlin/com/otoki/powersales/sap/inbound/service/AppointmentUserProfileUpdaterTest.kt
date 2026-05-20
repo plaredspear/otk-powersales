@@ -247,6 +247,59 @@ class AppointmentUserProfileUpdaterTest {
     }
 
     @Nested
+    @DisplayName("User cost_center_code derived 캐시 동기화")
+    inner class UserCostCenterCodeCacheTests {
+
+        @BeforeEach
+        fun setUp() {
+            setupSystemCodeMaster()
+        }
+
+        @Test
+        @DisplayName("발령 즉시 반영 시 매칭 User 의 cost_center_code 가 Employee 값으로 갱신")
+        fun syncCostCenterCode() {
+            val employee = createEmployee(costCenterCode = "0000")
+            val user = com.otoki.powersales.user.entity.User(
+                username = "u@otoki.local",
+                employeeCode = "100234",
+                password = "x",
+                costCenterCode = "0000",
+            )
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
+            every { userRepository.findByEmployeeCode("100234") } returns user
+
+            val appointment = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "신규지점",
+                jikchak = "D0053", jobCode = "A055",
+                appointDate = LocalDate.of(2026, 3, 22), ordDetailNode = "전보"
+            )
+
+            updater.updateUserProfiles(listOf(appointment), today)
+
+            assertThat(employee.costCenterCode).isEqualTo("1111")
+            assertThat(user.costCenterCode).isEqualTo("1111")
+        }
+
+        @Test
+        @DisplayName("매칭 User 없는 사원은 silent skip — 예외 없이 Employee 만 갱신")
+        fun skipsWhenUserMissing() {
+            val employee = createEmployee(costCenterCode = "0000")
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
+            every { userRepository.findByEmployeeCode("100234") } returns null
+
+            val appointment = createAppointment(
+                afterOrgCode = "1111", afterOrgName = "신규지점",
+                jikchak = "D0053", jobCode = "A055",
+                appointDate = LocalDate.of(2026, 3, 22), ordDetailNode = "전보"
+            )
+
+            updater.updateUserProfiles(listOf(appointment), today)
+
+            assertThat(employee.costCenterCode).isEqualTo("1111")
+        }
+    }
+
+    @Nested
     @DisplayName("AppAuthority 결정 (jobCode 기반)")
     inner class JobCodeAuthorityTests {
 

@@ -22,4 +22,5 @@ data class EmployeeCreatedEvent(
     val birthDate: String?,
     val role: UserRole?,
     val appLoginActive: Boolean?,
+    val costCenterCode: String? = null,
 )

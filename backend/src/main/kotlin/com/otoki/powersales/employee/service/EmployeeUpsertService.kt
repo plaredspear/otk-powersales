@@ -9,6 +9,7 @@ import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertFailedRow
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertResult
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
+import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -50,6 +51,7 @@ class EmployeeUpsertService(
     private val employeeRepository: EmployeeRepository,
     private val systemCodeMasterRepository: SystemCodeMasterRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    private val userRepository: UserRepository,
 ) {
 
     @Transactional
@@ -117,6 +119,18 @@ class EmployeeUpsertService(
             employeeRepository.saveAll(toSave)
         }
 
+        // Employee.cost_center_code derived 캐시 동기화 — 기존 user 행에 대해서만 즉시 갱신.
+        // 신규 사원의 User 행은 아래 EmployeeCreatedEvent 흐름에서 새로 생성된다.
+        val existingCodes = toSave.map { it.employeeCode }.filter { it.isNotBlank() } - newEmployees.map { it.employeeCode }.toSet()
+        if (existingCodes.isNotEmpty()) {
+            val users = userRepository.findByEmployeeCodeIn(existingCodes)
+            val empByCode = toSave.associateBy { it.employeeCode }
+            users.forEach { user ->
+                val empCode = user.employeeCode ?: return@forEach
+                user.costCenterCode = empByCode[empCode]?.costCenterCode
+            }
+        }
+
         // SF IF_REST_SAP_EmployeeMaster.upsertUser(@future) 동등 — Employee 신규 행에 한해 이벤트 발행.
         // 실제 User INSERT 는 UserProvisioningService 가 AFTER_COMMIT + @Async 로 별도 트랜잭션 처리.
         newEmployees.forEach { employee ->
@@ -129,6 +143,7 @@ class EmployeeUpsertService(
                     birthDate = employee.birthDate,
                     role = employee.role,
                     appLoginActive = employee.appLoginActive,
+                    costCenterCode = employee.costCenterCode,
                 )
             )
         }

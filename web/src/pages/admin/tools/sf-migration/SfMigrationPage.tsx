@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -6,6 +6,8 @@ import {
   Descriptions,
   Empty,
   Progress,
+  Radio,
+  Select,
   Space,
   Statistic,
   Table,
@@ -16,12 +18,17 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
   useFkResolveProgress,
+  useRunPicklistAll,
+  useRunPicklistColumn,
   useStartFkResolve,
 } from '@/hooks/admin/useSfMigration';
 import type {
   FkResolveProgress,
   FkResolveStatus,
   FkResolveTableResult,
+  PicklistColumn,
+  PicklistResponse,
+  PicklistSubstepResult,
 } from '@/api/admin/sfMigration';
 
 const { Title, Paragraph, Text } = Typography;
@@ -61,13 +68,36 @@ function currentTablePercent(p: FkResolveProgress): number {
   );
 }
 
+type PicklistRunMode = 'single' | 'batch';
+
+const PICKLIST_COLUMN_OPTIONS: Array<{ value: PicklistColumn; label: string }> = [
+  { value: 'employee_role', label: 'Employee.role (한글 AppAuthority → UserRole)' },
+  { value: 'employee_ppt', label: 'Employee.professional_promotion_team (한글 → enum)' },
+  { value: 'user_profile_type', label: 'User.profile_type (한글 Profile.Name → ProfileType)' },
+  { value: 'user_cost_center_code', label: 'User.cost_center_code (Employee 캐시 동기화)' },
+];
+
 export default function SfMigrationPage() {
   const progressQuery = useFkResolveProgress();
   const startMutation = useStartFkResolve();
+  const runPicklistAllMutation = useRunPicklistAll();
+  const runPicklistColumnMutation = useRunPicklistColumn();
+
+  const [picklistMode, setPicklistMode] = useState<PicklistRunMode>('single');
+  const [picklistColumn, setPicklistColumn] = useState<PicklistColumn>('user_cost_center_code');
 
   const progress = progressQuery.data;
   const isRunning = progress?.status === 'RUNNING';
   const statusTag = progress ? STATUS_TAG[progress.status] : STATUS_TAG.IDLE;
+
+  // Picklist 실행 결과는 두 mutation 중 더 최근 것을 보여준다.
+  const picklistResult: PicklistResponse | undefined =
+    runPicklistColumnMutation.data ?? runPicklistAllMutation.data;
+  const picklistError =
+    (runPicklistColumnMutation.error as Error | null) ??
+    (runPicklistAllMutation.error as Error | null);
+  const picklistPending =
+    runPicklistAllMutation.isPending || runPicklistColumnMutation.isPending;
 
   const tableColumns: ColumnsType<FkResolveTableResult> = useMemo(
     () => [
@@ -219,6 +249,116 @@ export default function SfMigrationPage() {
           </Card>
         </>
       )}
+
+      <Card title="Stage 2-B — Picklist 변환 / Derived 캐시 동기화" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          한글 picklist 값을 enum 으로 일괄 UPDATE 한다 (Employee.role / Employee.professional_promotion_team /
+          User.profile_type). 추가로 User.cost_center_code derived 캐시를 Employee.cost_center_code 기준으로
+          동기화한다. 본 작업은 동기 실행 — 보통 수 초 내 완료.
+        </Paragraph>
+
+        <Radio.Group
+          value={picklistMode}
+          onChange={(e) => setPicklistMode(e.target.value as PicklistRunMode)}
+          optionType="button"
+          buttonStyle="solid"
+          disabled={picklistPending}
+          style={{ marginBottom: 16 }}
+        >
+          <Radio.Button value="single">개별 실행 (컬럼 1개)</Radio.Button>
+          <Radio.Button value="batch">일괄 실행 (4개 컬럼 전체)</Radio.Button>
+        </Radio.Group>
+
+        {picklistMode === 'single' ? (
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Select<PicklistColumn>
+              style={{ width: '100%', maxWidth: 540 }}
+              value={picklistColumn}
+              options={PICKLIST_COLUMN_OPTIONS}
+              onChange={(v) => setPicklistColumn(v)}
+              disabled={picklistPending}
+            />
+            <Space>
+              <Button
+                type="primary"
+                loading={runPicklistColumnMutation.isPending}
+                disabled={picklistPending}
+                onClick={() => {
+                  runPicklistAllMutation.reset();
+                  runPicklistColumnMutation.mutate(picklistColumn);
+                }}
+              >
+                실행
+              </Button>
+            </Space>
+          </Space>
+        ) : (
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+              4개 컬럼 (Employee.role → Employee.ppt → User.profile_type → User.cost_center_code) 을 순차 실행한다.
+            </Paragraph>
+            <Space>
+              <Button
+                type="primary"
+                loading={runPicklistAllMutation.isPending}
+                disabled={picklistPending}
+                onClick={() => {
+                  runPicklistColumnMutation.reset();
+                  runPicklistAllMutation.mutate();
+                }}
+              >
+                일괄 실행
+              </Button>
+            </Space>
+          </Space>
+        )}
+
+        {picklistError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="Picklist 실행 실패"
+            description={picklistError.message}
+            closable
+            onClose={() => {
+              runPicklistAllMutation.reset();
+              runPicklistColumnMutation.reset();
+            }}
+          />
+        )}
+
+        {picklistResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{picklistResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="누적 적용 row">
+                {picklistResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            <Table<PicklistSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '컬럼', dataIndex: 'label', key: 'label' },
+                {
+                  title: '적용 row',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={picklistResult.results}
+            />
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

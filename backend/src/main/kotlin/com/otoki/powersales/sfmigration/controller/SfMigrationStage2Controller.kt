@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.Executors
@@ -65,6 +66,33 @@ class SfMigrationStage2Controller(
     @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
     fun runPicklistMapping(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = service.runPicklistMapping()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * Stage 2-B 의 4개 컬럼 중 1개만 개별 실행. column 값:
+     * - `employee_role` / `employee_ppt` / `user_profile_type` / `user_cost_center_code`
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/picklist/{column}")
+    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    fun runPicklistColumn(
+        @PathVariable column: String,
+    ): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = when (column) {
+            "employee_role" -> service.runPicklistEmployeeRole()
+            "employee_ppt" -> service.runPicklistEmployeePpt()
+            "user_profile_type" -> service.runPicklistUserProfileType()
+            "user_cost_center_code" -> service.runUserCostCenterCodeSync()
+            else -> return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                ApiResponse.success(
+                    SfMigrationStage2Response(
+                        substep = "picklist.$column",
+                        results = emptyList(),
+                        totalRowsAffected = 0,
+                    )
+                )
+            )
+        }
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

@@ -48,3 +48,46 @@ export async function getFkResolveProgress(): Promise<FkResolveProgress> {
   }
   return res.data.data;
 }
+
+/**
+ * Stage 2-B (picklist) substep — 한글 picklist 값 → enum 변환 + User.cost_center_code derived 캐시 동기화.
+ *
+ * 4개 컬럼 (Employee.role / Employee.professional_promotion_team / User.profile_type /
+ * User.cost_center_code) 을 컬럼별로 개별 실행하거나 일괄 실행할 수 있다.
+ */
+export type PicklistColumn =
+  | 'employee_role'
+  | 'employee_ppt'
+  | 'user_profile_type'
+  | 'user_cost_center_code';
+
+export interface PicklistSubstepResult {
+  label: string;
+  rowsAffected: number;
+}
+
+export interface PicklistResponse {
+  substep: string;
+  results: PicklistSubstepResult[];
+  totalRowsAffected: number;
+}
+
+export async function runPicklistAll(): Promise<PicklistResponse> {
+  const res = await client.post<ApiResponse<PicklistResponse>>(
+    '/api/v1/admin/sf-migration/stage2/picklist',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'Picklist 일괄 실행에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function runPicklistColumn(column: PicklistColumn): Promise<PicklistResponse> {
+  const res = await client.post<ApiResponse<PicklistResponse>>(
+    `/api/v1/admin/sf-migration/stage2/picklist/${column}`,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || `Picklist (${column}) 실행에 실패했습니다`);
+  }
+  return res.data.data;
+}

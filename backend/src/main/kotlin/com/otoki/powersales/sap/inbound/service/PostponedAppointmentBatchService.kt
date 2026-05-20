@@ -50,6 +50,7 @@ class PostponedAppointmentBatchService(
                 appointmentUserProfileUpdater.applyImmediateAppointment(
                     employee, appointment, today, codeMap
                 )
+                appointmentUserProfileUpdater.updateUserProfileCache(employee)
                 processedCount++
             } catch (e: Exception) {
                 log.warn("예약 발령 처리 실패: employeeCode={}, error={}", employee.employeeCode, e.message)

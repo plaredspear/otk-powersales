@@ -7,6 +7,7 @@ import com.otoki.powersales.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -18,9 +19,11 @@ import org.junit.jupiter.api.Test
 class AdminEmployeeUpdateServiceTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
+    private val userRepository: UserRepository = mockk(relaxed = true)
 
     private val service = AdminEmployeeUpdateService(
         employeeRepository,
+        userRepository,
     )
 
     @Test
@@ -93,5 +96,29 @@ class AdminEmployeeUpdateServiceTest {
 
         assertThat(response.lockingFlag).isTrue()
         assertThat(response.appLoginActive).isFalse() // Trigger 자동 비활성화
+    }
+
+    @Test
+    @DisplayName("costCenterCode 변경 시 매칭 User 의 derived 캐시도 동기화")
+    fun update_syncsUserCostCenterCode() {
+        val existing = Employee(id = 13L, employeeCode = "100400", name = "조직이동")
+            .apply {
+                origin = EmployeeOrigin.MANUAL
+                costCenterCode = "1000"
+            }
+        val user = com.otoki.powersales.user.entity.User(
+            username = "u@otoki.local",
+            employeeCode = "100400",
+            password = "x",
+            costCenterCode = "1000",
+        )
+        every { employeeRepository.findWithEmployeeInfoById(13L) } returns existing
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+        every { userRepository.findByEmployeeCode("100400") } returns user
+
+        service.update(13L, AdminEmployeeUpdateRequest(costCenterCode = "2000"))
+
+        assertThat(existing.costCenterCode).isEqualTo("2000")
+        assertThat(user.costCenterCode).isEqualTo("2000")
     }
 }

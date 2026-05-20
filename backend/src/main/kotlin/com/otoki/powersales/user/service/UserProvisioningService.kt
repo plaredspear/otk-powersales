@@ -66,6 +66,7 @@ class UserProvisioningService(
                 birthDate = event.birthDate,
                 role = event.role,
                 appLoginActive = event.appLoginActive,
+                costCenterCode = event.costCenterCode,
             )
         } catch (ex: Exception) {
             // SF @future 동등: 메인(Employee) 트랜잭션에 영향 주지 않고 본 트랜잭션만 rollback.
@@ -88,6 +89,7 @@ class UserProvisioningService(
         birthDate: String?,
         role: UserRole?,
         appLoginActive: Boolean?,
+        costCenterCode: String? = null,
         encodedPassword: String? = null,
         passwordChangeRequired: Boolean = true,
     ) {
@@ -99,6 +101,7 @@ class UserProvisioningService(
             birthDate = birthDate,
             role = role,
             appLoginActive = appLoginActive,
+            costCenterCode = costCenterCode,
             overrideEncodedPassword = encodedPassword,
             passwordChangeRequired = passwordChangeRequired,
         )
@@ -117,6 +120,7 @@ class UserProvisioningService(
         birthDate: String?,
         role: UserRole?,
         appLoginActive: Boolean?,
+        costCenterCode: String? = null,
         overrideEncodedPassword: String? = null,
         passwordChangeRequired: Boolean = true,
     ) {
@@ -147,6 +151,7 @@ class UserProvisioningService(
             isActive = appLoginActive ?: true,
             profileType = profileTypeFor(role),
             isSalesSupport = role == UserRole.SALES_SUPPORT,
+            costCenterCode = costCenterCode,
             isDeleted = false,
         )
         userRepository.save(user)

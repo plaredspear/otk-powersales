@@ -8,6 +8,7 @@ import com.otoki.powersales.employee.enums.Gender
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
+import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
@@ -26,11 +27,13 @@ class EmployeeUpsertServiceTest {
     private val employeeRepository: EmployeeRepository = mockk()
     private val systemCodeMasterRepository: SystemCodeMasterRepository = mockk()
     private val eventPublisher: ApplicationEventPublisher = mockk(relaxUnitFun = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
 
     private val service = EmployeeUpsertService(
         employeeRepository,
         systemCodeMasterRepository,
         eventPublisher,
+        userRepository,
     )
 
     private fun command(
