@@ -12,33 +12,28 @@ import com.otoki.powersales.productexpiration.exception.InvalidProductExpiration
 import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
 import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
-import java.util.*
+import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("ProductExpirationService 테스트")
 class ProductExpirationServiceTest {
 
-    @Mock
-    private lateinit var productExpirationRepository: ProductExpirationRepository
+    private val productExpirationRepository: ProductExpirationRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @InjectMocks
-    private lateinit var productExpirationService: ProductExpirationService
+    private val productExpirationService = ProductExpirationService(
+        productExpirationRepository,
+        employeeRepository,
+    )
 
     private val userId = 1L
     private val employeeCodeVal = "20030117"
@@ -72,7 +67,7 @@ class ProductExpirationServiceTest {
     }
 
     private fun stubUser(id: Long = userId) {
-        whenever(employeeRepository.findById(id)).thenReturn(Optional.of(createEmployee(id = id)))
+        every { employeeRepository.findById(id) } returns Optional.of(createEmployee(id = id))
     }
 
     @Nested
@@ -84,11 +79,11 @@ class ProductExpirationServiceTest {
         fun getList_allAccounts_success() {
             stubUser()
             val items = listOf(createProductExpiration(seq = 1), createProductExpiration(seq = 2))
-            whenever(
+            every {
                 productExpirationRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(userId), any(), any()
+                    userId, any(), any()
                 )
-            ).thenReturn(items)
+            } returns items
 
             val result = productExpirationService.getProductExpirationList(userId, null, "2026-03-01", "2026-03-31")
 
@@ -100,11 +95,11 @@ class ProductExpirationServiceTest {
         fun getList_specificAccount_success() {
             stubUser()
             val items = listOf(createProductExpiration(seq = 1))
-            whenever(
+            every {
                 productExpirationRepository.findByEmployeeIdAndAccountCodeAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(userId), eq("1025172"), any(), any()
+                    userId, "1025172", any(), any()
                 )
-            ).thenReturn(items)
+            } returns items
 
             val result = productExpirationService.getProductExpirationList(userId, "1025172", "2026-03-01", "2026-03-31")
 
@@ -116,11 +111,11 @@ class ProductExpirationServiceTest {
         @DisplayName("빈 결과 - 데이터 없음 -> 빈 리스트 반환")
         fun getList_empty() {
             stubUser()
-            whenever(
+            every {
                 productExpirationRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(userId), any(), any()
+                    userId, any(), any()
                 )
-            ).thenReturn(emptyList())
+            } returns emptyList()
 
             val result = productExpirationService.getProductExpirationList(userId, null, "2026-03-01", "2026-03-31")
 
@@ -131,11 +126,11 @@ class ProductExpirationServiceTest {
         @DisplayName("데이터 없음 - employeeCode로 조회 결과 없음 -> 빈 리스트 반환")
         fun getList_noData_returnsEmpty() {
             stubUser()
-            whenever(
+            every {
                 productExpirationRepository.findByEmployeeIdAndExpirationDateBetweenOrderByExpirationDateAsc(
-                    eq(userId), any(), any()
+                    userId, any(), any()
                 )
-            ).thenReturn(emptyList())
+            } returns emptyList()
 
             val result = productExpirationService.getProductExpirationList(userId, null, "2026-03-01", "2026-03-31")
 
@@ -184,7 +179,9 @@ class ProductExpirationServiceTest {
                 alarmDate = "2026-03-09",
                 description = "테스트"
             )
-            whenever(productExpirationRepository.save(any<ProductExpiration>())).thenAnswer { it.getArgument<ProductExpiration>(0) }
+            every { productExpirationRepository.save(any<ProductExpiration>()) } answers {
+                firstArg<ProductExpiration>()
+            }
 
             val result = productExpirationService.createProductExpiration(userId, request)
 
@@ -213,7 +210,7 @@ class ProductExpirationServiceTest {
         @Test
         @DisplayName("사용자 없음 - 존재하지 않는 userId -> EmployeeNotFoundException")
         fun create_userNotFound() {
-            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(999L) } returns Optional.empty()
 
             val request = ProductExpirationCreateRequest(
                 accountCode = "1025172",
@@ -239,7 +236,7 @@ class ProductExpirationServiceTest {
         fun update_success() {
             stubUser()
             val entity = createProductExpiration(seq = 1)
-            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+            every { productExpirationRepository.findById(1) } returns Optional.of(entity)
 
             val request = ProductExpirationUpdateRequest(
                 expirationDate = "2026-04-10",
@@ -258,7 +255,7 @@ class ProductExpirationServiceTest {
         fun update_forbidden() {
             stubUser()
             val entity = createProductExpiration(seq = 1, employeeId = 999L)
-            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+            every { productExpirationRepository.findById(1) } returns Optional.of(entity)
 
             val request = ProductExpirationUpdateRequest(
                 expirationDate = "2026-04-10",
@@ -274,7 +271,7 @@ class ProductExpirationServiceTest {
         @DisplayName("존재하지 않는 seq - 없는 seq -> ProductExpirationNotFoundException")
         fun update_notFound() {
             stubUser()
-            whenever(productExpirationRepository.findById(999)).thenReturn(Optional.empty())
+            every { productExpirationRepository.findById(999) } returns Optional.empty()
 
             val request = ProductExpirationUpdateRequest(
                 expirationDate = "2026-04-10",
@@ -296,7 +293,8 @@ class ProductExpirationServiceTest {
         fun delete_success() {
             stubUser()
             val entity = createProductExpiration(seq = 1)
-            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+            every { productExpirationRepository.findById(1) } returns Optional.of(entity)
+            every { productExpirationRepository.delete(entity) } just Runs
 
             productExpirationService.deleteProductExpiration(userId, 1)
         }
@@ -305,7 +303,7 @@ class ProductExpirationServiceTest {
         @DisplayName("존재하지 않는 seq -> ProductExpirationNotFoundException")
         fun delete_notFound() {
             stubUser()
-            whenever(productExpirationRepository.findById(999)).thenReturn(Optional.empty())
+            every { productExpirationRepository.findById(999) } returns Optional.empty()
 
             assertThatThrownBy {
                 productExpirationService.deleteProductExpiration(userId, 999)
@@ -317,7 +315,7 @@ class ProductExpirationServiceTest {
         fun delete_forbidden() {
             stubUser()
             val entity = createProductExpiration(seq = 1, employeeId = 999L)
-            whenever(productExpirationRepository.findById(1)).thenReturn(Optional.of(entity))
+            every { productExpirationRepository.findById(1) } returns Optional.of(entity)
 
             assertThatThrownBy {
                 productExpirationService.deleteProductExpiration(userId, 1)
@@ -338,8 +336,10 @@ class ProductExpirationServiceTest {
                 createProductExpiration(seq = 2),
                 createProductExpiration(seq = 3)
             )
-            whenever(productExpirationRepository.findBySeqInAndEmployeeId(eq(listOf(1, 2, 3)), eq(userId)))
-                .thenReturn(items)
+            every {
+                productExpirationRepository.findBySeqInAndEmployeeId(listOf(1, 2, 3), userId)
+            } returns items
+            every { productExpirationRepository.deleteAll(items) } just Runs
 
             val request = ProductExpirationBatchDeleteRequest(ids = listOf(1, 2, 3))
             val result = productExpirationService.deleteProductExpirationBatch(userId, request)
@@ -352,10 +352,11 @@ class ProductExpirationServiceTest {
         fun batchDelete_forbidden() {
             stubUser()
             val myItem = createProductExpiration(seq = 1)
-            whenever(productExpirationRepository.findBySeqInAndEmployeeId(eq(listOf(1, 2)), eq(userId)))
-                .thenReturn(listOf(myItem))
-            whenever(productExpirationRepository.findAllById(listOf(2)))
-                .thenReturn(listOf(createProductExpiration(seq = 2, employeeId = 999L)))
+            every {
+                productExpirationRepository.findBySeqInAndEmployeeId(listOf(1, 2), userId)
+            } returns listOf(myItem)
+            every { productExpirationRepository.findAllById(listOf(2)) } returns
+                listOf(createProductExpiration(seq = 2, employeeId = 999L))
 
             val request = ProductExpirationBatchDeleteRequest(ids = listOf(1, 2))
 

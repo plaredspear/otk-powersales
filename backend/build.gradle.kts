@@ -97,6 +97,10 @@ dependencies {
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+	// MockK — mockito-kotlin 의 inline reified matcher 가 K2 컴파일러를 폭발시키는
+	// 문제를 회피하기 위해 도메인별 점진적 전환 진행 중. 마이그레이션 현황은
+	// .claude/guides/mockk-migration-guide.md 참조.
+	testImplementation("io.mockk:mockk:1.13.13")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
