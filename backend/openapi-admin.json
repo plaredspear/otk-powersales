@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:49474",
+    "url" : "http://localhost:54842",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -6628,10 +6628,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -12023,6 +12023,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
           "first" : {
             "type" : "boolean"
           },
@@ -12032,12 +12038,6 @@
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -12061,10 +12061,6 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "unpaged" : {
             "type" : "boolean"
           },
@@ -12072,11 +12068,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "paged" : {
+            "type" : "boolean"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "paged" : {
-            "type" : "boolean"
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "offset" : {
             "type" : "integer",
@@ -12135,10 +12135,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -13229,10 +13229,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           }
         }
@@ -15453,6 +15453,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
           "first" : {
             "type" : "boolean"
           },
@@ -15462,12 +15468,6 @@
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -15720,6 +15720,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
           "first" : {
             "type" : "boolean"
           },
@@ -15729,12 +15735,6 @@
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
