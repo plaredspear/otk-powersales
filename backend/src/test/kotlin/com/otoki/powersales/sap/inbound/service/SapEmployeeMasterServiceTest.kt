@@ -8,38 +8,22 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.employee.EmployeeMasterRequestItem
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-/**
- * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
- * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / MANUAL_ORIGIN_PROTECTED audit (어댑터 잔류) 만 검증.
- */
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SapEmployeeMasterService 어댑터 테스트")
 class SapEmployeeMasterServiceTest {
 
-    @Mock
-    private lateinit var employeeUpsertService: EmployeeUpsertService
-
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
-
-    @InjectMocks
-    private lateinit var service: SapEmployeeMasterService
+    private val employeeUpsertService: EmployeeUpsertService = mockk()
+    private val auditService: SapInboundAuditService = mockk()
+    private val service = SapEmployeeMasterService(employeeUpsertService, auditService)
 
     @Nested
     @DisplayName("upsert - 어댑터 책임")
@@ -52,15 +36,14 @@ class SapEmployeeMasterServiceTest {
                 EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"),
                 EmployeeMasterRequestItem(employeeCode = "100124", employeeName = "임꺽정")
             )
-            whenever(employeeUpsertService.upsert(any())).thenReturn(
+            every { employeeUpsertService.upsert(any()) } returns
                 EmployeeUpsertResult(successCount = 2, failureCount = 0, failures = emptyList(), protectedManualCodes = emptyList())
-            )
 
             val detail = service.upsert(items)
 
             assertThat(detail.successCount).isEqualTo(2)
             assertThat(detail.failureCount).isEqualTo(0)
-            verify(auditService, never()).record(any())
+            verify(exactly = 0) { auditService.record(any()) }
         }
 
         @Test
@@ -70,14 +53,13 @@ class SapEmployeeMasterServiceTest {
                 EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "정상"),
                 EmployeeMasterRequestItem(employeeCode = "100124", employeeName = null)
             )
-            whenever(employeeUpsertService.upsert(any())).thenReturn(
+            every { employeeUpsertService.upsert(any()) } returns
                 EmployeeUpsertResult(
                     successCount = 1,
                     failureCount = 1,
                     failures = listOf(EmployeeUpsertFailedRow("100124", "EmployeeName 필수")),
                     protectedManualCodes = emptyList()
                 )
-            )
 
             val detail = service.upsert(items)
 
@@ -91,8 +73,8 @@ class SapEmployeeMasterServiceTest {
         @DisplayName("도메인 throw: 어댑터는 catch 하지 않고 그대로 재전파 (audit 은 Aspect 책임)")
         fun domainThrow_propagated() {
             val items = listOf(EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"))
-            whenever(employeeUpsertService.upsert(any()))
-                .thenThrow(IllegalStateException("DB connection lost"))
+            every { employeeUpsertService.upsert(any()) } throws
+                IllegalStateException("DB connection lost")
 
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(IllegalStateException::class.java)
@@ -105,20 +87,20 @@ class SapEmployeeMasterServiceTest {
                 EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"),
                 EmployeeMasterRequestItem(employeeCode = "M0001", employeeName = "수동등록")
             )
-            whenever(employeeUpsertService.upsert(any())).thenReturn(
+            every { employeeUpsertService.upsert(any()) } returns
                 EmployeeUpsertResult(
                     successCount = 1,
                     failureCount = 0,
                     failures = emptyList(),
                     protectedManualCodes = listOf("M0001")
                 )
-            )
+            every { auditService.record(any()) } answers { firstArg<SapInboundAudit>() }
 
             service.upsert(items)
 
-            val auditCaptor = argumentCaptor<SapInboundAudit>()
-            verify(auditService, times(1)).record(auditCaptor.capture())
-            val audit = auditCaptor.firstValue
+            val auditCaptor = slot<SapInboundAudit>()
+            verify(exactly = 1) { auditService.record(capture(auditCaptor)) }
+            val audit = auditCaptor.captured
             assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.MANUAL_ORIGIN_PROTECTED)
             assertThat(audit.reason).isEqualTo("M0001")
         }
@@ -143,15 +125,14 @@ class SapEmployeeMasterServiceTest {
                     lockingFlag = "N"
                 )
             )
-            whenever(employeeUpsertService.upsert(any())).thenReturn(
+            every { employeeUpsertService.upsert(any()) } returns
                 EmployeeUpsertResult(successCount = 1, failureCount = 0, failures = emptyList(), protectedManualCodes = emptyList())
-            )
 
             service.upsert(items)
 
-            val captor = argumentCaptor<List<EmployeeUpsertCommand>>()
-            verify(employeeUpsertService).upsert(captor.capture())
-            val command = captor.firstValue.single()
+            val captor = slot<List<EmployeeUpsertCommand>>()
+            verify { employeeUpsertService.upsert(capture(captor)) }
+            val command = captor.captured.single()
             assertThat(command.employeeCode).isEqualTo("100123")
             assertThat(command.employeeName).isEqualTo("홍길동")
             assertThat(command.gender).isEqualTo("1")

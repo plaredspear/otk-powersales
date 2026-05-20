@@ -4,16 +4,15 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.auth.config.SapAuthProperties
 import com.otoki.powersales.sap.auth.service.SapJwtCodec
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import jakarta.servlet.FilterChain
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.core.context.SecurityContextHolder
@@ -26,12 +25,12 @@ class SapBearerTokenFilterTest {
     private val codec = SapJwtCodec(
         SapAuthProperties(jwtSigningKey = signingKey, tokenTtlSeconds = 86400)
     )
-    private val auditService: SapInboundAuditService = mock<SapInboundAuditService>().apply {
-        whenever(this.record(any())).thenAnswer { it.getArgument<SapInboundAudit>(0) }
+    private val auditService: SapInboundAuditService = mockk<SapInboundAuditService>().apply {
+        every { record(any()) } answers { firstArg<SapInboundAudit>() }
     }
     private val objectMapper = ObjectMapper()
     private val filter = SapBearerTokenFilter(codec, auditService, objectMapper)
-    private val chain: FilterChain = mock()
+    private val chain: FilterChain = mockk(relaxed = true)
 
     @AfterEach
     fun tearDown() {
@@ -50,7 +49,7 @@ class SapBearerTokenFilterTest {
 
             filter.doFilter(request, response, chain)
 
-            verify(chain).doFilter(request, response)
+            verify { chain.doFilter(request, response) }
             assertThat(SecurityContextHolder.getContext().authentication).isNull()
         }
 
@@ -70,7 +69,7 @@ class SapBearerTokenFilterTest {
             assertThat(auth!!.principal).isEqualTo("client-1")
             assertThat(auth.authorities.map { it.authority })
                 .containsExactlyInAnyOrder("SCOPE_sap.org.write", "SCOPE_sap.employee.write")
-            verify(chain).doFilter(request, response)
+            verify { chain.doFilter(request, response) }
         }
     }
 

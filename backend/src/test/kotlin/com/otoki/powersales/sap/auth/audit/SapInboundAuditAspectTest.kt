@@ -3,6 +3,10 @@ package com.otoki.powersales.sap.auth.audit
 import com.otoki.powersales.sap.auth.exception.SapSanityCheckFailedException
 import com.otoki.powersales.sap.inbound.dto.SapInboundChunkedResult
 import com.otoki.powersales.sap.inbound.dto.SapInboundUpsertResult
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.aspectj.lang.ProceedingJoinPoint
@@ -12,25 +16,16 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 
-/**
- * Spec #639 — `@SapInboundAccepted` 트리거 around advice 의 단위 테스트.
- */
 @DisplayName("SapInboundAuditAspect 테스트")
 class SapInboundAuditAspectTest {
 
-    private val auditService: SapInboundAuditService = mock()
+    private val auditService: SapInboundAuditService = mockk()
     private val aspect = SapInboundAuditAspect(auditService)
 
     private val endpoint = "/api/v1/sap/account"
@@ -47,7 +42,7 @@ class SapInboundAuditAspectTest {
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(clientId, null, emptyList())
 
-        whenever(auditService.record(any())).thenAnswer { it.getArgument<SapInboundAudit>(0) }
+        every { auditService.record(any()) } answers { firstArg<SapInboundAudit>() }
     }
 
     @AfterEach
@@ -70,9 +65,9 @@ class SapInboundAuditAspectTest {
             val ret = aspect.around(jp)
 
             assertThat(ret).isSameAs(result)
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            val audit = captor.firstValue
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            val audit = captor.captured
             assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
             assertThat(audit.endpoint).isEqualTo(endpoint)
             assertThat(audit.httpMethod).isEqualTo("POST")
@@ -91,9 +86,9 @@ class SapInboundAuditAspectTest {
 
             aspect.around(jp)
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            val audit = captor.firstValue
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            val audit = captor.captured
             assertThat(audit.receivedCount).isEqualTo(2500)
             assertThat(audit.reason).isEqualTo("success=2400 failure=100 chunks=3")
         }
@@ -106,10 +101,10 @@ class SapInboundAuditAspectTest {
 
             aspect.around(jp)
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.reason).isEqualTo("success=0 failure=0")
-            assertThat(captor.firstValue.receivedCount).isEqualTo(2)
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            assertThat(captor.captured.reason).isEqualTo("success=0 failure=0")
+            assertThat(captor.captured.receivedCount).isEqualTo(2)
         }
     }
 
@@ -128,9 +123,9 @@ class SapInboundAuditAspectTest {
                 .isInstanceOf(IllegalStateException::class.java)
                 .hasMessage("DB connection lost")
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            val audit = captor.firstValue
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            val audit = captor.captured
             assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_ACCEPTED)
             assertThat(audit.receivedCount).isEqualTo(7)
             assertThat(audit.reason).isEqualTo("success=0 failure=7")
@@ -146,9 +141,9 @@ class SapInboundAuditAspectTest {
             assertThatThrownBy { aspect.around(jp) }
                 .isInstanceOf(RuntimeException::class.java)
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.reason).isEqualTo("success=0 failure=3 chunks=0")
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            assertThat(captor.captured.reason).isEqualTo("success=0 failure=3 chunks=0")
         }
 
         @Test
@@ -161,7 +156,7 @@ class SapInboundAuditAspectTest {
             assertThatThrownBy { aspect.around(jp) }
                 .isInstanceOf(SapSanityCheckFailedException::class.java)
 
-            verify(auditService, never()).record(any())
+            verify(exactly = 0) { auditService.record(any()) }
         }
     }
 
@@ -178,9 +173,9 @@ class SapInboundAuditAspectTest {
 
             aspect.around(jp)
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.receivedCount).isEqualTo(0)
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            assertThat(captor.captured.receivedCount).isEqualTo(0)
         }
 
         @Test
@@ -192,9 +187,9 @@ class SapInboundAuditAspectTest {
 
             aspect.around(jp)
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.receivedCount).isEqualTo(3)
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            assertThat(captor.captured.receivedCount).isEqualTo(3)
         }
     }
 
@@ -212,9 +207,9 @@ class SapInboundAuditAspectTest {
 
             aspect.around(jp)
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            val audit = captor.firstValue
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            val audit = captor.captured
             assertThat(audit.endpoint).isEmpty()
             assertThat(audit.httpMethod).isNull()
             assertThat(audit.clientIp).isEmpty()
@@ -230,9 +225,9 @@ class SapInboundAuditAspectTest {
 
             aspect.around(jp)
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.clientId).isNull()
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            assertThat(captor.captured.clientId).isNull()
         }
     }
 
@@ -253,9 +248,9 @@ class SapInboundAuditAspectTest {
 
             aspect.around(jp)
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.reason).isEqualTo("chunks=2 | failure=3 | success=7")
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            assertThat(captor.captured.reason).isEqualTo("chunks=2 | failure=3 | success=7")
         }
     }
 
@@ -294,16 +289,16 @@ class SapInboundAuditAspectTest {
         result: Any?,
         throwOnProceed: Throwable?
     ): ProceedingJoinPoint {
-        val joinPoint: ProceedingJoinPoint = mock()
-        val signature: MethodSignature = mock()
-        whenever(signature.method).thenReturn(method)
-        whenever(signature.parameterNames).thenReturn(arrayOf("items"))
-        whenever(joinPoint.signature).thenReturn(signature)
-        whenever(joinPoint.args).thenReturn(args)
+        val joinPoint: ProceedingJoinPoint = mockk()
+        val signature: MethodSignature = mockk()
+        every { signature.method } returns method
+        every { signature.parameterNames } returns arrayOf("items")
+        every { joinPoint.signature } returns signature
+        every { joinPoint.args } returns args
         if (throwOnProceed != null) {
-            whenever(joinPoint.proceed()).thenThrow(throwOnProceed)
+            every { joinPoint.proceed() } throws throwOnProceed
         } else {
-            whenever(joinPoint.proceed()).thenReturn(result)
+            every { joinPoint.proceed() } returns result
         }
         return joinPoint
     }

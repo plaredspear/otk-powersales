@@ -6,33 +6,21 @@ import com.otoki.powersales.order.service.dto.ErpOrderUpsertFailedRow
 import com.otoki.powersales.order.service.dto.ErpOrderUpsertResult
 import com.otoki.powersales.sap.inbound.dto.order.ErpOrderItemDetail
 import com.otoki.powersales.sap.inbound.dto.order.ErpOrderRequestItem
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-/**
- * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
- * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
- */
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SapErpOrderService 어댑터 테스트")
 class SapErpOrderServiceTest {
 
-    @Mock
-    private lateinit var erpOrderUpsertService: ErpOrderUpsertService
-
-    @InjectMocks
-    private lateinit var service: SapErpOrderService
+    private val erpOrderUpsertService: ErpOrderUpsertService = mockk()
+    private val service = SapErpOrderService(erpOrderUpsertService)
 
     private fun line(
         sapOrderNumber: String? = "0010012345",
@@ -67,9 +55,8 @@ class SapErpOrderServiceTest {
         @Test
         @DisplayName("happy: 도메인 결과 (header=1, line=1, failures=0) → ErpOrderDetail successCount=1")
         fun happy_domainResultMapped() {
-            whenever(erpOrderUpsertService.upsert(any())).thenReturn(
+            every { erpOrderUpsertService.upsert(any()) } returns
                 ErpOrderUpsertResult(headerSuccessCount = 1, lineSuccessCount = 1, failures = emptyList())
-            )
 
             val detail = service.upsert(listOf(header()))
 
@@ -80,13 +67,12 @@ class SapErpOrderServiceTest {
         @Test
         @DisplayName("부분 실패: 도메인 failures → ErpOrderFailure 매핑 (sapOrderNumber 보존)")
         fun partialFailure_failureRowsMapped() {
-            whenever(erpOrderUpsertService.upsert(any())).thenReturn(
+            every { erpOrderUpsertService.upsert(any()) } returns
                 ErpOrderUpsertResult(
                     headerSuccessCount = 1,
                     lineSuccessCount = 1,
                     failures = listOf(ErpOrderUpsertFailedRow("0010000002", "account not found"))
                 )
-            )
 
             val detail = service.upsert(
                 listOf(
@@ -104,8 +90,8 @@ class SapErpOrderServiceTest {
         @Test
         @DisplayName("도메인 throw (라인 ConstraintViolation 시뮬): 어댑터는 catch 하지 않고 그대로 재전파")
         fun domainThrow_propagated() {
-            whenever(erpOrderUpsertService.upsert(any()))
-                .thenThrow(IllegalStateException("constraint violation"))
+            every { erpOrderUpsertService.upsert(any()) } throws
+                IllegalStateException("constraint violation")
 
             assertThatThrownBy { service.upsert(listOf(header())) }
                 .isInstanceOf(IllegalStateException::class.java)
@@ -114,15 +100,14 @@ class SapErpOrderServiceTest {
         @Test
         @DisplayName("DTO 매핑: ErpOrderRequestItem (헤더 + ItemDetailList) → ErpOrderUpsertCommand (헤더 + lines)")
         fun dtoMapping_itemToCommand() {
-            whenever(erpOrderUpsertService.upsert(any())).thenReturn(
+            every { erpOrderUpsertService.upsert(any()) } returns
                 ErpOrderUpsertResult(headerSuccessCount = 1, lineSuccessCount = 1, failures = emptyList())
-            )
 
             service.upsert(listOf(header(lines = listOf(line(lineNumber = "001"), line(lineNumber = "002")))))
 
-            val captor = argumentCaptor<List<ErpOrderUpsertCommand>>()
-            verify(erpOrderUpsertService).upsert(captor.capture())
-            val command = captor.firstValue.single()
+            val captor = slot<List<ErpOrderUpsertCommand>>()
+            verify { erpOrderUpsertService.upsert(capture(captor)) }
+            val command = captor.captured.single()
             assertThat(command.sapOrderNumber).isEqualTo("0010012345")
             assertThat(command.sapAccountCode).isEqualTo("1032619")
             assertThat(command.orderSalesAmount).isEqualTo("1500000")

@@ -5,33 +5,21 @@ import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertCommand
 import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertFailedRow
 import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertResult
 import com.otoki.powersales.sap.inbound.dto.product.BarcodeMasterRequestItem
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-/**
- * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
- * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
- */
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SapBarcodeMasterService 어댑터 테스트")
 class SapBarcodeMasterServiceTest {
 
-    @Mock
-    private lateinit var productBarcodeUpsertService: ProductBarcodeUpsertService
-
-    @InjectMocks
-    private lateinit var service: SapBarcodeMasterService
+    private val productBarcodeUpsertService: ProductBarcodeUpsertService = mockk()
+    private val service = SapBarcodeMasterService(productBarcodeUpsertService)
 
     @Nested
     @DisplayName("upsert - 어댑터 책임")
@@ -49,9 +37,8 @@ class SapBarcodeMasterServiceTest {
                     productBarcode = "8801045123456"
                 )
             )
-            whenever(productBarcodeUpsertService.upsert(any())).thenReturn(
+            every { productBarcodeUpsertService.upsert(any()) } returns
                 ProductBarcodeUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
-            )
 
             val detail = service.upsert(items)
 
@@ -66,13 +53,12 @@ class SapBarcodeMasterServiceTest {
                 BarcodeMasterRequestItem(productCode = "100100", productUnit = "EA", productSequence = "001", productBarcode = "111"),
                 BarcodeMasterRequestItem(productCode = "999999", productUnit = "EA", productSequence = "001", productBarcode = "222")
             )
-            whenever(productBarcodeUpsertService.upsert(any())).thenReturn(
+            every { productBarcodeUpsertService.upsert(any()) } returns
                 ProductBarcodeUpsertResult(
                     successCount = 1,
                     failureCount = 1,
                     failures = listOf(ProductBarcodeUpsertFailedRow("999999EA001", "product_code not found: 999999"))
                 )
-            )
 
             val detail = service.upsert(items)
 
@@ -88,8 +74,7 @@ class SapBarcodeMasterServiceTest {
             val items = listOf(
                 BarcodeMasterRequestItem(productCode = "100100", productUnit = "EA", productSequence = "001", productBarcode = "111")
             )
-            whenever(productBarcodeUpsertService.upsert(any()))
-                .thenThrow(IllegalStateException("DB connection lost"))
+            every { productBarcodeUpsertService.upsert(any()) } throws IllegalStateException("DB connection lost")
 
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(IllegalStateException::class.java)
@@ -107,15 +92,14 @@ class SapBarcodeMasterServiceTest {
                     productBarcode = "8801045123456"
                 )
             )
-            whenever(productBarcodeUpsertService.upsert(any())).thenReturn(
+            every { productBarcodeUpsertService.upsert(any()) } returns
                 ProductBarcodeUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
-            )
 
             service.upsert(items)
 
-            val captor = argumentCaptor<List<ProductBarcodeUpsertCommand>>()
-            verify(productBarcodeUpsertService).upsert(captor.capture())
-            val command = captor.firstValue.single()
+            val captor = slot<List<ProductBarcodeUpsertCommand>>()
+            verify { productBarcodeUpsertService.upsert(capture(captor)) }
+            val command = captor.captured.single()
             assertThat(command.productCode).isEqualTo("100100")
             assertThat(command.productName).isEqualTo("진라면")
             assertThat(command.productUnit).isEqualTo("EA")

@@ -5,33 +5,21 @@ import com.otoki.powersales.account.service.dto.AccountCategoryUpsertCommand
 import com.otoki.powersales.account.service.dto.AccountCategoryUpsertFailedRow
 import com.otoki.powersales.account.service.dto.AccountCategoryUpsertResult
 import com.otoki.powersales.sap.inbound.dto.account.AccountCategoryRequestItem
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-/**
- * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
- * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
- */
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SapAccountCategoryService 어댑터 테스트")
 class SapAccountCategoryServiceTest {
 
-    @Mock
-    private lateinit var accountCategoryUpsertService: AccountCategoryUpsertService
-
-    @InjectMocks
-    private lateinit var service: SapAccountCategoryService
+    private val accountCategoryUpsertService: AccountCategoryUpsertService = mockk()
+    private val service = SapAccountCategoryService(accountCategoryUpsertService)
 
     @Nested
     @DisplayName("upsert - 어댑터 책임")
@@ -44,9 +32,8 @@ class SapAccountCategoryServiceTest {
                 AccountCategoryRequestItem(accountCode = "Z001", name = "일반거래처"),
                 AccountCategoryRequestItem(accountCode = "Z002", name = "위탁거래처")
             )
-            whenever(accountCategoryUpsertService.upsert(any())).thenReturn(
+            every { accountCategoryUpsertService.upsert(any()) } returns
                 AccountCategoryUpsertResult(successCount = 2, failureCount = 0, failures = emptyList())
-            )
 
             val detail = service.upsert(items)
 
@@ -62,13 +49,12 @@ class SapAccountCategoryServiceTest {
                 AccountCategoryRequestItem(accountCode = "Z001", name = "정상"),
                 AccountCategoryRequestItem(accountCode = "Z002", name = null)
             )
-            whenever(accountCategoryUpsertService.upsert(any())).thenReturn(
+            every { accountCategoryUpsertService.upsert(any()) } returns
                 AccountCategoryUpsertResult(
                     successCount = 1,
                     failureCount = 1,
                     failures = listOf(AccountCategoryUpsertFailedRow(identifier = "Z002", reason = "Name 필수"))
                 )
-            )
 
             val detail = service.upsert(items)
 
@@ -86,8 +72,8 @@ class SapAccountCategoryServiceTest {
                 AccountCategoryRequestItem(accountCode = "Z001", name = "일반"),
                 AccountCategoryRequestItem(accountCode = "Z002", name = "위탁")
             )
-            whenever(accountCategoryUpsertService.upsert(any()))
-                .thenThrow(IllegalStateException("DB connection lost"))
+            every { accountCategoryUpsertService.upsert(any()) } throws
+                IllegalStateException("DB connection lost")
 
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(IllegalStateException::class.java)
@@ -98,15 +84,14 @@ class SapAccountCategoryServiceTest {
         @DisplayName("DTO 매핑: AccountCategoryRequestItem → AccountCategoryUpsertCommand 필드 매핑")
         fun dtoMapping_itemToCommand() {
             val items = listOf(AccountCategoryRequestItem(accountCode = "Z001", name = "일반거래처"))
-            whenever(accountCategoryUpsertService.upsert(any())).thenReturn(
+            every { accountCategoryUpsertService.upsert(any()) } returns
                 AccountCategoryUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
-            )
 
             service.upsert(items)
 
-            val captor = argumentCaptor<List<AccountCategoryUpsertCommand>>()
-            verify(accountCategoryUpsertService).upsert(captor.capture())
-            val command = captor.firstValue.single()
+            val captor = slot<List<AccountCategoryUpsertCommand>>()
+            verify { accountCategoryUpsertService.upsert(capture(captor)) }
+            val command = captor.captured.single()
             assertThat(command.accountCode).isEqualTo("Z001")
             assertThat(command.name).isEqualTo("일반거래처")
         }

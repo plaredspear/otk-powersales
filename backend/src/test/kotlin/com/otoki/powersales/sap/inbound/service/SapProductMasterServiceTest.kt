@@ -5,33 +5,21 @@ import com.otoki.powersales.product.service.dto.ProductUpsertCommand
 import com.otoki.powersales.product.service.dto.ProductUpsertFailedRow
 import com.otoki.powersales.product.service.dto.ProductUpsertResult
 import com.otoki.powersales.sap.inbound.dto.product.ProductMasterRequestItem
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-/**
- * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
- * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
- */
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SapProductMasterService 어댑터 테스트")
 class SapProductMasterServiceTest {
 
-    @Mock
-    private lateinit var productUpsertService: ProductUpsertService
-
-    @InjectMocks
-    private lateinit var service: SapProductMasterService
+    private val productUpsertService: ProductUpsertService = mockk()
+    private val service = SapProductMasterService(productUpsertService)
 
     @Nested
     @DisplayName("upsert - 어댑터 책임")
@@ -43,9 +31,8 @@ class SapProductMasterServiceTest {
             val items = listOf(
                 ProductMasterRequestItem(productCode = "100100", productName = "진라면", standardPrice = "4500")
             )
-            whenever(productUpsertService.upsert(any())).thenReturn(
+            every { productUpsertService.upsert(any()) } returns
                 ProductUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
-            )
 
             val detail = service.upsert(items)
 
@@ -60,13 +47,12 @@ class SapProductMasterServiceTest {
                 ProductMasterRequestItem(productCode = "100100", productName = "진라면"),
                 ProductMasterRequestItem(productCode = "100200", productName = "안성탕면", standardPrice = "abc")
             )
-            whenever(productUpsertService.upsert(any())).thenReturn(
+            every { productUpsertService.upsert(any()) } returns
                 ProductUpsertResult(
                     successCount = 1,
                     failureCount = 1,
                     failures = listOf(ProductUpsertFailedRow("100200", "StandardPrice 변환 실패: abc"))
                 )
-            )
 
             val detail = service.upsert(items)
 
@@ -80,8 +66,7 @@ class SapProductMasterServiceTest {
         @DisplayName("도메인 throw: 어댑터는 catch 하지 않고 그대로 재전파 (audit 은 Aspect 책임)")
         fun domainThrow_propagated() {
             val items = listOf(ProductMasterRequestItem(productCode = "100100", productName = "진라면"))
-            whenever(productUpsertService.upsert(any()))
-                .thenThrow(IllegalStateException("DB connection lost"))
+            every { productUpsertService.upsert(any()) } throws IllegalStateException("DB connection lost")
 
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(IllegalStateException::class.java)
@@ -101,15 +86,14 @@ class SapProductMasterServiceTest {
                     pallet = "100"
                 )
             )
-            whenever(productUpsertService.upsert(any())).thenReturn(
+            every { productUpsertService.upsert(any()) } returns
                 ProductUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
-            )
 
             service.upsert(items)
 
-            val captor = argumentCaptor<List<ProductUpsertCommand>>()
-            verify(productUpsertService).upsert(captor.capture())
-            val command = captor.firstValue.single()
+            val captor = slot<List<ProductUpsertCommand>>()
+            verify { productUpsertService.upsert(capture(captor)) }
+            val command = captor.captured.single()
             assertThat(command.productCode).isEqualTo("100100")
             assertThat(command.productName).isEqualTo("진라면")
             assertThat(command.standardPrice).isEqualTo("4500")

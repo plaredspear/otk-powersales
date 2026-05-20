@@ -9,16 +9,15 @@ import com.otoki.powersales.sap.auth.exception.SapInvalidClientException
 import com.otoki.powersales.sap.auth.exception.SapInvalidScopeException
 import com.otoki.powersales.sap.auth.exception.SapIpNotAllowedException
 import com.otoki.powersales.sap.auth.exception.SapUnsupportedGrantTypeException
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
 @DisplayName("SapTokenService 테스트")
@@ -28,7 +27,7 @@ class SapTokenServiceTest {
     private val secretHash: String = BCryptPasswordEncoder().encode(plainSecret)!!
     private val signingKey = "sap-token-service-test-signing-key-with-256-bits-1234567890"
 
-    private val auditService: SapInboundAuditService = mock()
+    private val auditService: SapInboundAuditService = mockk()
 
     private fun service(
         allowedIps: List<String> = emptyList(),
@@ -44,7 +43,7 @@ class SapTokenServiceTest {
             allowedScopes = allowedScopes,
             allowedIps = allowedIps
         )
-        whenever(auditService.record(any())).thenAnswer { it.getArgument<SapInboundAudit>(0) }
+        every { auditService.record(any()) } answers { firstArg<SapInboundAudit>() }
         return SapTokenService(props, auditService, SapJwtCodec(props))
     }
 
@@ -70,10 +69,10 @@ class SapTokenServiceTest {
             assertThat(response.expiresIn).isEqualTo(86400)
             assertThat(response.scope).isEqualTo("sap.org.write sap.employee.write")
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.TOKEN_ISSUED)
-            assertThat(captor.firstValue.clientId).isEqualTo("otoki-sap-client")
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            assertThat(captor.captured.eventType).isEqualTo(SapInboundAuditEventType.TOKEN_ISSUED)
+            assertThat(captor.captured.clientId).isEqualTo("otoki-sap-client")
         }
     }
 
@@ -89,9 +88,9 @@ class SapTokenServiceTest {
             assertThatThrownBy { svc.issue(req, "127.0.0.1") }
                 .isInstanceOf(SapInvalidClientException::class.java)
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.eventType).isEqualTo(SapInboundAuditEventType.TOKEN_REJECTED)
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            assertThat(captor.captured.eventType).isEqualTo(SapInboundAuditEventType.TOKEN_REJECTED)
         }
 
         @Test
@@ -133,9 +132,9 @@ class SapTokenServiceTest {
             assertThatThrownBy { svc.issue(validRequest(), "203.0.113.5") }
                 .isInstanceOf(SapIpNotAllowedException::class.java)
 
-            val captor = argumentCaptor<SapInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.eventType)
+            val captor = slot<SapInboundAudit>()
+            verify { auditService.record(capture(captor)) }
+            assertThat(captor.captured.eventType)
                 .isEqualTo(SapInboundAuditEventType.REQUEST_REJECTED_IP)
         }
 

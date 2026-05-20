@@ -1,34 +1,27 @@
 package com.otoki.powersales.sap.inbound.service
 
-import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.schedule.repository.AppointmentRepository
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("PostponedAppointmentBatchService 테스트 (#692)")
 class PostponedAppointmentBatchServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var appointmentRepository: AppointmentRepository
-
-    @Mock
-    private lateinit var appointmentUserProfileUpdater: AppointmentUserProfileUpdater
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val appointmentRepository: AppointmentRepository = mockk()
+    private val appointmentUserProfileUpdater: AppointmentUserProfileUpdater = mockk()
 
     private lateinit var service: PostponedAppointmentBatchService
 
@@ -48,8 +41,8 @@ class PostponedAppointmentBatchServiceTest {
         @Test
         @DisplayName("대상 없음 - 아무 처리 없이 종료")
         fun noTargets() {
-            whenever(employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today))
-                .thenReturn(emptyList())
+            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
+                emptyList()
 
             service.process(today)
         }
@@ -58,34 +51,38 @@ class PostponedAppointmentBatchServiceTest {
         @DisplayName("정상 처리 - Appointment 조회 후 즉시 반영 수행")
         fun normalProcess() {
             val employee = createEmployee(crmWorkStartDate = today)
-            whenever(employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today))
-                .thenReturn(listOf(employee))
+            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
+                listOf(employee)
 
             val codeMap = mapOf("H20020:D0052" to "조장")
-            whenever(appointmentUserProfileUpdater.loadSystemCodeMap()).thenReturn(codeMap)
+            every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns codeMap
 
             val appointment = createAppointment()
-            whenever(appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc("100234"))
-                .thenReturn(appointment)
+            every { appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc("100234") } returns
+                appointment
+            every {
+                appointmentUserProfileUpdater.applyImmediateAppointment(employee, appointment, today, codeMap)
+            } just runs
 
             service.process(today)
 
-            verify(appointmentUserProfileUpdater).applyImmediateAppointment(
-                employee, appointment, today, codeMap
-            )
+            verify {
+                appointmentUserProfileUpdater.applyImmediateAppointment(
+                    employee, appointment, today, codeMap
+                )
+            }
         }
 
         @Test
         @DisplayName("Appointment 없음 - crmWorkStartDate만 null 초기화")
         fun noAppointmentFound() {
             val employee = createEmployee(crmWorkStartDate = today)
-            whenever(employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today))
-                .thenReturn(listOf(employee))
+            every { employeeRepository.findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(today) } returns
+                listOf(employee)
 
-            whenever(appointmentUserProfileUpdater.loadSystemCodeMap()).thenReturn(emptyMap())
+            every { appointmentUserProfileUpdater.loadSystemCodeMap() } returns emptyMap()
 
-            whenever(appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc("100234"))
-                .thenReturn(null)
+            every { appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc("100234") } returns null
 
             service.process(today)
 

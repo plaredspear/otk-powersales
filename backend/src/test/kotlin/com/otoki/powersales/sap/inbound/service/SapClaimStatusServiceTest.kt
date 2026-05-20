@@ -10,34 +10,31 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.claim.ClaimStatusRequestItem
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
-import java.time.LocalDate
 import java.math.BigDecimal
+import java.time.LocalDate
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SapClaimStatusService 테스트")
 class SapClaimStatusServiceTest {
 
-    @Mock
-    private lateinit var claimRepository: ClaimRepository
+    private val claimRepository: ClaimRepository = mockk()
+    private val auditService: SapInboundAuditService = mockk()
+    private val service = SapClaimStatusService(claimRepository, auditService)
 
-    @Mock
-    private lateinit var auditService: SapInboundAuditService
-
-    @InjectMocks
-    private lateinit var service: SapClaimStatusService
+    @BeforeEach
+    fun setUp() {
+        every { auditService.record(any<SapInboundAudit>()) } answers { firstArg() }
+        every { claimRepository.findAllByNameIn(any()) } returns emptyList()
+        every { claimRepository.saveAll(any<List<Claim>>()) } answers { firstArg() }
+    }
 
     private fun claim(
         name: String?,
@@ -84,14 +81,15 @@ class SapClaimStatusServiceTest {
         @DisplayName("기존 Claim 갱신 - SAP 처리 필드 6종 모두 적용")
         fun update_existingClaim() {
             val existing = claim(name = "CLM-2026-04-001")
-            whenever(claimRepository.findAllByNameIn(listOf("CLM-2026-04-001")))
-                .thenReturn(listOf(existing))
+            every { claimRepository.findAllByNameIn(listOf("CLM-2026-04-001")) } returns listOf(existing)
+            every { claimRepository.saveAll(any<List<Claim>>()) } answers { firstArg() }
+            every { auditService.record(any<SapInboundAudit>()) } answers { firstArg() }
 
             val detail = service.update(listOf(item()))
 
-            val captor = argumentCaptor<List<Claim>>()
-            verify(claimRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val captor = slot<List<Claim>>()
+            verify { claimRepository.saveAll(capture(captor)) }
+            val saved = captor.captured.single()
             assertThat(saved).isSameAs(existing)
             assertThat(saved.counselNumber).isEqualTo("001")
             assertThat(saved.actionCode).isEqualTo("AC02")
@@ -101,7 +99,7 @@ class SapClaimStatusServiceTest {
             assertThat(saved.cosmosKey).isEqualTo("CSMS-20260428-001")
             assertThat(detail.successCount).isEqualTo(1)
             assertThat(detail.failureCount).isEqualTo(0)
-            verify(auditService).record(any<SapInboundAudit>())
+            verify { auditService.record(any<SapInboundAudit>()) }
         }
 
         @Test
@@ -109,8 +107,9 @@ class SapClaimStatusServiceTest {
         fun update_multipleRows() {
             val a = claim(name = "CLM-001")
             val b = claim(name = "CLM-002")
-            whenever(claimRepository.findAllByNameIn(listOf("CLM-001", "CLM-002")))
-                .thenReturn(listOf(a, b))
+            every { claimRepository.findAllByNameIn(listOf("CLM-001", "CLM-002")) } returns listOf(a, b)
+            every { claimRepository.saveAll(any<List<Claim>>()) } answers { firstArg() }
+            every { auditService.record(any<SapInboundAudit>()) } answers { firstArg() }
 
             val detail = service.update(
                 listOf(item(name = "CLM-001"), item(name = "CLM-002"))
@@ -133,13 +132,13 @@ class SapClaimStatusServiceTest {
             assertThat(detail.successCount).isEqualTo(0)
             assertThat(detail.failureCount).isEqualTo(1)
             assertThat(detail.failures.single().reason).contains("Name 필수")
-            verify(claimRepository, never()).saveAll(any<List<Claim>>())
+            verify(exactly = 0) { claimRepository.saveAll(any<List<Claim>>()) }
         }
 
         @Test
         @DisplayName("Claim 미존재 - failure (claim not found), INSERT 안 함")
         fun update_claimNotFound() {
-            whenever(claimRepository.findAllByNameIn(listOf("CLM-NOTEXIST"))).thenReturn(emptyList())
+            every { claimRepository.findAllByNameIn(listOf("CLM-NOTEXIST")) } returns emptyList()
 
             val detail = service.update(listOf(item(name = "CLM-NOTEXIST")))
 
@@ -147,7 +146,7 @@ class SapClaimStatusServiceTest {
             assertThat(detail.failureCount).isEqualTo(1)
             assertThat(detail.failures.single().name).isEqualTo("CLM-NOTEXIST")
             assertThat(detail.failures.single().reason).isEqualTo("claim not found")
-            verify(claimRepository, never()).saveAll(any<List<Claim>>())
+            verify(exactly = 0) { claimRepository.saveAll(any<List<Claim>>()) }
         }
 
         @Test
@@ -167,8 +166,9 @@ class SapClaimStatusServiceTest {
         @DisplayName("부분 실패 - 1건 매칭, 1건 미존재")
         fun update_partialFailure() {
             val existing = claim(name = "CLM-OK")
-            whenever(claimRepository.findAllByNameIn(listOf("CLM-OK", "CLM-NG")))
-                .thenReturn(listOf(existing))
+            every { claimRepository.findAllByNameIn(listOf("CLM-OK", "CLM-NG")) } returns listOf(existing)
+            every { claimRepository.saveAll(any<List<Claim>>()) } answers { firstArg() }
+            every { auditService.record(any<SapInboundAudit>()) } answers { firstArg() }
 
             val detail = service.update(
                 listOf(item(name = "CLM-OK"), item(name = "CLM-NG"))

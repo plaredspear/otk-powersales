@@ -7,34 +7,22 @@ import com.otoki.powersales.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AttendInfoToScheduleConverter 테스트")
 class AttendInfoToScheduleConverterTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
-
-    @InjectMocks
-    private lateinit var converter: AttendInfoToScheduleConverter
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+    private val converter = AttendInfoToScheduleConverter(employeeRepository, teamMemberScheduleRepository)
 
     private fun attendInfo(
         id: Long = 0,
@@ -72,22 +60,22 @@ class AttendInfoToScheduleConverterTest {
             val result = converter.convert(emptyList())
 
             assertThat(result).isEqualTo(ScheduleConversionSummary.ZERO)
-            verify(employeeRepository, never()).findByEmployeeCodeIn(any())
+            verify(exactly = 0) { employeeRepository.findByEmployeeCodeIn(any()) }
         }
 
         @Test
         @DisplayName("정상 변환 (Status='N') - 3일 범위, converted=3")
         fun convert_status_N_threeDays() {
             val emp = employee()
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123")))
-                .thenReturn(listOf(emp))
-            whenever(
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(emp)
+            every {
                 teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
                     eq(emp), any(), eq(WorkingType.ANNUAL_LEAVE)
                 )
-            ).thenReturn(false)
-            whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()))
-                .thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
+            } returns false
+            every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
+                firstArg<List<TeamMemberSchedule>>()
+            }
 
             val result = converter.convert(
                 listOf(
@@ -98,9 +86,9 @@ class AttendInfoToScheduleConverterTest {
             assertThat(result.convertedScheduleCount).isEqualTo(3)
             assertThat(result.deletedScheduleCount).isEqualTo(0)
             assertThat(result.skippedIdempotent).isEqualTo(0)
-            val captor = argumentCaptor<List<TeamMemberSchedule>>()
-            verify(teamMemberScheduleRepository).saveAll(captor.capture())
-            val saved = captor.firstValue
+            val captor = slot<List<TeamMemberSchedule>>()
+            verify { teamMemberScheduleRepository.saveAll(capture(captor)) }
+            val saved = captor.captured
             assertThat(saved).hasSize(3)
             assertThat(saved.map { it.workingDate }).containsExactly(
                 LocalDate.of(2026, 4, 27),
@@ -125,16 +113,16 @@ class AttendInfoToScheduleConverterTest {
                     workingDate = LocalDate.of(2026, 4, 29); workingType = WorkingType.ANNUAL_LEAVE; this.employee = emp
                 }
             )
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123")))
-                .thenReturn(listOf(emp))
-            whenever(
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(emp)
+            every {
                 teamMemberScheduleRepository.findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
                     eq(emp),
                     eq(LocalDate.of(2026, 4, 27)),
                     eq(LocalDate.of(2026, 4, 29)),
                     eq(WorkingType.ANNUAL_LEAVE)
                 )
-            ).thenReturn(existing)
+            } returns existing
+            every { teamMemberScheduleRepository.deleteAll(existing) } returns Unit
 
             val result = converter.convert(
                 listOf(
@@ -144,25 +132,26 @@ class AttendInfoToScheduleConverterTest {
 
             assertThat(result.deletedScheduleCount).isEqualTo(3)
             assertThat(result.convertedScheduleCount).isEqualTo(0)
-            verify(teamMemberScheduleRepository).deleteAll(existing)
+            verify { teamMemberScheduleRepository.deleteAll(existing) }
         }
 
         @Test
         @DisplayName("소문자 status 'n' / 'y' - 대문자와 동일하게 처리")
         fun lowercaseStatus_handled() {
             val emp = employee()
-            whenever(employeeRepository.findByEmployeeCodeIn(any()))
-                .thenReturn(listOf(emp))
-            whenever(
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
+            every {
                 teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(any(), any(), any())
-            ).thenReturn(false)
-            whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()))
-                .thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
-            whenever(
+            } returns false
+            every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
+                firstArg<List<TeamMemberSchedule>>()
+            }
+            every {
                 teamMemberScheduleRepository.findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
                     any(), any(), any(), any()
                 )
-            ).thenReturn(emptyList())
+            } returns emptyList()
+            every { teamMemberScheduleRepository.deleteAll(any<List<TeamMemberSchedule>>()) } returns Unit
 
             val result = converter.convert(
                 listOf(
@@ -179,20 +168,20 @@ class AttendInfoToScheduleConverterTest {
         @DisplayName("멱등성 - 이미 존재하는 일정은 skipped_idempotent 증가")
         fun idempotent_skip() {
             val emp = employee()
-            whenever(employeeRepository.findByEmployeeCodeIn(any()))
-                .thenReturn(listOf(emp))
-            whenever(
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
+            every {
                 teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
                     eq(emp), eq(LocalDate.of(2026, 4, 27)), eq(WorkingType.ANNUAL_LEAVE)
                 )
-            ).thenReturn(true)
-            whenever(
+            } returns true
+            every {
                 teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
                     eq(emp), eq(LocalDate.of(2026, 4, 28)), eq(WorkingType.ANNUAL_LEAVE)
                 )
-            ).thenReturn(false)
-            whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()))
-                .thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
+            } returns false
+            every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
+                firstArg<List<TeamMemberSchedule>>()
+            }
 
             val result = converter.convert(
                 listOf(attendInfo(startDate = "20260427", endDate = "20260428", status = "N"))
@@ -220,16 +209,15 @@ class AttendInfoToScheduleConverterTest {
 
             assertThat(result.skippedAttendTypeFilter).isEqualTo(3)
             assertThat(result.convertedScheduleCount).isEqualTo(0)
-            verify(employeeRepository, never()).findByEmployeeCodeIn(any())
-            verify(teamMemberScheduleRepository, never()).saveAll(any<List<TeamMemberSchedule>>())
+            verify(exactly = 0) { employeeRepository.findByEmployeeCodeIn(any()) }
+            verify(exactly = 0) { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) }
         }
 
         @Test
         @DisplayName("직무 필터 미통과 - skipped_job_filter 증가 (Status='N' 분기만 적용)")
         fun jobFilter_skip() {
             val emp = employee(jobCode = "영업직")
-            whenever(employeeRepository.findByEmployeeCodeIn(any()))
-                .thenReturn(listOf(emp))
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
 
             val result = converter.convert(
                 listOf(attendInfo(status = "N"))
@@ -237,7 +225,7 @@ class AttendInfoToScheduleConverterTest {
 
             assertThat(result.skippedJobFilter).isEqualTo(1)
             assertThat(result.convertedScheduleCount).isEqualTo(0)
-            verify(teamMemberScheduleRepository, never()).saveAll(any<List<TeamMemberSchedule>>())
+            verify(exactly = 0) { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) }
         }
 
         @Test
@@ -249,13 +237,13 @@ class AttendInfoToScheduleConverterTest {
                     workingDate = LocalDate.of(2026, 4, 27); workingType = WorkingType.ANNUAL_LEAVE; this.employee = emp
                 }
             )
-            whenever(employeeRepository.findByEmployeeCodeIn(any()))
-                .thenReturn(listOf(emp))
-            whenever(
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
+            every {
                 teamMemberScheduleRepository.findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
                     eq(emp), any(), any(), eq(WorkingType.ANNUAL_LEAVE)
                 )
-            ).thenReturn(existing)
+            } returns existing
+            every { teamMemberScheduleRepository.deleteAll(existing) } returns Unit
 
             val result = converter.convert(
                 listOf(attendInfo(status = "Y"))
@@ -263,7 +251,7 @@ class AttendInfoToScheduleConverterTest {
 
             assertThat(result.deletedScheduleCount).isEqualTo(1)
             assertThat(result.skippedJobFilter).isEqualTo(0)
-            verify(teamMemberScheduleRepository).deleteAll(existing)
+            verify { teamMemberScheduleRepository.deleteAll(existing) }
         }
 
         @Test
@@ -274,7 +262,7 @@ class AttendInfoToScheduleConverterTest {
             )
 
             assertThat(result).isEqualTo(ScheduleConversionSummary.ZERO)
-            verify(employeeRepository, never()).findByEmployeeCodeIn(any())
+            verify(exactly = 0) { employeeRepository.findByEmployeeCodeIn(any()) }
         }
     }
 
@@ -286,13 +274,13 @@ class AttendInfoToScheduleConverterTest {
         @DisplayName("직원 매핑 실패 - 해당 레코드 skip, 다른 레코드는 변환 진행")
         fun employeeNotFound_partialContinue() {
             val emp = employee(employeeCode = "100123")
-            whenever(employeeRepository.findByEmployeeCodeIn(any()))
-                .thenReturn(listOf(emp))
-            whenever(
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
+            every {
                 teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(any(), any(), any())
-            ).thenReturn(false)
-            whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()))
-                .thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
+            } returns false
+            every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
+                firstArg<List<TeamMemberSchedule>>()
+            }
 
             val result = converter.convert(
                 listOf(
@@ -308,8 +296,7 @@ class AttendInfoToScheduleConverterTest {
         @Test
         @DisplayName("Status='Y' 분기 직원 매핑 실패 - skipped_employee_not_found 증가")
         fun statusY_employeeNotFound() {
-            whenever(employeeRepository.findByEmployeeCodeIn(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns emptyList()
 
             val result = converter.convert(
                 listOf(attendInfo(employeeCode = "UNKNOWN", status = "Y"))
@@ -323,8 +310,7 @@ class AttendInfoToScheduleConverterTest {
         @DisplayName("일자 역전 (start > end) - skip")
         fun invalidDateRange_skip() {
             val emp = employee()
-            whenever(employeeRepository.findByEmployeeCodeIn(any()))
-                .thenReturn(listOf(emp))
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
 
             val result = converter.convert(
                 listOf(
@@ -334,20 +320,20 @@ class AttendInfoToScheduleConverterTest {
 
             assertThat(result.convertedScheduleCount).isEqualTo(0)
             assertThat(result.skippedJobFilter).isEqualTo(0)
-            verify(teamMemberScheduleRepository, never()).saveAll(any<List<TeamMemberSchedule>>())
+            verify(exactly = 0) { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) }
         }
 
         @Test
         @DisplayName("AttendType 필터 미통과 + Status='N' 정상건 혼합 - 정상건만 변환")
         fun mixed_filterAndConvert() {
             val emp = employee()
-            whenever(employeeRepository.findByEmployeeCodeIn(any()))
-                .thenReturn(listOf(emp))
-            whenever(
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
+            every {
                 teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(any(), any(), any())
-            ).thenReturn(false)
-            whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()))
-                .thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
+            } returns false
+            every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
+                firstArg<List<TeamMemberSchedule>>()
+            }
 
             val result = converter.convert(
                 listOf(

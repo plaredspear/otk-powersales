@@ -5,33 +5,21 @@ import com.otoki.powersales.account.service.dto.AccountUpsertCommand
 import com.otoki.powersales.account.service.dto.AccountUpsertFailedRow
 import com.otoki.powersales.account.service.dto.AccountUpsertResult
 import com.otoki.powersales.sap.inbound.dto.account.ClientMasterRequestItem
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-/**
- * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
- * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
- */
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SapClientMasterService 어댑터 테스트")
 class SapClientMasterServiceTest {
 
-    @Mock
-    private lateinit var accountUpsertService: AccountUpsertService
-
-    @InjectMocks
-    private lateinit var service: SapClientMasterService
+    private val accountUpsertService: AccountUpsertService = mockk()
+    private val service = SapClientMasterService(accountUpsertService)
 
     @Nested
     @DisplayName("upsert - 어댑터 책임")
@@ -44,9 +32,8 @@ class SapClientMasterServiceTest {
                 ClientMasterRequestItem(sapAccountCode = "A", name = "거래처A"),
                 ClientMasterRequestItem(sapAccountCode = "B", name = "거래처B")
             )
-            whenever(accountUpsertService.upsert(any())).thenReturn(
+            every { accountUpsertService.upsert(any()) } returns
                 AccountUpsertResult(successCount = 2, failureCount = 0, failures = emptyList())
-            )
 
             val detail = service.upsert(items)
 
@@ -62,13 +49,12 @@ class SapClientMasterServiceTest {
                 ClientMasterRequestItem(sapAccountCode = "A", name = "정상"),
                 ClientMasterRequestItem(sapAccountCode = "B", name = null)
             )
-            whenever(accountUpsertService.upsert(any())).thenReturn(
+            every { accountUpsertService.upsert(any()) } returns
                 AccountUpsertResult(
                     successCount = 1,
                     failureCount = 1,
                     failures = listOf(AccountUpsertFailedRow(identifier = "B", reason = "Name 필수"))
                 )
-            )
 
             val detail = service.upsert(items)
 
@@ -86,8 +72,8 @@ class SapClientMasterServiceTest {
                 ClientMasterRequestItem(sapAccountCode = "A", name = "거래처A"),
                 ClientMasterRequestItem(sapAccountCode = "B", name = "거래처B")
             )
-            whenever(accountUpsertService.upsert(any()))
-                .thenThrow(IllegalStateException("DB connection lost"))
+            every { accountUpsertService.upsert(any()) } throws
+                IllegalStateException("DB connection lost")
 
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(IllegalStateException::class.java)
@@ -112,15 +98,14 @@ class SapClientMasterServiceTest {
                     phone = "02-0000-0000"
                 )
             )
-            whenever(accountUpsertService.upsert(any())).thenReturn(
+            every { accountUpsertService.upsert(any()) } returns
                 AccountUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
-            )
 
             service.upsert(items)
 
-            val captor = argumentCaptor<List<AccountUpsertCommand>>()
-            verify(accountUpsertService).upsert(captor.capture())
-            val command = captor.firstValue.single()
+            val captor = slot<List<AccountUpsertCommand>>()
+            verify { accountUpsertService.upsert(capture(captor)) }
+            val command = captor.captured.single()
             assertThat(command.externalKey).isEqualTo("1032619")
             assertThat(command.name).isEqualTo("(주)홍길동상회")
             assertThat(command.employeeCode).isEqualTo("100123")

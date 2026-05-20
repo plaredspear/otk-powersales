@@ -1,60 +1,52 @@
 package com.otoki.powersales.sap.inbound.service
 
-import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.common.entity.SystemCodeMaster
+import com.otoki.powersales.common.repository.SystemCodeMasterRepository
+import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
-import com.otoki.powersales.common.repository.SystemCodeMasterRepository
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.user.service.EmployeeProfileResolver
 import com.otoki.powersales.user.service.UserRoleResolver
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AppointmentUserProfileUpdater 테스트")
 class AppointmentUserProfileUpdaterTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
-
-    @Mock
-    private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
-
-    @Mock
-    private lateinit var userRepository: UserRepository
-
-    @Mock
-    private lateinit var employeeProfileResolver: EmployeeProfileResolver
-
-    @Mock
-    private lateinit var userRoleResolver: UserRoleResolver
-
-    @InjectMocks
-    private lateinit var updater: AppointmentUserProfileUpdater
+    private val employeeRepository: EmployeeRepository = mockk(relaxed = true)
+    private val organizationRepository: OrganizationRepository = mockk(relaxed = true)
+    private val systemCodeMasterRepository: SystemCodeMasterRepository = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
+    private val employeeProfileResolver: EmployeeProfileResolver = mockk(relaxed = true)
+    private val userRoleResolver: UserRoleResolver = mockk(relaxed = true)
+    private val updater = AppointmentUserProfileUpdater(
+        employeeRepository,
+        organizationRepository,
+        systemCodeMasterRepository,
+        userRepository,
+        employeeProfileResolver,
+        userRoleResolver
+    )
 
     private val today = LocalDate.of(2026, 3, 22)
 
     private fun setupSystemCodeMaster() {
-        whenever(systemCodeMasterRepository.findByGroupCodeIn(
-            listOf("H20020", "H20030", "H20010", "H10050", "H10060")
-        )).thenReturn(listOf(
+        every {
+            systemCodeMasterRepository.findByGroupCodeIn(
+                listOf("H20020", "H20030", "H20010", "H10050", "H10060")
+            )
+        } returns listOf(
             createSystemCodeMaster("H20020", "D0052", "조장"),
             createSystemCodeMaster("H20020", "D0053", "사원"),
             createSystemCodeMaster("H20030", "W0010", "사원"),
@@ -64,7 +56,7 @@ class AppointmentUserProfileUpdaterTest {
             createSystemCodeMaster("H10060", "A049", "판촉직"),
             createSystemCodeMaster("H10060", "A053", "레이디직"),
             createSystemCodeMaster("H10060", "B001", "일반직")
-        ))
+        )
     }
 
     @Nested
@@ -80,7 +72,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("조장 - jobCode=A055, jikchak=D0052 -> appAuthority=조장, appLoginActive=true")
         fun immediateLeader() {
             val employee = createEmployee()
-            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "제1영업지점",
@@ -112,7 +104,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("여사원 - jobCode=A049, jikchak!=D0052, ordDetailNode=전보 -> 여사원, professionalPromotionTeam=일반")
         fun immediateWorker() {
             val employee = createEmployee()
-            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "제2영업지점",
@@ -131,7 +123,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("일반직 - jobCode=B001 -> role/appLoginActive 변경 없음")
         fun immediateGeneral() {
             val employee = createEmployee(role = UserRole.UNKNOWN, appLoginActive = false)
-            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "본사",
@@ -152,7 +144,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("승진 발령 - ordDetailNode=승진 -> professionalPromotionTeam 기존 값 유지")
         fun promotionKeepsPPT() {
             val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
-            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "지점",
@@ -235,7 +227,7 @@ class AppointmentUserProfileUpdaterTest {
         @DisplayName("예약 발령 - crmWorkStartDate 설정, AppAuthority 즉시, 나머지 미변경")
         fun reservedAppointment() {
             val employee = createEmployee(orgName = "기존지점", costCenterCode = "0000")
-            whenever(employeeRepository.findByEmployeeCode("100234")).thenReturn(Optional.of(employee))
+            every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
 
             val appointment = createAppointment(
                 afterOrgCode = "1111", afterOrgName = "신규지점",

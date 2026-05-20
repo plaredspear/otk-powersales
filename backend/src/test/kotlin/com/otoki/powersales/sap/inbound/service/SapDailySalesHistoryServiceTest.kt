@@ -7,31 +7,21 @@ import com.otoki.powersales.sales.service.dto.DailySalesHistoryUpsertResult
 import com.otoki.powersales.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.sap.inbound.dto.sales.DailySalesHistoryRequestItem
 import com.otoki.powersales.sap.inbound.exception.SapPayloadTooLargeException
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-/**
- * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
- * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 청크 분할 / 응답 매핑만 검증.
- */
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SapDailySalesHistoryService 어댑터 테스트")
 class SapDailySalesHistoryServiceTest {
 
-    @Mock
-    private lateinit var dailySalesHistoryUpsertService: DailySalesHistoryUpsertService
+    private val dailySalesHistoryUpsertService: DailySalesHistoryUpsertService = mockk()
 
     private lateinit var service: SapDailySalesHistoryService
 
@@ -62,9 +52,8 @@ class SapDailySalesHistoryServiceTest {
         @Test
         @DisplayName("happy: 단일 청크, 도메인 결과 (success=1, failure=0) → SalesHistoryDetail + chunk SUCCESS")
         fun happy_singleChunkSuccess() {
-            whenever(dailySalesHistoryUpsertService.upsert(any())).thenReturn(
+            every { dailySalesHistoryUpsertService.upsert(any()) } returns
                 DailySalesHistoryUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
-            )
 
             val detail = service.upsert(listOf(item()))
 
@@ -78,9 +67,8 @@ class SapDailySalesHistoryServiceTest {
         @DisplayName("청크 분할: 5건 / chunkSize=3 → 2 chunks (3+2), 도메인 호출 2회")
         fun chunkSplit_callsDomainPerChunk() {
             val items = (1..5).map { item(salesDate = "2026042$it") }
-            whenever(dailySalesHistoryUpsertService.upsert(any())).thenAnswer { invocation ->
-                @Suppress("UNCHECKED_CAST")
-                val cmds = invocation.arguments[0] as List<DailySalesHistoryUpsertCommand>
+            every { dailySalesHistoryUpsertService.upsert(any()) } answers {
+                val cmds = firstArg<List<DailySalesHistoryUpsertCommand>>()
                 DailySalesHistoryUpsertResult(successCount = cmds.size, failureCount = 0, failures = emptyList())
             }
 
@@ -91,20 +79,19 @@ class SapDailySalesHistoryServiceTest {
             assertThat(detail.chunks[0].count).isEqualTo(3)
             assertThat(detail.chunks[1].count).isEqualTo(2)
             assertThat(detail.chunks).allMatch { it.status == ChunkResult.STATUS_SUCCESS }
-            verify(dailySalesHistoryUpsertService, org.mockito.kotlin.times(2)).upsert(any())
+            verify(exactly = 2) { dailySalesHistoryUpsertService.upsert(any()) }
             assertThat(detail.chunkCount).isEqualTo(2)
         }
 
         @Test
         @DisplayName("부분 실패: 도메인 failures → SAP FailureItem 매핑, chunk PARTIAL")
         fun partialFailure_chunkPartial() {
-            whenever(dailySalesHistoryUpsertService.upsert(any())).thenReturn(
+            every { dailySalesHistoryUpsertService.upsert(any()) } returns
                 DailySalesHistoryUpsertResult(
                     successCount = 1,
                     failureCount = 1,
                     failures = listOf(DailySalesHistoryUpsertFailedRow("10326192026-04-27", "SalesDate 형식 오류: 2026-04-27"))
                 )
-            )
 
             val detail = service.upsert(listOf(item(salesDate = "2026-04-27"), item(salesDate = "20260428")))
 
@@ -119,11 +106,10 @@ class SapDailySalesHistoryServiceTest {
         fun chunkCommitFailure_isolated() {
             val items = (1..5).map { item(salesDate = "2026042$it") }
             var callCount = 0
-            whenever(dailySalesHistoryUpsertService.upsert(any())).thenAnswer { invocation ->
+            every { dailySalesHistoryUpsertService.upsert(any()) } answers {
                 callCount++
                 if (callCount == 1) throw RuntimeException("DB connection lost")
-                @Suppress("UNCHECKED_CAST")
-                val cmds = invocation.arguments[0] as List<DailySalesHistoryUpsertCommand>
+                val cmds = firstArg<List<DailySalesHistoryUpsertCommand>>()
                 DailySalesHistoryUpsertResult(successCount = cmds.size, failureCount = 0, failures = emptyList())
             }
 
@@ -139,9 +125,8 @@ class SapDailySalesHistoryServiceTest {
         @Test
         @DisplayName("DTO 매핑: DailySalesHistoryRequestItem → DailySalesHistoryUpsertCommand 필드 매핑")
         fun dtoMapping_itemToCommand() {
-            whenever(dailySalesHistoryUpsertService.upsert(any())).thenReturn(
+            every { dailySalesHistoryUpsertService.upsert(any()) } returns
                 DailySalesHistoryUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
-            )
             val items = listOf(
                 DailySalesHistoryRequestItem(
                     sapAccountCode = "1032619",
@@ -153,9 +138,9 @@ class SapDailySalesHistoryServiceTest {
 
             service.upsert(items)
 
-            val captor = argumentCaptor<List<DailySalesHistoryUpsertCommand>>()
-            verify(dailySalesHistoryUpsertService).upsert(captor.capture())
-            val command = captor.firstValue.single()
+            val captor = slot<List<DailySalesHistoryUpsertCommand>>()
+            verify { dailySalesHistoryUpsertService.upsert(capture(captor)) }
+            val command = captor.captured.single()
             assertThat(command.sapAccountCode).isEqualTo("1032619")
             assertThat(command.salesDate).isEqualTo("20260427")
             assertThat(command.erpSalesAmount1).isEqualTo("1500000")
@@ -174,7 +159,7 @@ class SapDailySalesHistoryServiceTest {
 
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(SapPayloadTooLargeException::class.java)
-            verify(dailySalesHistoryUpsertService, never()).upsert(any())
+            verify(exactly = 0) { dailySalesHistoryUpsertService.upsert(any()) }
         }
     }
 }

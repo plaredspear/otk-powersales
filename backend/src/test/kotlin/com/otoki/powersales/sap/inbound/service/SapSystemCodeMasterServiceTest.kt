@@ -5,33 +5,21 @@ import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertCommand
 import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertFailedRow
 import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertResult
 import com.otoki.powersales.sap.inbound.dto.product.SystemCodeMasterRequestItem
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-/**
- * Spec #639: REQUEST_ACCEPTED audit 검증은 SapInboundAuditAspectTest 가 책임.
- * 본 테스트는 어댑터의 도메인 호출 / DTO 매핑 / 응답 매핑만 검증.
- */
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SapSystemCodeMasterService 어댑터 테스트")
 class SapSystemCodeMasterServiceTest {
 
-    @Mock
-    private lateinit var systemCodeMasterUpsertService: SystemCodeMasterUpsertService
-
-    @InjectMocks
-    private lateinit var service: SapSystemCodeMasterService
+    private val systemCodeMasterUpsertService: SystemCodeMasterUpsertService = mockk()
+    private val service = SapSystemCodeMasterService(systemCodeMasterUpsertService)
 
     @Nested
     @DisplayName("upsert - 어댑터 책임")
@@ -40,9 +28,8 @@ class SapSystemCodeMasterServiceTest {
         @Test
         @DisplayName("happy: 도메인 결과 → ProductMasterDetail")
         fun happy_domainResultMapped() {
-            whenever(systemCodeMasterUpsertService.upsert(any())).thenReturn(
+            every { systemCodeMasterUpsertService.upsert(any()) } returns
                 SystemCodeMasterUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
-            )
 
             val detail = service.upsert(
                 listOf(
@@ -62,13 +49,12 @@ class SapSystemCodeMasterServiceTest {
         @Test
         @DisplayName("부분 실패: 도메인 failures → SAP FailureItem 매핑")
         fun partialFailure_failureRowsMapped() {
-            whenever(systemCodeMasterUpsertService.upsert(any())).thenReturn(
+            every { systemCodeMasterUpsertService.upsert(any()) } returns
                 SystemCodeMasterUpsertResult(
                     successCount = 0,
                     failureCount = 1,
                     failures = listOf(SystemCodeMasterUpsertFailedRow(null, "GroupCode 필수"))
                 )
-            )
 
             val detail = service.upsert(
                 listOf(SystemCodeMasterRequestItem(companyCode = "1000", groupCode = null, detailCode = "10"))
@@ -81,8 +67,7 @@ class SapSystemCodeMasterServiceTest {
         @Test
         @DisplayName("도메인 throw: 어댑터는 catch 하지 않고 그대로 재전파 (audit 은 Aspect 책임)")
         fun domainThrow_propagated() {
-            whenever(systemCodeMasterUpsertService.upsert(any()))
-                .thenThrow(IllegalStateException("DB connection lost"))
+            every { systemCodeMasterUpsertService.upsert(any()) } throws IllegalStateException("DB connection lost")
 
             assertThatThrownBy {
                 service.upsert(
@@ -94,9 +79,8 @@ class SapSystemCodeMasterServiceTest {
         @Test
         @DisplayName("DTO 매핑: SystemCodeMasterRequestItem → SystemCodeMasterUpsertCommand")
         fun dtoMapping_itemToCommand() {
-            whenever(systemCodeMasterUpsertService.upsert(any())).thenReturn(
+            every { systemCodeMasterUpsertService.upsert(any()) } returns
                 SystemCodeMasterUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
-            )
             val items = listOf(
                 SystemCodeMasterRequestItem(
                     companyCode = "1000",
@@ -110,9 +94,9 @@ class SapSystemCodeMasterServiceTest {
 
             service.upsert(items)
 
-            val captor = argumentCaptor<List<SystemCodeMasterUpsertCommand>>()
-            verify(systemCodeMasterUpsertService).upsert(captor.capture())
-            val command = captor.firstValue.single()
+            val captor = slot<List<SystemCodeMasterUpsertCommand>>()
+            verify { systemCodeMasterUpsertService.upsert(capture(captor)) }
+            val command = captor.captured.single()
             assertThat(command.companyCode).isEqualTo("1000")
             assertThat(command.groupCode).isEqualTo("H10010")
             assertThat(command.detailCode).isEqualTo("10")
