@@ -1,9 +1,9 @@
 #!/usr/bin/env kotlin
 
 /**
- * Stage 1 — Raw INSERT (Spec #764, v10 — K2 cache 무효화 / isIntegerScale 제거 + NUMERIC 통일).
+ * Stage 1 — Raw INSERT (Spec #764, v11 — K2 cache 무효화 / COPY FROM STDIN 전략 추가).
  *
- * 책임: 추출된 CSV 를 staging 영역에 1:1 로 JDBC batch INSERT.
+ * 책임: 추출된 CSV 를 staging 영역에 1:1 로 JDBC batch INSERT 또는 COPY FROM STDIN.
  *       - enum 변환 / transform 일체 수행하지 않음 (Stage 2 의 책임).
  *       - SF 원본 값을 그대로 적재 (raw_columns_as_string 컬럼은 한글 picklist 그대로).
  *       - ON CONFLICT DO NOTHING 으로 멱등성 보장 (재실행 안전).
@@ -31,6 +31,8 @@
 import java.io.File
 import java.sql.Connection
 import java.sql.Types
+import org.postgresql.PGConnection
+import org.postgresql.copy.CopyManager
 
 // =============================================================================
 // JDBC batch INSERT (lambda-free — K2 cross-file safe)
@@ -179,6 +181,104 @@ fun applyStageOneStreamingInsert(
             inserted += results.count { it > 0 || it == java.sql.Statement.SUCCESS_NO_INFO }
             progress?.update(processed, "${meta.targetName} ($processed processed)")
         }
+    }
+    return Triple(inserted, totalRows, filteredOut)
+}
+
+/**
+ * EntityMetadata 기준 COPY FROM STDIN 적재 (백만 단위 row entity 의 속도 개선용).
+ *
+ * 모드 분기 (resetMode 인자):
+ *   - true (--reset 직후): 빈 타겟 테이블에 직접 COPY — 충돌 0건 보장, 최고 속도.
+ *   - false (--no-reset 누적): UNLOGGED staging 테이블 → COPY → INSERT-SELECT ON CONFLICT
+ *     DO NOTHING → DROP. 멱등성 보전 + WAL 우회로 속도 유지.
+ *
+ * 반환: Triple(inserted, totalRows, filteredOut).
+ *   - resetMode=true: inserted = totalRows - filteredOut (COPY 직접, 충돌 없음)
+ *   - resetMode=false: inserted = INSERT-SELECT 의 rowcount (ON CONFLICT 로 skip 된 row 제외)
+ */
+fun applyStageOneCopyInsert(
+    conn: Connection,
+    meta: EntityMetadata,
+    csvFile: File,
+    resetMode: Boolean,
+    progress: ProgressBar? = null
+): Triple<Int, Int, Int> {
+    val allColumns = meta.fields.map { it.dbColumnName } + meta.extraStaticColumns.keys.toList()
+    val columnsList = allColumns.joinToString(", ")
+    val quotedTable = quoteTable(meta.tableName)
+    val fullyQualified = "${meta.schemaName}.$quotedTable"
+    val requiredFields = meta.fields.filter { !it.nullable }
+    val extraValues = meta.extraStaticColumns.values.toList()
+
+    val copyTargetTable: String
+    val stagingTableName: String?
+    if (resetMode) {
+        copyTargetTable = fullyQualified
+        stagingTableName = null
+    } else {
+        // UNLOGGED staging — WAL 우회로 적재 속도 + DROP 으로 깨끗하게 정리.
+        // 세션 trx 내에서만 의미가 있으므로 session-local schema 가 아닌 powersales 에 직접 생성.
+        stagingTableName = "${meta.schemaName}._copy_staging_${meta.tableName}"
+        copyTargetTable = stagingTableName
+        conn.createStatement().use { st ->
+            st.executeUpdate("DROP TABLE IF EXISTS $stagingTableName")
+            st.executeUpdate(
+                "CREATE UNLOGGED TABLE $stagingTableName " +
+                "(LIKE $fullyQualified INCLUDING DEFAULTS EXCLUDING CONSTRAINTS EXCLUDING INDEXES)"
+            )
+        }
+    }
+
+    val copySql = "COPY $copyTargetTable ($columnsList) FROM STDIN " +
+                  "WITH (FORMAT csv, NULL '\\N')"
+    val pgConn = conn.unwrap(PGConnection::class.java)
+    val copyManager: CopyManager = pgConn.copyAPI
+    val copyIn = copyManager.copyIn(copySql)
+
+    var totalRows = 0
+    var filteredOut = 0
+    var processed = 0
+    try {
+        streamCsvFile(csvFile) { row ->
+            totalRows++
+            val ok = requiredFields.all { row[it.sfFieldName]?.isNotBlank() == true }
+            if (!ok) {
+                filteredOut++
+                return@streamCsvFile
+            }
+            val values = ArrayList<String?>(meta.fields.size + extraValues.size)
+            for (f in meta.fields) values.add(row[f.sfFieldName])
+            for (v in extraValues) values.add(v)
+            val bytes = pgCsvLine(values).toByteArray(Charsets.UTF_8)
+            copyIn.writeToCopy(bytes, 0, bytes.size)
+            processed++
+            if (processed % 10_000 == 0) {
+                progress?.update(processed, "${meta.targetName} ($processed COPY rows)")
+            }
+        }
+        copyIn.endCopy()
+    } catch (e: Throwable) {
+        // copyIn 이 살아있다면 cancel — 트랜잭션은 호출자 rollback 책임.
+        try { if (copyIn.isActive) copyIn.cancelCopy() } catch (_: Throwable) {}
+        throw e
+    }
+
+    val copyRowCount = copyIn.handledRowCount.toInt()
+    progress?.update(processed, "${meta.targetName} ($copyRowCount COPY rows)")
+
+    val inserted: Int = if (resetMode) {
+        copyRowCount
+    } else {
+        // staging → 타겟 테이블 INSERT-SELECT ON CONFLICT DO NOTHING.
+        // RETURNING 으로 inserted row count 회수. ON CONFLICT 로 skip 된 row 는 미반환.
+        val sql = "INSERT INTO $fullyQualified ($columnsList) " +
+                  "SELECT $columnsList FROM $stagingTableName " +
+                  "ON CONFLICT DO NOTHING"
+        val rc = conn.createStatement().use { st -> st.executeUpdate(sql) }
+        // staging 정리.
+        conn.createStatement().use { st -> st.executeUpdate("DROP TABLE IF EXISTS $stagingTableName") }
+        rc
     }
     return Triple(inserted, totalRows, filteredOut)
 }
@@ -334,10 +434,15 @@ for (target in sortedTargets) {
         when (val m = spec.meta) {
             is EntityMetadata -> {
                 // streaming path — CSV 를 row 단위로 읽으면서 즉시 INSERT (백만 단위 OOM 회피).
-                // ProgressBar total 은 사전 line 카운트 (정확치는 아니지만 진행률 표시용).
+                // useCopyStrategy=true 인 entity 는 COPY FROM STDIN path 로 분기 (속도 5~20×).
                 val estimatedTotal = countCsvDataRows(csvFile)
-                val pb = ProgressBar("Stage 1 $target", estimatedTotal)
-                val (inserted, totalRows, filteredOut) = applyStageOneStreamingInsert(conn, m, csvFile, pb)
+                val strategyLabel = if (m.useCopyStrategy) "COPY" else "INSERT"
+                val pb = ProgressBar("Stage 1 $target ($strategyLabel)", estimatedTotal)
+                val (inserted, totalRows, filteredOut) = if (m.useCopyStrategy) {
+                    applyStageOneCopyInsert(conn, m, csvFile, resetMode = shouldReset, progress = pb)
+                } else {
+                    applyStageOneStreamingInsert(conn, m, csvFile, pb)
+                }
                 conn.commit()
                 if (filteredOut > 0) {
                     println("\n[$target] 필수 필드 누락 row 사전 제외: ${filteredOut}건")

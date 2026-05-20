@@ -1,5 +1,5 @@
 /**
- * SF 데이터 마이그레이션 공통 모듈 (Spec #764, v2 — K2 cache 무효화 / PRODUCT_METADATA 정합).
+ * SF 데이터 마이그레이션 공통 모듈 (Spec #764, v3 — K2 cache 무효화 / COPY helper + useCopyStrategy).
  *
  * Stage 1 / Stage 2 entry script 가 @file:Import 로 로드.
  * - data class + 단순 helper 함수 + 상수 매핑 표만 위치.
@@ -46,7 +46,15 @@ data class EntityMetadata(
      * 예: user.password (NOT NULL) → "" placeholder, backend admin API stage2/password 가 BCrypt 로 덮어씀.
      * 값이 null 이면 SQL NULL 로 처리.
      */
-    val extraStaticColumns: Map<String, String?> = emptyMap()
+    val extraStaticColumns: Map<String, String?> = emptyMap(),
+    /**
+     * COPY FROM STDIN 전략 사용 여부 (백만 단위 row entity 의 속도 개선용).
+     * true → CopyManager.copyIn 으로 raw INSERT path 우회.
+     *   - --reset 모드: 빈 타겟 테이블에 직접 COPY (충돌 0건 보장)
+     *   - --no-reset 모드: UNLOGGED temp staging → COPY → INSERT-SELECT ON CONFLICT DO NOTHING → DROP
+     * false (기본값) → 기존 PreparedStatement batch INSERT (소규모 entity / ON CONFLICT 가 잦은 entity).
+     */
+    val useCopyStrategy: Boolean = false
 )
 
 val ORGANIZATION_METADATA = EntityMetadata(
@@ -747,7 +755,9 @@ val ERP_ORDER_PRODUCT_METADATA = EntityMetadata(
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", isString = false)
-    )
+    ),
+    // 백만 단위 row entity — COPY FROM STDIN 으로 적재 속도 개선 (PoC entity, Stage 1 v11).
+    useCopyStrategy = true
 )
 
 val HOLIDAY_MASTER_METADATA = EntityMetadata(
@@ -1599,4 +1609,48 @@ fun parseTargets(targetsStr: String?): List<String> {
         require(t in SUPPORTED_TARGETS) { "Unknown target: $t (allowed: ${SUPPORTED_TARGETS.joinToString(", ")})" }
     }
     return targets
+}
+
+// =============================================================================
+// COPY helpers (PostgreSQL COPY FROM STDIN, FORMAT csv)
+// =============================================================================
+
+/**
+ * PostgreSQL COPY FORMAT csv 의 값 한 셀을 직렬화.
+ *
+ *  - null → `\N` (FORMAT csv 의 NULL 토큰. `COPY ... WITH (FORMAT csv, NULL '\N')` 로 송신측 일치)
+ *  - 빈 문자열 → `""` (literal empty string, NULL 과 구분)
+ *  - quote (`"`) 포함 → `""` 로 escape + 전체 quote
+ *  - comma / newline / carriage return / quote 중 하나라도 포함 시 전체 quote
+ *  - 그 외 일반 ASCII → quote 없이 그대로
+ *
+ * PostgreSQL COPY CSV 사양: https://www.postgresql.org/docs/current/sql-copy.html
+ */
+fun pgCsvEscape(value: String?): String {
+    if (value == null) return "\\N"
+    if (value.isEmpty()) return "\"\""
+    val needsQuote = value.any { it == ',' || it == '"' || it == '\n' || it == '\r' }
+    if (!needsQuote) return value
+    val sb = StringBuilder(value.length + 4)
+    sb.append('"')
+    for (c in value) {
+        if (c == '"') sb.append('"').append('"') else sb.append(c)
+    }
+    sb.append('"')
+    return sb.toString()
+}
+
+/**
+ * 한 row 의 컬럼 값 list 를 COPY CSV line 으로 직렬화 (마지막에 \n).
+ *
+ * 컬럼 순서는 호출자가 INSERT 컬럼 순서 (meta.fields → extraStaticColumns) 와 일치시켜야 함.
+ */
+fun pgCsvLine(values: List<String?>): String {
+    val sb = StringBuilder()
+    for ((i, v) in values.withIndex()) {
+        if (i > 0) sb.append(',')
+        sb.append(pgCsvEscape(v))
+    }
+    sb.append('\n')
+    return sb.toString()
 }
