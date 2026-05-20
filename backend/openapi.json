@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:59231",
+    "url" : "http://localhost:61828",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -8152,12 +8152,12 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
+          "expired" : {
+            "type" : "boolean"
+          },
           "dday" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "expired" : {
-            "type" : "boolean"
           }
         }
       },
@@ -8187,12 +8187,10 @@
             "type" : [ "string", "null" ]
           },
           "defectQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "purchaseAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "purchaseMethodCode" : {
             "type" : [ "string", "null" ]
@@ -8577,13 +8575,11 @@
             "type" : [ "string", "null" ]
           },
           "basePrice" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "dailyTargetCount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "targetAmount" : {
@@ -8597,28 +8593,23 @@
             "minimum" : 0
           },
           "primaryProductAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "primarySalesQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "primarySalesPrice" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "otherSalesAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "otherSalesQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "s3ImageUniqueKey" : {
@@ -8728,12 +8719,10 @@
             "type" : "boolean"
           },
           "basePrice" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "dailyTargetCount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "targetAmount" : {
             "type" : [ "integer", "null" ],
@@ -8744,24 +8733,19 @@
             "format" : "int64"
           },
           "primaryProductAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "primarySalesQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "primarySalesPrice" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "otherSalesAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "otherSalesQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "s3ImageUniqueKey" : {
             "type" : [ "string", "null" ]
@@ -8917,10 +8901,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -8949,13 +8933,11 @@
             "type" : [ "string", "null" ]
           },
           "basePrice" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "dailyTargetCount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "targetAmount" : {
@@ -8969,28 +8951,23 @@
             "minimum" : 0
           },
           "primaryProductAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "primarySalesQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "primarySalesPrice" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "otherSalesAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "otherSalesQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
+            "type" : [ "number", "null" ],
             "minimum" : 0
           },
           "s3ImageUniqueKey" : {
@@ -9071,12 +9048,10 @@
             "type" : "boolean"
           },
           "basePrice" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "dailyTargetCount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "targetAmount" : {
             "type" : [ "integer", "null" ],
@@ -9087,24 +9062,19 @@
             "format" : "int64"
           },
           "primaryProductAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "primarySalesQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "primarySalesPrice" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "otherSalesAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "otherSalesQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "s3ImageUniqueKey" : {
             "type" : [ "string", "null" ]
@@ -10238,8 +10208,7 @@
             "type" : [ "number", "null" ]
           },
           "numberOfEmployees" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "type" : [ "number", "null" ]
           },
           "employeeCode" : {
             "type" : [ "string", "null" ],
@@ -10406,8 +10375,7 @@
             "type" : [ "number", "null" ]
           },
           "numberOfEmployees" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
+            "type" : [ "number", "null" ]
           },
           "consignmentAcc" : {
             "type" : [ "string", "null" ]
@@ -12160,8 +12128,7 @@
             "format" : "int64"
           },
           "lineNumber" : {
-            "type" : "integer",
-            "format" : "int64"
+            "type" : "number"
           },
           "productCode" : {
             "type" : "string"
@@ -12315,12 +12282,10 @@
             "minLength" : 0
           },
           "defectQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "purchaseAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "purchaseMethodCode" : {
             "type" : [ "string", "null" ]
@@ -15756,12 +15721,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -15771,6 +15730,12 @@
           },
           "last" : {
             "type" : "boolean"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -15794,8 +15759,9 @@
       "PageableObject" : {
         "type" : "object",
         "properties" : {
-          "unpaged" : {
-            "type" : "boolean"
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageSize" : {
             "type" : "integer",
@@ -15807,9 +15773,8 @@
           "paged" : {
             "type" : "boolean"
           },
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
+          "unpaged" : {
+            "type" : "boolean"
           },
           "offset" : {
             "type" : "integer",
@@ -15846,10 +15811,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -16501,8 +16466,7 @@
             "type" : "number"
           },
           "totalQuantityPieces" : {
-            "type" : "integer",
-            "format" : "int64"
+            "type" : "number"
           },
           "cancelled" : {
             "type" : "boolean"
@@ -17108,8 +17072,7 @@
             "format" : "date"
           },
           "totalApprovedAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "orderedItemCount" : {
             "type" : "integer",
@@ -17198,8 +17161,7 @@
             "type" : [ "string", "null" ]
           },
           "defectQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "status" : {
             "type" : "string"
@@ -17284,12 +17246,10 @@
             "type" : [ "string", "null" ]
           },
           "defectQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "purchaseAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "purchaseMethodName" : {
             "type" : [ "string", "null" ]
@@ -19160,12 +19120,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -19175,6 +19129,12 @@
           },
           "last" : {
             "type" : "boolean"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -20146,10 +20106,10 @@
           "remark" : {
             "type" : [ "string", "null" ]
           },
-          "deleted" : {
+          "closed" : {
             "type" : "boolean"
           },
-          "closed" : {
+          "deleted" : {
             "type" : "boolean"
           }
         }
@@ -21835,8 +21795,7 @@
             "type" : [ "string", "null" ]
           },
           "defectQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "status" : {
             "type" : "string"
@@ -21948,12 +21907,10 @@
             "type" : [ "string", "null" ]
           },
           "defectQuantity" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "purchaseAmount" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
+            "type" : [ "number", "null" ]
           },
           "purchaseMethodName" : {
             "type" : [ "string", "null" ]
@@ -22148,12 +22105,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -22163,6 +22114,12 @@
           },
           "last" : {
             "type" : "boolean"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
@@ -22415,12 +22372,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -22430,6 +22381,12 @@
           },
           "last" : {
             "type" : "boolean"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "size" : {
             "type" : "integer",
