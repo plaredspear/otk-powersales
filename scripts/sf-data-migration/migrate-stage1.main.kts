@@ -1,7 +1,7 @@
 #!/usr/bin/env kotlin
 
 /**
- * Stage 1 — Raw INSERT (Spec #764, v5 — K2 cache 무효화 / User.employee_code nullable 화).
+ * Stage 1 — Raw INSERT (Spec #764, v8 — K2 cache 무효화 / isIntegerScale 메타 기반 BigDecimal→Long casting).
  *
  * 책임: 추출된 CSV 를 staging 영역에 1:1 로 JDBC batch INSERT.
  *       - enum 변환 / transform 일체 수행하지 않음 (Stage 2 의 책임).
@@ -111,6 +111,85 @@ fun applyStageOneRawInsert(
         }
     }
     return inserted
+}
+
+/**
+ * EntityMetadata 기준 raw INSERT — streaming 버전.
+ *
+ * parseCsvFile (전체 메모리 적재) 대신 streamCsvFile (row-by-row) 를 사용하여
+ * 백만 단위 entity 에서도 OOM 없이 처리. filterValidRows 의 row 별 검증 inline 처리.
+ *
+ * 반환: Triple(inserted, totalRows, filteredOut). totalRows 는 blank 제외 입력 row 수.
+ */
+fun applyStageOneStreamingInsert(
+    conn: Connection,
+    meta: EntityMetadata,
+    csvFile: File,
+    progress: ProgressBar? = null
+): Triple<Int, Int, Int> {
+    val allColumns = meta.fields.map { it.dbColumnName } + meta.extraStaticColumns.keys.toList()
+    val columns = allColumns.joinToString(", ")
+    val placeholders = allColumns.joinToString(", ") { "?" }
+    val quotedTable = quoteTable(meta.tableName)
+    val sql = "INSERT INTO ${meta.schemaName}.$quotedTable ($columns) VALUES ($placeholders) " +
+              "ON CONFLICT DO NOTHING"
+    val requiredFields = meta.fields.filter { !it.nullable }
+    var inserted = 0
+    var processed = 0
+    var filteredOut = 0
+    var totalRows = 0
+    conn.prepareStatement(sql).use { ps ->
+        totalRows = streamCsvFile(csvFile) { row ->
+            // NOT NULL pre-filter inline.
+            val ok = requiredFields.all { row[it.sfFieldName]?.isNotBlank() == true }
+            if (!ok) {
+                filteredOut++
+                return@streamCsvFile
+            }
+            for ((idx, f) in meta.fields.withIndex()) {
+                val raw = row[f.sfFieldName]
+                if (raw == null) {
+                    ps.setNull(idx + 1, Types.NULL)
+                } else if (f.isIntegerScale) {
+                    // SF Number(int 또는 scale=0 double) + backend Int/Long 컬럼 — type-safe casting.
+                    // SF export 가 "2456830.0" 형식으로 내보내는 .0 접미사를 BigDecimal 정확 파싱 후
+                    // BigIntegerExact 로 정수성 검증 (소수 입력은 ArithmeticException 으로 즉시 실패).
+                    val asLong = try {
+                        raw.toBigDecimal().toBigIntegerExact().toLong()
+                    } catch (e: ArithmeticException) {
+                        error("Integer column expects exact integer but got '$raw' at ${meta.targetName}.${f.sfFieldName}")
+                    } catch (e: NumberFormatException) {
+                        error("Integer column expects numeric but got '$raw' at ${meta.targetName}.${f.sfFieldName}")
+                    }
+                    ps.setLong(idx + 1, asLong)
+                } else {
+                    ps.setString(idx + 1, raw)
+                }
+            }
+            val extraOffset = meta.fields.size
+            for ((extraIdx, entry) in meta.extraStaticColumns.entries.withIndex()) {
+                val value = entry.value
+                if (value == null) {
+                    ps.setNull(extraOffset + extraIdx + 1, Types.NULL)
+                } else {
+                    ps.setString(extraOffset + extraIdx + 1, value)
+                }
+            }
+            ps.addBatch()
+            processed++
+            if (processed % BATCH_SIZE == 0) {
+                val results = ps.executeBatch()
+                inserted += results.count { it > 0 || it == java.sql.Statement.SUCCESS_NO_INFO }
+                progress?.update(processed, "${meta.targetName} ($processed processed)")
+            }
+        }
+        if (processed % BATCH_SIZE != 0) {
+            val results = ps.executeBatch()
+            inserted += results.count { it > 0 || it == java.sql.Statement.SUCCESS_NO_INFO }
+            progress?.update(processed, "${meta.targetName} ($processed processed)")
+        }
+    }
+    return Triple(inserted, totalRows, filteredOut)
 }
 
 /**
@@ -259,32 +338,42 @@ for (target in sortedTargets) {
     var report = TargetReport(targetName = target, sObjectName = spec.sObjectName)
 
     val csvFile = File(inputDir, spec.csvFileName)
-    val allRows = parseCsvFile(csvFile)
-    val fields = when (val m = spec.meta) {
-        is EntityMetadata -> m.fields
-        is PermissionStagingMetadata -> m.fields
-        else -> emptyList()
-    }
-    val (rows, filteredOut) = filterValidRows(fields, allRows)
-    if (filteredOut > 0) {
-        println("[$target] 필수 필드 누락 row 사전 제외: ${filteredOut}건")
-    }
-    val pb = ProgressBar("Stage 1 $target", rows.size)
-
     val conn = openConnection(dbConfig)
     try {
-        val inserted = when (val m = spec.meta) {
-            is EntityMetadata -> applyStageOneRawInsert(conn, m, rows, pb)
-            is PermissionStagingMetadata -> applyPermissionStagingRawInsert(conn, m, rows, pb)
-            else -> 0
+        when (val m = spec.meta) {
+            is EntityMetadata -> {
+                // streaming path — CSV 를 row 단위로 읽으면서 즉시 INSERT (백만 단위 OOM 회피).
+                // ProgressBar total 은 사전 line 카운트 (정확치는 아니지만 진행률 표시용).
+                val estimatedTotal = countCsvDataRows(csvFile)
+                val pb = ProgressBar("Stage 1 $target", estimatedTotal)
+                val (inserted, totalRows, filteredOut) = applyStageOneStreamingInsert(conn, m, csvFile, pb)
+                conn.commit()
+                if (filteredOut > 0) {
+                    println("\n[$target] 필수 필드 누락 row 사전 제외: ${filteredOut}건")
+                }
+                val validRows = totalRows - filteredOut
+                val conflictSkipped = validRows - inserted
+                pb.done("inserted=$inserted (filtered=$filteredOut, conflict_skipped=$conflictSkipped)")
+                report = report.copy(rawRowsCount = totalRows, insertedCount = inserted, stage1Applied = true)
+            }
+            is PermissionStagingMetadata -> {
+                // Permission staging 은 row 수 적음 — 기존 readAll path 유지.
+                val allRows = parseCsvFile(csvFile)
+                val (rows, filteredOut) = filterValidRows(m.fields, allRows)
+                if (filteredOut > 0) {
+                    println("[$target] 필수 필드 누락 row 사전 제외: ${filteredOut}건")
+                }
+                val pb = ProgressBar("Stage 1 $target", rows.size)
+                val inserted = applyPermissionStagingRawInsert(conn, m, rows, pb)
+                conn.commit()
+                val conflictSkipped = rows.size - inserted
+                pb.done("inserted=$inserted (filtered=$filteredOut, conflict_skipped=$conflictSkipped)")
+                report = report.copy(rawRowsCount = allRows.size, insertedCount = inserted, stage1Applied = true)
+            }
+            else -> {}
         }
-        conn.commit()
-        val conflictSkipped = rows.size - inserted
-        pb.done("inserted=$inserted (filtered=$filteredOut, conflict_skipped=$conflictSkipped)")
-        report = report.copy(rawRowsCount = allRows.size, insertedCount = inserted, stage1Applied = true)
     } catch (e: Exception) {
         conn.rollback()
-        pb.done("FAILED")
         println("\n[$target] FAILED: ${e.message}")
         report = report.copy(errors = listOf("INSERT failed: ${e.message}"))
     } finally {

@@ -25,7 +25,14 @@ data class FieldMapping(
     val sfFieldName: String,
     val dbColumnName: String,
     val nullable: Boolean = true,
-    val isString: Boolean = true
+    val isString: Boolean = true,
+    /**
+     * SF describe type == int 또는 (double + scale=0) + backend Entity 컬럼 타입 = Int/Long.
+     * Stage 1 적재 시 SF export 의 "2456830.0" 같은 `.0` 접미사를 BigDecimal 파싱 후
+     * toBigIntegerExact().toLong() 으로 정수화하여 setLong / setInt 로 type-safe 전달.
+     * isString = true 인 경우 무시됨.
+     */
+    val isIntegerScale: Boolean = false
 )
 
 data class EntityMetadata(
@@ -247,7 +254,7 @@ val ACCOUNT_METADATA = EntityMetadata(
         FieldMapping("Website", "website"),
         FieldMapping("Fax", "fax"),
         FieldMapping("AnnualRevenue", "annual_revenue", isString = false),
-        FieldMapping("NumberOfEmployees", "number_of_employees", isString = false),
+        FieldMapping("NumberOfEmployees", "number_of_employees", isString = false, isIntegerScale = true),
         FieldMapping("ParentId", "parent_sfid"),
         FieldMapping("Rating", "rating"),
         FieldMapping("Ownership", "ownership"),
@@ -583,8 +590,8 @@ val CLAIM_METADATA = EntityMetadata(
         FieldMapping("DKRetail__ClaimType1__c", "claim_type1", nullable = false),
         FieldMapping("DKRetail__ClaimType2__c", "claim_type2", nullable = false),
         FieldMapping("DKRetail__Description__c", "defect_description", nullable = false),
-        FieldMapping("DKRetail__Quantity__c", "defect_quantity", nullable = false, isString = false),
-        FieldMapping("DKRetail__Amount__c", "purchase_amount", isString = false),
+        FieldMapping("DKRetail__Quantity__c", "defect_quantity", nullable = false, isString = false, isIntegerScale = true),
+        FieldMapping("DKRetail__Amount__c", "purchase_amount", isString = false, isIntegerScale = true),
         FieldMapping("DKRetail__PurchaseMethod__c", "purchase_method_code"),
         FieldMapping("DKRetail__RequestType__c", "request_type_code"),
         FieldMapping("DKRetail__Status__c", "status", nullable = false),
@@ -690,7 +697,7 @@ val ERP_ORDER_METADATA = EntityMetadata(
         FieldMapping("OrderDate__c", "order_date", isString = false),
         FieldMapping("EmployeeCode__c", "employee_code"),
         FieldMapping("EmployeeName__c", "employee_name"),
-        FieldMapping("TotalOrderAmount__c", "order_sales_amount", isString = false),
+        FieldMapping("TotalOrderAmount__c", "order_sales_amount", isString = false, isIntegerScale = true),
         FieldMapping("OrderChannel__c", "order_channel"),
         FieldMapping("OrderChannel_NM__c", "order_channel_nm"),
         FieldMapping("OrderType__c", "order_type"),
@@ -719,7 +726,7 @@ val ERP_ORDER_PRODUCT_METADATA = EntityMetadata(
         FieldMapping("ExternalKey__c", "external_key", nullable = false),
         FieldMapping("ProductCode__c", "product_code"),
         FieldMapping("ProductName__c", "product_name"),
-        FieldMapping("OrderQuantity__c", "order_quantity", isString = false),
+        FieldMapping("OrderQuantity__c", "order_quantity", isString = false, isIntegerScale = true),
         FieldMapping("Unit__c", "unit"),
         FieldMapping("ConfirmQuantity_Box__c", "confirm_quantity_box", isString = false),
         FieldMapping("ConfirmQuantity__c", "confirm_quantity", isString = false),
@@ -733,13 +740,13 @@ val ERP_ORDER_PRODUCT_METADATA = EntityMetadata(
         FieldMapping("ShippingScheduleTime__c", "shipping_schedule_time"),
         FieldMapping("ShippingCompleteTime__c", "shipping_complete_time"),
         FieldMapping("ShippingQuantity_Box__c", "shipping_quantity_box", isString = false),
-        FieldMapping("ShippingQuantity__c", "shipping_quantity", isString = false),
-        FieldMapping("OrderSalesLineAmount__c", "order_sales_line_amount", isString = false),
-        FieldMapping("ShippingAmount__c", "shipping_amount", isString = false),
+        FieldMapping("ShippingQuantity__c", "shipping_quantity", isString = false, isIntegerScale = true),
+        FieldMapping("OrderSalesLineAmount__c", "order_sales_line_amount", isString = false, isIntegerScale = true),
+        FieldMapping("ShippingAmount__c", "shipping_amount", isString = false, isIntegerScale = true),
         FieldMapping("Plant__c", "plant"),
         FieldMapping("Plant_NM__c", "plant_nm"),
-        FieldMapping("ReleaseQuantity__c", "release_quantity", isString = false),
-        FieldMapping("ReleaseAmount__c", "release_amount", isString = false),
+        FieldMapping("ReleaseQuantity__c", "release_quantity", isString = false, isIntegerScale = true),
+        FieldMapping("ReleaseAmount__c", "release_amount", isString = false, isIntegerScale = true),
         FieldMapping("BoxQuantity__c", "box_quantity", isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
@@ -816,11 +823,11 @@ val MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA = EntityMetadata(
         FieldMapping("EmpBranchName__c", "emp_branch_name"),
         FieldMapping("ProfessionalPromotionTeam__c", "professional_promotion_team"),
         FieldMapping("WorkingDaysMonth__c", "working_days_month", isString = false),
-        FieldMapping("NumberOfInputs__c", "number_of_inputs", isString = false),
+        FieldMapping("NumberOfInputs__c", "number_of_inputs", isString = false, isIntegerScale = true),
         FieldMapping("EquivalentNumberOfWorkingDays__c", "equivalent_number_of_working_days", isString = false),
         FieldMapping("ConvertedHeadcount__c", "converted_headcount", isString = false),
-        FieldMapping("EDI_POS__c", "edi_pos", isString = false),
-        FieldMapping("ThisMonthAmount__c", "this_month_amount", isString = false),
+        FieldMapping("EDI_POS__c", "edi_pos", isString = false, isIntegerScale = true),
+        FieldMapping("ThisMonthAmount__c", "this_month_amount", isString = false, isIntegerScale = true),
         FieldMapping("AccountConvertedHeadcount__c", "account_converted_headcount", isString = false),
         FieldMapping("EmployeeInputCriteriaMaster__c", "employee_input_criteria_master_sfid"),
         FieldMapping("OwnerId", "owner_sfid"),
@@ -946,11 +953,11 @@ val ORDER_REQUEST_PRODUCT_METADATA = EntityMetadata(
         FieldMapping("Id", "sfid", nullable = false),
         FieldMapping("DKRetail__RequestNumber__c", "order_request_sfid"),
         FieldMapping("Name", "name"),
-        FieldMapping("LineNumber__c", "line_number", nullable = false, isString = false),
+        FieldMapping("LineNumber__c", "line_number", nullable = false, isString = false, isIntegerScale = true),
         FieldMapping("DKRetail__LineNumber__c", "dk_line_number"),
         FieldMapping("ProductCode__c", "product_code", nullable = false),
         FieldMapping("TotalQuantity_Box__c", "quantity_boxes", nullable = false, isString = false),
-        FieldMapping("TotalQuantity_Each__c", "quantity_pieces", nullable = false, isString = false),
+        FieldMapping("TotalQuantity_Each__c", "quantity_pieces", nullable = false, isString = false, isIntegerScale = true),
         FieldMapping("DKRetail__OrderingUnit__c", "unit", nullable = false),
         FieldMapping("DKRetail__TotalAmount__c", "amount", nullable = false, isString = false),
         FieldMapping("DKRetail__LineChangeType__c", "line_change_type"),
@@ -1062,13 +1069,13 @@ val PROMOTION_EMPLOYEE_METADATA = EntityMetadata(
         FieldMapping("DKRetail__WorkType3__c", "work_type3"),
         FieldMapping("DKRetail__ScheduleId__c", "team_member_schedule_sfid"),
         FieldMapping("PromoCloseByTm__c", "promo_close_by_tm", nullable = false, isString = false),
-        FieldMapping("DKRetail__BasePrice__c", "base_price", isString = false),
-        FieldMapping("DKRetail__DailyTargetCount__c", "daily_target_count", isString = false),
-        FieldMapping("PrimaryProductAmount__c", "primary_product_amount", isString = false),
-        FieldMapping("DKRetail__PrimarySalesQuantity__c", "primary_sales_quantity", isString = false),
-        FieldMapping("DKRetail__PrimarySalesPrice__c", "primary_sales_price", isString = false),
-        FieldMapping("DKRetail__OtherSalesAmount__c", "other_sales_amount", isString = false),
-        FieldMapping("DKRetail__OtherSalesQuantity__c", "other_sales_quantity", isString = false),
+        FieldMapping("DKRetail__BasePrice__c", "base_price", isString = false, isIntegerScale = true),
+        FieldMapping("DKRetail__DailyTargetCount__c", "daily_target_count", isString = false, isIntegerScale = true),
+        FieldMapping("PrimaryProductAmount__c", "primary_product_amount", isString = false, isIntegerScale = true),
+        FieldMapping("DKRetail__PrimarySalesQuantity__c", "primary_sales_quantity", isString = false, isIntegerScale = true),
+        FieldMapping("DKRetail__PrimarySalesPrice__c", "primary_sales_price", isString = false, isIntegerScale = true),
+        FieldMapping("DKRetail__OtherSalesAmount__c", "other_sales_amount", isString = false, isIntegerScale = true),
+        FieldMapping("DKRetail__OtherSalesQuantity__c", "other_sales_quantity", isString = false, isIntegerScale = true),
         FieldMapping("S3ImageUniqueKey__c", "s3_image_unique_key"),
         FieldMapping("Description__c", "description"),
         FieldMapping("DKRetail__WorkType2__c", "dk_work_type2"),
@@ -1247,6 +1254,51 @@ fun parseCsvFile(file: File): List<Map<String, String?>> {
         result.add(m)
     }
     return result
+}
+
+/**
+ * CSV 를 row 단위로 streaming 처리 — onRow 콜백을 row 마다 호출.
+ *
+ * `parseCsvFile` 는 전체 row 를 메모리에 적재 (`readAll`) 하므로 백만 단위 entity 에서 OOM.
+ * 본 함수는 CSVReader 의 row-by-row API 를 사용하여 메모리 부담 일정.
+ *
+ * 반환: 처리된 row 수 (header 제외, blank row 제외 후 카운트).
+ */
+fun streamCsvFile(file: File, onRow: (Map<String, String?>) -> Unit): Int {
+    if (!file.exists()) error("CSV file not found: ${file.absolutePath}")
+    val reader = CSVReaderBuilder(FileReader(file)).build()
+    try {
+        val headerArr = reader.readNext() ?: return 0
+        val headers = headerArr.map { it.trim() }
+        var count = 0
+        while (true) {
+            val arr = reader.readNext() ?: break
+            if (arr.all { it.isBlank() }) continue
+            val m = mutableMapOf<String, String?>()
+            for (j in headers.indices) {
+                val v = if (j < arr.size) arr[j].let { if (it.isBlank()) null else it } else null
+                m[headers[j]] = v
+            }
+            onRow(m)
+            count++
+        }
+        return count
+    } finally {
+        reader.close()
+    }
+}
+
+/**
+ * CSV 의 data row 수만 빠르게 추산 (header 제외).
+ * 정확한 blank-row skip 은 안 함 — ProgressBar total 용 대략치.
+ */
+fun countCsvDataRows(file: File): Int {
+    if (!file.exists()) return 0
+    var lines = 0
+    file.bufferedReader().use { br ->
+        while (br.readLine() != null) lines++
+    }
+    return (lines - 1).coerceAtLeast(0)
 }
 
 // =============================================================================
