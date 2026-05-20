@@ -207,6 +207,31 @@ class Stage1S3CopyService(
                             "(LIKE $fullyQualified INCLUDING DEFAULTS EXCLUDING CONSTRAINTS EXCLUDING INDEXES)"
                     )
                 }
+                // LIKE INCLUDING DEFAULTS 는 IDENTITY 속성을 복사하지 않아 PK 컬럼 default 가
+                // 사라진 채 NOT NULL 만 남는다. staging 은 검증이 아닌 운반 목적이므로 모든
+                // 컬럼의 NOT NULL 제약을 일괄 해제하여 COPY 입력이 NULL 인 경우(미매핑 컬럼,
+                // PK identity 포함)에도 통과시키고, 무결성 검증은 INSERT-SELECT 시 본 테이블의
+                // 제약이 담당.
+                conn.prepareStatement(
+                    "SELECT column_name FROM information_schema.columns " +
+                        "WHERE table_schema = ? AND table_name = ? AND is_nullable = 'NO'"
+                ).use { ps ->
+                    ps.setString(1, meta.schemaName)
+                    ps.setString(2, "_copy_staging_${meta.tableName}")
+                    val notNullCols = mutableListOf<String>()
+                    ps.executeQuery().use { rs ->
+                        while (rs.next()) notNullCols.add(rs.getString(1))
+                    }
+                    if (notNullCols.isNotEmpty()) {
+                        conn.createStatement().use { st ->
+                            for (col in notNullCols) {
+                                st.executeUpdate(
+                                    "ALTER TABLE $stagingTable ALTER COLUMN \"$col\" DROP NOT NULL"
+                                )
+                            }
+                        }
+                    }
+                }
 
                 val getReq = GetObjectRequest.builder().bucket(s3Bucket).key(s3Key).build()
                 val copySql =
