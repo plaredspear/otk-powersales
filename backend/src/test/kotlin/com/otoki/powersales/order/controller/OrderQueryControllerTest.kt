@@ -17,10 +17,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -29,7 +25,9 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.every
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -43,19 +41,19 @@ class OrderQueryControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var orderQueryService: OrderQueryService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -91,9 +89,9 @@ class OrderQueryControllerTest {
                 )
             )
             val page = PageImpl(products, PageRequest.of(0, 20), 1)
-            whenever(orderQueryService.getOrderHistoryProducts(
-                eq(1L), isNull(), isNull(), isNull(), isNull()
-            )).thenReturn(page)
+            every { orderQueryService.getOrderHistoryProducts(
+                eq(1L), null, null, null, null
+            ) } returns page
 
             // When & Then
             mockMvc.perform(
@@ -123,9 +121,9 @@ class OrderQueryControllerTest {
                 PageRequest.of(0, 20),
                 0
             )
-            whenever(orderQueryService.getOrderHistoryProducts(
-                eq(1L), any(), any(), isNull(), isNull()
-            )).thenReturn(page)
+            every { orderQueryService.getOrderHistoryProducts(
+                eq(1L), any(), any(), null, null
+            ) } returns page
 
             // When & Then
             mockMvc.perform(
@@ -157,7 +155,7 @@ class OrderQueryControllerTest {
                 availableCredit = 55_000_000,
                 lastUpdatedAt = "2026-02-10T10:00:00"
             )
-            whenever(orderQueryService.getClientCreditBalance(1L)).thenReturn(response)
+            every { orderQueryService.getClientCreditBalance(1L) } returns response
 
             // When & Then
             mockMvc.perform(
@@ -179,8 +177,7 @@ class OrderQueryControllerTest {
         @DisplayName("거래처 없음 - 404 CLIENT_NOT_FOUND")
         fun getClientCreditBalance_notFound_returns404() {
             // Given
-            whenever(orderQueryService.getClientCreditBalance(999L))
-                .thenThrow(ClientNotFoundException())
+            every { orderQueryService.getClientCreditBalance(999L) } throws ClientNotFoundException()
 
             // When & Then
             mockMvc.perform(
@@ -212,7 +209,7 @@ class OrderQueryControllerTest {
                 dcQuantity = 500,
                 unitPrice = 5000
             )
-            whenever(orderQueryService.getProductOrderInfo("01101123")).thenReturn(response)
+            every { orderQueryService.getProductOrderInfo("01101123") } returns response
 
             // When & Then
             mockMvc.perform(
@@ -235,8 +232,7 @@ class OrderQueryControllerTest {
         @DisplayName("제품 없음 - 404 PRODUCT_NOT_FOUND")
         fun getProductOrderInfo_notFound_returns404() {
             // Given
-            whenever(orderQueryService.getProductOrderInfo("INVALID"))
-                .thenThrow(ProductNotFoundException("INVALID"))
+            every { orderQueryService.getProductOrderInfo("INVALID") } throws ProductNotFoundException("INVALID")
 
             // When & Then
             mockMvc.perform(

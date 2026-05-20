@@ -18,16 +18,15 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.every
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -43,13 +42,13 @@ class OrderRequestCreatePostTest {
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean private lateinit var orderRequestService: OrderRequestService
-    @MockitoBean private lateinit var orderRequestCreateService: OrderRequestCreateService
-    @MockitoBean private lateinit var orderCancelService: com.otoki.powersales.order.service.OrderCancelService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var orderRequestService: OrderRequestService
+    @MockkBean private lateinit var orderRequestCreateService: OrderRequestCreateService
+    @MockkBean private lateinit var orderCancelService: com.otoki.powersales.order.service.OrderCancelService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
 
     private val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
 
@@ -68,7 +67,7 @@ class OrderRequestCreatePostTest {
             status = OrderRequestStatus.SENT,
             totalAmount = BigDecimal.valueOf(1234567),
         )
-        whenever(orderRequestCreateService.create(eq(1L), any())).thenReturn(response)
+        every { orderRequestCreateService.create(eq(1L), any()) } returns response
 
         val body = sampleRequest()
 
@@ -87,8 +86,7 @@ class OrderRequestCreatePostTest {
     @Test
     @DisplayName("ORD_ACCOUNT_FORBIDDEN — 403")
     fun forbidden() {
-        whenever(orderRequestCreateService.create(eq(1L), any()))
-            .thenThrow(OrderAccountForbiddenException())
+        every { orderRequestCreateService.create(eq(1L), any()) } throws OrderAccountForbiddenException()
 
         mockMvc.perform(
             post("/api/v1/mobile/order-requests")
@@ -102,8 +100,7 @@ class OrderRequestCreatePostTest {
     @Test
     @DisplayName("ORD_LOAN_EXCEEDED — 400")
     fun loanExceeded() {
-        whenever(orderRequestCreateService.create(eq(1L), any()))
-            .thenThrow(OrderLoanExceededException(BigDecimal.valueOf(500_000), BigDecimal.valueOf(1_234_567)))
+        every { orderRequestCreateService.create(eq(1L), any()) } throws OrderLoanExceededException(BigDecimal.valueOf(500_000), BigDecimal.valueOf(1_234_567))
 
         mockMvc.perform(
             post("/api/v1/mobile/order-requests")

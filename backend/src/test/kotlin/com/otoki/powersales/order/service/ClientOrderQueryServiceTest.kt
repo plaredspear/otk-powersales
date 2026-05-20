@@ -10,28 +10,25 @@ import com.otoki.powersales.order.exception.InvalidSapOrderNumberException
 import com.otoki.powersales.order.exception.SapOrderNotFoundException
 import com.otoki.powersales.order.repository.ErpOrderProductRepository
 import com.otoki.powersales.order.repository.ErpOrderRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("ClientOrderQueryService 테스트 (#593)")
 class ClientOrderQueryServiceTest {
 
-    @Mock private lateinit var erpOrderRepository: ErpOrderRepository
-    @Mock private lateinit var erpOrderProductRepository: ErpOrderProductRepository
-    @Mock private lateinit var employeeRepository: EmployeeRepository
-    @InjectMocks private lateinit var service: ClientOrderQueryService
+    private val erpOrderRepository: ErpOrderRepository = mockk()
+    private val erpOrderProductRepository: ErpOrderProductRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val service = ClientOrderQueryService(erpOrderRepository, erpOrderProductRepository, employeeRepository)
 
     private val sapOrderNumber = "0300011396"
     private val userId = 1L
@@ -49,10 +46,9 @@ class ClientOrderQueryServiceTest {
                 createProduct(lineNumber = "10", deliveryStatus = "배송중", productCode = "P001", productName = "예시1", shippingQuantityBox = BigDecimal("5"), unit = "BOX"),
                 createProduct(lineNumber = "20", deliveryStatus = "배송 완료", productCode = "P002", productName = "예시2", shippingQuantityBox = BigDecimal("10"), unit = "BOX"),
             )
-            whenever(erpOrderRepository.findBySapOrderNumber(sapOrderNumber)).thenReturn(order)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
-            whenever(erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber))
-                .thenReturn(products)
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns products
 
             val result = service.getClientOrderDetail(userId, sapOrderNumber)
 
@@ -75,10 +71,9 @@ class ClientOrderQueryServiceTest {
         @DisplayName("정상 - 라인 0건 → orderedItems 빈 배열")
         fun emptyLines() {
             val order = createOrder(employeeCode = employeeCode)
-            whenever(erpOrderRepository.findBySapOrderNumber(sapOrderNumber)).thenReturn(order)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
-            whenever(erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber))
-                .thenReturn(emptyList())
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns emptyList()
 
             val result = service.getClientOrderDetail(userId, sapOrderNumber)
 
@@ -91,10 +86,9 @@ class ClientOrderQueryServiceTest {
         fun unknownStatusFallback() {
             val order = createOrder(employeeCode = employeeCode)
             val products = listOf(createProduct(lineNumber = "10", deliveryStatus = "알수없음"))
-            whenever(erpOrderRepository.findBySapOrderNumber(sapOrderNumber)).thenReturn(order)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
-            whenever(erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber))
-                .thenReturn(products)
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns products
 
             val result = service.getClientOrderDetail(userId, sapOrderNumber)
 
@@ -123,7 +117,7 @@ class ClientOrderQueryServiceTest {
         @Test
         @DisplayName("실패 - SAP 주문번호 미존재 → SapOrderNotFoundException")
         fun notFound() {
-            whenever(erpOrderRepository.findBySapOrderNumber(sapOrderNumber)).thenReturn(null)
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns null
 
             assertThatThrownBy { service.getClientOrderDetail(userId, sapOrderNumber) }
                 .isInstanceOf(SapOrderNotFoundException::class.java)
@@ -133,8 +127,8 @@ class ClientOrderQueryServiceTest {
         @DisplayName("실패 - employee_code 불일치 → ClientOrderForbiddenException")
         fun forbiddenMismatch() {
             val order = createOrder(employeeCode = "OTHER_CODE")
-            whenever(erpOrderRepository.findBySapOrderNumber(sapOrderNumber)).thenReturn(order)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
 
             assertThatThrownBy { service.getClientOrderDetail(userId, sapOrderNumber) }
                 .isInstanceOf(ClientOrderForbiddenException::class.java)
@@ -144,8 +138,8 @@ class ClientOrderQueryServiceTest {
         @DisplayName("실패 - employee_code 가 null → ClientOrderForbiddenException")
         fun forbiddenNullCode() {
             val order = createOrder(employeeCode = null)
-            whenever(erpOrderRepository.findBySapOrderNumber(sapOrderNumber)).thenReturn(order)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
 
             assertThatThrownBy { service.getClientOrderDetail(userId, sapOrderNumber) }
                 .isInstanceOf(ClientOrderForbiddenException::class.java)
@@ -155,8 +149,8 @@ class ClientOrderQueryServiceTest {
         @DisplayName("실패 - 사용자 미존재 → ClientOrderForbiddenException")
         fun forbiddenUserMissing() {
             val order = createOrder(employeeCode = employeeCode)
-            whenever(erpOrderRepository.findBySapOrderNumber(sapOrderNumber)).thenReturn(order)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { employeeRepository.findById(userId) } returns Optional.empty()
 
             assertThatThrownBy { service.getClientOrderDetail(userId, sapOrderNumber) }
                 .isInstanceOf(ClientOrderForbiddenException::class.java)

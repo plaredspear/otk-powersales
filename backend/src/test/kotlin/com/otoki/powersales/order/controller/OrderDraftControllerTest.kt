@@ -16,15 +16,17 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -42,20 +44,20 @@ class OrderDraftControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var orderDraftService: OrderDraftService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -87,9 +89,8 @@ class OrderDraftControllerTest {
         @Test
         @DisplayName("H1 - 정상 등록 → 200 + draftId")
         fun success() {
-            whenever(orderDraftService.save(any(), any())).thenReturn(
-                OrderDraftSaveResponse(draftId = 99L, savedAt = java.time.LocalDateTime.of(2026, 5, 4, 10, 0)),
-            )
+            every { orderDraftService.save(any(), any()) } returns
+                OrderDraftSaveResponse(draftId = 99L, savedAt = java.time.LocalDateTime.of(2026, 5, 4, 10, 0))
 
             mockMvc.perform(
                 post("/api/v1/mobile/orders/draft")
@@ -120,8 +121,7 @@ class OrderDraftControllerTest {
         @Test
         @DisplayName("E1 - 본인 외 거래처 → 403 ORD_DRAFT_ACCOUNT_FORBIDDEN")
         fun forbidden() {
-            whenever(orderDraftService.save(any(), any()))
-                .thenThrow(OrderDraftAccountForbiddenException())
+            every { orderDraftService.save(any(), any()) } throws OrderDraftAccountForbiddenException()
 
             mockMvc.perform(
                 post("/api/v1/mobile/orders/draft")
@@ -135,8 +135,7 @@ class OrderDraftControllerTest {
         @Test
         @DisplayName("E3 - 단위 잘못 (Service 예외) → 400 ORD_DRAFT_INVALID_REQUEST")
         fun invalidUnit() {
-            whenever(orderDraftService.save(any(), any()))
-                .thenThrow(OrderDraftInvalidRequestException("단위 오류"))
+            every { orderDraftService.save(any(), any()) } throws OrderDraftInvalidRequestException("단위 오류")
 
             mockMvc.perform(
                 post("/api/v1/mobile/orders/draft")
@@ -155,7 +154,7 @@ class OrderDraftControllerTest {
         @Test
         @DisplayName("H4 - 임시저장 없음 → 200 + data:null")
         fun empty() {
-            whenever(orderDraftService.findByUserId(any())).thenReturn(null)
+            every { orderDraftService.findByUserId(any()) } returns null
 
             mockMvc.perform(get("/api/v1/mobile/orders/draft"))
                 .andExpect(status().isOk)
@@ -186,7 +185,7 @@ class OrderDraftControllerTest {
                     ),
                 ),
             )
-            whenever(orderDraftService.findByUserId(any())).thenReturn(response)
+            every { orderDraftService.findByUserId(any()) } returns response
 
             mockMvc.perform(get("/api/v1/mobile/orders/draft"))
                 .andExpect(status().isOk)
@@ -205,6 +204,8 @@ class OrderDraftControllerTest {
         @Test
         @DisplayName("H5/H6 - 있어도 없어도 204")
         fun noContent() {
+            every { orderDraftService.deleteByEmployeeId(any()) } just Runs
+
             mockMvc.perform(delete("/api/v1/mobile/orders/draft"))
                 .andExpect(status().isNoContent)
         }

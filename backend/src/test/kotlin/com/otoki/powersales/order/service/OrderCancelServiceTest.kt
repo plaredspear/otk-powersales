@@ -19,23 +19,18 @@ import com.otoki.powersales.order.repository.OrderRequestRepository
 import com.otoki.powersales.order.sap.OrderRequestCancelPayloadFactory
 import com.otoki.powersales.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.sap.outbound.sender.OrderRequestCancelSender
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.Optional
 
 @DisplayName("OrderCancelService 테스트 (#597)")
@@ -56,9 +51,9 @@ class OrderCancelServiceTest {
 
     @BeforeEach
     fun setUp() {
-        orderRequestRepository = mock()
-        orderRequestProductRepository = mock()
-        employeeRepository = mock()
+        orderRequestRepository = mockk()
+        orderRequestProductRepository = mockk()
+        employeeRepository = mockk()
         deadlineCalculator = OrderDeadlineCalculator(
             Clock.fixed(
                 java.time.LocalDateTime.of(2026, 5, 1, 10, 0).atZone(TimeZones.SEOUL_ZONE).toInstant(),
@@ -66,8 +61,8 @@ class OrderCancelServiceTest {
             ),
         )
         payloadFactory = OrderRequestCancelPayloadFactory()
-        sender = mock()
-        committer = mock()
+        sender = mockk()
+        committer = mockk()
         service = OrderCancelService(
             orderRequestRepository = orderRequestRepository,
             orderRequestProductRepository = orderRequestProductRepository,
@@ -90,15 +85,15 @@ class OrderCancelServiceTest {
         )
         stubLoad(orderRequest, lines)
         stubEmployee()
-        whenever(committer.commit(eq(orderRequestId), any(), eq(employeeCode)))
-            .thenReturn(commitResult(orderRequest.copy(status = OrderRequestStatus.CANCELED), lines))
+        every { sender.send(any()) } returns Unit
+        val captor = slot<List<Long>>()
+        every { committer.commit(eq(orderRequestId), capture(captor), eq(employeeCode)) } returns
+            commitResult(orderRequest.copy(status = OrderRequestStatus.CANCELED), lines)
 
         val response = service.cancel(orderRequestId, userId, emptyList())
 
-        verify(sender).send(any())
-        val captor = argumentCaptor<List<Long>>()
-        verify(committer).commit(eq(orderRequestId), captor.capture(), eq(employeeCode))
-        assertThat(captor.firstValue).containsExactly(101L, 102L)
+        verify { sender.send(any()) }
+        assertThat(captor.captured).containsExactly(101L, 102L)
         assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCELED)
         assertThat(response.cancelledLines).hasSize(2)
     }
@@ -115,14 +110,14 @@ class OrderCancelServiceTest {
         )
         stubLoad(orderRequest, lines)
         stubEmployee()
-        whenever(committer.commit(eq(orderRequestId), any(), eq(employeeCode)))
-            .thenReturn(commitResult(orderRequest, lines.take(2)))
+        every { sender.send(any()) } returns Unit
+        val captor = slot<List<Long>>()
+        every { committer.commit(eq(orderRequestId), capture(captor), eq(employeeCode)) } returns
+            commitResult(orderRequest, lines.take(2))
 
         val response = service.cancel(orderRequestId, userId, listOf(101L, 102L))
 
-        val captor = argumentCaptor<List<Long>>()
-        verify(committer).commit(eq(orderRequestId), captor.capture(), eq(employeeCode))
-        assertThat(captor.firstValue).containsExactly(101L, 102L)
+        assertThat(captor.captured).containsExactly(101L, 102L)
         assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.APPROVED)
         assertThat(response.cancelledLines).hasSize(2)
     }
@@ -135,13 +130,14 @@ class OrderCancelServiceTest {
         val lines = listOf(product(101, BigDecimal.valueOf(10L), "P001", orderRequest))
         stubLoad(orderRequest, lines)
         stubEmployee()
-        whenever(committer.commit(eq(orderRequestId), any(), eq(employeeCode)))
-            .thenReturn(commitResult(orderRequest.copy(status = OrderRequestStatus.CANCELED), lines))
+        every { sender.send(any()) } returns Unit
+        every { committer.commit(eq(orderRequestId), any(), eq(employeeCode)) } returns
+            commitResult(orderRequest.copy(status = OrderRequestStatus.CANCELED), lines)
 
         val response = service.cancel(orderRequestId, userId, emptyList())
 
         assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCELED)
-        verify(sender).send(any())
+        verify { sender.send(any()) }
     }
 
     // ───────── EP1: 본인 주문 아님 ─────────
@@ -150,27 +146,26 @@ class OrderCancelServiceTest {
     fun ep1_forbidden() {
         val other = Employee(id = 99L, employeeCode = "E999", name = "other")
         val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED, employee = other)
-        whenever(orderRequestRepository.findById(orderRequestId)).thenReturn(Optional.of(orderRequest))
+        every { orderRequestRepository.findById(orderRequestId) } returns Optional.of(orderRequest)
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
             .isInstanceOf(ForbiddenOrderAccessException::class.java)
-        verify(sender, never()).send(any())
+        verify(exactly = 0) { sender.send(any()) }
     }
 
     // ───────── EP2: 마감 시각 초과 ─────────
     @Test
     @DisplayName("EP2 — 마감 시각 초과 → ORD_CANCEL_DEADLINE_PASSED, SAP 미호출")
     fun ep2_deadlinePassed() {
-        // 납기일 = 2026-05-01 (오늘) → cancellable false (납기일 당일은 항상 false)
         val orderRequest = orderRequest(
             status = OrderRequestStatus.APPROVED,
             deliveryDate = LocalDate.of(2026, 5, 1),
         )
-        whenever(orderRequestRepository.findById(orderRequestId)).thenReturn(Optional.of(orderRequest))
+        every { orderRequestRepository.findById(orderRequestId) } returns Optional.of(orderRequest)
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
             .isInstanceOf(OrderCancelDeadlinePassedException::class.java)
-        verify(sender, never()).send(any())
+        verify(exactly = 0) { sender.send(any()) }
     }
 
     // ───────── EP3: DRAFT 거부 ─────────
@@ -178,11 +173,11 @@ class OrderCancelServiceTest {
     @DisplayName("EP3 — DRAFT 상태 → ORD_CANCEL_INVALID_STATUS, SAP 미호출")
     fun ep3_invalidStatusDraft() {
         val orderRequest = orderRequest(status = OrderRequestStatus.DRAFT)
-        whenever(orderRequestRepository.findById(orderRequestId)).thenReturn(Optional.of(orderRequest))
+        every { orderRequestRepository.findById(orderRequestId) } returns Optional.of(orderRequest)
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
             .isInstanceOf(OrderCancelInvalidStatusException::class.java)
-        verify(sender, never()).send(any())
+        verify(exactly = 0) { sender.send(any()) }
     }
 
     // ───────── EP4: CANCELED (이미 취소) ─────────
@@ -190,11 +185,11 @@ class OrderCancelServiceTest {
     @DisplayName("EP4 — 이미 CANCELED → ORD_CANCEL_INVALID_STATUS, SAP 미호출")
     fun ep4_invalidStatusCanceled() {
         val orderRequest = orderRequest(status = OrderRequestStatus.CANCELED)
-        whenever(orderRequestRepository.findById(orderRequestId)).thenReturn(Optional.of(orderRequest))
+        every { orderRequestRepository.findById(orderRequestId) } returns Optional.of(orderRequest)
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
             .isInstanceOf(OrderCancelInvalidStatusException::class.java)
-        verify(sender, never()).send(any())
+        verify(exactly = 0) { sender.send(any()) }
     }
 
     // ───────── EP5: 다른 주문의 라인 ID 포함 ─────────
@@ -207,7 +202,7 @@ class OrderCancelServiceTest {
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, listOf(101L, 999L)) }
             .isInstanceOf(OrderCancelLineNotFoundException::class.java)
-        verify(sender, never()).send(any())
+        verify(exactly = 0) { sender.send(any()) }
     }
 
     // ───────── EP7: SAP 응답 'E' ─────────
@@ -217,42 +212,41 @@ class OrderCancelServiceTest {
         val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
         val lines = listOf(product(101, BigDecimal.valueOf(10L), "P001", orderRequest))
         stubLoad(orderRequest, lines)
-        doThrow(OrderCancelSapFailedException("SAP error")).whenever(sender).send(any())
+        stubEmployee()
+        every { sender.send(any()) } throws OrderCancelSapFailedException("SAP error")
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
             .isInstanceOf(OrderCancelSapFailedException::class.java)
-        verify(committer, never()).commit(any(), any(), any())
+        verify(exactly = 0) { committer.commit(any(), any(), any()) }
     }
 
     // ───────── EP10: 존재하지 않는 orderRequestId ─────────
     @Test
     @DisplayName("EP10 — 미존재 orderRequestId → ORD_NOT_FOUND, SAP 미호출")
     fun ep10_orderNotFound() {
-        whenever(orderRequestRepository.findById(orderRequestId)).thenReturn(Optional.empty())
+        every { orderRequestRepository.findById(orderRequestId) } returns Optional.empty()
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
             .isInstanceOf(OrderNotFoundException::class.java)
-        verify(sender, never()).send(any())
+        verify(exactly = 0) { sender.send(any()) }
     }
 
     // ───────── 헬퍼 ─────────
 
     private fun stubLoad(orderRequest: OrderRequest, lines: List<OrderRequestProduct>) {
-        whenever(orderRequestRepository.findById(orderRequestId)).thenReturn(Optional.of(orderRequest))
-        whenever(orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId))
-            .thenReturn(lines)
+        every { orderRequestRepository.findById(orderRequestId) } returns Optional.of(orderRequest)
+        every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId) } returns lines
     }
 
     private fun stubEmployee() {
         val employee = Employee(id = userId, employeeCode = employeeCode, name = "tester", role = UserRole.WOMAN)
-        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+        every { employeeRepository.findById(userId) } returns Optional.of(employee)
     }
 
     private fun commitResult(
         orderRequest: OrderRequest,
         lines: List<OrderRequestProduct>,
     ): OrderCancelCommitter.CommitResult {
-        // mutation 금지 — stub 평가 시점에 mutate 하면 service 의 resolveTargetLines 가 이미 cancelled 로 필터링됨
         return OrderCancelCommitter.CommitResult(orderRequest, lines)
     }
 

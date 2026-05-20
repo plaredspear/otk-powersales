@@ -14,14 +14,14 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.every
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -36,11 +36,11 @@ class LoanInquiryControllerTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
 
-    @MockitoBean private lateinit var loanInquiryService: LoanInquiryService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var loanInquiryService: LoanInquiryService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
 
     private val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
 
@@ -60,7 +60,7 @@ class LoanInquiryControllerTest {
             currency = "KRW",
             dataAsOf = OffsetDateTime.now(),
         )
-        whenever(loanInquiryService.inquireByExternalKey(eq("EK001"))).thenReturn(response)
+        every { loanInquiryService.inquireByExternalKey(eq("EK001")) } returns response
 
         mockMvc.perform(get("/api/v1/mobile/clients/{externalKey}/loan-inquiry", "EK001"))
             .andExpect(status().isOk)
@@ -74,8 +74,7 @@ class LoanInquiryControllerTest {
     @Test
     @DisplayName("LOAN_SAP_ERROR — 500")
     fun sapError() {
-        whenever(loanInquiryService.inquireByExternalKey(eq("EK_BAD")))
-            .thenThrow(LoanSapErrorException("거래처 미존재"))
+        every { loanInquiryService.inquireByExternalKey(eq("EK_BAD")) } throws LoanSapErrorException("거래처 미존재")
 
         mockMvc.perform(get("/api/v1/mobile/clients/{externalKey}/loan-inquiry", "EK_BAD"))
             .andExpect(status().isInternalServerError)
@@ -86,8 +85,7 @@ class LoanInquiryControllerTest {
     @Test
     @DisplayName("LOAN_SAP_HTML_RESPONSE — 502")
     fun htmlResponse() {
-        whenever(loanInquiryService.inquireByExternalKey(eq("EK001")))
-            .thenThrow(LoanSapHtmlResponseException())
+        every { loanInquiryService.inquireByExternalKey(eq("EK001")) } throws LoanSapHtmlResponseException()
 
         mockMvc.perform(get("/api/v1/mobile/clients/{externalKey}/loan-inquiry", "EK001"))
             .andExpect(status().isBadGateway)
@@ -97,8 +95,7 @@ class LoanInquiryControllerTest {
     @Test
     @DisplayName("LOAN_SAP_UNAVAILABLE — 503")
     fun unavailable() {
-        whenever(loanInquiryService.inquireByExternalKey(eq("EK001")))
-            .thenThrow(LoanSapUnavailableException())
+        every { loanInquiryService.inquireByExternalKey(eq("EK001")) } throws LoanSapUnavailableException()
 
         mockMvc.perform(get("/api/v1/mobile/clients/{externalKey}/loan-inquiry", "EK001"))
             .andExpect(status().isServiceUnavailable)

@@ -23,15 +23,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.every
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -52,26 +51,26 @@ class OrderRequestControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var orderRequestService: OrderRequestService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var orderRequestCreateService: com.otoki.powersales.order.service.OrderRequestCreateService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var orderCancelService: OrderCancelService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -106,11 +105,11 @@ class OrderRequestControllerTest {
                 truncated = false,
                 fetchedAt = OffsetDateTime.of(2026, 5, 5, 10, 30, 0, 0, ZoneOffset.ofHours(9)),
             )
-            whenever(
+            every {
                 orderRequestService.getMyOrderRequests(
-                    any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(),
-                ),
-            ).thenReturn(response)
+                    any(), any(), any(), any(), any(), any(), any(),
+                )
+            } returns response
 
             mockMvc.perform(
                 get("/api/v1/mobile/me/order-requests")
@@ -130,11 +129,11 @@ class OrderRequestControllerTest {
         @Test
         @DisplayName("실패 - 7일 초과 -> ORD_DATE_RANGE_TOO_WIDE")
         fun tooWideRange() {
-            whenever(
+            every {
                 orderRequestService.getMyOrderRequests(
-                    any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(),
-                ),
-            ).thenThrow(OrderDateRangeTooWideException())
+                    any(), any(), any(), any(), any(), any(), any(),
+                )
+            } throws OrderDateRangeTooWideException()
 
             mockMvc.perform(
                 get("/api/v1/mobile/me/order-requests")
@@ -148,11 +147,11 @@ class OrderRequestControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 sortBy -> ORD_INVALID_PARAM")
         fun invalidSortBy() {
-            whenever(
+            every {
                 orderRequestService.getMyOrderRequests(
-                    any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(),
-                ),
-            ).thenThrow(InvalidOrderParameterException("정렬 기준 오류"))
+                    any(), any(), any(), any(), any(), any(), any(),
+                )
+            } throws InvalidOrderParameterException("정렬 기준 오류")
 
             mockMvc.perform(
                 get("/api/v1/mobile/me/order-requests")
@@ -214,7 +213,7 @@ class OrderRequestControllerTest {
                 ),
                 rejectedItems = null,
             )
-            whenever(orderRequestService.getOrderRequestDetail(any(), any())).thenReturn(response)
+            every { orderRequestService.getOrderRequestDetail(any(), any()) } returns response
 
             mockMvc.perform(get("/api/v1/mobile/me/order-requests/12345"))
                 .andExpect(status().isOk)
@@ -231,8 +230,7 @@ class OrderRequestControllerTest {
         @Test
         @DisplayName("실패 - 본인 외 접근 -> 403")
         fun forbidden() {
-            whenever(orderRequestService.getOrderRequestDetail(any(), any()))
-                .thenThrow(com.otoki.powersales.order.exception.ForbiddenOrderAccessException())
+            every { orderRequestService.getOrderRequestDetail(any(), any()) } throws com.otoki.powersales.order.exception.ForbiddenOrderAccessException()
 
             mockMvc.perform(get("/api/v1/mobile/me/order-requests/12345"))
                 .andExpect(status().isForbidden)
@@ -242,8 +240,7 @@ class OrderRequestControllerTest {
         @Test
         @DisplayName("실패 - 미존재 ID -> 404")
         fun notFound() {
-            whenever(orderRequestService.getOrderRequestDetail(any(), any()))
-                .thenThrow(com.otoki.powersales.order.exception.OrderNotFoundException())
+            every { orderRequestService.getOrderRequestDetail(any(), any()) } throws com.otoki.powersales.order.exception.OrderNotFoundException()
 
             mockMvc.perform(get("/api/v1/mobile/me/order-requests/99999"))
                 .andExpect(status().isNotFound)
@@ -258,19 +255,17 @@ class OrderRequestControllerTest {
         @Test
         @DisplayName("성공 - 빈 본문(전체 취소) → 200")
         fun successFullCancel() {
-            whenever(orderCancelService.cancel(any(), any(), any()))
-                .thenReturn(
-                    OrderCancelResponse(
-                        orderRequestId = 12345L,
-                        orderRequestNumber = "ORD-20260504-12345",
-                        orderRequestStatus = OrderRequestStatus.CANCELED,
-                        cancelledLines = listOf(
-                            CancelledLineResponse(
-                                orderProductId = 101L,
-                                lineNumber = BigDecimal.valueOf(10L),
-                                productCode = "P001",
-                                cancelledAt = java.time.LocalDateTime.of(2026, 5, 4, 13, 25),
-                            ),
+            every { orderCancelService.cancel(any(), any(), any()) } returns
+                OrderCancelResponse(
+                    orderRequestId = 12345L,
+                    orderRequestNumber = "ORD-20260504-12345",
+                    orderRequestStatus = OrderRequestStatus.CANCELED,
+                    cancelledLines = listOf(
+                        CancelledLineResponse(
+                            orderProductId = 101L,
+                            lineNumber = BigDecimal.valueOf(10L),
+                            productCode = "P001",
+                            cancelledAt = java.time.LocalDateTime.of(2026, 5, 4, 13, 25),
                         ),
                     ),
                 )
@@ -287,15 +282,13 @@ class OrderRequestControllerTest {
         @Test
         @DisplayName("성공 - 부분 취소(orderProductIds) → 200")
         fun successPartialCancel() {
-            whenever(orderCancelService.cancel(any(), any(), any()))
-                .thenReturn(
-                    OrderCancelResponse(
-                        orderRequestId = 12345L,
-                        orderRequestNumber = "ORD-20260504-12345",
-                        orderRequestStatus = OrderRequestStatus.APPROVED,
-                        cancelledLines = listOf(
-                            CancelledLineResponse(101L, BigDecimal.valueOf(10L), "P001", java.time.LocalDateTime.of(2026, 5, 4, 13, 25)),
-                        ),
+            every { orderCancelService.cancel(any(), any(), any()) } returns
+                OrderCancelResponse(
+                    orderRequestId = 12345L,
+                    orderRequestNumber = "ORD-20260504-12345",
+                    orderRequestStatus = OrderRequestStatus.APPROVED,
+                    cancelledLines = listOf(
+                        CancelledLineResponse(101L, BigDecimal.valueOf(10L), "P001", java.time.LocalDateTime.of(2026, 5, 4, 13, 25)),
                     ),
                 )
 
@@ -312,8 +305,7 @@ class OrderRequestControllerTest {
         @Test
         @DisplayName("실패 - 마감 시각 초과 → 400 ORD_CANCEL_DEADLINE_PASSED")
         fun deadlinePassed() {
-            whenever(orderCancelService.cancel(any(), any(), any()))
-                .thenThrow(OrderCancelDeadlinePassedException())
+            every { orderCancelService.cancel(any(), any(), any()) } throws OrderCancelDeadlinePassedException()
 
             mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/cancel"))
                 .andExpect(status().isBadRequest)
@@ -323,8 +315,7 @@ class OrderRequestControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 상태 → 400 ORD_CANCEL_INVALID_STATUS")
         fun invalidStatus() {
-            whenever(orderCancelService.cancel(any(), any(), any()))
-                .thenThrow(OrderCancelInvalidStatusException("DRAFT"))
+            every { orderCancelService.cancel(any(), any(), any()) } throws OrderCancelInvalidStatusException("DRAFT")
 
             mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/cancel"))
                 .andExpect(status().isBadRequest)
@@ -334,8 +325,7 @@ class OrderRequestControllerTest {
         @Test
         @DisplayName("실패 - SAP 송신 실패 → 502 ORD_CANCEL_SAP_FAILED")
         fun sapFailed() {
-            whenever(orderCancelService.cancel(any(), any(), any()))
-                .thenThrow(OrderCancelSapFailedException("SAP error"))
+            every { orderCancelService.cancel(any(), any(), any()) } throws OrderCancelSapFailedException("SAP error")
 
             mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/cancel"))
                 .andExpect(status().isBadGateway)

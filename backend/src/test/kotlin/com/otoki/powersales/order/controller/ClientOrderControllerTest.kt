@@ -17,14 +17,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.every
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -40,20 +40,20 @@ class ClientOrderControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var clientOrderQueryService: ClientOrderQueryService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -91,8 +91,7 @@ class ClientOrderControllerTest {
                     )
                 )
             )
-            whenever(clientOrderQueryService.getClientOrderDetail(eq(1L), eq(sapOrderNumber)))
-                .thenReturn(response)
+            every { clientOrderQueryService.getClientOrderDetail(eq(1L), eq(sapOrderNumber)) } returns response
 
             mockMvc.perform(get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber))
                 .andExpect(status().isOk)
@@ -110,8 +109,7 @@ class ClientOrderControllerTest {
         @Test
         @DisplayName("실패 - 형식 오류 시 400 ORD_INVALID_SAP_NUMBER")
         fun invalidFormat() {
-            whenever(clientOrderQueryService.getClientOrderDetail(eq(1L), eq("abc")))
-                .thenThrow(InvalidSapOrderNumberException())
+            every { clientOrderQueryService.getClientOrderDetail(eq(1L), eq("abc")) } throws InvalidSapOrderNumberException()
 
             mockMvc.perform(get("/api/v1/mobile/client-orders/{sapOrderNumber}", "abc"))
                 .andExpect(status().isBadRequest)
@@ -122,8 +120,7 @@ class ClientOrderControllerTest {
         @Test
         @DisplayName("실패 - 권한 없음 시 403 ORD_FORBIDDEN")
         fun forbidden() {
-            whenever(clientOrderQueryService.getClientOrderDetail(eq(1L), eq(sapOrderNumber)))
-                .thenThrow(ClientOrderForbiddenException())
+            every { clientOrderQueryService.getClientOrderDetail(eq(1L), eq(sapOrderNumber)) } throws ClientOrderForbiddenException()
 
             mockMvc.perform(get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber))
                 .andExpect(status().isForbidden)
@@ -133,8 +130,7 @@ class ClientOrderControllerTest {
         @Test
         @DisplayName("실패 - SAP 주문번호 미존재 시 404 ORD_SAP_NOT_FOUND")
         fun notFound() {
-            whenever(clientOrderQueryService.getClientOrderDetail(eq(1L), eq(sapOrderNumber)))
-                .thenThrow(SapOrderNotFoundException())
+            every { clientOrderQueryService.getClientOrderDetail(eq(1L), eq(sapOrderNumber)) } throws SapOrderNotFoundException()
 
             mockMvc.perform(get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber))
                 .andExpect(status().isNotFound)
