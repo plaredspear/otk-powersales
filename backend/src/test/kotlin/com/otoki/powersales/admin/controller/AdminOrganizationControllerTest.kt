@@ -16,17 +16,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -41,26 +39,26 @@ class AdminOrganizationControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminOrganizationService: AdminOrganizationService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
     // @AutoConfigureMockMvc(addFilters = false) 환경에서 WebAdminContextFilter 가 동작하지 않으므로
     // ArgumentResolver 자체를 stub 하여 ALL scope 기본값 주입.
-    @MockitoBean
+    @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
@@ -82,12 +80,11 @@ class AdminOrganizationControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        whenever(currentAdminContextArgumentResolver.supportsParameter(any())).thenAnswer { invocation ->
-            val parameter = invocation.arguments[0] as MethodParameter
+        every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
+            val parameter = firstArg<MethodParameter>()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
-        whenever(currentAdminContextArgumentResolver.resolveArgument(any(), anyOrNull(), any(), anyOrNull()))
-            .thenReturn(DataScope(branchCodes = emptyList(), isAllBranches = true))
+        every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
     }
 
     @Nested
@@ -115,8 +112,7 @@ class AdminOrganizationControllerTest {
                     createdAt = java.time.LocalDateTime.of(2026, 1, 15, 9, 0)
                 )
             )
-            whenever(adminOrganizationService.getOrganizations(any(), anyOrNull(), anyOrNull()))
-                .thenReturn(response)
+            every { adminOrganizationService.getOrganizations(any(), any(), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/organizations"))
                 .andExpect(status().isOk)
@@ -135,8 +131,7 @@ class AdminOrganizationControllerTest {
         @Test
         @DisplayName("성공 - 키워드 + 레벨 필터")
         fun getOrganizations_withFilters() {
-            whenever(adminOrganizationService.getOrganizations(any(), eq("강남"), eq("L4")))
-                .thenReturn(emptyList())
+            every { adminOrganizationService.getOrganizations(any(), eq("강남"), eq("L4")) } returns emptyList()
 
             mockMvc.perform(
                 get("/api/v1/admin/organizations")
@@ -151,8 +146,7 @@ class AdminOrganizationControllerTest {
         @Test
         @DisplayName("성공 - 빈 결과")
         fun getOrganizations_empty() {
-            whenever(adminOrganizationService.getOrganizations(any(), anyOrNull(), anyOrNull()))
-                .thenReturn(emptyList())
+            every { adminOrganizationService.getOrganizations(any(), any(), any()) } returns emptyList()
 
             mockMvc.perform(get("/api/v1/admin/organizations"))
                 .andExpect(status().isOk)

@@ -20,17 +20,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
@@ -44,10 +42,10 @@ class AdminAlternativeHolidayControllerTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
-    @MockitoBean private lateinit var adminAlternativeHolidayService: AdminAlternativeHolidayService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var adminAlternativeHolidayService: AdminAlternativeHolidayService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @BeforeEach
     fun setUp() {
@@ -86,9 +84,9 @@ class AdminAlternativeHolidayControllerTest {
                     createdByEmpNo = "admin01", createdAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0)
                 )
             )
-            whenever(adminAlternativeHolidayService.getAlternativeHolidays(
-                any(), any(), anyOrNull(), anyOrNull(), anyOrNull()
-            )).thenReturn(items)
+            every { adminAlternativeHolidayService.getAlternativeHolidays(
+                any(), any(), any(), any(), any()
+            ) } returns items
 
             mockMvc.perform(
                 get("/api/v1/admin/alternative-holidays")
@@ -112,7 +110,7 @@ class AdminAlternativeHolidayControllerTest {
         @DisplayName("성공 - 대체휴무 신청")
         fun create_success() {
             val response = AlternativeHolidayCreateResponse(id = 1, status = "신규")
-            whenever(adminAlternativeHolidayService.createAlternativeHoliday(any(), eq(1L))).thenReturn(response)
+            every { adminAlternativeHolidayService.createAlternativeHoliday(any(), eq(1L)) } returns response
 
             val request = AlternativeHolidayCreateRequest(
                 employeeCode = "12345678",
@@ -133,8 +131,7 @@ class AdminAlternativeHolidayControllerTest {
         @Test
         @DisplayName("실패 - 신청일이 공휴일")
         fun create_holidayError() {
-            whenever(adminAlternativeHolidayService.createAlternativeHoliday(any(), eq(1L)))
-                .thenThrow(AltHolidayConfirmDateIsHolidayException())
+            every { adminAlternativeHolidayService.createAlternativeHoliday(any(), eq(1L)) } throws AltHolidayConfirmDateIsHolidayException()
 
             val json = """{"employeeCode": "12345678", "actualWorkDate": "2026-03-07", "targetAltHolidayDate": "2026-01-01"}"""
             mockMvc.perform(
@@ -167,7 +164,7 @@ class AdminAlternativeHolidayControllerTest {
             val response = AlternativeHolidayApproveResponse(
                 id = 1, status = "승인", confirmAltHolidayDate = LocalDate.of(2026, 3, 9)
             )
-            whenever(adminAlternativeHolidayService.approveAlternativeHoliday(eq(1L), any())).thenReturn(response)
+            every { adminAlternativeHolidayService.approveAlternativeHoliday(eq(1L), any()) } returns response
 
             val json = """{"confirmAltHolidayDate": "2026-03-09"}"""
             mockMvc.perform(
@@ -182,8 +179,7 @@ class AdminAlternativeHolidayControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 상태")
         fun approve_invalidStatus() {
-            whenever(adminAlternativeHolidayService.approveAlternativeHoliday(eq(1L), any()))
-                .thenThrow(AltHolidayInvalidStatusException())
+            every { adminAlternativeHolidayService.approveAlternativeHoliday(eq(1L), any()) } throws AltHolidayInvalidStatusException()
 
             val json = """{}"""
             mockMvc.perform(
@@ -203,7 +199,7 @@ class AdminAlternativeHolidayControllerTest {
         @DisplayName("성공 - 대체휴무 반려")
         fun reject_success() {
             val response = AlternativeHolidayRejectResponse(id = 1, status = "반려")
-            whenever(adminAlternativeHolidayService.rejectAlternativeHoliday(eq(1L), any())).thenReturn(response)
+            every { adminAlternativeHolidayService.rejectAlternativeHoliday(eq(1L), any()) } returns response
 
             val request = AlternativeHolidayRejectRequest(changeReason = "인력 부족")
             mockMvc.perform(
@@ -229,8 +225,7 @@ class AdminAlternativeHolidayControllerTest {
         @Test
         @DisplayName("실패 - 존재하지 않는 ID")
         fun reject_notFound() {
-            whenever(adminAlternativeHolidayService.rejectAlternativeHoliday(eq(99999L), any()))
-                .thenThrow(AltHolidayNotFoundException())
+            every { adminAlternativeHolidayService.rejectAlternativeHoliday(eq(99999L), any()) } throws AltHolidayNotFoundException()
 
             val json = """{"changeReason": "테스트"}"""
             mockMvc.perform(

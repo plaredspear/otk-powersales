@@ -19,7 +19,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import io.mockk.every
+import io.mockk.just
+import io.mockk.Runs
+import io.mockk.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -27,7 +30,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -43,16 +46,16 @@ class AdminPromotionControllerTest {
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean private lateinit var adminPromotionService: AdminPromotionService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminPromotionService: AdminPromotionService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
     // @AutoConfigureMockMvc(addFilters = false) 환경에서 WebAdminContextFilter 가 동작하지 않으므로
     // ArgumentResolver 자체를 stub 하여 ALL scope 기본값 주입.
-    @MockitoBean
+    @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
@@ -74,12 +77,11 @@ class AdminPromotionControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        whenever(currentAdminContextArgumentResolver.supportsParameter(any())).thenAnswer { invocation ->
-            val parameter = invocation.arguments[0] as MethodParameter
+        every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
+            val parameter = firstArg<MethodParameter>()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
-        whenever(currentAdminContextArgumentResolver.resolveArgument(any(), anyOrNull(), any(), anyOrNull()))
-            .thenReturn(DataScope(branchCodes = emptyList(), isAllBranches = true))
+        every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
     }
 
     @Nested
@@ -99,7 +101,7 @@ class AdminPromotionControllerTest {
                     StandLocationOption(value = "ISLAND", name = "아일랜드")
                 )
             )
-            whenever(adminPromotionService.getPromotionFormMeta()).thenReturn(response)
+            every { adminPromotionService.getPromotionFormMeta() } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions/form-meta"))
                 .andExpect(status().isOk)
@@ -137,10 +139,10 @@ class AdminPromotionControllerTest {
                 ),
                 page = 0, size = 20, totalElements = 1, totalPages = 1
             )
-            whenever(adminPromotionService.getPromotions(
-                any(), anyOrNull(), anyOrNull(),
-                anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
-            )).thenReturn(response)
+            every { adminPromotionService.getPromotions(
+                any(), any(), any(),
+                any(), any(), any(), any()
+            ) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions"))
                 .andExpect(status().isOk)
@@ -157,10 +159,10 @@ class AdminPromotionControllerTest {
             val response = PromotionListResponse(
                 content = emptyList(), page = 0, size = 20, totalElements = 0, totalPages = 0
             )
-            whenever(adminPromotionService.getPromotions(
-                any(), anyOrNull(), anyOrNull(),
-                anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
-            )).thenReturn(response)
+            every { adminPromotionService.getPromotions(
+                any(), any(), any(),
+                any(), any(), any(), any()
+            ) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions"))
                 .andExpect(status().isOk)
@@ -177,7 +179,7 @@ class AdminPromotionControllerTest {
         @DisplayName("성공 - 상세 정보 반환")
         fun getPromotion_success() {
             val response = createDetailResponse()
-            whenever(adminPromotionService.getPromotion(any(), eq(1L))).thenReturn(response)
+            every { adminPromotionService.getPromotion(any(), eq(1L)) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions/1"))
                 .andExpect(status().isOk)
@@ -191,8 +193,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("실패 - 미존재 행사마스터")
         fun getPromotion_notFound() {
-            whenever(adminPromotionService.getPromotion(any(), eq(999L)))
-                .thenThrow(PromotionNotFoundException())
+            every { adminPromotionService.getPromotion(any(), eq(999L)) } throws PromotionNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/promotions/999"))
                 .andExpect(status().isNotFound)
@@ -202,8 +203,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("실패 - 권한 외 조회")
         fun getPromotion_forbidden() {
-            whenever(adminPromotionService.getPromotion(any(), eq(1L)))
-                .thenThrow(PromotionForbiddenException())
+            every { adminPromotionService.getPromotion(any(), eq(1L)) } throws PromotionForbiddenException()
 
             mockMvc.perform(get("/api/v1/admin/promotions/1"))
                 .andExpect(status().isForbidden)
@@ -219,7 +219,7 @@ class AdminPromotionControllerTest {
         @DisplayName("성공 - 행사마스터 생성")
         fun createPromotion_success() {
             val response = createDetailResponse()
-            whenever(adminPromotionService.createPromotion(eq(1L), any())).thenReturn(response)
+            every { adminPromotionService.createPromotion(eq(1L), any()) } returns response
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions")
@@ -366,8 +366,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("실패 - 날짜 범위 오류")
         fun createPromotion_invalidDateRange() {
-            whenever(adminPromotionService.createPromotion(eq(1L), any()))
-                .thenThrow(InvalidDateRangeException())
+            every { adminPromotionService.createPromotion(eq(1L), any()) } throws InvalidDateRangeException()
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions")
@@ -381,8 +380,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("실패 - 유효하지 않은 매대위치")
         fun createPromotion_invalidStandLocation() {
-            whenever(adminPromotionService.createPromotion(eq(1L), any()))
-                .thenThrow(InvalidStandLocationException())
+            every { adminPromotionService.createPromotion(eq(1L), any()) } throws InvalidStandLocationException()
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions")
@@ -396,8 +394,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("실패 - 미존재 거래처")
         fun createPromotion_accountNotFound() {
-            whenever(adminPromotionService.createPromotion(eq(1L), any()))
-                .thenThrow(AccountNotFoundException())
+            every { adminPromotionService.createPromotion(eq(1L), any()) } throws AccountNotFoundException()
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions")
@@ -417,7 +414,7 @@ class AdminPromotionControllerTest {
         @DisplayName("성공 - 행사마스터 수정")
         fun updatePromotion_success() {
             val response = createDetailResponse()
-            whenever(adminPromotionService.updatePromotion(any(), eq(1L), eq(1L), any())).thenReturn(response)
+            every { adminPromotionService.updatePromotion(any(), eq(1L), eq(1L), any()) } returns response
 
             mockMvc.perform(
                 put("/api/v1/admin/promotions/1")
@@ -495,8 +492,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("실패 - 미존재 행사마스터 수정")
         fun updatePromotion_notFound() {
-            whenever(adminPromotionService.updatePromotion(any(), eq(999L), eq(1L), any()))
-                .thenThrow(PromotionNotFoundException())
+            every { adminPromotionService.updatePromotion(any(), eq(999L), eq(1L), any()) } throws PromotionNotFoundException()
 
             mockMvc.perform(
                 put("/api/v1/admin/promotions/999")
@@ -515,7 +511,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("성공 - soft delete")
         fun deletePromotion_success() {
-            doNothing().whenever(adminPromotionService).deletePromotion(any(), eq(1L))
+            every { adminPromotionService.deletePromotion(any(), eq(1L)) } just Runs
 
             mockMvc.perform(delete("/api/v1/admin/promotions/1"))
                 .andExpect(status().isOk)
@@ -525,8 +521,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("실패 - 미존재 행사마스터 삭제")
         fun deletePromotion_notFound() {
-            whenever(adminPromotionService.deletePromotion(any(), eq(999L)))
-                .thenThrow(PromotionNotFoundException())
+            every { adminPromotionService.deletePromotion(any(), eq(999L)) } throws PromotionNotFoundException()
 
             mockMvc.perform(delete("/api/v1/admin/promotions/999"))
                 .andExpect(status().isNotFound)
@@ -536,8 +531,7 @@ class AdminPromotionControllerTest {
         @Test
         @DisplayName("실패 - 권한 외 삭제")
         fun deletePromotion_forbidden() {
-            whenever(adminPromotionService.deletePromotion(any(), eq(1L)))
-                .thenThrow(PromotionForbiddenException())
+            every { adminPromotionService.deletePromotion(any(), eq(1L)) } throws PromotionForbiddenException()
 
             mockMvc.perform(delete("/api/v1/admin/promotions/1"))
                 .andExpect(status().isForbidden)

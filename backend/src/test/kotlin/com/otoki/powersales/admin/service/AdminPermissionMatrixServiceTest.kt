@@ -7,33 +7,22 @@ import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 import java.util.*
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminPermissionMatrixService 테스트")
 class AdminPermissionMatrixServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var rolePermissionRepository: RolePermissionRepository
-
-    @Mock
-    private lateinit var adminPermissionResolver: AdminPermissionResolver
-
-    @InjectMocks
-    private lateinit var service: AdminPermissionMatrixService
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val rolePermissionRepository: RolePermissionRepository = mockk()
+    private val adminPermissionResolver: AdminPermissionResolver = mockk()
+    private val service = AdminPermissionMatrixService(employeeRepository, rolePermissionRepository, adminPermissionResolver)
 
     @Nested
     @DisplayName("getMatrix - 역할-권한 매트릭스 조회")
@@ -44,9 +33,9 @@ class AdminPermissionMatrixServiceTest {
         fun getMatrix_success() {
             // Given
             val employee = createEmployee(role = UserRole.LEADER)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(rolePermissionRepository.findAll()).thenReturn(createAllRolePermissions())
-            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { rolePermissionRepository.findAll() } returns createAllRolePermissions()
+            every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
 
             // When
             val result = service.getMatrix(1L)
@@ -70,9 +59,9 @@ class AdminPermissionMatrixServiceTest {
         fun getMatrix_systemAdmin() {
             // Given
             val employee = createEmployee(role = UserRole.SYSTEM_ADMIN)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(rolePermissionRepository.findAll()).thenReturn(emptyList())
-            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { rolePermissionRepository.findAll() } returns emptyList()
+            every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
 
             // When
             val result = service.getMatrix(1L)
@@ -86,9 +75,9 @@ class AdminPermissionMatrixServiceTest {
         fun getMatrix_permissionDetails() {
             // Given
             val employee = createEmployee(role = UserRole.LEADER)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(rolePermissionRepository.findAll()).thenReturn(emptyList())
-            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { rolePermissionRepository.findAll() } returns emptyList()
+            every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
 
             // When
             val result = service.getMatrix(1L)
@@ -106,9 +95,9 @@ class AdminPermissionMatrixServiceTest {
             // Given
             val employee = createEmployee(role = UserRole.BRANCH_MANAGER)
             val limitedPerms = AdminPermission.entries.toSet() - AdminPermission.SCHEDULE_WRITE
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(rolePermissionRepository.findAll()).thenReturn(emptyList())
-            whenever(adminPermissionResolver.resolve(employee)).thenReturn(limitedPerms)
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { rolePermissionRepository.findAll() } returns emptyList()
+            every { adminPermissionResolver.resolve(employee) } returns limitedPerms
 
             // When
             val result = service.getMatrix(1L)
@@ -124,8 +113,8 @@ class AdminPermissionMatrixServiceTest {
         @DisplayName("실패 - 존재하지 않는 사용자 → EmployeeNotFoundException")
         fun getMatrix_employeeNotFound() {
             // Given
-            whenever(rolePermissionRepository.findAll()).thenReturn(emptyList())
-            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
+            every { rolePermissionRepository.findAll() } returns emptyList()
+            every { employeeRepository.findById(999L) } returns Optional.empty()
 
             // Then
             assertThatThrownBy { service.getMatrix(999L) }

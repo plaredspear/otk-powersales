@@ -19,14 +19,17 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import io.mockk.every
+import io.mockk.just
+import io.mockk.Runs
+import io.mockk.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -43,12 +46,12 @@ class AdminPromotionEmployeeControllerTest {
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean private lateinit var adminPromotionEmployeeService: AdminPromotionEmployeeService
-    @MockitoBean private lateinit var adminPromotionConfirmService: AdminPromotionConfirmService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminPromotionEmployeeService: AdminPromotionEmployeeService
+    @MockkBean private lateinit var adminPromotionConfirmService: AdminPromotionConfirmService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
     fun setUp() {
@@ -79,7 +82,7 @@ class AdminPromotionEmployeeControllerTest {
         @DisplayName("성공 - 조원 목록 반환")
         fun getEmployees_success() {
             val response = listOf(createListResponse())
-            whenever(adminPromotionEmployeeService.getEmployees(10L)).thenReturn(response)
+            every { adminPromotionEmployeeService.getEmployees(10L) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions/10/employees"))
                 .andExpect(status().isOk)
@@ -93,8 +96,7 @@ class AdminPromotionEmployeeControllerTest {
         @Test
         @DisplayName("실패 - 행사 미존재")
         fun getEmployees_promotionNotFound() {
-            whenever(adminPromotionEmployeeService.getEmployees(999L))
-                .thenThrow(PromotionNotFoundException())
+            every { adminPromotionEmployeeService.getEmployees(999L) } throws PromotionNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/promotions/999/employees"))
                 .andExpect(status().isNotFound)
@@ -110,7 +112,7 @@ class AdminPromotionEmployeeControllerTest {
         @DisplayName("성공 - 조원 상세 반환")
         fun getEmployee_success() {
             val response = createDetailResponse()
-            whenever(adminPromotionEmployeeService.getEmployee(1L)).thenReturn(response)
+            every { adminPromotionEmployeeService.getEmployee(1L) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotion-employees/1"))
                 .andExpect(status().isOk)
@@ -123,8 +125,7 @@ class AdminPromotionEmployeeControllerTest {
         @Test
         @DisplayName("실패 - ID 미존재")
         fun getEmployee_notFound() {
-            whenever(adminPromotionEmployeeService.getEmployee(999L))
-                .thenThrow(PromotionEmployeeNotFoundException())
+            every { adminPromotionEmployeeService.getEmployee(999L) } throws PromotionEmployeeNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/promotion-employees/999"))
                 .andExpect(status().isNotFound)
@@ -140,7 +141,7 @@ class AdminPromotionEmployeeControllerTest {
         @DisplayName("성공 - 201 반환")
         fun createEmployee_success() {
             val response = createDetailResponse()
-            whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any())).thenReturn(response)
+            every { adminPromotionEmployeeService.createEmployee(eq(10L), any()) } returns response
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions/10/employees")
@@ -156,8 +157,7 @@ class AdminPromotionEmployeeControllerTest {
         @Test
         @DisplayName("실패 - 행사 미존재")
         fun createEmployee_promotionNotFound() {
-            whenever(adminPromotionEmployeeService.createEmployee(eq(999L), any()))
-                .thenThrow(PromotionNotFoundException())
+            every { adminPromotionEmployeeService.createEmployee(eq(999L), any()) } throws PromotionNotFoundException()
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions/999/employees")
@@ -171,7 +171,7 @@ class AdminPromotionEmployeeControllerTest {
         @DisplayName("성공 - 빈 Body로 추가 시 scheduleDate null로 생성")
         fun createEmployee_emptyBody_success() {
             val response = createDetailResponse()
-            whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any())).thenReturn(response)
+            every { adminPromotionEmployeeService.createEmployee(eq(10L), any()) } returns response
 
             mockMvc.perform(
                 post("/api/v1/admin/promotions/10/employees")
@@ -186,7 +186,7 @@ class AdminPromotionEmployeeControllerTest {
         @DisplayName("성공 - 투입일 포함, 나머지 필드 없이 추가")
         fun createEmployee_scheduleDateOnly_success() {
             val response = createDetailResponse()
-            whenever(adminPromotionEmployeeService.createEmployee(eq(10L), any())).thenReturn(response)
+            every { adminPromotionEmployeeService.createEmployee(eq(10L), any()) } returns response
 
             val partialJson = """{"scheduleDate":"2026-03-15"}"""
 
@@ -208,7 +208,7 @@ class AdminPromotionEmployeeControllerTest {
         @DisplayName("성공 - 200 반환")
         fun updateEmployee_success() {
             val response = createDetailResponse()
-            whenever(adminPromotionEmployeeService.updateEmployee(eq(1L), eq(1L), any())).thenReturn(response)
+            every { adminPromotionEmployeeService.updateEmployee(eq(1L), eq(1L), any()) } returns response
 
             mockMvc.perform(
                 put("/api/v1/admin/promotion-employees/1")
@@ -223,8 +223,7 @@ class AdminPromotionEmployeeControllerTest {
         @Test
         @DisplayName("실패 - ID 미존재")
         fun updateEmployee_notFound() {
-            whenever(adminPromotionEmployeeService.updateEmployee(eq(999L), eq(1L), any()))
-                .thenThrow(PromotionEmployeeNotFoundException())
+            every { adminPromotionEmployeeService.updateEmployee(eq(999L), eq(1L), any()) } throws PromotionEmployeeNotFoundException()
 
             mockMvc.perform(
                 put("/api/v1/admin/promotion-employees/999")
@@ -242,7 +241,7 @@ class AdminPromotionEmployeeControllerTest {
         @Test
         @DisplayName("성공 - 200 반환")
         fun deleteEmployee_success() {
-            doNothing().whenever(adminPromotionEmployeeService).deleteEmployee(1L)
+            every { adminPromotionEmployeeService.deleteEmployee(1L) } just Runs
 
             mockMvc.perform(delete("/api/v1/admin/promotion-employees/1"))
                 .andExpect(status().isOk)
@@ -253,8 +252,7 @@ class AdminPromotionEmployeeControllerTest {
         @Test
         @DisplayName("실패 - ID 미존재")
         fun deleteEmployee_notFound() {
-            whenever(adminPromotionEmployeeService.deleteEmployee(999L))
-                .thenThrow(PromotionEmployeeNotFoundException())
+            every { adminPromotionEmployeeService.deleteEmployee(999L) } throws PromotionEmployeeNotFoundException()
 
             mockMvc.perform(delete("/api/v1/admin/promotion-employees/999"))
                 .andExpect(status().isNotFound)

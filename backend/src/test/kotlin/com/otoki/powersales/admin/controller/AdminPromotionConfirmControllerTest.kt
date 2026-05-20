@@ -15,13 +15,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.whenever
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -33,12 +33,12 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class AdminPromotionConfirmControllerTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
-    @MockitoBean private lateinit var adminPromotionEmployeeService: AdminPromotionEmployeeService
-    @MockitoBean private lateinit var adminPromotionConfirmService: AdminPromotionConfirmService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminPromotionEmployeeService: AdminPromotionEmployeeService
+    @MockkBean private lateinit var adminPromotionConfirmService: AdminPromotionConfirmService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
     fun setUp() {
@@ -73,7 +73,7 @@ class AdminPromotionConfirmControllerTest {
                 totalEmployees = 3,
                 upsertedTeamMemberSchedules = 3
             )
-            whenever(adminPromotionConfirmService.confirmPromotion(10L)).thenReturn(response)
+            every { adminPromotionConfirmService.confirmPromotion(10L) } returns response
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isOk)
@@ -86,8 +86,7 @@ class AdminPromotionConfirmControllerTest {
         @Test
         @DisplayName("실패 - 행사 미존재 -> 404")
         fun confirm_notFound() {
-            whenever(adminPromotionConfirmService.confirmPromotion(999L))
-                .thenThrow(PromotionNotFoundException())
+            every { adminPromotionConfirmService.confirmPromotion(999L) } throws PromotionNotFoundException()
 
             mockMvc.perform(post("/api/v1/admin/promotions/999/confirm"))
                 .andExpect(status().isNotFound)
@@ -97,8 +96,7 @@ class AdminPromotionConfirmControllerTest {
         @Test
         @DisplayName("실패 - 조원 0명 -> 400")
         fun confirm_noEmployees() {
-            whenever(adminPromotionConfirmService.confirmPromotion(10L))
-                .thenThrow(NoEmployeesException())
+            every { adminPromotionConfirmService.confirmPromotion(10L) } throws NoEmployeesException()
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isBadRequest)
@@ -108,8 +106,7 @@ class AdminPromotionConfirmControllerTest {
         @Test
         @DisplayName("실패 - 필수값 누락 -> 400")
         fun confirm_valuesRequired() {
-            whenever(adminPromotionConfirmService.confirmPromotion(10L))
-                .thenThrow(ValuesRequiredException("김철수의 필수 항목을 입력하세요 (근무유형1)"))
+            every { adminPromotionConfirmService.confirmPromotion(10L) } throws ValuesRequiredException("김철수의 필수 항목을 입력하세요 (근무유형1)")
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isBadRequest)
@@ -119,8 +116,7 @@ class AdminPromotionConfirmControllerTest {
         @Test
         @DisplayName("실패 - 투입일 범위 초과 -> 400")
         fun confirm_dateOutOfRange() {
-            whenever(adminPromotionConfirmService.confirmPromotion(10L))
-                .thenThrow(DateOutOfRangeException("김철수의 투입일이 행사 기간을 벗어납니다"))
+            every { adminPromotionConfirmService.confirmPromotion(10L) } throws DateOutOfRangeException("김철수의 투입일이 행사 기간을 벗어납니다")
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isBadRequest)
@@ -130,8 +126,7 @@ class AdminPromotionConfirmControllerTest {
         @Test
         @DisplayName("실패 - 근무유형3 수량 초과 -> 400")
         fun confirm_workType3Limit() {
-            whenever(adminPromotionConfirmService.confirmPromotion(10L))
-                .thenThrow(WorkType3LimitExceededException("초과"))
+            every { adminPromotionConfirmService.confirmPromotion(10L) } throws WorkType3LimitExceededException("초과")
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isBadRequest)
@@ -141,8 +136,7 @@ class AdminPromotionConfirmControllerTest {
         @Test
         @DisplayName("실패 - 연차/대휴 충돌 -> 400")
         fun confirm_leaveConflict() {
-            whenever(adminPromotionConfirmService.confirmPromotion(10L))
-                .thenThrow(LeaveConflictException("충돌"))
+            every { adminPromotionConfirmService.confirmPromotion(10L) } throws LeaveConflictException("충돌")
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isBadRequest)
@@ -152,8 +146,7 @@ class AdminPromotionConfirmControllerTest {
         @Test
         @DisplayName("실패 - 거래처 중복 -> 400")
         fun confirm_duplicateSchedule() {
-            whenever(adminPromotionConfirmService.confirmPromotion(10L))
-                .thenThrow(DuplicateScheduleException("중복"))
+            every { adminPromotionConfirmService.confirmPromotion(10L) } throws DuplicateScheduleException("중복")
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isBadRequest)
@@ -163,8 +156,7 @@ class AdminPromotionConfirmControllerTest {
         @Test
         @DisplayName("실패 - 여사원 휴직 -> 400")
         fun confirm_employeeOnLeave() {
-            whenever(adminPromotionConfirmService.confirmPromotion(10L))
-                .thenThrow(EmployeeOnLeaveException("휴직"))
+            every { adminPromotionConfirmService.confirmPromotion(10L) } throws EmployeeOnLeaveException("휴직")
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isBadRequest)
@@ -174,8 +166,7 @@ class AdminPromotionConfirmControllerTest {
         @Test
         @DisplayName("실패 - 여사원 퇴직 -> 400")
         fun confirm_employeeResigned() {
-            whenever(adminPromotionConfirmService.confirmPromotion(10L))
-                .thenThrow(EmployeeResignedException("퇴직"))
+            every { adminPromotionConfirmService.confirmPromotion(10L) } throws EmployeeResignedException("퇴직")
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isBadRequest)

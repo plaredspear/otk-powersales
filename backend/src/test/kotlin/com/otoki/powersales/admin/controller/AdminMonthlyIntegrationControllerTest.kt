@@ -13,15 +13,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
@@ -33,10 +31,10 @@ import java.math.BigDecimal
 class AdminMonthlyIntegrationControllerTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
-    @MockitoBean private lateinit var adminMonthlyIntegrationService: AdminMonthlyIntegrationService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var adminMonthlyIntegrationService: AdminMonthlyIntegrationService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @BeforeEach
     fun setUp() {
@@ -89,8 +87,7 @@ class AdminMonthlyIntegrationControllerTest {
                 ),
                 totalCount = 1
             )
-            whenever(adminMonthlyIntegrationService.getMonthlyIntegration(eq(2026), eq(3), any()))
-                .thenReturn(response)
+            every { adminMonthlyIntegrationService.getMonthlyIntegration(eq(2026), eq(3), any()) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/schedules/monthly-integration")
@@ -111,8 +108,7 @@ class AdminMonthlyIntegrationControllerTest {
         @Test
         @DisplayName("실패 - year 범위 초과")
         fun invalidYear() {
-            whenever(adminMonthlyIntegrationService.getMonthlyIntegration(eq(1999), eq(3), any()))
-                .thenThrow(InvalidParameterException("year는 2020~2099 범위여야 합니다"))
+            every { adminMonthlyIntegrationService.getMonthlyIntegration(eq(1999), eq(3), any()) } throws InvalidParameterException("year는 2020~2099 범위여야 합니다")
 
             mockMvc.perform(
                 get("/api/v1/admin/schedules/monthly-integration")
@@ -136,8 +132,7 @@ class AdminMonthlyIntegrationControllerTest {
                 bytes = byteArrayOf(0x50, 0x4B), // dummy xlsx header
                 filename = "2026년3월_여사원 통합일정 조회_20260322_120000.xlsx"
             )
-            whenever(adminMonthlyIntegrationService.exportMonthlyIntegration(eq(2026), eq(3), any()))
-                .thenReturn(excelResult)
+            every { adminMonthlyIntegrationService.exportMonthlyIntegration(eq(2026), eq(3), any()) } returns excelResult
 
             mockMvc.perform(
                 get("/api/v1/admin/schedules/monthly-integration/export")
@@ -179,8 +174,7 @@ class AdminMonthlyIntegrationControllerTest {
                     )
                 )
             )
-            whenever(adminMonthlyIntegrationService.getCategorySchedule(eq(2026), eq(3), any()))
-                .thenReturn(response)
+            every { adminMonthlyIntegrationService.getCategorySchedule(eq(2026), eq(3), any()) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/schedules/monthly-integration/category")

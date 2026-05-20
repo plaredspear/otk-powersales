@@ -14,15 +14,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.whenever
+
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -36,20 +35,20 @@ class AdminAnnualLeaveControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminAnnualLeaveService: AdminAnnualLeaveService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -92,8 +91,7 @@ class AdminAnnualLeaveControllerTest {
                     totalCount = 2
                 )
             )
-            whenever(adminAnnualLeaveService.getSummary(eq("2026-03"), isNull()))
-                .thenReturn(data)
+            every { adminAnnualLeaveService.getSummary(eq("2026-03"), null) } returns data
 
             mockMvc.perform(
                 get("/api/v1/admin/annual-leave/summary")
@@ -134,8 +132,7 @@ class AdminAnnualLeaveControllerTest {
                     totalCount = 1
                 )
             )
-            whenever(adminAnnualLeaveService.getSummary(eq("2026-03"), eq("서울1팀")))
-                .thenReturn(data)
+            every { adminAnnualLeaveService.getSummary(eq("2026-03"), eq("서울1팀")) } returns data
 
             mockMvc.perform(
                 get("/api/v1/admin/annual-leave/summary")

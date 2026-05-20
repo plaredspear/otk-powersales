@@ -13,30 +13,26 @@ import com.otoki.powersales.sap.outbound.entity.SapOutboundLog
 import com.otoki.powersales.sap.outbound.repository.SapOutboundLogRepository
 import com.otoki.powersales.sap.outbox.SapOutbox
 import com.otoki.powersales.sap.outbox.SapOutboxRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
-import java.time.LocalDateTime
 import java.util.Optional
 
 @DisplayName("AdminSapIntegrationService 테스트")
 class AdminSapIntegrationServiceTest {
 
-    private val inboundAuditRepository = mock<SapInboundAuditRepository>()
-    private val outboundLogRepository = mock<SapOutboundLogRepository>()
-    private val outboxRepository = mock<SapOutboxRepository>()
+    private val inboundAuditRepository: SapInboundAuditRepository = mockk()
+    private val outboundLogRepository: SapOutboundLogRepository = mockk()
+    private val outboxRepository: SapOutboxRepository = mockk()
 
     private val service = AdminSapIntegrationService(
         sapInboundAuditRepository = inboundAuditRepository,
@@ -114,59 +110,61 @@ class AdminSapIntegrationServiceTest {
         @Test
         @DisplayName("필터 4개 모두 null - repository 에 그대로 null 전달")
         fun allFiltersNull() {
-            whenever(inboundAuditRepository.search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(PageImpl(emptyList()))
+            val pageableSlot = slot<Pageable>()
+            every {
+                inboundAuditRepository.search(any(), any(), any(), any(), any(), capture(pageableSlot))
+            } returns PageImpl(emptyList())
 
             service.searchInboundAudits(AdminSapInboundAuditQuery())
 
-            val pageableCaptor = argumentCaptor<Pageable>()
-            verify(inboundAuditRepository).search(
-                eq(null), eq(null), eq(null), eq(null), eq(null), pageableCaptor.capture()
-            )
-            assertThat(pageableCaptor.firstValue.pageNumber).isEqualTo(0)
-            assertThat(pageableCaptor.firstValue.pageSize).isEqualTo(20)
+            verify {
+                inboundAuditRepository.search(null, null, null, null, null, any())
+            }
+            assertThat(pageableSlot.captured.pageNumber).isEqualTo(0)
+            assertThat(pageableSlot.captured.pageSize).isEqualTo(20)
         }
 
         @Test
         @DisplayName("단일 eventType 필터 - repository 에 전달")
         fun singleEventTypeFilter() {
-            whenever(inboundAuditRepository.search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(PageImpl(emptyList()))
+            every {
+                inboundAuditRepository.search(any(), any(), any(), any(), any(), any())
+            } returns PageImpl(emptyList())
 
             service.searchInboundAudits(
                 AdminSapInboundAuditQuery(eventType = "REQUEST_ACCEPTED")
             )
 
-            verify(inboundAuditRepository).search(
-                eq(null), eq("REQUEST_ACCEPTED"), eq(null), eq(null), eq(null), any()
-            )
+            verify {
+                inboundAuditRepository.search(null, "REQUEST_ACCEPTED", null, null, null, any())
+            }
         }
 
         @Test
         @DisplayName("page=2 size=50 - 0-base 페이지로 변환되어 repository 전달")
         fun pagingNormalized() {
-            whenever(inboundAuditRepository.search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(PageImpl(emptyList()))
+            val pageableSlot = slot<Pageable>()
+            every {
+                inboundAuditRepository.search(any(), any(), any(), any(), any(), capture(pageableSlot))
+            } returns PageImpl(emptyList())
 
             service.searchInboundAudits(AdminSapInboundAuditQuery(page = 2, size = 50))
 
-            val captor = argumentCaptor<Pageable>()
-            verify(inboundAuditRepository).search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), captor.capture())
-            assertThat(captor.firstValue.pageNumber).isEqualTo(1)
-            assertThat(captor.firstValue.pageSize).isEqualTo(50)
+            assertThat(pageableSlot.captured.pageNumber).isEqualTo(1)
+            assertThat(pageableSlot.captured.pageSize).isEqualTo(50)
         }
 
         @Test
         @DisplayName("size > 100 - 100으로 제한")
         fun sizeClamped() {
-            whenever(inboundAuditRepository.search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(PageImpl(emptyList()))
+            val pageableSlot = slot<Pageable>()
+            every {
+                inboundAuditRepository.search(any(), any(), any(), any(), any(), capture(pageableSlot))
+            } returns PageImpl(emptyList())
 
             service.searchInboundAudits(AdminSapInboundAuditQuery(size = 999))
 
-            val captor = argumentCaptor<Pageable>()
-            verify(inboundAuditRepository).search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), captor.capture())
-            assertThat(captor.firstValue.pageSize).isEqualTo(100)
+            assertThat(pageableSlot.captured.pageSize).isEqualTo(100)
         }
 
         @Test
@@ -185,8 +183,9 @@ class AdminSapIntegrationServiceTest {
                 reason = null,
                 createdAt = java.time.LocalDateTime.of(2026, 5, 18, 0, 0),
             )
-            whenever(inboundAuditRepository.search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(PageImpl(listOf(audit)))
+            every {
+                inboundAuditRepository.search(any(), any(), any(), any(), any(), any())
+            } returns PageImpl(listOf(audit))
 
             val result = service.searchInboundAudits(AdminSapInboundAuditQuery())
 
@@ -217,7 +216,7 @@ class AdminSapIntegrationServiceTest {
                 reason = "IP not allowed",
                 createdAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 14, 0),
             )
-            whenever(inboundAuditRepository.findById(42L)).thenReturn(Optional.of(audit))
+            every { inboundAuditRepository.findById(42L) } returns Optional.of(audit)
 
             val result = service.getInboundAuditDetail(42L)
 
@@ -229,7 +228,7 @@ class AdminSapIntegrationServiceTest {
         @Test
         @DisplayName("미존재 id - BusinessException NOT_FOUND")
         fun notFound() {
-            whenever(inboundAuditRepository.findById(99999L)).thenReturn(Optional.empty())
+            every { inboundAuditRepository.findById(99999L) } returns Optional.empty()
 
             val ex = assertThrows<BusinessException> {
                 service.getInboundAuditDetail(99999L)
@@ -260,8 +259,9 @@ class AdminSapIntegrationServiceTest {
                 requestedAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 0, 0),
                 completedAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 0, 1),
             )
-            whenever(outboundLogRepository.search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(PageImpl(listOf(log)))
+            every {
+                outboundLogRepository.search(any(), any(), any(), any(), any())
+            } returns PageImpl(listOf(log))
 
             val result = service.searchOutboundLogs(AdminSapOutboundLogQuery())
 
@@ -273,12 +273,15 @@ class AdminSapIntegrationServiceTest {
         @Test
         @DisplayName("resultCode 필터 - repository 전달")
         fun resultCodeFilter() {
-            whenever(outboundLogRepository.search(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(PageImpl(emptyList()))
+            every {
+                outboundLogRepository.search(any(), any(), any(), any(), any())
+            } returns PageImpl(emptyList())
 
             service.searchOutboundLogs(AdminSapOutboundLogQuery(resultCode = "FAIL"))
 
-            verify(outboundLogRepository).search(eq(null), eq("FAIL"), eq(null), eq(null), any())
+            verify {
+                outboundLogRepository.search(null, "FAIL", null, null, any())
+            }
         }
     }
 
@@ -289,7 +292,7 @@ class AdminSapIntegrationServiceTest {
         @Test
         @DisplayName("미존재 id - BusinessException NOT_FOUND")
         fun notFound() {
-            whenever(outboundLogRepository.findById(99999L)).thenReturn(Optional.empty())
+            every { outboundLogRepository.findById(99999L) } returns Optional.empty()
 
             val ex = assertThrows<BusinessException> {
                 service.getOutboundLogDetail(99999L)
@@ -317,7 +320,7 @@ class AdminSapIntegrationServiceTest {
                 lastError = null,
                 sentAt = null,
             ).apply { createdAt = java.time.LocalDateTime.of(2026, 5, 18, 2, 45, 11) }
-            whenever(outboxRepository.pagePendingOrRetry(any())).thenReturn(PageImpl(listOf(pending)))
+            every { outboxRepository.pagePendingOrRetry(any()) } returns PageImpl(listOf(pending))
 
             val result = service.searchOutboxPending(1, 20)
 
@@ -329,14 +332,13 @@ class AdminSapIntegrationServiceTest {
         @Test
         @DisplayName("page=1 size=20 - pageable 0-base 변환")
         fun pageableNormalized() {
-            whenever(outboxRepository.pagePendingOrRetry(any())).thenReturn(PageImpl(emptyList()))
+            val pageableSlot = slot<Pageable>()
+            every { outboxRepository.pagePendingOrRetry(capture(pageableSlot)) } returns PageImpl(emptyList())
 
             service.searchOutboxPending(1, 20)
 
-            val captor = argumentCaptor<Pageable>()
-            verify(outboxRepository).pagePendingOrRetry(captor.capture())
-            assertThat(captor.firstValue.pageNumber).isEqualTo(0)
-            assertThat(captor.firstValue.pageSize).isEqualTo(20)
+            assertThat(pageableSlot.captured.pageNumber).isEqualTo(0)
+            assertThat(pageableSlot.captured.pageSize).isEqualTo(20)
         }
     }
 

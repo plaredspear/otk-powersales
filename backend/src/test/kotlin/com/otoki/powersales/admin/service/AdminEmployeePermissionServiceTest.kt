@@ -17,37 +17,24 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 import java.util.*
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminEmployeePermissionService 테스트")
 class AdminEmployeePermissionServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var rolePermissionRepository: RolePermissionRepository
-
-    @Mock
-    private lateinit var userPermissionRepository: UserPermissionRepository
-
-    @Mock
-    private lateinit var adminPermissionResolver: AdminPermissionResolver
-
-    @Mock
-    private lateinit var userRepository: UserRepository
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val rolePermissionRepository: RolePermissionRepository = mockk()
+    private val userPermissionRepository: UserPermissionRepository = mockk()
+    private val adminPermissionResolver: AdminPermissionResolver = mockk()
+    private val userRepository: UserRepository = mockk()
 
     private lateinit var service: AdminEmployeePermissionService
 
@@ -89,14 +76,13 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("성공 - 시스템관리자가 사원 권한 조회")
         fun getEmployeePermissions_success() {
             // Given
-            whenever(employeeRepository.findById(2L)).thenReturn(Optional.of(targetEmployee))
-            whenever(adminPermissionResolver.resolveWithDetails(targetEmployee)).thenReturn(
+            every { employeeRepository.findById(2L) } returns Optional.of(targetEmployee)
+            every { adminPermissionResolver.resolveWithDetails(targetEmployee) } returns
                 PermissionResolveResult(
                     rolePermissions = listOf("DASHBOARD_READ"),
                     userPermissions = listOf(UserPermissionDetail("SCHEDULE_WRITE")),
                     effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_WRITE")
                 )
-            )
 
             // When
             val result = service.getEmployeePermissions(systemAdmin, 2L)
@@ -121,7 +107,7 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("실패 - 사원 미존재 → EmployeeNotFoundException")
         fun getEmployeePermissions_notFound() {
             // Given
-            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(999L) } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy { service.getEmployeePermissions(systemAdmin, 999L) }
@@ -137,16 +123,16 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("성공 - 권한 추가 후 변경된 상태 반환")
         fun updateUserPermissions_success() {
             // Given
-            whenever(employeeRepository.findById(2L)).thenReturn(Optional.of(targetEmployee))
-            whenever(userRepository.findByEmployeeCode("00000002")).thenReturn(targetUser)
-            whenever(userPermissionRepository.save(any<UserPermission>())).thenAnswer { it.arguments[0] }
-            whenever(adminPermissionResolver.resolveWithDetails(targetEmployee)).thenReturn(
+            every { employeeRepository.findById(2L) } returns Optional.of(targetEmployee)
+            every { userRepository.findByEmployeeCode("00000002") } returns targetUser
+            every { userPermissionRepository.deleteByUserId(any()) } returns Unit
+            every { userPermissionRepository.save(any<UserPermission>()) } answers { firstArg() }
+            every { adminPermissionResolver.resolveWithDetails(targetEmployee) } returns
                 PermissionResolveResult(
                     rolePermissions = listOf("DASHBOARD_READ"),
                     userPermissions = listOf(UserPermissionDetail("SCHEDULE_WRITE")),
                     effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_WRITE")
                 )
-            )
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("SCHEDULE_WRITE"))
 
@@ -162,7 +148,7 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("실패 - 자기 자신 수정 → CannotModifyOwnPermissionException")
         fun updateUserPermissions_self() {
             // Given
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(systemAdminEmployee))
+            every { employeeRepository.findById(1L) } returns Optional.of(systemAdminEmployee)
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("SCHEDULE_WRITE"))
 
@@ -175,7 +161,7 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("실패 - 잘못된 권한 → InvalidPermissionException")
         fun updateUserPermissions_invalidPermission() {
             // Given
-            whenever(employeeRepository.findById(2L)).thenReturn(Optional.of(targetEmployee))
+            every { employeeRepository.findById(2L) } returns Optional.of(targetEmployee)
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("INVALID_PERM"))
 
@@ -188,7 +174,7 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("실패 - 중복 권한 → DuplicatePermissionException")
         fun updateUserPermissions_duplicate() {
             // Given
-            whenever(employeeRepository.findById(2L)).thenReturn(Optional.of(targetEmployee))
+            every { employeeRepository.findById(2L) } returns Optional.of(targetEmployee)
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("SCHEDULE_WRITE", "SCHEDULE_WRITE"))
 
@@ -206,11 +192,10 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("성공 - 지점장 → 영업부장 역할 변경")
         fun updateAuthority_success() {
             // Given
-            whenever(employeeRepository.findById(2L)).thenReturn(Optional.of(targetEmployee))
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-            whenever(adminPermissionResolver.resolve(targetEmployee)).thenReturn(
+            every { employeeRepository.findById(2L) } returns Optional.of(targetEmployee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            every { adminPermissionResolver.resolve(targetEmployee) } returns
                 AdminPermission.entries.toSet() - AdminPermission.SCHEDULE_WRITE
-            )
 
             val request = UpdateAuthorityRequest(role = UserRole.SALES_MANAGER)
 
@@ -228,7 +213,7 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("실패 - 자기 자신 역할 변경 → CannotModifyOwnAuthorityException")
         fun updateAuthority_self() {
             // Given
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(systemAdminEmployee))
+            every { employeeRepository.findById(1L) } returns Optional.of(systemAdminEmployee)
 
             val request = UpdateAuthorityRequest(role = UserRole.LEADER)
 
@@ -241,7 +226,7 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("실패 - 잘못된 역할 → InvalidAuthorityException")
         fun updateAuthority_invalidRole() {
             // Given
-            whenever(employeeRepository.findById(2L)).thenReturn(Optional.of(targetEmployee))
+            every { employeeRepository.findById(2L) } returns Optional.of(targetEmployee)
 
             val request = UpdateAuthorityRequest(role = UserRole.WOMAN)
 
@@ -259,7 +244,9 @@ class AdminEmployeePermissionServiceTest {
         @DisplayName("성공 - 지점장 역할에 SCHEDULE_WRITE 추가")
         fun updateRolePermissions_success() {
             // Given
-            whenever(rolePermissionRepository.save(any<RolePermission>())).thenAnswer { it.arguments[0] }
+            every { rolePermissionRepository.deleteByRoleName(any()) } returns 0
+            every { rolePermissionRepository.flush() } returns Unit
+            every { rolePermissionRepository.save(any<RolePermission>()) } answers { firstArg() }
 
             val request = UpdateRolePermissionsRequest(
                 permissions = listOf("DASHBOARD_READ", "SCHEDULE_WRITE")

@@ -12,13 +12,12 @@ import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+import io.mockk.every
+import io.mockk.slot
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -32,11 +31,11 @@ class AdminScheduledJobControllerTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
 
-    @MockitoBean private lateinit var adminScheduledJobService: AdminScheduledJobService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminScheduledJobService: AdminScheduledJobService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @Test
     @DisplayName("GET /runs - 필터 없이 호출 시 service 에 page=1, size=20 기본값 전달")
@@ -58,7 +57,7 @@ class AdminScheduledJobControllerTest {
             currentPage = 1,
             pageSize = 20,
         )
-        whenever(adminScheduledJobService.search(any())).thenReturn(response)
+        every { adminScheduledJobService.search(any()) } returns response
 
         mockMvc.perform(get("/api/v1/admin/scheduled-jobs/runs"))
             .andExpect(status().isOk)
@@ -72,9 +71,8 @@ class AdminScheduledJobControllerTest {
     @Test
     @DisplayName("GET /runs - 필터 파라미터가 service query 로 전달")
     fun runs_withFilters() {
-        whenever(adminScheduledJobService.search(any())).thenReturn(
-            ScheduledJobRunListResponse(items = emptyList(), totalCount = 0L, currentPage = 2, pageSize = 50)
-        )
+        val captor = slot<AdminScheduledJobQuery>()
+        every { adminScheduledJobService.search(capture(captor)) } returns ScheduledJobRunListResponse(items = emptyList(), totalCount = 0L, currentPage = 2, pageSize = 50)
 
         mockMvc.perform(
             get("/api/v1/admin/scheduled-jobs/runs")
@@ -89,9 +87,7 @@ class AdminScheduledJobControllerTest {
             .andExpect(jsonPath("$.data.currentPage").value(2))
             .andExpect(jsonPath("$.data.pageSize").value(50))
 
-        val captor = org.mockito.kotlin.argumentCaptor<AdminScheduledJobQuery>()
-        org.mockito.kotlin.verify(adminScheduledJobService).search(captor.capture())
-        val q = captor.firstValue
+        val q = captor.captured
         assert(q.jobName == "sap-outbox-worker")
         assert(q.status == "FAILURE")
         assert(q.from == java.time.LocalDateTime.of(2026, 5, 17, 0, 0, 0))
@@ -103,12 +99,10 @@ class AdminScheduledJobControllerTest {
     @Test
     @DisplayName("GET /catalog - 정적 9건 응답 매핑")
     fun catalog_ok() {
-        whenever(adminScheduledJobService.catalog()).thenReturn(
-            listOf(
+        every { adminScheduledJobService.catalog() } returns listOf(
                 RegisteredScheduledJobDto("sap-outbox-worker", "*/30 * * * * *", "SAP outbox worker"),
                 RegisteredScheduledJobDto("pptMaster.expire", "0 0 23 * * *", "전문행사조 만료"),
             )
-        )
 
         mockMvc.perform(get("/api/v1/admin/scheduled-jobs/catalog"))
             .andExpect(status().isOk)
@@ -121,8 +115,7 @@ class AdminScheduledJobControllerTest {
     fun summary_default() {
         val to = java.time.LocalDateTime.of(2026, 5, 18, 12, 0, 0)
         val from = to.minus(24, java.time.temporal.ChronoUnit.HOURS)
-        whenever(adminScheduledJobService.summary(eq(24L))).thenReturn(
-            ScheduledJobSummaryResponse(
+        every { adminScheduledJobService.summary(eq(24L)) } returns ScheduledJobSummaryResponse(
                 windowFrom = from,
                 windowTo = to,
                 totalCount = 100L,
@@ -131,7 +124,6 @@ class AdminScheduledJobControllerTest {
                 failureCount = 3L,
                 distinctJobNames = listOf("sap-outbox-worker", "pptMaster.expire"),
             )
-        )
 
         mockMvc.perform(get("/api/v1/admin/scheduled-jobs/summary"))
             .andExpect(status().isOk)

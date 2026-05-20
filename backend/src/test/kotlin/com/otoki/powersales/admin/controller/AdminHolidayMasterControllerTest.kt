@@ -18,16 +18,16 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
@@ -44,16 +44,16 @@ class AdminHolidayMasterControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminHolidayMasterService: AdminHolidayMasterService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
@@ -89,7 +89,7 @@ class AdminHolidayMasterControllerTest {
                 HolidayMasterResponse(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정", type = "공휴일"),
                 HolidayMasterResponse(id = 2, holidayDate = LocalDate.of(2026, 3, 1), name = "삼일절", type = "공휴일")
             )
-            whenever(adminHolidayMasterService.getHolidayMasters(2026)).thenReturn(holidays)
+            every { adminHolidayMasterService.getHolidayMasters(2026) } returns holidays
 
             mockMvc.perform(get("/api/v1/admin/holiday-masters").param("year", "2026"))
                 .andExpect(status().isOk)
@@ -114,7 +114,7 @@ class AdminHolidayMasterControllerTest {
                 type = "기타"
             )
             val response = HolidayMasterResponse(id = 16, holidayDate = LocalDate.of(2026, 8, 17), name = "임시공휴일", type = "기타")
-            whenever(adminHolidayMasterService.createHolidayMaster(any())).thenReturn(response)
+            every { adminHolidayMasterService.createHolidayMaster(any()) } returns response
 
             mockMvc.perform(
                 post("/api/v1/admin/holiday-masters")
@@ -130,8 +130,7 @@ class AdminHolidayMasterControllerTest {
         @Test
         @DisplayName("실패 - 중복 날짜")
         fun create_duplicateDate() {
-            whenever(adminHolidayMasterService.createHolidayMaster(any()))
-                .thenThrow(HolidayDateDuplicateException())
+            every { adminHolidayMasterService.createHolidayMaster(any()) } throws HolidayDateDuplicateException()
 
             val json = """{"holidayDate": "2026-01-01", "name": "신정", "type": "공휴일"}"""
             mockMvc.perform(
@@ -146,8 +145,7 @@ class AdminHolidayMasterControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 유형")
         fun create_invalidType() {
-            whenever(adminHolidayMasterService.createHolidayMaster(any()))
-                .thenThrow(InvalidHolidayTypeException())
+            every { adminHolidayMasterService.createHolidayMaster(any()) } throws InvalidHolidayTypeException()
 
             val json = """{"holidayDate": "2026-08-17", "name": "기타", "type": "기타"}"""
             mockMvc.perform(
@@ -180,7 +178,7 @@ class AdminHolidayMasterControllerTest {
         @DisplayName("성공 - 공휴일 수정")
         fun update_success() {
             val response = HolidayMasterResponse(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정(수정)", type = "공휴일")
-            whenever(adminHolidayMasterService.updateHolidayMaster(eq(1L), any())).thenReturn(response)
+            every { adminHolidayMasterService.updateHolidayMaster(eq(1L), any()) } returns response
 
             val request = HolidayMasterUpdateRequest(
                 holidayDate = LocalDate.of(2026, 1, 1),
@@ -200,8 +198,7 @@ class AdminHolidayMasterControllerTest {
         @Test
         @DisplayName("실패 - 존재하지 않는 ID")
         fun update_notFound() {
-            whenever(adminHolidayMasterService.updateHolidayMaster(eq(99999L), any()))
-                .thenThrow(HolidayNotFoundException())
+            every { adminHolidayMasterService.updateHolidayMaster(eq(99999L), any()) } throws HolidayNotFoundException()
 
             val json = """{"holidayDate": "2026-01-01", "name": "신정", "type": "공휴일"}"""
             mockMvc.perform(
@@ -221,6 +218,8 @@ class AdminHolidayMasterControllerTest {
         @Test
         @DisplayName("성공 - 공휴일 삭제")
         fun delete_success() {
+            every { adminHolidayMasterService.deleteHolidayMaster(any()) } just Runs
+
             mockMvc.perform(delete("/api/v1/admin/holiday-masters/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -230,8 +229,7 @@ class AdminHolidayMasterControllerTest {
         @Test
         @DisplayName("실패 - 존재하지 않는 ID")
         fun delete_notFound() {
-            whenever(adminHolidayMasterService.deleteHolidayMaster(99999L))
-                .thenThrow(HolidayNotFoundException())
+            every { adminHolidayMasterService.deleteHolidayMaster(99999L) } throws HolidayNotFoundException()
 
             mockMvc.perform(delete("/api/v1/admin/holiday-masters/99999"))
                 .andExpect(status().isNotFound)

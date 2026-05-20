@@ -12,13 +12,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.whenever
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -32,19 +32,19 @@ class AdminPermissionMatrixControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminPermissionMatrixService: AdminPermissionMatrixService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminEmployeePermissionService: com.otoki.powersales.admin.service.AdminEmployeePermissionService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @BeforeEach
@@ -87,7 +87,7 @@ class AdminPermissionMatrixControllerTest {
                 ),
                 currentUser = CurrentUserPermission("LEADER", "조장", listOf("DASHBOARD_READ", "EMPLOYEE_READ"))
             )
-            whenever(adminPermissionMatrixService.getMatrix(1L)).thenReturn(mockResponse)
+            every { adminPermissionMatrixService.getMatrix(1L) } returns mockResponse
 
             // When & Then
             mockMvc.perform(get("/api/v1/admin/permissions/matrix"))

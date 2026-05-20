@@ -17,17 +17,17 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
@@ -41,10 +41,10 @@ class AdminPPTMasterControllerTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
-    @MockitoBean private lateinit var adminPPTMasterService: AdminPPTMasterService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var adminPPTMasterService: AdminPPTMasterService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @BeforeEach
     fun setUp() {
@@ -95,8 +95,7 @@ class AdminPPTMasterControllerTest {
                 content = listOf(createResponse()),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
             )
-            whenever(adminPPTMasterService.getMasters(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any()))
-                .thenReturn(listResponse)
+            every { adminPPTMasterService.getMasters(any(), any(), any(), any(), any(), any()) } returns listResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-masters"))
                 .andExpect(status().isOk)
@@ -113,7 +112,7 @@ class AdminPPTMasterControllerTest {
         @Test
         @DisplayName("성공 - 마스터 상세 조회")
         fun getMaster_success() {
-            whenever(adminPPTMasterService.getMaster(1L)).thenReturn(createResponse())
+            every { adminPPTMasterService.getMaster(1L) } returns createResponse()
 
             mockMvc.perform(get("/api/v1/admin/ppt-masters/1"))
                 .andExpect(status().isOk)
@@ -124,7 +123,7 @@ class AdminPPTMasterControllerTest {
         @Test
         @DisplayName("실패 - 미존재 ID -> 404")
         fun getMaster_notFound() {
-            whenever(adminPPTMasterService.getMaster(999L)).thenThrow(PPTMasterNotFoundException())
+            every { adminPPTMasterService.getMaster(999L) } throws PPTMasterNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/ppt-masters/999"))
                 .andExpect(status().isNotFound)
@@ -139,7 +138,7 @@ class AdminPPTMasterControllerTest {
         @Test
         @DisplayName("성공 - 마스터 생성 -> 201")
         fun createMaster_success() {
-            whenever(adminPPTMasterService.createMaster(any())).thenReturn(createResponse())
+            every { adminPPTMasterService.createMaster(any()) } returns createResponse()
 
             val request = PPTMasterCreateRequest(
                 employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
@@ -159,7 +158,7 @@ class AdminPPTMasterControllerTest {
         @Test
         @DisplayName("실패 - 중복 -> 409")
         fun createMaster_duplicate() {
-            whenever(adminPPTMasterService.createMaster(any())).thenThrow(PPTMasterDuplicateException())
+            every { adminPPTMasterService.createMaster(any()) } throws PPTMasterDuplicateException()
 
             val request = PPTMasterCreateRequest(
                 employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
@@ -184,7 +183,7 @@ class AdminPPTMasterControllerTest {
         @DisplayName("성공 - 마스터 수정")
         fun updateMaster_success() {
             val response = createResponse().copy(teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
-            whenever(adminPPTMasterService.updateMaster(eq(1L), any())).thenReturn(response)
+            every { adminPPTMasterService.updateMaster(eq(1L), any()) } returns response
 
             val requestJson = """{"employeeId":1,"accountId":1,"teamType":"프레시세일조_냉장","startDate":"2026-04-01","isConfirmed":false}"""
 
@@ -205,6 +204,8 @@ class AdminPPTMasterControllerTest {
         @Test
         @DisplayName("성공 - 마스터 삭제 -> 204")
         fun deleteMaster_success() {
+            every { adminPPTMasterService.deleteMaster(any()) } just Runs
+
             mockMvc.perform(delete("/api/v1/admin/ppt-masters/1"))
                 .andExpect(status().isNoContent)
         }
@@ -224,7 +225,7 @@ class AdminPPTMasterControllerTest {
                     BulkValidationResultItem(2, true, null)
                 )
             )
-            whenever(adminPPTMasterService.validateBulk(any())).thenReturn(response)
+            every { adminPPTMasterService.validateBulk(any()) } returns response
 
             val requestJson = """{"items":[{"employeeCode":"12345678","accountCode":"SAP001","teamType":"라면세일조","startDate":"2026-04-01"}]}"""
 
@@ -245,7 +246,7 @@ class AdminPPTMasterControllerTest {
         @Test
         @DisplayName("성공 - 일괄 확정 -> 201")
         fun confirmBulk_success() {
-            whenever(adminPPTMasterService.confirmBulk(any())).thenReturn(BulkConfirmResponse(createdCount = 3))
+            every { adminPPTMasterService.confirmBulk(any()) } returns BulkConfirmResponse(createdCount = 3)
 
             val requestJson = """{"items":[{"employeeCode":"12345678","accountCode":"SAP001","teamType":"라면세일조","startDate":"2026-04-01"}]}"""
 
@@ -277,7 +278,7 @@ class AdminPPTMasterControllerTest {
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
             )
-            whenever(adminPPTMasterService.getHistory(eq(1L), any())).thenReturn(historyResponse)
+            every { adminPPTMasterService.getHistory(eq(1L), any()) } returns historyResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-masters/1/history"))
                 .andExpect(status().isOk)
@@ -308,8 +309,7 @@ class AdminPPTMasterControllerTest {
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
             )
-            whenever(adminPPTMasterService.getAllHistory(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(historyResponse)
+            every { adminPPTMasterService.getAllHistory(any(), any(), any(), any(), any(), any()) } returns historyResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-histories"))
                 .andExpect(status().isOk)
@@ -328,10 +328,10 @@ class AdminPPTMasterControllerTest {
             val historyResponse = PPTMasterHistoryListResponse(
                 content = emptyList(), totalElements = 0, totalPages = 0, number = 0, size = 20
             )
-            whenever(adminPPTMasterService.getAllHistory(
+            every { adminPPTMasterService.getAllHistory(
                 eq("홍"), eq("EMP001"), eq("라면세일조"),
                 eq(LocalDate.of(2026, 5, 1)), eq(LocalDate.of(2026, 5, 31)), any()
-            )).thenReturn(historyResponse)
+            ) } returns historyResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-histories")
                 .param("employeeName", "홍")
@@ -358,8 +358,7 @@ class AdminPPTMasterControllerTest {
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
             )
-            whenever(adminPPTMasterService.getAllHistory(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(historyResponse)
+            every { adminPPTMasterService.getAllHistory(any(), any(), any(), any(), any(), any()) } returns historyResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-histories"))
                 .andExpect(status().isOk)

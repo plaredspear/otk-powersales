@@ -21,16 +21,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
@@ -48,16 +46,16 @@ class AdminEmployeePermissionControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminEmployeePermissionService: AdminEmployeePermissionService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @BeforeEach
@@ -99,7 +97,7 @@ class AdminEmployeePermissionControllerTest {
                 userPermissions = listOf(UserPermissionDetailResponse("SCHEDULE_WRITE")),
                 effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_READ", "SCHEDULE_WRITE")
             )
-            whenever(adminEmployeePermissionService.getEmployeePermissions(any(), eq(2L))).thenReturn(response)
+            every { adminEmployeePermissionService.getEmployeePermissions(any(), eq(2L)) } returns response
 
             // When & Then
             mockMvc.perform(get("/api/v1/admin/employees/2/permissions"))
@@ -115,8 +113,7 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("실패 - 비관리자 → 403")
         fun forbidden() {
-            whenever(adminEmployeePermissionService.getEmployeePermissions(any(), eq(2L)))
-                .thenThrow(AdminForbiddenException())
+            every { adminEmployeePermissionService.getEmployeePermissions(any(), eq(2L)) } throws AdminForbiddenException()
 
             mockMvc.perform(get("/api/v1/admin/employees/2/permissions"))
                 .andExpect(status().isForbidden)
@@ -126,8 +123,7 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("실패 - 사원 미존재 → 404")
         fun notFound() {
-            whenever(adminEmployeePermissionService.getEmployeePermissions(any(), eq(999L)))
-                .thenThrow(EmployeeNotFoundException())
+            every { adminEmployeePermissionService.getEmployeePermissions(any(), eq(999L)) } throws EmployeeNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/employees/999/permissions"))
                 .andExpect(status().isNotFound)
@@ -150,7 +146,7 @@ class AdminEmployeePermissionControllerTest {
                 userPermissions = listOf(UserPermissionDetailResponse("SCHEDULE_WRITE")),
                 effectivePermissions = listOf("DASHBOARD_READ", "SCHEDULE_WRITE")
             )
-            whenever(adminEmployeePermissionService.updateUserPermissions(any(), eq(2L), any())).thenReturn(response)
+            every { adminEmployeePermissionService.updateUserPermissions(any(), eq(2L), any()) } returns response
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("SCHEDULE_WRITE"))
 
@@ -168,8 +164,7 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("실패 - 자기 자신 수정 → 400")
         fun selfModify() {
-            whenever(adminEmployeePermissionService.updateUserPermissions(any(), eq(1L), any()))
-                .thenThrow(CannotModifyOwnPermissionException())
+            every { adminEmployeePermissionService.updateUserPermissions(any(), eq(1L), any()) } throws CannotModifyOwnPermissionException()
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("SCHEDULE_WRITE"))
 
@@ -185,8 +180,7 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 권한 → 400")
         fun invalidPermission() {
-            whenever(adminEmployeePermissionService.updateUserPermissions(any(), eq(2L), any()))
-                .thenThrow(InvalidPermissionException("INVALID"))
+            every { adminEmployeePermissionService.updateUserPermissions(any(), eq(2L), any()) } throws InvalidPermissionException("INVALID")
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("INVALID"))
 
@@ -214,7 +208,7 @@ class AdminEmployeePermissionControllerTest {
                 newRole = "SALES_MANAGER", newRoleLabel = "영업부장",
                 effectivePermissions = listOf("DASHBOARD_READ")
             )
-            whenever(adminEmployeePermissionService.updateAuthority(any(), eq(2L), any())).thenReturn(response)
+            every { adminEmployeePermissionService.updateAuthority(any(), eq(2L), any()) } returns response
 
             val request = UpdateAuthorityRequest(role = UserRole.SALES_MANAGER)
 

@@ -17,14 +17,17 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import io.mockk.every
+import io.mockk.just
+import io.mockk.Runs
+import io.mockk.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -38,20 +41,20 @@ class AdminEducationControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var educationService: EducationService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -99,8 +102,7 @@ class AdminEducationControllerTest {
                 size = 10
             )
 
-            whenever(educationService.getPostsForAdmin(isNull(), isNull(), eq(1), eq(10)))
-                .thenReturn(response)
+            every { educationService.getPostsForAdmin(null, null, eq(1), eq(10)) } returns response
 
             mockMvc.perform(get("/api/v1/admin/education/posts"))
                 .andExpect(status().isOk)
@@ -121,8 +123,7 @@ class AdminEducationControllerTest {
                 size = 10
             )
 
-            whenever(educationService.getPostsForAdmin(eq("c00001"), isNull(), eq(1), eq(10)))
-                .thenReturn(response)
+            every { educationService.getPostsForAdmin(eq("c00001"), null, eq(1), eq(10)) } returns response
 
             mockMvc.perform(get("/api/v1/admin/education/posts").param("category", "c00001"))
                 .andExpect(status().isOk)
@@ -132,8 +133,7 @@ class AdminEducationControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 카테고리")
         fun getPosts_invalidCategory() {
-            whenever(educationService.getPostsForAdmin(eq("c99999"), isNull(), eq(1), eq(10)))
-                .thenThrow(InvalidEducationCategoryException())
+            every { educationService.getPostsForAdmin(eq("c99999"), null, eq(1), eq(10)) } throws InvalidEducationCategoryException()
 
             mockMvc.perform(get("/api/v1/admin/education/posts").param("category", "c99999"))
                 .andExpect(status().isBadRequest)
@@ -165,7 +165,7 @@ class AdminEducationControllerTest {
                 )
             )
 
-            whenever(educationService.getPostDetail("edu20260309100000")).thenReturn(response)
+            every { educationService.getPostDetail("edu20260309100000") } returns response
 
             mockMvc.perform(get("/api/v1/admin/education/posts/edu20260309100000"))
                 .andExpect(status().isOk)
@@ -176,8 +176,7 @@ class AdminEducationControllerTest {
         @Test
         @DisplayName("실패 - 미존재 교육")
         fun getPostDetail_notFound() {
-            whenever(educationService.getPostDetail("nonexistent"))
-                .thenThrow(EducationPostNotFoundException())
+            every { educationService.getPostDetail("nonexistent") } throws EducationPostNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/education/posts/nonexistent"))
                 .andExpect(status().isNotFound)
@@ -204,8 +203,7 @@ class AdminEducationControllerTest {
                 attachments = emptyList()
             )
 
-            whenever(educationService.createPost(eq(1L), eq("테스트 교육"), eq("내용"), eq("c00001"), isNull()))
-                .thenReturn(response)
+            every { educationService.createPost(eq(1L), eq("테스트 교육"), eq("내용"), eq("c00001"), null) } returns response
 
             mockMvc.perform(
                 multipart("/api/v1/admin/education/posts")
@@ -237,8 +235,7 @@ class AdminEducationControllerTest {
                 )
             )
 
-            whenever(educationService.createPost(eq(1L), eq("테스트"), eq("내용"), eq("c00004"), any()))
-                .thenReturn(response)
+            every { educationService.createPost(eq(1L), eq("테스트"), eq("내용"), eq("c00004"), any()) } returns response
 
             mockMvc.perform(
                 multipart("/api/v1/admin/education/posts")
@@ -254,8 +251,7 @@ class AdminEducationControllerTest {
         @Test
         @DisplayName("실패 - 빈 제목")
         fun createPost_emptyTitle() {
-            whenever(educationService.createPost(eq(1L), eq(""), eq("내용"), eq("c00001"), isNull()))
-                .thenThrow(InvalidEducationParameterException("제목은 1~150자여야 합니다"))
+            every { educationService.createPost(eq(1L), eq(""), eq("내용"), eq("c00001"), null) } throws InvalidEducationParameterException("제목은 1~150자여야 합니다")
 
             mockMvc.perform(
                 multipart("/api/v1/admin/education/posts")
@@ -270,8 +266,7 @@ class AdminEducationControllerTest {
         @Test
         @DisplayName("실패 - 파일 수 초과")
         fun createPost_fileLimitExceeded() {
-            whenever(educationService.createPost(eq(1L), eq("제목"), eq("내용"), eq("c00001"), isNull()))
-                .thenThrow(FileLimitExceededException())
+            every { educationService.createPost(eq(1L), eq("제목"), eq("내용"), eq("c00001"), null) } throws FileLimitExceededException()
 
             mockMvc.perform(
                 multipart("/api/v1/admin/education/posts")
@@ -303,8 +298,7 @@ class AdminEducationControllerTest {
                 attachments = emptyList()
             )
 
-            whenever(educationService.updatePost(eq("edu001"), eq("수정됨"), eq("수정 내용"), eq("c00001"), isNull(), isNull()))
-                .thenReturn(response)
+            every { educationService.updatePost(eq("edu001"), eq("수정됨"), eq("수정 내용"), eq("c00001"), null, null) } returns response
 
             mockMvc.perform(
                 multipart("/api/v1/admin/education/posts/edu001")
@@ -326,7 +320,7 @@ class AdminEducationControllerTest {
         @Test
         @DisplayName("성공 - 교육 삭제")
         fun deletePost_success() {
-            doNothing().whenever(educationService).deletePost("edu001")
+            every { educationService.deletePost("edu001") } just Runs
 
             mockMvc.perform(delete("/api/v1/admin/education/posts/edu001"))
                 .andExpect(status().isOk)
@@ -336,8 +330,7 @@ class AdminEducationControllerTest {
         @Test
         @DisplayName("실패 - 미존재 교육")
         fun deletePost_notFound() {
-            whenever(educationService.deletePost("nonexistent"))
-                .thenThrow(EducationPostNotFoundException())
+            every { educationService.deletePost("nonexistent") } throws EducationPostNotFoundException()
 
             mockMvc.perform(delete("/api/v1/admin/education/posts/nonexistent"))
                 .andExpect(status().isNotFound)
@@ -357,7 +350,7 @@ class AdminEducationControllerTest {
                 EducationCategoryResponse(eduCode = "c00002", eduCodeNm = "CS/안전")
             )
 
-            whenever(educationService.getCategories()).thenReturn(categories)
+            every { educationService.getCategories() } returns categories
 
             mockMvc.perform(get("/api/v1/admin/education/categories"))
                 .andExpect(status().isOk)

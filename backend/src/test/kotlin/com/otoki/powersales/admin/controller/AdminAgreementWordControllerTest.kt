@@ -15,15 +15,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -44,20 +43,20 @@ class AdminAgreementWordControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminAgreementWordService: AdminAgreementWordService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
 
@@ -104,7 +103,7 @@ class AdminAgreementWordControllerTest {
                 activeDate = null,
                 createdAt = java.time.LocalDateTime.of(2026, 5, 11, 14, 23, 51)
             )
-            whenever(adminAgreementWordService.createAgreementWord(any())).thenReturn(response)
+            every { adminAgreementWordService.createAgreementWord(any()) } returns response
 
             mockMvc.perform(
                 post("/api/v1/admin/agreement-words")
@@ -214,7 +213,7 @@ class AdminAgreementWordControllerTest {
                 activeDate = null,
                 createdAt = java.time.LocalDateTime.of(2026, 5, 11, 14, 23, 51)
             )
-            whenever(adminAgreementWordService.createAgreementWord(any())).thenReturn(response)
+            every { adminAgreementWordService.createAgreementWord(any()) } returns response
 
             mockMvc.perform(
                 post("/api/v1/admin/agreement-words")
@@ -268,7 +267,7 @@ class AdminAgreementWordControllerTest {
                 activeDate = null,
                 createdAt = java.time.LocalDateTime.of(2026, 5, 11, 14, 23, 51)
             )
-            whenever(adminAgreementWordService.createAgreementWord(any())).thenReturn(response)
+            every { adminAgreementWordService.createAgreementWord(any()) } returns response
 
             val rawJson = """{"name":"AGR-2026-001","contents":"위치정보 수집·이용 동의서","afterActiveDate":"$futureDate"}"""
 
@@ -298,7 +297,7 @@ class AdminAgreementWordControllerTest {
                 activeDate = today,
                 afterActiveDate = today.plusMonths(6)
             )
-            whenever(adminAgreementWordService.getActiveAgreementWord()).thenReturn(response)
+            every { adminAgreementWordService.getActiveAgreementWord() } returns response
 
             mockMvc.perform(get("/api/v1/admin/agreement-words/active"))
                 .andExpect(status().isOk)
@@ -313,7 +312,7 @@ class AdminAgreementWordControllerTest {
         @Test
         @DisplayName("T14 활성 약관 부재 → 200 OK + data: null + message: '활성 약관 없음'")
         fun t14_activeAbsent() {
-            whenever(adminAgreementWordService.getActiveAgreementWord()).thenReturn(null)
+            every { adminAgreementWordService.getActiveAgreementWord() } returns null
 
             mockMvc.perform(get("/api/v1/admin/agreement-words/active"))
                 .andExpect(status().isOk)

@@ -20,17 +20,17 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -48,20 +48,20 @@ class AdminProductExpirationControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminProductExpirationService: AdminProductExpirationService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private fun setUpPrincipal(userId: Long = 1L, role: UserRole = UserRole.WOMAN) {
@@ -121,8 +121,7 @@ class AdminProductExpirationControllerTest {
                 totalElements = 1L,
                 totalPages = 1
             )
-            whenever(adminProductExpirationService.getList(eq(1L), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(response)
+            every { adminProductExpirationService.getList(eq(1L), any(), any(), any(), any(), any(), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/product-expiration"))
                 .andExpect(status().isOk)
@@ -147,7 +146,7 @@ class AdminProductExpirationControllerTest {
         @Test
         @DisplayName("성공 - 상세 조회")
         fun getDetail_success() {
-            whenever(adminProductExpirationService.getDetail(1L, 1)).thenReturn(sampleResponse())
+            every { adminProductExpirationService.getDetail(1L, 1) } returns sampleResponse()
 
             mockMvc.perform(get("/api/v1/admin/product-expiration/1"))
                 .andExpect(status().isOk)
@@ -161,8 +160,7 @@ class AdminProductExpirationControllerTest {
         @Test
         @DisplayName("실패 - 미존재 ID → 404")
         fun getDetail_notFound() {
-            whenever(adminProductExpirationService.getDetail(1L, 999))
-                .thenThrow(ProductExpirationNotFoundException())
+            every { adminProductExpirationService.getDetail(1L, 999) } throws ProductExpirationNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/product-expiration/999"))
                 .andExpect(status().isNotFound)
@@ -177,7 +175,7 @@ class AdminProductExpirationControllerTest {
         @Test
         @DisplayName("성공 - 201 Created")
         fun create_success() {
-            whenever(adminProductExpirationService.create(eq(1L), any())).thenReturn(sampleResponse())
+            every { adminProductExpirationService.create(eq(1L), any()) } returns sampleResponse()
 
             val json = """
                 {
@@ -222,8 +220,7 @@ class AdminProductExpirationControllerTest {
         @Test
         @DisplayName("실패 - 알림일 오류 → 400")
         fun create_invalidAlertDate() {
-            whenever(adminProductExpirationService.create(eq(1L), any()))
-                .thenThrow(InvalidAlertDateException())
+            every { adminProductExpirationService.create(eq(1L), any()) } throws InvalidAlertDateException()
 
             val json = """
                 {
@@ -248,8 +245,7 @@ class AdminProductExpirationControllerTest {
         @Test
         @DisplayName("실패 - 권한 없음 → 403")
         fun create_forbidden() {
-            whenever(adminProductExpirationService.create(eq(1L), any()))
-                .thenThrow(ProductExpirationForbiddenException())
+            every { adminProductExpirationService.create(eq(1L), any()) } throws ProductExpirationForbiddenException()
 
             val json = """
                 {
@@ -284,7 +280,7 @@ class AdminProductExpirationControllerTest {
                 alarmDate = "2026-05-25",
                 dDay = 57
             )
-            whenever(adminProductExpirationService.update(eq(1L), eq(1), any())).thenReturn(updated)
+            every { adminProductExpirationService.update(eq(1L), eq(1), any()) } returns updated
 
             val json = """
                 {
@@ -309,8 +305,7 @@ class AdminProductExpirationControllerTest {
         @Test
         @DisplayName("실패 - 미존재 → 404")
         fun update_notFound() {
-            whenever(adminProductExpirationService.update(eq(1L), eq(999), any()))
-                .thenThrow(ProductExpirationNotFoundException())
+            every { adminProductExpirationService.update(eq(1L), eq(999), any()) } throws ProductExpirationNotFoundException()
 
             val json = """
                 {
@@ -336,6 +331,8 @@ class AdminProductExpirationControllerTest {
         @Test
         @DisplayName("성공 - 삭제")
         fun delete_success() {
+            every { adminProductExpirationService.delete(any(), any()) } just Runs
+
             mockMvc.perform(delete("/api/v1/admin/product-expiration/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -351,7 +348,7 @@ class AdminProductExpirationControllerTest {
         @DisplayName("성공 - 일괄 삭제")
         fun batchDelete_success() {
             val response = AdminProductExpirationBatchDeleteResponse(deletedCount = 3)
-            whenever(adminProductExpirationService.batchDelete(eq(1L), any())).thenReturn(response)
+            every { adminProductExpirationService.batchDelete(eq(1L), any()) } returns response
 
             val json = """{"ids": [1, 2, 3]}"""
 
@@ -379,7 +376,7 @@ class AdminProductExpirationControllerTest {
                 imminentCount = 20L,
                 normalCount = 70L
             )
-            whenever(adminProductExpirationService.getSummary(1L)).thenReturn(response)
+            every { adminProductExpirationService.getSummary(1L) } returns response
 
             mockMvc.perform(get("/api/v1/admin/product-expiration/summary"))
                 .andExpect(status().isOk)

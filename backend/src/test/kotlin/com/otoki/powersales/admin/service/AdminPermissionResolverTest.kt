@@ -9,31 +9,20 @@ import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminPermissionResolver 테스트")
 class AdminPermissionResolverTest {
 
-    @Mock
-    private lateinit var rolePermissionRepository: RolePermissionRepository
-
-    @Mock
-    private lateinit var userPermissionRepository: UserPermissionRepository
-
-    @Mock
-    private lateinit var userRepository: UserRepository
-
-    @InjectMocks
-    private lateinit var resolver: AdminPermissionResolver
+    private val rolePermissionRepository: RolePermissionRepository = mockk()
+    private val userPermissionRepository: UserPermissionRepository = mockk()
+    private val userRepository: UserRepository = mockk()
+    private val resolver = AdminPermissionResolver(rolePermissionRepository, userPermissionRepository, userRepository)
 
     private val targetUser = User(id = 101L, username = "테스트", employeeCode = "00000001", password = "x")
 
@@ -46,14 +35,12 @@ class AdminPermissionResolverTest {
         fun resolve_roleOnly() {
             // Given
             val employee = createEmployee(role = UserRole.BRANCH_MANAGER)
-            whenever(rolePermissionRepository.findByRoleName("BRANCH_MANAGER")).thenReturn(
-                listOf(
-                    RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ"),
-                    RolePermission(role = "BRANCH_MANAGER", permission = "SCHEDULE_READ")
-                )
+            every { rolePermissionRepository.findByRoleName("BRANCH_MANAGER") } returns listOf(
+                RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ"),
+                RolePermission(role = "BRANCH_MANAGER", permission = "SCHEDULE_READ")
             )
-            whenever(userRepository.findByEmployeeCode("00000001")).thenReturn(targetUser)
-            whenever(userPermissionRepository.findByUserId(101L)).thenReturn(emptyList())
+            every { userRepository.findByEmployeeCode("00000001") } returns targetUser
+            every { userPermissionRepository.findByUserId(101L) } returns emptyList()
 
             // When
             val result = resolver.resolve(employee)
@@ -67,12 +54,12 @@ class AdminPermissionResolverTest {
         fun resolve_roleAndUser() {
             // Given
             val employee = createEmployee(role = UserRole.BRANCH_MANAGER)
-            whenever(rolePermissionRepository.findByRoleName("BRANCH_MANAGER")).thenReturn(
-                listOf(RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ"))
+            every { rolePermissionRepository.findByRoleName("BRANCH_MANAGER") } returns listOf(
+                RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ")
             )
-            whenever(userRepository.findByEmployeeCode("00000001")).thenReturn(targetUser)
-            whenever(userPermissionRepository.findByUserId(101L)).thenReturn(
-                listOf(UserPermission(userId = 101L, permission = "SCHEDULE_WRITE"))
+            every { userRepository.findByEmployeeCode("00000001") } returns targetUser
+            every { userPermissionRepository.findByUserId(101L) } returns listOf(
+                UserPermission(userId = 101L, permission = "SCHEDULE_WRITE")
             )
 
             // When
@@ -87,9 +74,9 @@ class AdminPermissionResolverTest {
         fun resolve_nullAuthority() {
             // Given
             val employee = createEmployee(role = null)
-            whenever(userRepository.findByEmployeeCode("00000001")).thenReturn(targetUser)
-            whenever(userPermissionRepository.findByUserId(101L)).thenReturn(
-                listOf(UserPermission(userId = 101L, permission = "DASHBOARD_READ"))
+            every { userRepository.findByEmployeeCode("00000001") } returns targetUser
+            every { userPermissionRepository.findByUserId(101L) } returns listOf(
+                UserPermission(userId = 101L, permission = "DASHBOARD_READ")
             )
 
             // When
@@ -104,8 +91,8 @@ class AdminPermissionResolverTest {
         fun resolve_noPermissions() {
             // Given
             val employee = createEmployee(role = null)
-            whenever(userRepository.findByEmployeeCode("00000001")).thenReturn(targetUser)
-            whenever(userPermissionRepository.findByUserId(101L)).thenReturn(emptyList())
+            every { userRepository.findByEmployeeCode("00000001") } returns targetUser
+            every { userPermissionRepository.findByUserId(101L) } returns emptyList()
 
             // When
             val result = resolver.resolve(employee)
@@ -124,12 +111,12 @@ class AdminPermissionResolverTest {
         fun resolveWithDetails_success() {
             // Given
             val employee = createEmployee(role = UserRole.BRANCH_MANAGER)
-            whenever(rolePermissionRepository.findByRoleName("BRANCH_MANAGER")).thenReturn(
-                listOf(RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ"))
+            every { rolePermissionRepository.findByRoleName("BRANCH_MANAGER") } returns listOf(
+                RolePermission(role = "BRANCH_MANAGER", permission = "DASHBOARD_READ")
             )
-            whenever(userRepository.findByEmployeeCode("00000001")).thenReturn(targetUser)
-            whenever(userPermissionRepository.findByUserId(101L)).thenReturn(
-                listOf(UserPermission(userId = 101L, permission = "SCHEDULE_WRITE"))
+            every { userRepository.findByEmployeeCode("00000001") } returns targetUser
+            every { userPermissionRepository.findByUserId(101L) } returns listOf(
+                UserPermission(userId = 101L, permission = "SCHEDULE_WRITE")
             )
 
             // When

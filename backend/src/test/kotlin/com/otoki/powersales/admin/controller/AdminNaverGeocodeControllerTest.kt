@@ -15,16 +15,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -39,11 +37,11 @@ class AdminNaverGeocodeControllerTest {
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean private lateinit var adminNaverGeocodeService: AdminNaverGeocodeService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminNaverGeocodeService: AdminNaverGeocodeService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
     fun setUp() {
@@ -86,7 +84,7 @@ class AdminNaverGeocodeControllerTest {
                     )
                 )
             )
-            whenever(adminNaverGeocodeService.test(eq(1L), any())).thenReturn(response)
+            every { adminNaverGeocodeService.test(eq(1L), any()) } returns response
 
             mockMvc.perform(
                 post("/api/v1/admin/naver-geocode/test")
@@ -135,7 +133,7 @@ class AdminNaverGeocodeControllerTest {
         @DisplayName("E2 실패 - Naver API 5xx (service 가 NaverApiException throw) -> 502 + NAVER_GEOCODE_API_FAILED")
         fun test_naverApiFailure() {
             val request = NaverGeocodeTestRequest(address = "서울특별시 강남구 테헤란로 123")
-            whenever(adminNaverGeocodeService.test(eq(1L), any())).thenThrow(NaverApiException())
+            every { adminNaverGeocodeService.test(eq(1L), any()) } throws NaverApiException()
 
             mockMvc.perform(
                 post("/api/v1/admin/naver-geocode/test")
@@ -156,7 +154,7 @@ class AdminNaverGeocodeControllerTest {
                 matchedCount = 0,
                 results = emptyList()
             )
-            whenever(adminNaverGeocodeService.test(eq(1L), any())).thenReturn(response)
+            every { adminNaverGeocodeService.test(eq(1L), any()) } returns response
 
             mockMvc.perform(
                 post("/api/v1/admin/naver-geocode/test")

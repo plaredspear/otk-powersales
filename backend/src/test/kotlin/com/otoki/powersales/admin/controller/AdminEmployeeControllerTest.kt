@@ -24,17 +24,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -50,35 +48,35 @@ class AdminEmployeeControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminEmployeeService: AdminEmployeeService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminEmployeeCredentialService: AdminEmployeeCredentialService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminEmployeeUpdateService: AdminEmployeeUpdateService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
     // @AutoConfigureMockMvc(addFilters = false) 환경에서 WebAdminContextFilter 가 동작하지 않으므로
     // ArgumentResolver 자체를 stub 하여 ALL scope 기본값 주입.
-    @MockitoBean
+    @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
@@ -100,12 +98,11 @@ class AdminEmployeeControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        whenever(currentAdminContextArgumentResolver.supportsParameter(any())).thenAnswer { invocation ->
-            val parameter = invocation.arguments[0] as MethodParameter
+        every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
+            val parameter = firstArg<MethodParameter>()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
-        whenever(currentAdminContextArgumentResolver.resolveArgument(any(), anyOrNull(), any(), anyOrNull()))
-            .thenReturn(DataScope(branchCodes = emptyList(), isAllBranches = true))
+        every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
     }
 
     @Nested
@@ -144,8 +141,7 @@ class AdminEmployeeControllerTest {
                 totalElements = 1,
                 totalPages = 1
             )
-            whenever(adminEmployeeService.getEmployees(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
-                .thenReturn(response)
+            every { adminEmployeeService.getEmployees(any(), any(), any(), any(), any(), any(), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/employees"))
                 .andExpect(status().isOk)
@@ -175,8 +171,7 @@ class AdminEmployeeControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("홍"), eq(UserRole.LEADER), eq(0), eq(10)))
-                .thenReturn(response)
+            every { adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("홍"), eq(UserRole.LEADER), eq(0), eq(10)) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/employees")
@@ -203,8 +198,7 @@ class AdminEmployeeControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminEmployeeService.getEmployees(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
-                .thenReturn(response)
+            every { adminEmployeeService.getEmployees(any(), any(), any(), any(), any(), any(), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/employees"))
                 .andExpect(status().isOk)
@@ -229,7 +223,7 @@ class AdminEmployeeControllerTest {
                 previousDeviceBound = true,
                 resetAt = java.time.LocalDateTime.of(2026, 5, 4, 14, 30, 0)
             )
-            whenever(adminEmployeeCredentialService.resetDevice(eq(12345L))).thenReturn(response)
+            every { adminEmployeeCredentialService.resetDevice(eq(12345L)) } returns response
 
             mockMvc.perform(post("/api/v1/admin/employees/12345/reset-device"))
                 .andExpect(status().isOk)
@@ -243,8 +237,7 @@ class AdminEmployeeControllerTest {
         @Test
         @DisplayName("실패 - 미존재 사원 -> 404, EMP_NOT_FOUND")
         fun resetDevice_notFound() {
-            whenever(adminEmployeeCredentialService.resetDevice(eq(99999999L)))
-                .thenThrow(EmployeeNotFoundException(99999999L))
+            every { adminEmployeeCredentialService.resetDevice(eq(99999999L)) } throws EmployeeNotFoundException(99999999L)
 
             mockMvc.perform(post("/api/v1/admin/employees/99999999/reset-device"))
                 .andExpect(status().isNotFound)
@@ -254,8 +247,7 @@ class AdminEmployeeControllerTest {
         @Test
         @DisplayName("실패 - 앱 로그인 비활성 사원 -> 400, EMP_LOGIN_INACTIVE")
         fun resetDevice_loginInactive() {
-            whenever(adminEmployeeCredentialService.resetDevice(eq(12345L)))
-                .thenThrow(EmployeeLoginInactiveException())
+            every { adminEmployeeCredentialService.resetDevice(eq(12345L)) } throws EmployeeLoginInactiveException()
 
             mockMvc.perform(post("/api/v1/admin/employees/12345/reset-device"))
                 .andExpect(status().isBadRequest)
@@ -278,7 +270,7 @@ class AdminEmployeeControllerTest {
                 passwordChangeRequired = true,
                 resetAt = java.time.LocalDateTime.of(2026, 5, 4, 14, 30, 0)
             )
-            whenever(adminEmployeeCredentialService.resetPassword(eq(12345L))).thenReturn(response)
+            every { adminEmployeeCredentialService.resetPassword(eq(12345L)) } returns response
 
             mockMvc.perform(post("/api/v1/admin/employees/12345/reset-password"))
                 .andExpect(status().isOk)
@@ -291,8 +283,7 @@ class AdminEmployeeControllerTest {
         @Test
         @DisplayName("실패 - 미존재 사원 -> 404, EMP_NOT_FOUND")
         fun resetPassword_notFound() {
-            whenever(adminEmployeeCredentialService.resetPassword(eq(99999999L)))
-                .thenThrow(EmployeeNotFoundException(99999999L))
+            every { adminEmployeeCredentialService.resetPassword(eq(99999999L)) } throws EmployeeNotFoundException(99999999L)
 
             mockMvc.perform(post("/api/v1/admin/employees/99999999/reset-password"))
                 .andExpect(status().isNotFound)
@@ -302,8 +293,7 @@ class AdminEmployeeControllerTest {
         @Test
         @DisplayName("실패 - 앱 로그인 비활성 사원 -> 400, EMP_LOGIN_INACTIVE")
         fun resetPassword_loginInactive() {
-            whenever(adminEmployeeCredentialService.resetPassword(eq(12345L)))
-                .thenThrow(EmployeeLoginInactiveException())
+            every { adminEmployeeCredentialService.resetPassword(eq(12345L)) } throws EmployeeLoginInactiveException()
 
             mockMvc.perform(post("/api/v1/admin/employees/12345/reset-password"))
                 .andExpect(status().isBadRequest)

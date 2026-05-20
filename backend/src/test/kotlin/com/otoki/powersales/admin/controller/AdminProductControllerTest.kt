@@ -30,16 +30,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.whenever
+
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -53,26 +51,26 @@ class AdminProductControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminProductService: AdminProductService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminProductInventoryService: AdminProductInventoryService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminProductExportService: AdminProductExportService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -130,11 +128,11 @@ class AdminProductControllerTest {
                 totalElements = 1,
                 totalPages = 1
             )
-            whenever(adminProductService.getProducts(
-                keyword = isNull(), category1 = isNull(), category2 = isNull(),
-                category3 = isNull(), productStatus = isNull(),
+            every { adminProductService.getProducts(
+                keyword = null, category1 = null, category2 = null,
+                category3 = null, productStatus = null,
                 page = eq(0), size = eq(20)
-            )).thenReturn(response)
+            ) } returns response
 
             // When & Then
             mockMvc.perform(get("/api/v1/admin/products"))
@@ -161,11 +159,11 @@ class AdminProductControllerTest {
                 content = emptyList(),
                 page = 0, size = 10, totalElements = 0, totalPages = 0
             )
-            whenever(adminProductService.getProducts(
-                keyword = eq("진라면"), category1 = eq("면류"), category2 = isNull(),
-                category3 = isNull(), productStatus = isNull(),
+            every { adminProductService.getProducts(
+                keyword = eq("진라면"), category1 = eq("면류"), category2 = null,
+                category3 = null, productStatus = null,
                 page = eq(0), size = eq(10)
-            )).thenReturn(response)
+            ) } returns response
 
             // When & Then
             mockMvc.perform(
@@ -187,11 +185,11 @@ class AdminProductControllerTest {
                 content = emptyList(),
                 page = 0, size = 20, totalElements = 0, totalPages = 0
             )
-            whenever(adminProductService.getProducts(
-                keyword = isNull(), category1 = isNull(), category2 = isNull(),
-                category3 = isNull(), productStatus = isNull(),
+            every { adminProductService.getProducts(
+                keyword = null, category1 = null, category2 = null,
+                category3 = null, productStatus = null,
                 page = eq(0), size = eq(20)
-            )).thenReturn(response)
+            ) } returns response
 
             // When & Then
             mockMvc.perform(get("/api/v1/admin/products"))
@@ -217,7 +215,7 @@ class AdminProductControllerTest {
                     )
                 )
             )
-            whenever(adminProductService.getCategories()).thenReturn(response)
+            every { adminProductService.getCategories() } returns response
 
             // When & Then
             mockMvc.perform(get("/api/v1/admin/products/categories"))
@@ -260,7 +258,7 @@ class AdminProductControllerTest {
                 createdAt = "2026-01-01T00:00:00",
                 lastModifiedAt = "2026-05-01T00:00:00"
             )
-            whenever(adminProductService.getProductDetail(eq("P001"))).thenReturn(detail)
+            every { adminProductService.getProductDetail(eq("P001")) } returns detail
 
             // When & Then
             mockMvc.perform(get("/api/v1/admin/products/P001"))
@@ -301,7 +299,7 @@ class AdminProductControllerTest {
                     )
                 )
             )
-            whenever(adminProductInventoryService.searchInventory(any())).thenReturn(response)
+            every { adminProductInventoryService.searchInventory(any()) } returns response
 
             // When & Then
             mockMvc.perform(
@@ -353,8 +351,7 @@ class AdminProductControllerTest {
         fun exportExcel_success() {
             // Given
             val xlsxBytes = byteArrayOf(0x50, 0x4B, 0x03, 0x04) // PK header (dummy)
-            whenever(adminProductExportService.exportSelectedProducts(eq(listOf("P001", "P002"))))
-                .thenReturn(xlsxBytes)
+            every { adminProductExportService.exportSelectedProducts(eq(listOf("P001", "P002"))) } returns xlsxBytes
             val request = ProductExportRequest(productCodes = listOf("P001", "P002"))
 
             // When & Then

@@ -20,15 +20,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.whenever
+
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -42,20 +42,20 @@ class AdminDashboardControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminDashboardService: AdminDashboardService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
 
@@ -119,8 +119,7 @@ class AdminDashboardControllerTest {
         @Test
         @DisplayName("성공 - 200 OK + 응답 스키마 키 모두 존재")
         fun getDashboard_success_schemaKeysExist() {
-            whenever(adminDashboardService.getDashboard(anyOrNull(), anyOrNull()))
-                .thenReturn(emptyDashboardResponse("2026-03"))
+            every { adminDashboardService.getDashboard(any(), any()) } returns emptyDashboardResponse("2026-03")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
@@ -166,8 +165,7 @@ class AdminDashboardControllerTest {
         @Test
         @DisplayName("성공 - yearMonth 미입력 시 응답의 year_month가 YYYY-MM 패턴")
         fun getDashboard_success_noYearMonth() {
-            whenever(adminDashboardService.getDashboard(anyOrNull(), anyOrNull()))
-                .thenReturn(emptyDashboardResponse("2026-05"))
+            every { adminDashboardService.getDashboard(any(), any()) } returns emptyDashboardResponse("2026-05")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")

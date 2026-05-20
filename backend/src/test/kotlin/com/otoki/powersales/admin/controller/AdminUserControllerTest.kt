@@ -19,17 +19,17 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -50,20 +50,20 @@ class AdminUserControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminUserService: AdminUserService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -115,8 +115,7 @@ class AdminUserControllerTest {
                 totalElements = 1,
                 totalPages = 1
             )
-            whenever(adminUserService.findUsers(anyOrNull(), anyOrNull(), eq(0), eq(20)))
-                .thenReturn(response)
+            every { adminUserService.findUsers(any(), any(), eq(0), eq(20)) } returns response
 
             mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(status().isOk)
@@ -140,8 +139,7 @@ class AdminUserControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminUserService.findUsers(eq("kim"), eq(false), eq(0), eq(10)))
-                .thenReturn(response)
+            every { adminUserService.findUsers(eq("kim"), eq(false), eq(0), eq(10)) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/users")
@@ -189,7 +187,7 @@ class AdminUserControllerTest {
                 createdAt = java.time.LocalDateTime.of(2026, 1, 1, 0, 0),
                 lastModifiedAt = java.time.LocalDateTime.of(2026, 5, 14, 10, 0)
             )
-            whenever(adminUserService.findUserDetail(eq(1L))).thenReturn(response)
+            every { adminUserService.findUserDetail(eq(1L)) } returns response
 
             mockMvc.perform(get("/api/v1/admin/users/1"))
                 .andExpect(status().isOk)
@@ -203,8 +201,7 @@ class AdminUserControllerTest {
         @Test
         @DisplayName("실패 - 미존재 사용자 → 404")
         fun getUser_notFound() {
-            whenever(adminUserService.findUserDetail(eq(99999L)))
-                .thenThrow(AdminUserNotFoundException(99999L))
+            every { adminUserService.findUserDetail(eq(99999L)) } throws AdminUserNotFoundException(99999L)
 
             mockMvc.perform(get("/api/v1/admin/users/99999"))
                 .andExpect(status().isNotFound)
@@ -226,7 +223,7 @@ class AdminUserControllerTest {
                 passwordChangeRequired = true,
                 resetAt = java.time.LocalDateTime.of(2026, 5, 14, 14, 30)
             )
-            whenever(adminUserService.resetPassword(eq(5L))).thenReturn(response)
+            every { adminUserService.resetPassword(eq(5L)) } returns response
 
             mockMvc.perform(post("/api/v1/admin/users/5/reset-password"))
                 .andExpect(status().isOk)
@@ -240,8 +237,7 @@ class AdminUserControllerTest {
         @Test
         @DisplayName("실패 - 미존재 사용자 → 404")
         fun resetPassword_notFound() {
-            whenever(adminUserService.resetPassword(eq(99999L)))
-                .thenThrow(AdminUserNotFoundException(99999L))
+            every { adminUserService.resetPassword(eq(99999L)) } throws AdminUserNotFoundException(99999L)
 
             mockMvc.perform(post("/api/v1/admin/users/99999/reset-password"))
                 .andExpect(status().isNotFound)
@@ -257,6 +253,7 @@ class AdminUserControllerTest {
         @DisplayName("성공 - 비활성화")
         fun deactivate_success() {
             val request = UpdateUserActiveStatusRequest(isActive = false)
+            every { adminUserService.updateActiveStatus(any(), any(), any()) } just Runs
 
             mockMvc.perform(
                 put("/api/v1/admin/users/5/active")
@@ -272,6 +269,7 @@ class AdminUserControllerTest {
         @DisplayName("성공 - 활성화")
         fun activate_success() {
             val request = UpdateUserActiveStatusRequest(isActive = true)
+            every { adminUserService.updateActiveStatus(any(), any(), any()) } just Runs
 
             mockMvc.perform(
                 put("/api/v1/admin/users/5/active")
@@ -287,8 +285,7 @@ class AdminUserControllerTest {
         @DisplayName("실패 - 자기 자신 비활성화 → 400")
         fun deactivateSelf_blocked() {
             val request = UpdateUserActiveStatusRequest(isActive = false)
-            whenever(adminUserService.updateActiveStatus(eq(100L), eq(100L), eq(false)))
-                .thenThrow(CannotDeactivateSelfException())
+            every { adminUserService.updateActiveStatus(eq(100L), eq(100L), eq(false)) } throws CannotDeactivateSelfException()
 
             mockMvc.perform(
                 put("/api/v1/admin/users/100/active")
@@ -303,8 +300,7 @@ class AdminUserControllerTest {
         @DisplayName("실패 - 미존재 사용자 → 404")
         fun update_notFound() {
             val request = UpdateUserActiveStatusRequest(isActive = true)
-            whenever(adminUserService.updateActiveStatus(any(), any(), any()))
-                .thenThrow(AdminUserNotFoundException(99999L))
+            every { adminUserService.updateActiveStatus(any(), any(), any()) } throws AdminUserNotFoundException(99999L)
 
             mockMvc.perform(
                 put("/api/v1/admin/users/99999/active")

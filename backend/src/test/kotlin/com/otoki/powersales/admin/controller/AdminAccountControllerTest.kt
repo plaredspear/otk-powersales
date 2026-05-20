@@ -30,10 +30,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -41,7 +41,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -61,36 +61,36 @@ class AdminAccountControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminAccountService: AdminAccountService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var accountCreateService: AccountCreateService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var accountUpdateService: AccountUpdateService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var accountDeleteService: AccountDeleteService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
     // 운영에서는 WebAdminContextFilter 가 request attribute 에 DataScope 를 적재 → ArgumentResolver
     // 가 그 값을 꺼낸다. 본 테스트는 @AutoConfigureMockMvc(addFilters = false) 로 필터가 비활성
     // 이므로 ArgumentResolver 자체를 stub 하여 ALL scope 기본값을 주입한다.
-    @MockitoBean
+    @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
@@ -112,12 +112,11 @@ class AdminAccountControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        whenever(currentAdminContextArgumentResolver.supportsParameter(any())).thenAnswer { invocation ->
-            val parameter = invocation.arguments[0] as MethodParameter
+        every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
+            val parameter = firstArg<MethodParameter>()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
-        whenever(currentAdminContextArgumentResolver.resolveArgument(any(), anyOrNull(), any(), anyOrNull()))
-            .thenReturn(DataScope(branchCodes = emptyList(), isAllBranches = true))
+        every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
     }
 
     @Nested
@@ -147,8 +146,7 @@ class AdminAccountControllerTest {
                 totalElements = 1,
                 totalPages = 1
             )
-            whenever(adminAccountService.getAccounts(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
-                .thenReturn(response)
+            every { adminAccountService.getAccounts(any(), any(), any(), any(), any(), any(), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/accounts"))
                 .andExpect(status().isOk)
@@ -179,8 +177,7 @@ class AdminAccountControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminAccountService.getAccounts(any(), eq("GS25"), eq("편의점"), eq("A001"), eq("활성"), eq(0), eq(10)))
-                .thenReturn(response)
+            every { adminAccountService.getAccounts(any(), eq("GS25"), eq("편의점"), eq("A001"), eq("활성"), eq(0), eq(10)) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/accounts")
@@ -207,8 +204,7 @@ class AdminAccountControllerTest {
                 totalElements = 0,
                 totalPages = 0
             )
-            whenever(adminAccountService.getAccounts(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
-                .thenReturn(response)
+            every { adminAccountService.getAccounts(any(), any(), any(), any(), any(), any(), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/accounts"))
                 .andExpect(status().isOk)
@@ -235,7 +231,7 @@ class AdminAccountControllerTest {
                 branchCode = "C001",
                 branchName = "강남지점"
             )
-            whenever(accountCreateService.create(any())).thenReturn(response)
+            every { accountCreateService.create(any()) } returns response
 
             mockMvc.perform(
                 post("/api/v1/admin/accounts")
@@ -271,7 +267,7 @@ class AdminAccountControllerTest {
         @DisplayName("C5 실패 - 동일명 등록 시도 → 409 ACCOUNT_NAME_DUPLICATE")
         fun createAccount_duplicate() {
             val request = AdminAccountCreateRequest(name = "(신규) 강남점", employeeCode = "100123")
-            whenever(accountCreateService.create(any())).thenThrow(AccountNameDuplicateException())
+            every { accountCreateService.create(any()) } throws AccountNameDuplicateException()
 
             mockMvc.perform(
                 post("/api/v1/admin/accounts")
@@ -287,8 +283,7 @@ class AdminAccountControllerTest {
         @DisplayName("C6 실패 - prefix 미포함 → 400 ACCOUNT_NAME_PREFIX_REQUIRED + 메시지 정합")
         fun createAccount_prefixMissing() {
             val request = AdminAccountCreateRequest(name = "강남점", employeeCode = "100123")
-            whenever(accountCreateService.create(any()))
-                .thenThrow(AccountNamePrefixRequiredException("(신규)/(기타)"))
+            every { accountCreateService.create(any()) } throws AccountNamePrefixRequiredException("(신규)/(기타)")
 
             mockMvc.perform(
                 post("/api/v1/admin/accounts")
@@ -360,7 +355,7 @@ class AdminAccountControllerTest {
                 consignmentAcc = null,
                 distribution = null
             )
-            whenever(accountUpdateService.update(eq(1234), any(), any())).thenReturn(response)
+            every { accountUpdateService.update(eq(1234), any(), any()) } returns response
 
             mockMvc.perform(
                 put("/api/v1/admin/accounts/{id}", 1234)
@@ -385,8 +380,7 @@ class AdminAccountControllerTest {
         @Test
         @DisplayName("C2 실패 - 비존재 id → 404 ACCOUNT_NOT_FOUND + 메시지에 id 포함")
         fun updateAccount_notFound() {
-            org.mockito.kotlin.doThrow(AccountNotFoundException(9999))
-                .whenever(accountUpdateService).update(eq(9999), any(), any())
+            every { accountUpdateService.update(eq(9999), any(), any()) } throws AccountNotFoundException(9999)
 
             mockMvc.perform(
                 put("/api/v1/admin/accounts/{id}", 9999)
@@ -401,8 +395,7 @@ class AdminAccountControllerTest {
         @Test
         @DisplayName("C3 실패 - prefix 위반 → 400 ACCOUNT_NAME_PREFIX_REQUIRED + 메시지 '거래처 수정은 ...'")
         fun updateAccount_prefixMissing() {
-            org.mockito.kotlin.doThrow(AccountNamePrefixRequiredForUpdateException("(신규)/(기타)"))
-                .whenever(accountUpdateService).update(eq(1234), any(), any())
+            every { accountUpdateService.update(eq(1234), any(), any()) } throws AccountNamePrefixRequiredForUpdateException("(신규)/(기타)")
 
             mockMvc.perform(
                 put("/api/v1/admin/accounts/{id}", 1234)
@@ -417,8 +410,7 @@ class AdminAccountControllerTest {
         @Test
         @DisplayName("C4 실패 - 동일명 중복 → 409 ACCOUNT_NAME_DUPLICATE")
         fun updateAccount_duplicate() {
-            org.mockito.kotlin.doThrow(AccountNameDuplicateException())
-                .whenever(accountUpdateService).update(eq(1234), any(), any())
+            every { accountUpdateService.update(eq(1234), any(), any()) } throws AccountNameDuplicateException()
 
             mockMvc.perform(
                 put("/api/v1/admin/accounts/{id}", 1234)
@@ -438,6 +430,8 @@ class AdminAccountControllerTest {
         @Test
         @DisplayName("C1 성공 - 정상 삭제 (200 OK + camelCase 응답)")
         fun deleteAccount_success() {
+            every { accountDeleteService.delete(eq(1234)) } just Runs
+
             mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 1234))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -447,8 +441,7 @@ class AdminAccountControllerTest {
         @Test
         @DisplayName("C4 실패 - SAP 동기 거래처 삭제 시도 → 409 ACCOUNT_DELETE_BLOCKED_SAP_SYNCED")
         fun deleteAccount_sapSyncedBlocked() {
-            org.mockito.kotlin.doThrow(AccountDeleteBlockedSapSyncedException())
-                .whenever(accountDeleteService).delete(eq(1234))
+            every { accountDeleteService.delete(eq(1234)) } throws AccountDeleteBlockedSapSyncedException()
 
             mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 1234))
                 .andExpect(status().isConflict)
@@ -459,8 +452,7 @@ class AdminAccountControllerTest {
         @Test
         @DisplayName("C5 실패 - 존재하지 않는 id → 404 ACCOUNT_NOT_FOUND")
         fun deleteAccount_notFound() {
-            org.mockito.kotlin.doThrow(AccountNotFoundException())
-                .whenever(accountDeleteService).delete(eq(9999))
+            every { accountDeleteService.delete(eq(9999)) } throws AccountNotFoundException()
 
             mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 9999))
                 .andExpect(status().isNotFound)
@@ -471,8 +463,7 @@ class AdminAccountControllerTest {
         @Test
         @DisplayName("C6 실패 - 이미 삭제된 id 재요청 → 404 ACCOUNT_NOT_FOUND (멱등)")
         fun deleteAccount_alreadyDeletedIdempotent() {
-            org.mockito.kotlin.doThrow(AccountNotFoundException())
-                .whenever(accountDeleteService).delete(eq(1234))
+            every { accountDeleteService.delete(eq(1234)) } throws AccountNotFoundException()
 
             mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 1234))
                 .andExpect(status().isNotFound)

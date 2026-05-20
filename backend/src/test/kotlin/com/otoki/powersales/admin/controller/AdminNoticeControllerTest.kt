@@ -28,16 +28,16 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -54,20 +54,20 @@ class AdminNoticeControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var noticeService: NoticeService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -107,7 +107,7 @@ class AdminNoticeControllerTest {
                 currentPage = 1,
                 size = 10
             )
-            whenever(noticeService.getPostsForAdmin(eq(null), eq(null), eq(1), eq(10))).thenReturn(response)
+            every { noticeService.getPostsForAdmin(null, null, eq(1), eq(10)) } returns response
 
             mockMvc.perform(get("/api/v1/admin/notices"))
                 .andExpect(status().isOk)
@@ -135,7 +135,7 @@ class AdminNoticeControllerTest {
                     BranchOption("1102", "[제1사업부] 1영업부-서울2지점")
                 )
             )
-            whenever(noticeService.getNoticeFormMeta()).thenReturn(response)
+            every { noticeService.getNoticeFormMeta() } returns response
 
             mockMvc.perform(get("/api/v1/admin/notices/form-meta"))
                 .andExpect(status().isOk)
@@ -167,7 +167,7 @@ class AdminNoticeControllerTest {
                 createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00"),
                 images = emptyList()
             )
-            whenever(noticeService.getNoticeDetail(1L)).thenReturn(response)
+            every { noticeService.getNoticeDetail(1L) } returns response
 
             mockMvc.perform(get("/api/v1/admin/notices/1"))
                 .andExpect(status().isOk)
@@ -200,7 +200,7 @@ class AdminNoticeControllerTest {
                 branchCode = null,
                 createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00")
             )
-            whenever(noticeService.createNotice(any(), eq(1L))).thenReturn(mutationResponse)
+            every { noticeService.createNotice(any(), eq(1L)) } returns mutationResponse
 
             val request = NoticeCreateRequest(
                 title = "새 공지",
@@ -236,7 +236,7 @@ class AdminNoticeControllerTest {
         @Test
         @DisplayName("실패 - 지점 누락")
         fun createNotice_branchRequired() {
-            whenever(noticeService.createNotice(any(), eq(1L))).thenThrow(BranchRequiredException())
+            every { noticeService.createNotice(any(), eq(1L)) } throws BranchRequiredException()
 
             val request = NoticeCreateRequest(
                 title = "지점 공지",
@@ -256,7 +256,7 @@ class AdminNoticeControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 카테고리")
         fun createNotice_invalidCategory() {
-            whenever(noticeService.createNotice(any(), eq(1L))).thenThrow(InvalidNoticeCategoryException())
+            every { noticeService.createNotice(any(), eq(1L)) } throws InvalidNoticeCategoryException()
 
             val request = NoticeCreateRequest(
                 title = "공지",
@@ -291,7 +291,7 @@ class AdminNoticeControllerTest {
                 branchCode = null,
                 createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00")
             )
-            whenever(noticeService.updateNotice(eq(10L), any())).thenReturn(mutationResponse)
+            every { noticeService.updateNotice(eq(10L), any()) } returns mutationResponse
 
             val request = NoticeUpdateRequest(
                 title = "수정된 제목",
@@ -311,7 +311,7 @@ class AdminNoticeControllerTest {
         @Test
         @DisplayName("실패 - 미존재 공지")
         fun updateNotice_notFound() {
-            whenever(noticeService.updateNotice(eq(999L), any())).thenThrow(NoticePostNotFoundException())
+            every { noticeService.updateNotice(eq(999L), any()) } throws NoticePostNotFoundException()
 
             val request = NoticeUpdateRequest(
                 title = "제목",
@@ -336,6 +336,8 @@ class AdminNoticeControllerTest {
         @Test
         @DisplayName("성공 - 공지 삭제")
         fun deleteNotice_success() {
+            every { noticeService.deleteNotice(any()) } just Runs
+
             mockMvc.perform(delete("/api/v1/admin/notices/10"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -345,7 +347,7 @@ class AdminNoticeControllerTest {
         @Test
         @DisplayName("실패 - 미존재 공지")
         fun deleteNotice_notFound() {
-            whenever(noticeService.deleteNotice(999L)).thenThrow(NoticePostNotFoundException())
+            every { noticeService.deleteNotice(999L) } throws NoticePostNotFoundException()
 
             mockMvc.perform(delete("/api/v1/admin/notices/999"))
                 .andExpect(status().isNotFound)
@@ -365,7 +367,7 @@ class AdminNoticeControllerTest {
                 url = "https://test-bucket.s3.ap-northeast-2.amazonaws.com/uploads/notice/2026/05/11/abc.png",
                 sortOrder = 0
             )
-            whenever(noticeService.uploadNoticeImage(eq(42L), any())).thenReturn(response)
+            every { noticeService.uploadNoticeImage(eq(42L), any()) } returns response
 
             val file = MockMultipartFile("image", "photo.png", "image/png", ByteArray(2048))
 
@@ -382,7 +384,7 @@ class AdminNoticeControllerTest {
         @Test
         @DisplayName("실패 - 미존재 공지")
         fun uploadNoticeImage_noticeNotFound() {
-            whenever(noticeService.uploadNoticeImage(eq(999L), any())).thenThrow(NoticePostNotFoundException())
+            every { noticeService.uploadNoticeImage(eq(999L), any()) } throws NoticePostNotFoundException()
 
             val file = MockMultipartFile("image", "photo.png", "image/png", ByteArray(100))
 
@@ -399,6 +401,8 @@ class AdminNoticeControllerTest {
         @Test
         @DisplayName("성공 - 첨부 삭제 + 200 + 메시지 반환")
         fun deleteNoticeImage_success() {
+            every { noticeService.deleteNoticeImage(any(), any()) } just Runs
+
             mockMvc.perform(delete("/api/v1/admin/notices/42/images/200"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -408,7 +412,7 @@ class AdminNoticeControllerTest {
         @Test
         @DisplayName("실패 - imageId 미존재 또는 parent 불일치")
         fun deleteNoticeImage_invalidImageId() {
-            whenever(noticeService.deleteNoticeImage(42L, 999L)).thenThrow(InvalidImageIdException())
+            every { noticeService.deleteNoticeImage(42L, 999L) } throws InvalidImageIdException()
 
             mockMvc.perform(delete("/api/v1/admin/notices/42/images/999"))
                 .andExpect(status().isNotFound)

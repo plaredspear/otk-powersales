@@ -12,36 +12,24 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.crypto.password.PasswordEncoder
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminEmployeeRegisterService 테스트")
 class AdminEmployeeRegisterServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var passwordEncoder: PasswordEncoder
-
-    @InjectMocks
-    private lateinit var service: AdminEmployeeRegisterService
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val passwordEncoder: PasswordEncoder = mockk()
+    private val service = AdminEmployeeRegisterService(employeeRepository, passwordEncoder)
 
     private val systemAdminActor = principal(employeeId = 1L, employeeCode = "ADMIN-OWNER", role = UserRole.SYSTEM_ADMIN)
     private val womanActor = principal(employeeId = 2L, employeeCode = "EMP-001", role = UserRole.WOMAN)
@@ -82,9 +70,6 @@ class AdminEmployeeRegisterServiceTest {
         costCenterCode = costCenterCode
     )
 
-    // actor 는 각 케이스에서 service.register(actor, request) 로 직접 전달.
-    // (holder mock 패턴 제거 — explicit parameter 컨벤션)
-
     @Nested
     @DisplayName("register - 정상 등록")
     inner class HappyPath {
@@ -92,15 +77,14 @@ class AdminEmployeeRegisterServiceTest {
         @Test
         @DisplayName("정상 등록 - SYSTEM_ADMIN 호출자 -> Employee 저장, role/origin/appLoginActive 고정")
         fun success() {
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-001")).thenReturn(false)
-            whenever(passwordEncoder.encode("Admin@2026!")).thenReturn("\$2a\$10\$encoded")
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            every { employeeRepository.existsByEmployeeCode("ADMIN-001") } returns false
+            every { passwordEncoder.encode("Admin@2026!") } returns "\$2a\$10\$encoded"
+            val savedSlot = slot<Employee>()
+            every { employeeRepository.save(capture(savedSlot)) } answers { firstArg() }
 
             val response = service.register(systemAdminActor, request())
 
-            val captor = argumentCaptor<Employee>()
-            verify(employeeRepository).save(captor.capture())
-            val saved = captor.firstValue
+            val saved = savedSlot.captured
             assertThat(saved.employeeCode).isEqualTo("ADMIN-001")
             assertThat(saved.role).isEqualTo(UserRole.SYSTEM_ADMIN)
             assertThat(saved.origin).isEqualTo(EmployeeOrigin.MANUAL)
@@ -117,15 +101,14 @@ class AdminEmployeeRegisterServiceTest {
         @Test
         @DisplayName("BCrypt 해시 - 평문 password 가 그대로 저장되지 않고 인코더 결과로 저장")
         fun encodesPassword() {
-            whenever(employeeRepository.existsByEmployeeCode(any())).thenReturn(false)
-            whenever(passwordEncoder.encode("Admin@2026!")).thenReturn("HASHED")
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            every { employeeRepository.existsByEmployeeCode(any()) } returns false
+            every { passwordEncoder.encode("Admin@2026!") } returns "HASHED"
+            val savedSlot = slot<Employee>()
+            every { employeeRepository.save(capture(savedSlot)) } answers { firstArg() }
 
             service.register(systemAdminActor, request())
 
-            val captor = argumentCaptor<Employee>()
-            verify(employeeRepository).save(captor.capture())
-            assertThat(captor.firstValue.password)
+            assertThat(savedSlot.captured.password)
                 .isEqualTo("HASHED")
                 .isNotEqualTo("Admin@2026!")
         }
@@ -141,7 +124,7 @@ class AdminEmployeeRegisterServiceTest {
             assertThatThrownBy { service.register(womanActor, request()) }
                 .isInstanceOf(AdminForbiddenException::class.java)
 
-            verify(employeeRepository, never()).save(any<Employee>())
+            verify(exactly = 0) { employeeRepository.save(any<Employee>()) }
         }
 
         @Test
@@ -193,21 +176,20 @@ class AdminEmployeeRegisterServiceTest {
         @Test
         @DisplayName("사번 중복 - existsByEmployeeCode true -> EmployeeCodeDuplicatedException")
         fun duplicatedEmployeeCode() {
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-001")).thenReturn(true)
+            every { employeeRepository.existsByEmployeeCode("ADMIN-001") } returns true
 
             assertThatThrownBy { service.register(systemAdminActor, request()) }
                 .isInstanceOf(EmployeeCodeDuplicatedException::class.java)
 
-            verify(employeeRepository, never()).save(any<Employee>())
+            verify(exactly = 0) { employeeRepository.save(any<Employee>()) }
         }
 
         @Test
         @DisplayName("DB UNIQUE 충돌 - DataIntegrityViolationException -> EmployeeCodeDuplicatedException")
         fun raceConditionUniqueViolation() {
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-001")).thenReturn(false)
-            whenever(passwordEncoder.encode(any())).thenReturn("HASHED")
-            whenever(employeeRepository.save(any<Employee>()))
-                .thenThrow(DataIntegrityViolationException("duplicate key"))
+            every { employeeRepository.existsByEmployeeCode("ADMIN-001") } returns false
+            every { passwordEncoder.encode(any()) } returns "HASHED"
+            every { employeeRepository.save(any<Employee>()) } throws DataIntegrityViolationException("duplicate key")
 
             assertThatThrownBy { service.register(systemAdminActor, request()) }
                 .isInstanceOf(EmployeeCodeDuplicatedException::class.java)

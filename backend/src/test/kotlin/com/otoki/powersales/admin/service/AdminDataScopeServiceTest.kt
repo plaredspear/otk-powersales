@@ -4,26 +4,19 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminDataScopeService 테스트")
 class AdminDataScopeServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @InjectMocks
-    private lateinit var adminDataScopeService: AdminDataScopeService
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val adminDataScopeService = AdminDataScopeService(employeeRepository)
 
     @Nested
     @DisplayName("resolve")
@@ -37,7 +30,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 1L
             val employee = createTestEmployee(id = userId, role = UserRole.SALES_MANAGER, costCenterCode = "B001")
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -53,7 +46,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 2L
             val employee = createTestEmployee(id = userId, role = UserRole.BUSINESS_MANAGER, costCenterCode = "B002")
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -69,7 +62,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 3L
             val employee = createTestEmployee(id = userId, role = UserRole.HEADQUARTERS_MANAGER, costCenterCode = "B003")
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -85,7 +78,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 4L
             val employee = createTestEmployee(id = userId, role = UserRole.SALES_SUPPORT, costCenterCode = "B004")
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -103,7 +96,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 5L
             val employee = createTestEmployee(id = userId, role = UserRole.LEADER, costCenterCode = "B100")
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -119,7 +112,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 6L
             val employee = createTestEmployee(id = userId, role = UserRole.BRANCH_MANAGER, costCenterCode = "B200")
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -135,7 +128,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 7L
             val employee = createTestEmployee(id = userId, role = UserRole.LEADER, costCenterCode = null)
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -153,7 +146,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 8L
             val employee = createTestEmployee(id = userId, role = null, costCenterCode = "B300")
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -169,7 +162,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 9L
             val employee = createTestEmployee(id = userId, role = null, costCenterCode = null)
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -187,7 +180,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 10L
             val employee = createTestEmployee(id = userId, role = UserRole.UNKNOWN, costCenterCode = "B400")
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -203,7 +196,7 @@ class AdminDataScopeServiceTest {
             // Given
             val userId = 11L
             val employee = createTestEmployee(id = userId, role = UserRole.UNKNOWN, costCenterCode = null)
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
             val result = adminDataScopeService.resolve(userId)
@@ -220,7 +213,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withNonExistentUser_throwsException() {
             // Given
             val userId = 999L
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(null)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns null
 
             // When & Then
             assertThatThrownBy { adminDataScopeService.resolve(userId) }

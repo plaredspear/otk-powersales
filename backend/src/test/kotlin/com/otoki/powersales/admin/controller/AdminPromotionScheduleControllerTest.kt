@@ -19,17 +19,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -46,10 +44,10 @@ class AdminPromotionScheduleControllerTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
-    @MockitoBean private lateinit var adminPromotionScheduleService: AdminPromotionScheduleService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var adminPromotionScheduleService: AdminPromotionScheduleService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     private val promotionId = 100L
 
@@ -107,8 +105,7 @@ class AdminPromotionScheduleControllerTest {
                 totalMemberCount = 1,
                 totalScheduleCount = 1
             )
-            whenever(adminPromotionScheduleService.getSchedules(eq(promotionId), anyOrNull(), anyOrNull()))
-                .thenReturn(response)
+            every { adminPromotionScheduleService.getSchedules(eq(promotionId), any(), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions/$promotionId/schedules"))
                 .andExpect(status().isOk)
@@ -128,8 +125,7 @@ class AdminPromotionScheduleControllerTest {
         @Test
         @DisplayName("성공 - 일괄 변경 응답")
         fun bulkUpdate_success() {
-            whenever(adminPromotionScheduleService.bulkUpdate(eq(promotionId), any()))
-                .thenReturn(PromotionScheduleBulkUpdateResponse(updatedCount = 2, scheduleIds = listOf(1001L, 1002L)))
+            every { adminPromotionScheduleService.bulkUpdate(eq(promotionId), any()) } returns PromotionScheduleBulkUpdateResponse(updatedCount = 2, scheduleIds = listOf(1001L, 1002L))
 
             val body = """
                 {
@@ -180,8 +176,7 @@ class AdminPromotionScheduleControllerTest {
         @Test
         @DisplayName("실패 - 다른 행사 소속 일정 -> 403 FORBIDDEN")
         fun bulkUpdate_forbidden() {
-            whenever(adminPromotionScheduleService.bulkUpdate(eq(promotionId), any()))
-                .thenThrow(PromotionScheduleNotInPromotionException())
+            every { adminPromotionScheduleService.bulkUpdate(eq(promotionId), any()) } throws PromotionScheduleNotInPromotionException()
 
             val body = """
                 {
@@ -208,8 +203,7 @@ class AdminPromotionScheduleControllerTest {
         @Test
         @DisplayName("성공 - 3건 삭제")
         fun bulkDelete_success() {
-            whenever(adminPromotionScheduleService.bulkDelete(eq(promotionId), any()))
-                .thenReturn(PromotionScheduleBulkDeleteResponse(deletedCount = 3))
+            every { adminPromotionScheduleService.bulkDelete(eq(promotionId), any()) } returns PromotionScheduleBulkDeleteResponse(deletedCount = 3)
 
             val body = """{"scheduleIds": [1001, 1002, 1003]}"""
 
@@ -226,8 +220,7 @@ class AdminPromotionScheduleControllerTest {
         @Test
         @DisplayName("실패 - 부분 미존재 -> 404 missing_ids 포함")
         fun bulkDelete_partialNotFound() {
-            whenever(adminPromotionScheduleService.bulkDelete(eq(promotionId), any()))
-                .thenThrow(PromotionScheduleNotFoundPartialException(listOf(1003L, 1005L)))
+            every { adminPromotionScheduleService.bulkDelete(eq(promotionId), any()) } throws PromotionScheduleNotFoundPartialException(listOf(1003L, 1005L))
 
             val body = """{"scheduleIds": [1001, 1003, 1005]}"""
 

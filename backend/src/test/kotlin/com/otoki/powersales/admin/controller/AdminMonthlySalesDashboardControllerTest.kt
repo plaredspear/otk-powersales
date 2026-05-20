@@ -19,16 +19,15 @@ import com.otoki.powersales.user.entity.ProfileType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.whenever
+
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.core.MethodParameter
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
@@ -43,14 +42,14 @@ class AdminMonthlySalesDashboardControllerTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
 
-    @MockitoBean private lateinit var queryService: MonthlySalesAdminQueryService
-    @MockitoBean private lateinit var excelExporter: MonthlySalesDashboardExcelExporter
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var queryService: MonthlySalesAdminQueryService
+    @MockkBean private lateinit var excelExporter: MonthlySalesDashboardExcelExporter
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    @MockitoBean private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
+    @MockkBean private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
     fun setUp() {
@@ -71,12 +70,11 @@ class AdminMonthlySalesDashboardControllerTest {
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        whenever(currentAdminContextArgumentResolver.supportsParameter(any())).thenAnswer { invocation ->
-            val parameter = invocation.arguments[0] as MethodParameter
+        every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
+            val parameter = firstArg<MethodParameter>()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
-        whenever(currentAdminContextArgumentResolver.resolveArgument(any(), anyOrNull(), any(), anyOrNull()))
-            .thenReturn(DataScope(branchCodes = emptyList(), isAllBranches = true))
+        every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
     }
 
     @Test
@@ -89,7 +87,7 @@ class AdminMonthlySalesDashboardControllerTest {
             totalLastYearAchievedAmount = 1_000_000L, lastYearComparisonRatio = 120.0,
             monthlyTrend = emptyList(),
         )
-        whenever(queryService.getSummary(any(), any(), any(), any(), anyOrNull(), anyOrNull())).thenReturn(response)
+        every { queryService.getSummary(any(), any(), any(), any(), any(), any()) } returns response
 
         mockMvc.perform(
             get("/api/v1/admin/sales/monthly/summary")
@@ -122,7 +120,7 @@ class AdminMonthlySalesDashboardControllerTest {
             ),
             pageInfo = MonthlySalesDashboardListResponse.PageInfo(0, 20, 1L, 1),
         )
-        whenever(queryService.getList(any(), any())).thenReturn(response)
+        every { queryService.getList(any(), any()) } returns response
 
         mockMvc.perform(
             get("/api/v1/admin/sales/monthly/list")
@@ -140,13 +138,11 @@ class AdminMonthlySalesDashboardControllerTest {
     @Test
     @DisplayName("GET /list/export - 엑셀 헤더 Content-Disposition")
     fun listExport() {
-        whenever(queryService.getListForExport(any(), any())).thenReturn(emptyList())
-        whenever(excelExporter.export(any(), any(), any())).thenReturn(
-            MonthlySalesDashboardExcelExporter.ExcelResult(
+        every { queryService.getListForExport(any(), any()) } returns emptyList()
+        every { excelExporter.export(any(), any(), any()) } returns MonthlySalesDashboardExcelExporter.ExcelResult(
                 bytes = byteArrayOf(1, 2, 3),
                 filename = "monthly-sales-2026-05.xlsx",
             )
-        )
 
         mockMvc.perform(
             get("/api/v1/admin/sales/monthly/list/export")
@@ -171,7 +167,7 @@ class AdminMonthlySalesDashboardControllerTest {
             yearComparison = MonthlySalesDashboardDetailResponse.YearComparisonInfo(0, 0),
             monthlyAverage = MonthlySalesDashboardDetailResponse.MonthlyAverageInfo(0, 0, 1, 5),
         )
-        whenever(queryService.getDetail(any(), any(), any(), any())).thenReturn(response)
+        every { queryService.getDetail(any(), any(), any(), any()) } returns response
 
         mockMvc.perform(
             get("/api/v1/admin/sales/monthly/detail/1")

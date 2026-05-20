@@ -4,23 +4,19 @@ import com.otoki.powersales.admin.dto.request.NaverGeocodeTestRequest
 import com.otoki.powersales.common.naver.NaverApiException
 import com.otoki.powersales.common.naver.NaverGeocodeClient
 import com.otoki.powersales.common.naver.NaverGeocodeResponse
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminNaverGeocodeService 테스트")
 class AdminNaverGeocodeServiceTest {
 
-    @Mock private lateinit var naverGeocodeClient: NaverGeocodeClient
-    @InjectMocks private lateinit var service: AdminNaverGeocodeService
+    private val naverGeocodeClient: NaverGeocodeClient = mockk()
+    private val service = AdminNaverGeocodeService(naverGeocodeClient)
 
     @Nested
     @DisplayName("test - Naver Geocode 변환")
@@ -41,7 +37,7 @@ class AdminNaverGeocodeServiceTest {
                     )
                 )
             )
-            whenever(naverGeocodeClient.geocode(address)).thenReturn(response)
+            every { naverGeocodeClient.geocode(address) } returns response
 
             val result = service.test(userId = 1L, request = request)
 
@@ -59,7 +55,7 @@ class AdminNaverGeocodeServiceTest {
         fun test_zeroMatch() {
             val address = "잘못된 주소"
             val request = NaverGeocodeTestRequest(address = address)
-            whenever(naverGeocodeClient.geocode(address)).thenReturn(NaverGeocodeResponse(addresses = emptyList()))
+            every { naverGeocodeClient.geocode(address) } returns NaverGeocodeResponse(addresses = emptyList())
 
             val result = service.test(userId = 1L, request = request)
 
@@ -73,7 +69,7 @@ class AdminNaverGeocodeServiceTest {
         fun test_naverApiFailure() {
             val address = "서울특별시 강남구 테헤란로 123"
             val request = NaverGeocodeTestRequest(address = address)
-            whenever(naverGeocodeClient.geocode(address)).thenReturn(null)
+            every { naverGeocodeClient.geocode(address) } returns null
 
             assertThatThrownBy { service.test(userId = 1L, request = request) }
                 .isInstanceOf(NaverApiException::class.java)
@@ -85,7 +81,7 @@ class AdminNaverGeocodeServiceTest {
         fun test_naverApiTimeout() {
             val address = "서울특별시 강남구 테헤란로 123"
             val request = NaverGeocodeTestRequest(address = address)
-            whenever(naverGeocodeClient.geocode(address)).thenReturn(null)
+            every { naverGeocodeClient.geocode(address) } returns null
 
             assertThatThrownBy { service.test(userId = 1L, request = request) }
                 .isInstanceOf(NaverApiException::class.java)

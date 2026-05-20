@@ -15,15 +15,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -36,11 +34,11 @@ import java.time.LocalDateTime
 class AdminSafetyCheckControllerTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
-    @MockitoBean private lateinit var adminSafetyCheckService: AdminSafetyCheckService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockitoBean private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminSafetyCheckService: AdminSafetyCheckService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
     fun setUp() {
@@ -113,7 +111,7 @@ class AdminSafetyCheckControllerTest {
                     )
                 )
             )
-            whenever(adminSafetyCheckService.getStatus(eq(1L), any())).thenReturn(response)
+            every { adminSafetyCheckService.getStatus(eq(1L), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/safety-check/status").param("date", "2026-03-17"))
                 .andExpect(status().isOk)
@@ -147,7 +145,7 @@ class AdminSafetyCheckControllerTest {
                 notSubmittedCount = 0,
                 members = emptyList()
             )
-            whenever(adminSafetyCheckService.getStatus(eq(1L), any())).thenReturn(response)
+            every { adminSafetyCheckService.getStatus(eq(1L), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/safety-check/status"))
                 .andExpect(status().isOk)
