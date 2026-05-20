@@ -13,35 +13,25 @@ import com.otoki.powersales.order.exception.OrderDraftAccountForbiddenException
 import com.otoki.powersales.order.exception.OrderDraftInvalidRequestException
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.product.repository.ProductRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
-import org.mockito.quality.Strictness
 import java.math.BigDecimal
 import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("OrderDraftService 테스트 (#596)")
 class OrderDraftServiceTest {
 
-    @Mock private lateinit var tmpOrderRepository: TmpOrderRepository
-    @Mock private lateinit var accountRepository: AccountRepository
-    @Mock private lateinit var employeeRepository: EmployeeRepository
-    @Mock private lateinit var productRepository: ProductRepository
-    @InjectMocks private lateinit var service: OrderDraftService
+    private val tmpOrderRepository: TmpOrderRepository = mockk()
+    private val accountRepository: AccountRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val productRepository: ProductRepository = mockk()
+    private val service = OrderDraftService(tmpOrderRepository, accountRepository, employeeRepository, productRepository)
 
     private val userId = 1L
     private val accountId = 5678L
@@ -95,14 +85,12 @@ class OrderDraftServiceTest {
         @Test
         @DisplayName("H1 - 신규 등록 (기존 임시저장 없음) → tmp_order 1행 + 라인 1행")
         fun newSave() {
-            whenever(employeeRepository.findById(eq(userId))).thenReturn(Optional.of(employee()))
-            whenever(accountRepository.findById(eq(accountId.toInt()))).thenReturn(Optional.of(account()))
-            whenever(tmpOrderRepository.findByEmployeeIdForUpdate(userId)).thenReturn(null)
-            whenever(productRepository.findByProductCodeIn(any())).thenReturn(
-                listOf(Product(id = 99L, productCode = "P001", name = "진라면")),
-            )
-            whenever(tmpOrderRepository.save(any<TmpOrder>())).thenAnswer { inv ->
-                val o = inv.arguments[0] as TmpOrder
+            every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
+            every { accountRepository.findById(eq(accountId.toInt())) } returns Optional.of(account())
+            every { tmpOrderRepository.findByEmployeeIdForUpdate(userId) } returns null
+            every { productRepository.findByProductCodeIn(any()) } returns listOf(Product(id = 99L, productCode = "P001", name = "진라면"))
+            every { tmpOrderRepository.save(any<TmpOrder>()) } answers {
+                val o = firstArg<TmpOrder>()
                 setId(o, 99L)
                 o
             }
@@ -110,20 +98,22 @@ class OrderDraftServiceTest {
             val response = service.save(userId, req())
 
             assertThat(response.draftId).isEqualTo(99L)
-            verify(tmpOrderRepository, never()).delete(any<TmpOrder>())
-            verify(tmpOrderRepository).save(any<TmpOrder>())
+            verify(exactly = 0) { tmpOrderRepository.delete(any<TmpOrder>()) }
+            verify { tmpOrderRepository.save(any<TmpOrder>()) }
         }
 
         @Test
         @DisplayName("H2 - 덮어쓰기 등록 (기존 임시저장 있음) → 기존 삭제 후 새 IDENTITY")
         fun overwriteSave() {
             val existing = TmpOrder(id = 10L, employeeId = userId)
-            whenever(employeeRepository.findById(eq(userId))).thenReturn(Optional.of(employee()))
-            whenever(accountRepository.findById(eq(accountId.toInt()))).thenReturn(Optional.of(account()))
-            whenever(tmpOrderRepository.findByEmployeeIdForUpdate(userId)).thenReturn(existing)
-            whenever(productRepository.findByProductCodeIn(any())).thenReturn(emptyList())
-            whenever(tmpOrderRepository.save(any<TmpOrder>())).thenAnswer { inv ->
-                val o = inv.arguments[0] as TmpOrder
+            every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
+            every { accountRepository.findById(eq(accountId.toInt())) } returns Optional.of(account())
+            every { tmpOrderRepository.findByEmployeeIdForUpdate(userId) } returns existing
+            every { productRepository.findByProductCodeIn(any()) } returns emptyList()
+            every { tmpOrderRepository.delete(any<TmpOrder>()) } returns Unit
+            every { tmpOrderRepository.flush() } returns Unit
+            every { tmpOrderRepository.save(any<TmpOrder>()) } answers {
+                val o = firstArg<TmpOrder>()
                 setId(o, 11L)
                 o
             }
@@ -132,29 +122,27 @@ class OrderDraftServiceTest {
 
             assertThat(response.draftId).isEqualTo(11L)
             assertThat(response.draftId).isNotEqualTo(10L) // 새 IDENTITY
-            verify(tmpOrderRepository).delete(eq(existing))
-            verify(tmpOrderRepository).save(any<TmpOrder>())
+            verify { tmpOrderRepository.delete(eq(existing)) }
+            verify { tmpOrderRepository.save(any<TmpOrder>()) }
         }
 
         @Test
         @DisplayName("E1 - 본인 담당 거래처 아님 → ORD_DRAFT_ACCOUNT_FORBIDDEN")
         fun notMyAccount() {
-            whenever(employeeRepository.findById(eq(userId))).thenReturn(Optional.of(employee()))
-            whenever(accountRepository.findById(eq(accountId.toInt())))
-                .thenReturn(Optional.of(account(empCode = "OTHER")))
+            every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
+            every { accountRepository.findById(eq(accountId.toInt())) } returns Optional.of(account(empCode = "OTHER"))
 
             assertThatThrownBy { service.save(userId, req()) }
                 .isInstanceOf(OrderDraftAccountForbiddenException::class.java)
 
-            verify(tmpOrderRepository, never()).save(any<TmpOrder>())
+            verify(exactly = 0) { tmpOrderRepository.save(any<TmpOrder>()) }
         }
 
         @Test
         @DisplayName("E1 - 거래처 employeeCode 가 null → ORD_DRAFT_ACCOUNT_FORBIDDEN")
         fun nullAccountEmpCode() {
-            whenever(employeeRepository.findById(eq(userId))).thenReturn(Optional.of(employee()))
-            whenever(accountRepository.findById(eq(accountId.toInt())))
-                .thenReturn(Optional.of(account(empCode = null)))
+            every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
+            every { accountRepository.findById(eq(accountId.toInt())) } returns Optional.of(account(empCode = null))
 
             assertThatThrownBy { service.save(userId, req()) }
                 .isInstanceOf(OrderDraftAccountForbiddenException::class.java)
@@ -186,7 +174,7 @@ class OrderDraftServiceTest {
         @Test
         @DisplayName("H4 - 임시저장 없음 → null")
         fun notFound() {
-            whenever(tmpOrderRepository.findByEmployeeId(userId)).thenReturn(null)
+            every { tmpOrderRepository.findByEmployeeId(userId) } returns null
             val response = service.findByUserId(userId)
             assertThat(response).isNull()
         }
@@ -217,11 +205,9 @@ class OrderDraftServiceTest {
                 amount = BigDecimal("123450"),
             )
             draft.products += product
-            whenever(tmpOrderRepository.findByEmployeeId(userId)).thenReturn(draft)
-            whenever(accountRepository.findById(eq(accountId.toInt()))).thenReturn(Optional.of(account()))
-            whenever(productRepository.findByProductCodeIn(eq(listOf("P001")))).thenReturn(
-                listOf(Product(id = 99L, productCode = "P001", name = "진라면")),
-            )
+            every { tmpOrderRepository.findByEmployeeId(userId) } returns draft
+            every { accountRepository.findById(eq(accountId.toInt())) } returns Optional.of(account())
+            every { productRepository.findByProductCodeIn(eq(listOf("P001"))) } returns listOf(Product(id = 99L, productCode = "P001", name = "진라면"))
 
             val response = service.findByUserId(userId)
 
@@ -246,11 +232,11 @@ class OrderDraftServiceTest {
         @Test
         @DisplayName("H5/H6 - 있어도 없어도 호출 가능 (멱등)")
         fun deleteIdempotent() {
-            whenever(tmpOrderRepository.deleteByEmployeeId(userId)).thenReturn(1L)
+            every { tmpOrderRepository.deleteByEmployeeId(userId) } returns 1L
             service.deleteByEmployeeId(userId)
-            verify(tmpOrderRepository).deleteByEmployeeId(userId)
+            verify { tmpOrderRepository.deleteByEmployeeId(userId) }
 
-            whenever(tmpOrderRepository.deleteByEmployeeId(userId)).thenReturn(0L)
+            every { tmpOrderRepository.deleteByEmployeeId(userId) } returns 0L
             service.deleteByEmployeeId(userId)
         }
     }

@@ -8,37 +8,26 @@ import com.otoki.powersales.order.exception.InvalidDateRangeException
 import com.otoki.powersales.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.order.exception.OrderDateRangeTooWideException
 import com.otoki.powersales.order.repository.OrderRequestRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("OrderRequestService 테스트")
 class OrderRequestServiceTest {
 
-    @Mock
-    private lateinit var orderRequestRepository: OrderRequestRepository
-
-    @Mock
-    private lateinit var orderRequestProductRepository: com.otoki.powersales.order.repository.OrderRequestProductRepository
-
-    @Mock
-    private lateinit var orderRequestDetailSapSender: com.otoki.powersales.sap.outbound.sender.OrderRequestDetailSapSender
-
+    private val orderRequestRepository: OrderRequestRepository = mockk()
+    private val orderRequestProductRepository: com.otoki.powersales.order.repository.OrderRequestProductRepository = mockk()
+    private val orderRequestDetailSapSender: com.otoki.powersales.sap.outbound.sender.OrderRequestDetailSapSender = mockk()
     private val orderRequestDetailMapper = com.otoki.powersales.order.service.OrderRequestDetailMapper()
 
     private val fixedClock: Clock = Clock.fixed(
@@ -48,7 +37,7 @@ class OrderRequestServiceTest {
 
     private lateinit var service: OrderRequestService
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     fun setUp() {
         service = OrderRequestService(
             orderRequestRepository,
@@ -168,11 +157,11 @@ class OrderRequestServiceTest {
         @DisplayName("성공 - 본인 항목만 매핑되어 반환")
         fun returnsItems() {
             val record = createOrderRequest(id = 100L, accountId = 5, accountName = "ABC")
-            whenever(
+            every {
                 orderRequestRepository.findMyOrderRequests(
-                    any(), anyOrNull(), anyOrNull(), any(), any(), any(), any(), any(),
-                ),
-            ).thenReturn(listOf(record))
+                    any(), any(), any(), any(), any(), any(), any(), any(),
+                )
+            } returns listOf(record)
 
             val response = service.getMyOrderRequests(
                 userId = 1L,
@@ -196,11 +185,11 @@ class OrderRequestServiceTest {
         @DisplayName("성공 - 응답 라인 수 상한 도달 시 truncated=true + 첫 2000건만 반환")
         fun truncatedAtLimit() {
             val records = (1..2001).map { createOrderRequest(id = it.toLong()) }
-            whenever(
+            every {
                 orderRequestRepository.findMyOrderRequests(
-                    any(), anyOrNull(), anyOrNull(), any(), any(), any(), any(), any(),
-                ),
-            ).thenReturn(records)
+                    any(), any(), any(), any(), any(), any(), any(), any(),
+                )
+            } returns records
 
             val response = service.getMyOrderRequests(
                 userId = 1L,
@@ -280,7 +269,7 @@ class OrderRequestServiceTest {
         @Test
         @DisplayName("실패 — 미존재 ID → ORD_NOT_FOUND")
         fun notFound() {
-            whenever(orderRequestRepository.findById(eq(999L))).thenReturn(java.util.Optional.empty())
+            every { orderRequestRepository.findById(eq(999L)) } returns java.util.Optional.empty()
             assertThatThrownBy { service.getOrderRequestDetail(999L, userId = 1L) }
                 .isInstanceOf(com.otoki.powersales.order.exception.OrderNotFoundException::class.java)
         }
@@ -289,7 +278,7 @@ class OrderRequestServiceTest {
         @DisplayName("실패 — 본인 외 접근 → ORD_FORBIDDEN")
         fun forbidden() {
             val other = createOrderRequestWithEmployeeId(employeeId = 99L)
-            whenever(orderRequestRepository.findById(eq(100L))).thenReturn(java.util.Optional.of(other))
+            every { orderRequestRepository.findById(eq(100L)) } returns java.util.Optional.of(other)
             assertThatThrownBy { service.getOrderRequestDetail(100L, userId = 1L) }
                 .isInstanceOf(com.otoki.powersales.order.exception.ForbiddenOrderAccessException::class.java)
         }
@@ -298,12 +287,11 @@ class OrderRequestServiceTest {
         @DisplayName("성공 — SAP 정상 + 마감 후 → orderProcessingStatusList 길이 1")
         fun successWithSapAfterClose() {
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))
-            whenever(orderRequestRepository.findById(eq(100L))).thenReturn(java.util.Optional.of(orderRequest))
-            whenever(orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L))
-                .thenReturn(listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest)))
-            whenever(orderRequestDetailSapSender.fetchDetail(any())).thenReturn(
-                listOf(buildSapLine("1000023", "0300004993", "143000")),
-            )
+            every { orderRequestRepository.findById(eq(100L)) } returns java.util.Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest))
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns
+                listOf(buildSapLine("1000023", "0300004993", "143000"))
 
             val response = service.getOrderRequestDetail(100L, userId = 1L)
 
@@ -318,29 +306,27 @@ class OrderRequestServiceTest {
         @DisplayName("성공 — 마감 전(isClosed=false) → orderProcessingStatusList = null (Q6, SAP 호출은 수행)")
         fun beforeCloseListNull() {
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
-            whenever(orderRequestRepository.findById(eq(100L))).thenReturn(java.util.Optional.of(orderRequest))
-            whenever(orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L))
-                .thenReturn(listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest)))
-            whenever(orderRequestDetailSapSender.fetchDetail(any())).thenReturn(
-                listOf(buildSapLine("1000023", "0300004993", "143000")),
-            )
+            every { orderRequestRepository.findById(eq(100L)) } returns java.util.Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest))
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns
+                listOf(buildSapLine("1000023", "0300004993", "143000"))
 
             val response = service.getOrderRequestDetail(100L, userId = 1L)
 
             assertThat(response.isClosed).isFalse()
             assertThat(response.orderProcessingStatusList).isNull()
             // SAP 호출은 수행되었어야 함
-            org.mockito.kotlin.verify(orderRequestDetailSapSender).fetchDetail(any())
+            verify { orderRequestDetailSapSender.fetchDetail(any()) }
         }
 
         @Test
         @DisplayName("성공 — SAP null 반환 → orderProcessingStatusList = null, rejectedItems = null, 200 유지")
         fun sapFailureFallback() {
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))
-            whenever(orderRequestRepository.findById(eq(100L))).thenReturn(java.util.Optional.of(orderRequest))
-            whenever(orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L))
-                .thenReturn(emptyList())
-            whenever(orderRequestDetailSapSender.fetchDetail(any())).thenReturn(null)
+            every { orderRequestRepository.findById(eq(100L)) } returns java.util.Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns emptyList()
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns null
 
             val response = service.getOrderRequestDetail(100L, userId = 1L)
 

@@ -21,6 +21,9 @@ import com.otoki.powersales.order.sap.client.SapInventorySearchClient
 import com.otoki.powersales.order.sap.client.SapLoanInquiryClient
 import com.otoki.powersales.order.sap.sender.OrderRequestRegisterSender
 import com.otoki.powersales.sap.outbox.SapOutbox
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
 import org.assertj.core.api.Assertions.assertThat
@@ -29,35 +32,34 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
-@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 @DisplayName("OrderRequestCreateService 테스트 (#592)")
 class OrderRequestCreateServiceTest {
 
-    @Mock private lateinit var orderRequestRepository: OrderRequestRepository
-    @Mock private lateinit var orderRequestProductRepository: OrderRequestProductRepository
-    @Mock private lateinit var accountRepository: AccountRepository
-    @Mock private lateinit var employeeRepository: EmployeeRepository
-    @Mock private lateinit var inventorySearchClient: SapInventorySearchClient
-    @Mock private lateinit var loanInquiryClient: SapLoanInquiryClient
-    @Mock private lateinit var orderRequestRegisterSender: OrderRequestRegisterSender
-    @Mock private lateinit var orderDraftService: OrderDraftService
-    @Mock private lateinit var entityManager: EntityManager
-    @Mock private lateinit var nativeQuery: Query
-    @InjectMocks private lateinit var service: OrderRequestCreateService
+    private val orderRequestRepository: OrderRequestRepository = mockk()
+    private val orderRequestProductRepository: OrderRequestProductRepository = mockk()
+    private val accountRepository: AccountRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val inventorySearchClient: SapInventorySearchClient = mockk()
+    private val loanInquiryClient: SapLoanInquiryClient = mockk()
+    private val orderRequestRegisterSender: OrderRequestRegisterSender = mockk()
+    private val orderDraftService: OrderDraftService = mockk()
+    private val entityManager: EntityManager = mockk()
+    private val nativeQuery: Query = mockk()
+    private val service = OrderRequestCreateService(
+        orderRequestRepository,
+        orderRequestProductRepository,
+        accountRepository,
+        employeeRepository,
+        inventorySearchClient,
+        loanInquiryClient,
+        orderRequestRegisterSender,
+        orderDraftService,
+        entityManager,
+    )
 
     private val userId = 1L
     private val accountId = 5678L
@@ -65,8 +67,10 @@ class OrderRequestCreateServiceTest {
 
     @BeforeEach
     fun setUp() {
-        whenever(entityManager.createNativeQuery(any<String>())).thenReturn(nativeQuery)
-        whenever(nativeQuery.singleResult).thenReturn(42L)
+        every { entityManager.createNativeQuery(any<String>()) } returns nativeQuery
+        every { nativeQuery.singleResult } returns 42L
+        every { orderRequestRepository.findByClientRequestId(any()) } returns null
+        every { orderDraftService.deleteByEmployeeId(any()) } returns Unit
     }
 
     @Nested
@@ -78,15 +82,11 @@ class OrderRequestCreateServiceTest {
         fun success() {
             stubAuthAndAccount()
             stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000)))
-            whenever(loanInquiryClient.inquireCreditBalance(accountId)).thenReturn(BigDecimal.valueOf(10_000_000))
-            whenever(orderRequestRepository.save(any<OrderRequest>())).thenAnswer { invocation ->
-                val arg = invocation.arguments[0] as OrderRequest
-                arg
-            }
-            whenever(orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()))
-                .thenAnswer { invocation -> invocation.arguments[0] }
-            whenever(orderRequestRegisterSender.enqueue(any(), any()))
-                .thenReturn(SapOutbox(domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}"))
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
+            every { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) } answers { firstArg() }
+            every { orderRequestRegisterSender.enqueue(any(), any()) } returns
+                SapOutbox(domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}")
 
             val request = baseRequest(
                 lines = listOf(line(productCode = "P001", quantity = 10, unit = "BOX", quantityPieces = 300, quantityBoxes = 10))
@@ -97,14 +97,14 @@ class OrderRequestCreateServiceTest {
             assertThat(response.orderRequestNumber).startsWith("ORD-")
             assertThat(response.orderRequestNumber).endsWith("-42")
             assertThat(response.status).isEqualTo(OrderRequestStatus.SENT)
-            verify(orderRequestRegisterSender, times(1)).enqueue(any(), any())
+            verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
         }
 
         @Test
         @DisplayName("멱등 — 동일 clientRequestId 재요청 시 기존 row 응답, 신규 INSERT 없음")
         fun idempotent() {
             val existing = mockHeader(orderRequestNumber = "ORD-20260505-1", status = OrderRequestStatus.APPROVED)
-            whenever(orderRequestRepository.findByClientRequestId("idem-1")).thenReturn(existing)
+            every { orderRequestRepository.findByClientRequestId("idem-1") } returns existing
 
             val request = baseRequest(
                 clientRequestId = "idem-1",
@@ -115,10 +115,10 @@ class OrderRequestCreateServiceTest {
 
             assertThat(response.orderRequestId).isEqualTo(existing.id)
             assertThat(response.status).isEqualTo(OrderRequestStatus.APPROVED)
-            verify(inventorySearchClient, times(0)).search(any(), any())
-            verify(loanInquiryClient, times(0)).inquireCreditBalance(any())
-            verify(orderRequestRepository, times(0)).save(any<OrderRequest>())
-            verify(orderRequestRegisterSender, times(0)).enqueue(any(), any())
+            verify(exactly = 0) { inventorySearchClient.search(any(), any()) }
+            verify(exactly = 0) { loanInquiryClient.inquireCreditBalance(any()) }
+            verify(exactly = 0) { orderRequestRepository.save(any<OrderRequest>()) }
+            verify(exactly = 0) { orderRequestRegisterSender.enqueue(any(), any()) }
         }
     }
 
@@ -129,8 +129,8 @@ class OrderRequestCreateServiceTest {
         @Test
         @DisplayName("본인 담당 거래처 아님 → ORD_ACCOUNT_FORBIDDEN")
         fun accountForbidden() {
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee(employeeCode = employeeCode)))
-            whenever(accountRepository.findById(accountId.toInt())).thenReturn(Optional.of(account(employeeCode = "OTHER")))
+            every { employeeRepository.findById(userId) } returns Optional.of(employee(employeeCode = employeeCode))
+            every { accountRepository.findById(accountId.toInt()) } returns Optional.of(account(employeeCode = "OTHER"))
 
             assertThatThrownBy { service.create(userId, baseRequest(lines = listOf(line()))) }
                 .isInstanceOf(OrderAccountForbiddenException::class.java)
@@ -178,7 +178,7 @@ class OrderRequestCreateServiceTest {
         fun loanExceeded() {
             stubAuthAndAccount()
             stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 1, supply = 1000)))
-            whenever(loanInquiryClient.inquireCreditBalance(accountId)).thenReturn(BigDecimal.valueOf(500_000))
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(500_000)
 
             val request = baseRequest(
                 totalAmount = 1_234_567,
@@ -213,12 +213,12 @@ class OrderRequestCreateServiceTest {
     // ───── Test fixtures ─────
 
     private fun stubAuthAndAccount() {
-        whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee(employeeCode = employeeCode)))
-        whenever(accountRepository.findById(accountId.toInt())).thenReturn(Optional.of(account(employeeCode = employeeCode)))
+        every { employeeRepository.findById(userId) } returns Optional.of(employee(employeeCode = employeeCode))
+        every { accountRepository.findById(accountId.toInt()) } returns Optional.of(account(employeeCode = employeeCode))
     }
 
     private fun stubInventory(map: Map<String, InventoryInfo>) {
-        whenever(inventorySearchClient.search(eq(accountId), any())).thenReturn(map)
+        every { inventorySearchClient.search(eq(accountId), any()) } returns map
     }
 
     private fun baseRequest(
