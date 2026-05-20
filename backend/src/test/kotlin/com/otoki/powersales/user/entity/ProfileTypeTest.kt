@@ -8,19 +8,46 @@ import org.junit.jupiter.api.Test
 class ProfileTypeTest {
 
     @Test
-    @DisplayName("fromValue — DB 저장 값 → enum")
+    @DisplayName("fromValue — DB 저장 값(SF 운영 raw 값) → enum")
     fun fromValueMatching() {
-        assertThat(ProfileType.fromValue("MARKETING")).isEqualTo(ProfileType.MARKETING)
-        assertThat(ProfileType.fromValue("STAFF")).isEqualTo(ProfileType.STAFF)
-        assertThat(ProfileType.fromValue("SYSTEM_ADMIN")).isEqualTo(ProfileType.SYSTEM_ADMIN)
+        assertThat(ProfileType.fromValue("8.마케팅")).isEqualTo(ProfileType.MARKETING)
+        assertThat(ProfileType.fromValue("9. Staff")).isEqualTo(ProfileType.STAFF)
+        assertThat(ProfileType.fromValue("6.조장")).isEqualTo(ProfileType.TEAM_LEADER)
+        assertThat(ProfileType.fromValue("4.지점장")).isEqualTo(ProfileType.BRANCH_MANAGER)
+        assertThat(ProfileType.fromValue("3.영업부장")).isEqualTo(ProfileType.SALES_MANAGER)
+        assertThat(ProfileType.fromValue("2.사업부장")).isEqualTo(ProfileType.BUSINESS_DIRECTOR)
+        assertThat(ProfileType.fromValue("1.본부장")).isEqualTo(ProfileType.DIVISION_HEAD)
+        assertThat(ProfileType.fromValue("5.영업사원")).isEqualTo(ProfileType.SALES_REP)
+        assertThat(ProfileType.fromValue("시스템 관리자")).isEqualTo(ProfileType.SYSTEM_ADMIN)
     }
 
     @Test
-    @DisplayName("fromValue — 미인지 값 → null")
-    fun fromValueUnknown() {
-        assertThat(ProfileType.fromValue("UNKNOWN_TYPE")).isNull()
+    @DisplayName("fromValue — sfProfileNames 표기 변형도 흡수")
+    fun fromValueSfNameVariants() {
+        assertThat(ProfileType.fromValue("8. 마케팅")).isEqualTo(ProfileType.MARKETING)
+        assertThat(ProfileType.fromValue("마케팅")).isEqualTo(ProfileType.MARKETING)
+        assertThat(ProfileType.fromValue("Staff")).isEqualTo(ProfileType.STAFF)
+        assertThat(ProfileType.fromValue("영업사원")).isEqualTo(ProfileType.SALES_REP)
+        assertThat(ProfileType.fromValue("SYSTEM_ADMIN")).isEqualTo(ProfileType.SYSTEM_ADMIN)
+        assertThat(ProfileType.fromValue("System Administrator")).isEqualTo(ProfileType.SYSTEM_ADMIN)
+    }
+
+    @Test
+    @DisplayName("fromValue — 추가 enum 3종 (FACTORY_STAFF, SALES_REP_LEADER, OLS)")
+    fun fromValueExtendedEnums() {
+        assertThat(ProfileType.fromValue("공장관계자")).isEqualTo(ProfileType.FACTORY_STAFF)
+        assertThat(ProfileType.fromValue("7.영업사원 + 조장")).isEqualTo(ProfileType.SALES_REP_LEADER)
+        assertThat(ProfileType.fromValue("영업사원+조장")).isEqualTo(ProfileType.SALES_REP_LEADER)
+        assertThat(ProfileType.fromValue("OLS")).isEqualTo(ProfileType.OLS)
+    }
+
+    @Test
+    @DisplayName("fromValue — null/empty 만 null, 미인지 값은 STAFF fallback")
+    fun fromValueUnknownFallback() {
         assertThat(ProfileType.fromValue(null)).isNull()
         assertThat(ProfileType.fromValue("")).isNull()
+        assertThat(ProfileType.fromValue("UNKNOWN_TYPE")).isEqualTo(ProfileType.STAFF)
+        assertThat(ProfileType.fromValue("새로 추가된 SF Profile")).isEqualTo(ProfileType.STAFF)
     }
 
     @Test
@@ -63,10 +90,9 @@ class ProfileTypeTest {
     }
 
     @Test
-    @DisplayName("DB value 는 enum name 과 동일 (VARCHAR(40) 호환)")
-    fun valueConvention() {
+    @DisplayName("DB value 길이 제한 (VARCHAR(40))")
+    fun valueLengthConstraint() {
         ProfileType.entries.forEach { type ->
-            assertThat(type.value).isEqualTo(type.name)
             assertThat(type.value.length).isLessThanOrEqualTo(40)
         }
     }

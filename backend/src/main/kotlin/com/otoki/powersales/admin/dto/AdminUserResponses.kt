@@ -141,5 +141,8 @@ private fun ProfileType.toKoreanLabel(): String = when (this) {
     ProfileType.BUSINESS_DIRECTOR -> "사업부장"
     ProfileType.DIVISION_HEAD -> "본부장"
     ProfileType.SALES_REP -> "영업사원"
+    ProfileType.SALES_REP_LEADER -> "영업사원+조장"
+    ProfileType.FACTORY_STAFF -> "공장관계자"
+    ProfileType.OLS -> "OLS"
     ProfileType.SYSTEM_ADMIN -> "시스템관리자"
 }

@@ -97,8 +97,10 @@ class WebUserDetailsService(
             ProfileType.STAFF -> "ROLE_STAFF"
             ProfileType.BUSINESS_DIRECTOR, ProfileType.DIVISION_HEAD -> "ROLE_DIRECTOR"
             ProfileType.BRANCH_MANAGER, ProfileType.SALES_MANAGER -> "ROLE_MANAGER"
-            ProfileType.TEAM_LEADER -> "ROLE_LEADER"
+            ProfileType.TEAM_LEADER, ProfileType.SALES_REP_LEADER -> "ROLE_LEADER"
             ProfileType.SALES_REP -> "ROLE_SALES_REP"
+            ProfileType.FACTORY_STAFF -> "ROLE_FACTORY"
+            ProfileType.OLS -> "ROLE_OLS"
         }
     }
 }

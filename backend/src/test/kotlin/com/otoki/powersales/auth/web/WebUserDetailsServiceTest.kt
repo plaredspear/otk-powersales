@@ -137,6 +137,27 @@ class WebUserDetailsServiceTest {
             val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.MARKETING, false)
             assertThat(authorities.map { it.authority }).containsExactly("ROLE_MARKETING")
         }
+
+        @Test
+        @DisplayName("SALES_REP_LEADER → ROLE_LEADER (TEAM_LEADER 동급)")
+        fun sales_rep_leader_mapping() {
+            val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.SALES_REP_LEADER, false)
+            assertThat(authorities.map { it.authority }).containsExactly("ROLE_LEADER")
+        }
+
+        @Test
+        @DisplayName("FACTORY_STAFF → ROLE_FACTORY")
+        fun factory_staff_mapping() {
+            val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.FACTORY_STAFF, false)
+            assertThat(authorities.map { it.authority }).containsExactly("ROLE_FACTORY")
+        }
+
+        @Test
+        @DisplayName("OLS → ROLE_OLS")
+        fun ols_mapping() {
+            val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.OLS, false)
+            assertThat(authorities.map { it.authority }).containsExactly("ROLE_OLS")
+        }
     }
 
     private fun createUser(
