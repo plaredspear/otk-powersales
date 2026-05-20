@@ -2,33 +2,25 @@ package com.otoki.powersales.sap.outbound.service
 
 import com.otoki.powersales.sap.outbound.entity.SapOutboundLog
 import com.otoki.powersales.sap.outbound.repository.SapOutboundLogRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.whenever
 import java.time.LocalDateTime
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SapOutboundLogService 테스트")
 class SapOutboundLogServiceTest {
 
-    @Mock
-    private lateinit var repository: SapOutboundLogRepository
-
-    @InjectMocks
-    private lateinit var service: SapOutboundLogService
+    private val repository: SapOutboundLogRepository = mockk()
+    private val service = SapOutboundLogService(repository)
 
     @Test
     @DisplayName("log 호출 시 모든 필드를 매핑한 SapOutboundLog 엔티티가 저장된다")
     fun log_persistsEntityWithAllFields() {
-        val captor = argumentCaptor<SapOutboundLog>()
-        whenever(repository.save(any<SapOutboundLog>())).thenAnswer { it.getArgument<SapOutboundLog>(0) }
+        val captor = slot<SapOutboundLog>()
+        every { repository.save(capture(captor)) } answers { firstArg() }
 
         val requestedAt = LocalDateTime.now().minusSeconds(3)
         val completedAt = LocalDateTime.now()
@@ -46,8 +38,7 @@ class SapOutboundLogServiceTest {
             completedAt = completedAt
         )
 
-        org.mockito.kotlin.verify(repository).save(captor.capture())
-        val saved = captor.firstValue
+        val saved = captor.captured
         assertThat(saved.interfaceId).isEqualTo("SD03300")
         assertThat(saved.endpointPath).isEqualTo("/api/sap/SD03300")
         assertThat(saved.requestCount).isEqualTo(5)
