@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:56434",
+    "url" : "http://localhost:57433",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1496,34 +1496,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseSfFkResolveProgressResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/sf-migration/stage1/copy-from-s3" : {
-      "post" : {
-        "tags" : [ "stage-1-copy-controller" ],
-        "operationId" : "copyFromS3",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/Stage1CopyRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseStage1CopyProgressResponse"
                 }
               }
             }
@@ -3658,42 +3630,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseSfFkResolveProgressResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/sf-migration/stage1/targets" : {
-      "get" : {
-        "tags" : [ "stage-1-copy-controller" ],
-        "operationId" : "listTargets",
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListString"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/sf-migration/stage1/copy-from-s3/progress" : {
-      "get" : {
-        "tags" : [ "stage-1-copy-controller" ],
-        "operationId" : "getProgress",
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseStage1CopyProgressResponse"
                 }
               }
             }
@@ -8467,96 +8403,6 @@
           }
         }
       },
-      "Stage1CopyRequest" : {
-        "type" : "object",
-        "properties" : {
-          "targetName" : {
-            "type" : "string",
-            "minLength" : 1
-          },
-          "s3Bucket" : {
-            "type" : "string",
-            "minLength" : 1
-          },
-          "s3Key" : {
-            "type" : "string",
-            "minLength" : 1
-          }
-        },
-        "required" : [ "s3Bucket", "s3Key", "targetName" ]
-      },
-      "ApiResponseStage1CopyProgressResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/Stage1CopyProgressResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "Stage1CopyProgressResponse" : {
-        "type" : "object",
-        "properties" : {
-          "status" : {
-            "type" : "string"
-          },
-          "startedAt" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time"
-          },
-          "finishedAt" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time"
-          },
-          "targetName" : {
-            "type" : [ "string", "null" ]
-          },
-          "s3Bucket" : {
-            "type" : [ "string", "null" ]
-          },
-          "s3Key" : {
-            "type" : [ "string", "null" ]
-          },
-          "processedRows" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "filteredOut" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "insertedRows" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "errors" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        }
-      },
       "AdminScheduleCreateRequest" : {
         "type" : "object",
         "properties" : {
@@ -12177,6 +12023,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
@@ -12188,10 +12038,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -12289,10 +12135,10 @@
       "SortObject" : {
         "type" : "object",
         "properties" : {
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
           "empty" : {
@@ -15607,6 +15453,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
@@ -15618,10 +15468,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -15874,6 +15720,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
@@ -15885,10 +15735,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
