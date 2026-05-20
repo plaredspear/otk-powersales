@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.config
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.cache.autoconfigure.RedisCacheManagerBuilderCustomizer
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.EnableCaching
 import org.springframework.cache.support.NoOpCacheManager
@@ -9,8 +9,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
 import org.springframework.context.annotation.Profile
 import org.springframework.data.redis.cache.RedisCacheConfiguration
-import org.springframework.data.redis.cache.RedisCacheManager
-import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer
 import org.springframework.data.redis.serializer.RedisSerializationContext
 import org.springframework.data.redis.serializer.RedisSerializer
@@ -20,27 +18,39 @@ import tools.jackson.databind.json.JsonMapper
 import java.time.Duration
 
 /**
- * Spring Cache 인프라 (PR 1).
+ * Spring Cache 인프라.
  *
  * `@EnableCaching` 활성화 + cache name 별 TTL 정의.
  *
+ * ## 통합 전략 — Spring Boot 자동 구성에 합류
+ *
+ * `RedisCacheManager` 빈을 직접 생성하지 않고 Spring Boot 의 [RedisCacheAutoConfiguration] 흐름에 합류한다.
+ *
+ * - [defaultRedisCacheConfiguration]: default 직렬화 / TTL 정의 — Spring Boot 가 이 빈을 발견하면 자동 구성에 사용
+ * - [perCacheTtlCustomizer]: per-cache TTL / 등록 — `RedisCacheManagerBuilderCustomizer` 로 builder 에 합류
+ *
+ * 이전 구현은 `@Configuration` 에서 `RedisCacheManager` 빈을 직접 만들고 `@ConditionalOnBean(RedisConnectionFactory::class)`
+ * 로 보호했으나, `RedisConnectionFactory` 자체가 [RedisAutoConfiguration] 의 조건부 빈이라 평가 순서에 따라 `@ConditionalOnBean`
+ * 이 false 로 평가되어 빈이 등록되지 않고 Spring Boot 의 default `RedisCacheManager` (JdkSerializationRedisSerializer)
+ * 가 fallback 되는 함정이 있었다 (운영에서 `List<BranchResponse>` 캐시 시 `NotSerializableException` 발생).
+ *
+ * 본 패턴은 자동 구성 흐름에 customize 만 합류시키므로 평가 순서 문제가 발생하지 않는다.
+ *
  * ## Profile 별 CacheManager
  *
- * | Profile        | CacheManager        | 동작                                                    |
- * |----------------|---------------------|---------------------------------------------------------|
- * | dev / prod     | [RedisCacheManager] | Redis 에 실제 캐싱                                       |
- * | test           | [NoOpCacheManager]  | 캐시 어노테이션 통과만 시키고 매번 원본 메서드 호출       |
- * | local          | [NoOpCacheManager]  | Redis 실 가동 부재 시 connection error 회피 (stub 보호)  |
+ * | Profile        | CacheManager                              | 동작                                                    |
+ * |----------------|-------------------------------------------|---------------------------------------------------------|
+ * | dev / prod     | Spring Boot 자동 구성 [RedisCacheManager]  | 본 클래스의 default config + per-cache customizer 적용     |
+ * | test           | [NoOpCacheManager] (`@Primary`)           | 캐시 어노테이션 통과만 시키고 매번 원본 메서드 호출       |
+ * | local          | [NoOpCacheManager] (`@Primary`)           | Redis 실 가동 부재 시 connection error 회피 (stub 보호)  |
  *
- * `@ConditionalOnBean(RedisConnectionFactory)` 만으로는 local profile 의 [LocalRedisStubConfig]
- * stub ConnectionFactory 가 빈을 만들어버려 캐시 호출이 connection error 로 fail 한다.
- * 따라서 NoOp 분기는 profile 기준으로 명시 (test, local).
+ * test / local profile 은 `@Primary` NoOpCacheManager 가 우선되어 자동 구성된 RedisCacheManager 가 있어도 사용되지 않는다.
  *
  * ## Cache 등록 컨벤션
  *
  * 신규 캐시 추가 시:
  *  1. 본 클래스의 cache name 상수 추가
- *  2. [redisCacheManager] 의 `perCacheConfig` Map 에 `cacheName → TTL` 항목 추가
+ *  2. [perCacheTtlCustomizer] 의 `withCacheConfiguration` 호출 추가 (`cacheName → TTL`)
  *  3. 서비스/리포지토리 메서드에 `@Cacheable(value = "<cacheName>", key = "...")` 부착
  *  4. 무효화 트리거 위치에 `@CacheEvict(value = ["<cacheName>"], allEntries = true)` 부착
  *
@@ -62,7 +72,8 @@ import java.time.Duration
  *   deprecated. 본 프로젝트는 application 본업이 Jackson 3 (`tools.jackson.*`) 이라 정합 양호.
  *
  * `GenericJacksonJsonRedisSerializer` 는 default typing 을 활성화하여 polymorphic 타입과
- * `List<DTO>` 같은 generic collection 도 역직렬화 시 타입 복원이 가능하다.
+ * `List<DTO>` 같은 generic collection 도 역직렬화 시 타입 복원이 가능하다. DTO 가 `Serializable` 을
+ * 구현하지 않아도 JSON 직렬화 대상이므로 캐시 가능.
  */
 @Configuration
 @EnableCaching
@@ -79,22 +90,20 @@ class CacheConfig {
     }
 
     /**
-     * RedisCacheManager — Redis 가 실제 가동되는 환경 (dev / prod) 전용.
+     * Default [RedisCacheConfiguration] — Spring Boot 자동 구성이 이 빈을 발견하면 RedisCacheManager 의 default 로 사용.
      *
-     * test / local profile 은 [noOpCacheManager] 가 우선되어 본 빈은 생성되어도 사용되지 않는다
-     * (둘 다 `@Primary` 지만 profile 분기로 한 시점에 1개만 활성).
+     * 본 빈이 등록된 상태에서 별도 cache name 의 `@Cacheable` 이 사용되면 (per-cache 미정의), 이 default 가 적용된다.
+     * per-cache 별 별도 TTL/직렬화는 [perCacheTtlCustomizer] 에서 정의.
      */
     @Bean
-    @Primary
-    @ConditionalOnBean(RedisConnectionFactory::class)
     @Profile("!test & !local")
-    fun redisCacheManager(connectionFactory: RedisConnectionFactory): CacheManager {
+    fun defaultRedisCacheConfiguration(): RedisCacheConfiguration {
         // Jackson 3 ObjectMapper — application 본업과 분리된 캐시 전용 인스턴스. Kotlin module +
         // Java time 등은 findAndAddModules() 가 자동 등록.
         val cacheObjectMapper: ObjectMapper = JsonMapper.builder().findAndAddModules().build()
         val valueSerializer: RedisSerializer<Any> = GenericJacksonJsonRedisSerializer(cacheObjectMapper)
 
-        val defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
+        return RedisCacheConfiguration.defaultCacheConfig()
             .disableCachingNullValues()
             .entryTtl(ORGANIZATION_TTL)
             .serializeKeysWith(
@@ -103,17 +112,25 @@ class CacheConfig {
             .serializeValuesWith(
                 RedisSerializationContext.SerializationPair.fromSerializer(valueSerializer)
             )
+    }
 
-        // cache name 별 TTL — 현재는 모두 ORGANIZATION_TTL 동일. 도메인 추가 시 본 Map 에 별도 entry.
+    /**
+     * per-cache TTL 정의 — Spring Boot 가 RedisCacheManager 를 빌드할 때 호출하여 builder 에 합류.
+     *
+     * 현재는 모든 캐시가 [ORGANIZATION_TTL] (24h) 동일. 도메인 추가 시 본 customizer 에 별도 entry 추가.
+     * `withInitialCacheConfigurations` 로 cache name 을 미리 등록해 두면, 호출 site 에서 `@Cacheable` 만 부착해도
+     * lazy 생성 없이 사전 정의된 설정으로 캐시가 동작한다.
+     */
+    @Bean
+    @Profile("!test & !local")
+    fun perCacheTtlCustomizer(defaultConfig: RedisCacheConfiguration): RedisCacheManagerBuilderCustomizer {
         val perCacheConfig = mapOf(
             CACHE_ORGANIZATION_CASCADE to defaultConfig,
             CACHE_TEAM_SCHEDULE_BRANCHES to defaultConfig,
         )
-
-        return RedisCacheManager.builder(connectionFactory)
-            .cacheDefaults(defaultConfig)
-            .withInitialCacheConfigurations(perCacheConfig)
-            .build()
+        return RedisCacheManagerBuilderCustomizer { builder ->
+            builder.withInitialCacheConfigurations(perCacheConfig)
+        }
     }
 
     /**
@@ -123,8 +140,8 @@ class CacheConfig {
      * local profile: [LocalRedisStubConfig] 의 stub ConnectionFactory 가 실제 Redis 미가동 시
      * connection error 를 유발하므로 NoOp 으로 명시적 분기.
      *
-     * NoOpCacheManager 는 `@Cacheable` / `@CacheEvict` 어노테이션을 통과만 시키고 매번 원본
-     * 메서드를 호출한다. 즉 캐시 어노테이션이 부착된 메서드의 동작 시맨틱은 캐시 없음 케이스와 동등.
+     * `@Primary` 로 자동 구성된 RedisCacheManager 보다 우선되어 캐시 호출이 모두 본 NoOp 으로 흐른다.
+     * NoOpCacheManager 는 `@Cacheable` / `@CacheEvict` 어노테이션을 통과만 시키고 매번 원본 메서드를 호출한다.
      */
     @Bean
     @Primary
