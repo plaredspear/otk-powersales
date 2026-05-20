@@ -1,7 +1,7 @@
 #!/usr/bin/env kotlin
 
 /**
- * Stage 1 — Raw INSERT (Spec #764, v11 — K2 cache 무효화 / COPY FROM STDIN 전략 추가).
+ * Stage 1 — Raw INSERT (Spec #764, v12 — K2 cache 무효화 / entity 별 + 전체 elapsed 측정 + summary).
  *
  * 책임: 추출된 CSV 를 staging 영역에 1:1 로 JDBC batch INSERT 또는 COPY FROM STDIN.
  *       - enum 변환 / transform 일체 수행하지 않음 (Stage 2 의 책임).
@@ -337,6 +337,22 @@ val outputDir = File(argMap["output-dir"] ?: File(scriptDir, "output").absoluteP
 val targets = parseTargets(argMap["target"])
 outputDir.mkdirs()
 
+// 전체 실행 시간 측정 시작 — 매 entity 별 측정과 별개로 wall-clock 누적.
+val overallStartedAt = System.currentTimeMillis()
+
+fun formatElapsed(ms: Long): String {
+    val s = ms / 1000
+    val h = s / 3600
+    val m = (s % 3600) / 60
+    val sec = s % 60
+    val msPart = ms % 1000
+    return when {
+        h > 0 -> "%dh %02dm %02d.%03ds".format(h, m, sec, msPart)
+        m > 0 -> "%dm %02d.%03ds".format(m, sec, msPart)
+        else -> "%d.%03ds".format(sec, msPart)
+    }
+}
+
 val dbConfig = loadDbConfig(scriptDir)
 
 println("=".repeat(60))
@@ -423,6 +439,10 @@ if (shouldReset) {
     println()
 }
 
+// entity 별 (target, elapsed ms, inserted, totalRows) 누적 — 마지막 summary 출력용.
+data class TargetTiming(val target: String, val elapsedMs: Long, val inserted: Int, val totalRows: Int, val strategy: String, val failed: Boolean)
+val timings = mutableListOf<TargetTiming>()
+
 for (target in sortedTargets) {
     val spec = TARGET_SPECS[target]
         ?: error("Unknown target: $target")
@@ -430,13 +450,18 @@ for (target in sortedTargets) {
 
     val csvFile = File(inputDir, spec.csvFileName)
     val conn = openConnection(dbConfig)
+    val targetStartedAt = System.currentTimeMillis()
+    var targetInserted = 0
+    var targetTotal = 0
+    var strategyLabel = "INSERT"
+    var failed = false
     try {
         when (val m = spec.meta) {
             is EntityMetadata -> {
                 // streaming path — CSV 를 row 단위로 읽으면서 즉시 INSERT (백만 단위 OOM 회피).
                 // useCopyStrategy=true 인 entity 는 COPY FROM STDIN path 로 분기 (속도 5~20×).
                 val estimatedTotal = countCsvDataRows(csvFile)
-                val strategyLabel = if (m.useCopyStrategy) "COPY" else "INSERT"
+                strategyLabel = if (m.useCopyStrategy) "COPY" else "INSERT"
                 val pb = ProgressBar("Stage 1 $target ($strategyLabel)", estimatedTotal)
                 val (inserted, totalRows, filteredOut) = if (m.useCopyStrategy) {
                     applyStageOneCopyInsert(conn, m, csvFile, resetMode = shouldReset, progress = pb)
@@ -451,9 +476,12 @@ for (target in sortedTargets) {
                 val conflictSkipped = validRows - inserted
                 pb.done("inserted=$inserted (filtered=$filteredOut, conflict_skipped=$conflictSkipped)")
                 report = report.copy(rawRowsCount = totalRows, insertedCount = inserted, stage1Applied = true)
+                targetInserted = inserted
+                targetTotal = totalRows
             }
             is PermissionStagingMetadata -> {
                 // Permission staging 은 row 수 적음 — 기존 readAll path 유지.
+                strategyLabel = "INSERT"
                 val allRows = parseCsvFile(csvFile)
                 val (rows, filteredOut) = filterValidRows(m.fields, allRows)
                 if (filteredOut > 0) {
@@ -465,6 +493,8 @@ for (target in sortedTargets) {
                 val conflictSkipped = rows.size - inserted
                 pb.done("inserted=$inserted (filtered=$filteredOut, conflict_skipped=$conflictSkipped)")
                 report = report.copy(rawRowsCount = allRows.size, insertedCount = inserted, stage1Applied = true)
+                targetInserted = inserted
+                targetTotal = allRows.size
             }
             else -> {}
         }
@@ -473,14 +503,35 @@ for (target in sortedTargets) {
         val rootMessage = formatJdbcError(e)
         println("\n[$target] FAILED: $rootMessage")
         report = report.copy(errors = listOf("INSERT failed: $rootMessage"))
+        failed = true
     } finally {
         conn.close()
     }
+    val targetElapsed = System.currentTimeMillis() - targetStartedAt
+    timings.add(TargetTiming(target, targetElapsed, targetInserted, targetTotal, strategyLabel, failed))
+    println("[$target] elapsed=${formatElapsed(targetElapsed)} ($strategyLabel, inserted=$targetInserted/$targetTotal)")
     reports.add(report)
 }
 
 val reportFile = File(outputDir, "migration_report_stage1.txt")
 writeReport(reports, "1", reportFile)
+val overallElapsed = System.currentTimeMillis() - overallStartedAt
+println()
+println("=".repeat(60))
+println("Stage 1 timing summary (slowest first)")
+println("=".repeat(60))
+val sortedTimings = timings.sortedByDescending { it.elapsedMs }
+val maxNameLen = (sortedTimings.maxOfOrNull { it.target.length } ?: 0).coerceAtLeast(6)
+for (t in sortedTimings) {
+    val status = if (t.failed) "FAIL" else "ok  "
+    val nameCol = t.target.padEnd(maxNameLen)
+    val stratCol = t.strategy.padEnd(6)
+    val timeCol = formatElapsed(t.elapsedMs).padStart(16)
+    val rowsCol = if (t.totalRows > 0) " inserted=${t.inserted}/${t.totalRows}" else ""
+    println("  [$status] $nameCol  $stratCol  $timeCol$rowsCol")
+}
+println("-".repeat(60))
+println("TOTAL elapsed: ${formatElapsed(overallElapsed)} (targets=${timings.size})")
 println()
 println("✅ Stage 1 완료. 리포트: ${reportFile.absolutePath}")
 println("다음 단계: kotlin migrate-stage2.main.kts")
