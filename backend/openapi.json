@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:54842",
+    "url" : "http://localhost:55131",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -15825,15 +15825,15 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -15864,11 +15864,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "paged" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
@@ -19224,15 +19224,15 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -22209,15 +22209,15 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -22476,15 +22476,15 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
