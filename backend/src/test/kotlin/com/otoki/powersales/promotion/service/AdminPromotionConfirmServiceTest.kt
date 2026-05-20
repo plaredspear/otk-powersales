@@ -13,28 +13,30 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.*
 import java.time.LocalDate
 import java.util.*
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminPromotionConfirmService 테스트")
 class AdminPromotionConfirmServiceTest {
 
-    @Mock private lateinit var promotionRepository: PromotionRepository
-    @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
-    @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
-    @Mock private lateinit var employeeRepository: EmployeeRepository
-    @InjectMocks private lateinit var service: AdminPromotionConfirmService
+    private val promotionRepository: PromotionRepository = mockk()
+    private val promotionEmployeeRepository: PromotionEmployeeRepository = mockk()
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
+
+    private val service = AdminPromotionConfirmService(
+        promotionRepository,
+        promotionEmployeeRepository,
+        teamMemberScheduleRepository,
+        employeeRepository,
+    )
 
     private val startDate = LocalDate.of(2026, 3, 1)
     private val endDate = LocalDate.of(2026, 3, 31)
@@ -53,18 +55,17 @@ class AdminPromotionConfirmServiceTest {
                 createPE(id = 3L, employeeId = 3L, scheduleDate = startDate.plus(2, java.time.temporal.ChronoUnit.DAYS))
             )
 
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
-            whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
-            whenever(teamMemberScheduleRepository.findByPromotionEmployeeIn(any())).thenReturn(emptyList())
-            whenever(teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any())).thenReturn(emptyList())
-            whenever(employeeRepository.findAllById(any())).thenReturn(listOf(
+            every { promotionRepository.findById(10L) } returns Optional.of(promotion)
+            every { promotionEmployeeRepository.findByPromotionId(10L) } returns employees
+            every { teamMemberScheduleRepository.findByPromotionEmployeeIn(any()) } returns emptyList()
+            every { teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any()) } returns emptyList()
+            every { employeeRepository.findAllById(any()) } returns listOf(
                 createEmployee(id = 1L, employeeCode = "EMP001", name = "김철수"),
                 createEmployee(id = 2L, employeeCode = "EMP002", name = "이영희"),
                 createEmployee(id = 3L, employeeCode = "EMP003", name = "박민수")
-            ))
-            whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { invocation ->
-                val teamMemberSchedules = invocation.getArgument<List<TeamMemberSchedule>>(0)
-                teamMemberSchedules.mapIndexed { index, s ->
+            )
+            every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
+                firstArg<List<TeamMemberSchedule>>().mapIndexed { index, s ->
                     TeamMemberSchedule(
                         id = (100L + index),
                         employee = s.employee,
@@ -78,7 +79,7 @@ class AdminPromotionConfirmServiceTest {
                     )
                 }
             }
-            whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
+            every { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) } answers { firstArg<List<PromotionEmployee>>() }
 
             val result = service.confirmPromotion(10L)
 
@@ -108,13 +109,13 @@ class AdminPromotionConfirmServiceTest {
                 promotionEmployee = PromotionEmployee(id = 1L, promotionId = 10L)
             )
 
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
-            whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
-            whenever(teamMemberScheduleRepository.findByPromotionEmployeeIn(any())).thenReturn(listOf(existingTeamMemberSchedule))
-            whenever(teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any())).thenReturn(listOf(existingTeamMemberSchedule))
-            whenever(employeeRepository.findAllById(any())).thenReturn(listOf(createEmployee(id = 1L, employeeCode = "EMP001", name = "김철수")))
-            whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { it.getArgument<List<TeamMemberSchedule>>(0) }
-            whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
+            every { promotionRepository.findById(10L) } returns Optional.of(promotion)
+            every { promotionEmployeeRepository.findByPromotionId(10L) } returns employees
+            every { teamMemberScheduleRepository.findByPromotionEmployeeIn(any()) } returns listOf(existingTeamMemberSchedule)
+            every { teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any()) } returns listOf(existingTeamMemberSchedule)
+            every { employeeRepository.findAllById(any()) } returns listOf(createEmployee(id = 1L, employeeCode = "EMP001", name = "김철수"))
+            every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers { firstArg<List<TeamMemberSchedule>>() }
+            every { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) } answers { firstArg<List<PromotionEmployee>>() }
 
             val result = service.confirmPromotion(10L)
 
@@ -125,7 +126,7 @@ class AdminPromotionConfirmServiceTest {
         @Test
         @DisplayName("행사 미존재 -> 404 PromotionNotFoundException")
         fun confirm_promotionNotFound() {
-            whenever(promotionRepository.findById(999L)).thenReturn(Optional.empty())
+            every { promotionRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { service.confirmPromotion(999L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -135,7 +136,7 @@ class AdminPromotionConfirmServiceTest {
         @DisplayName("삭제된 행사 -> 404 PromotionNotFoundException")
         fun confirm_deletedPromotion() {
             val promotion = createPromotion(isDeleted = true)
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
+            every { promotionRepository.findById(10L) } returns Optional.of(promotion)
 
             assertThatThrownBy { service.confirmPromotion(10L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -145,8 +146,8 @@ class AdminPromotionConfirmServiceTest {
         @DisplayName("조원 0명 -> 400 NoEmployeesException")
         fun confirm_noEmployees() {
             val promotion = createPromotion()
-            whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
-            whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(emptyList())
+            every { promotionRepository.findById(10L) } returns Optional.of(promotion)
+            every { promotionEmployeeRepository.findByPromotionId(10L) } returns emptyList()
 
             assertThatThrownBy { service.confirmPromotion(10L) }
                 .isInstanceOf(NoEmployeesException::class.java)
@@ -466,25 +467,23 @@ class AdminPromotionConfirmServiceTest {
         }
     }
 
-    // --- Helper Methods ---
-
     private fun setupMocks(
         promotion: Promotion,
         employees: List<PromotionEmployee>,
         existingTeamMemberSchedules: List<TeamMemberSchedule> = emptyList(),
         userStatus: String? = null
     ) {
-        whenever(promotionRepository.findById(10L)).thenReturn(Optional.of(promotion))
-        whenever(promotionEmployeeRepository.findByPromotionId(10L)).thenReturn(employees)
-        org.mockito.Mockito.lenient().`when`(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
-        org.mockito.Mockito.lenient().`when`(teamMemberScheduleRepository.findByPromotionEmployeeIn(any())).thenReturn(emptyList())
-        org.mockito.Mockito.lenient().`when`(teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any())).thenReturn(existingTeamMemberSchedules)
+        every { promotionRepository.findById(10L) } returns Optional.of(promotion)
+        every { promotionEmployeeRepository.findByPromotionId(10L) } returns employees
+        every { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) } answers { firstArg<List<PromotionEmployee>>() }
+        every { teamMemberScheduleRepository.findByPromotionEmployeeIn(any()) } returns emptyList()
+        every { teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(any(), any()) } returns existingTeamMemberSchedules
 
         val employeeIds = employees.mapNotNull { it.employeeId }.distinct()
-        val employees = employeeIds.mapIndexed { _, id ->
+        val empList = employeeIds.map { id ->
             createEmployee(id = id, employeeCode = "EMP${String.format("%03d", id)}", name = "EMP${String.format("%03d", id)}이름", status = userStatus)
         }
-        org.mockito.Mockito.lenient().`when`(employeeRepository.findAllById(any())).thenReturn(employees)
+        every { employeeRepository.findAllById(any()) } returns empList
     }
 
     private fun setupMocksForSuccess(
@@ -492,9 +491,8 @@ class AdminPromotionConfirmServiceTest {
         employees: List<PromotionEmployee>
     ) {
         setupMocks(promotion, employees)
-        whenever(teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>())).thenAnswer { invocation ->
-            val schedules = invocation.getArgument<List<TeamMemberSchedule>>(0)
-            schedules.mapIndexed { index, s ->
+        every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
+            firstArg<List<TeamMemberSchedule>>().mapIndexed { index, s ->
                 TeamMemberSchedule(
                     id = (100L + index),
                     employee = s.employee,
@@ -508,7 +506,7 @@ class AdminPromotionConfirmServiceTest {
                 )
             }
         }
-        whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>())).thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
+        every { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) } answers { firstArg<List<PromotionEmployee>>() }
     }
 
     private fun createPromotion(

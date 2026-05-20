@@ -15,19 +15,17 @@ import com.otoki.powersales.promotion.exception.PromotionInvalidParameterExcepti
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.promotion.service.MobilePromotionService
 import com.otoki.powersales.auth.entity.UserRole
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -45,20 +43,19 @@ class PromotionControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var mobilePromotionService: MobilePromotionService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -106,11 +103,7 @@ class PromotionControllerTest {
                 totalElements = 2L,
                 totalPages = 1
             )
-            whenever(
-                mobilePromotionService.getPromotions(
-                    eq(1L), isNull(), isNull(), isNull(), eq(0), eq(20)
-                )
-            ).thenReturn(response)
+            every { mobilePromotionService.getPromotions(1L, null, null, null, 0, 20) } returns response
 
             mockMvc.perform(get("/api/v1/mobile/promotions"))
                 .andExpect(status().isOk)
@@ -142,11 +135,7 @@ class PromotionControllerTest {
                 totalElements = 0L,
                 totalPages = 0
             )
-            whenever(
-                mobilePromotionService.getPromotions(
-                    eq(1L), eq("2026-03-01"), eq("2026-03-31"), isNull(), eq(0), eq(20)
-                )
-            ).thenReturn(response)
+            every { mobilePromotionService.getPromotions(1L, "2026-03-01", "2026-03-31", null, 0, 20) } returns response
 
             mockMvc.perform(
                 get("/api/v1/mobile/promotions")
@@ -183,11 +172,7 @@ class PromotionControllerTest {
                 totalElements = 1L,
                 totalPages = 1
             )
-            whenever(
-                mobilePromotionService.getPromotions(
-                    eq(1L), isNull(), isNull(), eq("봄맞이"), eq(0), eq(20)
-                )
-            ).thenReturn(response)
+            every { mobilePromotionService.getPromotions(1L, null, null, "봄맞이", 0, 20) } returns response
 
             mockMvc.perform(
                 get("/api/v1/mobile/promotions")
@@ -202,11 +187,8 @@ class PromotionControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 날짜 형식")
         fun getPromotions_invalidDateFormat() {
-            whenever(
-                mobilePromotionService.getPromotions(
-                    eq(1L), eq("invalid-date"), isNull(), isNull(), eq(0), eq(20)
-                )
-            ).thenThrow(PromotionInvalidParameterException())
+            every { mobilePromotionService.getPromotions(1L, "invalid-date", null, null, 0, 20) } throws
+                PromotionInvalidParameterException()
 
             mockMvc.perform(
                 get("/api/v1/mobile/promotions")
@@ -261,7 +243,7 @@ class PromotionControllerTest {
                 remark = "비고 내용",
                 employees = employees
             )
-            whenever(mobilePromotionService.getPromotion(eq(1L), eq(1L))).thenReturn(detail)
+            every { mobilePromotionService.getPromotion(1L, 1L) } returns detail
 
             mockMvc.perform(get("/api/v1/mobile/promotions/1"))
                 .andExpect(status().isOk)
@@ -294,8 +276,7 @@ class PromotionControllerTest {
         @Test
         @DisplayName("실패 - 미존재 행사")
         fun getPromotion_notFound() {
-            whenever(mobilePromotionService.getPromotion(eq(1L), eq(999L)))
-                .thenThrow(PromotionNotFoundException())
+            every { mobilePromotionService.getPromotion(1L, 999L) } throws PromotionNotFoundException()
 
             mockMvc.perform(get("/api/v1/mobile/promotions/999"))
                 .andExpect(status().isNotFound)
@@ -305,8 +286,7 @@ class PromotionControllerTest {
         @Test
         @DisplayName("실패 - 접근 권한 없음")
         fun getPromotion_forbidden() {
-            whenever(mobilePromotionService.getPromotion(eq(1L), eq(5L)))
-                .thenThrow(PromotionForbiddenException())
+            every { mobilePromotionService.getPromotion(1L, 5L) } throws PromotionForbiddenException()
 
             mockMvc.perform(get("/api/v1/mobile/promotions/5"))
                 .andExpect(status().isForbidden)

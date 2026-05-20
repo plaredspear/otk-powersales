@@ -5,11 +5,11 @@ import com.otoki.powersales.account.entity.AccountType
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
 @DisplayName("PPTMasterPayloadFactory — 17개 필드 매핑 (#765)")
@@ -170,14 +170,14 @@ class PPTMasterPayloadFactoryTest {
         jikwee: String? = "사원",
         org: String? = "지점"
     ): Employee {
-        val mock: Employee = mock()
-        whenever(mock.name).thenReturn(name)
-        whenever(mock.employeeCode).thenReturn(code)
-        whenever(mock.status).thenReturn(status)
-        whenever(mock.appLoginActive).thenReturn(appLogin)
-        whenever(mock.endDate).thenReturn(endDate)
-        whenever(mock.jikwee).thenReturn(jikwee)
-        whenever(mock.orgName).thenReturn(org)
+        val mock: Employee = mockk()
+        every { mock.name } returns name
+        every { mock.employeeCode } returns code
+        every { mock.status } returns status
+        every { mock.appLoginActive } returns appLogin
+        every { mock.endDate } returns endDate
+        every { mock.jikwee } returns jikwee
+        every { mock.orgName } returns org
         return mock
     }
 
@@ -186,10 +186,10 @@ class PPTMasterPayloadFactoryTest {
         statusName: String? = "정상",
         type: AccountType? = AccountType.DISCOUNT_STORE
     ): Account {
-        val mock: Account = mock()
-        whenever(mock.externalKey).thenReturn(externalKey)
-        whenever(mock.accountStatusName).thenReturn(statusName)
-        whenever(mock.accountType).thenReturn(type)
+        val mock: Account = mockk()
+        every { mock.externalKey } returns externalKey
+        every { mock.accountStatusName } returns statusName
+        every { mock.accountType } returns type
         return mock
     }
 
@@ -205,17 +205,17 @@ class PPTMasterPayloadFactoryTest {
         employee: Employee? = employee(),
         account: Account? = account()
     ): ProfessionalPromotionTeamMaster {
-        val mock: ProfessionalPromotionTeamMaster = mock()
-        whenever(mock.id).thenReturn(id)
-        whenever(mock.name).thenReturn(name)
-        whenever(mock.teamType).thenReturn(teamType)
-        whenever(mock.accountSfid).thenReturn(accountSfid)
-        whenever(mock.isConfirmed).thenReturn(isConfirmed)
-        whenever(mock.startDate).thenReturn(startDate)
-        whenever(mock.endDate).thenReturn(endDate)
-        whenever(mock.branchCode).thenReturn(branchCode)
-        whenever(mock.employee).thenReturn(employee)
-        whenever(mock.account).thenReturn(account)
+        val mock: ProfessionalPromotionTeamMaster = mockk()
+        every { mock.id } returns id
+        every { mock.name } returns name
+        every { mock.teamType } returns teamType
+        every { mock.accountSfid } returns accountSfid
+        every { mock.isConfirmed } returns isConfirmed
+        every { mock.startDate } returns startDate
+        every { mock.endDate } returns endDate
+        every { mock.branchCode } returns branchCode
+        every { mock.employee } returns employee
+        every { mock.account } returns account
         return mock
     }
 }
