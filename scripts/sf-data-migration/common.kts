@@ -1233,6 +1233,33 @@ val PERMISSION_METADATA = PermissionStagingMetadata()
 
 fun quoteTable(name: String): String = if (name == "user") "\"user\"" else name
 
+/**
+ * JDBC 예외에서 root cause 메시지만 추출 — batch 전체 SQL 덤프 회피.
+ *
+ * PostgreSQL JDBC 의 BatchUpdateException.getMessage() 는 batch 안 모든 row 의 INSERT
+ * SQL 본문을 합쳐 출력 (수십 ~ 수천 줄). 사용자에게 noise 만 늘림. nextException chain 을
+ * 풀어서 PSQLException 의 serverErrorMessage (단순 한 줄 — `ERROR: invalid input syntax ...`)
+ * 만 노출.
+ */
+fun formatJdbcError(e: Throwable): String {
+    var cause: Throwable? = e
+    var pgError: java.sql.SQLException? = null
+    while (cause != null) {
+        if (cause is java.sql.BatchUpdateException) {
+            pgError = cause.nextException ?: cause
+            break
+        }
+        if (cause is java.sql.SQLException) {
+            pgError = cause
+            break
+        }
+        cause = cause.cause
+    }
+    val msg = pgError?.message ?: e.message ?: e.javaClass.simpleName
+    // PostgreSQL 의 multi-line "Detail / Where / Hint" 중 첫 ERROR 라인만 추출.
+    return msg.lineSequence().firstOrNull { it.isNotBlank() } ?: msg
+}
+
 // =============================================================================
 // CSV parsing
 // =============================================================================

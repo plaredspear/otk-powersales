@@ -1,7 +1,7 @@
 #!/usr/bin/env kotlin
 
 /**
- * Stage 1 — Raw INSERT (Spec #764, v8 — K2 cache 무효화 / isIntegerScale 메타 기반 BigDecimal→Long casting).
+ * Stage 1 — Raw INSERT (Spec #764, v9 — K2 cache 무효화 / BatchUpdateException root cause 만 출력).
  *
  * 책임: 추출된 CSV 를 staging 영역에 1:1 로 JDBC batch INSERT.
  *       - enum 변환 / transform 일체 수행하지 않음 (Stage 2 의 책임).
@@ -374,8 +374,9 @@ for (target in sortedTargets) {
         }
     } catch (e: Exception) {
         conn.rollback()
-        println("\n[$target] FAILED: ${e.message}")
-        report = report.copy(errors = listOf("INSERT failed: ${e.message}"))
+        val rootMessage = formatJdbcError(e)
+        println("\n[$target] FAILED: $rootMessage")
+        report = report.copy(errors = listOf("INSERT failed: $rootMessage"))
     } finally {
         conn.close()
     }
