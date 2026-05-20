@@ -8,21 +8,27 @@ import {
   Form,
   Input,
   Progress,
+  Radio,
   Select,
   Space,
   Statistic,
+  Table,
   Tag,
   Typography,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
   useStage1CopyProgress,
   useStage1Targets,
   useStartStage1Copy,
+  useStartStage1CopyAll,
 } from '@/hooks/admin/useSfMigrationStage1';
 import {
   Stage1AlreadyRunningError,
   type Stage1CopyProgress,
+  type Stage1EntityResult,
+  type Stage1EntityStatus,
   type Stage1Status,
 } from '@/api/admin/sfMigrationStage1';
 
@@ -34,6 +40,16 @@ const STATUS_TAG: Record<Stage1Status, { color: string; label: string }> = {
   COMPLETED: { color: 'success', label: '완료' },
   FAILED: { color: 'error', label: '실패' },
 };
+
+const ENTITY_STATUS_TAG: Record<Stage1EntityStatus, { color: string; label: string }> = {
+  PENDING: { color: 'default', label: '대기' },
+  RUNNING: { color: 'processing', label: '실행 중' },
+  COMPLETED: { color: 'success', label: '완료' },
+  FAILED: { color: 'error', label: '실패' },
+  SKIPPED: { color: 'warning', label: '건너뜀' },
+};
+
+type RunMode = 'single' | 'batch';
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return '-';
@@ -61,8 +77,12 @@ function rowsThroughput(p: Stage1CopyProgress): string {
 export default function SfMigrationStage1Page() {
   const progressQuery = useStage1CopyProgress();
   const targetsQuery = useStage1Targets();
-  const startMutation = useStartStage1Copy();
-  const [form] = Form.useForm<{ targetName: string; s3Bucket: string; s3Key: string }>();
+  const startSingleMutation = useStartStage1Copy();
+  const startBatchMutation = useStartStage1CopyAll();
+
+  const [singleForm] = Form.useForm<{ targetName: string; s3Bucket: string; s3Key: string }>();
+  const [batchForm] = Form.useForm<{ s3Bucket: string; s3KeyPrefix: string }>();
+  const [runMode, setRunMode] = useState<RunMode>('single');
 
   const progress = progressQuery.data;
   const isRunning = progress?.status === 'RUNNING';
@@ -78,10 +98,21 @@ export default function SfMigrationStage1Page() {
     return () => clearInterval(id);
   }, [isRunning]);
 
-  const onSubmit = (values: { targetName: string; s3Bucket: string; s3Key: string }) => {
+  const startMutationPending =
+    startSingleMutation.isPending || startBatchMutation.isPending;
+
+  const resetSubmitState = () => {
     setSubmitError(null);
     setAlreadyRunning(false);
-    startMutation.mutate(values, {
+  };
+
+  const onSubmitSingle = (values: {
+    targetName: string;
+    s3Bucket: string;
+    s3Key: string;
+  }) => {
+    resetSubmitState();
+    startSingleMutation.mutate(values, {
       onError: (err) => {
         if (err instanceof Stage1AlreadyRunningError) {
           setAlreadyRunning(true);
@@ -91,6 +122,90 @@ export default function SfMigrationStage1Page() {
       },
     });
   };
+
+  const onSubmitBatch = (values: { s3Bucket: string; s3KeyPrefix: string }) => {
+    resetSubmitState();
+    startBatchMutation.mutate(values, {
+      onError: (err) => {
+        if (err instanceof Stage1AlreadyRunningError) {
+          setAlreadyRunning(true);
+          return;
+        }
+        setSubmitError(err.message);
+      },
+    });
+  };
+
+  const entityColumns: ColumnsType<Stage1EntityResult> = [
+    {
+      title: '#',
+      key: 'index',
+      width: 50,
+      render: (_v, _r, idx) => idx + 1,
+    },
+    {
+      title: 'Target',
+      dataIndex: 'targetName',
+      key: 'targetName',
+      render: (v: string) => <Text code>{v}</Text>,
+    },
+    {
+      title: '상태',
+      dataIndex: 'status',
+      key: 'status',
+      width: 110,
+      render: (v: Stage1EntityStatus) => {
+        const tag = ENTITY_STATUS_TAG[v];
+        return <Tag color={tag.color}>{tag.label}</Tag>;
+      },
+    },
+    {
+      title: 'S3 Key',
+      dataIndex: 's3Key',
+      key: 's3Key',
+      ellipsis: true,
+      render: (v: string | null) => (v ? <Text code>{v}</Text> : '-'),
+    },
+    {
+      title: '처리 row',
+      dataIndex: 'processedRows',
+      key: 'processedRows',
+      width: 110,
+      align: 'right',
+      render: (v: number) => v.toLocaleString(),
+    },
+    {
+      title: '제외',
+      dataIndex: 'filteredOut',
+      key: 'filteredOut',
+      width: 90,
+      align: 'right',
+      render: (v: number) => v.toLocaleString(),
+    },
+    {
+      title: '적재',
+      dataIndex: 'insertedRows',
+      key: 'insertedRows',
+      width: 110,
+      align: 'right',
+      render: (v: number) => v.toLocaleString(),
+    },
+    {
+      title: '경과',
+      key: 'elapsed',
+      width: 100,
+      render: (_v, r) => formatDuration(r.startedAt, r.finishedAt),
+    },
+    {
+      title: '실패 사유',
+      dataIndex: 'errorMessage',
+      key: 'errorMessage',
+      render: (v: string | null) =>
+        v ? <Text type="danger" style={{ whiteSpace: 'pre-wrap' }}>{v}</Text> : '-',
+    },
+  ];
+
+  const isBatch = progress?.mode === 'BATCH';
 
   return (
     <div style={{ padding: 24 }}>
@@ -102,96 +217,171 @@ export default function SfMigrationStage1Page() {
       </Paragraph>
 
       <Card style={{ marginBottom: 16 }} title="실행">
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onSubmit}
-          disabled={isRunning || startMutation.isPending}
+        <Radio.Group
+          value={runMode}
+          onChange={(e) => {
+            setRunMode(e.target.value as RunMode);
+            resetSubmitState();
+          }}
+          optionType="button"
+          buttonStyle="solid"
+          disabled={isRunning || startMutationPending}
+          style={{ marginBottom: 16 }}
         >
-          <Form.Item
-            label="Target"
-            name="targetName"
-            rules={[{ required: true, message: 'target 을 선택하세요' }]}
+          <Radio.Button value="single">개별 실행 (target 1개)</Radio.Button>
+          <Radio.Button value="batch">일괄 실행 (전체 entity)</Radio.Button>
+        </Radio.Group>
+
+        {runMode === 'single' ? (
+          <Form
+            form={singleForm}
+            layout="vertical"
+            onFinish={onSubmitSingle}
+            disabled={isRunning || startMutationPending}
           >
-            <Select
-              placeholder="target 선택 (예: ErpOrderProduct)"
-              loading={targetsQuery.isLoading}
-              options={(targetsQuery.data ?? []).map((t) => ({ value: t, label: t }))}
-            />
-          </Form.Item>
-          <Form.Item
-            label="S3 Bucket"
-            name="s3Bucket"
-            rules={[{ required: true, message: 'S3 bucket 을 입력하세요' }]}
-          >
-            <Input placeholder="otoki-dev-storage" />
-          </Form.Item>
-          <Form.Item
-            label="S3 Key"
-            name="s3Key"
-            rules={[{ required: true, message: 'S3 key 를 입력하세요' }]}
-          >
-            <Input placeholder="sf-migration/input/erp_order_products.csv" />
-          </Form.Item>
-          <Space>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={startMutation.isPending}
-              disabled={isRunning}
+            <Form.Item
+              label="Target"
+              name="targetName"
+              rules={[{ required: true, message: 'target 을 선택하세요' }]}
             >
-              {isRunning ? '진행 중…' : '적재 실행'}
-            </Button>
-            <Button onClick={() => progressQuery.refetch()} disabled={progressQuery.isFetching}>
-              새로 고침
-            </Button>
-            <Tag color={statusTag.color} style={{ fontSize: 14, padding: '4px 12px' }}>
-              상태: {statusTag.label}
-            </Tag>
-          </Space>
-          {alreadyRunning && (
-            <Alert
-              style={{ marginTop: 12 }}
-              type="info"
-              showIcon
-              message="이미 실행 중입니다"
-              description="아래 진행 상태를 확인하세요. 완료 후 다시 실행할 수 있습니다."
-              closable
-              onClose={() => {
-                setAlreadyRunning(false);
-                startMutation.reset();
-              }}
-            />
-          )}
-          {submitError && (
-            <Alert
-              style={{ marginTop: 12 }}
-              type="error"
-              showIcon
-              message="실행 요청 실패"
-              description={submitError}
-              closable
-              onClose={() => {
-                setSubmitError(null);
-                startMutation.reset();
-              }}
-            />
-          )}
-        </Form>
+              <Select
+                placeholder="target 선택 (예: ErpOrderProduct)"
+                loading={targetsQuery.isLoading}
+                showSearch
+                options={(targetsQuery.data ?? []).map((t) => ({ value: t, label: t }))}
+              />
+            </Form.Item>
+            <Form.Item
+              label="S3 Bucket"
+              name="s3Bucket"
+              rules={[{ required: true, message: 'S3 bucket 을 입력하세요' }]}
+            >
+              <Input placeholder="otoki-dev-storage" />
+            </Form.Item>
+            <Form.Item
+              label="S3 Key"
+              name="s3Key"
+              rules={[{ required: true, message: 'S3 key 를 입력하세요' }]}
+            >
+              <Input placeholder="sf-migration/input/erp_order_products.csv" />
+            </Form.Item>
+            <Space>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={startSingleMutation.isPending}
+                disabled={isRunning}
+              >
+                {isRunning ? '진행 중…' : '적재 실행'}
+              </Button>
+              <Button onClick={() => progressQuery.refetch()} disabled={progressQuery.isFetching}>
+                새로 고침
+              </Button>
+              <Tag color={statusTag.color} style={{ fontSize: 14, padding: '4px 12px' }}>
+                상태: {statusTag.label}
+              </Tag>
+            </Space>
+          </Form>
+        ) : (
+          <Form
+            form={batchForm}
+            layout="vertical"
+            onFinish={onSubmitBatch}
+            disabled={isRunning || startMutationPending}
+          >
+            <Form.Item
+              label="S3 Bucket"
+              name="s3Bucket"
+              rules={[{ required: true, message: 'S3 bucket 을 입력하세요' }]}
+            >
+              <Input placeholder="otoki-dev-storage" />
+            </Form.Item>
+            <Form.Item
+              label="S3 Key Prefix"
+              name="s3KeyPrefix"
+              tooltip="각 entity 의 S3 key 는 <prefix>/<csvFileName> 으로 자동 조립됩니다."
+              rules={[{ required: true, message: 'S3 key prefix 를 입력하세요' }]}
+            >
+              <Input placeholder="sf-migration/input" />
+            </Form.Item>
+            <Paragraph type="secondary" style={{ marginBottom: 16 }}>
+              등록된 {(targetsQuery.data ?? []).length} 개 entity 를 의존성 순서대로 순차 적재합니다.
+              1개 entity 가 실패하면 즉시 중단되고 나머지는 SKIPPED 로 표시됩니다.
+            </Paragraph>
+            <Space>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={startBatchMutation.isPending}
+                disabled={isRunning}
+              >
+                {isRunning ? '진행 중…' : '일괄 실행'}
+              </Button>
+              <Button onClick={() => progressQuery.refetch()} disabled={progressQuery.isFetching}>
+                새로 고침
+              </Button>
+              <Tag color={statusTag.color} style={{ fontSize: 14, padding: '4px 12px' }}>
+                상태: {statusTag.label}
+              </Tag>
+            </Space>
+          </Form>
+        )}
+
+        {alreadyRunning && (
+          <Alert
+            style={{ marginTop: 12 }}
+            type="info"
+            showIcon
+            message="이미 실행 중입니다"
+            description="아래 진행 상태를 확인하세요. 완료 후 다시 실행할 수 있습니다."
+            closable
+            onClose={() => {
+              setAlreadyRunning(false);
+              startSingleMutation.reset();
+              startBatchMutation.reset();
+            }}
+          />
+        )}
+        {submitError && (
+          <Alert
+            style={{ marginTop: 12 }}
+            type="error"
+            showIcon
+            message="실행 요청 실패"
+            description={submitError}
+            closable
+            onClose={() => {
+              setSubmitError(null);
+              startSingleMutation.reset();
+              startBatchMutation.reset();
+            }}
+          />
+        )}
       </Card>
 
       {!progress ? (
         <Empty description="진행 상태 없음 (한 번도 실행되지 않음)" />
       ) : (
         <>
-          <Card title="요약" style={{ marginBottom: 16 }}>
+          <Card title={isBatch ? '요약 (일괄)' : '요약'} style={{ marginBottom: 16 }}>
             <Descriptions column={{ xs: 1, sm: 2, md: 3 }} bordered size="small">
-              <Descriptions.Item label="Target">
-                <Text code>{progress.targetName ?? '-'}</Text>
+              <Descriptions.Item label="모드">
+                <Tag>{isBatch ? '일괄 실행 (BATCH)' : '개별 실행 (SINGLE)'}</Tag>
               </Descriptions.Item>
+              {isBatch ? (
+                <Descriptions.Item label="현재 처리 중">
+                  {progress.targetName ? <Text code>{progress.targetName}</Text> : '-'}
+                </Descriptions.Item>
+              ) : (
+                <Descriptions.Item label="Target">
+                  <Text code>{progress.targetName ?? '-'}</Text>
+                </Descriptions.Item>
+              )}
               <Descriptions.Item label="S3">
                 {progress.s3Bucket && progress.s3Key ? (
                   <Text code>s3://{progress.s3Bucket}/{progress.s3Key}</Text>
+                ) : progress.s3Bucket ? (
+                  <Text code>s3://{progress.s3Bucket}/</Text>
                 ) : (
                   '-'
                 )}
@@ -212,7 +402,7 @@ export default function SfMigrationStage1Page() {
 
             <Space size="large" style={{ marginTop: 16 }} wrap>
               <Statistic
-                title="처리 row (CSV 누적)"
+                title={isBatch ? '처리 row (전체 누적)' : '처리 row (CSV 누적)'}
                 value={progress.processedRows.toLocaleString()}
               />
               <Statistic
@@ -220,13 +410,10 @@ export default function SfMigrationStage1Page() {
                 value={progress.filteredOut.toLocaleString()}
               />
               <Statistic
-                title="적재된 row (insert 후)"
+                title={isBatch ? '적재된 row (전체 누적)' : '적재된 row (insert 후)'}
                 value={progress.insertedRows.toLocaleString()}
               />
-              <Statistic
-                title="처리량"
-                value={rowsThroughput(progress)}
-              />
+              <Statistic title="처리량" value={rowsThroughput(progress)} />
             </Space>
 
             {isRunning && (
@@ -250,6 +437,21 @@ export default function SfMigrationStage1Page() {
               </div>
             )}
           </Card>
+
+          {isBatch && progress.entityResults.length > 0 && (
+            <Card title={`Entity 별 결과 (${progress.entityResults.length})`} style={{ marginBottom: 16 }}>
+              <Table<Stage1EntityResult>
+                rowKey="targetName"
+                dataSource={progress.entityResults}
+                columns={entityColumns}
+                pagination={false}
+                size="small"
+                rowClassName={(r) =>
+                  r.status === 'FAILED' ? 'ant-table-row-stage1-failed' : ''
+                }
+              />
+            </Card>
+          )}
 
           {progress.errors.length > 0 && (
             <Alert

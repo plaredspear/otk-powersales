@@ -10,12 +10,31 @@ import type { ApiResponse } from '../types';
  *
  * Stage 1 은 SF export CSV (S3 업로드된 상태) 를 PostgreSQL COPY 로 직접 적재한다.
  * 큰 entity (ErpOrderProduct ≈ 5GB) 의 적재는 수 분~수십 분 소요.
+ *
+ * 두 가지 모드:
+ *  - SINGLE: target 1개를 골라 적재.
+ *  - BATCH : 등록된 모든 entity 를 의존성 순서대로 일괄 적재. 1개 실패 시 즉시 중단.
  */
 
 export type Stage1Status = 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type Stage1Mode = 'SINGLE' | 'BATCH';
+export type Stage1EntityStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'SKIPPED';
+
+export interface Stage1EntityResult {
+  targetName: string;
+  status: Stage1EntityStatus;
+  s3Key: string | null;
+  processedRows: number;
+  filteredOut: number;
+  insertedRows: number;
+  errorMessage: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
 
 export interface Stage1CopyProgress {
   status: Stage1Status;
+  mode: Stage1Mode;
   startedAt: string | null;
   finishedAt: string | null;
   targetName: string | null;
@@ -25,12 +44,18 @@ export interface Stage1CopyProgress {
   filteredOut: number;
   insertedRows: number;
   errors: string[];
+  entityResults: Stage1EntityResult[];
 }
 
 export interface Stage1CopyRequest {
   targetName: string;
   s3Bucket: string;
   s3Key: string;
+}
+
+export interface Stage1CopyAllRequest {
+  s3Bucket: string;
+  s3KeyPrefix: string;
 }
 
 export class Stage1AlreadyRunningError extends Error {
@@ -43,21 +68,40 @@ export class Stage1AlreadyRunningError extends Error {
 export async function startStage1Copy(
   req: Stage1CopyRequest,
 ): Promise<Stage1CopyProgress> {
+  return postAndHandle409(
+    '/api/v1/admin/sf-migration/stage1/copy-from-s3',
+    req,
+    'Stage 1 적재 실행 요청에 실패했습니다',
+  );
+}
+
+export async function startStage1CopyAll(
+  req: Stage1CopyAllRequest,
+): Promise<Stage1CopyProgress> {
+  return postAndHandle409(
+    '/api/v1/admin/sf-migration/stage1/copy-all-from-s3',
+    req,
+    'Stage 1 일괄 적재 실행 요청에 실패했습니다',
+  );
+}
+
+async function postAndHandle409<TReq>(
+  url: string,
+  body: TReq,
+  failureMessage: string,
+): Promise<Stage1CopyProgress> {
   try {
-    const res = await client.post<ApiResponse<Stage1CopyProgress>>(
-      '/api/v1/admin/sf-migration/stage1/copy-from-s3',
-      req,
-    );
+    const res = await client.post<ApiResponse<Stage1CopyProgress>>(url, body);
     if (!res.data.success || !res.data.data) {
-      throw new Error(res.data.message || 'Stage 1 적재 실행 요청에 실패했습니다');
+      throw new Error(res.data.message || failureMessage);
     }
     return res.data.data;
   } catch (err) {
     // backend 가 RUNNING 중일 때 409 + 본문에 현재 progress 반환. 정상 진행 상태로 취급.
     if (err instanceof AxiosError && err.response?.status === 409) {
-      const body = err.response.data as ApiResponse<Stage1CopyProgress> | undefined;
-      if (body?.data) {
-        throw new Stage1AlreadyRunningError(body.data);
+      const ar = err.response.data as ApiResponse<Stage1CopyProgress> | undefined;
+      if (ar?.data) {
+        throw new Stage1AlreadyRunningError(ar.data);
       }
     }
     throw err;

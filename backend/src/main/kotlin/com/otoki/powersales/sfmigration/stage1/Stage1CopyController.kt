@@ -25,6 +25,10 @@ import java.util.concurrent.Executors
  *
  * 비동기 실행 — 단일 thread executor 로 동시 1회만 enforce. RUNNING 중 신규 요청은 409.
  * 진행 상태는 GET /progress endpoint 로 polling.
+ *
+ * 진입점 2개:
+ *  - POST /copy-from-s3       : 단건 (target 1개) 실행
+ *  - POST /copy-all-from-s3   : 일괄 (등록된 모든 entity) 실행 — 의존성 순서, 1개 실패 시 즉시 중단
  */
 // Stage1S3CopyService 와 동일하게 dev/prod 에서만 활성화 (S3Client 의존 + 운영 도구 성격).
 @RestController
@@ -50,13 +54,32 @@ class Stage1CopyController(
             return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.success(progress.toResponse()))
         }
-        // RUNNING 으로 미리 표시 (executor submit 직후 polling 들어와도 IDLE 로 안 보이도록).
         progress.begin(req.targetName, req.s3Bucket, req.s3Key)
         executor.submit {
             try {
                 service.copyFromS3(req.targetName, req.s3Bucket, req.s3Key)
             } catch (e: Exception) {
                 log.error("[stage1-copy] async run failed", e)
+            }
+        }
+        return ResponseEntity.accepted().body(ApiResponse.success(progress.toResponse()))
+    }
+
+    @PostMapping("/api/v1/admin/sf-migration/stage1/copy-all-from-s3")
+    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    fun copyAllFromS3(
+        @Valid @RequestBody req: Stage1CopyAllRequest,
+    ): ResponseEntity<ApiResponse<Stage1CopyProgressResponse>> {
+        if (progress.status == Stage1CopyProgress.Status.RUNNING) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.success(progress.toResponse()))
+        }
+        progress.beginBatch(req.s3Bucket, Stage1Targets.list())
+        executor.submit {
+            try {
+                service.copyAllFromS3(req.s3Bucket, req.s3KeyPrefix)
+            } catch (e: Exception) {
+                log.error("[stage1-copy-all] async run failed", e)
             }
         }
         return ResponseEntity.accepted().body(ApiResponse.success(progress.toResponse()))
@@ -77,6 +100,7 @@ class Stage1CopyController(
     private fun Stage1CopyProgress.toResponse(): Stage1CopyProgressResponse {
         return Stage1CopyProgressResponse(
             status = status.name,
+            mode = mode.name,
             startedAt = startedAt,
             finishedAt = finishedAt,
             targetName = targetName,
@@ -86,6 +110,19 @@ class Stage1CopyController(
             filteredOut = filteredOut,
             insertedRows = insertedRows,
             errors = errors.toList(),
+            entityResults = entityResults.map {
+                Stage1EntityResultResponse(
+                    targetName = it.targetName,
+                    status = it.status.name,
+                    s3Key = it.s3Key,
+                    processedRows = it.processedRows,
+                    filteredOut = it.filteredOut,
+                    insertedRows = it.insertedRows,
+                    errorMessage = it.errorMessage,
+                    startedAt = it.startedAt,
+                    finishedAt = it.finishedAt,
+                )
+            },
         )
     }
 }

@@ -3,7 +3,9 @@ import {
   getStage1CopyProgress,
   listStage1Targets,
   startStage1Copy,
+  startStage1CopyAll,
   Stage1AlreadyRunningError,
+  type Stage1CopyAllRequest,
   type Stage1CopyProgress,
   type Stage1CopyRequest,
 } from '@/api/admin/sfMigrationStage1';
@@ -34,7 +36,21 @@ export function useStartStage1Copy() {
       queryClient.setQueryData(PROGRESS_KEY, data);
     },
     onError: (err) => {
-      // 409 (이미 RUNNING) — 에러지만 응답 본문의 진행 상태로 cache 갱신.
+      if (err instanceof Stage1AlreadyRunningError) {
+        queryClient.setQueryData(PROGRESS_KEY, err.progress);
+      }
+    },
+  });
+}
+
+export function useStartStage1CopyAll() {
+  const queryClient = useQueryClient();
+  return useMutation<Stage1CopyProgress, Error, Stage1CopyAllRequest>({
+    mutationFn: startStage1CopyAll,
+    onSuccess: (data) => {
+      queryClient.setQueryData(PROGRESS_KEY, data);
+    },
+    onError: (err) => {
       if (err instanceof Stage1AlreadyRunningError) {
         queryClient.setQueryData(PROGRESS_KEY, err.progress);
       }
