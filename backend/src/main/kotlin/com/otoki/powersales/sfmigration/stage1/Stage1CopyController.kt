@@ -5,6 +5,7 @@ import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -25,7 +26,9 @@ import java.util.concurrent.Executors
  * 비동기 실행 — 단일 thread executor 로 동시 1회만 enforce. RUNNING 중 신규 요청은 409.
  * 진행 상태는 GET /progress endpoint 로 polling.
  */
+// Stage1S3CopyService 와 동일하게 dev/prod 에서만 활성화 (S3Client 의존 + 운영 도구 성격).
 @RestController
+@Profile("dev | prod")
 class Stage1CopyController(
     private val service: Stage1S3CopyService,
     private val progress: Stage1CopyProgress,

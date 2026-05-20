@@ -3,6 +3,7 @@ package com.otoki.powersales.sfmigration.stage1
 import com.opencsv.CSVReaderBuilder
 import org.postgresql.PGConnection
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
@@ -23,7 +24,12 @@ import javax.sql.DataSource
  *  - ON CONFLICT DO NOTHING 으로 멱등성 보장. reset 모드 없음 (DB 가 비어있는 첫 적재 가정).
  *  - 적재 실패 시 트랜잭션 전체 rollback (chunk commit 없음). 정식 구축 시 chunk 도입 검토.
  */
+// S3Client 빈은 spring-cloud-aws S3AutoConfiguration 이 제공하며 local 프로파일에서는 exclude
+// 된다 (application-local.yml). 그에 맞춰 본 서비스도 dev/prod 에서만 활성화하여 local 부팅 시
+// S3Client 빈 미등록으로 인한 의존 해소 실패를 회피한다. SF migration Stage1 자체가 운영 도구라
+// local 시나리오 없음.
 @Service
+@Profile("dev | prod")
 class Stage1S3CopyService(
     private val dataSource: DataSource,
     private val s3Client: S3Client,
