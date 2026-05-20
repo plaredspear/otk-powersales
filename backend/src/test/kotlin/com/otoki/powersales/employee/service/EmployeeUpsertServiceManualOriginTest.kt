@@ -5,21 +5,15 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
+import io.mockk.CapturingSlot
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
-import org.mockito.quality.Strictness
 import org.springframework.context.ApplicationEventPublisher
 
 /**
@@ -28,22 +22,18 @@ import org.springframework.context.ApplicationEventPublisher
  * 어댑터 ↔ 도메인 분리(#635 P2-B) 후 보호 로직은 도메인 서비스로 이전. 어댑터 측 audit 트리거 검증은
  * [com.otoki.powersales.sap.inbound.service.SapEmployeeMasterServiceTest] 의 `manualOriginProtected_extraAudit` 케이스 참조.
  */
-@ExtendWith(MockitoExtension::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("EmployeeUpsertService - MANUAL 보호 테스트")
 class EmployeeUpsertServiceManualOriginTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val systemCodeMasterRepository: SystemCodeMasterRepository = mockk()
+    private val eventPublisher: ApplicationEventPublisher = mockk(relaxUnitFun = true)
 
-    @Mock
-    private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
-
-    @Mock
-    private lateinit var eventPublisher: ApplicationEventPublisher
-
-    @InjectMocks
-    private lateinit var service: EmployeeUpsertService
+    private val service = EmployeeUpsertService(
+        employeeRepository,
+        systemCodeMasterRepository,
+        eventPublisher,
+    )
 
     private fun command(
         employeeCode: String = "ADMIN-001",
@@ -65,6 +55,12 @@ class EmployeeUpsertServiceManualOriginTest {
         lockingFlag = lockingFlag
     )
 
+    private fun stubSaveAllCapture(): CapturingSlot<List<Employee>> {
+        val slot = slot<List<Employee>>()
+        every { employeeRepository.saveAll(capture(slot)) } answers { firstArg<List<Employee>>() }
+        return slot
+    }
+
     @Nested
     @DisplayName("origin=MANUAL 직원 보호")
     inner class ManualProtection {
@@ -76,9 +72,8 @@ class EmployeeUpsertServiceManualOriginTest {
                 origin = EmployeeOrigin.MANUAL
                 appLoginActive = false
             }
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("ADMIN-001")))
-                .thenReturn(listOf(manualEmployee))
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
+            every { employeeRepository.findByEmployeeCodeIn(listOf("ADMIN-001")) } returns listOf(manualEmployee)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
 
             val result = service.upsert(listOf(command(lockingFlag = "Y")))
 
@@ -88,7 +83,7 @@ class EmployeeUpsertServiceManualOriginTest {
             assertThat(result.failureCount).isEqualTo(0)
             assertThat(result.failures).isEmpty()
             assertThat(result.protectedManualCodes).containsExactly("ADMIN-001")
-            verify(employeeRepository, never()).saveAll(any<List<Employee>>())
+            verify(exactly = 0) { employeeRepository.saveAll(any<List<Employee>>()) }
         }
 
         @Test
@@ -97,9 +92,8 @@ class EmployeeUpsertServiceManualOriginTest {
             val manualEmployee = Employee(employeeCode = "ADMIN-001", name = "기존관리자").apply {
                 origin = EmployeeOrigin.MANUAL
             }
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("ADMIN-001")))
-                .thenReturn(listOf(manualEmployee))
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
+            every { employeeRepository.findByEmployeeCodeIn(listOf("ADMIN-001")) } returns listOf(manualEmployee)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
 
             val result = service.upsert(listOf(command()))
 
@@ -112,8 +106,9 @@ class EmployeeUpsertServiceManualOriginTest {
             val sapEmployee = Employee(employeeCode = "E001", name = "기존이름").apply {
                 origin = EmployeeOrigin.SAP
             }
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("E001"))).thenReturn(listOf(sapEmployee))
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
+            every { employeeRepository.findByEmployeeCodeIn(listOf("E001")) } returns listOf(sapEmployee)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            stubSaveAllCapture()
 
             val result = service.upsert(
                 listOf(command(employeeCode = "E001", employeeName = "변경된이름"))
@@ -121,20 +116,19 @@ class EmployeeUpsertServiceManualOriginTest {
 
             assertThat(sapEmployee.name).isEqualTo("변경된이름")
             assertThat(result.successCount).isEqualTo(1)
-            verify(employeeRepository).saveAll(any<List<Employee>>())
+            verify { employeeRepository.saveAll(any<List<Employee>>()) }
         }
 
         @Test
         @DisplayName("신규 INSERT - 매칭되는 기존 행 없음 -> origin=SAP default 유지")
         fun newInsertHasSapOrigin() {
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("E999"))).thenReturn(emptyList())
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
+            every { employeeRepository.findByEmployeeCodeIn(listOf("E999")) } returns emptyList()
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(listOf(command(employeeCode = "E999")))
 
-            val captor = argumentCaptor<List<Employee>>()
-            verify(employeeRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.origin).isEqualTo(EmployeeOrigin.SAP)
         }
 
@@ -147,9 +141,9 @@ class EmployeeUpsertServiceManualOriginTest {
             val sapEmployee = Employee(employeeCode = "E001", name = "기존이름").apply {
                 origin = EmployeeOrigin.SAP
             }
-            whenever(employeeRepository.findByEmployeeCodeIn(any<List<String>>()))
-                .thenReturn(listOf(manualEmployee, sapEmployee))
-            whenever(systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010"))).thenReturn(emptyList())
+            every { employeeRepository.findByEmployeeCodeIn(any<List<String>>()) } returns listOf(manualEmployee, sapEmployee)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            stubSaveAllCapture()
 
             val result = service.upsert(
                 listOf(

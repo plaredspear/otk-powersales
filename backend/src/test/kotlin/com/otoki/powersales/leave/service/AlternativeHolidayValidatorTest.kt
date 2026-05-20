@@ -5,27 +5,27 @@ import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AlternativeHolidayValidator 테스트")
 class AlternativeHolidayValidatorTest {
 
-    @Mock private lateinit var holidayMasterService: HolidayMasterService
-    @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
-    @Mock private lateinit var alternativeHolidayRepository: AlternativeHolidayRepository
-    @InjectMocks private lateinit var validator: AlternativeHolidayValidator
+    private val holidayMasterService: HolidayMasterService = mockk()
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+    private val alternativeHolidayRepository: AlternativeHolidayRepository = mockk()
+
+    private val validator = AlternativeHolidayValidator(
+        holidayMasterService,
+        teamMemberScheduleRepository,
+        alternativeHolidayRepository,
+    )
 
     // 2026-03-07 = 토요일, 2026-03-08 = 일요일, 2026-03-09 = 월요일, 2026-03-11 = 수요일
     private val saturday = LocalDate.of(2026, 3, 7)
@@ -40,14 +40,14 @@ class AlternativeHolidayValidatorTest {
         @Test
         @DisplayName("평일 + 비공휴일 -> 통과")
         fun validWeekday() {
-            whenever(holidayMasterService.isHoliday(monday)).thenReturn(false)
+            every { holidayMasterService.isHoliday(monday) } returns false
             assertThatCode { validator.validateConfirmDate(monday) }.doesNotThrowAnyException()
         }
 
         @Test
         @DisplayName("공휴일 -> AltHolidayConfirmDateIsHolidayException")
         fun holiday() {
-            whenever(holidayMasterService.isHoliday(monday)).thenReturn(true)
+            every { holidayMasterService.isHoliday(monday) } returns true
             assertThatThrownBy { validator.validateConfirmDate(monday) }
                 .isInstanceOf(AltHolidayConfirmDateIsHolidayException::class.java)
         }
@@ -55,7 +55,7 @@ class AlternativeHolidayValidatorTest {
         @Test
         @DisplayName("토요일 -> AltHolidayConfirmDateIsWeekendException")
         fun saturdayFails() {
-            whenever(holidayMasterService.isHoliday(saturday)).thenReturn(false)
+            every { holidayMasterService.isHoliday(saturday) } returns false
             assertThatThrownBy { validator.validateConfirmDate(saturday) }
                 .isInstanceOf(AltHolidayConfirmDateIsWeekendException::class.java)
         }
@@ -63,7 +63,7 @@ class AlternativeHolidayValidatorTest {
         @Test
         @DisplayName("일요일 -> AltHolidayConfirmDateIsWeekendException")
         fun sundayFails() {
-            whenever(holidayMasterService.isHoliday(sunday)).thenReturn(false)
+            every { holidayMasterService.isHoliday(sunday) } returns false
             assertThatThrownBy { validator.validateConfirmDate(sunday) }
                 .isInstanceOf(AltHolidayConfirmDateIsWeekendException::class.java)
         }
@@ -76,20 +76,21 @@ class AlternativeHolidayValidatorTest {
         @Test
         @DisplayName("토요일 -> 통과")
         fun saturday_passes() {
+            every { holidayMasterService.isHoliday(saturday) } returns false
             assertThatCode { validator.validateActualWorkDate(saturday) }.doesNotThrowAnyException()
         }
 
         @Test
         @DisplayName("공휴일(평일) -> 통과")
         fun weekdayHoliday_passes() {
-            whenever(holidayMasterService.isHoliday(wednesday)).thenReturn(true)
+            every { holidayMasterService.isHoliday(wednesday) } returns true
             assertThatCode { validator.validateActualWorkDate(wednesday) }.doesNotThrowAnyException()
         }
 
         @Test
         @DisplayName("평일 + 비공휴일 -> AltHolidayActualDateIsWeekdayException")
         fun weekday_nonHoliday_fails() {
-            whenever(holidayMasterService.isHoliday(wednesday)).thenReturn(false)
+            every { holidayMasterService.isHoliday(wednesday) } returns false
             assertThatThrownBy { validator.validateActualWorkDate(wednesday) }
                 .isInstanceOf(AltHolidayActualDateIsWeekdayException::class.java)
         }
@@ -104,9 +105,7 @@ class AlternativeHolidayValidatorTest {
         @Test
         @DisplayName("근무 스케줄 존재 -> 통과")
         fun scheduleExists() {
-            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
-                any(), any(), any()
-            )).thenReturn(true)
+            every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(any(), any(), any()) } returns true
             assertThatCode { validator.validateWorkScheduleExists(testEmployee, saturday) }
                 .doesNotThrowAnyException()
         }
@@ -114,9 +113,7 @@ class AlternativeHolidayValidatorTest {
         @Test
         @DisplayName("근무 스케줄 없음 -> AltHolidayNoWorkScheduleException")
         fun noSchedule() {
-            whenever(teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
-                any(), any(), any()
-            )).thenReturn(false)
+            every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(any(), any(), any()) } returns false
             assertThatThrownBy { validator.validateWorkScheduleExists(testEmployee, saturday) }
                 .isInstanceOf(AltHolidayNoWorkScheduleException::class.java)
         }
@@ -129,9 +126,9 @@ class AlternativeHolidayValidatorTest {
         @Test
         @DisplayName("중복 없음 -> 통과")
         fun noDuplicate() {
-            whenever(alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                1L, saturday, AltHolidayStatus.REJECTED
-            )).thenReturn(false)
+            every {
+                alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(1L, saturday, AltHolidayStatus.REJECTED)
+            } returns false
             assertThatCode { validator.validateNoDuplicate(1L, saturday) }
                 .doesNotThrowAnyException()
         }
@@ -139,9 +136,9 @@ class AlternativeHolidayValidatorTest {
         @Test
         @DisplayName("중복 존재 -> AltHolidayDuplicateException")
         fun duplicate() {
-            whenever(alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(
-                1L, saturday, AltHolidayStatus.REJECTED
-            )).thenReturn(true)
+            every {
+                alternativeHolidayRepository.existsByEmployeeIdAndActualWorkDateAndStatusNot(1L, saturday, AltHolidayStatus.REJECTED)
+            } returns true
             assertThatThrownBy { validator.validateNoDuplicate(1L, saturday) }
                 .isInstanceOf(AltHolidayDuplicateException::class.java)
         }

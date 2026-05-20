@@ -12,27 +12,24 @@ import com.otoki.powersales.leave.exception.AltHolidayConfirmDateIsWeekendExcept
 import com.otoki.powersales.leave.exception.AltHolidayDuplicateException
 import com.otoki.powersales.leave.service.AlternativeHolidayService
 import com.otoki.powersales.auth.entity.UserRole
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @WebMvcTest(AlternativeHolidayController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -41,10 +38,10 @@ class AlternativeHolidayControllerTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
-    @MockitoBean private lateinit var alternativeHolidayService: AlternativeHolidayService
-    @MockitoBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockitoBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockitoBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var alternativeHolidayService: AlternativeHolidayService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @BeforeEach
     fun setUp() {
@@ -67,8 +64,7 @@ class AlternativeHolidayControllerTest {
                 status = "신규",
                 createdAt = java.time.LocalDateTime.of(2026, 3, 9, 10, 30)
             )
-            whenever(alternativeHolidayService.createAlternativeHoliday(eq(1L), any(), any()))
-                .thenReturn(response)
+            every { alternativeHolidayService.createAlternativeHoliday(1L, any(), any()) } returns response
 
             val request = AlternativeHolidayRequest(
                 actualWorkDate = LocalDate.of(2026, 3, 7),
@@ -91,8 +87,8 @@ class AlternativeHolidayControllerTest {
         @Test
         @DisplayName("실패 - 신청일이 주말")
         fun create_weekendTarget() {
-            whenever(alternativeHolidayService.createAlternativeHoliday(eq(1L), any(), any()))
-                .thenThrow(AltHolidayConfirmDateIsWeekendException())
+            every { alternativeHolidayService.createAlternativeHoliday(1L, any(), any()) } throws
+                AltHolidayConfirmDateIsWeekendException()
 
             val request = AlternativeHolidayRequest(
                 actualWorkDate = LocalDate.of(2026, 3, 7),
@@ -111,8 +107,8 @@ class AlternativeHolidayControllerTest {
         @Test
         @DisplayName("실패 - 중복 신청")
         fun create_duplicate() {
-            whenever(alternativeHolidayService.createAlternativeHoliday(eq(1L), any(), any()))
-                .thenThrow(AltHolidayDuplicateException())
+            every { alternativeHolidayService.createAlternativeHoliday(1L, any(), any()) } throws
+                AltHolidayDuplicateException()
 
             val request = AlternativeHolidayRequest(
                 actualWorkDate = LocalDate.of(2026, 3, 7),
@@ -160,8 +156,7 @@ class AlternativeHolidayControllerTest {
                     createdAt = java.time.LocalDateTime.of(2026, 3, 9, 10, 30)
                 )
             )
-            whenever(alternativeHolidayService.getAlternativeHolidays(eq(1L), any(), any()))
-                .thenReturn(items)
+            every { alternativeHolidayService.getAlternativeHolidays(1L, any(), any()) } returns items
 
             mockMvc.perform(
                 get("/api/v1/mobile/alternative-holidays")
@@ -178,8 +173,7 @@ class AlternativeHolidayControllerTest {
         @Test
         @DisplayName("성공 - 기간 미지정 조회")
         fun get_defaultDateRange() {
-            whenever(alternativeHolidayService.getAlternativeHolidays(eq(1L), any(), any()))
-                .thenReturn(emptyList())
+            every { alternativeHolidayService.getAlternativeHolidays(1L, any(), any()) } returns emptyList()
 
             mockMvc.perform(get("/api/v1/mobile/alternative-holidays"))
                 .andExpect(status().isOk)

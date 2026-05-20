@@ -9,42 +9,45 @@ import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
+import io.mockk.CapturingSlot
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.Spy
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AccountUpsertService 테스트")
 class AccountUpsertServiceTest {
 
-    @Mock
-    private lateinit var accountRepository: AccountRepository
-
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
-
-    @Mock
-    private lateinit var userRepository: UserRepository
-
-    @Spy
+    private val accountRepository: AccountRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val organizationRepository: OrganizationRepository = mockk()
+    private val userRepository: UserRepository = mockk()
     private val mapper: AccountUpsertMapper = AccountUpsertMapper()
 
-    @InjectMocks
-    private lateinit var service: AccountUpsertService
+    private val service = AccountUpsertService(
+        accountRepository,
+        employeeRepository,
+        organizationRepository,
+        userRepository,
+        mapper,
+    )
+
+    @BeforeEach
+    fun setUpDefaults() {
+        every { employeeRepository.findByEmployeeCodeIn(any()) } returns emptyList()
+        every { userRepository.findByEmployeeCodeIn(any()) } returns emptyList()
+    }
+
+    private fun stubSaveAllCapture(): CapturingSlot<List<Account>> {
+        val slot = slot<List<Account>>()
+        every { accountRepository.saveAll(capture(slot)) } answers { firstArg<List<Account>>() }
+        return slot
+    }
 
     private fun command(
         externalKey: String? = "1032619",
@@ -134,16 +137,15 @@ class AccountUpsertServiceTest {
         @Test
         @DisplayName("신규 거래처 1건 - INSERT, success_count=1")
         fun upsert_insertNew() {
-            whenever(accountRepository.findByExternalKeyIn(listOf("1032619"))).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command()))
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue).hasSize(1)
-            assertThat(captor.firstValue[0].externalKey).isEqualTo("1032619")
-            assertThat(captor.firstValue[0].name).isEqualTo("(주)홍길동상회")
+            assertThat(savedSlot.captured).hasSize(1)
+            assertThat(savedSlot.captured[0].externalKey).isEqualTo("1032619")
+            assertThat(savedSlot.captured[0].name).isEqualTo("(주)홍길동상회")
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
         }
@@ -152,14 +154,13 @@ class AccountUpsertServiceTest {
         @DisplayName("기존 거래처 갱신 - 동일 externalKey, name/phone 업데이트")
         fun upsert_updateExisting() {
             val existing = Account(externalKey = "1032619", name = "기존이름", phone = "old-phone")
-            whenever(accountRepository.findByExternalKeyIn(listOf("1032619"))).thenReturn(listOf(existing))
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns listOf(existing)
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(listOf(command(name = "새이름", phone = "new-phone")))
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved).isSameAs(existing)
             assertThat(saved.name).isEqualTo("새이름")
             assertThat(saved.phone).isEqualTo("new-phone")
@@ -173,15 +174,14 @@ class AccountUpsertServiceTest {
                 oc3 = "11000", oc4 = "11100", oc5 = "11110",
                 on3 = "Retail사업부", on4 = "영업1팀", on5 = "서울지점"
             )
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns listOf(org)
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(listOf(command(branchCode = "1111", branchName = "raw-name")))
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().branchCode).isEqualTo("11110")
-            assertThat(captor.firstValue.single().branchName).isEqualTo("서울지점")
+            assertThat(savedSlot.captured.single().branchCode).isEqualTo("11110")
+            assertThat(savedSlot.captured.single().branchName).isEqualTo("서울지점")
         }
 
         @Test
@@ -192,53 +192,51 @@ class AccountUpsertServiceTest {
                 oc4 = "11100", oc5 = null,
                 on4 = "영업1팀", on5 = null
             )
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns listOf(org)
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(listOf(command(salesDeptCode = "1110")))
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().branchCode).isEqualTo("11100")
-            assertThat(captor.firstValue.single().branchName).isEqualTo("영업1팀")
+            assertThat(savedSlot.captured.single().branchCode).isEqualTo("11100")
+            assertThat(savedSlot.captured.single().branchName).isEqualTo("영업1팀")
         }
 
         @Test
         @DisplayName("Organization 매칭 실패 - 페이로드 raw 값 그대로 저장")
         fun upsert_orgMissingFallbackRaw() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(listOf(command(branchCode = "9999", branchName = "raw-branch")))
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().branchCode).isEqualTo("9999")
-            assertThat(captor.firstValue.single().branchName).isEqualTo("raw-branch")
+            assertThat(savedSlot.captured.single().branchCode).isEqualTo("9999")
+            assertThat(savedSlot.captured.single().branchName).isEqualTo("raw-branch")
         }
 
         @Test
         @DisplayName("EmployeeCode 매칭 성공 - 거래처 적재")
         fun upsert_employeeMatched() {
             val employee = Employee(employeeCode = "100123", name = "홍길동")
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("100123"))).thenReturn(listOf(employee))
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(employee)
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(employeeCode = "100123")))
 
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().employeeCode).isEqualTo("100123")
+            assertThat(savedSlot.captured.single().employeeCode).isEqualTo("100123")
         }
 
         @Test
         @DisplayName("Spec #575 - 13개 레거시 필드 모두 entity 에 저장됨")
         fun upsert_legacyFields_allMapped() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(
                 listOf(
@@ -260,9 +258,7 @@ class AccountUpsertServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.accountStatusCode).isEqualTo("01")
             assertThat(saved.businessType).isEqualTo("유통업")
             assertThat(saved.businessCategory).isEqualTo("도매")
@@ -281,8 +277,9 @@ class AccountUpsertServiceTest {
         @Test
         @DisplayName("Spec #575 - 13개 레거시 필드 빈 문자열 → 빈 문자열 그대로 저장")
         fun upsert_legacyFields_blankPreserved() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(
                 listOf(
@@ -302,9 +299,7 @@ class AccountUpsertServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.accountStatusCode).isEqualTo("")
             assertThat(saved.consignmentAcc).isEqualTo("")
             assertThat(saved.werk1).isEqualTo("")
@@ -313,8 +308,9 @@ class AccountUpsertServiceTest {
         @Test
         @DisplayName("Spec #575 - ConsignmentAcc=N 정상 저장")
         fun upsert_consignmentAccN_pass() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(consignmentAcc = "N")))
 
@@ -330,9 +326,9 @@ class AccountUpsertServiceTest {
         @Test
         @DisplayName("EmployeeCode 매칭 실패 - failures 에 기록, 적재 스킵")
         fun upsert_employeeNotFound() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("999999"))).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { employeeRepository.findByEmployeeCodeIn(listOf("999999")) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
 
             val result = service.upsert(listOf(command(employeeCode = "999999")))
 
@@ -340,13 +336,15 @@ class AccountUpsertServiceTest {
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().identifier).isEqualTo("1032619")
             assertThat(result.failures.single().reason).contains("employee_code not found")
-            verify(accountRepository, never()).saveAll(any<List<Account>>())
+            verify(exactly = 0) { accountRepository.saveAll(any<List<Account>>()) }
         }
 
         @Test
         @DisplayName("SAPAccountCode 누락 - failures 에 기록, identifier null")
         fun upsert_missingExternalKey() {
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { organizationRepository.findAll() } returns emptyList()
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { accountRepository.saveAll(any<List<Account>>()) } answers { firstArg<List<Account>>() }
 
             val result = service.upsert(listOf(command(externalKey = null)))
 
@@ -359,8 +357,9 @@ class AccountUpsertServiceTest {
         @Test
         @DisplayName("Name 누락 - failures 에 기록")
         fun upsert_missingName() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            every { accountRepository.saveAll(any<List<Account>>()) } answers { firstArg<List<Account>>() }
 
             val result = service.upsert(listOf(command(name = null)))
 
@@ -373,8 +372,9 @@ class AccountUpsertServiceTest {
         @Test
         @DisplayName("Spec #575 - ConsignmentAcc 형식 위반 (소문자 'y') → 행 단위 부분 실패")
         fun upsert_consignmentAccInvalidLowercase() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            every { accountRepository.saveAll(any<List<Account>>()) } answers { firstArg<List<Account>>() }
 
             val result = service.upsert(listOf(command(consignmentAcc = "y")))
 
@@ -382,14 +382,15 @@ class AccountUpsertServiceTest {
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().identifier).isEqualTo("1032619")
             assertThat(result.failures.single().reason).contains("ConsignmentAcc 형식 오류: y")
-            verify(accountRepository, never()).saveAll(any<List<Account>>())
+            verify(exactly = 0) { accountRepository.saveAll(any<List<Account>>()) }
         }
 
         @Test
         @DisplayName("Spec #575 - ConsignmentAcc 형식 위반 (2자) → 행 단위 부분 실패")
         fun upsert_consignmentAccInvalidLength() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            every { accountRepository.saveAll(any<List<Account>>()) } answers { firstArg<List<Account>>() }
 
             val result = service.upsert(listOf(command(consignmentAcc = "YN")))
 
@@ -400,8 +401,9 @@ class AccountUpsertServiceTest {
         @Test
         @DisplayName("일부 행 실패 - 성공 행은 적재, 실패 행은 failures 누적")
         fun upsert_partialFailure() {
-            whenever(accountRepository.findByExternalKeyIn(listOf("A", "B"))).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(listOf("A", "B")) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            stubSaveAllCapture()
 
             val result = service.upsert(
                 listOf(
@@ -428,8 +430,9 @@ class AccountUpsertServiceTest {
                 oc3 = "ORG3", oc4 = "ORG4", oc5 = "ORG5",
                 on3 = "사업부", on4 = "영업팀", on5 = "지점"
             )
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns listOf(org)
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(
                 listOf(
@@ -441,9 +444,7 @@ class AccountUpsertServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.divisionCode).isEqualTo("ORG5")
             assertThat(saved.salesDeptCode).isEqualTo("ORG5")
             assertThat(saved.branchCode).isEqualTo("ORG5")
@@ -460,8 +461,9 @@ class AccountUpsertServiceTest {
                 oc3 = "ORG3", oc4 = "ORG4", oc5 = "",
                 on3 = "사업부", on4 = "영업팀", on5 = ""
             )
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns listOf(org)
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(
                 listOf(
@@ -473,9 +475,7 @@ class AccountUpsertServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.divisionCode).isEqualTo("ORG4")
             assertThat(saved.salesDeptCode).isEqualTo("ORG4")
             assertThat(saved.branchCode).isEqualTo("ORG4")
@@ -490,8 +490,9 @@ class AccountUpsertServiceTest {
                 oc3 = "ORG3", oc4 = "", oc5 = "",
                 on3 = "사업부", on4 = "", on5 = ""
             )
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(listOf(org))
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns listOf(org)
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(
                 listOf(
@@ -503,9 +504,7 @@ class AccountUpsertServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.divisionCode).isEqualTo("ORG3")
             assertThat(saved.salesDeptCode).isEqualTo("ORG3")
             assertThat(saved.branchCode).isEqualTo("ORG3")
@@ -515,14 +514,13 @@ class AccountUpsertServiceTest {
         @Test
         @DisplayName("O4 Org 미매칭 - divisionCode/salesDeptCode=null, branchCode=raw, branchCostCenter=raw")
         fun upsert_orgCodeTrio_noMatch() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(listOf(command(branchCode = "BR999")))
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.divisionCode).isNull()
             assertThat(saved.salesDeptCode).isNull()
             assertThat(saved.branchCode).isEqualTo("BR999")
@@ -532,14 +530,13 @@ class AccountUpsertServiceTest {
         @Test
         @DisplayName("O5 branchCode 빈값 - 트리오 + branchCode + branchCostCenter 모두 null")
         fun upsert_orgCodeTrio_blankBranchCode() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(listOf(command(branchCode = "")))
 
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.branchCode).isNull()
             assertThat(saved.branchCostCenter).isNull()
             assertThat(saved.divisionCode).isNull()
@@ -559,66 +556,63 @@ class AccountUpsertServiceTest {
         fun upsert_ownerMapped() {
             val employee = Employee(employeeCode = "12345", name = "홍길동")
             val matchedUser = user("12345")
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(employee))
-            whenever(userRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(matchedUser))
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { employeeRepository.findByEmployeeCodeIn(listOf("12345")) } returns listOf(employee)
+            every { userRepository.findByEmployeeCodeIn(listOf("12345")) } returns listOf(matchedUser)
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(employeeCode = "12345")))
 
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().owner).isSameAs(matchedUser)
+            assertThat(savedSlot.captured.single().owner).isSameAs(matchedUser)
         }
 
         @Test
         @DisplayName("O2 Employee 미존재 - 행 차단, owner 매핑 도달 안 함")
         fun upsert_employeeMissing_blocksRow() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("99999"))).thenReturn(emptyList())
-            whenever(userRepository.findByEmployeeCodeIn(listOf("99999"))).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { employeeRepository.findByEmployeeCodeIn(listOf("99999")) } returns emptyList()
+            every { userRepository.findByEmployeeCodeIn(listOf("99999")) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
 
             val result = service.upsert(listOf(command(employeeCode = "99999")))
 
             assertThat(result.successCount).isEqualTo(0)
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().reason).contains("employee_code not found: 99999")
-            verify(accountRepository, never()).saveAll(any<List<Account>>())
+            verify(exactly = 0) { accountRepository.saveAll(any<List<Account>>()) }
         }
 
         @Test
         @DisplayName("O3 employeeCode blank/null - account.owner = null 통과")
         fun upsert_employeeCodeBlank_ownerNull() {
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(employeeCode = null)))
 
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().owner).isNull()
+            assertThat(savedSlot.captured.single().owner).isNull()
         }
 
         @Test
         @DisplayName("O4 Employee 존재 but User 미존재 - account.owner = null (Employee invariant 미적재 케이스)")
         fun upsert_userMissing_ownerNull() {
             val employee = Employee(employeeCode = "12345", name = "홍길동")
-            whenever(accountRepository.findByExternalKeyIn(any<List<String>>())).thenReturn(emptyList())
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(listOf(employee))
-            whenever(userRepository.findByEmployeeCodeIn(listOf("12345"))).thenReturn(emptyList())
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
+            every { employeeRepository.findByEmployeeCodeIn(listOf("12345")) } returns listOf(employee)
+            every { userRepository.findByEmployeeCodeIn(listOf("12345")) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(employeeCode = "12345")))
 
             assertThat(result.successCount).isEqualTo(1)
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single().owner).isNull()
+            assertThat(savedSlot.captured.single().owner).isNull()
         }
 
         @Test
@@ -626,12 +620,11 @@ class AccountUpsertServiceTest {
         fun upsert_partialOwnerMiss() {
             val employee = Employee(employeeCode = "12345", name = "홍길동")
             val matchedUser = user("12345")
-            whenever(accountRepository.findByExternalKeyIn(listOf("A", "B", "C"))).thenReturn(emptyList())
-            whenever(employeeRepository.findByEmployeeCodeIn(listOf("12345", "99999")))
-                .thenReturn(listOf(employee))
-            whenever(userRepository.findByEmployeeCodeIn(listOf("12345", "99999")))
-                .thenReturn(listOf(matchedUser))
-            whenever(organizationRepository.findAll()).thenReturn(emptyList())
+            every { accountRepository.findByExternalKeyIn(listOf("A", "B", "C")) } returns emptyList()
+            every { employeeRepository.findByEmployeeCodeIn(listOf("12345", "99999")) } returns listOf(employee)
+            every { userRepository.findByEmployeeCodeIn(listOf("12345", "99999")) } returns listOf(matchedUser)
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(
                 listOf(
@@ -644,9 +637,7 @@ class AccountUpsertServiceTest {
             assertThat(result.successCount).isEqualTo(2)
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().identifier).isEqualTo("B")
-            val captor = argumentCaptor<List<Account>>()
-            verify(accountRepository).saveAll(captor.capture())
-            val saved = captor.firstValue
+            val saved = savedSlot.captured
             assertThat(saved).hasSize(2)
             assertThat(saved.first { it.externalKey == "A" }.owner).isSameAs(matchedUser)
             assertThat(saved.first { it.externalKey == "C" }.owner).isNull()

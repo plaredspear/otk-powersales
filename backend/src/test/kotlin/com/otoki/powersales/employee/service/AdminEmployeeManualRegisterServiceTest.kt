@@ -6,32 +6,27 @@ import com.otoki.powersales.employee.dto.request.AdminEmployeeManualRegisterRequ
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminEmployeeManualRegisterService 테스트 (UC-06)")
 class AdminEmployeeManualRegisterServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository = mockk()
 
-    @InjectMocks
-    private lateinit var service: AdminEmployeeManualRegisterService
+    private val service = AdminEmployeeManualRegisterService(
+        employeeRepository,
+    )
 
     @Test
     @DisplayName("신규 등록 성공 -> origin=MANUAL + appLoginActive=false + 전화번호 미러링")
     fun register_success() {
-        whenever(employeeRepository.existsByEmployeeCode("100400")).thenReturn(false)
-        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] as Employee }
+        every { employeeRepository.existsByEmployeeCode("100400") } returns false
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
 
         val request = AdminEmployeeManualRegisterRequest(
             employeeCode = "100400",
@@ -48,7 +43,6 @@ class AdminEmployeeManualRegisterServiceTest {
         assertThat(response.name).isEqualTo("신규여사원")
         assertThat(response.origin).isEqualTo(EmployeeOrigin.MANUAL.name)
         assertThat(response.appLoginActive).isFalse()
-        // 전화번호 미러링: homePhone -> phone 자동 채움
         assertThat(response.phone).isEqualTo("010-1111-2222")
         assertThat(response.homePhone).isEqualTo("010-1111-2222")
         assertThat(response.role).isEqualTo("WOMAN")
@@ -57,7 +51,7 @@ class AdminEmployeeManualRegisterServiceTest {
     @Test
     @DisplayName("중복 사번 -> EmployeeCodeDuplicatedException")
     fun register_duplicate() {
-        whenever(employeeRepository.existsByEmployeeCode("100500")).thenReturn(true)
+        every { employeeRepository.existsByEmployeeCode("100500") } returns true
 
         assertThatThrownBy {
             service.register(

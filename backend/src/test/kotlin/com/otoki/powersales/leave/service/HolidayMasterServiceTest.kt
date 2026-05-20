@@ -3,26 +3,22 @@ package com.otoki.powersales.leave.service
 import com.otoki.powersales.leave.entity.HolidayMaster
 import com.otoki.powersales.leave.enums.HolidayType
 import com.otoki.powersales.leave.repository.HolidayMasterRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("HolidayMasterService 테스트")
 class HolidayMasterServiceTest {
 
-    @Mock
-    private lateinit var holidayMasterRepository: HolidayMasterRepository
+    private val holidayMasterRepository: HolidayMasterRepository = mockk()
 
-    @InjectMocks
-    private lateinit var holidayMasterService: HolidayMasterService
+    private val holidayMasterService = HolidayMasterService(
+        holidayMasterRepository,
+    )
 
     @Nested
     @DisplayName("isHoliday - 공휴일 여부 확인")
@@ -31,7 +27,7 @@ class HolidayMasterServiceTest {
         @Test
         @DisplayName("공휴일인 날짜 -> true")
         fun isHoliday_true() {
-            whenever(holidayMasterRepository.existsByHolidayDate(LocalDate.of(2026, 1, 1))).thenReturn(true)
+            every { holidayMasterRepository.existsByHolidayDate(LocalDate.of(2026, 1, 1)) } returns true
 
             val result = holidayMasterService.isHoliday(LocalDate.of(2026, 1, 1))
 
@@ -41,7 +37,7 @@ class HolidayMasterServiceTest {
         @Test
         @DisplayName("평일인 날짜 -> false")
         fun isHoliday_false() {
-            whenever(holidayMasterRepository.existsByHolidayDate(LocalDate.of(2026, 1, 2))).thenReturn(false)
+            every { holidayMasterRepository.existsByHolidayDate(LocalDate.of(2026, 1, 2)) } returns false
 
             val result = holidayMasterService.isHoliday(LocalDate.of(2026, 1, 2))
 
@@ -60,9 +56,9 @@ class HolidayMasterServiceTest {
                 HolidayMaster(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정", type = HolidayType.PUBLIC_HOLIDAY, year = 2026),
                 HolidayMaster(id = 2, holidayDate = LocalDate.of(2026, 1, 28), name = "설날 연휴", type = HolidayType.PUBLIC_HOLIDAY, year = 2026)
             )
-            whenever(holidayMasterRepository.findByHolidayDateBetween(
-                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)
-            )).thenReturn(holidays)
+            every {
+                holidayMasterRepository.findByHolidayDateBetween(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31))
+            } returns holidays
 
             val result = holidayMasterService.getHolidaysByDateRange(
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)
@@ -74,9 +70,9 @@ class HolidayMasterServiceTest {
         @Test
         @DisplayName("기간 내 공휴일 없음 -> 빈 리스트")
         fun getHolidaysByDateRange_empty() {
-            whenever(holidayMasterRepository.findByHolidayDateBetween(
-                LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28)
-            )).thenReturn(emptyList())
+            every {
+                holidayMasterRepository.findByHolidayDateBetween(LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28))
+            } returns emptyList()
 
             val result = holidayMasterService.getHolidaysByDateRange(
                 LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28)

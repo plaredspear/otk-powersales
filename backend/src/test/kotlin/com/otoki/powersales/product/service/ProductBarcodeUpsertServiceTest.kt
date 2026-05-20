@@ -5,32 +5,26 @@ import com.otoki.powersales.product.entity.ProductBarcode
 import com.otoki.powersales.product.repository.ProductBarcodeRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertCommand
+import io.mockk.CapturingSlot
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("ProductBarcodeUpsertService 테스트")
 class ProductBarcodeUpsertServiceTest {
 
-    @Mock
-    private lateinit var productBarcodeRepository: ProductBarcodeRepository
+    private val productBarcodeRepository: ProductBarcodeRepository = mockk()
+    private val productRepository: ProductRepository = mockk()
 
-    @Mock
-    private lateinit var productRepository: ProductRepository
-
-    @InjectMocks
-    private lateinit var service: ProductBarcodeUpsertService
+    private val service = ProductBarcodeUpsertService(
+        productBarcodeRepository,
+        productRepository,
+    )
 
     private fun command(
         productCode: String? = "100100",
@@ -46,6 +40,12 @@ class ProductBarcodeUpsertServiceTest {
         productBarcode = productBarcode
     )
 
+    private fun stubSaveAllCapture(): CapturingSlot<List<ProductBarcode>> {
+        val slot = slot<List<ProductBarcode>>()
+        every { productBarcodeRepository.saveAll(capture(slot)) } answers { firstArg<List<ProductBarcode>>() }
+        return slot
+    }
+
     @Nested
     @DisplayName("upsert - Happy Path")
     inner class UpsertHappy {
@@ -54,14 +54,13 @@ class ProductBarcodeUpsertServiceTest {
         @DisplayName("신규 1건 - INSERT, FK 매핑, name=ProductUnit")
         fun upsert_insertNew() {
             val product = Product(id = 7L, productCode = "100100", name = "진라면 매운맛 5입")
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(listOf(product))
-            whenever(productBarcodeRepository.findByCustomKey("100100EA001")).thenReturn(null)
+            every { productRepository.findByProductCodeIn(listOf("100100")) } returns listOf(product)
+            every { productBarcodeRepository.findByCustomKey("100100EA001") } returns null
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command()))
 
-            val captor = argumentCaptor<List<ProductBarcode>>()
-            verify(productBarcodeRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.customKey).isEqualTo("100100EA001")
             assertThat(saved.name).isEqualTo("EA")
             assertThat(saved.unit).isEqualTo("EA")
@@ -76,14 +75,13 @@ class ProductBarcodeUpsertServiceTest {
         fun upsert_updateExisting() {
             val product = Product(id = 7L, productCode = "100100", name = "진라면 매운맛 5입")
             val existing = ProductBarcode(customKey = "100100EA001", barcode = "old-barcode")
-            whenever(productRepository.findByProductCodeIn(listOf("100100"))).thenReturn(listOf(product))
-            whenever(productBarcodeRepository.findByCustomKey("100100EA001")).thenReturn(existing)
+            every { productRepository.findByProductCodeIn(listOf("100100")) } returns listOf(product)
+            every { productBarcodeRepository.findByCustomKey("100100EA001") } returns existing
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(listOf(command(productBarcode = "new-barcode")))
 
-            val captor = argumentCaptor<List<ProductBarcode>>()
-            verify(productBarcodeRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved).isSameAs(existing)
             assertThat(saved.barcode).isEqualTo("new-barcode")
         }
@@ -96,7 +94,8 @@ class ProductBarcodeUpsertServiceTest {
         @Test
         @DisplayName("Product 매칭 실패 - failures, 적재 스킵")
         fun upsert_productNotFound() {
-            whenever(productRepository.findByProductCodeIn(listOf("999999"))).thenReturn(emptyList())
+            every { productRepository.findByProductCodeIn(listOf("999999")) } returns emptyList()
+            every { productBarcodeRepository.findByCustomKey(any()) } returns null
 
             val result = service.upsert(listOf(command(productCode = "999999")))
 
@@ -104,7 +103,7 @@ class ProductBarcodeUpsertServiceTest {
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().identifier).isEqualTo("999999EA001")
             assertThat(result.failures.single().reason).contains("product_code not found")
-            verify(productBarcodeRepository, never()).saveAll(any<List<ProductBarcode>>())
+            verify(exactly = 0) { productBarcodeRepository.saveAll(any<List<ProductBarcode>>()) }
         }
 
         @Test
@@ -120,6 +119,8 @@ class ProductBarcodeUpsertServiceTest {
         @Test
         @DisplayName("ProductUnit 누락 - failures")
         fun upsert_missingProductUnit() {
+            every { productRepository.findByProductCodeIn(any()) } returns emptyList()
+
             val result = service.upsert(listOf(command(productUnit = null)))
 
             assertThat(result.failureCount).isEqualTo(1)
@@ -129,6 +130,9 @@ class ProductBarcodeUpsertServiceTest {
         @Test
         @DisplayName("ProductBarcode 누락 - failures (identifier=customKey)")
         fun upsert_missingBarcode() {
+            every { productRepository.findByProductCodeIn(any()) } returns emptyList()
+            every { productBarcodeRepository.findByCustomKey(any()) } returns null
+
             val result = service.upsert(listOf(command(productBarcode = null)))
 
             assertThat(result.failureCount).isEqualTo(1)

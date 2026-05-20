@@ -7,26 +7,21 @@ import com.otoki.powersales.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminEmployeeUpdateService 테스트 (UC-07)")
 class AdminEmployeeUpdateServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository = mockk()
 
-    @InjectMocks
-    private lateinit var service: AdminEmployeeUpdateService
+    private val service = AdminEmployeeUpdateService(
+        employeeRepository,
+    )
 
     @Test
     @DisplayName("origin=MANUAL 사원 -> 정보 수정 성공 + 응답에 새 값 반영")
@@ -40,8 +35,8 @@ class AdminEmployeeUpdateServiceTest {
             jikchak = "기존직책"
             role = UserRole.WOMAN
         }
-        whenever(employeeRepository.findWithEmployeeInfoById(10L)).thenReturn(existing)
-        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] as Employee }
+        every { employeeRepository.findWithEmployeeInfoById(10L) } returns existing
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
 
         val request = AdminEmployeeUpdateRequest(
             jikchak = "새직책",
@@ -61,7 +56,7 @@ class AdminEmployeeUpdateServiceTest {
     fun update_sapOrigin_blocked() {
         val sapEmployee = Employee(id = 11L, employeeCode = "100200", name = "SAP사원")
             .apply { origin = EmployeeOrigin.SAP }
-        whenever(employeeRepository.findWithEmployeeInfoById(11L)).thenReturn(sapEmployee)
+        every { employeeRepository.findWithEmployeeInfoById(11L) } returns sapEmployee
 
         assertThatThrownBy {
             service.update(11L, AdminEmployeeUpdateRequest(jikchak = "변경시도"))
@@ -72,7 +67,7 @@ class AdminEmployeeUpdateServiceTest {
     @Test
     @DisplayName("존재하지 않는 사원 -> EmployeeNotFoundException")
     fun update_notFound() {
-        whenever(employeeRepository.findWithEmployeeInfoById(999L)).thenReturn(null)
+        every { employeeRepository.findWithEmployeeInfoById(999L) } returns null
 
         assertThatThrownBy {
             service.update(999L, AdminEmployeeUpdateRequest())
@@ -88,8 +83,8 @@ class AdminEmployeeUpdateServiceTest {
                 appLoginActive = true
                 lockingFlag = false
             }
-        whenever(employeeRepository.findWithEmployeeInfoById(12L)).thenReturn(existing)
-        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] as Employee }
+        every { employeeRepository.findWithEmployeeInfoById(12L) } returns existing
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
 
         val response = service.update(
             12L,

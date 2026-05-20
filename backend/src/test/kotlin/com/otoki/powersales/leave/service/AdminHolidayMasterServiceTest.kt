@@ -8,29 +8,24 @@ import com.otoki.powersales.leave.exception.HolidayDateDuplicateException
 import com.otoki.powersales.leave.exception.HolidayNotFoundException
 import com.otoki.powersales.leave.exception.InvalidHolidayTypeException
 import com.otoki.powersales.leave.repository.HolidayMasterRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.util.*
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminHolidayMasterService 테스트")
 class AdminHolidayMasterServiceTest {
 
-    @Mock
-    private lateinit var holidayMasterRepository: HolidayMasterRepository
+    private val holidayMasterRepository: HolidayMasterRepository = mockk(relaxUnitFun = true)
 
-    @InjectMocks
-    private lateinit var adminHolidayMasterService: AdminHolidayMasterService
+    private val adminHolidayMasterService = AdminHolidayMasterService(
+        holidayMasterRepository,
+    )
 
     @Nested
     @DisplayName("getHolidayMasters - 연도별 공휴일 목록 조회")
@@ -43,7 +38,7 @@ class AdminHolidayMasterServiceTest {
                 createHolidayMaster(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정"),
                 createHolidayMaster(id = 2, holidayDate = LocalDate.of(2026, 3, 1), name = "삼일절")
             )
-            whenever(holidayMasterRepository.findByYearOrderByHolidayDateAsc(2026)).thenReturn(holidays)
+            every { holidayMasterRepository.findByYearOrderByHolidayDateAsc(2026) } returns holidays
 
             val result = adminHolidayMasterService.getHolidayMasters(2026)
 
@@ -55,7 +50,7 @@ class AdminHolidayMasterServiceTest {
         @Test
         @DisplayName("빈 결과 - 등록된 공휴일 없는 연도 -> 빈 리스트")
         fun getHolidayMasters_empty() {
-            whenever(holidayMasterRepository.findByYearOrderByHolidayDateAsc(2099)).thenReturn(emptyList())
+            every { holidayMasterRepository.findByYearOrderByHolidayDateAsc(2099) } returns emptyList()
 
             val result = adminHolidayMasterService.getHolidayMasters(2099)
 
@@ -75,8 +70,8 @@ class AdminHolidayMasterServiceTest {
                 name = "임시공휴일",
                 type = "기타"
             )
-            whenever(holidayMasterRepository.existsByHolidayDate(request.holidayDate)).thenReturn(false)
-            whenever(holidayMasterRepository.save(any<HolidayMaster>())).thenAnswer { it.getArgument<HolidayMaster>(0) }
+            every { holidayMasterRepository.existsByHolidayDate(request.holidayDate) } returns false
+            every { holidayMasterRepository.save(any<HolidayMaster>()) } answers { firstArg() }
 
             val result = adminHolidayMasterService.createHolidayMaster(request)
 
@@ -93,7 +88,7 @@ class AdminHolidayMasterServiceTest {
                 name = "신정",
                 type = "공휴일"
             )
-            whenever(holidayMasterRepository.existsByHolidayDate(request.holidayDate)).thenReturn(true)
+            every { holidayMasterRepository.existsByHolidayDate(request.holidayDate) } returns true
 
             assertThatThrownBy { adminHolidayMasterService.createHolidayMaster(request) }
                 .isInstanceOf(HolidayDateDuplicateException::class.java)
@@ -126,8 +121,8 @@ class AdminHolidayMasterServiceTest {
                 name = "신정(수정)",
                 type = "공휴일"
             )
-            whenever(holidayMasterRepository.findById(1L)).thenReturn(Optional.of(existing))
-            whenever(holidayMasterRepository.existsByHolidayDateAndIdNot(request.holidayDate, 1L)).thenReturn(false)
+            every { holidayMasterRepository.findById(1L) } returns Optional.of(existing)
+            every { holidayMasterRepository.existsByHolidayDateAndIdNot(request.holidayDate, 1L) } returns false
 
             val result = adminHolidayMasterService.updateHolidayMaster(1L, request)
 
@@ -142,7 +137,7 @@ class AdminHolidayMasterServiceTest {
                 name = "신정",
                 type = "공휴일"
             )
-            whenever(holidayMasterRepository.findById(99999L)).thenReturn(Optional.empty())
+            every { holidayMasterRepository.findById(99999L) } returns Optional.empty()
 
             assertThatThrownBy { adminHolidayMasterService.updateHolidayMaster(99999L, request) }
                 .isInstanceOf(HolidayNotFoundException::class.java)
@@ -157,8 +152,8 @@ class AdminHolidayMasterServiceTest {
                 name = "신정",
                 type = "공휴일"
             )
-            whenever(holidayMasterRepository.findById(1L)).thenReturn(Optional.of(existing))
-            whenever(holidayMasterRepository.existsByHolidayDateAndIdNot(request.holidayDate, 1L)).thenReturn(true)
+            every { holidayMasterRepository.findById(1L) } returns Optional.of(existing)
+            every { holidayMasterRepository.existsByHolidayDateAndIdNot(request.holidayDate, 1L) } returns true
 
             assertThatThrownBy { adminHolidayMasterService.updateHolidayMaster(1L, request) }
                 .isInstanceOf(HolidayDateDuplicateException::class.java)
@@ -173,7 +168,7 @@ class AdminHolidayMasterServiceTest {
                 name = "신정",
                 type = "잘못된유형"
             )
-            whenever(holidayMasterRepository.findById(1L)).thenReturn(Optional.of(existing))
+            every { holidayMasterRepository.findById(1L) } returns Optional.of(existing)
 
             assertThatThrownBy { adminHolidayMasterService.updateHolidayMaster(1L, request) }
                 .isInstanceOf(InvalidHolidayTypeException::class.java)
@@ -188,7 +183,7 @@ class AdminHolidayMasterServiceTest {
         @DisplayName("정상 삭제 - 존재하는 공휴일 삭제")
         fun deleteHolidayMaster_success() {
             val existing = createHolidayMaster(id = 1, holidayDate = LocalDate.of(2026, 1, 1), name = "신정")
-            whenever(holidayMasterRepository.findById(1L)).thenReturn(Optional.of(existing))
+            every { holidayMasterRepository.findById(1L) } returns Optional.of(existing)
 
             adminHolidayMasterService.deleteHolidayMaster(1L)
         }
@@ -196,7 +191,7 @@ class AdminHolidayMasterServiceTest {
         @Test
         @DisplayName("존재하지 않는 ID - id=99999 -> HolidayNotFoundException")
         fun deleteHolidayMaster_notFound() {
-            whenever(holidayMasterRepository.findById(99999L)).thenReturn(Optional.empty())
+            every { holidayMasterRepository.findById(99999L) } returns Optional.empty()
 
             assertThatThrownBy { adminHolidayMasterService.deleteHolidayMaster(99999L) }
                 .isInstanceOf(HolidayNotFoundException::class.java)

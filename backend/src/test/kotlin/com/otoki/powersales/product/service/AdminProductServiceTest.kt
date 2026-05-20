@@ -6,33 +6,25 @@ import com.otoki.powersales.product.enums.StorageCondition
 import com.otoki.powersales.product.exception.ProductNotFoundException
 import com.otoki.powersales.product.repository.CategoryRow
 import com.otoki.powersales.product.repository.ProductRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import java.math.BigDecimal
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminProductService 테스트")
 class AdminProductServiceTest {
 
-    @Mock
-    private lateinit var productRepository: ProductRepository
+    private val productRepository: ProductRepository = mockk()
 
-    @InjectMocks
-    private lateinit var adminProductService: AdminProductService
+    private val adminProductService = AdminProductService(
+        productRepository,
+    )
 
     @Nested
     @DisplayName("getProducts - 제품 목록 조회")
@@ -41,7 +33,6 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("기본 조회 - 필터 없이 호출 -> 전체 제품 목록 반환")
         fun getProducts_noFilters_success() {
-            // Given
             val products = listOf(
                 createProduct(id = 1L, name = "진라면 매운맛", productCode = "P001"),
                 createProduct(id = 2L, name = "카레 약간매운맛", productCode = "P002")
@@ -49,22 +40,22 @@ class AdminProductServiceTest {
             val pageable = PageRequest.of(0, 20, Sort.by("name").ascending())
             val page = PageImpl(products, pageable, 2L)
 
-            whenever(productRepository.searchForAdmin(
-                keyword = isNull(),
-                category1 = isNull(),
-                category2 = isNull(),
-                category3 = isNull(),
-                productStatus = isNull(),
-                pageable = any()
-            )).thenReturn(page)
+            every {
+                productRepository.searchForAdmin(
+                    keyword = null,
+                    category1 = null,
+                    category2 = null,
+                    category3 = null,
+                    productStatus = null,
+                    pageable = any()
+                )
+            } returns page
 
-            // When
             val result = adminProductService.getProducts(
                 keyword = null, category1 = null, category2 = null,
                 category3 = null, productStatus = null, page = 0, size = 20
             )
 
-            // Then
             assertThat(result.content).hasSize(2)
             assertThat(result.content[0].productCode).isEqualTo("P001")
             assertThat(result.content[1].name).isEqualTo("카레 약간매운맛")
@@ -77,29 +68,28 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("키워드 검색 - keyword 전달 -> 필터링된 결과 반환")
         fun getProducts_withKeyword_success() {
-            // Given
             val products = listOf(
                 createProduct(id = 1L, name = "진라면 매운맛", productCode = "P001")
             )
             val pageable = PageRequest.of(0, 20, Sort.by("name").ascending())
             val page = PageImpl(products, pageable, 1L)
 
-            whenever(productRepository.searchForAdmin(
-                keyword = eq("진라면"),
-                category1 = isNull(),
-                category2 = isNull(),
-                category3 = isNull(),
-                productStatus = isNull(),
-                pageable = any()
-            )).thenReturn(page)
+            every {
+                productRepository.searchForAdmin(
+                    keyword = "진라면",
+                    category1 = null,
+                    category2 = null,
+                    category3 = null,
+                    productStatus = null,
+                    pageable = any()
+                )
+            } returns page
 
-            // When
             val result = adminProductService.getProducts(
                 keyword = "진라면", category1 = null, category2 = null,
                 category3 = null, productStatus = null, page = 0, size = 20
             )
 
-            // Then
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].name).isEqualTo("진라면 매운맛")
         }
@@ -107,29 +97,28 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("복합 필터 - 카테고리 + 상태 전달 -> 필터링된 결과 반환")
         fun getProducts_withMultipleFilters_success() {
-            // Given
             val products = listOf(
                 createProduct(id = 1L, name = "진라면", category1 = "면류", category2 = "라면", productStatus = "판매중")
             )
             val pageable = PageRequest.of(0, 10, Sort.by("name").ascending())
             val page = PageImpl(products, pageable, 1L)
 
-            whenever(productRepository.searchForAdmin(
-                keyword = isNull(),
-                category1 = eq("면류"),
-                category2 = eq("라면"),
-                category3 = isNull(),
-                productStatus = eq("판매중"),
-                pageable = any()
-            )).thenReturn(page)
+            every {
+                productRepository.searchForAdmin(
+                    keyword = null,
+                    category1 = "면류",
+                    category2 = "라면",
+                    category3 = null,
+                    productStatus = "판매중",
+                    pageable = any()
+                )
+            } returns page
 
-            // When
             val result = adminProductService.getProducts(
                 keyword = null, category1 = "면류", category2 = "라면",
                 category3 = null, productStatus = "판매중", page = 0, size = 10
             )
 
-            // Then
             assertThat(result.content).hasSize(1)
             assertThat(result.totalElements).isEqualTo(1)
         }
@@ -137,26 +126,25 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("빈 결과 - 존재하지 않는 카테고리 -> 빈 목록 반환")
         fun getProducts_noResults_emptyContent() {
-            // Given
             val pageable = PageRequest.of(0, 20, Sort.by("name").ascending())
             val emptyPage = PageImpl<Product>(emptyList(), pageable, 0L)
 
-            whenever(productRepository.searchForAdmin(
-                keyword = isNull(),
-                category1 = eq("없는카테고리"),
-                category2 = isNull(),
-                category3 = isNull(),
-                productStatus = isNull(),
-                pageable = any()
-            )).thenReturn(emptyPage)
+            every {
+                productRepository.searchForAdmin(
+                    keyword = null,
+                    category1 = "없는카테고리",
+                    category2 = null,
+                    category3 = null,
+                    productStatus = null,
+                    pageable = any()
+                )
+            } returns emptyPage
 
-            // When
             val result = adminProductService.getProducts(
                 keyword = null, category1 = "없는카테고리", category2 = null,
                 category3 = null, productStatus = null, page = 0, size = 20
             )
 
-            // Then
             assertThat(result.content).isEmpty()
             assertThat(result.totalElements).isEqualTo(0)
             assertThat(result.totalPages).isEqualTo(0)
@@ -170,14 +158,11 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("존재하는 제품코드 -> ProductDetail 반환")
         fun getProductDetail_success() {
-            // Given
             val product = createProduct(id = 10L, productCode = "P100", name = "꿀배청 680G")
-            whenever(productRepository.findByProductCode(eq("P100"))).thenReturn(product)
+            every { productRepository.findByProductCode("P100") } returns product
 
-            // When
             val result = adminProductService.getProductDetail("P100")
 
-            // Then
             assertThat(result.productCode).isEqualTo("P100")
             assertThat(result.name).isEqualTo("꿀배청 680G")
         }
@@ -185,10 +170,8 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("존재하지 않는 제품코드 -> ProductNotFoundException")
         fun getProductDetail_notFound() {
-            // Given
-            whenever(productRepository.findByProductCode(eq("X-NONE"))).thenReturn(null)
+            every { productRepository.findByProductCode("X-NONE") } returns null
 
-            // When + Then
             assertThatThrownBy { adminProductService.getProductDetail("X-NONE") }
                 .isInstanceOf(ProductNotFoundException::class.java)
         }
@@ -201,19 +184,16 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("계층 구조 - 카테고리 3단계 트리 반환")
         fun getCategories_success() {
-            // Given
             val rows = listOf(
                 CategoryRow("면류", "라면", "봉지면"),
                 CategoryRow("면류", "라면", "컵라면"),
                 CategoryRow("면류", "국수", "소면"),
                 CategoryRow("소스류", "카레", "레토르트")
             )
-            whenever(productRepository.findDistinctCategories()).thenReturn(rows)
+            every { productRepository.findDistinctCategories() } returns rows
 
-            // When
             val result = adminProductService.getCategories()
 
-            // Then
             assertThat(result).hasSize(2)
 
             val noodles = result.find { it.category1 == "면류" }!!
@@ -232,13 +212,10 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("빈 결과 - 카테고리 없음 -> 빈 리스트 반환")
         fun getCategories_empty() {
-            // Given
-            whenever(productRepository.findDistinctCategories()).thenReturn(emptyList())
+            every { productRepository.findDistinctCategories() } returns emptyList()
 
-            // When
             val result = adminProductService.getCategories()
 
-            // Then
             assertThat(result).isEmpty()
         }
     }

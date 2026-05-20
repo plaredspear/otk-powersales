@@ -4,25 +4,21 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.exception.AccountDeleteBlockedSapSyncedException
 import com.otoki.powersales.account.exception.AccountNotFoundException
 import com.otoki.powersales.account.repository.AccountRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AccountDeleteService 테스트 (Spec #642 P1-B)")
 class AccountDeleteServiceTest {
 
-    @Mock
-    private lateinit var accountRepository: AccountRepository
+    private val accountRepository: AccountRepository = mockk()
 
-    @InjectMocks
-    private lateinit var service: AccountDeleteService
+    private val service = AccountDeleteService(
+        accountRepository,
+    )
 
     private fun nativeAccount(id: Int = 1234, isDeleted: Boolean? = null): Account = Account(
         id = id,
@@ -36,7 +32,7 @@ class AccountDeleteServiceTest {
     @DisplayName("T1 정상 삭제 - external_key IS NULL + is_deleted IS NULL (활성)")
     fun delete_success_isDeletedNull() {
         val account = nativeAccount(id = 1234, isDeleted = null)
-        whenever(accountRepository.findActiveById(1234)).thenReturn(account)
+        every { accountRepository.findActiveById(1234) } returns account
 
         service.delete(1234)
 
@@ -47,7 +43,7 @@ class AccountDeleteServiceTest {
     @DisplayName("T2 정상 삭제 - external_key IS NULL + is_deleted = false (활성)")
     fun delete_success_isDeletedFalse() {
         val account = nativeAccount(id = 1234, isDeleted = false)
-        whenever(accountRepository.findActiveById(1234)).thenReturn(account)
+        every { accountRepository.findActiveById(1234) } returns account
 
         service.delete(1234)
 
@@ -64,20 +60,19 @@ class AccountDeleteServiceTest {
             accountGroup = "1010",
             isDeleted = false
         )
-        whenever(accountRepository.findActiveById(1234)).thenReturn(account)
+        every { accountRepository.findActiveById(1234) } returns account
 
         assertThatThrownBy { service.delete(1234) }
             .isInstanceOf(AccountDeleteBlockedSapSyncedException::class.java)
             .hasMessage("거래처 코드가 있는 거래처는 삭제할 수 없습니다.")
 
-        // 가드 통과 전 — is_deleted 변경 없음
         assertThat(account.isDeleted).isFalse
     }
 
     @Test
     @DisplayName("T4 차단 - id row 부재 → ACCOUNT_NOT_FOUND")
     fun delete_notFound_noRow() {
-        whenever(accountRepository.findActiveById(9999)).thenReturn(null)
+        every { accountRepository.findActiveById(9999) } returns null
 
         assertThatThrownBy { service.delete(9999) }
             .isInstanceOf(AccountNotFoundException::class.java)
@@ -87,8 +82,7 @@ class AccountDeleteServiceTest {
     @Test
     @DisplayName("T5 차단 - 이미 is_deleted = true (멱등 보장) → ACCOUNT_NOT_FOUND")
     fun delete_notFound_alreadyDeleted() {
-        // findActiveById 가 is_deleted = true row 를 제외 (Repository 레벨 필터)
-        whenever(accountRepository.findActiveById(1234)).thenReturn(null)
+        every { accountRepository.findActiveById(1234) } returns null
 
         assertThatThrownBy { service.delete(1234) }
             .isInstanceOf(AccountNotFoundException::class.java)
