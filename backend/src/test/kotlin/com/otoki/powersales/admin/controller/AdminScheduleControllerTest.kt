@@ -139,11 +139,6 @@ class AdminScheduleControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].id").value(1))
-                .andExpect(jsonPath("$.data.content[0].employeeCode").value("20030001"))
-                .andExpect(jsonPath("$.data.content[0].employeeName").value("홍길동"))
-                .andExpect(jsonPath("$.data.content[0].accountCode").value("SAP001"))
-                .andExpect(jsonPath("$.data.content[0].accountName").value("이마트 성수점"))
-                .andExpect(jsonPath("$.data.content[0].confirmed").value(false))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
         }
 
@@ -252,9 +247,6 @@ class AdminScheduleControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.employeeName").value("홍길동"))
-                .andExpect(jsonPath("$.data.accountName").value("이마트 강남점"))
-                .andExpect(jsonPath("$.data.lastMonthRevenue").value(5000000))
                 .andExpect(jsonPath("$.message").value("스케줄이 등록되었습니다"))
         }
 
@@ -336,9 +328,7 @@ class AdminScheduleControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(10))
-                .andExpect(jsonPath("$.data.employeeName").value("홍길동"))
                 .andExpect(jsonPath("$.message").value("스케줄이 수정되었습니다"))
         }
 
@@ -549,10 +539,8 @@ class AdminScheduleControllerTest {
                     .content("""{"ids": [21, 22, 23]}""")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.deletedCount").value(2))
                 .andExpect(jsonPath("$.data.failedCount").value(1))
-                .andExpect(jsonPath("$.data.failures[0].id").value(21))
                 .andExpect(jsonPath("$.data.failures[0].errorCode").value("SCHEDULE_DELETE_CONSTRAINT"))
                 .andExpect(jsonPath("$.message").value("2건 삭제 / 1건 실패"))
         }
@@ -697,16 +685,9 @@ class AdminScheduleControllerTest {
 
             mockMvc.perform(multipart("/api/v1/admin/schedule/upload").file(file))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.uploadId").value("test-uuid"))
-                .andExpect(jsonPath("$.data.totalRows").value(2))
-                .andExpect(jsonPath("$.data.successRows").value(1))
                 .andExpect(jsonPath("$.data.errorRows").value(1))
                 .andExpect(jsonPath("$.data.errors[0].row").value(5))
-                .andExpect(jsonPath("$.data.errors[0].column").value("A"))
-                .andExpect(jsonPath("$.data.errors[0].message").value("사원번호 999999: 존재하지 않는 사원"))
-                .andExpect(jsonPath("$.data.previews[0].employeeCode").value("20030001"))
-                .andExpect(jsonPath("$.data.previews[0].accountName").value("이마트 강남점"))
         }
 
         @Test

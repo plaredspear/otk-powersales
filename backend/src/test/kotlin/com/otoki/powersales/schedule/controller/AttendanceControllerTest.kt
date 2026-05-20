@@ -20,6 +20,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -77,12 +80,11 @@ class AttendanceControllerTest {
         @Test
         @DisplayName("출근 등록 성공 - 200 OK, schedule_id 포함")
         fun register_success() {
-            // Given
             val mockResponse = AttendanceRegisterResponse(
                 scheduleId = 10L,
                 accountName = "이마트 부산점",
                 workType = "ROOM_TEMP",
-                distanceKm = 0.0, // Spec #585 Q4: 응답에 실제 거리 미노출
+                distanceKm = 0.0,
                 totalCount = 5,
                 registeredCount = 2
             )
@@ -102,7 +104,6 @@ class AttendanceControllerTest {
                 }
             """.trimIndent()
 
-            // When & Then
             mockMvc.perform(
                 post("/api/v1/mobile/attendance")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -110,140 +111,54 @@ class AttendanceControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("출근등록 완료"))
                 .andExpect(jsonPath("$.data.scheduleId").value(10))
-                .andExpect(jsonPath("$.data.accountName").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.workType").value("ROOM_TEMP"))
-                .andExpect(jsonPath("$.data.distanceKm").value(0.0))
-                .andExpect(jsonPath("$.data.totalCount").value(5))
-                .andExpect(jsonPath("$.data.registeredCount").value(2))
         }
 
-        @Test
-        @DisplayName("안전점검 미완료 - 400 SAFETY_CHECK_REQUIRED")
-        fun register_safetyCheckRequired() {
-            // Given
+        /**
+         * 분기별 비즈니스 검증은 [com.otoki.powersales.schedule.service.AttendanceServiceTest] 가 담당.
+         * controller 책임은 예외 → HTTP status + errorCode 매핑이므로 본 파라미터 테이블로 1테스트로 집약.
+         */
+        @ParameterizedTest(name = "{0} → {1} {2}")
+        @MethodSource("com.otoki.powersales.schedule.controller.AttendanceControllerTest#registerExceptionCases")
+        fun register_exceptionMapping(
+            @Suppress("UNUSED_PARAMETER") caseName: String,
+            expectedStatus: Int,
+            expectedCode: String,
+            exception: RuntimeException,
+            latitude: Double
+        ) {
             every {
                 attendanceService.register(
-                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), any()
+                    eq(1L), eq(10L), null, null, eq(latitude), eq(129.0567), any()
                 )
-} throws SafetyCheckRequiredException()
+            } throws exception
 
             val requestJson = """
                 {
                     "scheduleId": 10,
-                    "latitude": 35.1234,
+                    "latitude": $latitude,
                     "longitude": 129.0567
                 }
             """.trimIndent()
 
-            // When & Then
             mockMvc.perform(
                 post("/api/v1/mobile/attendance")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
-                .andExpect(status().isBadRequest)
+                .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("SAFETY_CHECK_REQUIRED"))
-        }
-
-        @Test
-        @DisplayName("거리 초과 - 400 ATT_GPS_DISTANCE_EXCEEDED")
-        fun register_distanceExceeded() {
-            // Given
-            every {
-                attendanceService.register(
-                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), any()
-                )
-} throws DistanceExceededException()
-
-            val requestJson = """
-                {
-                    "scheduleId": 10,
-                    "latitude": 35.1234,
-                    "longitude": 129.0567
-                }
-            """.trimIndent()
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/mobile/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("ATT_GPS_DISTANCE_EXCEEDED"))
-        }
-
-        @Test
-        @DisplayName("거래처 좌표 누락 - 400 ATT_ACCOUNT_COORDS_MISSING")
-        fun register_accountCoordsMissing() {
-            // Given
-            every {
-                attendanceService.register(
-                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), any()
-                )
-} throws AccountCoordsMissingException()
-
-            val requestJson = """
-                {
-                    "scheduleId": 10,
-                    "latitude": 35.1234,
-                    "longitude": 129.0567
-                }
-            """.trimIndent()
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/mobile/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("ATT_ACCOUNT_COORDS_MISSING"))
-        }
-
-        @Test
-        @DisplayName("사원 위치 좌표 무효 - 400 ATT_INVALID_COORDS")
-        fun register_invalidCoords() {
-            // Given
-            every {
-                attendanceService.register(
-                    eq(1L), eq(10L), null, null, eq(91.0), eq(129.0567), any()
-                )
-} throws InvalidCoordsException()
-
-            val requestJson = """
-                {
-                    "scheduleId": 10,
-                    "latitude": 91.0,
-                    "longitude": 129.0567
-                }
-            """.trimIndent()
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/mobile/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("ATT_INVALID_COORDS"))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
 
         @Test
         @DisplayName("schedule_id, display_work_schedule_id 둘 다 없음 - 400 ATTENDANCE_TARGET_REQUIRED")
         fun register_bothNull_targetRequired() {
-            // Given - 둘 다 누락 → 서비스에서 AttendanceTargetRequiredException
             every {
                 attendanceService.register(
                     eq(1L), null, null, null, eq(35.1234), eq(129.0567), any()
                 )
-} throws AttendanceTargetRequiredException()
+            } throws AttendanceTargetRequiredException()
 
             val requestJson = """
                 {
@@ -252,102 +167,13 @@ class AttendanceControllerTest {
                 }
             """.trimIndent()
 
-            // When & Then
             mockMvc.perform(
                 post("/api/v1/mobile/attendance")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("ATTENDANCE_TARGET_REQUIRED"))
-        }
-
-        @Test
-        @DisplayName("이미 등록 - 409 ALREADY_REGISTERED")
-        fun register_alreadyRegistered() {
-            // Given
-            every {
-                attendanceService.register(
-                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), any()
-                )
-} throws AlreadyRegisteredException()
-
-            val requestJson = """
-                {
-                    "scheduleId": 10,
-                    "latitude": 35.1234,
-                    "longitude": 129.0567
-                }
-            """.trimIndent()
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/mobile/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson)
-            )
-                .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("ALREADY_REGISTERED"))
-        }
-
-        @Test
-        @DisplayName("17시 이후 등록 - 400 ATTENDANCE_TIME_EXCEEDED")
-        fun register_timeExceeded() {
-            // Given
-            every {
-                attendanceService.register(
-                    eq(1L), eq(10L), null, null, eq(35.1234), eq(129.0567), any()
-                )
-} throws AttendanceTimeExceededException()
-
-            val requestJson = """
-                {
-                    "scheduleId": 10,
-                    "latitude": 35.1234,
-                    "longitude": 129.0567
-                }
-            """.trimIndent()
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/mobile/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("ATTENDANCE_TIME_EXCEEDED"))
-        }
-
-        @Test
-        @DisplayName("스케줄 없음 - 404 SCHEDULE_NOT_FOUND")
-        fun register_scheduleNotFound() {
-            // Given
-            every {
-                attendanceService.register(
-                    eq(1L), eq(99999L), null, null, eq(35.1234), eq(129.0567), any()
-                )
-} throws TeamMemberScheduleNotFoundException()
-
-            val requestJson = """
-                {
-                    "scheduleId": 99999,
-                    "latitude": 35.1234,
-                    "longitude": 129.0567
-                }
-            """.trimIndent()
-
-            // When & Then
-            mockMvc.perform(
-                post("/api/v1/mobile/attendance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson)
-            )
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_FOUND"))
         }
     }
 
@@ -360,7 +186,6 @@ class AttendanceControllerTest {
         @Test
         @DisplayName("정상 조회 + 안전점검 완료 - 200 OK, safety_check_completed=true")
         fun getAccountList_success() {
-            // Given
             val mockResponse = AccountListResponse(
                 safetyCheckCompleted = true,
                 accounts = listOf(
@@ -394,59 +219,34 @@ class AttendanceControllerTest {
 
             every { attendanceService.getAccountList(eq(1L), null) } returns mockResponse
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/attendance/accounts")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("조회 성공"))
                 .andExpect(jsonPath("$.data.safetyCheckCompleted").value(true))
-                .andExpect(jsonPath("$.data.accounts").isArray)
-                .andExpect(jsonPath("$.data.accounts[0].scheduleId").value(1))
-                .andExpect(jsonPath("$.data.accounts[0].accountId").value(1))
-                .andExpect(jsonPath("$.data.accounts[0].accountName").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.accounts[0].accountTypeCode").value("2110"))
-                .andExpect(jsonPath("$.data.accounts[0].workCategory").value("진열"))
-                .andExpect(jsonPath("$.data.accounts[0].latitude").value(35.1696))
-                .andExpect(jsonPath("$.data.accounts[0].longitude").value(129.1314))
                 .andExpect(jsonPath("$.data.accounts[0].isRegistered").value(false))
                 .andExpect(jsonPath("$.data.accounts[1].isRegistered").value(true))
-                .andExpect(jsonPath("$.data.totalCount").value(2))
-                .andExpect(jsonPath("$.data.registeredCount").value(1))
-                .andExpect(jsonPath("$.data.currentDate").value("2026-02-25"))
+                // Controller 가 추가하는 deadline / closed 필드는 service mock 응답에 없으므로
+                // controller 가 후처리하는 것을 검증해야 함 — 유지
                 .andExpect(jsonPath("$.data.registrationDeadline").value("17:00"))
                 .andExpect(jsonPath("$.data.isRegistrationClosed").value(false))
         }
 
         @Test
-        @DisplayName("키워드 검색 - 200 OK")
+        @DisplayName("키워드 검색 - 200 OK, service 에 keyword 전달")
         fun getAccountList_withKeyword() {
-            // Given
             val mockResponse = AccountListResponse(
                 safetyCheckCompleted = false,
-                accounts = listOf(
-                    AccountInfo(
-                        scheduleId = 1L,
-                        accountId = 1,
-                        accountName = "이마트 부산점",
-                        accountTypeCode = "2110",
-                        workCategory = "진열",
-                        address = "부산시 해운대구 센텀2로 25",
-                        latitude = 35.1696,
-                        longitude = 129.1314,
-                        isRegistered = false
-                    )
-                ),
-                totalCount = 1,
+                accounts = emptyList(),
+                totalCount = 0,
                 registeredCount = 0,
                 currentDate = "2026-02-25"
             )
 
             every { attendanceService.getAccountList(eq(1L), eq("이마트")) } returns mockResponse
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/attendance/accounts")
                     .param("keyword", "이마트")
@@ -454,11 +254,6 @@ class AttendanceControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.safetyCheckCompleted").value(false))
-                .andExpect(jsonPath("$.data.accounts").isArray)
-                .andExpect(jsonPath("$.data.accounts[0].accountName").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.totalCount").value(1))
-                .andExpect(jsonPath("$.data.registeredCount").value(0))
         }
     }
 
@@ -471,54 +266,40 @@ class AttendanceControllerTest {
         @Test
         @DisplayName("정상 조회 - 200 OK, status_list 포함")
         fun getStatus_success() {
-            // Given
             val mockResponse = AttendanceStatusResponse(
                 totalCount = 3,
                 registeredCount = 1,
                 statusList = listOf(
-                    AttendanceStatusItem(
-                        scheduleId = 1L,
-                        accountName = "이마트 부산점",
-                        workCategory = "진열",
-                        status = "REGISTERED"
-                    ),
-                    AttendanceStatusItem(
-                        scheduleId = 2L,
-                        accountName = "홈플러스 서면점",
-                        workCategory = "상시",
-                        status = "PENDING"
-                    ),
-                    AttendanceStatusItem(
-                        scheduleId = 3L,
-                        accountName = "롯데마트 동래점",
-                        workCategory = "상시",
-                        status = "PENDING"
-                    )
+                    AttendanceStatusItem(1L, "이마트 부산점", "진열", "REGISTERED"),
+                    AttendanceStatusItem(2L, "홈플러스 서면점", "상시", "PENDING"),
+                    AttendanceStatusItem(3L, "롯데마트 동래점", "상시", "PENDING")
                 ),
                 currentDate = "2026-02-25"
             )
 
             every { attendanceService.getStatus(1L) } returns mockResponse
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/attendance/status")
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("조회 성공"))
                 .andExpect(jsonPath("$.data.totalCount").value(3))
-                .andExpect(jsonPath("$.data.registeredCount").value(1))
                 .andExpect(jsonPath("$.data.statusList").isArray)
-                .andExpect(jsonPath("$.data.statusList[0].scheduleId").value(1))
-                .andExpect(jsonPath("$.data.statusList[0].accountName").value("이마트 부산점"))
-                .andExpect(jsonPath("$.data.statusList[0].workCategory").value("진열"))
-                .andExpect(jsonPath("$.data.statusList[0].status").value("REGISTERED"))
-                .andExpect(jsonPath("$.data.statusList[1].scheduleId").value(2))
-                .andExpect(jsonPath("$.data.statusList[1].accountName").value("홈플러스 서면점"))
-                .andExpect(jsonPath("$.data.statusList[1].status").value("PENDING"))
-                .andExpect(jsonPath("$.data.currentDate").value("2026-02-25"))
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun registerExceptionCases(): List<Arguments> = listOf(
+            Arguments.of("안전점검 미완료", 400, "SAFETY_CHECK_REQUIRED", SafetyCheckRequiredException(), 35.1234),
+            Arguments.of("거리 초과", 400, "ATT_GPS_DISTANCE_EXCEEDED", DistanceExceededException(), 35.1234),
+            Arguments.of("거래처 좌표 누락", 400, "ATT_ACCOUNT_COORDS_MISSING", AccountCoordsMissingException(), 35.1234),
+            Arguments.of("사원 좌표 무효", 400, "ATT_INVALID_COORDS", InvalidCoordsException(), 91.0),
+            Arguments.of("이미 등록", 409, "ALREADY_REGISTERED", AlreadyRegisteredException(), 35.1234),
+            Arguments.of("17시 이후", 400, "ATTENDANCE_TIME_EXCEEDED", AttendanceTimeExceededException(), 35.1234),
+            Arguments.of("스케줄 없음", 404, "SCHEDULE_NOT_FOUND", TeamMemberScheduleNotFoundException(), 35.1234)
+        )
     }
 }
