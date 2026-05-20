@@ -3,6 +3,7 @@ import {
   getStage1CopyProgress,
   listStage1Targets,
   startStage1Copy,
+  Stage1AlreadyRunningError,
   type Stage1CopyProgress,
   type Stage1CopyRequest,
 } from '@/api/admin/sfMigrationStage1';
@@ -15,10 +16,12 @@ export function useStage1CopyProgress(options?: { enabled?: boolean }) {
   return useQuery<Stage1CopyProgress>({
     queryKey: PROGRESS_KEY,
     queryFn: getStage1CopyProgress,
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      return data && data.status === 'RUNNING' ? 1000 : false;
-    },
+    // RUNNING 이면 1초 — processedRows 실시간 갱신.
+    // 그 외 (IDLE/COMPLETED/FAILED) 는 5초 — 사용자가 페이지에 머무는 동안 backend 가
+    // begin() 한 직후 RUNNING 전환을 자동 감지하도록 가벼운 polling 유지.
+    refetchInterval: (query) =>
+      query.state.data?.status === 'RUNNING' ? 1000 : 5000,
+    refetchIntervalInBackground: false,
     enabled: options?.enabled ?? true,
   });
 }
@@ -29,6 +32,12 @@ export function useStartStage1Copy() {
     mutationFn: startStage1Copy,
     onSuccess: (data) => {
       queryClient.setQueryData(PROGRESS_KEY, data);
+    },
+    onError: (err) => {
+      // 409 (이미 RUNNING) — 에러지만 응답 본문의 진행 상태로 cache 갱신.
+      if (err instanceof Stage1AlreadyRunningError) {
+        queryClient.setQueryData(PROGRESS_KEY, err.progress);
+      }
     },
   });
 }

@@ -20,9 +20,10 @@ import {
   useStage1Targets,
   useStartStage1Copy,
 } from '@/hooks/admin/useSfMigrationStage1';
-import type {
-  Stage1CopyProgress,
-  Stage1Status,
+import {
+  Stage1AlreadyRunningError,
+  type Stage1CopyProgress,
+  type Stage1Status,
 } from '@/api/admin/sfMigrationStage1';
 
 const { Title, Paragraph, Text } = Typography;
@@ -67,6 +68,7 @@ export default function SfMigrationStage1Page() {
   const isRunning = progress?.status === 'RUNNING';
   const statusTag = progress ? STATUS_TAG[progress.status] : STATUS_TAG.IDLE;
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [alreadyRunning, setAlreadyRunning] = useState(false);
 
   // 진행 중 row 표시 갱신을 위해 force render 1초 간격 (Statistic 의 elapsed 가 client clock 의존).
   const [, setTick] = useState(0);
@@ -78,8 +80,15 @@ export default function SfMigrationStage1Page() {
 
   const onSubmit = (values: { targetName: string; s3Bucket: string; s3Key: string }) => {
     setSubmitError(null);
+    setAlreadyRunning(false);
     startMutation.mutate(values, {
-      onError: (err) => setSubmitError(err.message),
+      onError: (err) => {
+        if (err instanceof Stage1AlreadyRunningError) {
+          setAlreadyRunning(true);
+          return;
+        }
+        setSubmitError(err.message);
+      },
     });
   };
 
@@ -140,6 +149,20 @@ export default function SfMigrationStage1Page() {
               상태: {statusTag.label}
             </Tag>
           </Space>
+          {alreadyRunning && (
+            <Alert
+              style={{ marginTop: 12 }}
+              type="info"
+              showIcon
+              message="이미 실행 중입니다"
+              description="아래 진행 상태를 확인하세요. 완료 후 다시 실행할 수 있습니다."
+              closable
+              onClose={() => {
+                setAlreadyRunning(false);
+                startMutation.reset();
+              }}
+            />
+          )}
           {submitError && (
             <Alert
               style={{ marginTop: 12 }}
