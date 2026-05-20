@@ -120,6 +120,7 @@ export const menuRoute: MenuRoute = {
         { path: '/admin/tools/scheduled-jobs', name: '스케줄 잡 실행 이력', requiredPermission: 'SCHEDULED_JOB_READ' },
         { path: '/admin/tools/sap-inbound', name: 'SAP Inbound', requiredPermission: 'SAP_INTEGRATION_READ' },
         { path: '/admin/tools/sap-outbound', name: 'SAP Outbound', requiredPermission: 'SAP_INTEGRATION_READ' },
+        { path: '/admin/tools/sf-migration', name: 'SF Migration', requiredPermission: 'SF_MIGRATION_RUN' },
       ],
     },
   ],

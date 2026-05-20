@@ -55,6 +55,7 @@ const NaverGeocodeTestPage = lazy(() => import('@/pages/admin/NaverGeocodeTestPa
 const ScheduledJobsPage = lazy(() => import('@/pages/admin/scheduled-jobs/ScheduledJobsPage'));
 const SapInboundPage = lazy(() => import('@/pages/admin/tools/sap-inbound/SapInboundPage'));
 const SapOutboundPage = lazy(() => import('@/pages/admin/tools/sap-outbound/SapOutboundPage'));
+const SfMigrationPage = lazy(() => import('@/pages/admin/tools/sf-migration/SfMigrationPage'));
 const AgreementWordsPage = lazy(() => import('@/pages/admin/agreement-words/AgreementWordsPage'));
 const UserListPage = lazy(() => import('@/pages/users/UserListPage'));
 const UserDetailPage = lazy(() => import('@/pages/users/UserDetailPage'));
@@ -209,6 +210,12 @@ export const router = createBrowserRouter(
               children: [
                 { path: '/admin/tools/sap-inbound', element: <LazyWrapper><SapInboundPage /></LazyWrapper> },
                 { path: '/admin/tools/sap-outbound', element: <LazyWrapper><SapOutboundPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute requiredPermission="SF_MIGRATION_RUN" />,
+              children: [
+                { path: '/admin/tools/sf-migration', element: <LazyWrapper><SfMigrationPage /></LazyWrapper> },
               ],
             },
             {
