@@ -11,37 +11,29 @@ import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.employee.entity.Employee
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.*
 import java.math.BigDecimal
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminClaimService 테스트")
 class AdminClaimServiceTest {
 
-    @Mock
-    private lateinit var adminClaimRepository: AdminClaimRepository
+    private val adminClaimRepository: AdminClaimRepository = mockk()
+    private val adminClaimPhotoRepository: AdminClaimPhotoRepository = mockk()
 
-    @Mock
-    private lateinit var adminClaimPhotoRepository: AdminClaimPhotoRepository
-
-    @InjectMocks
-    private lateinit var adminClaimService: AdminClaimService
+    private val adminClaimService = AdminClaimService(
+        adminClaimRepository,
+        adminClaimPhotoRepository,
+    )
 
     @Nested
     @DisplayName("getClaims - 클레임 목록 조회")
@@ -53,7 +45,7 @@ class AdminClaimServiceTest {
             // Given
             val claim = createClaim()
             val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
-            whenever(adminClaimRepository.findClaims(any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn(page)
+            every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
 
             // When
             val result = adminClaimService.getClaims(null, null, null, null, null, 0, 20)
@@ -76,7 +68,7 @@ class AdminClaimServiceTest {
             // Given
             val claim = createClaim(status = ClaimStatus.SENT)
             val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
-            whenever(adminClaimRepository.findClaims(any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn(page)
+            every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
 
             // When
             val result = adminClaimService.getClaims(
@@ -94,7 +86,7 @@ class AdminClaimServiceTest {
         fun getClaims_invalidStatus() {
             // Given
             val page = PageImpl(emptyList<Claim>(), PageRequest.of(0, 20), 0)
-            whenever(adminClaimRepository.findClaims(any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), any())).thenReturn(page)
+            every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
 
             // When
             val result = adminClaimService.getClaims(null, null, "INVALID", null, null, 0, 20)
@@ -117,8 +109,8 @@ class AdminClaimServiceTest {
                 createClaimPhoto(id = 1L, claim = claim, photoType = ClaimPhotoType.DEFECT),
                 createClaimPhoto(id = 2L, claim = claim, photoType = ClaimPhotoType.RECEIPT)
             )
-            whenever(adminClaimRepository.findById(1L)).thenReturn(Optional.of(claim))
-            whenever(adminClaimPhotoRepository.findByClaimId(1L)).thenReturn(photos)
+            every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
+            every { adminClaimPhotoRepository.findByClaimId(1L) } returns photos
 
             // When
             val result = adminClaimService.getClaimDetail(1L)
@@ -137,8 +129,8 @@ class AdminClaimServiceTest {
         fun getClaimDetail_noPhotos() {
             // Given
             val claim = createClaim()
-            whenever(adminClaimRepository.findById(1L)).thenReturn(Optional.of(claim))
-            whenever(adminClaimPhotoRepository.findByClaimId(1L)).thenReturn(emptyList())
+            every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
+            every { adminClaimPhotoRepository.findByClaimId(1L) } returns emptyList()
 
             // When
             val result = adminClaimService.getClaimDetail(1L)
@@ -152,7 +144,7 @@ class AdminClaimServiceTest {
         @DisplayName("미존재 클레임 - 존재하지 않는 ID -> ClaimNotFoundException")
         fun getClaimDetail_notFound() {
             // Given
-            whenever(adminClaimRepository.findById(999L)).thenReturn(Optional.empty())
+            every { adminClaimRepository.findById(999L) } returns Optional.empty()
 
             // Then
             assertThatThrownBy { adminClaimService.getClaimDetail(999L) }

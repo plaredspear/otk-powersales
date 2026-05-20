@@ -12,25 +12,22 @@ import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.math.BigDecimal
 
 @WebMvcTest(ClaimQueryController::class)
@@ -41,16 +38,16 @@ class ClaimQueryControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var claimQueryService: ClaimQueryService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
@@ -84,7 +81,7 @@ class ClaimQueryControllerTest {
                     createdAt = java.time.LocalDateTime.of(2026, 4, 8, 10, 30, 0)
                 )
             )
-            whenever(claimQueryService.getClaims(eq(1L), isNull(), isNull())).thenReturn(items)
+            every { claimQueryService.getClaims(1L, null, null) } returns items
 
             mockMvc.perform(get("/api/v1/mobile/claims"))
                 .andExpect(status().isOk)
@@ -99,8 +96,7 @@ class ClaimQueryControllerTest {
         @Test
         @DisplayName("성공 - 기간 지정 → 200")
         fun getClaims_withDates_success() {
-            whenever(claimQueryService.getClaims(eq(1L), eq("2026-04-01"), eq("2026-04-08")))
-                .thenReturn(emptyList())
+            every { claimQueryService.getClaims(1L, "2026-04-01", "2026-04-08") } returns emptyList()
 
             mockMvc.perform(
                 get("/api/v1/mobile/claims")
@@ -116,8 +112,7 @@ class ClaimQueryControllerTest {
         @Test
         @DisplayName("실패 - 잘못된 날짜 형식 → 400")
         fun getClaims_invalidDateFormat() {
-            whenever(claimQueryService.getClaims(eq(1L), eq("20260401"), isNull()))
-                .thenThrow(InvalidDateFormatException())
+            every { claimQueryService.getClaims(1L, "20260401", null) } throws InvalidDateFormatException()
 
             mockMvc.perform(
                 get("/api/v1/mobile/claims")
@@ -130,8 +125,7 @@ class ClaimQueryControllerTest {
         @Test
         @DisplayName("실패 - 역전된 날짜 범위 → 400")
         fun getClaims_invalidDateRange() {
-            whenever(claimQueryService.getClaims(eq(1L), eq("2026-04-10"), eq("2026-04-01")))
-                .thenThrow(InvalidDateRangeException())
+            every { claimQueryService.getClaims(1L, "2026-04-10", "2026-04-01") } throws InvalidDateRangeException()
 
             mockMvc.perform(
                 get("/api/v1/mobile/claims")
@@ -180,7 +174,7 @@ class ClaimQueryControllerTest {
                     )
                 )
             )
-            whenever(claimQueryService.getClaimDetail(eq(1L), eq(1L))).thenReturn(detail)
+            every { claimQueryService.getClaimDetail(1L, 1L) } returns detail
 
             mockMvc.perform(get("/api/v1/mobile/claims/1"))
                 .andExpect(status().isOk)
@@ -195,8 +189,7 @@ class ClaimQueryControllerTest {
         @Test
         @DisplayName("실패 - 존재하지 않는 클레임 → 404")
         fun getClaimDetail_notFound() {
-            whenever(claimQueryService.getClaimDetail(eq(1L), eq(999L)))
-                .thenThrow(ClaimNotFoundException(999L))
+            every { claimQueryService.getClaimDetail(1L, 999L) } throws ClaimNotFoundException(999L)
 
             mockMvc.perform(get("/api/v1/mobile/claims/999"))
                 .andExpect(status().isNotFound)
@@ -206,8 +199,7 @@ class ClaimQueryControllerTest {
         @Test
         @DisplayName("실패 - 타인 클레임 → 404")
         fun getClaimDetail_notOwner() {
-            whenever(claimQueryService.getClaimDetail(eq(1L), eq(2L)))
-                .thenThrow(ClaimNotFoundException(2L))
+            every { claimQueryService.getClaimDetail(1L, 2L) } throws ClaimNotFoundException(2L)
 
             mockMvc.perform(get("/api/v1/mobile/claims/2"))
                 .andExpect(status().isNotFound)

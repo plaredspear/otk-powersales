@@ -13,35 +13,27 @@ import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.employee.entity.Employee
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.*
 import java.math.BigDecimal
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("ClaimQueryService 테스트")
 class ClaimQueryServiceTest {
 
-    @Mock
-    private lateinit var claimRepository: ClaimRepository
+    private val claimRepository: ClaimRepository = mockk()
+    private val claimPhotoRepository: ClaimPhotoRepository = mockk()
 
-    @Mock
-    private lateinit var claimPhotoRepository: ClaimPhotoRepository
-
-    @InjectMocks
-    private lateinit var claimQueryService: ClaimQueryService
+    private val claimQueryService = ClaimQueryService(
+        claimRepository,
+        claimPhotoRepository,
+    )
 
     @Nested
     @DisplayName("getClaims - 클레임 목록 조회")
@@ -51,9 +43,7 @@ class ClaimQueryServiceTest {
         @DisplayName("정상 조회 - 기본 파라미터(최근 7일) → 목록 반환")
         fun getClaims_defaultDates_success() {
             val claim = createClaim()
-            whenever(claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(
-                eq(1L), any(), any()
-            )).thenReturn(listOf(claim))
+            every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns listOf(claim)
 
             val result = claimQueryService.getClaims(1L, null, null)
 
@@ -66,9 +56,7 @@ class ClaimQueryServiceTest {
         @Test
         @DisplayName("정상 조회 - 기간 지정 → 목록 반환")
         fun getClaims_withDates_success() {
-            whenever(claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(
-                eq(1L), any(), any()
-            )).thenReturn(emptyList())
+            every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns emptyList()
 
             val result = claimQueryService.getClaims(1L, "2026-04-01", "2026-04-08")
 
@@ -78,9 +66,7 @@ class ClaimQueryServiceTest {
         @Test
         @DisplayName("빈 결과 - 해당 기간에 클레임 없음 → 빈 리스트")
         fun getClaims_empty() {
-            whenever(claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(
-                eq(1L), any(), any()
-            )).thenReturn(emptyList())
+            every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns emptyList()
 
             val result = claimQueryService.getClaims(1L, null, null)
 
@@ -111,8 +97,8 @@ class ClaimQueryServiceTest {
         fun getClaimDetail_success() {
             val claim = createClaim()
             val photo = createClaimPhoto(claim)
-            whenever(claimRepository.findById(1L)).thenReturn(Optional.of(claim))
-            whenever(claimPhotoRepository.findByClaimId(1L)).thenReturn(listOf(photo))
+            every { claimRepository.findById(1L) } returns Optional.of(claim)
+            every { claimPhotoRepository.findByClaimId(1L) } returns listOf(photo)
 
             val result = claimQueryService.getClaimDetail(1L, 1L)
 
@@ -130,8 +116,8 @@ class ClaimQueryServiceTest {
         @DisplayName("사진 없음 - 사진 없는 클레임 → photos 빈 리스트")
         fun getClaimDetail_noPhotos() {
             val claim = createClaim()
-            whenever(claimRepository.findById(1L)).thenReturn(Optional.of(claim))
-            whenever(claimPhotoRepository.findByClaimId(1L)).thenReturn(emptyList())
+            every { claimRepository.findById(1L) } returns Optional.of(claim)
+            every { claimPhotoRepository.findByClaimId(1L) } returns emptyList()
 
             val result = claimQueryService.getClaimDetail(1L, 1L)
 
@@ -142,8 +128,8 @@ class ClaimQueryServiceTest {
         @DisplayName("구매정보 없음 - purchaseAmount null → null 반환")
         fun getClaimDetail_noPurchaseInfo() {
             val claim = createClaim(purchaseAmount = null, purchaseMethodName = null, requestTypeName = null)
-            whenever(claimRepository.findById(1L)).thenReturn(Optional.of(claim))
-            whenever(claimPhotoRepository.findByClaimId(1L)).thenReturn(emptyList())
+            every { claimRepository.findById(1L) } returns Optional.of(claim)
+            every { claimPhotoRepository.findByClaimId(1L) } returns emptyList()
 
             val result = claimQueryService.getClaimDetail(1L, 1L)
 
@@ -155,7 +141,7 @@ class ClaimQueryServiceTest {
         @Test
         @DisplayName("존재하지 않는 클레임 - claimId 없음 → ClaimNotFoundException")
         fun getClaimDetail_notFound() {
-            whenever(claimRepository.findById(999L)).thenReturn(Optional.empty())
+            every { claimRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { claimQueryService.getClaimDetail(1L, 999L) }
                 .isInstanceOf(ClaimNotFoundException::class.java)
@@ -165,7 +151,7 @@ class ClaimQueryServiceTest {
         @DisplayName("타인 클레임 조회 - 다른 사원의 클레임 → ClaimNotFoundException")
         fun getClaimDetail_notOwner() {
             val claim = createClaim(employeeId = 2L)
-            whenever(claimRepository.findById(1L)).thenReturn(Optional.of(claim))
+            every { claimRepository.findById(1L) } returns Optional.of(claim)
 
             assertThatThrownBy { claimQueryService.getClaimDetail(1L, 1L) }
                 .isInstanceOf(ClaimNotFoundException::class.java)
