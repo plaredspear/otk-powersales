@@ -3,29 +3,23 @@ package com.otoki.powersales.sales.service
 import com.otoki.powersales.sales.entity.DailySalesHistory
 import com.otoki.powersales.sales.repository.DailySalesHistoryRepository
 import com.otoki.powersales.sales.service.dto.DailySalesHistoryUpsertCommand
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("DailySalesHistoryUpsertService 테스트")
 class DailySalesHistoryUpsertServiceTest {
 
-    @Mock
-    private lateinit var dailySalesHistoryRepository: DailySalesHistoryRepository
+    private val dailySalesHistoryRepository: DailySalesHistoryRepository = mockk()
 
-    @InjectMocks
-    private lateinit var service: DailySalesHistoryUpsertService
+    private val service = DailySalesHistoryUpsertService(
+        dailySalesHistoryRepository,
+    )
 
     private fun command(
         sapAccountCode: String? = "1032619",
@@ -44,6 +38,12 @@ class DailySalesHistoryUpsertServiceTest {
         ledgerAmount = ledgerAmount
     )
 
+    private fun stubSaveAllCapture(): io.mockk.CapturingSlot<List<DailySalesHistory>> {
+        val slot = slot<List<DailySalesHistory>>()
+        every { dailySalesHistoryRepository.saveAll(capture(slot)) } answers { firstArg<List<DailySalesHistory>>() }
+        return slot
+    }
+
     @Nested
     @DisplayName("upsert - Happy Path")
     inner class UpsertHappy {
@@ -51,14 +51,12 @@ class DailySalesHistoryUpsertServiceTest {
         @Test
         @DisplayName("신규 1건 - INSERT, success_count=1")
         fun upsert_insertNew() {
-            whenever(dailySalesHistoryRepository.findByExternalKeyIn(listOf("103261920260427")))
-                .thenReturn(emptyList())
+            every { dailySalesHistoryRepository.findByExternalKeyIn(listOf("103261920260427")) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(erpSalesAmount1 = "1500000", ledgerAmount = "1500000")))
 
-            val captor = argumentCaptor<List<DailySalesHistory>>()
-            verify(dailySalesHistoryRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.externalKey).isEqualTo("103261920260427")
             assertThat(saved.sapAccountCode).isEqualTo("1032619")
             assertThat(saved.salesDate).isEqualTo("20260427")
@@ -76,27 +74,24 @@ class DailySalesHistoryUpsertServiceTest {
                 externalKey = "103261920260427"
             )
             existing.ledgerAmount = 1.0
-            whenever(dailySalesHistoryRepository.findByExternalKeyIn(listOf("103261920260427")))
-                .thenReturn(listOf(existing))
+            every { dailySalesHistoryRepository.findByExternalKeyIn(listOf("103261920260427")) } returns listOf(existing)
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(listOf(command(ledgerAmount = "999")))
 
-            val captor = argumentCaptor<List<DailySalesHistory>>()
-            verify(dailySalesHistoryRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.single()).isSameAs(existing)
+            assertThat(savedSlot.captured.single()).isSameAs(existing)
             assertThat(existing.ledgerAmount).isEqualTo(999.0)
         }
 
         @Test
         @DisplayName("빈 금액 → 0")
         fun upsert_emptyAmountToZero() {
-            whenever(dailySalesHistoryRepository.findByExternalKeyIn(any())).thenReturn(emptyList())
+            every { dailySalesHistoryRepository.findByExternalKeyIn(any()) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(listOf(command(erpSalesAmount1 = null, ledgerAmount = "")))
 
-            val captor = argumentCaptor<List<DailySalesHistory>>()
-            verify(dailySalesHistoryRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.erpSalesAmount1).isEqualTo(0.0)
             assertThat(saved.ledgerAmount).isEqualTo(0.0)
         }
@@ -114,13 +109,14 @@ class DailySalesHistoryUpsertServiceTest {
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().identifier).isNull()
             assertThat(result.failures.single().reason).contains("SAPAccountCode 필수")
-            verify(dailySalesHistoryRepository, never()).saveAll(any<List<DailySalesHistory>>())
+            verify(exactly = 0) { dailySalesHistoryRepository.saveAll(any<List<DailySalesHistory>>()) }
         }
 
         @Test
         @DisplayName("SalesDate 형식 오류 - failures (identifier=ac+sd)")
         fun upsert_invalidSalesDate() {
-            whenever(dailySalesHistoryRepository.findByExternalKeyIn(any())).thenReturn(emptyList())
+            every { dailySalesHistoryRepository.findByExternalKeyIn(any()) } returns emptyList()
+            every { dailySalesHistoryRepository.saveAll(any<List<DailySalesHistory>>()) } answers { firstArg<List<DailySalesHistory>>() }
 
             val result = service.upsert(listOf(command(salesDate = "2026-04-27")))
 
@@ -132,7 +128,8 @@ class DailySalesHistoryUpsertServiceTest {
         @Test
         @DisplayName("일부 행 실패 - 성공 행은 적재, 실패 행은 failures 누적")
         fun upsert_partialFailure() {
-            whenever(dailySalesHistoryRepository.findByExternalKeyIn(any())).thenReturn(emptyList())
+            every { dailySalesHistoryRepository.findByExternalKeyIn(any()) } returns emptyList()
+            every { dailySalesHistoryRepository.saveAll(any<List<DailySalesHistory>>()) } answers { firstArg<List<DailySalesHistory>>() }
 
             val result = service.upsert(
                 listOf(

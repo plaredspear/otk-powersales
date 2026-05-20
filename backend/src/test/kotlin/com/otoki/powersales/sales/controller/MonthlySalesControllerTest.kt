@@ -9,18 +9,17 @@ import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.sales.service.MonthlySalesService
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -39,19 +38,19 @@ class MonthlySalesControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var monthlySalesService: MonthlySalesService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -103,7 +102,7 @@ class MonthlySalesControllerTest {
             )
         )
 
-        whenever(monthlySalesService.getMonthlySales(any())).thenReturn(mockResponse)
+        every { monthlySalesService.getMonthlySales(any()) } returns mockResponse
 
         // When & Then
         mockMvc.perform(
@@ -163,7 +162,7 @@ class MonthlySalesControllerTest {
             monthlyAverage = MonthlySalesResponse.MonthlyAverageInfo(0, 0, 1, 2)
         )
 
-        whenever(monthlySalesService.getMonthlySales(any())).thenReturn(mockResponse)
+        every { monthlySalesService.getMonthlySales(any()) } returns mockResponse
 
         // When & Then
         mockMvc.perform(

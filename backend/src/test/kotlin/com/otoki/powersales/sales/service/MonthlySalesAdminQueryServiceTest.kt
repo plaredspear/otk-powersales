@@ -10,31 +10,26 @@ import com.otoki.powersales.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.sales.enums.SalesMonth
 import com.otoki.powersales.sales.enums.SalesYear
 import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
-import org.mockito.quality.Strictness
 import java.math.BigDecimal
 import java.time.LocalDate
 
-@ExtendWith(MockitoExtension::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("MonthlySalesAdminQueryService 테스트")
 class MonthlySalesAdminQueryServiceTest {
 
-    @Mock private lateinit var monthlySalesHistoryRepository: MonthlySalesHistoryRepository
-    @Mock private lateinit var accountRepository: AccountRepository
+    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository = mockk()
+    private val accountRepository: AccountRepository = mockk()
 
-    @InjectMocks private lateinit var service: MonthlySalesAdminQueryService
+    private val service = MonthlySalesAdminQueryService(
+        monthlySalesHistoryRepository,
+        accountRepository,
+    )
 
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
@@ -86,17 +81,15 @@ class MonthlySalesAdminQueryServiceTest {
 
     @BeforeEach
     fun resetMocks() {
-        // 기본 stub — 모든 repo 호출에 빈 결과
-        whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), any()))
-            .thenReturn(emptyList())
-        whenever(monthlySalesHistoryRepository.findBySalesYearAndSalesMonthInAndAccountIn(any(), any(), any()))
-            .thenReturn(emptyList())
+        // 기본 stub — 모든 repo 호출에 빈 결과 (각 테스트가 필요 시 override)
+        every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), any()) } returns emptyList()
+        every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthInAndAccountIn(any(), any(), any()) } returns emptyList()
     }
 
     @Test
     @DisplayName("getSummary: 거래처 0건 시 모든 합계 0 + monthlyTrend 6포인트 0")
     fun summaryEmptyAccounts() {
-        whenever(accountRepository.findByBranchCodeIn(listOf("1000"))).thenReturn(emptyList())
+        every { accountRepository.findByBranchCodeIn(listOf("1000")) } returns emptyList()
 
         val response = service.getSummary(allScope, 2026, 5, listOf("1000"), null, null)
 
@@ -114,17 +107,17 @@ class MonthlySalesAdminQueryServiceTest {
     fun summaryWithData() {
         val acc1 = account(1, "거래처A", "1000")
         val acc2 = account(2, "거래처B", "1000")
-        whenever(accountRepository.findByBranchCodeIn(listOf("1000"))).thenReturn(listOf(acc1, acc2))
+        every { accountRepository.findByBranchCodeIn(listOf("1000")) } returns listOf(acc1, acc2)
 
         val rows = listOf(
             history(acc1, target = 1_000_000L, shipSum = 800_000.0),
             history(acc2, target = 500_000.0.toLong(), shipSum = 600_000.0),
         )
-        whenever(
+        every {
             monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
                 SalesYear.Y2026, SalesMonth.M05, listOf(acc1, acc2)
             )
-        ).thenReturn(rows)
+        } returns rows
 
         val response = service.getSummary(allScope, 2026, 5, listOf("1000"), null, null)
 
@@ -138,16 +131,14 @@ class MonthlySalesAdminQueryServiceTest {
     fun listWithPaging() {
         val acc1 = account(1, "거래처A", "1000")
         val acc2 = account(2, "거래처B", "1000")
-        whenever(accountRepository.findByBranchCodeIn(listOf("1000"))).thenReturn(listOf(acc1, acc2))
-        whenever(
+        every { accountRepository.findByBranchCodeIn(listOf("1000")) } returns listOf(acc1, acc2)
+        every {
             monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
                 SalesYear.Y2026, SalesMonth.M05, listOf(acc1, acc2)
             )
-        ).thenReturn(
-            listOf(
-                history(acc1, target = 1_000_000L, abc1 = 100_000.0, abc2 = 200_000.0, abc3 = 300_000.0, abc4 = 400_000.0),
-                history(acc2, target = 500_000L, abc1 = 50_000.0, abc2 = 60_000.0, abc3 = 70_000.0, abc4 = 80_000.0),
-            )
+        } returns listOf(
+            history(acc1, target = 1_000_000L, abc1 = 100_000.0, abc2 = 200_000.0, abc3 = 300_000.0, abc4 = 400_000.0),
+            history(acc2, target = 500_000L, abc1 = 50_000.0, abc2 = 60_000.0, abc3 = 70_000.0, abc4 = 80_000.0),
         )
 
         val request = MonthlySalesDashboardListRequest(
@@ -170,16 +161,14 @@ class MonthlySalesAdminQueryServiceTest {
     fun listSortByRateDesc() {
         val acc1 = account(1, "거래처A", "1000")
         val acc2 = account(2, "거래처B", "1000")
-        whenever(accountRepository.findByBranchCodeIn(listOf("1000"))).thenReturn(listOf(acc1, acc2))
-        whenever(
+        every { accountRepository.findByBranchCodeIn(listOf("1000")) } returns listOf(acc1, acc2)
+        every {
             monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
                 SalesYear.Y2026, SalesMonth.M05, listOf(acc1, acc2)
             )
-        ).thenReturn(
-            listOf(
-                history(acc1, target = 1_000_000L, shipSum = 500_000.0), // 50%
-                history(acc2, target = 500_000L, shipSum = 450_000.0),   // 90%
-            )
+        } returns listOf(
+            history(acc1, target = 1_000_000L, shipSum = 500_000.0), // 50%
+            history(acc2, target = 500_000L, shipSum = 450_000.0),   // 90%
         )
 
         val response = service.getList(
@@ -206,7 +195,7 @@ class MonthlySalesAdminQueryServiceTest {
     @DisplayName("getDetail: 거래처가 권한 범위 밖 → AdminForbiddenException")
     fun detailForbidden() {
         val acc = account(1, "거래처A", "9999")
-        whenever(accountRepository.findByIdInAndIsDeletedNot(listOf(1), true)).thenReturn(listOf(acc))
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
 
         val scope = branchScope("1000")
         assertThatThrownBy {
@@ -218,13 +207,13 @@ class MonthlySalesAdminQueryServiceTest {
     @DisplayName("getDetail: happy path + 과거월 카테고리 4종 포함")
     fun detailHappyPath() {
         val acc = account(1, "거래처A", "1000")
-        whenever(accountRepository.findByIdInAndIsDeletedNot(listOf(1), true)).thenReturn(listOf(acc))
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
         val row = history(acc, year = SalesYear.Y2025, month = SalesMonth.M03, target = 1_000_000L)
-        whenever(
+        every {
             monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
                 SalesYear.Y2025, SalesMonth.M03, listOf(acc)
             )
-        ).thenReturn(listOf(row))
+        } returns listOf(row)
 
         val response = service.getDetail(allScope, 1, 2025, 3)
 
