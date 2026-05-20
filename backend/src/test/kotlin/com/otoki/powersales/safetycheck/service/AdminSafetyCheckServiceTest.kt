@@ -1,64 +1,62 @@
 package com.otoki.powersales.safetycheck.service
 
-import com.otoki.powersales.common.enums.WorkingType
-import com.otoki.powersales.schedule.exception.TeamScheduleEmployeeNotFoundException
+import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.safetycheck.entity.SafetyCheckItem
 import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.powersales.safetycheck.repository.SafetyCheckItemRepository
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.schedule.exception.TeamScheduleEmployeeNotFoundException
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.account.repository.AccountRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminSafetyCheckService 테스트")
 class AdminSafetyCheckServiceTest {
 
-    @Mock private lateinit var employeeRepository: EmployeeRepository
-    @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
-    @Mock private lateinit var safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository
-    @Mock private lateinit var safetyCheckItemRepository: SafetyCheckItemRepository
-    @Mock private lateinit var accountRepository: AccountRepository
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository = mockk()
+    private val safetyCheckItemRepository: SafetyCheckItemRepository = mockk()
+    private val accountRepository: AccountRepository = mockk()
 
-    @InjectMocks private lateinit var service: AdminSafetyCheckService
+    private val service = AdminSafetyCheckService(
+        employeeRepository,
+        teamMemberScheduleRepository,
+        safetyCheckSubmissionRepository,
+        safetyCheckItemRepository,
+        accountRepository,
+    )
 
     private val today = LocalDate.of(2026, 3, 17)
     private val adminUserId = 1L
 
     @BeforeEach
     fun setUp() {
-        whenever(safetyCheckItemRepository.findByUseYnOrderByQuestionNumAscSeqNumAsc("Y"))
-            .thenReturn(listOf(
-                createSafetyCheckItem(1, 1, "손목보호대 착용"),
-                createSafetyCheckItem(1, 2, "숨수건(화재피해 예방) 소지"),
-                createSafetyCheckItem(1, 3, "안전화 착용"),
-                createSafetyCheckItem(1, 4, "진열업무시 코팅장갑 및 허리보호대 착용"),
-                createSafetyCheckItem(1, 5, "진열대가 높을 경우 안전사다리 사용"),
-                createSafetyCheckItem(1, 6, "시식행사 진행시 위생장갑 사용"),
-                createSafetyCheckItem(1, 7, "오뚜기 유니폼 착용"),
-                createSafetyCheckItem(1, 8, "오뚜기 판매여사원 명찰 착용"),
-                createSafetyCheckItem(1, 9, "(위생)마스크 착용")
-            ))
+        every { safetyCheckItemRepository.findByUseYnOrderByQuestionNumAscSeqNumAsc("Y") } returns listOf(
+            createSafetyCheckItem(1, 1, "손목보호대 착용"),
+            createSafetyCheckItem(1, 2, "숨수건(화재피해 예방) 소지"),
+            createSafetyCheckItem(1, 3, "안전화 착용"),
+            createSafetyCheckItem(1, 4, "진열업무시 코팅장갑 및 허리보호대 착용"),
+            createSafetyCheckItem(1, 5, "진열대가 높을 경우 안전사다리 사용"),
+            createSafetyCheckItem(1, 6, "시식행사 진행시 위생장갑 사용"),
+            createSafetyCheckItem(1, 7, "오뚜기 유니폼 착용"),
+            createSafetyCheckItem(1, 8, "오뚜기 판매여사원 명찰 착용"),
+            createSafetyCheckItem(1, 9, "(위생)마스크 착용")
+        )
         service.initEquipmentLabels()
     }
 
@@ -69,32 +67,29 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("정상 조회 - 일부 제출, 일부 미제출")
         fun getStatus_partialSubmission() {
-            // Given
             val admin = createEmployee(adminUserId, "10000001", "관리자", UserRole.LEADER, "CC001")
             val member1 = createEmployee(42L, "123456", "홍길동", UserRole.WOMAN, "CC001")
             val member2 = createEmployee(55L, "654321", "김영희", UserRole.WOMAN, "CC001")
 
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(admin))
-            whenever(employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN))
-                .thenReturn(listOf(member1, member2))
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN) } returns
+                listOf(member1, member2)
 
             val schedule1 = createSchedule(1L, 42L, today, WorkingType.WORK, accountId = 100)
             val schedule2 = createSchedule(2L, 55L, today, WorkingType.WORK, accountId = 200)
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
-                .thenReturn(listOf(schedule1, schedule2))
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns
+                listOf(schedule1, schedule2)
 
             val submission = createSubmission(42L, today)
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
-                .thenReturn(listOf(submission))
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), today) } returns
+                listOf(submission)
 
             val account1 = createAccount(100, "이마트 강남점")
             val account2 = createAccount(200, "홈플러스 역삼점")
-            whenever(accountRepository.findByIdIn(any())).thenReturn(listOf(account1, account2))
+            every { accountRepository.findByIdIn(any()) } returns listOf(account1, account2)
 
-            // When
             val result = service.getStatus(adminUserId, today)
 
-            // Then
             assertThat(result.date).isEqualTo("2026-03-17")
             assertThat(result.totalCount).isEqualTo(2)
             assertThat(result.submittedCount).isEqualTo(1)
@@ -122,9 +117,8 @@ class AdminSafetyCheckServiceTest {
         @DisplayName("오늘 날짜 기본 조회 - date 미지정 시 오늘 기준")
         fun getStatus_defaultToday() {
             val admin = createEmployee(adminUserId, "10000001", "관리자", UserRole.LEADER, "CC001")
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(admin))
-            whenever(employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN) } returns emptyList()
 
             val result = service.getStatus(adminUserId, LocalDate.now())
 
@@ -139,20 +133,21 @@ class AdminSafetyCheckServiceTest {
             val member1 = createEmployee(42L, "123456", "홍길동", UserRole.WOMAN, "CC001")
             val member2 = createEmployee(55L, "654321", "김영희", UserRole.WOMAN, "CC001")
 
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(admin))
-            whenever(employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN))
-                .thenReturn(listOf(member1, member2))
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN) } returns
+                listOf(member1, member2)
 
             val schedule1 = createSchedule(1L, 42L, today, WorkingType.WORK)
             val schedule2 = createSchedule(2L, 55L, today, WorkingType.WORK)
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
-                .thenReturn(listOf(schedule1, schedule2))
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns
+                listOf(schedule1, schedule2)
 
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
-                .thenReturn(listOf(
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), today) } returns
+                listOf(
                     createSubmission(42L, today),
                     createSubmission(55L, today)
-                ))
+                )
+            every { accountRepository.findByIdIn(any()) } returns emptyList()
 
             val result = service.getStatus(adminUserId, today)
 
@@ -167,11 +162,9 @@ class AdminSafetyCheckServiceTest {
             val admin = createEmployee(adminUserId, "10000001", "관리자", UserRole.LEADER, "CC001")
             val member = createEmployee(42L, "123456", "홍길동", UserRole.WOMAN, "CC001")
 
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(admin))
-            whenever(employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN))
-                .thenReturn(listOf(member))
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN) } returns listOf(member)
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns emptyList()
 
             val result = service.getStatus(adminUserId, today)
 
@@ -186,17 +179,18 @@ class AdminSafetyCheckServiceTest {
             val member1 = createEmployee(42L, "123456", "홍길동", UserRole.WOMAN, "CC001")
             val member2 = createEmployee(55L, "654321", "김영희", UserRole.WOMAN, "CC001")
 
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(admin))
-            whenever(employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN))
-                .thenReturn(listOf(member1, member2))
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN) } returns
+                listOf(member1, member2)
 
             val workSchedule = createSchedule(1L, 42L, today, WorkingType.WORK)
             val leaveSchedule = createSchedule(2L, 55L, today, WorkingType.ANNUAL_LEAVE)
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
-                .thenReturn(listOf(workSchedule, leaveSchedule))
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns
+                listOf(workSchedule, leaveSchedule)
 
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
-                .thenReturn(emptyList())
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), today) } returns
+                emptyList()
+            every { accountRepository.findByIdIn(any()) } returns emptyList()
 
             val result = service.getStatus(adminUserId, today)
 
@@ -211,20 +205,19 @@ class AdminSafetyCheckServiceTest {
             val admin = createEmployee(adminUserId, "10000001", "관리자", UserRole.LEADER, "CC001")
             val member = createEmployee(42L, "123456", "홍길동", UserRole.WOMAN, "CC001")
 
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(admin))
-            whenever(employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN))
-                .thenReturn(listOf(member))
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN) } returns listOf(member)
 
             val schedule1 = createSchedule(1L, 42L, today, WorkingType.WORK, accountId = 100, traversalFlag = null)
             val schedule2 = createSchedule(2L, 42L, today, WorkingType.WORK, accountId = 200, traversalFlag = "O")
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
-                .thenReturn(listOf(schedule1, schedule2))
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns
+                listOf(schedule1, schedule2)
 
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
-                .thenReturn(emptyList())
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), today) } returns
+                emptyList()
 
             val account = createAccount(200, "홈플러스 역삼점")
-            whenever(accountRepository.findByIdIn(any())).thenReturn(listOf(account))
+            every { accountRepository.findByIdIn(any()) } returns listOf(account)
 
             val result = service.getStatus(adminUserId, today)
 
@@ -236,7 +229,7 @@ class AdminSafetyCheckServiceTest {
         @DisplayName("costCenterCode 없는 사용자 - 빈 결과")
         fun getStatus_noCostCenterCode() {
             val admin = createEmployee(adminUserId, "10000001", "관리자", UserRole.LEADER, null)
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(admin))
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
 
             val result = service.getStatus(adminUserId, today)
 
@@ -247,7 +240,7 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("사용자 없음 - TeamScheduleEmployeeNotFoundException")
         fun getStatus_userNotFound() {
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(adminUserId) } returns Optional.empty()
 
             assertThatThrownBy { service.getStatus(adminUserId, today) }
                 .isInstanceOf(TeamScheduleEmployeeNotFoundException::class.java)
@@ -260,15 +253,16 @@ class AdminSafetyCheckServiceTest {
             val activeMember = createEmployee(42L, "123456", "홍길동", UserRole.WOMAN, "CC001")
             val deletedMember = createEmployee(55L, "654321", "김영희", UserRole.WOMAN, "CC001", isDeleted = true)
 
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(admin))
-            whenever(employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN))
-                .thenReturn(listOf(activeMember, deletedMember))
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN) } returns
+                listOf(activeMember, deletedMember)
 
             val schedule = createSchedule(1L, 42L, today, WorkingType.WORK)
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
-                .thenReturn(listOf(schedule))
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
-                .thenReturn(emptyList())
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns
+                listOf(schedule)
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), today) } returns
+                emptyList()
+            every { accountRepository.findByIdIn(any()) } returns emptyList()
 
             val result = service.getStatus(adminUserId, today)
 
@@ -278,27 +272,25 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("본부 통합 권한 - costCenterCode 3232 사용자는 3234·3236 두 사업소 통합 조회 (SF callOut HRcode 3232 분기 정합)")
         fun getStatus_hqIntegratedScope_3232to3234and3236() {
-            // Given — 본부 영업관리자 (costCenterCode = 3232) 가 로그인
             val hqManager = createEmployee(adminUserId, "10000099", "본부관리자", UserRole.LEADER, "3232")
             val memberAt3234 = createEmployee(42L, "123456", "홍길동", UserRole.WOMAN, "3234")
             val memberAt3236 = createEmployee(55L, "654321", "김영희", UserRole.WOMAN, "3236")
 
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(hqManager))
-            // 3232 분기로 인해 findByCostCenterCodeInAndRole(["3234","3236"], WOMAN) 가 호출되어야 함
-            whenever(employeeRepository.findByCostCenterCodeInAndRole(listOf("3234", "3236"), UserRole.WOMAN))
-                .thenReturn(listOf(memberAt3234, memberAt3236))
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(hqManager)
+            every {
+                employeeRepository.findByCostCenterCodeInAndRole(listOf("3234", "3236"), UserRole.WOMAN)
+            } returns listOf(memberAt3234, memberAt3236)
 
             val schedule1 = createSchedule(1L, 42L, today, WorkingType.WORK)
             val schedule2 = createSchedule(2L, 55L, today, WorkingType.WORK)
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
-                .thenReturn(listOf(schedule1, schedule2))
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
-                .thenReturn(emptyList())
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns
+                listOf(schedule1, schedule2)
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), today) } returns
+                emptyList()
+            every { accountRepository.findByIdIn(any()) } returns emptyList()
 
-            // When
             val result = service.getStatus(adminUserId, today)
 
-            // Then — 3234, 3236 두 사업소의 여사원이 모두 응답에 포함
             assertThat(result.totalCount).isEqualTo(2)
             assertThat(result.members.map { it.employeeCode }).containsExactlyInAnyOrder("123456", "654321")
         }
@@ -306,25 +298,21 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("일반 사업소 사용자 (3234 단일) - 본부 통합 분기 적용 안 됨, 단일 사업소만 조회")
         fun getStatus_normalScope_singleCostCenter() {
-            // Given — 일반 영업조장 (costCenterCode = 3234) 이 로그인
             val leader = createEmployee(adminUserId, "20100001", "조장", UserRole.LEADER, "3234")
             val member = createEmployee(42L, "123456", "홍길동", UserRole.WOMAN, "3234")
 
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(leader))
-            // 본부 통합 분기 미적용 → 단일 사업소만
-            whenever(employeeRepository.findByCostCenterCodeAndRole("3234", UserRole.WOMAN))
-                .thenReturn(listOf(member))
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(leader)
+            every { employeeRepository.findByCostCenterCodeAndRole("3234", UserRole.WOMAN) } returns listOf(member)
 
             val schedule = createSchedule(1L, 42L, today, WorkingType.WORK)
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
-                .thenReturn(listOf(schedule))
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
-                .thenReturn(emptyList())
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns
+                listOf(schedule)
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), today) } returns
+                emptyList()
+            every { accountRepository.findByIdIn(any()) } returns emptyList()
 
-            // When
             val result = service.getStatus(adminUserId, today)
 
-            // Then
             assertThat(result.totalCount).isEqualTo(1)
             assertThat(result.members[0].employeeCode).isEqualTo("123456")
         }
@@ -337,18 +325,19 @@ class AdminSafetyCheckServiceTest {
             val member2 = createEmployee(55L, "222222", "김영희", UserRole.WOMAN, "CC001")
             val member3 = createEmployee(66L, "333333", "박민수", UserRole.WOMAN, "CC001")
 
-            whenever(employeeRepository.findById(adminUserId)).thenReturn(Optional.of(admin))
-            whenever(employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN))
-                .thenReturn(listOf(member1, member2, member3))
+            every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRole.WOMAN) } returns
+                listOf(member1, member2, member3)
 
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(eq(today), any()))
-                .thenReturn(listOf(
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns
+                listOf(
                     createSchedule(1L, 42L, today, WorkingType.WORK),
                     createSchedule(2L, 55L, today, WorkingType.WORK),
                     createSchedule(3L, 66L, today, WorkingType.WORK)
-                ))
-            whenever(safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), eq(today)))
-                .thenReturn(emptyList())
+                )
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), today) } returns
+                emptyList()
+            every { accountRepository.findByIdIn(any()) } returns emptyList()
 
             val result = service.getStatus(adminUserId, today)
 

@@ -1,10 +1,10 @@
 package com.otoki.powersales.sfmigration.service
 
+import io.mockk.mockk
 import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import org.springframework.transaction.support.TransactionTemplate
 
 /**
@@ -16,8 +16,8 @@ import org.springframework.transaction.support.TransactionTemplate
 class SfMigrationStage2FkServiceTest {
 
     private val service = SfMigrationStage2FkService(
-        em = mock<EntityManager>(),
-        transactionTemplate = mock<TransactionTemplate>(),
+        em = mockk<EntityManager>(),
+        transactionTemplate = mockk<TransactionTemplate>(),
         progress = SfFkResolveProgress(),
     )
 

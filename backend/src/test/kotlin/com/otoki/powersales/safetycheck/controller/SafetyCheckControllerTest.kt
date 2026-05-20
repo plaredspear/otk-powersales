@@ -1,33 +1,30 @@
 package com.otoki.powersales.safetycheck.controller
 
-import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
-import com.otoki.powersales.safetycheck.dto.response.MemberStatus
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
-import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckItemsResponse
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckSubmitResponse
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
+import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.safetycheck.exception.AlreadySubmittedException
-import com.otoki.powersales.safetycheck.exception.RequiredItemsMissingException
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
+import com.otoki.powersales.safetycheck.dto.response.MemberStatus
+import com.otoki.powersales.safetycheck.dto.response.SafetyCheckItemsResponse
+import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
+import com.otoki.powersales.safetycheck.dto.response.SafetyCheckSubmitResponse
+import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
+import com.otoki.powersales.safetycheck.exception.AlreadySubmittedException
+import com.otoki.powersales.safetycheck.exception.RequiredItemsMissingException
+import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
 import com.otoki.powersales.safetycheck.service.SafetyCheckService
+import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -36,7 +33,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 
 @WebMvcTest(SafetyCheckController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -46,26 +42,22 @@ class SafetyCheckControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
-    @MockitoBean
+    @MockkBean
     private lateinit var safetyCheckService: SafetyCheckService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var adminSafetyCheckService: AdminSafetyCheckService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -85,7 +77,6 @@ class SafetyCheckControllerTest {
         @Test
         @DisplayName("정상 조회 - 200 OK, 카테고리별 항목 반환")
         fun getChecklistItems_success() {
-            // Given
             val mockResponse = SafetyCheckItemsResponse(
                 categories = listOf(
                     SafetyCheckItemsResponse.CategoryInfo(
@@ -112,9 +103,8 @@ class SafetyCheckControllerTest {
                 )
             )
 
-            whenever(safetyCheckService.getChecklistItems()).thenReturn(mockResponse)
+            every { safetyCheckService.getChecklistItems() } returns mockResponse
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/mobile/safety-check/items")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -145,14 +135,13 @@ class SafetyCheckControllerTest {
         @Test
         @DisplayName("정상 제출 - 200 OK")
         fun submit_success() {
-            // Given
             val submittedAt = java.time.LocalDateTime.of(2026, 3, 15, 9, 2, 30)
             val mockResponse = SafetyCheckSubmitResponse(
                 submittedAt = submittedAt,
                 safetyCheckCompleted = true
             )
 
-            whenever(safetyCheckService.submitSafetyCheck(eq(1L), any())).thenReturn(mockResponse)
+            every { safetyCheckService.submitSafetyCheck(1L, any()) } returns mockResponse
 
             val requestJson = """
             {
@@ -173,7 +162,6 @@ class SafetyCheckControllerTest {
             }
             """.trimIndent()
 
-            // When & Then
             mockMvc.perform(
                 post("/api/v1/mobile/safety-check/submit")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -211,8 +199,7 @@ class SafetyCheckControllerTest {
         @Test
         @DisplayName("필수 항목 누락 - 400 REQUIRED_ITEMS_MISSING")
         fun submit_requiredItemsMissing() {
-            whenever(safetyCheckService.submitSafetyCheck(eq(1L), any()))
-                .thenThrow(RequiredItemsMissingException())
+            every { safetyCheckService.submitSafetyCheck(1L, any()) } throws RequiredItemsMissingException()
 
             val requestJson = """
             {
@@ -236,8 +223,7 @@ class SafetyCheckControllerTest {
         @Test
         @DisplayName("중복 제출 - 409 ALREADY_SUBMITTED")
         fun submit_alreadySubmitted() {
-            whenever(safetyCheckService.submitSafetyCheck(eq(1L), any()))
-                .thenThrow(AlreadySubmittedException())
+            every { safetyCheckService.submitSafetyCheck(1L, any()) } throws AlreadySubmittedException()
 
             val requestJson = """
             {
@@ -309,7 +295,7 @@ class SafetyCheckControllerTest {
                     )
                 )
             )
-            whenever(adminSafetyCheckService.getStatus(eq(1L), any())).thenReturn(response)
+            every { adminSafetyCheckService.getStatus(1L, any()) } returns response
 
             mockMvc.perform(get("/api/v1/mobile/safety-check/status").param("date", "2026-03-21"))
                 .andExpect(status().isOk)
@@ -336,7 +322,7 @@ class SafetyCheckControllerTest {
                 notSubmittedCount = 0,
                 members = emptyList()
             )
-            whenever(adminSafetyCheckService.getStatus(eq(1L), any())).thenReturn(response)
+            every { adminSafetyCheckService.getStatus(1L, any()) } returns response
 
             mockMvc.perform(get("/api/v1/mobile/safety-check/status"))
                 .andExpect(status().isOk)
@@ -366,7 +352,7 @@ class SafetyCheckControllerTest {
                 submittedAt = submittedAt
             )
 
-            whenever(safetyCheckService.getTodayStatus(1L)).thenReturn(mockResponse)
+            every { safetyCheckService.getTodayStatus(1L) } returns mockResponse
 
             mockMvc.perform(
                 get("/api/v1/mobile/safety-check/today")
@@ -386,7 +372,7 @@ class SafetyCheckControllerTest {
                 submittedAt = null
             )
 
-            whenever(safetyCheckService.getTodayStatus(1L)).thenReturn(mockResponse)
+            every { safetyCheckService.getTodayStatus(1L) } returns mockResponse
 
             mockMvc.perform(
                 get("/api/v1/mobile/safety-check/today")

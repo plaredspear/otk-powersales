@@ -1,6 +1,7 @@
 /*
 package com.otoki.powersales.suggestion.controller
 
+import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.suggestion.dto.response.SuggestionCreateResponse
 import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.common.security.GpsConsentFilter
@@ -9,11 +10,10 @@ import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.suggestion.service.SuggestionService
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -21,7 +21,6 @@ import org.springframework.http.MediaType
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -34,19 +33,19 @@ class SuggestionControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var suggestionService: SuggestionService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -73,8 +72,7 @@ class SuggestionControllerTest {
             createdAt = "2026-02-11T11:00:00"
         )
 
-        whenever(suggestionService.createSuggestion(any(), any(), any()))
-            .thenReturn(response)
+        every { suggestionService.createSuggestion(any(), any(), any()) } returns response
 
         // When & Then
         mockMvc.perform(
@@ -114,8 +112,7 @@ class SuggestionControllerTest {
             createdAt = "2026-02-11T11:00:00"
         )
 
-        whenever(suggestionService.createSuggestion(any(), any(), any()))
-            .thenReturn(response)
+        every { suggestionService.createSuggestion(any(), any(), any()) } returns response
 
         // When & Then
         mockMvc.perform(
@@ -144,8 +141,7 @@ class SuggestionControllerTest {
             createdAt = "2026-02-11T11:00:00"
         )
 
-        whenever(suggestionService.createSuggestion(any(), any(), any()))
-            .thenReturn(response)
+        every { suggestionService.createSuggestion(any(), any(), any()) } returns response
 
         // When & Then
         mockMvc.perform(

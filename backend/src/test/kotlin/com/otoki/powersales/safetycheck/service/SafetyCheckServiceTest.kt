@@ -1,6 +1,8 @@
 package com.otoki.powersales.safetycheck.service
 
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.safetycheck.dto.request.SafetyCheckSubmitRequest
 import com.otoki.powersales.safetycheck.entity.SafetyCheckItem
 import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
@@ -8,38 +10,29 @@ import com.otoki.powersales.safetycheck.exception.AlreadySubmittedException
 import com.otoki.powersales.safetycheck.exception.RequiredItemsMissingException
 import com.otoki.powersales.safetycheck.repository.SafetyCheckItemRepository
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SafetyCheckService 테스트")
 class SafetyCheckServiceTest {
 
-    @Mock
-    private lateinit var itemRepository: SafetyCheckItemRepository
+    private val itemRepository: SafetyCheckItemRepository = mockk()
+    private val submissionRepository: SafetyCheckSubmissionRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
 
-    @Mock
-    private lateinit var submissionRepository: SafetyCheckSubmissionRepository
-
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @InjectMocks
-    private lateinit var safetyCheckService: SafetyCheckService
+    private val safetyCheckService = SafetyCheckService(
+        itemRepository,
+        submissionRepository,
+        employeeRepository,
+    )
 
     private val userId = 1L
     private val employeeCode = "20030117"
@@ -51,18 +44,15 @@ class SafetyCheckServiceTest {
         @Test
         @DisplayName("정상 조회 - question_num별 그룹화된 항목 반환")
         fun getChecklistItems_success() {
-            // Given
             val items = listOf(
                 createItem(questionNum = 1, seqNum = 1, contents = "손목보호대를 착용했습니다"),
                 createItem(questionNum = 1, seqNum = 2, contents = "숨수건을 소지하고 있습니다"),
                 createItem(questionNum = 2, seqNum = 1, contents = "예방사항 1")
             )
-            whenever(itemRepository.findByUseYnOrderByQuestionNumAscSeqNumAsc("Y")).thenReturn(items)
+            every { itemRepository.findByUseYnOrderByQuestionNumAscSeqNumAsc("Y") } returns items
 
-            // When
             val result = safetyCheckService.getChecklistItems()
 
-            // Then
             assertThat(result.categories).hasSize(2)
 
             val section1 = result.categories[0]
@@ -92,17 +82,14 @@ class SafetyCheckServiceTest {
         @Test
         @DisplayName("오늘 제출 있음 - completed=true, submittedAt 반환")
         fun getTodayStatus_completed() {
-            // Given
             val completeTime = LocalDateTime.now().minus(2, java.time.temporal.ChronoUnit.HOURS)
             val submission = createSubmission(completeTime = completeTime)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
-            whenever(submissionRepository.findByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
-                .thenReturn(Optional.of(submission))
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { submissionRepository.findByEmployeeIdAndWorkingDate(userId, LocalDate.now()) } returns
+                Optional.of(submission)
 
-            // When
             val result = safetyCheckService.getTodayStatus(userId)
 
-            // Then
             assertThat(result.completed).isTrue()
             assertThat(result.submittedAt).isEqualTo(completeTime)
         }
@@ -110,15 +97,12 @@ class SafetyCheckServiceTest {
         @Test
         @DisplayName("오늘 제출 없음 - completed=false, submittedAt=null")
         fun getTodayStatus_notCompleted() {
-            // Given
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
-            whenever(submissionRepository.findByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
-                .thenReturn(Optional.empty())
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { submissionRepository.findByEmployeeIdAndWorkingDate(userId, LocalDate.now()) } returns
+                Optional.empty()
 
-            // When
             val result = safetyCheckService.getTodayStatus(userId)
 
-            // Then
             assertThat(result.completed).isFalse()
             assertThat(result.submittedAt).isNull()
         }
@@ -126,10 +110,8 @@ class SafetyCheckServiceTest {
         @Test
         @DisplayName("사용자 없음 - EmployeeNotFoundException")
         fun getTodayStatus_userNotFound() {
-            // Given
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(userId) } returns Optional.empty()
 
-            // When & Then
             assertThatThrownBy { safetyCheckService.getTodayStatus(userId) }
                 .isInstanceOf(EmployeeNotFoundException::class.java)
         }
@@ -142,20 +124,15 @@ class SafetyCheckServiceTest {
         @Test
         @DisplayName("정상 제출 - 9개 장비 응답 + 예방사항 2건")
         fun submitSafetyCheck_success() {
-            // Given
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
-            whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
-                .thenReturn(false)
-            whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
-            whenever(submissionRepository.save(any<SafetyCheckSubmission>()))
-                .thenAnswer { it.getArgument<SafetyCheckSubmission>(0) }
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()) } returns false
+            every { itemRepository.countByQuestionNumAndUseYn(1, "Y") } returns 9L
+            every { submissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg() }
 
             val request = createSubmitRequest()
 
-            // When
             val result = safetyCheckService.submitSafetyCheck(userId, request)
 
-            // Then
             assertThat(result.safetyCheckCompleted).isTrue()
             assertThat(result.submittedAt).isEqualTo(request.completeTime)
         }
@@ -163,32 +140,24 @@ class SafetyCheckServiceTest {
         @Test
         @DisplayName("예방사항 없이 제출 - precautions 빈 배열")
         fun submitSafetyCheck_noPrecautions() {
-            // Given
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
-            whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
-                .thenReturn(false)
-            whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
-            whenever(submissionRepository.save(any<SafetyCheckSubmission>()))
-                .thenAnswer { it.getArgument<SafetyCheckSubmission>(0) }
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()) } returns false
+            every { itemRepository.countByQuestionNumAndUseYn(1, "Y") } returns 9L
+            every { submissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg() }
 
             val request = createSubmitRequest(precautions = emptyList())
 
-            // When
             val result = safetyCheckService.submitSafetyCheck(userId, request)
 
-            // Then
             assertThat(result.safetyCheckCompleted).isTrue()
         }
 
         @Test
         @DisplayName("중복 제출 - AlreadySubmittedException")
         fun submitSafetyCheck_alreadySubmitted() {
-            // Given
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
-            whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
-                .thenReturn(true)
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()) } returns true
 
-            // When & Then
             assertThatThrownBy { safetyCheckService.submitSafetyCheck(userId, createSubmitRequest()) }
                 .isInstanceOf(AlreadySubmittedException::class.java)
         }
@@ -196,15 +165,12 @@ class SafetyCheckServiceTest {
         @Test
         @DisplayName("장비 응답 수 불일치 - 8개 제출 시 RequiredItemsMissingException")
         fun submitSafetyCheck_equipmentCountMismatch() {
-            // Given
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
-            whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
-                .thenReturn(false)
-            whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()) } returns false
+            every { itemRepository.countByQuestionNumAndUseYn(1, "Y") } returns 9L
 
             val request = createSubmitRequest(equipmentCount = 8)
 
-            // When & Then
             assertThatThrownBy { safetyCheckService.submitSafetyCheck(userId, request) }
                 .isInstanceOf(RequiredItemsMissingException::class.java)
         }
@@ -212,11 +178,9 @@ class SafetyCheckServiceTest {
         @Test
         @DisplayName("잘못된 응답값 - answer가 '아니오'인 경우 RequiredItemsMissingException")
         fun submitSafetyCheck_invalidAnswer() {
-            // Given
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
-            whenever(submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()))
-                .thenReturn(false)
-            whenever(itemRepository.countByQuestionNumAndUseYn(1, "Y")).thenReturn(9L)
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { submissionRepository.existsByEmployeeIdAndWorkingDate(userId, LocalDate.now()) } returns false
+            every { itemRepository.countByQuestionNumAndUseYn(1, "Y") } returns 9L
 
             val equipments = (1..9).map { seqNum ->
                 SafetyCheckSubmitRequest.EquipmentAnswer(
@@ -231,7 +195,6 @@ class SafetyCheckServiceTest {
                 precautions = null
             )
 
-            // When & Then
             assertThatThrownBy { safetyCheckService.submitSafetyCheck(userId, request) }
                 .isInstanceOf(RequiredItemsMissingException::class.java)
         }
@@ -239,10 +202,8 @@ class SafetyCheckServiceTest {
         @Test
         @DisplayName("사용자 없음 - EmployeeNotFoundException")
         fun submitSafetyCheck_userNotFound() {
-            // Given
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(userId) } returns Optional.empty()
 
-            // When & Then
             assertThatThrownBy { safetyCheckService.submitSafetyCheck(userId, createSubmitRequest()) }
                 .isInstanceOf(EmployeeNotFoundException::class.java)
         }
