@@ -19,53 +19,39 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("WebAuthenticationService 테스트")
 class WebAuthenticationServiceTest {
 
-    @Mock
-    private lateinit var userRepository: UserRepository
-
-    @Mock
-    private lateinit var webUserDetailsService: WebUserDetailsService
-
-    @Mock
-    private lateinit var webJwtService: WebJwtService
-
-    @Mock
-    private lateinit var webRefreshTokenStore: WebRefreshTokenStore
-
-    @Mock
-    private lateinit var passwordEncoder: PasswordEncoder
-
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var adminPermissionResolver: AdminPermissionResolver
-
-    @org.mockito.Spy
+    private val userRepository: UserRepository = mockk()
+    private val webUserDetailsService: WebUserDetailsService = mockk()
+    private val webJwtService: WebJwtService = mockk()
+    private val webRefreshTokenStore: WebRefreshTokenStore = mockk(relaxUnitFun = true)
+    private val passwordEncoder: PasswordEncoder = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val adminPermissionResolver: AdminPermissionResolver = mockk()
     private val passwordPolicyValidator: PasswordPolicyValidator = PasswordPolicyValidator()
 
-    @InjectMocks
-    private lateinit var service: WebAuthenticationService
+    private val service = WebAuthenticationService(
+        userRepository,
+        webUserDetailsService,
+        webJwtService,
+        webRefreshTokenStore,
+        passwordEncoder,
+        passwordPolicyValidator,
+        employeeRepository,
+        adminPermissionResolver,
+    )
 
     @Nested
     @DisplayName("login - Web 로그인")
@@ -75,13 +61,13 @@ class WebAuthenticationServiceTest {
         @DisplayName("성공 - 유효한 username + password → access/refresh token 발급 + last_login_at 갱신")
         fun login_success() {
             val user = createUser()
-            whenever(userRepository.findByUsername("u@otokims.co.kr")).thenReturn(user)
-            whenever(passwordEncoder.matches("password123", user.password)).thenReturn(true)
-            whenever(employeeRepository.findByEmployeeCode(any())).thenReturn(Optional.empty())
-            whenever(webJwtService.createAccessToken(any(), anyOrNull(), any())).thenReturn("access-token")
-            whenever(webJwtService.createRefreshToken(any(), any(), any(), any())).thenReturn("refresh-token")
-            whenever(webJwtService.getAccessTokenExpirationSeconds()).thenReturn(3600)
-            whenever(webJwtService.getRefreshExpirationMillis()).thenReturn(7 * 24 * 60 * 60 * 1000L)
+            every { userRepository.findByUsername("u@otokims.co.kr") } returns user
+            every { passwordEncoder.matches("password123", user.password) } returns true
+            every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
+            every { webJwtService.createAccessToken(any(), any(), any()) } returns "access-token"
+            every { webJwtService.createRefreshToken(any(), any(), any(), any()) } returns "refresh-token"
+            every { webJwtService.getAccessTokenExpirationSeconds() } returns 3600
+            every { webJwtService.getRefreshExpirationMillis() } returns 7 * 24 * 60 * 60 * 1000L
 
             val response = service.login(WebLoginRequest("u@otokims.co.kr", "password123"))
 
@@ -92,13 +78,13 @@ class WebAuthenticationServiceTest {
             assertThat(response.user.username).isEqualTo("u@otokims.co.kr")
             assertThat(response.user.profileType).isEqualTo(ProfileType.STAFF)
             assertThat(user.lastLoginAt).isNotNull
-            verify(webRefreshTokenStore).store(any(), eq(1L), any(), any())
+            verify { webRefreshTokenStore.store(any(), 1L, any(), any()) }
         }
 
         @Test
         @DisplayName("실패 - User 미존재 → INVALID_CREDENTIALS")
         fun login_userNotFound() {
-            whenever(userRepository.findByUsername("missing@otokims.co.kr")).thenReturn(null)
+            every { userRepository.findByUsername("missing@otokims.co.kr") } returns null
 
             assertThatThrownBy { service.login(WebLoginRequest("missing@otokims.co.kr", "p")) }
                 .isInstanceOf(InvalidCredentialsException::class.java)
@@ -108,7 +94,7 @@ class WebAuthenticationServiceTest {
         @DisplayName("실패 - User.is_active=false → USER_INACTIVE")
         fun login_inactiveUser() {
             val user = createUser(isActive = false)
-            whenever(userRepository.findByUsername("u@otokims.co.kr")).thenReturn(user)
+            every { userRepository.findByUsername("u@otokims.co.kr") } returns user
 
             assertThatThrownBy { service.login(WebLoginRequest("u@otokims.co.kr", "p")) }
                 .isInstanceOf(UserInactiveException::class.java)
@@ -118,8 +104,8 @@ class WebAuthenticationServiceTest {
         @DisplayName("실패 - 비밀번호 불일치 → INVALID_CREDENTIALS")
         fun login_passwordMismatch() {
             val user = createUser()
-            whenever(userRepository.findByUsername("u@otokims.co.kr")).thenReturn(user)
-            whenever(passwordEncoder.matches("wrong", user.password)).thenReturn(false)
+            every { userRepository.findByUsername("u@otokims.co.kr") } returns user
+            every { passwordEncoder.matches("wrong", user.password) } returns false
 
             assertThatThrownBy { service.login(WebLoginRequest("u@otokims.co.kr", "wrong")) }
                 .isInstanceOf(InvalidCredentialsException::class.java)
@@ -129,13 +115,13 @@ class WebAuthenticationServiceTest {
         @DisplayName("성공 - password_change_required=true 인 사용자도 로그인 + 응답에 플래그 반영")
         fun login_passwordChangeRequired() {
             val user = createUser(passwordChangeRequired = true)
-            whenever(userRepository.findByUsername("u@otokims.co.kr")).thenReturn(user)
-            whenever(passwordEncoder.matches("1234", user.password)).thenReturn(true)
-            whenever(employeeRepository.findByEmployeeCode(any())).thenReturn(Optional.empty())
-            whenever(webJwtService.createAccessToken(any(), anyOrNull(), any())).thenReturn("a")
-            whenever(webJwtService.createRefreshToken(any(), any(), any(), any())).thenReturn("r")
-            whenever(webJwtService.getAccessTokenExpirationSeconds()).thenReturn(3600)
-            whenever(webJwtService.getRefreshExpirationMillis()).thenReturn(60_000L)
+            every { userRepository.findByUsername("u@otokims.co.kr") } returns user
+            every { passwordEncoder.matches("1234", user.password) } returns true
+            every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
+            every { webJwtService.createAccessToken(any(), any(), any()) } returns "a"
+            every { webJwtService.createRefreshToken(any(), any(), any(), any()) } returns "r"
+            every { webJwtService.getAccessTokenExpirationSeconds() } returns 3600
+            every { webJwtService.getRefreshExpirationMillis() } returns 60_000L
 
             val response = service.login(WebLoginRequest("u@otokims.co.kr", "1234"))
 
@@ -151,31 +137,31 @@ class WebAuthenticationServiceTest {
         @DisplayName("성공 - 정상 refresh → 새 access/refresh token 발급 + 이전 token 삭제")
         fun refresh_success() {
             val user = createUser()
-            whenever(webJwtService.validateRefreshToken("rt")).thenReturn(true)
-            whenever(webJwtService.getFamilyIdFromToken("rt")).thenReturn("fam-1")
-            whenever(webJwtService.getTokenIdFromToken("rt")).thenReturn("tok-1")
-            whenever(webJwtService.getUserIdFromToken("rt")).thenReturn(1L)
-            whenever(webRefreshTokenStore.isFamilyRevoked("fam-1")).thenReturn(false)
-            whenever(webRefreshTokenStore.exists("tok-1")).thenReturn(true)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
-            whenever(employeeRepository.findByEmployeeCode(any())).thenReturn(Optional.empty())
-            whenever(webJwtService.createAccessToken(any(), anyOrNull(), any())).thenReturn("new-access")
-            whenever(webJwtService.createRefreshToken(any(), any(), eq("fam-1"), any())).thenReturn("new-refresh")
-            whenever(webJwtService.getAccessTokenExpirationSeconds()).thenReturn(3600)
-            whenever(webJwtService.getRefreshExpirationMillis()).thenReturn(60_000L)
+            every { webJwtService.validateRefreshToken("rt") } returns true
+            every { webJwtService.getFamilyIdFromToken("rt") } returns "fam-1"
+            every { webJwtService.getTokenIdFromToken("rt") } returns "tok-1"
+            every { webJwtService.getUserIdFromToken("rt") } returns 1L
+            every { webRefreshTokenStore.isFamilyRevoked("fam-1") } returns false
+            every { webRefreshTokenStore.exists("tok-1") } returns true
+            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
+            every { webJwtService.createAccessToken(any(), any(), any()) } returns "new-access"
+            every { webJwtService.createRefreshToken(any(), any(), "fam-1", any()) } returns "new-refresh"
+            every { webJwtService.getAccessTokenExpirationSeconds() } returns 3600
+            every { webJwtService.getRefreshExpirationMillis() } returns 60_000L
 
             val response = service.refresh(WebRefreshTokenRequest("rt"))
 
             assertThat(response.accessToken).isEqualTo("new-access")
             assertThat(response.refreshToken).isEqualTo("new-refresh")
-            verify(webRefreshTokenStore).delete("tok-1")
-            verify(webRefreshTokenStore).store(any(), eq(1L), eq("fam-1"), any())
+            verify { webRefreshTokenStore.delete("tok-1") }
+            verify { webRefreshTokenStore.store(any(), 1L, "fam-1", any()) }
         }
 
         @Test
         @DisplayName("실패 - 서명 무효 / audience 불일치 → INVALID_TOKEN")
         fun refresh_invalidToken() {
-            whenever(webJwtService.validateRefreshToken("rt")).thenReturn(false)
+            every { webJwtService.validateRefreshToken("rt") } returns false
 
             assertThatThrownBy { service.refresh(WebRefreshTokenRequest("rt")) }
                 .isInstanceOf(InvalidTokenException::class.java)
@@ -184,11 +170,11 @@ class WebAuthenticationServiceTest {
         @Test
         @DisplayName("실패 - family 무효화 상태 → TOKEN_REUSE_DETECTED")
         fun refresh_familyRevoked() {
-            whenever(webJwtService.validateRefreshToken("rt")).thenReturn(true)
-            whenever(webJwtService.getFamilyIdFromToken("rt")).thenReturn("fam-x")
-            whenever(webJwtService.getTokenIdFromToken("rt")).thenReturn("tok-x")
-            whenever(webJwtService.getUserIdFromToken("rt")).thenReturn(1L)
-            whenever(webRefreshTokenStore.isFamilyRevoked("fam-x")).thenReturn(true)
+            every { webJwtService.validateRefreshToken("rt") } returns true
+            every { webJwtService.getFamilyIdFromToken("rt") } returns "fam-x"
+            every { webJwtService.getTokenIdFromToken("rt") } returns "tok-x"
+            every { webJwtService.getUserIdFromToken("rt") } returns 1L
+            every { webRefreshTokenStore.isFamilyRevoked("fam-x") } returns true
 
             assertThatThrownBy { service.refresh(WebRefreshTokenRequest("rt")) }
                 .isInstanceOf(TokenReuseDetectedException::class.java)
@@ -197,17 +183,17 @@ class WebAuthenticationServiceTest {
         @Test
         @DisplayName("실패 - Redis 메타 부재 (재사용 감지) → family revoke + TOKEN_REUSE_DETECTED")
         fun refresh_reuseDetected() {
-            whenever(webJwtService.validateRefreshToken("rt")).thenReturn(true)
-            whenever(webJwtService.getFamilyIdFromToken("rt")).thenReturn("fam-y")
-            whenever(webJwtService.getTokenIdFromToken("rt")).thenReturn("tok-y")
-            whenever(webJwtService.getUserIdFromToken("rt")).thenReturn(1L)
-            whenever(webRefreshTokenStore.isFamilyRevoked("fam-y")).thenReturn(false)
-            whenever(webRefreshTokenStore.exists("tok-y")).thenReturn(false)
-            whenever(webJwtService.getRefreshExpirationMillis()).thenReturn(60_000L)
+            every { webJwtService.validateRefreshToken("rt") } returns true
+            every { webJwtService.getFamilyIdFromToken("rt") } returns "fam-y"
+            every { webJwtService.getTokenIdFromToken("rt") } returns "tok-y"
+            every { webJwtService.getUserIdFromToken("rt") } returns 1L
+            every { webRefreshTokenStore.isFamilyRevoked("fam-y") } returns false
+            every { webRefreshTokenStore.exists("tok-y") } returns false
+            every { webJwtService.getRefreshExpirationMillis() } returns 60_000L
 
             assertThatThrownBy { service.refresh(WebRefreshTokenRequest("rt")) }
                 .isInstanceOf(TokenReuseDetectedException::class.java)
-            verify(webRefreshTokenStore).revokeFamily(eq("fam-y"), any())
+            verify { webRefreshTokenStore.revokeFamily("fam-y", any()) }
         }
     }
 
@@ -220,9 +206,9 @@ class WebAuthenticationServiceTest {
         fun changePassword_voluntary_success() {
             val user = createUser(passwordChangeRequired = false)
             val principal = principalFor(user)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
-            whenever(passwordEncoder.matches("oldpw", user.password)).thenReturn(true)
-            whenever(passwordEncoder.encode("newpw123")).thenReturn("encoded-new")
+            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { passwordEncoder.matches("oldpw", user.password) } returns true
+            every { passwordEncoder.encode("newpw123") } returns "encoded-new"
 
             val response = service.changePassword(
                 principal,
@@ -239,8 +225,8 @@ class WebAuthenticationServiceTest {
         fun changePassword_forced_success() {
             val user = createUser(passwordChangeRequired = true)
             val principal = principalFor(user, passwordChangeRequired = true)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
-            whenever(passwordEncoder.encode("newpw456")).thenReturn("encoded-new-2")
+            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { passwordEncoder.encode("newpw456") } returns "encoded-new-2"
 
             val response = service.changePassword(
                 principal,
@@ -256,7 +242,7 @@ class WebAuthenticationServiceTest {
         fun changePassword_voluntary_missing() {
             val user = createUser(passwordChangeRequired = false)
             val principal = principalFor(user)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+            every { userRepository.findById(1L) } returns Optional.of(user)
 
             assertThatThrownBy {
                 service.changePassword(
@@ -271,8 +257,8 @@ class WebAuthenticationServiceTest {
         fun changePassword_voluntary_mismatch() {
             val user = createUser(passwordChangeRequired = false)
             val principal = principalFor(user)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
-            whenever(passwordEncoder.matches("wrong", user.password)).thenReturn(false)
+            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { passwordEncoder.matches("wrong", user.password) } returns false
 
             assertThatThrownBy {
                 service.changePassword(

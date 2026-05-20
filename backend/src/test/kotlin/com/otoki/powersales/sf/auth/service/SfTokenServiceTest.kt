@@ -8,16 +8,15 @@ import com.otoki.powersales.sf.auth.dto.TokenRequest
 import com.otoki.powersales.sf.auth.exception.SfInvalidClientException
 import com.otoki.powersales.sf.auth.exception.SfInvalidScopeException
 import com.otoki.powersales.sf.auth.exception.SfUnsupportedGrantTypeException
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
 @DisplayName("SfTokenService 테스트")
@@ -27,7 +26,7 @@ class SfTokenServiceTest {
     private val secretHash: String = BCryptPasswordEncoder().encode(plainSecret)!!
     private val signingKey = "sf-token-service-test-signing-key-with-256-bits-1234567890"
 
-    private val auditService: SfInboundAuditService = mock()
+    private val auditService: SfInboundAuditService = mockk()
 
     private fun service(
         allowedScopes: List<String> = listOf("sf.write")
@@ -39,7 +38,7 @@ class SfTokenServiceTest {
             tokenTtlSeconds = 86400,
             allowedScopes = allowedScopes
         )
-        whenever(auditService.record(any())).thenAnswer { it.getArgument<SfInboundAudit>(0) }
+        every { auditService.record(any()) } answers { firstArg() }
         return SfTokenService(props, auditService, SfJwtCodec(props))
     }
 
@@ -59,16 +58,19 @@ class SfTokenServiceTest {
         @Test
         @DisplayName("정상 발급 - JWT + expires_in=86400 + scope=sf.write 반환")
         fun issue_success() {
-            val response = service().issue(validRequest(), "127.0.0.1")
+            val auditSlot = slot<SfInboundAudit>()
+            val svc = service()
+            every { auditService.record(capture(auditSlot)) } answers { firstArg() }
+
+            val response = svc.issue(validRequest(), "127.0.0.1")
             assertThat(response.accessToken).isNotBlank()
             assertThat(response.tokenType).isEqualTo("Bearer")
             assertThat(response.expiresIn).isEqualTo(86400)
             assertThat(response.scope).isEqualTo("sf.write")
 
-            val captor = argumentCaptor<SfInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.eventType).isEqualTo(SfInboundAuditEventType.TOKEN_ISSUED)
-            assertThat(captor.firstValue.clientId).isEqualTo("otoki-sf-client")
+            verify { auditService.record(any()) }
+            assertThat(auditSlot.captured.eventType).isEqualTo(SfInboundAuditEventType.TOKEN_ISSUED)
+            assertThat(auditSlot.captured.clientId).isEqualTo("otoki-sf-client")
         }
     }
 
@@ -80,13 +82,15 @@ class SfTokenServiceTest {
         @DisplayName("client_secret 불일치 -> SfInvalidClientException + TOKEN_REJECTED 적재")
         fun issue_invalidSecret() {
             val req = validRequest().copy(clientSecret = "wrong-secret")
+            val auditSlot = slot<SfInboundAudit>()
             val svc = service()
+            every { auditService.record(capture(auditSlot)) } answers { firstArg() }
+
             assertThatThrownBy { svc.issue(req, "127.0.0.1") }
                 .isInstanceOf(SfInvalidClientException::class.java)
 
-            val captor = argumentCaptor<SfInboundAudit>()
-            verify(auditService).record(captor.capture())
-            assertThat(captor.firstValue.eventType).isEqualTo(SfInboundAuditEventType.TOKEN_REJECTED)
+            verify { auditService.record(any()) }
+            assertThat(auditSlot.captured.eventType).isEqualTo(SfInboundAuditEventType.TOKEN_REJECTED)
         }
 
         @Test

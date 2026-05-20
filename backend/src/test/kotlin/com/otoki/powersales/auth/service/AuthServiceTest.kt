@@ -21,6 +21,10 @@ import com.otoki.powersales.auth.policy.PasswordPolicyValidator
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.common.util.TimeZones
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
@@ -28,57 +32,34 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.ArgumentCaptor
-import org.mockito.Captor
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.LocalDate
 import java.util.*
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AuthService 테스트")
 class AuthServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var loginHistoryRepository: LoginHistoryRepository
-
-    @Mock
-    private lateinit var agreementWordRepository: AgreementWordRepository
-
-    @Mock
-    private lateinit var agreementHistoryRepository: AgreementHistoryRepository
-
-    @Mock
-    private lateinit var passwordEncoder: PasswordEncoder
-
-    @Mock
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @Mock
-    private lateinit var uuidCheckProperties: UuidCheckProperties
-
-    @Mock
-    private lateinit var adminPermissionResolver: com.otoki.powersales.admin.service.AdminPermissionResolver
-
-    @org.mockito.Spy
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val loginHistoryRepository: LoginHistoryRepository = mockk()
+    private val agreementWordRepository: AgreementWordRepository = mockk()
+    private val agreementHistoryRepository: AgreementHistoryRepository = mockk()
+    private val passwordEncoder: PasswordEncoder = mockk()
+    private val jwtTokenProvider: JwtTokenProvider = mockk(relaxUnitFun = true)
+    private val uuidCheckProperties: UuidCheckProperties = mockk()
+    private val adminPermissionResolver: com.otoki.powersales.admin.service.AdminPermissionResolver = mockk()
     private val passwordPolicyValidator: PasswordPolicyValidator = PasswordPolicyValidator()
 
-    @InjectMocks
-    private lateinit var authService: AuthService
-
-    @Captor
-    private lateinit var employeeCaptor: ArgumentCaptor<Employee>
+    private val authService = AuthService(
+        employeeRepository,
+        loginHistoryRepository,
+        agreementWordRepository,
+        agreementHistoryRepository,
+        passwordEncoder,
+        jwtTokenProvider,
+        uuidCheckProperties,
+        adminPermissionResolver,
+        passwordPolicyValidator,
+    )
 
     // ========== Login Tests ==========
 
@@ -102,12 +83,13 @@ class AuthServiceTest {
         val refreshToken = "refresh_token_123"
         val expiresIn = 3600
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)).thenReturn(employee)
-        whenever(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true)
-        whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false), any())).thenReturn(accessToken)
-        whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn(refreshToken)
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
+        every { passwordEncoder.matches(rawPassword, encodedPassword) } returns true
+        every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
+        every { jwtTokenProvider.createAccessToken(employee.id, any<UserRole>(), false, any()) } returns accessToken
+        every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns refreshToken
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns expiresIn
+        every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
 
         // When
         val response = authService.login(loginRequest)
@@ -123,8 +105,8 @@ class AuthServiceTest {
         assertThat(response.token.expiresIn).isEqualTo(expiresIn)
         assertThat(response.passwordChangeRequired).isTrue()
         assertThat(response.requiresGpsConsent).isTrue()
-        verify(loginHistoryRepository).save(any<LoginHistory>())
-        verify(jwtTokenProvider).storeRefreshToken(any(), eq(employee.id), any())
+        verify { loginHistoryRepository.save(any<LoginHistory>()) }
+        verify { jwtTokenProvider.storeRefreshToken(any(), employee.id, any()) }
     }
 
     @Test
@@ -134,23 +116,22 @@ class AuthServiceTest {
         val employeeCode = "12345678"
         val employee = createTestEmployee(id = 1L, employeeCode = employeeCode)
         val loginRequest = LoginRequest(employeeCode, "password123")
-        val historyCaptor = ArgumentCaptor.forClass(LoginHistory::class.java)
+        val historySlot = slot<LoginHistory>()
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)).thenReturn(employee)
-        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false), any())).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn("refresh")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
+        every { passwordEncoder.matches("password123", "encoded_password") } returns true
+        every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
+        every { jwtTokenProvider.createAccessToken(employee.id, any<UserRole>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns "refresh"
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+        every { loginHistoryRepository.save(capture(historySlot)) } answers { firstArg() }
 
         // When
         authService.login(loginRequest)
 
         // Then
-        verify(loginHistoryRepository).save(historyCaptor.capture())
-        val savedHistory = historyCaptor.value
-        assertThat(savedHistory.empCode).isEqualTo(employeeCode)
-        assertThat(savedHistory.instDate).isNotNull()
+        assertThat(historySlot.captured.empCode).isEqualTo(employeeCode)
+        assertThat(historySlot.captured.instDate).isNotNull()
     }
 
     @Test
@@ -161,13 +142,13 @@ class AuthServiceTest {
         val employee = createTestEmployee(id = 1L, employeeCode = employeeCode)
         val loginRequest = LoginRequest(employeeCode, "password123")
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode)).thenReturn(employee)
-        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-        whenever(loginHistoryRepository.save(any<LoginHistory>())).thenThrow(RuntimeException("DB error"))
-        whenever(jwtTokenProvider.createAccessToken(eq(employee.id), any<UserRole>(), eq(false), any())).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(eq(employee.id), any(), any())).thenReturn("refresh")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
+        every { passwordEncoder.matches("password123", "encoded_password") } returns true
+        every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
+        every { loginHistoryRepository.save(any<LoginHistory>()) } throws RuntimeException("DB error")
+        every { jwtTokenProvider.createAccessToken(employee.id, any<UserRole>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns "refresh"
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
         // When
         val response = authService.login(loginRequest)
@@ -183,12 +164,12 @@ class AuthServiceTest {
         // Given
         val loginRequest = LoginRequest("99999999", "password123")
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("99999999")).thenReturn(null)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("99999999") } returns null
 
         // When & Then
         assertThatThrownBy { authService.login(loginRequest) }
             .isInstanceOf(InvalidCredentialsException::class.java)
-        verify(loginHistoryRepository, never()).save(any<LoginHistory>())
+        verify(exactly = 0) { loginHistoryRepository.save(any<LoginHistory>()) }
     }
 
     @Test
@@ -198,13 +179,13 @@ class AuthServiceTest {
         val employee = createTestEmployee(password = "encoded_password")
         val loginRequest = LoginRequest("12345678", "wrong_password")
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-        whenever(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+        every { passwordEncoder.matches("wrong_password", "encoded_password") } returns false
 
         // When & Then
         assertThatThrownBy { authService.login(loginRequest) }
             .isInstanceOf(InvalidCredentialsException::class.java)
-        verify(loginHistoryRepository, never()).save(any<LoginHistory>())
+        verify(exactly = 0) { loginHistoryRepository.save(any<LoginHistory>()) }
     }
 
     // ========== Change Password Tests (Spec #584 통합) ==========
@@ -217,26 +198,25 @@ class AuthServiceTest {
         val employee = createTestEmployee(id = userId, password = "encoded_old", passwordChangeRequired = false)
         val request = ChangePasswordRequest("old_password", "newpass1")
         val principal = principal(userId, passwordChangeRequired = false)
+        val empSlot = slot<Employee>()
 
-        whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-        whenever(passwordEncoder.matches("old_password", "encoded_old")).thenReturn(true)
-        whenever(passwordEncoder.encode("newpass1")).thenReturn("encoded_new")
-        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-        whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), any(), eq(false))).thenReturn("new-access")
-        whenever(jwtTokenProvider.createRefreshToken(eq(userId), any(), any())).thenReturn("new-refresh")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+        every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+        every { passwordEncoder.matches("old_password", "encoded_old") } returns true
+        every { passwordEncoder.encode("newpass1") } returns "encoded_new"
+        every { employeeRepository.save(capture(empSlot)) } answers { firstArg() }
+        every { jwtTokenProvider.createAccessToken(userId, any<UserRole>(), any(), false) } returns "new-access"
+        every { jwtTokenProvider.createRefreshToken(userId, any(), any()) } returns "new-refresh"
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
         // When
         val response = authService.changePassword(principal, request)
 
         // Then
-        verify(employeeRepository).save(employeeCaptor.capture())
-        val savedEmployee = employeeCaptor.value
-        assertThat(savedEmployee.password).isEqualTo("encoded_new")
-        assertThat(savedEmployee.passwordChangeRequired).isFalse()
+        assertThat(empSlot.captured.password).isEqualTo("encoded_new")
+        assertThat(empSlot.captured.passwordChangeRequired).isFalse()
         assertThat(response.accessToken).isEqualTo("new-access")
         assertThat(response.refreshToken).isEqualTo("new-refresh")
-        verify(jwtTokenProvider).storeRefreshToken(any(), eq(userId), any())
+        verify { jwtTokenProvider.storeRefreshToken(any(), userId, any()) }
     }
 
     @Test
@@ -247,21 +227,21 @@ class AuthServiceTest {
         val employee = createTestEmployee(id = userId, password = "encoded_old", passwordChangeRequired = true)
         val request = ChangePasswordRequest(currentPassword = null, newPassword = "newpass1")
         val principal = principal(userId, passwordChangeRequired = true)
+        val empSlot = slot<Employee>()
 
-        whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-        whenever(passwordEncoder.encode("newpass1")).thenReturn("encoded_new")
-        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-        whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), any(), eq(false))).thenReturn("new-access")
-        whenever(jwtTokenProvider.createRefreshToken(eq(userId), any(), any())).thenReturn("new-refresh")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+        every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+        every { passwordEncoder.encode("newpass1") } returns "encoded_new"
+        every { employeeRepository.save(capture(empSlot)) } answers { firstArg() }
+        every { jwtTokenProvider.createAccessToken(userId, any<UserRole>(), any(), false) } returns "new-access"
+        every { jwtTokenProvider.createRefreshToken(userId, any(), any()) } returns "new-refresh"
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
         // When
         val response = authService.changePassword(principal, request)
 
         // Then
-        verify(passwordEncoder, never()).matches(any(), any())
-        verify(employeeRepository).save(employeeCaptor.capture())
-        assertThat(employeeCaptor.value.passwordChangeRequired).isFalse()
+        verify(exactly = 0) { passwordEncoder.matches(any(), any()) }
+        assertThat(empSlot.captured.passwordChangeRequired).isFalse()
         assertThat(response.accessToken).isEqualTo("new-access")
     }
 
@@ -274,7 +254,7 @@ class AuthServiceTest {
         val request = ChangePasswordRequest(currentPassword = null, newPassword = "newpass1")
         val principal = principal(userId, passwordChangeRequired = false)
 
-        whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+        every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
         // When & Then
         assertThatThrownBy { authService.changePassword(principal, request) }
@@ -290,8 +270,8 @@ class AuthServiceTest {
         val request = ChangePasswordRequest("wrong_password", "newpass1")
         val principal = principal(userId, passwordChangeRequired = false)
 
-        whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-        whenever(passwordEncoder.matches("wrong_password", "encoded_old")).thenReturn(false)
+        every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+        every { passwordEncoder.matches("wrong_password", "encoded_old") } returns false
 
         // When & Then
         assertThatThrownBy { authService.changePassword(principal, request) }
@@ -307,7 +287,7 @@ class AuthServiceTest {
         val request = ChangePasswordRequest(currentPassword = null, newPassword = "abc")
         val principal = principal(userId, passwordChangeRequired = true)
 
-        whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+        every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
         // When & Then
         assertThatThrownBy { authService.changePassword(principal, request) }
@@ -323,7 +303,7 @@ class AuthServiceTest {
         val request = ChangePasswordRequest(currentPassword = null, newPassword = "1234")
         val principal = principal(userId, passwordChangeRequired = true)
 
-        whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
+        every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
         // When & Then
         assertThatThrownBy { authService.changePassword(principal, request) }
@@ -357,17 +337,17 @@ class AuthServiceTest {
             val tokenId = "token-id-123"
             val familyId = "family-id-456"
 
-            whenever(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true)
-            whenever(jwtTokenProvider.getTokenType(refreshToken)).thenReturn("refresh")
-            whenever(jwtTokenProvider.getTokenIdFromToken(refreshToken)).thenReturn(tokenId)
-            whenever(jwtTokenProvider.getFamilyIdFromToken(refreshToken)).thenReturn(familyId)
-            whenever(jwtTokenProvider.isTokenFamilyRevoked(familyId)).thenReturn(false)
-            whenever(jwtTokenProvider.isRefreshTokenStored(tokenId)).thenReturn(true)
-            whenever(jwtTokenProvider.getUserIdFromToken(refreshToken)).thenReturn(userId)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(false), any())).thenReturn(newAccessToken)
-            whenever(jwtTokenProvider.createRefreshToken(eq(userId), eq(familyId), any())).thenReturn(newRefreshToken)
-            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(expiresIn)
+            every { jwtTokenProvider.validateToken(refreshToken) } returns true
+            every { jwtTokenProvider.getTokenType(refreshToken) } returns "refresh"
+            every { jwtTokenProvider.getTokenIdFromToken(refreshToken) } returns tokenId
+            every { jwtTokenProvider.getFamilyIdFromToken(refreshToken) } returns familyId
+            every { jwtTokenProvider.isTokenFamilyRevoked(familyId) } returns false
+            every { jwtTokenProvider.isRefreshTokenStored(tokenId) } returns true
+            every { jwtTokenProvider.getUserIdFromToken(refreshToken) } returns userId
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { jwtTokenProvider.createAccessToken(userId, any<UserRole>(), false, any()) } returns newAccessToken
+            every { jwtTokenProvider.createRefreshToken(userId, familyId, any()) } returns newRefreshToken
+            every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns expiresIn
 
             // When
             val response = authService.refreshAccessToken(request)
@@ -376,8 +356,8 @@ class AuthServiceTest {
             assertThat(response.accessToken).isEqualTo(newAccessToken)
             assertThat(response.refreshToken).isEqualTo(newRefreshToken)
             assertThat(response.expiresIn).isEqualTo(expiresIn)
-            verify(jwtTokenProvider).deleteRefreshToken(tokenId)
-            verify(jwtTokenProvider).storeRefreshToken(any(), eq(userId), eq(familyId))
+            verify { jwtTokenProvider.deleteRefreshToken(tokenId) }
+            verify { jwtTokenProvider.storeRefreshToken(any(), userId, familyId) }
         }
 
         @Test
@@ -386,7 +366,7 @@ class AuthServiceTest {
             // Given
             val request = RefreshTokenRequest("invalid_refresh_token")
 
-            whenever(jwtTokenProvider.validateToken("invalid_refresh_token")).thenReturn(false)
+            every { jwtTokenProvider.validateToken("invalid_refresh_token") } returns false
 
             // When & Then
             assertThatThrownBy { authService.refreshAccessToken(request) }
@@ -400,8 +380,8 @@ class AuthServiceTest {
             val accessToken = "access_token_not_refresh"
             val request = RefreshTokenRequest(accessToken)
 
-            whenever(jwtTokenProvider.validateToken(accessToken)).thenReturn(true)
-            whenever(jwtTokenProvider.getTokenType(accessToken)).thenReturn("access")
+            every { jwtTokenProvider.validateToken(accessToken) } returns true
+            every { jwtTokenProvider.getTokenType(accessToken) } returns "access"
 
             // When & Then
             assertThatThrownBy { authService.refreshAccessToken(request) }
@@ -417,17 +397,17 @@ class AuthServiceTest {
             val tokenId = "already-used-token-id"
             val familyId = "family-id-to-revoke"
 
-            whenever(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true)
-            whenever(jwtTokenProvider.getTokenType(refreshToken)).thenReturn("refresh")
-            whenever(jwtTokenProvider.getTokenIdFromToken(refreshToken)).thenReturn(tokenId)
-            whenever(jwtTokenProvider.getFamilyIdFromToken(refreshToken)).thenReturn(familyId)
-            whenever(jwtTokenProvider.isTokenFamilyRevoked(familyId)).thenReturn(false)
-            whenever(jwtTokenProvider.isRefreshTokenStored(tokenId)).thenReturn(false)
+            every { jwtTokenProvider.validateToken(refreshToken) } returns true
+            every { jwtTokenProvider.getTokenType(refreshToken) } returns "refresh"
+            every { jwtTokenProvider.getTokenIdFromToken(refreshToken) } returns tokenId
+            every { jwtTokenProvider.getFamilyIdFromToken(refreshToken) } returns familyId
+            every { jwtTokenProvider.isTokenFamilyRevoked(familyId) } returns false
+            every { jwtTokenProvider.isRefreshTokenStored(tokenId) } returns false
 
             // When & Then
             assertThatThrownBy { authService.refreshAccessToken(request) }
                 .isInstanceOf(TokenReuseDetectedException::class.java)
-            verify(jwtTokenProvider).revokeTokenFamily(familyId)
+            verify { jwtTokenProvider.revokeTokenFamily(familyId) }
         }
 
         @Test
@@ -439,11 +419,11 @@ class AuthServiceTest {
             val tokenId = "some-token-id"
             val familyId = "revoked-family-id"
 
-            whenever(jwtTokenProvider.validateToken(refreshToken)).thenReturn(true)
-            whenever(jwtTokenProvider.getTokenType(refreshToken)).thenReturn("refresh")
-            whenever(jwtTokenProvider.getTokenIdFromToken(refreshToken)).thenReturn(tokenId)
-            whenever(jwtTokenProvider.getFamilyIdFromToken(refreshToken)).thenReturn(familyId)
-            whenever(jwtTokenProvider.isTokenFamilyRevoked(familyId)).thenReturn(true)
+            every { jwtTokenProvider.validateToken(refreshToken) } returns true
+            every { jwtTokenProvider.getTokenType(refreshToken) } returns "refresh"
+            every { jwtTokenProvider.getTokenIdFromToken(refreshToken) } returns tokenId
+            every { jwtTokenProvider.getFamilyIdFromToken(refreshToken) } returns familyId
+            every { jwtTokenProvider.isTokenFamilyRevoked(familyId) } returns true
 
             // When & Then
             assertThatThrownBy { authService.refreshAccessToken(request) }
@@ -461,8 +441,8 @@ class AuthServiceTest {
         val employee = createTestEmployee(id = userId, password = "encoded_password")
         val request = VerifyPasswordRequest(currentPassword = "correct_password")
 
-        whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-        whenever(passwordEncoder.matches("correct_password", "encoded_password")).thenReturn(true)
+        every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+        every { passwordEncoder.matches("correct_password", "encoded_password") } returns true
 
         // When & Then (예외 없이 정상 완료)
         authService.verifyPassword(userId, request)
@@ -476,8 +456,8 @@ class AuthServiceTest {
         val employee = createTestEmployee(id = userId, password = "encoded_password")
         val request = VerifyPasswordRequest(currentPassword = "wrong_password")
 
-        whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-        whenever(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false)
+        every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+        every { passwordEncoder.matches("wrong_password", "encoded_password") } returns false
 
         // When & Then
         assertThatThrownBy { authService.verifyPassword(userId, request) }
@@ -490,7 +470,7 @@ class AuthServiceTest {
         // Given
         val request = VerifyPasswordRequest(currentPassword = "some_password")
 
-        whenever(employeeRepository.findWithEmployeeInfoById(999L)).thenReturn(null)
+        every { employeeRepository.findWithEmployeeInfoById(999L) } returns null
 
         // When & Then
         assertThatThrownBy { authService.verifyPassword(999L, request) }
@@ -510,8 +490,7 @@ class AuthServiceTest {
             active = true,
             isDeleted = false
         )
-        whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-            .thenReturn(Optional.of(terms))
+        every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(terms)
 
         // When
         val response = authService.getGpsConsentTerms()
@@ -525,8 +504,7 @@ class AuthServiceTest {
     @DisplayName("GPS 약관 조회 실패 - 활성 약관 없음")
     fun getGpsConsentTerms_notFound() {
         // Given
-        whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-            .thenReturn(Optional.empty())
+        every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.empty()
 
         // When & Then
         assertThatThrownBy { authService.getGpsConsentTerms() }
@@ -538,7 +516,7 @@ class AuthServiceTest {
     fun getGpsConsentStatus_requiresConsent() {
         // Given
         val employee = createTestEmployee(id = 1L, agreementFlag = null)
-        whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+        every { employeeRepository.findById(1L) } returns Optional.of(employee)
 
         // When
         val response = authService.getGpsConsentStatus(1L)
@@ -552,7 +530,7 @@ class AuthServiceTest {
     fun getGpsConsentStatus_consentGiven() {
         // Given
         val employee = createTestEmployee(id = 1L, agreementFlag = true)
-        whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+        every { employeeRepository.findById(1L) } returns Optional.of(employee)
 
         // When
         val response = authService.getGpsConsentStatus(1L)
@@ -575,13 +553,13 @@ class AuthServiceTest {
             // Given
             val userId = 1L
             val employee = createTestEmployee(id = userId, agreementFlag = null)
+            val historySlot = slot<AgreementHistory>()
 
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.of(activeTerms))
-            whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("new-token")
-            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(activeTerms)
+            every { agreementHistoryRepository.save(capture(historySlot)) } answers { firstArg() }
+            every { jwtTokenProvider.createAccessToken(userId, any<UserRole>(), true, any()) } returns "new-token"
+            every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
             // When
             val response = authService.recordGpsConsent(userId)
@@ -592,9 +570,7 @@ class AuthServiceTest {
             assertThat(response.accessToken).isEqualTo("new-token")
             assertThat(response.expiresIn).isEqualTo(3600)
 
-            val historyCaptor = ArgumentCaptor.forClass(AgreementHistory::class.java)
-            verify(agreementHistoryRepository).save(historyCaptor.capture())
-            val history = historyCaptor.value
+            val history = historySlot.captured
             assertThat(history.employeeId).isEqualTo(userId)
             assertThat(history.agreementFlag).isTrue()
             assertThat(history.agreementWordId).isEqualTo(10L)
@@ -610,30 +586,27 @@ class AuthServiceTest {
                 id = 20, name = "AGR-CUSTOM", contents = "커스텀 약관", active = true, isDeleted = false
             )
             val request = GpsConsentRequest(agreementNumber = "AGR-CUSTOM")
+            val historySlot = slot<AgreementHistory>()
 
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-            whenever(agreementWordRepository.findByNameAndIsDeletedFalse("AGR-CUSTOM"))
-                .thenReturn(Optional.of(namedTerms))
-            whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-            whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("new-token")
-            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            every { agreementWordRepository.findByNameAndIsDeletedFalse("AGR-CUSTOM") } returns Optional.of(namedTerms)
+            every { agreementHistoryRepository.save(capture(historySlot)) } answers { firstArg() }
+            every { jwtTokenProvider.createAccessToken(userId, any<UserRole>(), true, any()) } returns "new-token"
+            every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
             // When
             authService.recordGpsConsent(userId, request)
 
             // Then — 영속 entity 의 필드 변경은 dirty checking 으로 commit 시 자동 UPDATE
             assertThat(employee.lastAgreementNumber).isEqualTo("AGR-CUSTOM")
-
-            val historyCaptor = ArgumentCaptor.forClass(AgreementHistory::class.java)
-            verify(agreementHistoryRepository).save(historyCaptor.capture())
-            assertThat(historyCaptor.value.agreementWordId).isEqualTo(20L)
+            assertThat(historySlot.captured.agreementWordId).isEqualTo(20L)
         }
 
         @Test
         @DisplayName("실패 - 존재하지 않는 사용자 → UserNotFoundException")
         fun recordGpsConsent_userNotFound() {
             // Given
-            whenever(employeeRepository.findWithEmployeeInfoById(999L)).thenReturn(null)
+            every { employeeRepository.findWithEmployeeInfoById(999L) } returns null
 
             // When & Then
             assertThatThrownBy { authService.recordGpsConsent(999L) }
@@ -646,9 +619,8 @@ class AuthServiceTest {
             // Given
             val userId = 1L
             val employee = createTestEmployee(id = userId)
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.empty())
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy { authService.recordGpsConsent(userId) }
@@ -663,9 +635,8 @@ class AuthServiceTest {
             val employee = createTestEmployee(id = userId)
             val request = GpsConsentRequest(agreementNumber = "INVALID")
 
-            whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-            whenever(agreementWordRepository.findByNameAndIsDeletedFalse("INVALID"))
-                .thenReturn(Optional.empty())
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            every { agreementWordRepository.findByNameAndIsDeletedFalse("INVALID") } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy { authService.recordGpsConsent(userId, request) }
@@ -695,13 +666,13 @@ class AuthServiceTest {
                 // Given
                 val userId = 1L
                 val employee = createTestEmployee(id = userId, agreementFlag = null)
+                val historySlot = slot<AgreementHistory>()
 
-                whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-                whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                    .thenReturn(Optional.of(activeTerms))
-                whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("token")
-                whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+                every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+                every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(activeTerms)
+                every { agreementHistoryRepository.save(capture(historySlot)) } answers { firstArg() }
+                every { jwtTokenProvider.createAccessToken(userId, any<UserRole>(), true, any()) } returns "token"
+                every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
                 val expectedKstToday = LocalDate.now(TimeZones.SEOUL_ZONE)
 
@@ -709,9 +680,7 @@ class AuthServiceTest {
                 authService.recordGpsConsent(userId)
 
                 // Then
-                val historyCaptor = ArgumentCaptor.forClass(AgreementHistory::class.java)
-                verify(agreementHistoryRepository).save(historyCaptor.capture())
-                assertThat(historyCaptor.value.agreementDate).isEqualTo(expectedKstToday)
+                assertThat(historySlot.captured.agreementDate).isEqualTo(expectedKstToday)
             }
 
             @Test
@@ -720,21 +689,19 @@ class AuthServiceTest {
                 // Given
                 val userId = 1L
                 val employee = createTestEmployee(id = userId, agreementFlag = null)
+                val historySlot = slot<AgreementHistory>()
 
-                whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-                whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                    .thenReturn(Optional.of(activeTerms))
-                whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("token")
-                whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+                every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+                every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(activeTerms)
+                every { agreementHistoryRepository.save(capture(historySlot)) } answers { firstArg() }
+                every { jwtTokenProvider.createAccessToken(userId, any<UserRole>(), true, any()) } returns "token"
+                every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
                 // When
                 authService.recordGpsConsent(userId)
 
                 // Then
-                val historyCaptor = ArgumentCaptor.forClass(AgreementHistory::class.java)
-                verify(agreementHistoryRepository).save(historyCaptor.capture())
-                val history = historyCaptor.value
+                val history = historySlot.captured
                 assertThat(history.sfid).isNull()
                 assertThat(history.employeeSfid).isNull()
                 assertThat(history.agreementWordSfid).isNull()
@@ -747,13 +714,12 @@ class AuthServiceTest {
                 val userId = 1L
                 val employee = createTestEmployee(id = userId, agreementFlag = null)
 
-                whenever(employeeRepository.findWithEmployeeInfoById(userId)).thenReturn(employee)
-                whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                    .thenReturn(Optional.of(activeTerms))
-                whenever(agreementHistoryRepository.save(any<AgreementHistory>())).thenAnswer { it.arguments[0] }
-                whenever(jwtTokenProvider.createAccessToken(eq(userId), any<UserRole>(), eq(true), any())).thenReturn("token")
-                whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
-                whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+                every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+                every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(activeTerms)
+                every { agreementHistoryRepository.save(any<AgreementHistory>()) } answers { firstArg() }
+                every { jwtTokenProvider.createAccessToken(userId, any<UserRole>(), true, any()) } returns "token"
+                every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+                every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
                 // When
                 authService.recordGpsConsent(userId)
@@ -774,14 +740,14 @@ class AuthServiceTest {
         val accessToken = "access_token_to_blacklist"
         val userId = 1L
 
-        whenever(jwtTokenProvider.getUserIdFromToken(accessToken)).thenReturn(userId)
+        every { jwtTokenProvider.getUserIdFromToken(accessToken) } returns userId
 
         // When
         authService.logout(accessToken)
 
         // Then
-        verify(jwtTokenProvider).blacklistToken(accessToken)
-        verify(jwtTokenProvider).deleteRefreshTokenByUserId(userId)
+        verify { jwtTokenProvider.blacklistToken(accessToken) }
+        verify { jwtTokenProvider.deleteRefreshTokenByUserId(userId) }
     }
 
     @Test
@@ -790,13 +756,13 @@ class AuthServiceTest {
         // Given
         val accessToken = "expired_or_invalid_token"
 
-        whenever(jwtTokenProvider.getUserIdFromToken(accessToken)).thenThrow(RuntimeException("Token expired"))
+        every { jwtTokenProvider.getUserIdFromToken(accessToken) } throws RuntimeException("Token expired")
 
         // When
         authService.logout(accessToken)
 
         // Then
-        verify(jwtTokenProvider).blacklistToken(accessToken)
+        verify { jwtTokenProvider.blacklistToken(accessToken) }
     }
 
     // ========== Device Binding Tests ==========
@@ -807,23 +773,24 @@ class AuthServiceTest {
         // Given
         val employee = createTestEmployee(id = 1L, deviceUuid = null)
         val request = LoginRequest("12345678", "password123", deviceId = "device-abc-123")
+        val empSlot = slot<Employee>()
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(uuidCheckProperties.enabled).thenReturn(true)
-        whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
-        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+        every { passwordEncoder.matches("password123", "encoded_password") } returns true
+        every { uuidCheckProperties.enabled } returns true
+        every { uuidCheckProperties.isExcluded("12345678") } returns false
+        every { employeeRepository.save(capture(empSlot)) } answers { firstArg() }
+        every { jwtTokenProvider.createAccessToken(1L, any<UserRole>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+        every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
 
         // When
         val response = authService.login(request)
 
         // Then
         assertThat(response.token.accessToken).isEqualTo("token")
-        verify(employeeRepository).save(employeeCaptor.capture())
-        assertThat(employeeCaptor.value.deviceUuid).isEqualTo("device-abc-123")
+        assertThat(empSlot.captured.deviceUuid).isEqualTo("device-abc-123")
     }
 
     @Test
@@ -833,13 +800,14 @@ class AuthServiceTest {
         val employee = createTestEmployee(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123", deviceId = "device-abc-123")
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(uuidCheckProperties.enabled).thenReturn(true)
-        whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
-        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+        every { passwordEncoder.matches("password123", "encoded_password") } returns true
+        every { uuidCheckProperties.enabled } returns true
+        every { uuidCheckProperties.isExcluded("12345678") } returns false
+        every { jwtTokenProvider.createAccessToken(1L, any<UserRole>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+        every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
 
         // When
         val response = authService.login(request)
@@ -855,10 +823,10 @@ class AuthServiceTest {
         val employee = createTestEmployee(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123", deviceId = "device-xyz-789")
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(uuidCheckProperties.enabled).thenReturn(true)
-        whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+        every { passwordEncoder.matches("password123", "encoded_password") } returns true
+        every { uuidCheckProperties.enabled } returns true
+        every { uuidCheckProperties.isExcluded("12345678") } returns false
 
         // When & Then
         assertThatThrownBy { authService.login(request) }
@@ -872,12 +840,13 @@ class AuthServiceTest {
         val employee = createTestEmployee(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123")
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+        every { passwordEncoder.matches("password123", "encoded_password") } returns true
+        every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
+        every { jwtTokenProvider.createAccessToken(1L, any<UserRole>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+        every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
 
         // When
         val response = authService.login(request)
@@ -893,12 +862,13 @@ class AuthServiceTest {
         val employee = createTestEmployee(id = 1L, deviceUuid = "device-abc-123")
         val request = LoginRequest("12345678", "password123", deviceId = "device-xyz-789")
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(uuidCheckProperties.enabled).thenReturn(false)
-        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+        every { passwordEncoder.matches("password123", "encoded_password") } returns true
+        every { uuidCheckProperties.enabled } returns false
+        every { jwtTokenProvider.createAccessToken(1L, any<UserRole>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+        every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
 
         // When
         val response = authService.login(request)
@@ -914,13 +884,14 @@ class AuthServiceTest {
         val employee = createTestEmployee(id = 1L, employeeCode = "20010585", deviceUuid = "device-abc-123")
         val request = LoginRequest("20010585", "password123", deviceId = "device-xyz-789")
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("20010585")).thenReturn(employee)
-        whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-        whenever(uuidCheckProperties.enabled).thenReturn(true)
-        whenever(uuidCheckProperties.isExcluded("20010585")).thenReturn(true)
-        whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
-        whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
-        whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("20010585") } returns employee
+        every { passwordEncoder.matches("password123", "encoded_password") } returns true
+        every { uuidCheckProperties.enabled } returns true
+        every { uuidCheckProperties.isExcluded("20010585") } returns true
+        every { jwtTokenProvider.createAccessToken(1L, any<UserRole>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+        every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
 
         // When
         val response = authService.login(request)
@@ -942,12 +913,13 @@ class AuthServiceTest {
             val employee = createTestEmployee(id = 1L, role = UserRole.SALES_MANAGER)
             val request = LoginRequest("12345678", "password123")
 
-            whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-            whenever(adminPermissionResolver.resolve(employee)).thenReturn(AdminPermission.entries.toSet())
-            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
-            whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
-            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+            every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+            every { passwordEncoder.matches("password123", "encoded_password") } returns true
+            every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
+            every { jwtTokenProvider.createAccessToken(1L, any<UserRole>(), false, any()) } returns "token"
+            every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
+            every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+            every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
 
             // When
             val response = authService.login(request)
@@ -963,14 +935,15 @@ class AuthServiceTest {
             val employee = createTestEmployee(id = 1L, appLoginActive = true, deviceUuid = null)
             val request = LoginRequest("12345678", "password123", deviceId = "device-123")
 
-            whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-            whenever(uuidCheckProperties.enabled).thenReturn(true)
-            whenever(uuidCheckProperties.isExcluded("12345678")).thenReturn(false)
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
-            whenever(jwtTokenProvider.createAccessToken(eq(1L), any<UserRole>(), eq(false), any())).thenReturn("token")
-            whenever(jwtTokenProvider.createRefreshToken(eq(1L), any(), any())).thenReturn("refresh")
-            whenever(jwtTokenProvider.getAccessTokenExpirationSeconds()).thenReturn(3600)
+            every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+            every { passwordEncoder.matches("password123", "encoded_password") } returns true
+            every { uuidCheckProperties.enabled } returns true
+            every { uuidCheckProperties.isExcluded("12345678") } returns false
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            every { jwtTokenProvider.createAccessToken(1L, any<UserRole>(), false, any()) } returns "token"
+            every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
+            every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+            every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
 
             // When
             val response = authService.login(request)
@@ -986,9 +959,9 @@ class AuthServiceTest {
             val employee = createTestEmployee(id = 1L, role = UserRole.WOMAN)
             val request = LoginRequest("12345678", "password123")
 
-            whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-            whenever(adminPermissionResolver.resolve(employee)).thenReturn(emptySet())
+            every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+            every { passwordEncoder.matches("password123", "encoded_password") } returns true
+            every { adminPermissionResolver.resolve(employee) } returns emptySet()
 
             // When & Then
             assertThatThrownBy { authService.login(request) }
@@ -1002,9 +975,9 @@ class AuthServiceTest {
             val employee = createTestEmployee(id = 1L, role = null)
             val request = LoginRequest("12345678", "password123")
 
-            whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
-            whenever(adminPermissionResolver.resolve(employee)).thenReturn(emptySet())
+            every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+            every { passwordEncoder.matches("password123", "encoded_password") } returns true
+            every { adminPermissionResolver.resolve(employee) } returns emptySet()
 
             // When & Then
             assertThatThrownBy { authService.login(request) }
@@ -1018,8 +991,8 @@ class AuthServiceTest {
             val employee = createTestEmployee(id = 1L, appLoginActive = false)
             val request = LoginRequest("12345678", "password123", deviceId = "device-123")
 
-            whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+            every { passwordEncoder.matches("password123", "encoded_password") } returns true
 
             // When & Then
             assertThatThrownBy { authService.login(request) }
@@ -1033,8 +1006,8 @@ class AuthServiceTest {
             val employee = createTestEmployee(id = 1L, appLoginActive = null)
             val request = LoginRequest("12345678", "password123", deviceId = "device-123")
 
-            whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678")).thenReturn(employee)
-            whenever(passwordEncoder.matches("password123", "encoded_password")).thenReturn(true)
+            every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
+            every { passwordEncoder.matches("password123", "encoded_password") } returns true
 
             // When & Then
             assertThatThrownBy { authService.login(request) }
@@ -1051,23 +1024,23 @@ class AuthServiceTest {
     fun resetDevice_success() {
         // Given
         val employee = createTestEmployee(id = 1L, employeeCode = "20010585", deviceUuid = "device-abc-123")
+        val empSlot = slot<Employee>()
 
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("20010585")).thenReturn(employee)
-        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.arguments[0] }
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("20010585") } returns employee
+        every { employeeRepository.save(capture(empSlot)) } answers { firstArg() }
 
         // When
         authService.resetDevice("20010585")
 
         // Then
-        verify(employeeRepository).save(employeeCaptor.capture())
-        assertThat(employeeCaptor.value.deviceUuid).isNull()
+        assertThat(empSlot.captured.deviceUuid).isNull()
     }
 
     @Test
     @DisplayName("단말기 초기화 실패 - 존재하지 않는 사번 시 UserNotFoundException 발생")
     fun resetDevice_userNotFound() {
         // Given
-        whenever(employeeRepository.findWithEmployeeInfoByEmployeeCode("99999999")).thenReturn(null)
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("99999999") } returns null
 
         // When & Then
         assertThatThrownBy { authService.resetDevice("99999999") }

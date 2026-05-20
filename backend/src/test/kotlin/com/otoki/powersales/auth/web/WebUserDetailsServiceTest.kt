@@ -5,43 +5,34 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import java.util.Optional
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("WebUserDetailsService 테스트")
 class WebUserDetailsServiceTest {
 
-    @Mock
-    private lateinit var userRepository: UserRepository
+    private val userRepository: UserRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val adminPermissionResolver: AdminPermissionResolver = mockk()
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
-
-    @Mock
-    private lateinit var adminPermissionResolver: AdminPermissionResolver
-
-    @InjectMocks
-    private lateinit var service: WebUserDetailsService
+    private val service = WebUserDetailsService(
+        userRepository,
+        employeeRepository,
+        adminPermissionResolver,
+    )
 
     @BeforeEach
     fun stubEmployeeLookup() {
         // 본 테스트는 인증/권한 매핑만 검증 — Employee snapshot 부재 케이스만 사용.
-        org.mockito.Mockito.lenient()
-            .`when`(employeeRepository.findByEmployeeCode(any()))
-            .thenReturn(Optional.empty())
+        every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
     }
 
     @Nested
@@ -52,7 +43,7 @@ class WebUserDetailsServiceTest {
         @DisplayName("성공 - 활성 사용자 + STAFF profile → ROLE_STAFF 부여")
         fun success_staff() {
             val user = createUser(profileType = ProfileType.STAFF, isSalesSupport = false)
-            whenever(userRepository.findByUsername("u@otokims.co.kr")).thenReturn(user)
+            every { userRepository.findByUsername("u@otokims.co.kr") } returns user
 
             val principal = service.loadUserByUsername("u@otokims.co.kr")
 
@@ -66,7 +57,7 @@ class WebUserDetailsServiceTest {
         @DisplayName("성공 - SYSTEM_ADMIN + is_sales_support=true → ROLE_ADMIN + ROLE_SALES_SUPPORT")
         fun success_admin_with_sales_support() {
             val user = createUser(profileType = ProfileType.SYSTEM_ADMIN, isSalesSupport = true)
-            whenever(userRepository.findByUsername("admin@otokims.co.kr")).thenReturn(user)
+            every { userRepository.findByUsername("admin@otokims.co.kr") } returns user
 
             val principal = service.loadUserByUsername("admin@otokims.co.kr")
 
@@ -78,7 +69,7 @@ class WebUserDetailsServiceTest {
         @DisplayName("성공 - BRANCH_MANAGER → ROLE_MANAGER 매핑 (§2.3 매핑 표)")
         fun success_branch_manager_maps_to_manager() {
             val user = createUser(profileType = ProfileType.BRANCH_MANAGER, isSalesSupport = false)
-            whenever(userRepository.findByUsername("bm@otokims.co.kr")).thenReturn(user)
+            every { userRepository.findByUsername("bm@otokims.co.kr") } returns user
 
             val principal = service.loadUserByUsername("bm@otokims.co.kr")
 
@@ -89,7 +80,7 @@ class WebUserDetailsServiceTest {
         @DisplayName("비활성 사용자 - is_active=false → isEnabled=false")
         fun inactive_user() {
             val user = createUser(profileType = ProfileType.STAFF, isSalesSupport = false, isActive = false)
-            whenever(userRepository.findByUsername("inactive@otokims.co.kr")).thenReturn(user)
+            every { userRepository.findByUsername("inactive@otokims.co.kr") } returns user
 
             val principal = service.loadUserByUsername("inactive@otokims.co.kr")
 
@@ -99,7 +90,7 @@ class WebUserDetailsServiceTest {
         @Test
         @DisplayName("실패 - User 미존재 → UsernameNotFoundException")
         fun user_not_found() {
-            whenever(userRepository.findByUsername("missing@otokims.co.kr")).thenReturn(null)
+            every { userRepository.findByUsername("missing@otokims.co.kr") } returns null
 
             assertThatThrownBy { service.loadUserByUsername("missing@otokims.co.kr") }
                 .isInstanceOf(UsernameNotFoundException::class.java)

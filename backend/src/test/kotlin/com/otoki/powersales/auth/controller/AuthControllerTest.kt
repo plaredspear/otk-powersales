@@ -19,21 +19,18 @@ import com.otoki.powersales.common.security.PasswordChangeRequiredFilter
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.auth.service.AuthService
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.verify
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.doNothing
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -57,22 +54,22 @@ class AuthControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var authService: AuthService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var passwordChangeRequiredFilter: PasswordChangeRequiredFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -100,7 +97,7 @@ class AuthControllerTest {
             requiresGpsConsent = false
         )
 
-        whenever(authService.login(any())).thenReturn(mockResponse)
+        every { authService.login(any()) } returns mockResponse
 
         // When & Then
         mockMvc.perform(
@@ -134,7 +131,7 @@ class AuthControllerTest {
             requiresGpsConsent = true
         )
 
-        whenever(authService.login(any())).thenReturn(mockResponse)
+        every { authService.login(any()) } returns mockResponse
 
         // When & Then
         mockMvc.perform(
@@ -151,7 +148,7 @@ class AuthControllerTest {
     @DisplayName("사번 없음 - 401 INVALID_CREDENTIALS")
     fun login_invalidCredentials() {
         // Given
-        whenever(authService.login(any())).thenThrow(InvalidCredentialsException())
+        every { authService.login(any()) } throws InvalidCredentialsException()
 
         // When & Then
         mockMvc.perform(
@@ -220,7 +217,7 @@ class AuthControllerTest {
             expiresIn = 3600
         )
 
-        whenever(authService.refreshAccessToken(any())).thenReturn(mockResponse)
+        every { authService.refreshAccessToken(any()) } returns mockResponse
 
         // When & Then
         mockMvc.perform(
@@ -240,8 +237,7 @@ class AuthControllerTest {
     @DisplayName("탈취 감지 - 재사용된 Refresh Token 시 401 TOKEN_REUSE_DETECTED")
     fun refresh_tokenReuseDetected() {
         // Given
-        whenever(authService.refreshAccessToken(any()))
-            .thenThrow(TokenReuseDetectedException())
+        every { authService.refreshAccessToken(any()) } throws TokenReuseDetectedException()
 
         // When & Then
         mockMvc.perform(
@@ -258,8 +254,7 @@ class AuthControllerTest {
     @DisplayName("유효하지 않은 토큰 - 변조된 Refresh Token 시 401 INVALID_TOKEN")
     fun refresh_invalidToken() {
         // Given
-        whenever(authService.refreshAccessToken(any()))
-            .thenThrow(InvalidTokenException())
+        every { authService.refreshAccessToken(any()) } throws InvalidTokenException()
 
         // When & Then
         mockMvc.perform(
@@ -292,7 +287,7 @@ class AuthControllerTest {
     fun changePassword_success() {
         // Given
         val mockResponse = ChangePasswordResponse("new-access", "new-refresh", 3600)
-        whenever(authService.changePassword(any<UserPrincipal>(), any())).thenReturn(mockResponse)
+        every { authService.changePassword(any<UserPrincipal>(), any()) } returns mockResponse
 
         // When & Then
         mockMvc.perform(
@@ -311,8 +306,7 @@ class AuthControllerTest {
     @DisplayName("비밀번호 변경 - 현재 비밀번호 불일치 시 401 AUTH_CURRENT_PASSWORD_MISMATCH")
     fun changePassword_wrongCurrentPassword() {
         // Given
-        whenever(authService.changePassword(any<UserPrincipal>(), any()))
-            .thenThrow(InvalidCurrentPasswordException())
+        every { authService.changePassword(any<UserPrincipal>(), any()) } throws InvalidCurrentPasswordException()
 
         // When & Then
         mockMvc.perform(
@@ -343,8 +337,8 @@ class AuthControllerTest {
     @DisplayName("비밀번호 변경 - 정책 위반 시 400 AUTH_NEW_PASSWORD_INVALID + violations 배열")
     fun changePassword_policyViolation() {
         // Given
-        whenever(authService.changePassword(any<UserPrincipal>(), any()))
-            .thenThrow(NewPasswordPolicyViolationException(listOf("LENGTH_TOO_SHORT")))
+        every { authService.changePassword(any<UserPrincipal>(), any()) } throws
+            NewPasswordPolicyViolationException(listOf("LENGTH_TOO_SHORT"))
 
         // When & Then
         mockMvc.perform(
@@ -362,8 +356,7 @@ class AuthControllerTest {
     @DisplayName("비밀번호 변경 - 임시 비번 동일 시 400 AUTH_NEW_PASSWORD_SAME_AS_TEMP")
     fun changePassword_sameAsTemporary() {
         // Given
-        whenever(authService.changePassword(any<UserPrincipal>(), any()))
-            .thenThrow(NewPasswordSameAsTemporaryException())
+        every { authService.changePassword(any<UserPrincipal>(), any()) } throws NewPasswordSameAsTemporaryException()
 
         // When & Then
         mockMvc.perform(
@@ -381,7 +374,7 @@ class AuthControllerTest {
     @DisplayName("비밀번호 검증 성공 - 200 OK (인증 필요)")
     fun verifyPassword_success() {
         // Given
-        doNothing().whenever(authService).verifyPassword(eq(1L), any())
+        every { authService.verifyPassword(1L, any()) } just Runs
 
         // When & Then
         mockMvc.perform(
@@ -399,8 +392,7 @@ class AuthControllerTest {
     @DisplayName("비밀번호 검증 실패 - 비밀번호 불일치 시 401 AUTH_CURRENT_PASSWORD_MISMATCH")
     fun verifyPassword_passwordMismatch() {
         // Given
-        doThrow(InvalidCurrentPasswordException())
-            .whenever(authService).verifyPassword(eq(1L), any())
+        every { authService.verifyPassword(1L, any()) } throws InvalidCurrentPasswordException()
 
         // When & Then
         mockMvc.perform(
@@ -434,7 +426,7 @@ class AuthControllerTest {
     fun logout_success() {
         // Given
         val accessToken = "test-access-token"
-        doNothing().whenever(authService).logout(any())
+        every { authService.logout(any()) } just Runs
 
         // When & Then
         mockMvc.perform(
@@ -443,7 +435,7 @@ class AuthControllerTest {
         )
             .andExpect(status().isNoContent)
 
-        verify(authService).logout(accessToken)
+        verify { authService.logout(accessToken) }
     }
 
     @Test
@@ -463,7 +455,7 @@ class AuthControllerTest {
     fun gpsConsentTerms_success() {
         // Given
         val response = GpsConsentTermsResponse("AGR-2025-001", "약관 본문 텍스트")
-        whenever(authService.getGpsConsentTerms()).thenReturn(response)
+        every { authService.getGpsConsentTerms() } returns response
 
         // When & Then
         mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/terms"))
@@ -477,7 +469,7 @@ class AuthControllerTest {
     @DisplayName("GPS 약관 조회 실패 - 활성 약관 없음 404")
     fun gpsConsentTerms_notFound() {
         // Given
-        whenever(authService.getGpsConsentTerms()).thenThrow(TermsNotFoundException())
+        every { authService.getGpsConsentTerms() } throws TermsNotFoundException()
 
         // When & Then
         mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/terms"))
@@ -492,7 +484,7 @@ class AuthControllerTest {
     fun gpsConsentStatus_requiresConsent() {
         // Given
         val response = GpsConsentStatusResponse(requiresGpsConsent = true)
-        whenever(authService.getGpsConsentStatus(1L)).thenReturn(response)
+        every { authService.getGpsConsentStatus(1L) } returns response
 
         // When & Then
         mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/status"))
@@ -505,7 +497,7 @@ class AuthControllerTest {
     fun gpsConsentStatus_consentGiven() {
         // Given
         val response = GpsConsentStatusResponse(requiresGpsConsent = false)
-        whenever(authService.getGpsConsentStatus(1L)).thenReturn(response)
+        every { authService.getGpsConsentStatus(1L) } returns response
 
         // When & Then
         mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/status"))
@@ -520,7 +512,7 @@ class AuthControllerTest {
     fun gpsConsent_success_withAgreementNumber() {
         // Given
         val response = GpsConsentRecordResponse(accessToken = "new-token", expiresIn = 3600)
-        whenever(authService.recordGpsConsent(eq(1L), any())).thenReturn(response)
+        every { authService.recordGpsConsent(1L, any()) } returns response
 
         // When & Then
         mockMvc.perform(
@@ -540,7 +532,7 @@ class AuthControllerTest {
     fun gpsConsent_success_withoutBody() {
         // Given
         val response = GpsConsentRecordResponse(accessToken = "new-token", expiresIn = 3600)
-        whenever(authService.recordGpsConsent(eq(1L), anyOrNull())).thenReturn(response)
+        every { authService.recordGpsConsent(1L, any()) } returns response
 
         // When & Then
         mockMvc.perform(post("/api/v1/mobile/auth/gps-consent"))
