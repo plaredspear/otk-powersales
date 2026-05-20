@@ -24,14 +24,14 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.*
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -39,21 +39,39 @@ import java.time.LocalDate
 import java.util.*
 import java.math.BigDecimal
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminPromotionService 테스트")
 class AdminPromotionServiceTest {
 
-    @Mock private lateinit var promotionRepository: PromotionRepository
-    @Mock private lateinit var promotionEmployeeRepository: PromotionEmployeeRepository
-    @Mock private lateinit var promotionProductRepository: PromotionProductRepository
-    @Mock private lateinit var accountRepository: AccountRepository
-    @Mock private lateinit var productRepository: ProductRepository
-    @Mock private lateinit var employeeRepository: EmployeeRepository
-    @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val promotionRepository: PromotionRepository = mockk(relaxUnitFun = true)
+    private val promotionEmployeeRepository: PromotionEmployeeRepository = mockk(relaxUnitFun = true)
+    private val promotionProductRepository: PromotionProductRepository = mockk(relaxUnitFun = true)
+    private val accountRepository: AccountRepository = mockk()
+    private val productRepository: ProductRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
 
-    @InjectMocks private lateinit var adminPromotionService: AdminPromotionService
+    private val adminPromotionService: AdminPromotionService = AdminPromotionService(
+        promotionRepository = promotionRepository,
+        promotionEmployeeRepository = promotionEmployeeRepository,
+        promotionProductRepository = promotionProductRepository,
+        accountRepository = accountRepository,
+        productRepository = productRepository,
+        employeeRepository = employeeRepository,
+        teamMemberScheduleRepository = teamMemberScheduleRepository,
+    )
 
     private val userId = 1L
+
+    // 원본 mockito 테스트는 일부 케이스에서 promotionProductRepository.save /
+    // findByPromotionId 를 stubbing 없이 호출했고 mockito silent default 로 통과했다.
+    // strict MockK 호환을 위한 default — 각 테스트에서 override 가능.
+    @BeforeEach
+    fun stubMockitoSilentDefaults() {
+        every { promotionProductRepository.findByPromotionId(any()) } returns null
+        every {
+            promotionProductRepository.save(any<PromotionProduct>())
+        } answers { firstArg<PromotionProduct>() }
+    }
 
     @Nested
     @DisplayName("getPromotionFormMeta - 행사마스터 폼 메타 조회")
@@ -93,10 +111,10 @@ class AdminPromotionServiceTest {
             }
             val pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending())
             val page = PageImpl(listOf(promotion), pageable, 1)
-            whenever(promotionRepository.searchForAdmin(
+            every { promotionRepository.searchForAdmin(
                 keyword = null, promotionType = null,
                 startDate = null, endDate = null, branchCodes = null, pageable = pageable
-            )).thenReturn(page)
+            ) } returns page
 
             val result = adminPromotionService.getPromotions(scope = scope,
                 keyword = null, promotionType = null,
@@ -143,7 +161,7 @@ class AdminPromotionServiceTest {
                 account = createAccount()
                 primaryProduct = createProduct()
             }
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
             val result = adminPromotionService.getPromotion(scope, 1L)
 
@@ -163,7 +181,7 @@ class AdminPromotionServiceTest {
         @Test
         @DisplayName("미존재 ID - id=999 -> PromotionNotFoundException")
         fun getPromotion_notFound() {
-            whenever(promotionRepository.findByIdWithRelations(999L)).thenReturn(null)
+            every { promotionRepository.findByIdWithRelations(999L) } returns null
 
             assertThatThrownBy { adminPromotionService.getPromotion(scope, 999L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -173,7 +191,7 @@ class AdminPromotionServiceTest {
         @DisplayName("삭제된 행사마스터 조회 -> PromotionNotFoundException")
         fun getPromotion_deleted() {
             val promotion = createPromotion(isDeleted = true)
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
             assertThatThrownBy { adminPromotionService.getPromotion(scope, 1L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -186,7 +204,7 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion(costCenterCode = "1101")
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
             assertThatThrownBy { adminPromotionService.getPromotion(scope, 1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
@@ -205,13 +223,14 @@ class AdminPromotionServiceTest {
             val product = createProduct(name = "꿀배청 680G")
             val employee = createEmployee(costCenterCode = "1101")
 
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
-
+            every { accountRepository.findById(100) } returns Optional.of(account)
+            every { productRepository.findById(200L) } returns Optional.of(product)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { promotionRepository.getNextPromotionNumberSeq() } returns 1L
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
+            every { promotionProductRepository.findByPromotionId(any()) } returns null
+            val savedPromotionProduct = slot<PromotionProduct>()
+            every { promotionProductRepository.save(capture(savedPromotionProduct)) } answers { firstArg<PromotionProduct>() }
 
             val result = adminPromotionService.createPromotion(userId, request)
 
@@ -220,10 +239,8 @@ class AdminPromotionServiceTest {
             assertThat(result.promotionType).isEqualTo("시식")
 
             // 행사상품 1건 자동 생성 검증 (대표품목 productId=200 으로)
-            argumentCaptor<PromotionProduct>().apply {
-                verify(promotionProductRepository).save(capture())
-                assertThat(firstValue.productId).isEqualTo(200L)
-            }
+            verify { promotionProductRepository.save(any()) }
+            assertThat(savedPromotionProduct.captured.productId).isEqualTo(200L)
         }
 
         @Test
@@ -234,11 +251,11 @@ class AdminPromotionServiceTest {
             val product = createProduct(name = "진라면")
             val employee = createEmployee(costCenterCode = "1101")
 
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { accountRepository.findById(100) } returns Optional.of(account)
+            every { productRepository.findById(200L) } returns Optional.of(product)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { promotionRepository.getNextPromotionNumberSeq() } returns 1L
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
 
             adminPromotionService.createPromotion(userId, request)
@@ -260,7 +277,7 @@ class AdminPromotionServiceTest {
         @DisplayName("미존재 거래처 - account_id=999 -> AccountNotFoundException")
         fun createPromotion_accountNotFound() {
             val request = createRequest(accountId = 999)
-            whenever(accountRepository.findById(999)).thenReturn(Optional.empty())
+            every { accountRepository.findById(999) } returns Optional.empty()
 
             assertThatThrownBy { adminPromotionService.createPromotion(userId, request) }
                 .isInstanceOf(AccountNotFoundException::class.java)
@@ -270,8 +287,8 @@ class AdminPromotionServiceTest {
         @DisplayName("미존재 상품 - primary_product_id=999 -> ProductNotFoundException")
         fun createPromotion_productNotFound() {
             val request = createRequest(primaryProductId = 999L)
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(productRepository.findById(999L)).thenReturn(Optional.empty())
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
+            every { productRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { adminPromotionService.createPromotion(userId, request) }
                 .isInstanceOf(ProductNotFoundException::class.java)
@@ -283,9 +300,9 @@ class AdminPromotionServiceTest {
             val request = createRequest()
             val employee = createEmployee(costCenterCode = null)
 
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
+            every { productRepository.findById(200L) } returns Optional.of(createProduct())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
             assertThatThrownBy { adminPromotionService.createPromotion(userId, request) }
                 .isInstanceOf(CostCenterNotFoundException::class.java)
@@ -317,11 +334,11 @@ class AdminPromotionServiceTest {
             val product = createProduct()
             val employee = createEmployee(costCenterCode = "1101")
 
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { accountRepository.findById(100) } returns Optional.of(account)
+            every { productRepository.findById(200L) } returns Optional.of(product)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { promotionRepository.getNextPromotionNumberSeq() } returns 1L
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
 
             val result = adminPromotionService.createPromotion(userId, request)
@@ -346,11 +363,11 @@ class AdminPromotionServiceTest {
             val product = createProduct()
             val employee = createEmployee(costCenterCode = "1101")
 
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { accountRepository.findById(100) } returns Optional.of(account)
+            every { productRepository.findById(200L) } returns Optional.of(product)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { promotionRepository.getNextPromotionNumberSeq() } returns 1L
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
 
             val result = adminPromotionService.createPromotion(userId, request)
@@ -366,11 +383,11 @@ class AdminPromotionServiceTest {
             val product = createProduct()
             val employee = createEmployee(costCenterCode = "1101")
 
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { accountRepository.findById(100) } returns Optional.of(account)
+            every { productRepository.findById(200L) } returns Optional.of(product)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { promotionRepository.getNextPromotionNumberSeq() } returns 1L
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
 
             val result = adminPromotionService.createPromotion(userId, request)
@@ -386,11 +403,11 @@ class AdminPromotionServiceTest {
             val product = createProduct()
             val employee = createEmployee(costCenterCode = "1101")
 
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(account))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(product))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(1L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { accountRepository.findById(100) } returns Optional.of(account)
+            every { productRepository.findById(200L) } returns Optional.of(product)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { promotionRepository.getNextPromotionNumberSeq() } returns 1L
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
 
             val result = adminPromotionService.createPromotion(userId, request)
@@ -412,10 +429,10 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
+            every { productRepository.findById(200L) } returns Optional.of(createProduct())
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             val request = createRequest()
             adminPromotionService.updatePromotion(scope, 1L, userId, request)
@@ -428,14 +445,14 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
             val newAccount = createAccount(id = 200, name = "GS25 강남점", branchName = "서초21지점")
-            whenever(accountRepository.findById(200)).thenReturn(Optional.of(newAccount))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
-            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(emptyList())
+            every { accountRepository.findById(200) } returns Optional.of(newAccount)
+            every { productRepository.findById(200L) } returns Optional.of(createProduct())
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
+            every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns false
+            every { promotionEmployeeRepository.findByPromotionId(1L) } returns emptyList()
 
             val request = createRequest(accountId = 200)
             adminPromotionService.updatePromotion(scope, 1L, userId, request)
@@ -448,12 +465,12 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion(primaryProductId = 200L)
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
 
             val newProduct = createProduct(id = 300L, name = "진라면 매운맛")
-            whenever(productRepository.findById(300L)).thenReturn(Optional.of(newProduct))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { productRepository.findById(300L) } returns Optional.of(newProduct)
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             val request = createRequest(primaryProductId = 300L)
             adminPromotionService.updatePromotion(scope, 1L, userId, request)
@@ -466,13 +483,15 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion(primaryProductId = 200L)
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
 
             val newProduct = createProduct(id = 300L, name = "새 상품", category1 = "냉동")
-            whenever(productRepository.findById(300L)).thenReturn(Optional.of(newProduct))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.findByPromotionId(promotion.id)).thenReturn(null)
+            every { productRepository.findById(300L) } returns Optional.of(newProduct)
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
+            every { promotionProductRepository.findByPromotionId(promotion.id) } returns null
+            val savedPromotionProduct = slot<PromotionProduct>()
+            every { promotionProductRepository.save(capture(savedPromotionProduct)) } answers { firstArg<PromotionProduct>() }
 
             val request = createRequest(primaryProductId = 300L)
             val result = adminPromotionService.updatePromotion(scope, 1L, userId, request)
@@ -480,11 +499,9 @@ class AdminPromotionServiceTest {
             assertThat(result.primaryProductId).isEqualTo(300L)
 
             // 행사상품 신규 생성 검증 (기존 미존재 → save 신규)
-            argumentCaptor<PromotionProduct>().apply {
-                verify(promotionProductRepository).save(capture())
-                assertThat(firstValue.productId).isEqualTo(300L)
-                assertThat(firstValue.promotionId).isEqualTo(promotion.id)
-            }
+            verify { promotionProductRepository.save(any()) }
+            assertThat(savedPromotionProduct.captured.productId).isEqualTo(300L)
+            assertThat(savedPromotionProduct.captured.promotionId).isEqualTo(promotion.id)
         }
 
         @Test
@@ -493,12 +510,12 @@ class AdminPromotionServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
             val promotion = createPromotion(primaryProductId = 200L)
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
 
             val newProduct = createProduct(id = 300L, name = "새 상품", category1 = "냉동")
-            whenever(productRepository.findById(300L)).thenReturn(Optional.of(newProduct))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { productRepository.findById(300L) } returns Optional.of(newProduct)
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             // 기존 행사상품이 존재 (productId=200) → 새 productId=300 으로 갱신되어야 함
             val existingPromotionProduct = PromotionProduct(
@@ -506,18 +523,17 @@ class AdminPromotionServiceTest {
                 promotionId = promotion.id,
                 productId = 200L
             )
-            whenever(promotionProductRepository.findByPromotionId(promotion.id))
-                .thenReturn(existingPromotionProduct)
+            every { promotionProductRepository.findByPromotionId(promotion.id) } returns existingPromotionProduct
+            val savedPromotionProduct = slot<PromotionProduct>()
+            every { promotionProductRepository.save(capture(savedPromotionProduct)) } answers { firstArg<PromotionProduct>() }
 
             val request = createRequest(primaryProductId = 300L)
             adminPromotionService.updatePromotion(scope, 1L, userId, request)
 
             // 기존 entity 의 productId 가 300 으로 갱신되었는지 + 동일 entity 가 save 되었는지 검증
-            argumentCaptor<PromotionProduct>().apply {
-                verify(promotionProductRepository).save(capture())
-                assertThat(firstValue.id).isEqualTo(1L)
-                assertThat(firstValue.productId).isEqualTo(300L)
-            }
+            verify { promotionProductRepository.save(any()) }
+            assertThat(savedPromotionProduct.captured.id).isEqualTo(1L)
+            assertThat(savedPromotionProduct.captured.productId).isEqualTo(300L)
         }
 
         @Test
@@ -526,16 +542,16 @@ class AdminPromotionServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
             val promotion = createPromotion(primaryProductId = 200L)
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
+            every { productRepository.findById(200L) } returns Optional.of(createProduct())
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             val request = createRequest(primaryProductId = 200L)
             adminPromotionService.updatePromotion(scope, 1L, userId, request)
 
-            verify(promotionProductRepository, never()).save(any<PromotionProduct>())
-            verify(promotionProductRepository, never()).findByPromotionId(any())
+            verify(exactly = 0) { promotionProductRepository.save(any<PromotionProduct>()) }
+            verify(exactly = 0) { promotionProductRepository.findByPromotionId(any()) }
         }
 
         @Test
@@ -545,7 +561,7 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
             val request = createRequest(otherProduct = "라면's")
 
@@ -557,7 +573,7 @@ class AdminPromotionServiceTest {
         @DisplayName("삭제된 행사마스터 수정 -> PromotionNotFoundException")
         fun updatePromotion_deleted() {
             val promotion = createPromotion(isDeleted = true)
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
             assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, createRequest()) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -570,7 +586,7 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
             val request = createRequest(promotionType = "없는유형")
 
@@ -585,9 +601,9 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns true
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
 
             val request = createRequest(accountId = 200)
 
@@ -602,9 +618,9 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee()))
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns true
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
@@ -619,22 +635,22 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER)))
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns true
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER))
 
             val newAccount = createAccount(id = 200, name = "GS25 강남점")
-            whenever(accountRepository.findById(200)).thenReturn(Optional.of(newAccount))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { accountRepository.findById(200) } returns Optional.of(newAccount)
+            every { productRepository.findById(200L) } returns Optional.of(createProduct())
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             val pe = PromotionEmployee(
                 id = 5L, promotionId = 1L, employeeId = 1L,
                 scheduleDate = LocalDate.of(2026, 3, 15), workStatus = WorkingType.WORK,
                 workType1 = WorkingCategory1.EVENT, workType3 = WorkingCategory3.FIXED, teamMemberScheduleId = 100L
             )
-            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(listOf(pe))
-            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>())).thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            every { promotionEmployeeRepository.findByPromotionId(1L) } returns listOf(pe)
+            every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
 
             val request = createRequest(accountId = 200)
             val result = adminPromotionService.updatePromotion(scope, 1L, userId, request)
@@ -649,14 +665,14 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER)))
-            whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 10))
-            whenever(promotionEmployeeRepository.findMaxScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 18))
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns true
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER))
+            every { promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L) } returns LocalDate.of(2026, 3, 10)
+            every { promotionEmployeeRepository.findMaxScheduleDateByPromotionId(1L) } returns LocalDate.of(2026, 3, 18)
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
+            every { productRepository.findById(200L) } returns Optional.of(createProduct())
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
             val result = adminPromotionService.updatePromotion(scope, 1L, userId, request)
@@ -671,9 +687,9 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(role = UserRole.LEADER)))
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns true
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(role = UserRole.LEADER))
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
@@ -688,10 +704,10 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
-            whenever(promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 12))
-            whenever(promotionEmployeeRepository.findMaxScheduleDateByPromotionId(1L)).thenReturn(LocalDate.of(2026, 3, 18))
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns false
+            every { promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L) } returns LocalDate.of(2026, 3, 12)
+            every { promotionEmployeeRepository.findMaxScheduleDateByPromotionId(1L) } returns LocalDate.of(2026, 3, 18)
 
             // startDate를 3/13으로 → minDate(3/12) 이후이므로 충돌
             val request = createRequest(startDate = LocalDate.of(2026, 3, 13))
@@ -707,25 +723,25 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns false
 
             val pe = PromotionEmployee(
                 id = 5L, promotionId = 1L, employeeId = 1L,
                 scheduleDate = LocalDate.of(2026, 3, 15), workStatus = WorkingType.WORK,
                 workType1 = WorkingCategory1.EVENT, workType3 = WorkingCategory3.FIXED, teamMemberScheduleId = 100L
             )
-            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(listOf(pe))
+            every { promotionEmployeeRepository.findByPromotionId(1L) } returns listOf(pe)
 
             val newAccount = createAccount(id = 200, name = "GS25 강남점")
-            whenever(accountRepository.findById(200)).thenReturn(Optional.of(newAccount))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionEmployeeRepository.save(any<PromotionEmployee>())).thenAnswer { it.getArgument<PromotionEmployee>(0) }
+            every { accountRepository.findById(200) } returns Optional.of(newAccount)
+            every { productRepository.findById(200L) } returns Optional.of(createProduct())
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
+            every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
 
             adminPromotionService.updatePromotion(scope, 1L, userId, createRequest(accountId = 200))
 
-            verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
+            verify { teamMemberScheduleRepository.deleteAllByIdIn(listOf(100L)) }
             assertThat(pe.teamMemberScheduleId).isNull()
         }
     }
@@ -743,23 +759,23 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(false)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns false
 
             val pe = PromotionEmployee(
                 id = 5L, promotionId = 1L, employeeId = 1L,
                 scheduleDate = LocalDate.of(2026, 3, 15), workStatus = WorkingType.WORK,
                 workType1 = WorkingCategory1.EVENT, workType3 = WorkingCategory3.FIXED, teamMemberScheduleId = 100L
             )
-            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(listOf(pe))
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
+            every { promotionEmployeeRepository.findByPromotionId(1L) } returns listOf(pe)
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             adminPromotionService.deletePromotion(scope, 1L)
 
             assertThat(promotion.isDeleted).isTrue()
-            verify(teamMemberScheduleRepository).deleteAllByIdIn(listOf(100L))
-            verify(promotionEmployeeRepository).deleteByPromotionId(1L)
-            verify(promotionRepository).save(promotion)
+            verify { teamMemberScheduleRepository.deleteAllByIdIn(listOf(100L)) }
+            verify { promotionEmployeeRepository.deleteByPromotionId(1L) }
+            verify { promotionRepository.save(promotion) }
         }
 
         @Test
@@ -769,8 +785,8 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion()
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
-            whenever(promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L)).thenReturn(true)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns true
 
             assertThatThrownBy { adminPromotionService.deletePromotion(scope, 1L) }
                 .isInstanceOf(ClosedPromotionDeleteException::class.java)
@@ -780,7 +796,7 @@ class AdminPromotionServiceTest {
         @DisplayName("이미 삭제된 행사마스터 -> PromotionNotFoundException")
         fun deletePromotion_alreadyDeleted() {
             val promotion = createPromotion(isDeleted = true)
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
             assertThatThrownBy { adminPromotionService.deletePromotion(scope, 1L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -800,7 +816,7 @@ class AdminPromotionServiceTest {
             // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val promotion = createPromotion(costCenterCode = "1101")
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(promotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
             assertThatThrownBy { adminPromotionService.deletePromotion(scope, 1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
@@ -819,7 +835,7 @@ class AdminPromotionServiceTest {
 
             // 원본 행사
             val sourcePromotion = createPromotion(id = 1L, costCenterCode = "1101")
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(sourcePromotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns sourcePromotion
 
             // 원본 행사사원 2건 (이력성 필드 채워진 상태)
             val sourceEmployees = listOf(
@@ -841,15 +857,15 @@ class AdminPromotionServiceTest {
                     basePrice = BigDecimal.valueOf(1500L), dailyTargetCount = BigDecimal.valueOf(100L)
                 )
             )
-            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(sourceEmployees)
+            every { promotionEmployeeRepository.findByPromotionId(1L) } returns sourceEmployees
 
             // createPromotion 의존 stub (CC 자동 채움 + 신규 promotion 생성)
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct(name = "꿀배청 680G")))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(costCenterCode = "1101")))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(2L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer {
-                val p = it.getArgument<Promotion>(0)
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
+            every { productRepository.findById(200L) } returns Optional.of(createProduct(name = "꿀배청 680G"))
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(costCenterCode = "1101"))
+            every { promotionRepository.getNextPromotionNumberSeq() } returns 2L
+            every { promotionRepository.save(any<Promotion>()) } answers {
+                val p = firstArg<Promotion>()
                 // id 부여 모사 (Kotlin val 이라 reflection 필요 없이 새 인스턴스 반환)
                 Promotion(
                     id = 2L,
@@ -862,11 +878,13 @@ class AdminPromotionServiceTest {
                     costCenterCode = p.costCenterCode
                 )
             }
-            whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
+            every { promotionProductRepository.findByPromotionId(any()) } returns null
 
             // 신규 행사사원 일괄 save
-            whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()))
-                .thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
+            val savedClones = slot<List<PromotionEmployee>>()
+            every {
+                promotionEmployeeRepository.saveAll(capture(savedClones))
+            } answers { firstArg<List<PromotionEmployee>>() }
 
             val request = createRequest(promotionType = "시식")
             val result = adminPromotionService.clonePromotion(scope, 1L, userId, request)
@@ -876,31 +894,29 @@ class AdminPromotionServiceTest {
             assertThat(result.costCenterCode).isEqualTo("1101")
 
             // 행사상품 1건 자동 생성 검증 (T7 동등)
-            verify(promotionProductRepository).save(any<PromotionProduct>())
+            verify { promotionProductRepository.save(any<PromotionProduct>()) }
 
             // 신규 행사사원 일괄 save 호출 + 이력성 필드 초기화 검증
-            argumentCaptor<List<PromotionEmployee>>().apply {
-                verify(promotionEmployeeRepository).saveAll(capture())
-                val cloned = firstValue
-                assertThat(cloned).hasSize(2)
+            verify { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) }
+            val cloned = savedClones.captured
+            assertThat(cloned).hasSize(2)
 
-                // 첫 번째 복제 행 — 이력성 필드 모두 초기화 + 신규 promotion_id 연결
-                val c1 = cloned[0]
-                assertThat(c1.promotionId).isEqualTo(2L)
-                assertThat(c1.employeeId).isEqualTo(10L)  // 담당자 복사 유지
-                assertThat(c1.scheduleDate).isNull()  // 투입일 초기화
-                assertThat(c1.basePrice).isNull()  // 기준단가 초기화
-                assertThat(c1.dailyTargetCount).isNull()  // 일일목표수량 초기화
-                assertThat(c1.primarySalesPrice).isNull()
-                assertThat(c1.primarySalesQuantity).isNull()
-                assertThat(c1.otherSalesAmount).isNull()
-                assertThat(c1.otherSalesQuantity).isNull()
-                assertThat(c1.primaryProductAmount).isNull()
-                assertThat(c1.description).isNull()  // 비고 초기화
-                assertThat(c1.s3ImageUniqueKey).isNull()  // 이미지 키 초기화
-                assertThat(c1.teamMemberScheduleId).isNull()  // 여사원일정 ID 초기화
-                assertThat(c1.promoCloseByTm).isFalse  // 마감 여부 초기화
-            }
+            // 첫 번째 복제 행 — 이력성 필드 모두 초기화 + 신규 promotion_id 연결
+            val c1 = cloned[0]
+            assertThat(c1.promotionId).isEqualTo(2L)
+            assertThat(c1.employeeId).isEqualTo(10L)  // 담당자 복사 유지
+            assertThat(c1.scheduleDate).isNull()  // 투입일 초기화
+            assertThat(c1.basePrice).isNull()  // 기준단가 초기화
+            assertThat(c1.dailyTargetCount).isNull()  // 일일목표수량 초기화
+            assertThat(c1.primarySalesPrice).isNull()
+            assertThat(c1.primarySalesQuantity).isNull()
+            assertThat(c1.otherSalesAmount).isNull()
+            assertThat(c1.otherSalesQuantity).isNull()
+            assertThat(c1.primaryProductAmount).isNull()
+            assertThat(c1.description).isNull()  // 비고 초기화
+            assertThat(c1.s3ImageUniqueKey).isNull()  // 이미지 키 초기화
+            assertThat(c1.teamMemberScheduleId).isNull()  // 여사원일정 ID 초기화
+            assertThat(c1.promoCloseByTm).isFalse  // 마감 여부 초기화
         }
 
         @Test
@@ -909,19 +925,19 @@ class AdminPromotionServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
             val sourcePromotion = createPromotion(id = 1L, costCenterCode = "1101")
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(sourcePromotion)
-            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(emptyList())
+            every { promotionRepository.findByIdWithRelations(1L) } returns sourcePromotion
+            every { promotionEmployeeRepository.findByPromotionId(1L) } returns emptyList()
 
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(costCenterCode = "1101")))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(2L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
+            every { productRepository.findById(200L) } returns Optional.of(createProduct())
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(costCenterCode = "1101"))
+            every { promotionRepository.getNextPromotionNumberSeq() } returns 2L
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
+            every { promotionProductRepository.findByPromotionId(any()) } returns null
 
             adminPromotionService.clonePromotion(scope, 1L, userId, createRequest())
 
-            verify(promotionEmployeeRepository, never()).saveAll(any<List<PromotionEmployee>>())
+            verify(exactly = 0) { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) }
         }
 
         @Test
@@ -936,8 +952,7 @@ class AdminPromotionServiceTest {
         @DisplayName("UC-11 원본 삭제됨 -> PromotionNotFoundException")
         fun clonePromotion_sourceDeleted() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(promotionRepository.findByIdWithRelations(1L))
-                .thenReturn(createPromotion(isDeleted = true))
+            every { promotionRepository.findByIdWithRelations(1L) } returns createPromotion(isDeleted = true)
 
             assertThatThrownBy { adminPromotionService.clonePromotion(scope, 1L, userId, createRequest()) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -960,7 +975,7 @@ class AdminPromotionServiceTest {
                 promotionType = PromotionType.SAMPLING,
                 costCenterCode = "1101"
             )
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(sourcePromotion)
+            every { promotionRepository.findByIdWithRelations(1L) } returns sourcePromotion
 
             // 원본 행사사원 — 모든 필드 채워진 상태
             val sourceEmployees = listOf(
@@ -980,15 +995,15 @@ class AdminPromotionServiceTest {
                     promoCloseByTm = true
                 )
             )
-            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(sourceEmployees)
+            every { promotionEmployeeRepository.findByPromotionId(1L) } returns sourceEmployees
 
             // createPromotion 의존 stub
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct(name = "꿀배청 680G")))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(costCenterCode = "1101")))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(2L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer {
-                val p = it.getArgument<Promotion>(0)
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
+            every { productRepository.findById(200L) } returns Optional.of(createProduct(name = "꿀배청 680G"))
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(costCenterCode = "1101"))
+            every { promotionRepository.getNextPromotionNumberSeq() } returns 2L
+            every { promotionRepository.save(any<Promotion>()) } answers {
+                val p = firstArg<Promotion>()
                 Promotion(
                     id = 2L,
                     promotionNumber = p.promotionNumber,
@@ -1000,9 +1015,11 @@ class AdminPromotionServiceTest {
                     costCenterCode = p.costCenterCode
                 )
             }
-            whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
-            whenever(promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()))
-                .thenAnswer { it.getArgument<List<PromotionEmployee>>(0) }
+            every { promotionProductRepository.findByPromotionId(any()) } returns null
+            val savedClones = slot<List<PromotionEmployee>>()
+            every {
+                promotionEmployeeRepository.saveAll(capture(savedClones))
+            } answers { firstArg<List<PromotionEmployee>>() }
 
             val result = adminPromotionService.cloneWithChildren(scope, 1L, userId)
 
@@ -1013,37 +1030,35 @@ class AdminPromotionServiceTest {
             assertThat(result.endDate).isEqualTo(sourcePromotion.endDate)
 
             // 행사상품 1건 자동 생성 검증 (T7 동등)
-            verify(promotionProductRepository).save(any<PromotionProduct>())
+            verify { promotionProductRepository.save(any<PromotionProduct>()) }
 
             // 행사사원 5필드만 복사 + 나머지 초기값 검증
-            argumentCaptor<List<PromotionEmployee>>().apply {
-                verify(promotionEmployeeRepository).saveAll(capture())
-                val cloned = firstValue
-                assertThat(cloned).hasSize(1)
+            verify { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) }
+            val cloned = savedClones.captured
+            assertThat(cloned).hasSize(1)
 
-                val c = cloned[0]
-                assertThat(c.promotionId).isEqualTo(2L)
+            val c = cloned[0]
+            assertThat(c.promotionId).isEqualTo(2L)
 
-                // 복사 유지 (5필드)
-                assertThat(c.employeeId).isEqualTo(10L)
-                assertThat(c.workStatus).isEqualTo(WorkingType.WORK)
-                assertThat(c.workType1).isEqualTo(WorkingCategory1.EVENT)
-                assertThat(c.workType3).isEqualTo(WorkingCategory3.FIXED)
+            // 복사 유지 (5필드)
+            assertThat(c.employeeId).isEqualTo(10L)
+            assertThat(c.workStatus).isEqualTo(WorkingType.WORK)
+            assertThat(c.workType1).isEqualTo(WorkingCategory1.EVENT)
+            assertThat(c.workType3).isEqualTo(WorkingCategory3.FIXED)
 
-                // 나머지 모두 초기값 (레거시 ClonePromotionWithChildsController 동등 — UC-11 보다 더 강한 초기화)
-                assertThat(c.scheduleDate).isNull()
-                assertThat(c.basePrice).isNull()
-                assertThat(c.dailyTargetCount).isNull()
-                assertThat(c.primarySalesPrice).isNull()
-                assertThat(c.primarySalesQuantity).isNull()
-                assertThat(c.otherSalesAmount).isNull()
-                assertThat(c.otherSalesQuantity).isNull()
-                assertThat(c.primaryProductAmount).isNull()
-                assertThat(c.description).isNull()
-                assertThat(c.s3ImageUniqueKey).isNull()
-                assertThat(c.teamMemberScheduleId).isNull()
-                assertThat(c.promoCloseByTm).isFalse
-            }
+            // 나머지 모두 초기값 (레거시 ClonePromotionWithChildsController 동등 — UC-11 보다 더 강한 초기화)
+            assertThat(c.scheduleDate).isNull()
+            assertThat(c.basePrice).isNull()
+            assertThat(c.dailyTargetCount).isNull()
+            assertThat(c.primarySalesPrice).isNull()
+            assertThat(c.primarySalesQuantity).isNull()
+            assertThat(c.otherSalesAmount).isNull()
+            assertThat(c.otherSalesQuantity).isNull()
+            assertThat(c.primaryProductAmount).isNull()
+            assertThat(c.description).isNull()
+            assertThat(c.s3ImageUniqueKey).isNull()
+            assertThat(c.teamMemberScheduleId).isNull()
+            assertThat(c.promoCloseByTm).isFalse
         }
 
         @Test
@@ -1052,19 +1067,19 @@ class AdminPromotionServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
             val sourcePromotion = createPromotion(id = 1L, promotionType = PromotionType.SAMPLING, costCenterCode = "1101")
-            whenever(promotionRepository.findByIdWithRelations(1L)).thenReturn(sourcePromotion)
-            whenever(promotionEmployeeRepository.findByPromotionId(1L)).thenReturn(emptyList())
+            every { promotionRepository.findByIdWithRelations(1L) } returns sourcePromotion
+            every { promotionEmployeeRepository.findByPromotionId(1L) } returns emptyList()
 
-            whenever(accountRepository.findById(100)).thenReturn(Optional.of(createAccount()))
-            whenever(productRepository.findById(200L)).thenReturn(Optional.of(createProduct()))
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(createEmployee(costCenterCode = "1101")))
-            whenever(promotionRepository.getNextPromotionNumberSeq()).thenReturn(2L)
-            whenever(promotionRepository.save(any<Promotion>())).thenAnswer { it.getArgument<Promotion>(0) }
-            whenever(promotionProductRepository.findByPromotionId(any())).thenReturn(null)
+            every { accountRepository.findById(100) } returns Optional.of(createAccount())
+            every { productRepository.findById(200L) } returns Optional.of(createProduct())
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(costCenterCode = "1101"))
+            every { promotionRepository.getNextPromotionNumberSeq() } returns 2L
+            every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
+            every { promotionProductRepository.findByPromotionId(any()) } returns null
 
             adminPromotionService.cloneWithChildren(scope, 1L, userId)
 
-            verify(promotionEmployeeRepository, never()).saveAll(any<List<PromotionEmployee>>())
+            verify(exactly = 0) { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) }
         }
 
         @Test
@@ -1079,8 +1094,7 @@ class AdminPromotionServiceTest {
         @DisplayName("UC-12 원본 삭제됨 -> PromotionNotFoundException")
         fun cloneWithChildren_sourceDeleted() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            whenever(promotionRepository.findByIdWithRelations(1L))
-                .thenReturn(createPromotion(isDeleted = true))
+            every { promotionRepository.findByIdWithRelations(1L) } returns createPromotion(isDeleted = true)
 
             assertThatThrownBy { adminPromotionService.cloneWithChildren(scope, 1L, userId) }
                 .isInstanceOf(PromotionNotFoundException::class.java)

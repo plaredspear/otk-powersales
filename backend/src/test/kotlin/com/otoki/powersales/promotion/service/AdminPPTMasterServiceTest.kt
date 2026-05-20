@@ -16,37 +16,36 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import java.time.LocalDate
 import java.util.*
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminPPTMasterService 테스트")
 class AdminPPTMasterServiceTest {
 
-    @Mock private lateinit var pptMasterRepository: PPTMasterRepository
-    @Mock private lateinit var pptHistoryRepository: PPTHistoryRepository
-    @Mock private lateinit var employeeRepository: EmployeeRepository
-    @Mock private lateinit var accountRepository: AccountRepository
-    @Mock private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
-    @InjectMocks private lateinit var service: AdminPPTMasterService
+    private val pptMasterRepository: PPTMasterRepository = mockk(relaxUnitFun = true)
+    private val pptHistoryRepository: PPTHistoryRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
+    private val accountRepository: AccountRepository = mockk()
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+
+    private val service: AdminPPTMasterService = AdminPPTMasterService(
+        pptMasterRepository = pptMasterRepository,
+        pptHistoryRepository = pptHistoryRepository,
+        employeeRepository = employeeRepository,
+        accountRepository = accountRepository,
+        teamMemberScheduleRepository = teamMemberScheduleRepository,
+    )
 
     private lateinit var batchService: PPTMasterBatchService
 
@@ -98,6 +97,10 @@ class AdminPPTMasterServiceTest {
         )
     }
 
+    private fun stubTeamMemberScheduleDelete() {
+        every { teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(any(), any()) } returns 0L
+    }
+
     @Nested
     @DisplayName("getMaster - 마스터 상세 조회")
     inner class GetMasterTests {
@@ -106,9 +109,9 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - 존재하는 ID -> 마스터 상세 반환")
         fun getMaster_success() {
             val master = createMaster()
-            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
 
             val result = service.getMaster(1L)
 
@@ -120,7 +123,7 @@ class AdminPPTMasterServiceTest {
         @Test
         @DisplayName("실패 - 미존재 ID -> PPTMasterNotFoundException")
         fun getMaster_notFound() {
-            whenever(pptMasterRepository.findById(999L)).thenReturn(Optional.empty())
+            every { pptMasterRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { service.getMaster(999L) }
                 .isInstanceOf(PPTMasterNotFoundException::class.java)
@@ -138,18 +141,20 @@ class AdminPPTMasterServiceTest {
                 employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
-            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
-                .thenReturn(emptyList())
-            whenever(pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)).thenReturn(emptyList())
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
 
             val result = service.createMaster(request)
 
             assertThat(result.teamType).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
-            verify(pptHistoryRepository, never()).save(any())
+            verify(exactly = 0) { pptHistoryRepository.save(any()) }
         }
 
         @Test
@@ -161,21 +166,25 @@ class AdminPPTMasterServiceTest {
                 startDate = today, isConfirmed = true
             )
             val employee = createEmployee()
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
-            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
-                .thenReturn(emptyList())
-            whenever(pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)).thenReturn(emptyList())
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
-            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            every {
+                pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>())
+            } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
 
             service.createMaster(request)
 
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
-            verify(pptHistoryRepository).save(any())
+            verify { pptHistoryRepository.save(any()) }
         }
 
         @Test
@@ -186,13 +195,15 @@ class AdminPPTMasterServiceTest {
                 employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
-            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
-                .thenReturn(emptyList())
-            whenever(pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)).thenReturn(listOf(existingMaster))
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns listOf(existingMaster)
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
 
             service.createMaster(request)
 
@@ -206,8 +217,8 @@ class AdminPPTMasterServiceTest {
                 employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 5, 1), endDate = LocalDate.of(2026, 4, 1)
             )
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
 
             assertThatThrownBy { service.createMaster(request) }
                 .isInstanceOf(PPTMasterInvalidDateRangeException::class.java)
@@ -220,7 +231,7 @@ class AdminPPTMasterServiceTest {
                 employeeId = 999L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1)
             )
-            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { service.createMaster(request) }
                 .isInstanceOf(PPTMasterEmployeeNotFoundException::class.java)
@@ -233,8 +244,8 @@ class AdminPPTMasterServiceTest {
                 employeeId = 1L, accountId = 999, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1)
             )
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(999)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(999) } returns Optional.empty()
 
             assertThatThrownBy { service.createMaster(request) }
                 .isInstanceOf(PPTMasterAccountNotFoundException::class.java)
@@ -247,10 +258,11 @@ class AdminPPTMasterServiceTest {
                 employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1)
             )
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
-            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
-                .thenReturn(listOf(createMaster()))
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns listOf(createMaster())
 
             assertThatThrownBy { service.createMaster(request) }
                 .isInstanceOf(PPTMasterDuplicateException::class.java)
@@ -269,13 +281,16 @@ class AdminPPTMasterServiceTest {
                 employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
-            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
-            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
-                .thenReturn(emptyList())
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
 
             val result = service.updateMaster(1L, request)
 
@@ -291,13 +306,16 @@ class AdminPPTMasterServiceTest {
                 employeeId = 1L, accountId = 2, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
-            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(2)).thenReturn(Optional.of(newAccount))
-            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
-                .thenReturn(emptyList())
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(2) } returns Optional.of(newAccount)
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
 
             val result = service.updateMaster(1L, request)
 
@@ -318,13 +336,18 @@ class AdminPPTMasterServiceTest {
                 employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
-            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
-            whenever(pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L))
-                .thenReturn(listOf(master, existingOther))
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every {
+                pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)
+            } returns listOf(master, existingOther)
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
 
             service.updateMaster(1L, request)
 
@@ -342,11 +365,12 @@ class AdminPPTMasterServiceTest {
                 employeeId = 1L, accountId = 2, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
                 startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
             )
-            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(createEmployee()))
-            whenever(accountRepository.findById(2)).thenReturn(Optional.of(newAccount))
-            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
-                .thenReturn(listOf(createMaster(id = 2L, accountId = 2)))
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(2) } returns Optional.of(newAccount)
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns listOf(createMaster(id = 2L, accountId = 2))
 
             assertThatThrownBy { service.updateMaster(1L, request) }
                 .isInstanceOf(PPTMasterDuplicateException::class.java)
@@ -363,14 +387,15 @@ class AdminPPTMasterServiceTest {
             val master = createMaster()
             val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
-            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
-            whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, LocalDate.now())).thenReturn(emptyList())
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { pptMasterRepository.findValidMastersByEmployeeId(1L, LocalDate.now()) } returns emptyList()
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
 
             service.deleteMaster(1L)
 
-            verify(pptMasterRepository).delete(master)
+            verify { pptMasterRepository.delete(master) }
             assertThat(employee.professionalPromotionTeam).isNull()
         }
 
@@ -380,20 +405,21 @@ class AdminPPTMasterServiceTest {
             val master = createMaster(id = 1L)
             val otherMaster = createMaster(id = 2L, teamType = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
 
-            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
-            whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, LocalDate.now()))
-                .thenReturn(listOf(otherMaster))
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every {
+                pptMasterRepository.findValidMastersByEmployeeId(1L, LocalDate.now())
+            } returns listOf(otherMaster)
 
             service.deleteMaster(1L)
 
-            verify(pptMasterRepository).delete(master)
-            verify(employeeRepository, never()).save(any())
+            verify { pptMasterRepository.delete(master) }
+            verify(exactly = 0) { employeeRepository.save(any()) }
         }
 
         @Test
         @DisplayName("실패 - 미존재 ID -> PPTMasterNotFoundException")
         fun deleteMaster_notFound() {
-            whenever(pptMasterRepository.findById(999L)).thenReturn(Optional.empty())
+            every { pptMasterRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { service.deleteMaster(999L) }
                 .isInstanceOf(PPTMasterNotFoundException::class.java)
@@ -411,8 +437,9 @@ class AdminPPTMasterServiceTest {
             val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점")
             val page = PageImpl(listOf(searchResult), PageRequest.of(0, 20), 1)
 
-            whenever(pptMasterRepository.searchMasters(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), any()))
-                .thenReturn(page)
+            every {
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+            } returns page
 
             val result = service.getMasters(null, null, null, null, true, PageRequest.of(0, 20))
 
@@ -430,9 +457,10 @@ class AdminPPTMasterServiceTest {
         fun confirmByIds_success() {
             val master1 = createMaster(id = 1L, isConfirmed = false)
             val master2 = createMaster(id = 2L, isConfirmed = false)
-            whenever(pptMasterRepository.findAllById(listOf(1L, 2L))).thenReturn(listOf(master1, master2))
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            every { pptMasterRepository.findAllById(listOf(1L, 2L)) } returns listOf(master1, master2)
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
 
             val response = service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(1L, 2L)))
 
@@ -447,9 +475,10 @@ class AdminPPTMasterServiceTest {
         fun confirmByIds_skipAlreadyConfirmed() {
             val master1 = createMaster(id = 1L, isConfirmed = false)
             val master2 = createMaster(id = 2L, isConfirmed = true)
-            whenever(pptMasterRepository.findAllById(listOf(1L, 2L))).thenReturn(listOf(master1, master2))
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            every { pptMasterRepository.findAllById(listOf(1L, 2L)) } returns listOf(master1, master2)
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
 
             val response = service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(1L, 2L)))
 
@@ -464,19 +493,22 @@ class AdminPPTMasterServiceTest {
             val today = LocalDate.now()
             val master = createMaster(id = 1L, startDate = today, isConfirmed = false)
             val employee = createEmployee(professionalPromotionTeam = null)
-            whenever(pptMasterRepository.findAllById(listOf(1L))).thenReturn(listOf(master))
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
-            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+            every { pptMasterRepository.findAllById(listOf(1L)) } returns listOf(master)
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            every {
+                pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>())
+            } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
 
             service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(1L)))
 
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
-            verify(pptHistoryRepository).save(any())
-            verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
+            verify { pptHistoryRepository.save(any()) }
+            verify { teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(1L, today) }
         }
 
         @Test
@@ -484,15 +516,16 @@ class AdminPPTMasterServiceTest {
         fun confirmByIds_skipImmediateSyncWhenFuture() {
             val futureDate = LocalDate.now().plus(7, java.time.temporal.ChronoUnit.DAYS)
             val master = createMaster(id = 1L, startDate = futureDate, isConfirmed = false)
-            whenever(pptMasterRepository.findAllById(listOf(1L))).thenReturn(listOf(master))
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            every { pptMasterRepository.findAllById(listOf(1L)) } returns listOf(master)
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
 
             service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(1L)))
 
             assertThat(master.isConfirmed).isTrue
-            verify(employeeRepository, never()).save(any())
-            verify(pptHistoryRepository, never()).save(any())
+            verify(exactly = 0) { employeeRepository.save(any()) }
+            verify(exactly = 0) { pptHistoryRepository.save(any()) }
         }
 
         @Test
@@ -500,9 +533,10 @@ class AdminPPTMasterServiceTest {
         fun confirmByIds_skipNotFound() {
             val master = createMaster(id = 1L, isConfirmed = false)
             // 1, 2 요청 / 1 만 조회됨 (2 는 미존재)
-            whenever(pptMasterRepository.findAllById(listOf(1L, 2L))).thenReturn(listOf(master))
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
+            every { pptMasterRepository.findAllById(listOf(1L, 2L)) } returns listOf(master)
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
 
             val response = service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(1L, 2L)))
 
@@ -521,8 +555,9 @@ class AdminPPTMasterServiceTest {
             val master = createMaster()
             val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점")
             val page = PageImpl(listOf(searchResult), PageRequest.of(0, 50_000), 1)
-            whenever(pptMasterRepository.searchMasters(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), any()))
-                .thenReturn(page)
+            every {
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+            } returns page
 
             val bytes = service.exportToExcel(null, null, null, null, true)
 
@@ -536,8 +571,9 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - 결과 0건 -> 헤더만 있는 빈 xlsx 반환")
         fun exportToExcel_empty() {
             val page = PageImpl<PPTMasterSearchResult>(emptyList(), PageRequest.of(0, 50_000), 0)
-            whenever(pptMasterRepository.searchMasters(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any(), any(), any()))
-                .thenReturn(page)
+            every {
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+            } returns page
 
             val bytes = service.exportToExcel(null, null, null, null, true)
 
@@ -555,16 +591,18 @@ class AdminPPTMasterServiceTest {
             val master = createMaster(employeeId = 1L, teamType = ProfessionalPromotionTeamType.RAMEN_SALE)
             val employee = createEmployee(professionalPromotionTeam = null)
 
-            whenever(pptMasterRepository.findValidMasters(LocalDate.now())).thenReturn(listOf(master))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(employee))
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
-            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+            every { pptMasterRepository.findValidMasters(LocalDate.now()) } returns listOf(master)
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            every {
+                pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>())
+            } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
 
             batchService.syncValidMasters()
 
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
-            verify(pptHistoryRepository).save(any())
+            verify { pptHistoryRepository.save(any()) }
         }
     }
 
@@ -579,10 +617,11 @@ class AdminPPTMasterServiceTest {
             val master = createMaster(employeeId = 1L, endDate = today)
             val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
-            whenever(pptMasterRepository.findExpiringMasters(today)).thenReturn(listOf(master))
-            whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, today)).thenReturn(listOf(master))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            every { pptMasterRepository.findExpiringMasters(today) } returns listOf(master)
+            every { pptMasterRepository.findValidMastersByEmployeeId(1L, today) } returns listOf(master)
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
 
             batchService.expireMasters()
 
@@ -603,20 +642,24 @@ class AdminPPTMasterServiceTest {
                 startDate = today, isConfirmed = true
             )
             val employee = createEmployee(professionalPromotionTeam = null)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
-            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
-                .thenReturn(emptyList())
-            whenever(pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)).thenReturn(emptyList())
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
-            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            every {
+                pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>())
+            } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
 
             service.createMaster(request)
 
-            verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
+            verify { teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(1L, today) }
         }
 
         @Test
@@ -628,20 +671,25 @@ class AdminPPTMasterServiceTest {
                 startDate = today, isConfirmed = true
             )
             val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(accountRepository.findById(1)).thenReturn(Optional.of(createAccount()))
-            whenever(pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), anyOrNull()))
-                .thenReturn(emptyList())
-            whenever(pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L)).thenReturn(emptyList())
-            whenever(pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamMaster>(0) }
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
-            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            every {
+                pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>())
+            } answers { firstArg() }
 
             service.createMaster(request)
 
-            verify(teamMemberScheduleRepository, never()).deleteFutureWorkSchedulesByEmployeeId(any(), any())
+            verify(exactly = 0) {
+                teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(any(), any())
+            }
         }
 
         @Test
@@ -651,14 +699,15 @@ class AdminPPTMasterServiceTest {
             val master = createMaster()
             val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
-            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
-            whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, today)).thenReturn(emptyList())
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { pptMasterRepository.findValidMastersByEmployeeId(1L, today) } returns emptyList()
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
 
             service.deleteMaster(1L)
 
-            verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
+            verify { teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(1L, today) }
         }
 
         @Test
@@ -668,15 +717,17 @@ class AdminPPTMasterServiceTest {
             val master = createMaster(employeeId = 1L, teamType = ProfessionalPromotionTeamType.RAMEN_SALE)
             val employee = createEmployee(professionalPromotionTeam = null)
 
-            whenever(pptMasterRepository.findValidMasters(today)).thenReturn(listOf(master))
-            whenever(employeeRepository.findAllById(listOf(1L))).thenReturn(listOf(employee))
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
-            whenever(pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>()))
-                .thenAnswer { it.getArgument<ProfessionalPromotionTeamHistory>(0) }
+            every { pptMasterRepository.findValidMasters(today) } returns listOf(master)
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            every {
+                pptHistoryRepository.save(any<ProfessionalPromotionTeamHistory>())
+            } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
 
             batchService.syncValidMasters()
 
-            verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
+            verify { teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(1L, today) }
         }
 
         @Test
@@ -686,14 +737,15 @@ class AdminPPTMasterServiceTest {
             val master = createMaster(employeeId = 1L, endDate = today)
             val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
-            whenever(pptMasterRepository.findExpiringMasters(today)).thenReturn(listOf(master))
-            whenever(pptMasterRepository.findValidMastersByEmployeeId(1L, today)).thenReturn(listOf(master))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            every { pptMasterRepository.findExpiringMasters(today) } returns listOf(master)
+            every { pptMasterRepository.findValidMastersByEmployeeId(1L, today) } returns listOf(master)
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
 
             batchService.expireMasters()
 
-            verify(teamMemberScheduleRepository).deleteFutureWorkSchedulesByEmployeeId(eq(1L), eq(today))
+            verify { teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(1L, today) }
         }
     }
 
@@ -714,8 +766,9 @@ class AdminPPTMasterServiceTest {
             )
             val page = PageImpl(listOf(history), PageRequest.of(0, 20), 1)
 
-            whenever(pptHistoryRepository.searchHistories(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(page)
+            every {
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any())
+            } returns page
 
             val result = service.getAllHistory(null, null, null, null, null, PageRequest.of(0, 20))
 
@@ -733,30 +786,36 @@ class AdminPPTMasterServiceTest {
         @Test
         @DisplayName("성공 - teamType 표시명 → enum 변환하여 repository 호출")
         fun getAllHistory_teamTypeDisplayName_converted() {
-            whenever(pptHistoryRepository.searchHistories(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(PageImpl(emptyList(), PageRequest.of(0, 20), 0))
+            every {
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any())
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
             service.getAllHistory(null, null, "라면세일조", null, null, PageRequest.of(0, 20))
 
-            verify(pptHistoryRepository).searchHistories(
-                anyOrNull(), anyOrNull(),
-                eq(ProfessionalPromotionTeamType.RAMEN_SALE),
-                anyOrNull(), anyOrNull(), any()
-            )
+            verify {
+                pptHistoryRepository.searchHistories(
+                    any(), any(),
+                    ProfessionalPromotionTeamType.RAMEN_SALE,
+                    any(), any(), any()
+                )
+            }
         }
 
         @Test
         @DisplayName("성공 - 잘못된 teamType 문자열 → null 변환 (예외 없음)")
         fun getAllHistory_invalidTeamType_nullConverted() {
-            whenever(pptHistoryRepository.searchHistories(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(PageImpl(emptyList(), PageRequest.of(0, 20), 0))
+            every {
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any())
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
             service.getAllHistory(null, null, "잘못된값", null, null, PageRequest.of(0, 20))
 
-            verify(pptHistoryRepository).searchHistories(
-                anyOrNull(), anyOrNull(),
-                eq(null), anyOrNull(), anyOrNull(), any()
-            )
+            verify {
+                pptHistoryRepository.searchHistories(
+                    any(), any(), null,
+                    any(), any(), any()
+                )
+            }
         }
 
         @Test
@@ -770,8 +829,9 @@ class AdminPPTMasterServiceTest {
             )
             val page = PageImpl(listOf(history), PageRequest.of(0, 20), 1)
 
-            whenever(pptHistoryRepository.searchHistories(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any()))
-                .thenReturn(page)
+            every {
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any())
+            } returns page
 
             val result = service.getAllHistory(null, null, null, null, null, PageRequest.of(0, 20))
 
@@ -798,10 +858,11 @@ class AdminPPTMasterServiceTest {
                 newValue = ProfessionalPromotionTeamType.RAMEN_SALE
             )
 
-            whenever(pptMasterRepository.findById(1L)).thenReturn(Optional.of(master))
-            whenever(pptHistoryRepository.findByEmployeeIdOrderByChangedAtDesc(eq(1L), any()))
-                .thenReturn(PageImpl(listOf(history), PageRequest.of(0, 20), 1))
-            whenever(employeeRepository.findById(1L)).thenReturn(Optional.of(employee))
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every {
+                pptHistoryRepository.findByEmployeeIdOrderByChangedAtDesc(1L, any())
+            } returns PageImpl(listOf(history), PageRequest.of(0, 20), 1)
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
 
             val result = service.getHistory(1L, PageRequest.of(0, 20))
 
