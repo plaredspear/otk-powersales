@@ -126,7 +126,7 @@ class LocalDataInitializer(
      *   `costCenterCode`)는 null
      */
     private fun seedSystemAdmin() {
-        val encodedPassword = passwordEncoder.encode("a1234!@#$")!!
+        val encodedPassword = passwordEncoder.encode("1234")!!
 
         data class SeedSystemAdmin(val code: String, val name: String, val orgName: String, val workEmail: String)
 
