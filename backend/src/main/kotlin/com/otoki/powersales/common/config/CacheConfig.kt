@@ -13,8 +13,7 @@ import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializ
 import org.springframework.data.redis.serializer.RedisSerializationContext
 import org.springframework.data.redis.serializer.RedisSerializer
 import org.springframework.data.redis.serializer.StringRedisSerializer
-import tools.jackson.databind.ObjectMapper
-import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator
 import java.time.Duration
 
 /**
@@ -71,20 +70,33 @@ import java.time.Duration
  *   기존 `GenericJackson2JsonRedisSerializer` (Jackson 2 기반) 는 spring-data-redis 4.0 부터
  *   deprecated. 본 프로젝트는 application 본업이 Jackson 3 (`tools.jackson.*`) 이라 정합 양호.
  *
- * `GenericJacksonJsonRedisSerializer` 는 default typing 을 활성화하여 polymorphic 타입과
- * `List<DTO>` 같은 generic collection 도 역직렬화 시 타입 복원이 가능하다. DTO 가 `Serializable` 을
- * 구현하지 않아도 JSON 직렬화 대상이므로 캐시 가능.
+ * `GenericJacksonJsonRedisSerializer` 의 default typing 은 builder 의 [enableDefaultTyping] 으로 명시
+ * 활성화해야 한다. 미활성화 시 `List<DTO>` 역직렬화가 LinkedHashMap 으로 떨어져 캐시 hit 후
+ * ConversionFailedException 이 발생한다. typeValidator 는 `Object.class` 기반 permissive 설정 —
+ * 캐시 데이터 출처가 application 내부 SoT 라 외부 신뢰 경계 문제 없음. Spring Cache 의 `NullValue`
+ * marker 역직렬화도 default typing 활성화 시 자동 지원. DTO 가 `Serializable` 을 구현하지 않아도
+ * JSON 직렬화 대상이므로 캐시 가능.
  */
 @Configuration
 @EnableCaching
 class CacheConfig {
 
     companion object {
-        /** Organization cascade lookup 결과 (Organization 단건) — 24h TTL */
-        const val CACHE_ORGANIZATION_CASCADE = "organizationCascade"
+        /**
+         * Organization cascade lookup 결과 (Organization 단건) — 24h TTL.
+         *
+         * v2 접미사: 이전 cache name (`organizationCascade`) 은 default typing 미활성화 상태로 LinkedHashMap
+         * 으로 저장되어 새 직렬화 설정 (default typing on) 과 호환 불가. 운영 Redis flush 없이 자연 분리
+         * (기존 entry 는 24h TTL 후 만료).
+         */
+        const val CACHE_ORGANIZATION_CASCADE = "organizationCascadeV2"
 
-        /** 여사원 일정관리 사업소 옵션 (List<BranchResponse>) — 24h TTL */
-        const val CACHE_TEAM_SCHEDULE_BRANCHES = "teamScheduleBranches"
+        /**
+         * 여사원 일정관리 사업소 옵션 (List<BranchResponse>) — 24h TTL.
+         *
+         * v2 접미사 사유는 [CACHE_ORGANIZATION_CASCADE] 와 동일.
+         */
+        const val CACHE_TEAM_SCHEDULE_BRANCHES = "teamScheduleBranchesV2"
 
         private val ORGANIZATION_TTL: Duration = Duration.ofHours(24)
     }
@@ -98,10 +110,16 @@ class CacheConfig {
     @Bean
     @Profile("!test & !local")
     fun defaultRedisCacheConfiguration(): RedisCacheConfiguration {
-        // Jackson 3 ObjectMapper — application 본업과 분리된 캐시 전용 인스턴스. Kotlin module +
-        // Java time 등은 findAndAddModules() 가 자동 등록.
-        val cacheObjectMapper: ObjectMapper = JsonMapper.builder().findAndAddModules().build()
-        val valueSerializer: RedisSerializer<Any> = GenericJacksonJsonRedisSerializer(cacheObjectMapper)
+        // default typing 활성화 + Spring Cache NullValue 지원. typeValidator 는 builder 가 기본 제공하는
+        // permissive 설정 (Object.class 기반) 과 동일 — 캐시 데이터 출처가 application 내부 SoT 라 안전.
+        val typeValidator = BasicPolymorphicTypeValidator.builder()
+            .allowIfBaseType(Any::class.java)
+            .allowIfSubType { _, _ -> true }
+            .build()
+        val valueSerializer: RedisSerializer<Any> = GenericJacksonJsonRedisSerializer.builder()
+            .enableDefaultTyping(typeValidator)
+            .enableSpringCacheNullValueSupport()
+            .build()
 
         return RedisCacheConfiguration.defaultCacheConfig()
             .disableCachingNullValues()
