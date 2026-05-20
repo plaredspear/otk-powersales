@@ -1,7 +1,7 @@
 #!/usr/bin/env kotlin
 
 /**
- * Stage 1 — Raw INSERT (Spec #764, v12 — K2 cache 무효화 / entity 별 + 전체 elapsed 측정 + summary).
+ * Stage 1 — Raw INSERT (Spec #764, v14 — K2 cache 무효화 / placeholder summary 블록 추가).
  *
  * 책임: 추출된 CSV 를 staging 영역에 1:1 로 JDBC batch INSERT 또는 COPY FROM STDIN.
  *       - enum 변환 / transform 일체 수행하지 않음 (Stage 2 의 책임).
@@ -39,6 +39,22 @@ import org.postgresql.copy.CopyManager
 // =============================================================================
 
 val BATCH_SIZE = 500
+
+/**
+ * Stage 1 적재 결과 — placeholder 적용 row 추적 포함.
+ *
+ * placeholderRows: FieldMapping.nullPlaceholder 가 부착된 컬럼에서 SF 원본이 NULL/blank 였던
+ * row 의 추적용 (sfid, username, columnName) tuple. 적재 종료 후 main 이 file/console 출력.
+ *   - sfid: row 의 "Id" 컬럼 값 (SF Object 표준)
+ *   - identifier: 추적 시 사람이 식별 가능한 보조 필드 (User 면 Username, 그 외엔 Name)
+ *   - column: 적용된 placeholder 컬럼명 (예: "profile_type")
+ */
+data class StageOneResult(
+    val inserted: Int,
+    val totalRows: Int,
+    val filteredOut: Int,
+    val placeholderRows: List<Triple<String, String, String>> = emptyList()
+)
 
 /**
  * NOT NULL FieldMapping (nullable=false) 의 값이 모두 채워진 row 만 통과.
@@ -128,7 +144,7 @@ fun applyStageOneStreamingInsert(
     meta: EntityMetadata,
     csvFile: File,
     progress: ProgressBar? = null
-): Triple<Int, Int, Int> {
+): StageOneResult {
     val allColumns = meta.fields.map { it.dbColumnName } + meta.extraStaticColumns.keys.toList()
     val columns = allColumns.joinToString(", ")
     val placeholders = allColumns.joinToString(", ") { "?" }
@@ -136,6 +152,9 @@ fun applyStageOneStreamingInsert(
     val sql = "INSERT INTO ${meta.schemaName}.$quotedTable ($columns) VALUES ($placeholders) " +
               "ON CONFLICT DO NOTHING"
     val requiredFields = meta.fields.filter { !it.nullable }
+    // identifier 보조 컬럼 — User 면 "Username", 그 외엔 "Name" (없으면 sfid 만).
+    val identifierField = if (meta.fields.any { it.sfFieldName == "Username" }) "Username" else "Name"
+    val placeholderRows = mutableListOf<Triple<String, String, String>>()
     var inserted = 0
     var processed = 0
     var filteredOut = 0
@@ -150,13 +169,17 @@ fun applyStageOneStreamingInsert(
             }
             for ((idx, f) in meta.fields.withIndex()) {
                 val raw = row[f.sfFieldName]
-                if (raw == null) {
+                val effective = if (raw.isNullOrBlank() && f.nullPlaceholder != null) {
+                    placeholderRows.add(Triple(row["Id"] ?: "?", row[identifierField] ?: "?", f.dbColumnName))
+                    f.nullPlaceholder
+                } else raw
+                if (effective == null) {
                     ps.setNull(idx + 1, Types.NULL)
                 } else {
                     // PostgreSQL `stringtype=unspecified` 로 모든 컬럼 타입 (NUMERIC / DATE / BOOLEAN
                     // 등) 자동 cast. SF describe scale=0 은 강제력 없음 (운영 데이터에 소수 가능) —
                     // 정수 도메인 가정 코드를 제거하고 모든 numeric 컬럼을 NUMERIC 으로 통일 (V168).
-                    ps.setString(idx + 1, raw)
+                    ps.setString(idx + 1, effective)
                 }
             }
             val extraOffset = meta.fields.size
@@ -182,7 +205,7 @@ fun applyStageOneStreamingInsert(
             progress?.update(processed, "${meta.targetName} ($processed processed)")
         }
     }
-    return Triple(inserted, totalRows, filteredOut)
+    return StageOneResult(inserted, totalRows, filteredOut, placeholderRows)
 }
 
 /**
@@ -203,13 +226,15 @@ fun applyStageOneCopyInsert(
     csvFile: File,
     resetMode: Boolean,
     progress: ProgressBar? = null
-): Triple<Int, Int, Int> {
+): StageOneResult {
     val allColumns = meta.fields.map { it.dbColumnName } + meta.extraStaticColumns.keys.toList()
     val columnsList = allColumns.joinToString(", ")
     val quotedTable = quoteTable(meta.tableName)
     val fullyQualified = "${meta.schemaName}.$quotedTable"
     val requiredFields = meta.fields.filter { !it.nullable }
     val extraValues = meta.extraStaticColumns.values.toList()
+    val identifierField = if (meta.fields.any { it.sfFieldName == "Username" }) "Username" else "Name"
+    val placeholderRows = mutableListOf<Triple<String, String, String>>()
 
     val copyTargetTable: String
     val stagingTableName: String?
@@ -248,7 +273,14 @@ fun applyStageOneCopyInsert(
                 return@streamCsvFile
             }
             val values = ArrayList<String?>(meta.fields.size + extraValues.size)
-            for (f in meta.fields) values.add(row[f.sfFieldName])
+            for (f in meta.fields) {
+                val raw = row[f.sfFieldName]
+                val effective = if (raw.isNullOrBlank() && f.nullPlaceholder != null) {
+                    placeholderRows.add(Triple(row["Id"] ?: "?", row[identifierField] ?: "?", f.dbColumnName))
+                    f.nullPlaceholder
+                } else raw
+                values.add(effective)
+            }
             for (v in extraValues) values.add(v)
             val bytes = pgCsvLine(values).toByteArray(Charsets.UTF_8)
             copyIn.writeToCopy(bytes, 0, bytes.size)
@@ -280,7 +312,7 @@ fun applyStageOneCopyInsert(
         conn.createStatement().use { st -> st.executeUpdate("DROP TABLE IF EXISTS $stagingTableName") }
         rc
     }
-    return Triple(inserted, totalRows, filteredOut)
+    return StageOneResult(inserted, totalRows, filteredOut, placeholderRows)
 }
 
 /**
@@ -443,6 +475,10 @@ if (shouldReset) {
 data class TargetTiming(val target: String, val elapsedMs: Long, val inserted: Int, val totalRows: Int, val strategy: String, val failed: Boolean)
 val timings = mutableListOf<TargetTiming>()
 
+// entity·컬럼 별 placeholder 카운트 + 저장 파일 누적 — 마지막 placeholder summary 출력용.
+data class PlaceholderEntry(val target: String, val column: String, val count: Int, val filePath: String)
+val placeholderEntries = mutableListOf<PlaceholderEntry>()
+
 for (target in sortedTargets) {
     val spec = TARGET_SPECS[target]
         ?: error("Unknown target: $target")
@@ -463,18 +499,39 @@ for (target in sortedTargets) {
                 val estimatedTotal = countCsvDataRows(csvFile)
                 strategyLabel = if (m.useCopyStrategy) "COPY" else "INSERT"
                 val pb = ProgressBar("Stage 1 $target ($strategyLabel)", estimatedTotal)
-                val (inserted, totalRows, filteredOut) = if (m.useCopyStrategy) {
+                val result = if (m.useCopyStrategy) {
                     applyStageOneCopyInsert(conn, m, csvFile, resetMode = shouldReset, progress = pb)
                 } else {
                     applyStageOneStreamingInsert(conn, m, csvFile, pb)
                 }
                 conn.commit()
+                val inserted = result.inserted
+                val totalRows = result.totalRows
+                val filteredOut = result.filteredOut
                 if (filteredOut > 0) {
                     println("\n[$target] 필수 필드 누락 row 사전 제외: ${filteredOut}건")
                 }
                 val validRows = totalRows - filteredOut
                 val conflictSkipped = validRows - inserted
                 pb.done("inserted=$inserted (filtered=$filteredOut, conflict_skipped=$conflictSkipped)")
+                // placeholder 적용 row 추적 — 컬럼별 그룹 + 콘솔 요약 + 파일 저장 + 누적.
+                if (result.placeholderRows.isNotEmpty()) {
+                    val grouped = result.placeholderRows.groupBy { it.third }
+                    for ((col, rows) in grouped) {
+                        println("[$target] '$col' SF 원본 NULL/blank → placeholder 적용: ${rows.size}건")
+                    }
+                    val placeholderFile = File(outputDir, "stage1_${target.lowercase()}_placeholder.tsv")
+                    placeholderFile.printWriter().use { pw ->
+                        pw.println("sfid\tidentifier\tcolumn")
+                        for ((sfid, identifier, col) in result.placeholderRows) {
+                            pw.println("$sfid\t$identifier\t$col")
+                        }
+                    }
+                    println("[$target] placeholder row 전체 리스트: ${placeholderFile.absolutePath}")
+                    for ((col, rows) in grouped) {
+                        placeholderEntries.add(PlaceholderEntry(target, col, rows.size, placeholderFile.absolutePath))
+                    }
+                }
                 report = report.copy(rawRowsCount = totalRows, insertedCount = inserted, stage1Applied = true)
                 targetInserted = inserted
                 targetTotal = totalRows
@@ -532,6 +589,33 @@ for (t in sortedTimings) {
 }
 println("-".repeat(60))
 println("TOTAL elapsed: ${formatElapsed(overallElapsed)} (targets=${timings.size})")
+
+// Placeholder summary — FieldMapping.nullPlaceholder 적용 row 통계 (Stage 2 의 후속 sync
+// 가 정확값으로 덮어쓰기 전, Stage 1 시점에서 어떤 row 가 SF 원본 NULL 이었는지 추적).
+if (placeholderEntries.isNotEmpty()) {
+    println()
+    println("=".repeat(60))
+    println("Stage 1 placeholder summary")
+    println("=".repeat(60))
+    val pMaxName = placeholderEntries.maxOf { it.target.length }.coerceAtLeast(6)
+    val pMaxCol = placeholderEntries.maxOf { it.column.length }.coerceAtLeast(6)
+    // entity 별 그룹 → 같은 entity 의 컬럼들은 file path 1회만 출력.
+    val grouped = placeholderEntries.groupBy { it.target }
+    var grandTotal = 0
+    for ((target, entries) in grouped) {
+        for (e in entries) {
+            val nameCol = e.target.padEnd(pMaxName)
+            val colCol = e.column.padEnd(pMaxCol)
+            println("  [$nameCol] $colCol  ${e.count}건")
+            grandTotal += e.count
+        }
+        // 같은 target 의 첫 entry 의 filePath 출력 (entity 단위 1개 파일).
+        println("           file: ${entries.first().filePath}")
+    }
+    println("-".repeat(60))
+    println("TOTAL placeholder rows: $grandTotal")
+}
+
 println()
 println("✅ Stage 1 완료. 리포트: ${reportFile.absolutePath}")
 println("다음 단계: kotlin migrate-stage2.main.kts")

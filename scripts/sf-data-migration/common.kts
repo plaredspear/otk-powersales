@@ -1,5 +1,5 @@
 /**
- * SF 데이터 마이그레이션 공통 모듈 (Spec #764, v4 — K2 cache 무효화 / 50MB+ entity 9개 useCopyStrategy 일괄).
+ * SF 데이터 마이그레이션 공통 모듈 (Spec #764, v5 — K2 cache 무효화 / FieldMapping.nullPlaceholder + User.profile_type).
  *
  * Stage 1 / Stage 2 entry script 가 @file:Import 로 로드.
  * - data class + 단순 helper 함수 + 상수 매핑 표만 위치.
@@ -25,7 +25,15 @@ data class FieldMapping(
     val sfFieldName: String,
     val dbColumnName: String,
     val nullable: Boolean = true,
-    val isString: Boolean = true
+    val isString: Boolean = true,
+    /**
+     * DB 컬럼이 NOT NULL 인데 SF 원본이 NULL/blank 인 row 가 존재하는 경우의 placeholder.
+     * null (기본) → 변환 없이 SF 원본 NULL 그대로 보냄 (DB NOT NULL 위반 가능).
+     * 값 지정 → row 의 SF 값이 NULL/blank 일 때 placeholder 로 대체 + stage1 이 해당
+     *           row 의 sfid / Username 을 별도 추적 리포트로 출력.
+     * Stage 2 의 후속 sync (예: EmployeeProfileResolver) 가 정확값으로 덮어쓰는 패턴 가정.
+     */
+    val nullPlaceholder: String? = null
 )
 
 data class EntityMetadata(
@@ -179,7 +187,11 @@ val USER_METADATA = EntityMetadata(
         FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("LastModifiedById", "last_modified_by_sfid"),
-        FieldMapping("Profile.Name", "profile_type")
+        // Profile.Name → profile_type: DB NOT NULL DEFAULT 'STAFF' (V113).
+        // SF 의 Profile.Name 이 NULL/blank 인 row (예: 시스템 user / 일부 부서 공용 계정) 는
+        // Stage 1 에서 'STAFF' placeholder 로 적재 + 추적 리포트 출력. Stage 2 의
+        // EmployeeProfileResolver sync 가 정확값으로 덮어쓰는 것이 본래 설계.
+        FieldMapping("Profile.Name", "profile_type", nullPlaceholder = "STAFF")
     ),
     rawColumnsAsString = listOf("profile_type"),
     extraStaticColumns = mapOf(
