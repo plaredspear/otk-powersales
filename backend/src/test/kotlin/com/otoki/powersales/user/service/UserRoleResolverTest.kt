@@ -3,24 +3,20 @@ package com.otoki.powersales.user.service
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.organization.repository.dto.OrganizationCacheDto
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("UserRoleResolver — 영업지원실 / 영업본부 매칭 검증")
 class UserRoleResolverTest {
 
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
+    private val organizationRepository: OrganizationRepository = mockk()
 
-    @InjectMocks
-    private lateinit var resolver: UserRoleResolver
+    private val resolver = UserRoleResolver(
+        organizationRepository,
+    )
 
     @Test
     @DisplayName("OrgNameLevel4 contains '영업지원' (영업지원1팀) → true")
@@ -62,7 +58,7 @@ class UserRoleResolverTest {
     @DisplayName("Organization lookup 실패 → false")
     fun orgMissing() {
         // cascade Level5→4→3 모두 miss → null. Resolver 는 false 반환.
-        whenever(organizationRepository.findFirstByOrgCodeCascade("0000")).thenReturn(null)
+        every { organizationRepository.findFirstByOrgCodeCascade("0000") } returns null
         val employee = createEmployee(costCenterCode = "0000")
 
         assertThat(resolver.isSalesSupport(employee)).isFalse
@@ -107,14 +103,12 @@ class UserRoleResolverTest {
     private fun stubOrg(costCenterCode: String, orgNameLevel4: String?, orgNameLevel3: String?) {
         // cascade 메커니즘 자체는 OrganizationRepositoryCustomImpl 의 책임 — resolver 테스트는
         // cascade 결과 DTO 만 stub 하고 resolver 의 정책 분기를 검증.
-        whenever(organizationRepository.findFirstByOrgCodeCascade(costCenterCode))
-            .thenReturn(
-                OrganizationCacheDto(
-                    orgCodeLevel3 = null,
-                    orgNameLevel3 = orgNameLevel3,
-                    orgNameLevel4 = orgNameLevel4,
-                    costCenterLevel3 = null,
-                )
+        every { organizationRepository.findFirstByOrgCodeCascade(costCenterCode) } returns
+            OrganizationCacheDto(
+                orgCodeLevel3 = null,
+                orgNameLevel3 = orgNameLevel3,
+                orgNameLevel4 = orgNameLevel4,
+                costCenterLevel3 = null,
             )
     }
 

@@ -3,28 +3,22 @@ package com.otoki.powersales.organization.service
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.whenever
 import java.time.LocalDateTime
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("AdminOrganizationService 테스트")
 class AdminOrganizationServiceTest {
 
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
+    private val organizationRepository: OrganizationRepository = mockk()
 
-    @InjectMocks
-    private lateinit var adminOrganizationService: AdminOrganizationService
+    private val adminOrganizationService = AdminOrganizationService(
+        organizationRepository,
+    )
 
     @Nested
     @DisplayName("getOrganizations - 조직마스터 목록 조회")
@@ -34,10 +28,9 @@ class AdminOrganizationServiceTest {
         @DisplayName("전체 권한 - 필터 없이 조회 -> 전체 조직마스터 반환")
         fun allBranches_noFilter() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val orgs = listOf(createOrg(id = 1L, orgNameLevel4 = "강남지점"))
-            whenever(organizationRepository.searchForAdmin(isNull(), isNull(), isNull())).thenReturn(orgs)
+            every { organizationRepository.searchForAdmin(null, null, null) } returns orgs
 
             val result = adminOrganizationService.getOrganizations(scope, null, null)
 
@@ -50,10 +43,9 @@ class AdminOrganizationServiceTest {
         @DisplayName("전체 권한 + 키워드 -> 키워드 전달")
         fun allBranches_withKeyword() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val orgs = listOf(createOrg(orgNameLevel4 = "강남지점"))
-            whenever(organizationRepository.searchForAdmin(eq("강남"), isNull(), isNull())).thenReturn(orgs)
+            every { organizationRepository.searchForAdmin("강남", null, null) } returns orgs
 
             val result = adminOrganizationService.getOrganizations(scope, "강남", null)
 
@@ -65,10 +57,9 @@ class AdminOrganizationServiceTest {
         @DisplayName("전체 권한 + 레벨 필터 -> 레벨 전달")
         fun allBranches_withLevel() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val orgs = listOf(createOrg(orgNameLevel5 = "강남1조"))
-            whenever(organizationRepository.searchForAdmin(isNull(), eq("L5"), isNull())).thenReturn(orgs)
+            every { organizationRepository.searchForAdmin(null, "L5", null) } returns orgs
 
             val result = adminOrganizationService.getOrganizations(scope, null, "L5")
 
@@ -80,10 +71,9 @@ class AdminOrganizationServiceTest {
         @DisplayName("지점 권한 - 필터 없이 조회 -> 본인 CC코드 매칭 조직만 반환")
         fun branchOnly_noFilter() {
             val scope = DataScope(branchCodes = listOf("1101"), isAllBranches = false)
-            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val orgs = listOf(createOrg(costCenterLevel4 = "1101", orgNameLevel4 = "강남지점"))
-            whenever(organizationRepository.searchForAdmin(isNull(), isNull(), eq(listOf("1101")))).thenReturn(orgs)
+            every { organizationRepository.searchForAdmin(null, null, listOf("1101")) } returns orgs
 
             val result = adminOrganizationService.getOrganizations(scope, null, null)
 
@@ -94,7 +84,6 @@ class AdminOrganizationServiceTest {
         @DisplayName("지점 권한 + branchCodes 비어있음 -> 빈 결과 (NoAccess)")
         fun branchOnly_emptyBranchCodes() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
-            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
             val result = adminOrganizationService.getOrganizations(scope, null, null)
 
@@ -105,9 +94,8 @@ class AdminOrganizationServiceTest {
         @DisplayName("빈 결과 -> 빈 리스트 반환")
         fun emptyResult() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
 
-            whenever(organizationRepository.searchForAdmin(eq("존재하지않는조직"), isNull(), isNull())).thenReturn(emptyList())
+            every { organizationRepository.searchForAdmin("존재하지않는조직", null, null) } returns emptyList()
 
             val result = adminOrganizationService.getOrganizations(scope, "존재하지않는조직", null)
 

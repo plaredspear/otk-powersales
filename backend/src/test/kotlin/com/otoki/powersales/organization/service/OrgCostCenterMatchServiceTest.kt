@@ -2,31 +2,26 @@ package com.otoki.powersales.organization.service
 
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("OrgCostCenterMatchService 테스트")
 class OrgCostCenterMatchServiceTest {
 
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
+    private val organizationRepository: OrganizationRepository = mockk()
 
-    @InjectMocks
-    private lateinit var orgCostCenterMatchService: OrgCostCenterMatchService
+    private val orgCostCenterMatchService = OrgCostCenterMatchService(
+        organizationRepository,
+    )
 
     @Test
     @DisplayName("OrgCodeLevel5 매칭 → CostCenterLevel5 반환")
     fun matchLevel5() {
         val org = createOrg()
-        whenever(organizationRepository.findFirstByAnyOrgCodeLevel(eq("3987"))).thenReturn(org)
+        every { organizationRepository.findFirstByAnyOrgCodeLevel("3987") } returns org
 
         val result = orgCostCenterMatchService.findMatchingCostCenterCode("3987")
 
@@ -38,7 +33,7 @@ class OrgCostCenterMatchServiceTest {
     @DisplayName("OrgCodeLevel4 매칭 → CostCenterLevel4 반환")
     fun matchLevel4() {
         val org = createOrg()
-        whenever(organizationRepository.findFirstByAnyOrgCodeLevel(eq("744"))).thenReturn(org)
+        every { organizationRepository.findFirstByAnyOrgCodeLevel("744") } returns org
 
         val result = orgCostCenterMatchService.findMatchingCostCenterCode("744")
 
@@ -50,7 +45,7 @@ class OrgCostCenterMatchServiceTest {
     @DisplayName("OrgCodeLevel3 매칭 → CostCenterLevel3 반환")
     fun matchLevel3() {
         val org = createOrg()
-        whenever(organizationRepository.findFirstByAnyOrgCodeLevel(eq("282"))).thenReturn(org)
+        every { organizationRepository.findFirstByAnyOrgCodeLevel("282") } returns org
 
         val result = orgCostCenterMatchService.findMatchingCostCenterCode("282")
 
@@ -62,7 +57,7 @@ class OrgCostCenterMatchServiceTest {
     @DisplayName("OrgCodeLevel2 매칭 → CostCenterLevel2 반환")
     fun matchLevel2() {
         val org = createOrg()
-        whenever(organizationRepository.findFirstByAnyOrgCodeLevel(eq("279"))).thenReturn(org)
+        every { organizationRepository.findFirstByAnyOrgCodeLevel("279") } returns org
 
         val result = orgCostCenterMatchService.findMatchingCostCenterCode("279")
 
@@ -73,7 +68,7 @@ class OrgCostCenterMatchServiceTest {
     @Test
     @DisplayName("조회 결과 없음 → Optional.empty 반환")
     fun noOrgFound() {
-        whenever(organizationRepository.findFirstByAnyOrgCodeLevel(eq("NONEXISTENT"))).thenReturn(null)
+        every { organizationRepository.findFirstByAnyOrgCodeLevel("NONEXISTENT") } returns null
 
         val result = orgCostCenterMatchService.findMatchingCostCenterCode("NONEXISTENT")
 
@@ -89,7 +84,7 @@ class OrgCostCenterMatchServiceTest {
             costCenterLevel5 = null,
             orgCodeLevel5 = "9999"
         )
-        whenever(organizationRepository.findFirstByAnyOrgCodeLevel(eq("9999"))).thenReturn(org)
+        every { organizationRepository.findFirstByAnyOrgCodeLevel("9999") } returns org
 
         val result = orgCostCenterMatchService.findMatchingCostCenterCode("9999")
 
@@ -101,7 +96,7 @@ class OrgCostCenterMatchServiceTest {
     fun matchedNoBranch() {
         // 쿼리는 매칭됐다고 가정하지만 실제로 어느 OrgCodeLevel 와도 정확히 일치하지 않는 경우
         val org = createOrg()
-        whenever(organizationRepository.findFirstByAnyOrgCodeLevel(eq("UNKNOWN"))).thenReturn(org)
+        every { organizationRepository.findFirstByAnyOrgCodeLevel("UNKNOWN") } returns org
 
         val result = orgCostCenterMatchService.findMatchingCostCenterCode("UNKNOWN")
 

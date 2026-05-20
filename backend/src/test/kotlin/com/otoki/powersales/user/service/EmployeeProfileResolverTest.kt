@@ -4,24 +4,20 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.organization.repository.dto.OrganizationCacheDto
 import com.otoki.powersales.user.entity.ProfileType
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("EmployeeProfileResolver — SF AppointmentTriggerHandler 10개 분기 동등 검증")
 class EmployeeProfileResolverTest {
 
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
+    private val organizationRepository: OrganizationRepository = mockk()
 
-    @InjectMocks
-    private lateinit var resolver: EmployeeProfileResolver
+    private val resolver = EmployeeProfileResolver(
+        organizationRepository,
+    )
 
     @Test
     @DisplayName("[Branch 1] orgCodeLevel3=='5066' (마케팅실) → MARKETING — 직책 무관")
@@ -137,7 +133,7 @@ class EmployeeProfileResolverTest {
     @DisplayName("[Edge] Organization cascade lookup 실패 → STAFF 디폴트")
     fun orgLookupAllMissing() {
         // cascade Level5→4→3 모두 miss → null. Resolver 는 STAFF 디폴트.
-        whenever(organizationRepository.findFirstByOrgCodeCascade("9999")).thenReturn(null)
+        every { organizationRepository.findFirstByOrgCodeCascade("9999") } returns null
         val employee = createEmployee(costCenterCode = "9999", jikchak = "사업부장")
 
         assertThat(resolver.resolve(employee)).isEqualTo(ProfileType.STAFF)
@@ -165,17 +161,16 @@ class EmployeeProfileResolverTest {
     fun cascadeLevel4Hit() {
         // cascade 메커니즘 (Level5/4/3 순서) 자체는 OrganizationRepositoryCustomImpl 의 책임.
         // resolver 테스트는 "cascade 가 Org 를 돌려주면 정책 분기가 의도대로 평가되는가" 만 검증.
-        whenever(organizationRepository.findFirstByOrgCodeCascade("5066")).thenReturn(
+        every { organizationRepository.findFirstByOrgCodeCascade("5066") } returns
             organization(orgCodeLevel3 = "5066")
-        )
         val employee = createEmployee(costCenterCode = "5066", jikchak = "사원")
 
         assertThat(resolver.resolve(employee)).isEqualTo(ProfileType.MARKETING)
     }
 
     private fun stubOrg(costCenterCode: String, orgCodeLevel3: String?) {
-        whenever(organizationRepository.findFirstByOrgCodeCascade(costCenterCode))
-            .thenReturn(organization(orgCodeLevel3 = orgCodeLevel3))
+        every { organizationRepository.findFirstByOrgCodeCascade(costCenterCode) } returns
+            organization(orgCodeLevel3 = orgCodeLevel3)
     }
 
     // cascade 결과는 Repository 단에서 OrganizationCacheDto 로 변환 후 캐시 / 반환되므로 테스트도 DTO 로 stub.

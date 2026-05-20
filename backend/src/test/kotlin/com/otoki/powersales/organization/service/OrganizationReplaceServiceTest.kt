@@ -3,6 +3,13 @@ package com.otoki.powersales.organization.service
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.organization.service.dto.OrganizationReplaceCommand
+import io.mockk.CapturingSlot
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
 import org.assertj.core.api.Assertions.assertThat
@@ -10,37 +17,23 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("OrganizationReplaceService 테스트")
 class OrganizationReplaceServiceTest {
 
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
+    private val organizationRepository: OrganizationRepository = mockk()
+    private val entityManager: EntityManager = mockk()
+    private val nativeQuery: Query = mockk()
 
-    @Mock
-    private lateinit var entityManager: EntityManager
-
-    @Mock
-    private lateinit var nativeQuery: Query
-
-    @InjectMocks
-    private lateinit var service: OrganizationReplaceService
+    private val service = OrganizationReplaceService(
+        organizationRepository,
+        entityManager,
+    )
 
     private fun stubAdvisoryLock() {
-        whenever(entityManager.createNativeQuery(any<String>())).thenReturn(nativeQuery)
-        whenever(nativeQuery.setParameter(any<String>(), any())).thenReturn(nativeQuery)
-        whenever(nativeQuery.singleResult).thenReturn(1L)
+        every { entityManager.createNativeQuery(any<String>()) } returns nativeQuery
+        every { nativeQuery.setParameter(any<String>(), any()) } returns nativeQuery
+        every { nativeQuery.singleResult } returns 1L
     }
 
     private fun command(suffix: String): OrganizationReplaceCommand = OrganizationReplaceCommand(
@@ -50,11 +43,15 @@ class OrganizationReplaceServiceTest {
         ccCd5 = "13$suffix", orgCd5 = "130$suffix", orgNm5 = "지점$suffix"
     )
 
-    private fun stubSaveAllEcho() {
-        doAnswer { invocation ->
-            @Suppress("UNCHECKED_CAST")
-            invocation.arguments[0] as List<Organization>
-        }.whenever(organizationRepository).saveAll(any<List<Organization>>())
+    private fun stubSaveAllEcho(): CapturingSlot<List<Organization>> {
+        val captured = slot<List<Organization>>()
+        every { organizationRepository.saveAll(capture(captured)) } answers { firstArg<List<Organization>>() }
+        return captured
+    }
+
+    private fun stubDeleteFlush() {
+        every { organizationRepository.deleteAllInBatch() } just Runs
+        every { organizationRepository.flush() } just Runs
     }
 
     @Nested
@@ -65,21 +62,20 @@ class OrganizationReplaceServiceTest {
         @DisplayName("단일 행 - advisory lock + DELETE all + saveAll 호출, replacedCount=1")
         fun replaceAll_singleItem() {
             stubAdvisoryLock()
-            stubSaveAllEcho()
+            stubDeleteFlush()
+            val savedSlot = stubSaveAllEcho()
 
             val result = service.replaceAll(listOf(command("0")))
 
-            verify(entityManager).createNativeQuery("SELECT pg_advisory_xact_lock(:key)")
-            verify(nativeQuery).setParameter(eq("key"), eq(5560001L))
-            verify(organizationRepository).deleteAllInBatch()
-            verify(organizationRepository).flush()
+            verify { entityManager.createNativeQuery("SELECT pg_advisory_xact_lock(:key)") }
+            verify { nativeQuery.setParameter("key", 5560001L) }
+            verify { organizationRepository.deleteAllInBatch() }
+            verify { organizationRepository.flush() }
 
-            val captor = argumentCaptor<List<Organization>>()
-            verify(organizationRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue).hasSize(1)
-            assertThat(captor.firstValue[0].costCenterLevel2).isEqualTo("100")
-            assertThat(captor.firstValue[0].orgCodeLevel5).isEqualTo("1300")
-            assertThat(captor.firstValue[0].orgNameLevel5).isEqualTo("지점0")
+            assertThat(savedSlot.captured).hasSize(1)
+            assertThat(savedSlot.captured[0].costCenterLevel2).isEqualTo("100")
+            assertThat(savedSlot.captured[0].orgCodeLevel5).isEqualTo("1300")
+            assertThat(savedSlot.captured[0].orgNameLevel5).isEqualTo("지점0")
 
             assertThat(result.replacedCount).isEqualTo(1)
         }
@@ -88,13 +84,12 @@ class OrganizationReplaceServiceTest {
         @DisplayName("다중 행 - 모두 신규 Organization 으로 변환되어 저장, replacedCount 일치")
         fun replaceAll_multipleItems() {
             stubAdvisoryLock()
-            stubSaveAllEcho()
+            stubDeleteFlush()
+            val savedSlot = stubSaveAllEcho()
 
             val result = service.replaceAll(listOf(command("1"), command("2"), command("3")))
 
-            val captor = argumentCaptor<List<Organization>>()
-            verify(organizationRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue.map { it.orgNameLevel5 })
+            assertThat(savedSlot.captured.map { it.orgNameLevel5 })
                 .containsExactly("지점1", "지점2", "지점3")
             assertThat(result.replacedCount).isEqualTo(3)
         }
@@ -103,7 +98,8 @@ class OrganizationReplaceServiceTest {
         @DisplayName("일부 필드만 채워진 행 - 그대로 저장 (검증은 어댑터 책임)")
         fun replaceAll_partialFields() {
             stubAdvisoryLock()
-            stubSaveAllEcho()
+            stubDeleteFlush()
+            val savedSlot = stubSaveAllEcho()
             val cmd = OrganizationReplaceCommand(
                 ccCd2 = null, orgCd2 = null, orgNm2 = null,
                 ccCd3 = null, orgCd3 = null, orgNm3 = null,
@@ -113,10 +109,8 @@ class OrganizationReplaceServiceTest {
 
             val result = service.replaceAll(listOf(cmd))
 
-            val captor = argumentCaptor<List<Organization>>()
-            verify(organizationRepository).saveAll(captor.capture())
-            assertThat(captor.firstValue[0].costCenterLevel5).isEqualTo("1111")
-            assertThat(captor.firstValue[0].costCenterLevel2).isNull()
+            assertThat(savedSlot.captured[0].costCenterLevel5).isEqualTo("1111")
+            assertThat(savedSlot.captured[0].costCenterLevel2).isNull()
             assertThat(result.replacedCount).isEqualTo(1)
         }
     }
@@ -129,8 +123,9 @@ class OrganizationReplaceServiceTest {
         @DisplayName("saveAll 도중 ConstraintViolation - 예외 재전파 (어댑터에서 catch + 재전파)")
         fun replaceAll_constraintViolation() {
             stubAdvisoryLock()
-            whenever(organizationRepository.saveAll(any<List<Organization>>()))
-                .thenThrow(RuntimeException("constraint violation"))
+            stubDeleteFlush()
+            every { organizationRepository.saveAll(any<List<Organization>>()) } throws
+                RuntimeException("constraint violation")
 
             assertThatThrownBy { service.replaceAll(listOf(command("1"))) }
                 .isInstanceOf(RuntimeException::class.java)

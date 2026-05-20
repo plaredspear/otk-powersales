@@ -5,42 +5,39 @@ import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
 import com.otoki.powersales.user.repository.UserRepository
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.password.PasswordEncoder
 
-@ExtendWith(MockitoExtension::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("UserProvisioningService 테스트")
 class UserProvisioningServiceTest {
 
-    @Mock
-    private lateinit var userRepository: UserRepository
+    private val userRepository: UserRepository = mockk()
+    private val passwordEncoder: PasswordEncoder = mockk()
 
-    @Mock
-    private lateinit var passwordEncoder: PasswordEncoder
+    private val service = UserProvisioningService(
+        userRepository,
+        passwordEncoder,
+    )
 
-    @InjectMocks
-    private lateinit var service: UserProvisioningService
+    private val savedUsers = mutableListOf<User>()
 
     @BeforeEach
     fun setUp() {
-        whenever(passwordEncoder.encode(any<CharSequence>())).thenAnswer { it.arguments[0].toString() + ":encoded" }
-        whenever(userRepository.findByUsername(any<String>())).thenReturn(null)
+        savedUsers.clear()
+        every { passwordEncoder.encode(any<CharSequence>()) } answers { firstArg<CharSequence>().toString() + ":encoded" }
+        every { userRepository.findByUsername(any<String>()) } returns null
+        every { userRepository.save(any<User>()) } answers {
+            val arg = firstArg<User>()
+            savedUsers.add(arg)
+            arg
+        }
     }
 
     @Nested
@@ -62,9 +59,9 @@ class UserProvisioningServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
-            val saved = captor.firstValue
+            verify { userRepository.save(any<User>()) }
+            assertThat(savedUsers).hasSize(1)
+            val saved = savedUsers[0]
             assertThat(saved.employeeCode).isEqualTo("100123")
             assertThat(saved.username).isEqualTo("hong@otokims.co.kr")
             assertThat(saved.email).isEqualTo("hong@otokims.co.kr")
@@ -90,9 +87,8 @@ class UserProvisioningServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
-            assertThat(captor.firstValue.username).isEqualTo("kim@personal.com")
+            assertThat(savedUsers).hasSize(1)
+            assertThat(savedUsers[0].username).isEqualTo("kim@personal.com")
         }
 
         @Test
@@ -110,7 +106,7 @@ class UserProvisioningServiceTest {
                 )
             )
 
-            verify(userRepository, never()).save(any<User>())
+            verify(exactly = 0) { userRepository.save(any<User>()) }
         }
 
         @Test
@@ -128,9 +124,8 @@ class UserProvisioningServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
-            assertThat(captor.firstValue.password).isEqualTo("1001260000:encoded")
+            assertThat(savedUsers).hasSize(1)
+            assertThat(savedUsers[0].password).isEqualTo("1001260000:encoded")
         }
 
         @Test
@@ -148,20 +143,17 @@ class UserProvisioningServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
-            assertThat(captor.firstValue.isActive).isFalse()
+            assertThat(savedUsers).hasSize(1)
+            assertThat(savedUsers[0].isActive).isFalse()
         }
 
         @Test
         @DisplayName("U6 같은 username 의 User 가 이미 존재 — 멱등 skip")
         fun handleEvent_existingUsername_skipsCreation() {
-            whenever(userRepository.findByUsername("dup@otoki.com")).thenReturn(
-                User(
-                    username = "dup@otoki.com",
-                    employeeCode = "100128",
-                    password = "x"
-                )
+            every { userRepository.findByUsername("dup@otoki.com") } returns User(
+                username = "dup@otoki.com",
+                employeeCode = "100128",
+                password = "x"
             )
 
             service.handleEmployeeCreated(
@@ -176,13 +168,13 @@ class UserProvisioningServiceTest {
                 )
             )
 
-            verify(userRepository, never()).save(any<User>())
+            verify(exactly = 0) { userRepository.save(any<User>()) }
         }
 
         @Test
         @DisplayName("U7 UserProvisioningService 내부 예외 — 예외가 호출자에게 전파되지 않음 (SF @future 동등)")
         fun handleEvent_internalException_swallowed() {
-            whenever(userRepository.save(any<User>())).thenThrow(RuntimeException("DB constraint"))
+            every { userRepository.save(any<User>()) } throws RuntimeException("DB constraint")
 
             service.handleEmployeeCreated(
                 EmployeeCreatedEvent(
@@ -219,9 +211,8 @@ class UserProvisioningServiceTest {
                 passwordChangeRequired = false,
             )
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository).save(captor.capture())
-            val saved = captor.firstValue
+            assertThat(savedUsers).hasSize(1)
+            val saved = savedUsers[0]
             assertThat(saved.password).isEqualTo("pre_encoded")
             assertThat(saved.passwordChangeRequired).isFalse()
             assertThat(saved.profileType).isEqualTo(ProfileType.STAFF)
@@ -248,7 +239,7 @@ class UserProvisioningServiceTest {
                 UserRole.UNKNOWN to ProfileType.SALES_REP,
             )
 
-            cases.forEach { (role, expected) ->
+            cases.forEach { (role, _) ->
                 service.provisionForSeed(
                     employeeCode = "P_$role",
                     name = "테스트",
@@ -260,9 +251,8 @@ class UserProvisioningServiceTest {
                 )
             }
 
-            val captor = argumentCaptor<User>()
-            verify(userRepository, org.mockito.kotlin.times(cases.size)).save(captor.capture())
-            val byProfile = captor.allValues.associate { it.employeeCode to it.profileType }
+            verify(exactly = cases.size) { userRepository.save(any<User>()) }
+            val byProfile = savedUsers.associate { it.employeeCode to it.profileType }
             cases.forEach { (role, expected) ->
                 assertThat(byProfile["P_$role"]).isEqualTo(expected)
             }
