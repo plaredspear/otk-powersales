@@ -6,7 +6,7 @@ WORKDIR /app
 # Gradle wrapper & build files first (layer caching)
 COPY gradlew .
 COPY gradle/ gradle/
-COPY build.gradle.kts settings.gradle.kts ./
+COPY build.gradle.kts settings.gradle.kts gradle.properties ./
 RUN chmod +x gradlew
 
 # Copy source and build.
