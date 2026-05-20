@@ -1,5 +1,5 @@
 /**
- * SF 데이터 마이그레이션 공통 모듈 (Spec #764, v5 — K2 cache 무효화 / FieldMapping.nullPlaceholder + User.profile_type).
+ * SF 데이터 마이그레이션 공통 모듈 (Spec #764, v7 — K2 cache 무효화 / EntityMetadata.copyChunkSize + 거대 entity 적용).
  *
  * Stage 1 / Stage 2 entry script 가 @file:Import 로 로드.
  * - data class + 단순 helper 함수 + 상수 매핑 표만 위치.
@@ -62,7 +62,16 @@ data class EntityMetadata(
      *   - --no-reset 모드: UNLOGGED temp staging → COPY → INSERT-SELECT ON CONFLICT DO NOTHING → DROP
      * false (기본값) → 기존 PreparedStatement batch INSERT (소규모 entity / ON CONFLICT 가 잦은 entity).
      */
-    val useCopyStrategy: Boolean = false
+    val useCopyStrategy: Boolean = false,
+    /**
+     * COPY 적재를 chunk 단위로 분할하여 chunk 마다 commit + progress 기록.
+     * null (기본) → 단일 COPY (이전 동작 그대로). 적재 중간 끊김 시 전체 rollback.
+     * 값 지정 → chunk 단위 COPY+commit + output/stage1_<target>_progress.json 에 누적 row 번호
+     *           저장. 끊김 후 재실행 시 (`--no-reset` 또는 `--reset` 미사용) progress 파일을
+     *           읽어 그 row 번호까지 skip + 이후만 적재.
+     * 권장값: 1_000_000 (백만 row 단위). 큰 entity (5GB+) 에서만 사용.
+     */
+    val copyChunkSize: Int? = null
 )
 
 val ORGANIZATION_METADATA = EntityMetadata(
@@ -773,7 +782,9 @@ val ERP_ORDER_PRODUCT_METADATA = EntityMetadata(
         FieldMapping("IsDeleted", "is_deleted", isString = false)
     ),
     // 백만 단위 row entity — COPY FROM STDIN 으로 적재 속도 개선 (PoC entity, Stage 1 v11).
-    useCopyStrategy = true
+    useCopyStrategy = true,
+    // 5GB+ 거대 CSV — chunk 단위 commit + progress 저장으로 중간 끊김 시 이어 적재 (Stage 1 v15).
+    copyChunkSize = 1_000_000
 )
 
 val HOLIDAY_MASTER_METADATA = EntityMetadata(
@@ -1218,7 +1229,9 @@ val TEAM_MEMBER_SCHEDULE_METADATA = EntityMetadata(
         FieldMapping("LastModifiedById", "last_modified_by_sfid")
     ),
     // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
-    useCopyStrategy = true
+    useCopyStrategy = true,
+    // 2GB+ 거대 CSV — chunk 단위 commit + progress 저장으로 중간 끊김 시 이어 적재 (Stage 1 v15).
+    copyChunkSize = 1_000_000
 )
 
 val UPLOAD_FILE_METADATA = EntityMetadata(
@@ -1376,8 +1389,17 @@ data class DbConfig(
     /**
      * stringtype=unspecified — boolean/date/timestamp 컬럼에 String 값을 넣어도 Postgres 가 type 추론.
      * reWriteBatchedInserts=true — addBatch INSERT 를 multi-row INSERT 로 재작성 (속도 향상).
+     * tcpKeepAlive=true — OS TCP keepalive 활성화. SSM 터널 idle 끊김 등으로 인한 broken pipe
+     *                     중간 재발 방지 (장시간 COPY 적재 도중 connection 살아있도록 유지).
+     * socketTimeout=0   — read 무한 대기 (대용량 COPY 결과 응답 대기 중 timeout 회피).
+     * tcpNoDelay=true   — Nagle algorithm 우회로 COPY stream 의 byte buffering latency 최소화.
      */
-    val jdbcUrl: String = "jdbc:postgresql://$host:$port/$database?stringtype=unspecified&reWriteBatchedInserts=true"
+    val jdbcUrl: String = "jdbc:postgresql://$host:$port/$database" +
+        "?stringtype=unspecified" +
+        "&reWriteBatchedInserts=true" +
+        "&tcpKeepAlive=true" +
+        "&socketTimeout=0" +
+        "&tcpNoDelay=true"
 }
 
 fun loadDbConfig(scriptDir: File): DbConfig {

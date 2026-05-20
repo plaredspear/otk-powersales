@@ -72,6 +72,9 @@ dependencies {
 	// Apache POI (Excel)
 	implementation("org.apache.poi:poi-ooxml:5.3.0")
 
+	// OpenCSV (SF migration Stage 1 — S3 → PostgreSQL COPY 직결)
+	implementation("com.opencsv:opencsv:5.9")
+
 	// JWT
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
@@ -86,6 +89,10 @@ dependencies {
 	// PR #4311 fix 가 포함된 정식 릴리스가 나오면 Spring Boot 관리 버전으로 복귀한다.
 	runtimeOnly("com.h2database:h2:2.3.232")
 	runtimeOnly("org.postgresql:postgresql")
+	// SF migration Stage 1 — PG CopyManager API 직접 호출용 (Stage1S3CopyService).
+	// runtimeOnly 로는 PGConnection / org.postgresql.copy.CopyManager 가 컴파일 classpath
+	// 에 안 보이므로 compileOnly 로 보완. 런타임 jar 는 위 runtimeOnly 가 제공.
+	compileOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")

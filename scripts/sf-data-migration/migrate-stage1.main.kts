@@ -1,7 +1,7 @@
 #!/usr/bin/env kotlin
 
 /**
- * Stage 1 — Raw INSERT (Spec #764, v14 — K2 cache 무효화 / placeholder summary 블록 추가).
+ * Stage 1 — Raw INSERT (Spec #764, v15 — K2 cache 무효화 / chunk COPY + progress 파일 재개 path).
  *
  * 책임: 추출된 CSV 를 staging 영역에 1:1 로 JDBC batch INSERT 또는 COPY FROM STDIN.
  *       - enum 변환 / transform 일체 수행하지 않음 (Stage 2 의 책임).
@@ -316,6 +316,154 @@ fun applyStageOneCopyInsert(
 }
 
 /**
+ * EntityMetadata 기준 chunk 단위 COPY (거대 entity 의 중간 끊김 복원용).
+ *
+ * meta.copyChunkSize 만큼 row 가 모이면 endCopy + commit + progress 파일 갱신 후 다음 chunk
+ * 의 새 COPY stream 을 시작한다. 끊김 발생 시 직전 chunk 까지는 commit 되어 보존, 재실행 시
+ * progress 파일을 읽어 그 row 인덱스까지 skip + 이후만 적재 (`--reset` 모드 미사용 전제).
+ *
+ * progress 파일: outputDir/stage1_<target>_progress.json
+ *   {"lastCommittedRowIndex": <누적 row 번호, blank/필수누락 row 포함>, "totalProcessed": <적재된 row>}
+ *
+ * --reset 모드 동작:
+ *   - 빈 타겟 테이블 가정. chunk 마다 COPY → commit → progress 갱신.
+ *   - 시작 시 progress 파일이 있어도 무시 + 삭제 (reset 의도와 충돌).
+ *
+ * --no-reset 모드 동작:
+ *   - chunk 마다 UNLOGGED staging COPY → INSERT-SELECT ON CONFLICT → DROP → commit → progress.
+ *   - 끊김 후 재실행 시 progress 의 lastCommittedRowIndex 까지 streamCsvFile skip + 이후만 처리.
+ */
+fun applyStageOneCopyInsertChunked(
+    conn: Connection,
+    meta: EntityMetadata,
+    csvFile: File,
+    resetMode: Boolean,
+    outputDir: File,
+    progress: ProgressBar? = null
+): StageOneResult {
+    val chunkSize = meta.copyChunkSize ?: error("copyChunkSize 미지정 — chunked path 호출 부적합")
+    val allColumns = meta.fields.map { it.dbColumnName } + meta.extraStaticColumns.keys.toList()
+    val columnsList = allColumns.joinToString(", ")
+    val quotedTable = quoteTable(meta.tableName)
+    val fullyQualified = "${meta.schemaName}.$quotedTable"
+    val requiredFields = meta.fields.filter { !it.nullable }
+    val extraValues = meta.extraStaticColumns.values.toList()
+    val identifierField = if (meta.fields.any { it.sfFieldName == "Username" }) "Username" else "Name"
+    val placeholderRows = mutableListOf<Triple<String, String, String>>()
+
+    val progressFile = File(outputDir, "stage1_${meta.targetName.lowercase()}_progress.json")
+    // resetMode 면 progress 파일 무효화.
+    var skipUntil = 0L
+    var totalProcessedFromProgress = 0L
+    if (resetMode) {
+        if (progressFile.exists()) progressFile.delete()
+    } else if (progressFile.exists()) {
+        // {"lastCommittedRowIndex": N, "totalProcessed": M}  — 단순 정규식 파싱.
+        val text = progressFile.readText()
+        val lastIdx = Regex(""""lastCommittedRowIndex"\s*:\s*(\d+)""").find(text)?.groupValues?.get(1)?.toLongOrNull() ?: 0L
+        val tp = Regex(""""totalProcessed"\s*:\s*(\d+)""").find(text)?.groupValues?.get(1)?.toLongOrNull() ?: 0L
+        skipUntil = lastIdx
+        totalProcessedFromProgress = tp
+        println("[${meta.targetName}] progress 파일 발견 — row index $skipUntil 까지 skip (적재 누적 $totalProcessedFromProgress 건)")
+    }
+
+    val pgConn = conn.unwrap(PGConnection::class.java)
+    val copyManager: CopyManager = pgConn.copyAPI
+    val stagingTableName = if (resetMode) null else "${meta.schemaName}._copy_staging_${meta.tableName}"
+
+    var insertedTotal = totalProcessedFromProgress.toInt()
+    var totalRows = 0L
+    var filteredOut = 0
+    var rowIndex = 0L
+    var chunkProcessed = 0
+    var chunkCopyIn: org.postgresql.copy.CopyIn? = null
+
+    fun startNewChunk(): org.postgresql.copy.CopyIn {
+        if (!resetMode) {
+            // chunk 단위 staging — UNLOGGED 로 매 chunk 생성/적재/INSERT-SELECT/DROP.
+            conn.createStatement().use { st ->
+                st.executeUpdate("DROP TABLE IF EXISTS $stagingTableName")
+                st.executeUpdate(
+                    "CREATE UNLOGGED TABLE $stagingTableName " +
+                    "(LIKE $fullyQualified INCLUDING DEFAULTS EXCLUDING CONSTRAINTS EXCLUDING INDEXES)"
+                )
+            }
+        }
+        val tgt = if (resetMode) fullyQualified else stagingTableName!!
+        val sql = "COPY $tgt ($columnsList) FROM STDIN WITH (FORMAT csv, NULL '\\N')"
+        return copyManager.copyIn(sql)
+    }
+
+    fun finishChunk(copyIn: org.postgresql.copy.CopyIn) {
+        copyIn.endCopy()
+        val chunkRowCount = copyIn.handledRowCount.toInt()
+        val chunkInserted: Int = if (resetMode) {
+            chunkRowCount
+        } else {
+            // staging → 타겟 INSERT-SELECT ON CONFLICT.
+            val insSql = "INSERT INTO $fullyQualified ($columnsList) " +
+                         "SELECT $columnsList FROM $stagingTableName " +
+                         "ON CONFLICT DO NOTHING"
+            val rc = conn.createStatement().use { st -> st.executeUpdate(insSql) }
+            conn.createStatement().use { st -> st.executeUpdate("DROP TABLE IF EXISTS $stagingTableName") }
+            rc
+        }
+        insertedTotal += chunkInserted
+        conn.commit()
+        // progress 갱신 — lastCommittedRowIndex 는 streamCsvFile 의 row index (blank 포함).
+        progressFile.writeText(
+            """{"lastCommittedRowIndex": $rowIndex, "totalProcessed": $insertedTotal}"""
+        )
+    }
+
+    try {
+        chunkCopyIn = startNewChunk()
+        streamCsvFile(csvFile) { row ->
+            rowIndex++
+            totalRows++
+            // 재개 skip — lastCommittedRowIndex 까지는 streamCsvFile 의 row 번호 기준.
+            if (rowIndex <= skipUntil) return@streamCsvFile
+            val ok = requiredFields.all { row[it.sfFieldName]?.isNotBlank() == true }
+            if (!ok) {
+                filteredOut++
+                return@streamCsvFile
+            }
+            val values = ArrayList<String?>(meta.fields.size + extraValues.size)
+            for (f in meta.fields) {
+                val raw = row[f.sfFieldName]
+                val effective = if (raw.isNullOrBlank() && f.nullPlaceholder != null) {
+                    placeholderRows.add(Triple(row["Id"] ?: "?", row[identifierField] ?: "?", f.dbColumnName))
+                    f.nullPlaceholder
+                } else raw
+                values.add(effective)
+            }
+            for (v in extraValues) values.add(v)
+            val bytes = pgCsvLine(values).toByteArray(Charsets.UTF_8)
+            chunkCopyIn!!.writeToCopy(bytes, 0, bytes.size)
+            chunkProcessed++
+            if (chunkProcessed % 10_000 == 0) {
+                progress?.update(chunkProcessed.toInt(), "${meta.targetName} (chunk $chunkProcessed)")
+            }
+            if (chunkProcessed >= chunkSize) {
+                finishChunk(chunkCopyIn!!)
+                chunkProcessed = 0
+                chunkCopyIn = startNewChunk()
+            }
+        }
+        // 마지막 chunk flush.
+        if (chunkCopyIn != null) finishChunk(chunkCopyIn!!)
+    } catch (e: Throwable) {
+        try { if (chunkCopyIn?.isActive == true) chunkCopyIn!!.cancelCopy() } catch (_: Throwable) {}
+        throw e
+    }
+
+    // 정상 완료 시 progress 파일 삭제 (다음 적재 시 새로 시작).
+    if (progressFile.exists()) progressFile.delete()
+
+    return StageOneResult(insertedTotal, totalRows.toInt(), filteredOut, placeholderRows)
+}
+
+/**
  * PermissionSetAssignment staging INSERT.
  */
 fun applyPermissionStagingRawInsert(
@@ -496,13 +644,22 @@ for (target in sortedTargets) {
             is EntityMetadata -> {
                 // streaming path — CSV 를 row 단위로 읽으면서 즉시 INSERT (백만 단위 OOM 회피).
                 // useCopyStrategy=true 인 entity 는 COPY FROM STDIN path 로 분기 (속도 5~20×).
+                // copyChunkSize 가 지정된 거대 entity 는 chunk 단위 commit + progress 저장
+                // (중간 끊김 시 progress 파일로 재개 가능).
                 val estimatedTotal = countCsvDataRows(csvFile)
-                strategyLabel = if (m.useCopyStrategy) "COPY" else "INSERT"
+                strategyLabel = when {
+                    m.useCopyStrategy && m.copyChunkSize != null -> "COPY-CK"
+                    m.useCopyStrategy -> "COPY"
+                    else -> "INSERT"
+                }
                 val pb = ProgressBar("Stage 1 $target ($strategyLabel)", estimatedTotal)
-                val result = if (m.useCopyStrategy) {
-                    applyStageOneCopyInsert(conn, m, csvFile, resetMode = shouldReset, progress = pb)
-                } else {
-                    applyStageOneStreamingInsert(conn, m, csvFile, pb)
+                val result = when {
+                    m.useCopyStrategy && m.copyChunkSize != null ->
+                        applyStageOneCopyInsertChunked(conn, m, csvFile, resetMode = shouldReset, outputDir = outputDir, progress = pb)
+                    m.useCopyStrategy ->
+                        applyStageOneCopyInsert(conn, m, csvFile, resetMode = shouldReset, progress = pb)
+                    else ->
+                        applyStageOneStreamingInsert(conn, m, csvFile, pb)
                 }
                 conn.commit()
                 val inserted = result.inserted
