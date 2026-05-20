@@ -24,45 +24,51 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
-
-@ExtendWith(MockitoExtension::class)
-@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.CapturingSlot
+import io.mockk.verify
 @DisplayName("HomeService 테스트")
 class HomeServiceTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository = mockk()
 
-    @Mock
-    private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
 
-    @Mock
-    private lateinit var displayWorkScheduleRepository: DisplayWorkScheduleRepository
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk()
 
-    @Mock
-    private lateinit var noticeRepository: NoticeRepository
+    private val noticeRepository: NoticeRepository = mockk()
 
-    @Mock
-    private lateinit var accountRepository: AccountRepository
+    private val accountRepository: AccountRepository = mockk()
 
-    @Mock
-    private lateinit var safetyCheckService: SafetyCheckService
+    private val safetyCheckService: SafetyCheckService = mockk()
 
-    @Mock
-    private lateinit var productExpirationRepository: ProductExpirationRepository
+    private val productExpirationRepository: ProductExpirationRepository = mockk()
 
-    @InjectMocks
-    private lateinit var homeService: HomeService
+    private val homeService = HomeService(
+        employeeRepository,
+        teamMemberScheduleRepository,
+        displayWorkScheduleRepository,
+        noticeRepository,
+        accountRepository,
+        safetyCheckService,
+        productExpirationRepository,
+    )
+
+    @org.junit.jupiter.api.BeforeEach
+    fun stubDefaultsForLenientCompatibility() {
+        // 원본 테스트는 @MockitoSettings(LENIENT) 였으므로 unstubbed 메서드는 default 값 반환.
+        // MockK strict 모드 호환을 위해 기본 stub 일괄 등록 (각 테스트에서 더 구체적인 stub 으로 override).
+        every { productExpirationRepository.countByEmployeeIdAndAlarmDate(any(), any()) } returns 0L
+        every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = false)
+        every { noticeRepository.findRecentNotices(any()) } returns emptyList()
+        every { accountRepository.findByIdIn(any()) } returns emptyList()
+        every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+    }
 
     @Nested
     @DisplayName("getHomeData - 홈 화면 데이터 조회")
@@ -84,16 +90,12 @@ class HomeServiceTest {
                 createTeamMemberSchedule(id = 2L, employeeId = userId, accountId = 8938, workingCategory1 = WorkingCategory1.EVENT)
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
-                .thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(accountRepository.findByIdIn(any())).thenReturn(listOf(account))
-            whenever(safetyCheckService.getTodayStatus(any()))
-                .thenReturn(SafetyCheckTodayResponse(completed = false))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { accountRepository.findByIdIn(any()) } returns listOf(account)
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = false)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
@@ -132,15 +134,12 @@ class HomeServiceTest {
                 createAccount(id = 8939, name = "홈플러스 해운대점")
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
-            whenever(employeeRepository.findByOrgName(orgName)).thenReturn(teamEmployees)
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()))
-                .thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(accountRepository.findByIdIn(any())).thenReturn(accounts)
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(leader)
+            every { employeeRepository.findByOrgName(orgName) } returns teamEmployees
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { accountRepository.findByIdIn(any()) } returns accounts
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
@@ -160,15 +159,11 @@ class HomeServiceTest {
             val userId = 1L
             val employee = createEmployee(id = userId, role = UserRole.WOMAN)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(safetyCheckService.getTodayStatus(userId))
-                .thenReturn(SafetyCheckTodayResponse(completed = false))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { safetyCheckService.getTodayStatus(userId) } returns SafetyCheckTodayResponse(completed = false)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
@@ -184,15 +179,11 @@ class HomeServiceTest {
             val userId = 1L
             val employee = createEmployee(id = userId, role = UserRole.WOMAN)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(safetyCheckService.getTodayStatus(userId))
-                .thenReturn(SafetyCheckTodayResponse(completed = true, submittedAt = LocalDateTime.now()))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { safetyCheckService.getTodayStatus(userId) } returns SafetyCheckTodayResponse(completed = true, submittedAt = LocalDateTime.now())
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
@@ -208,14 +199,11 @@ class HomeServiceTest {
             val userId = 1L
             val leader = createEmployee(id = userId, orgName = "부산1지점", role = UserRole.LEADER)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(leader))
-            whenever(employeeRepository.findByOrgName("부산1지점")).thenReturn(listOf(leader))
-            whenever(teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()))
-                .thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(leader)
+            every { employeeRepository.findByOrgName("부산1지점") } returns listOf(leader)
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
@@ -233,17 +221,12 @@ class HomeServiceTest {
             val userId = 1L
             val employee = createEmployee(id = userId, role = null)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
-                .thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(safetyCheckService.getTodayStatus(any()))
-                .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
-            whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
-                .thenReturn(3L)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
+            every { productExpirationRepository.countByEmployeeIdAndAlarmDate(userId, any()) } returns 3L
 
             // When
             val result = homeService.getHomeData(userId)
@@ -263,17 +246,12 @@ class HomeServiceTest {
             val userId = 1L
             val employee = createEmployee(id = userId, role = null)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
-                .thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(safetyCheckService.getTodayStatus(any()))
-                .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
-            whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
-                .thenReturn(0L)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
+            every { productExpirationRepository.countByEmployeeIdAndAlarmDate(userId, any()) } returns 0L
 
             // When
             val result = homeService.getHomeData(userId)
@@ -290,17 +268,12 @@ class HomeServiceTest {
             val userId = 1L
             val employee = createEmployee(id = userId, role = null)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
-                .thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(safetyCheckService.getTodayStatus(any()))
-                .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
-            whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
-                .thenReturn(5L)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
+            every { productExpirationRepository.countByEmployeeIdAndAlarmDate(userId, any()) } returns 5L
 
             // When
             val result = homeService.getHomeData(userId)
@@ -317,17 +290,12 @@ class HomeServiceTest {
             val userId = 1L
             val employee = createEmployee(id = userId, orgName = null, role = null)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
-                .thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(safetyCheckService.getTodayStatus(any()))
-                .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
-            whenever(productExpirationRepository.countByEmployeeIdAndAlarmDate(eq(userId), any()))
-                .thenReturn(1L)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
+            every { productExpirationRepository.countByEmployeeIdAndAlarmDate(userId, any()) } returns 1L
 
             // When
             val result = homeService.getHomeData(userId)
@@ -377,16 +345,12 @@ class HomeServiceTest {
             // 의도적으로 역순 전달 (진열 -> 행사 -> 출근완료)
             val teamMemberSchedules = listOf(displaySchedule, eventSchedule, commuteSchedule)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
-                .thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
-            whenever(safetyCheckService.getTodayStatus(any()))
-                .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { accountRepository.findByIdIn(any()) } returns emptyList()
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
@@ -432,16 +396,12 @@ class HomeServiceTest {
 
             val teamMemberSchedules = listOf(displaySchedule, eventSchedule, otherSchedule)
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
-                .thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
-            whenever(safetyCheckService.getTodayStatus(any()))
-                .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { accountRepository.findByIdIn(any()) } returns emptyList()
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
@@ -467,16 +427,12 @@ class HomeServiceTest {
                 createTeamMemberSchedule(id = 3L, employeeId = userId, accountId = 8940, commuteLogSfid = null)
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
-                .thenReturn(teamMemberSchedules)
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(emptyList())
-            whenever(accountRepository.findByIdIn(any())).thenReturn(emptyList())
-            whenever(safetyCheckService.getTodayStatus(any()))
-                .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { accountRepository.findByIdIn(any()) } returns emptyList()
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
@@ -506,16 +462,12 @@ class HomeServiceTest {
                 typeOfWork3 = TypeOfWork3.ROTATION
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
-                .thenReturn(emptyList())
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(listOf(displayWorkSchedule))
-            whenever(accountRepository.findByIdIn(any())).thenReturn(listOf(account))
-            whenever(safetyCheckService.getTodayStatus(any()))
-                .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(displayWorkSchedule)
+            every { accountRepository.findByIdIn(any()) } returns listOf(account)
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
@@ -546,16 +498,12 @@ class HomeServiceTest {
                 id = 100L, employeeId = userId, accountId = 742
             )
 
-            whenever(employeeRepository.findById(userId)).thenReturn(Optional.of(employee))
-            whenever(teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(eq(userId), any()))
-                .thenReturn(listOf(teamMemberSchedule))
-            whenever(displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()))
-                .thenReturn(listOf(displayWorkSchedule))
-            whenever(accountRepository.findByIdIn(any())).thenReturn(listOf(account))
-            whenever(safetyCheckService.getTodayStatus(any()))
-                .thenReturn(SafetyCheckTodayResponse(completed = true))
-            whenever(noticeRepository.findRecentNotices(any()))
-                .thenReturn(emptyList())
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns listOf(teamMemberSchedule)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(displayWorkSchedule)
+            every { accountRepository.findByIdIn(any()) } returns listOf(account)
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
@@ -572,7 +520,7 @@ class HomeServiceTest {
         @DisplayName("사용자 없음 - 존재하지 않는 userId -> UserNotFoundException 발생")
         fun userNotFound_throwsException() {
             // Given
-            whenever(employeeRepository.findById(999L)).thenReturn(Optional.empty())
+            every { employeeRepository.findById(999L) } returns Optional.empty()
 
             // When & Then
             assertThatThrownBy { homeService.getHomeData(999L) }

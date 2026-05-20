@@ -7,7 +7,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.mock
+import io.mockk.mockk
 import org.springframework.data.redis.core.RedisTemplate
 
 /**
@@ -15,7 +15,7 @@ import org.springframework.data.redis.core.RedisTemplate
  */
 class JwtTokenProviderTest {
 
-    private val redisTemplate = mock<RedisTemplate<String, String>>()
+    private val redisTemplate = mockk<RedisTemplate<String, String>>(relaxed = true)
     private val objectMapper = ObjectMapper()
 
     private val jwtTokenProvider = JwtTokenProvider(

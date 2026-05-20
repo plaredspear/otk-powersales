@@ -1,13 +1,13 @@
 package com.otoki.powersales.common.security
 
+import io.mockk.Called
+import io.mockk.mockk
+import io.mockk.verify
 import jakarta.servlet.FilterChain
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.verify
-import org.mockito.Mockito.verifyNoInteractions
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
 
@@ -17,7 +17,7 @@ class DomainGuardFilterTest {
     private val apiDomain = "dev-powersalesapi.otoki.com"
     private val adminDomain = "dev-pwrs-admin.codapt.kr"
     private val filter = DomainGuardFilter(apiDomain, adminDomain)
-    private val filterChain = mock(FilterChain::class.java)
+    private val filterChain: FilterChain = mockk(relaxUnitFun = true)
 
     @Nested
     @DisplayName("API 도메인 (모바일 전용) 요청")
@@ -31,7 +31,7 @@ class DomainGuardFilterTest {
 
             filter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            verify { filterChain.doFilter(request, response) }
         }
 
         @Test
@@ -42,7 +42,7 @@ class DomainGuardFilterTest {
 
             filter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            verify { filterChain.doFilter(request, response) }
         }
 
         @Test
@@ -53,7 +53,7 @@ class DomainGuardFilterTest {
 
             filter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            verify { filterChain.doFilter(request, response) }
         }
 
         @Test
@@ -65,7 +65,7 @@ class DomainGuardFilterTest {
             filter.doFilter(request, response, filterChain)
 
             assertThat(response.status).isEqualTo(404)
-            verifyNoInteractions(filterChain)
+            verify { filterChain wasNot Called }
         }
 
         @Test
@@ -76,7 +76,7 @@ class DomainGuardFilterTest {
 
             filter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            verify { filterChain.doFilter(request, response) }
         }
 
         @Test
@@ -87,7 +87,7 @@ class DomainGuardFilterTest {
 
             filter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            verify { filterChain.doFilter(request, response) }
         }
 
         @Test
@@ -99,7 +99,7 @@ class DomainGuardFilterTest {
             filter.doFilter(request, response, filterChain)
 
             assertThat(response.status).isEqualTo(404)
-            verifyNoInteractions(filterChain)
+            verify { filterChain wasNot Called }
         }
 
         @Test
@@ -111,7 +111,7 @@ class DomainGuardFilterTest {
             filter.doFilter(request, response, filterChain)
 
             assertThat(response.status).isEqualTo(404)
-            verifyNoInteractions(filterChain)
+            verify { filterChain wasNot Called }
         }
 
         @Test
@@ -123,7 +123,7 @@ class DomainGuardFilterTest {
             filter.doFilter(request, response, filterChain)
 
             assertThat(response.status).isEqualTo(404)
-            verifyNoInteractions(filterChain)
+            verify { filterChain wasNot Called }
         }
 
         @Test
@@ -135,7 +135,7 @@ class DomainGuardFilterTest {
             filter.doFilter(request, response, filterChain)
 
             assertThat(response.status).isEqualTo(404)
-            verifyNoInteractions(filterChain)
+            verify { filterChain wasNot Called }
         }
     }
 
@@ -152,7 +152,7 @@ class DomainGuardFilterTest {
             filter.doFilter(request, response, filterChain)
 
             assertThat(response.status).isEqualTo(404)
-            verifyNoInteractions(filterChain)
+            verify { filterChain wasNot Called }
         }
 
         @Test
@@ -163,7 +163,7 @@ class DomainGuardFilterTest {
 
             filter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            verify { filterChain.doFilter(request, response) }
         }
 
         @Test
@@ -175,7 +175,7 @@ class DomainGuardFilterTest {
             filter.doFilter(request, response, filterChain)
 
             assertThat(response.status).isEqualTo(404)
-            verifyNoInteractions(filterChain)
+            verify { filterChain wasNot Called }
         }
 
         @Test
@@ -186,7 +186,7 @@ class DomainGuardFilterTest {
 
             filter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            verify { filterChain.doFilter(request, response) }
         }
     }
 
@@ -202,7 +202,7 @@ class DomainGuardFilterTest {
 
             filter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            verify { filterChain.doFilter(request, response) }
         }
 
         @Test
@@ -213,7 +213,7 @@ class DomainGuardFilterTest {
 
             filter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            verify { filterChain.doFilter(request, response) }
         }
     }
 
@@ -230,7 +230,7 @@ class DomainGuardFilterTest {
 
             emptyFilter.doFilter(request, response, filterChain)
 
-            verify(filterChain).doFilter(request, response)
+            verify { filterChain.doFilter(request, response) }
         }
     }
 
@@ -247,7 +247,7 @@ class DomainGuardFilterTest {
             filter.doFilter(request, response, filterChain)
 
             assertThat(response.status).isEqualTo(404)
-            verifyNoInteractions(filterChain)
+            verify { filterChain wasNot Called }
         }
     }
 

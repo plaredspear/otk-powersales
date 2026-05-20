@@ -13,11 +13,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.whenever
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -39,19 +40,19 @@ class HomeControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var homeService: HomeService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -117,7 +118,7 @@ class HomeControllerTest {
                 currentDate = "2026-02-25"
             )
 
-            whenever(homeService.getHomeData(1L)).thenReturn(mockResponse)
+            every { homeService.getHomeData(1L) } returns mockResponse
 
             // When & Then
             mockMvc.perform(
@@ -230,7 +231,7 @@ class HomeControllerTest {
                 currentDate = "2026-02-25"
             )
 
-            whenever(homeService.getHomeData(2L)).thenReturn(mockResponse)
+            every { homeService.getHomeData(2L) } returns mockResponse
 
             // When & Then
             mockMvc.perform(
@@ -302,7 +303,7 @@ class HomeControllerTest {
                 currentDate = "2026-02-25"
             )
 
-            whenever(homeService.getHomeData(1L)).thenReturn(mockResponse)
+            every { homeService.getHomeData(1L) } returns mockResponse
 
             // When & Then
             mockMvc.perform(
@@ -333,7 +334,7 @@ class HomeControllerTest {
         @DisplayName("사용자 없음 - 404 USER_NOT_FOUND")
         fun getHomeData_userNotFound() {
             // Given
-            whenever(homeService.getHomeData(1L)).thenThrow(EmployeeNotFoundException())
+            every { homeService.getHomeData(1L) } throws EmployeeNotFoundException()
 
             // When & Then
             mockMvc.perform(

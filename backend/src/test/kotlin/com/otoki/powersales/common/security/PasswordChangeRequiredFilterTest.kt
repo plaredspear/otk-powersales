@@ -2,27 +2,23 @@ package com.otoki.powersales.common.security
 
 import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.auth.entity.UserRole
+import io.mockk.Called
+import io.mockk.mockk
+import io.mockk.verify
 import jakarta.servlet.FilterChain
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("PasswordChangeRequiredFilter 테스트 (Spec #584)")
 class PasswordChangeRequiredFilterTest {
 
-    @Mock
-    private lateinit var filterChain: FilterChain
+    private val filterChain: FilterChain = mockk(relaxUnitFun = true)
 
     private lateinit var filter: PasswordChangeRequiredFilter
     private lateinit var request: MockHttpServletRequest
@@ -48,7 +44,7 @@ class PasswordChangeRequiredFilterTest {
 
         assertThat(response.status).isEqualTo(403)
         assertThat(response.contentAsString).contains("AUTH_PASSWORD_CHANGE_REQUIRED")
-        verifyNoInteractions(filterChain)
+        verify { filterChain wasNot Called }
     }
 
     @Test
@@ -60,7 +56,7 @@ class PasswordChangeRequiredFilterTest {
 
         filter.doFilter(request, response, filterChain)
 
-        verify(filterChain).doFilter(request, response)
+        verify { filterChain.doFilter(request, response) }
         assertThat(response.status).isEqualTo(200)
     }
 
@@ -73,7 +69,7 @@ class PasswordChangeRequiredFilterTest {
 
         filter.doFilter(request, response, filterChain)
 
-        verify(filterChain).doFilter(request, response)
+        verify { filterChain.doFilter(request, response) }
     }
 
     @Test
@@ -85,7 +81,7 @@ class PasswordChangeRequiredFilterTest {
 
         filter.doFilter(request, response, filterChain)
 
-        verify(filterChain).doFilter(request, response)
+        verify { filterChain.doFilter(request, response) }
     }
 
     @Test
@@ -97,7 +93,7 @@ class PasswordChangeRequiredFilterTest {
 
         filter.doFilter(request, response, filterChain)
 
-        verify(filterChain).doFilter(request, response)
+        verify { filterChain.doFilter(request, response) }
     }
 
     @Test
@@ -109,7 +105,7 @@ class PasswordChangeRequiredFilterTest {
 
         filter.doFilter(request, response, filterChain)
 
-        verify(filterChain).doFilter(request, response)
+        verify { filterChain.doFilter(request, response) }
     }
 
     @Test
@@ -119,7 +115,7 @@ class PasswordChangeRequiredFilterTest {
 
         filter.doFilter(request, response, filterChain)
 
-        verify(filterChain).doFilter(request, response)
+        verify { filterChain.doFilter(request, response) }
     }
 
     private fun principal(passwordChangeRequired: Boolean) = UserPrincipal(

@@ -15,125 +15,139 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.BeforeEach
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.check
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
 import org.springframework.boot.DefaultApplicationArguments
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.transaction.support.TransactionTemplate
 import java.util.Optional
-
-@ExtendWith(MockitoExtension::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
+import io.mockk.CapturingSlot
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 @DisplayName("LocalDataInitializer 테스트")
 class LocalDataInitializerTest {
 
-    @Mock
-    private lateinit var employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository = mockk()
 
-    @Mock
-    private lateinit var userProvisioningService: UserProvisioningService
+    private val userProvisioningService: UserProvisioningService = mockk()
 
-    @Mock
-    private lateinit var passwordEncoder: PasswordEncoder
+    private val passwordEncoder: PasswordEncoder = mockk()
 
-    @Mock
-    private lateinit var agreementWordRepository: AgreementWordRepository
+    private val agreementWordRepository: AgreementWordRepository = mockk()
 
-    @Mock
-    private lateinit var accountRepository: AccountRepository
+    private val accountRepository: AccountRepository = mockk()
 
-    @Mock
-    private lateinit var organizationRepository: OrganizationRepository
+    private val organizationRepository: OrganizationRepository = mockk()
 
-    @Mock
-    private lateinit var transactionTemplate: TransactionTemplate
+    private val transactionTemplate: TransactionTemplate = mockk()
 
-    @Mock
-    private lateinit var entityManager: EntityManager
+    private val entityManager: EntityManager = mockk()
 
-    @InjectMocks
-    private lateinit var localDataInitializer: LocalDataInitializer
+    private val savedEmployees = mutableListOf<Employee>()
+    private val savedAccounts = mutableListOf<Account>()
+
+    private val localDataInitializer = LocalDataInitializer(
+        employeeRepository,
+        userProvisioningService,
+        passwordEncoder,
+        agreementWordRepository,
+        accountRepository,
+        organizationRepository,
+        transactionTemplate,
+        entityManager,
+    )
 
     @BeforeEach
     fun setUp() {
-        whenever(transactionTemplate.executeWithoutResult(any())).thenAnswer { invocation ->
-            val callback = invocation.getArgument<java.util.function.Consumer<org.springframework.transaction.TransactionStatus>>(0)
-            callback.accept(org.mockito.Mockito.mock(org.springframework.transaction.TransactionStatus::class.java))
+        savedEmployees.clear()
+        savedAccounts.clear()
+        every { transactionTemplate.executeWithoutResult(any()) } answers {
+            val callback = firstArg<java.util.function.Consumer<org.springframework.transaction.TransactionStatus>>()
+            callback.accept(mockk<org.springframework.transaction.TransactionStatus>(relaxed = true))
             null
-        }
+         }
+        // 원본 LENIENT mode 호환: UserProvisioningService.provisionForSeed (Unit) 기본 stub
+        every {
+            userProvisioningService.provisionForSeed(
+                employeeCode = any(),
+                name = any(),
+                workEmail = any(),
+                email = any(),
+                birthDate = any(),
+                role = any(),
+                appLoginActive = any(),
+                encodedPassword = any(),
+                passwordChangeRequired = any(),
+            )
+        } just Runs
     }
 
     private fun stubEmployeeInfoExists() {
-        val mockQuery = org.mockito.Mockito.mock(Query::class.java)
-        whenever(entityManager.createNativeQuery(any<String>())).thenReturn(mockQuery)
-        whenever(mockQuery.setParameter(any<String>(), any())).thenReturn(mockQuery)
-        whenever(mockQuery.singleResult).thenReturn(0L)
+        val mockQuery = mockk<Query>(relaxed = true)
+        every { entityManager.createNativeQuery(any<String>()) } returns mockQuery
+        every { mockQuery.setParameter(any<String>(), any()) } returns mockQuery
+        every { mockQuery.singleResult } returns 0L
     }
 
     private fun stubAllUsersNotExist() {
-        whenever(employeeRepository.existsByEmployeeCode("99990001")).thenReturn(false)
-        whenever(employeeRepository.existsByEmployeeCode("99990002")).thenReturn(false)
-        whenever(employeeRepository.existsByEmployeeCode("99990003")).thenReturn(false)
-        whenever(employeeRepository.existsByEmployeeCode("99990004")).thenReturn(false)
-        whenever(employeeRepository.existsByEmployeeCode("99990005")).thenReturn(false)
-        whenever(employeeRepository.existsByEmployeeCode("ADMIN-99999999")).thenReturn(false)
-        whenever(employeeRepository.existsByEmployeeCode("ADMIN-99990001")).thenReturn(false)
-        whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
-        whenever(passwordEncoder.encode("a1234!@#$")).thenReturn("encoded_password")
-        whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+        every { employeeRepository.existsByEmployeeCode("99990001") } returns false
+        every { employeeRepository.existsByEmployeeCode("99990002") } returns false
+        every { employeeRepository.existsByEmployeeCode("99990003") } returns false
+        every { employeeRepository.existsByEmployeeCode("99990004") } returns false
+        every { employeeRepository.existsByEmployeeCode("99990005") } returns false
+        every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns false
+        every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns false
+        every { passwordEncoder.encode("1234") } returns "encoded_password"
+        every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
+        every { employeeRepository.save(any<Employee>()) } answers {
+            val emp = firstArg<Employee>()
+            savedEmployees.add(emp)
+            emp
+        }
         stubEmployeeInfoExists()
     }
 
     private fun stubAllUsersExist() {
-        whenever(employeeRepository.existsByEmployeeCode("99990001")).thenReturn(true)
-        whenever(employeeRepository.existsByEmployeeCode("99990002")).thenReturn(true)
-        whenever(employeeRepository.existsByEmployeeCode("99990003")).thenReturn(true)
-        whenever(employeeRepository.existsByEmployeeCode("99990004")).thenReturn(true)
-        whenever(employeeRepository.existsByEmployeeCode("99990005")).thenReturn(true)
-        whenever(employeeRepository.existsByEmployeeCode("ADMIN-99999999")).thenReturn(true)
-        whenever(employeeRepository.existsByEmployeeCode("ADMIN-99990001")).thenReturn(true)
+        every { employeeRepository.existsByEmployeeCode("99990001") } returns true
+        every { employeeRepository.existsByEmployeeCode("99990002") } returns true
+        every { employeeRepository.existsByEmployeeCode("99990003") } returns true
+        every { employeeRepository.existsByEmployeeCode("99990004") } returns true
+        every { employeeRepository.existsByEmployeeCode("99990005") } returns true
+        every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns true
+        every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns true
     }
 
     private fun stubAllAccountsExist() {
         for (i in 1..8) {
-            whenever(accountRepository.findByExternalKey("TEST-ACC-%03d".format(i)))
-                .thenReturn(Account(externalKey = "TEST-ACC-%03d".format(i)))
+            every { accountRepository.findByExternalKey("TEST-ACC-%03d".format(i)) } returns Account(externalKey = "TEST-ACC-%03d".format(i))
         }
     }
 
     private fun stubAllAccountsNotExist() {
         for (i in 1..8) {
-            whenever(accountRepository.findByExternalKey("TEST-ACC-%03d".format(i)))
-                .thenReturn(null)
+            every { accountRepository.findByExternalKey("TEST-ACC-%03d".format(i)) } returns null
         }
-        whenever(accountRepository.save(any<Account>())).thenAnswer { it.getArgument<Account>(0) }
+        every { accountRepository.save(any<Account>()) } answers {
+            val acc = firstArg<Account>()
+            savedAccounts.add(acc)
+            acc
+        }
     }
 
     private fun stubOtherSeedsExist() {
-        whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-            .thenReturn(Optional.of(AgreementWord(name = "AGR-STUB-001")))
-        whenever(organizationRepository.count()).thenReturn(1L)
+        every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(AgreementWord(name = "AGR-STUB-001"))
+        every { organizationRepository.count() } returns 1L
         stubAllAccountsExist()
     }
 
     private fun captureAllSavedEmployees(): List<Employee> {
-        val captor = argumentCaptor<Employee>()
-        verify(employeeRepository, times(7)).save(captor.capture())
-        return captor.allValues
+        verify(exactly = 7) { employeeRepository.save(any<Employee>()) }
+        return savedEmployees.toList()
     }
 
     @Nested
@@ -189,7 +203,7 @@ class LocalDataInitializerTest {
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            verify(employeeRepository, never()).save(any<Employee>())
+            verify(exactly = 0) { employeeRepository.save(any<Employee>()) }
         }
     }
 
@@ -239,16 +253,16 @@ class LocalDataInitializerTest {
         @DisplayName("멱등성 - DB에 00000002 존재 -> 해당 사용자 save 미호출")
         fun skipsSalesUser_whenAlreadyExists() {
             // Given
-            whenever(employeeRepository.existsByEmployeeCode("99990001")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990002")).thenReturn(true)
-            whenever(employeeRepository.existsByEmployeeCode("99990003")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990004")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990005")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-99999999")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-99990001")).thenReturn(false)
-            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
-            whenever(passwordEncoder.encode("a1234!@#$")).thenReturn("encoded_password")
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            every { employeeRepository.existsByEmployeeCode("99990001") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990002") } returns true
+            every { employeeRepository.existsByEmployeeCode("99990003") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990004") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990005") } returns false
+            every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns false
+            every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns false
+            every { passwordEncoder.encode("1234") } returns "encoded_password"
+            every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
+            every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
             stubOtherSeedsExist()
 
@@ -256,9 +270,9 @@ class LocalDataInitializerTest {
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            val captor = argumentCaptor<Employee>()
-            verify(employeeRepository, times(6)).save(captor.capture())
-            val savedIds = captor.allValues.map { it.employeeCode }
+            
+            val captor = savedEmployees; verify(exactly = 6) { employeeRepository.save(any<Employee>()) }
+            val savedIds = captor.map { it.employeeCode }
             assertThat(savedIds).doesNotContain("99990002")
         }
     }
@@ -309,16 +323,16 @@ class LocalDataInitializerTest {
         @DisplayName("멱등성 - DB에 00000003 존재 -> 해당 사용자 save 미호출")
         fun skipsAdminUser_whenAlreadyExists() {
             // Given
-            whenever(employeeRepository.existsByEmployeeCode("99990001")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990002")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990003")).thenReturn(true)
-            whenever(employeeRepository.existsByEmployeeCode("99990004")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990005")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-99999999")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-99990001")).thenReturn(false)
-            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
-            whenever(passwordEncoder.encode("a1234!@#$")).thenReturn("encoded_password")
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            every { employeeRepository.existsByEmployeeCode("99990001") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990002") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990003") } returns true
+            every { employeeRepository.existsByEmployeeCode("99990004") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990005") } returns false
+            every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns false
+            every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns false
+            every { passwordEncoder.encode("1234") } returns "encoded_password"
+            every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
+            every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
             stubOtherSeedsExist()
 
@@ -326,9 +340,9 @@ class LocalDataInitializerTest {
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            val captor = argumentCaptor<Employee>()
-            verify(employeeRepository, times(6)).save(captor.capture())
-            val savedIds = captor.allValues.map { it.employeeCode }
+            
+            val captor = savedEmployees; verify(exactly = 6) { employeeRepository.save(any<Employee>()) }
+            val savedIds = captor.map { it.employeeCode }
             assertThat(savedIds).doesNotContain("99990003")
         }
     }
@@ -424,16 +438,16 @@ class LocalDataInitializerTest {
         @DisplayName("멱등성 - ADMIN-99999999 / ADMIN-99990001 모두 존재 -> 해당 사용자 save 미호출")
         fun skipsSystemAdmin_whenAlreadyExists() {
             // Given
-            whenever(employeeRepository.existsByEmployeeCode("99990001")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990002")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990003")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990004")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990005")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-99999999")).thenReturn(true)
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-99990001")).thenReturn(true)
-            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
-            whenever(passwordEncoder.encode("a1234!@#$")).thenReturn("encoded_password")
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            every { employeeRepository.existsByEmployeeCode("99990001") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990002") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990003") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990004") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990005") } returns false
+            every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns true
+            every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns true
+            every { passwordEncoder.encode("1234") } returns "encoded_password"
+            every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
+            every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
             stubOtherSeedsExist()
 
@@ -441,9 +455,9 @@ class LocalDataInitializerTest {
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            val captor = argumentCaptor<Employee>()
-            verify(employeeRepository, times(5)).save(captor.capture())
-            val savedIds = captor.allValues.map { it.employeeCode }
+            
+            val captor = savedEmployees; verify(exactly = 5) { employeeRepository.save(any<Employee>()) }
+            val savedIds = captor.map { it.employeeCode }
             assertThat(savedIds).doesNotContain("ADMIN-99999999", "ADMIN-99990001")
         }
     }
@@ -456,16 +470,16 @@ class LocalDataInitializerTest {
         @DisplayName("부분 존재 - 00000001만 존재 -> 나머지 6명만 생성")
         fun createsOnlyMissing_whenPartiallyExists() {
             // Given
-            whenever(employeeRepository.existsByEmployeeCode("99990001")).thenReturn(true)
-            whenever(employeeRepository.existsByEmployeeCode("99990002")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990003")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990004")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("99990005")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-99999999")).thenReturn(false)
-            whenever(employeeRepository.existsByEmployeeCode("ADMIN-99990001")).thenReturn(false)
-            whenever(passwordEncoder.encode("1234")).thenReturn("encoded_password")
-            whenever(passwordEncoder.encode("a1234!@#$")).thenReturn("encoded_password")
-            whenever(employeeRepository.save(any<Employee>())).thenAnswer { it.getArgument<Employee>(0) }
+            every { employeeRepository.existsByEmployeeCode("99990001") } returns true
+            every { employeeRepository.existsByEmployeeCode("99990002") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990003") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990004") } returns false
+            every { employeeRepository.existsByEmployeeCode("99990005") } returns false
+            every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns false
+            every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns false
+            every { passwordEncoder.encode("1234") } returns "encoded_password"
+            every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
+            every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
             stubOtherSeedsExist()
 
@@ -473,9 +487,9 @@ class LocalDataInitializerTest {
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            val captor = argumentCaptor<Employee>()
-            verify(employeeRepository, times(6)).save(captor.capture())
-            val savedIds = captor.allValues.map { it.employeeCode }
+            
+            val captor = savedEmployees; verify(exactly = 6) { employeeRepository.save(any<Employee>()) }
+            val savedIds = captor.map { it.employeeCode }
             assertThat(savedIds).containsExactly("99990002", "99990003", "99990004", "99990005", "ADMIN-99999999", "ADMIN-99990001")
         }
 
@@ -512,7 +526,7 @@ class LocalDataInitializerTest {
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            verify(employeeRepository, never()).save(any<Employee>())
+            verify(exactly = 0) { employeeRepository.save(any<Employee>()) }
         }
     }
 
@@ -525,17 +539,15 @@ class LocalDataInitializerTest {
         fun run_createsAgreementWord_whenNotExists() {
             // Given
             stubAllUsersExist()
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.empty())
-            whenever(agreementWordRepository.save(any<AgreementWord>()))
-                .thenAnswer { it.getArgument<AgreementWord>(0) }
-            whenever(organizationRepository.count()).thenReturn(1L)
+            every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.empty()
+            every { agreementWordRepository.save(any<AgreementWord>()) } answers {  firstArg<AgreementWord>()  }
+            every { organizationRepository.count() } returns 1L
 
             // When
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            verify(agreementWordRepository).save(any<AgreementWord>())
+            verify { agreementWordRepository.save(any<AgreementWord>()) }
         }
 
         @Test
@@ -549,7 +561,7 @@ class LocalDataInitializerTest {
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            verify(agreementWordRepository, never()).save(any<AgreementWord>())
+            verify(exactly = 0) { agreementWordRepository.save(any<AgreementWord>()) }
         }
 
         @Test
@@ -557,25 +569,24 @@ class LocalDataInitializerTest {
         fun run_createsAgreementWordWithCorrectData() {
             // Given
             stubAllUsersExist()
-            whenever(agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse())
-                .thenReturn(Optional.empty())
-            whenever(agreementWordRepository.save(any<AgreementWord>()))
-                .thenAnswer { it.getArgument<AgreementWord>(0) }
-            whenever(organizationRepository.count()).thenReturn(1L)
+            every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.empty()
+            every { agreementWordRepository.save(any<AgreementWord>()) } answers {  firstArg<AgreementWord>()  }
+            every { organizationRepository.count() } returns 1L
 
             // When
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            verify(agreementWordRepository).save(check<AgreementWord> { aw ->
-                assertThat(aw.name).isEqualTo("AGR-LOCAL-001")
-                assertThat(aw.contents).contains("[LOCAL 개발용]")
-                assertThat(aw.contents).contains("위치정보 수집·이용 동의서")
-                assertThat(aw.active).isTrue()
-                assertThat(aw.isDeleted).isFalse()
-                assertThat(aw.activeDate).isNotNull()
-                assertThat(aw.createdAt).isNotNull()
-            })
+            val awSlot = slot<AgreementWord>()
+            verify { agreementWordRepository.save(capture(awSlot)) }
+            val aw = awSlot.captured
+            assertThat(aw.name).isEqualTo("AGR-LOCAL-001")
+            assertThat(aw.contents).contains("[LOCAL 개발용]")
+            assertThat(aw.contents).contains("위치정보 수집·이용 동의서")
+            assertThat(aw.active).isTrue()
+            assertThat(aw.isDeleted).isFalse()
+            assertThat(aw.activeDate).isNotNull()
+            assertThat(aw.createdAt).isNotNull()
         }
     }
 
@@ -595,7 +606,7 @@ class LocalDataInitializerTest {
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            verify(accountRepository, times(8)).save(any<Account>())
+            verify(exactly = 8) { accountRepository.save(any<Account>()) }
         }
 
         @Test
@@ -609,7 +620,7 @@ class LocalDataInitializerTest {
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            verify(accountRepository, never()).save(any<Account>())
+            verify(exactly = 0) { accountRepository.save(any<Account>()) }
         }
 
         @Test
@@ -624,11 +635,11 @@ class LocalDataInitializerTest {
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            val captor = argumentCaptor<Account>()
-            verify(accountRepository, times(8)).save(captor.capture())
+            
+            val captor = savedAccounts; verify(exactly = 8) { accountRepository.save(any<Account>()) }
 
-            val testBranch = captor.allValues.filter { it.branchCode == "1111" }
-            val gangnamBranch = captor.allValues.filter { it.branchCode == "1112" }
+            val testBranch = captor.filter { it.branchCode == "1111" }
+            val gangnamBranch = captor.filter { it.branchCode == "1112" }
             assertThat(testBranch).hasSize(5)
             assertThat(gangnamBranch).hasSize(3)
         }
@@ -644,15 +655,15 @@ class LocalDataInitializerTest {
             // Given
             stubAllUsersExist()
             stubOtherSeedsExist()
-            whenever(organizationRepository.count()).thenReturn(0L)
+            every { organizationRepository.count() } returns 0L
 
             // When
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            verify(organizationRepository).saveAll(check<List<Organization>> { orgs ->
-                assertThat(orgs).hasSize(3)
-            })
+            val orgsSlot = slot<List<Organization>>()
+            verify { organizationRepository.saveAll(capture(orgsSlot)) }
+            assertThat(orgsSlot.captured).hasSize(3)
         }
 
         @Test
@@ -661,13 +672,13 @@ class LocalDataInitializerTest {
             // Given
             stubAllUsersExist()
             stubOtherSeedsExist()
-            whenever(organizationRepository.count()).thenReturn(3L)
+            every { organizationRepository.count() } returns 3L
 
             // When
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            verify(organizationRepository, never()).saveAll(any<List<Organization>>())
+            verify(exactly = 0) { organizationRepository.saveAll(any<List<Organization>>()) }
         }
 
         @Test
@@ -676,17 +687,18 @@ class LocalDataInitializerTest {
             // Given
             stubAllUsersExist()
             stubOtherSeedsExist()
-            whenever(organizationRepository.count()).thenReturn(0L)
+            every { organizationRepository.count() } returns 0L
 
             // When
             localDataInitializer.run(DefaultApplicationArguments())
 
+
             // Then
-            verify(organizationRepository).saveAll(check<List<Organization>> { orgs ->
-                val testBranch = orgs.filter { it.orgNameLevel5 == "테스트지점" }
-                assertThat(testBranch).hasSize(1)
-                assertThat(testBranch[0].costCenterLevel5).isEqualTo("1111")
-            })
+            val orgsSlot = slot<List<Organization>>()
+            verify { organizationRepository.saveAll(capture(orgsSlot)) }
+            val testBranch = orgsSlot.captured.filter { it.orgNameLevel5 == "테스트지점" }
+            assertThat(testBranch).hasSize(1)
+            assertThat(testBranch[0].costCenterLevel5).isEqualTo("1111")
         }
 
         @Test
@@ -695,25 +707,23 @@ class LocalDataInitializerTest {
             // Given
             stubAllUsersExist()
             stubOtherSeedsExist()
-            whenever(organizationRepository.count()).thenReturn(0L)
+            every { organizationRepository.count() } returns 0L
 
             // When
             localDataInitializer.run(DefaultApplicationArguments())
 
             // Then
-            verify(organizationRepository).saveAll(check<List<Organization>> { orgs ->
-                // 공통 Level2/3
-                orgs.forEach { org ->
-                    assertThat(org.costCenterLevel2).isEqualTo("1000")
-                    assertThat(org.orgNameLevel2).isEqualTo("오뚜기")
-                    assertThat(org.costCenterLevel3).isEqualTo("1100")
-                    assertThat(org.orgNameLevel3).isEqualTo("영업본부")
-                }
-
-                // Level5 이름 검증
-                val level5Names = orgs.map { it.orgNameLevel5 }
-                assertThat(level5Names).containsExactly("테스트지점", "강남지점", "대전지점")
-            })
+            val orgsSlot = slot<List<Organization>>()
+            verify { organizationRepository.saveAll(capture(orgsSlot)) }
+            val orgs = orgsSlot.captured
+            orgs.forEach { org ->
+                assertThat(org.costCenterLevel2).isEqualTo("1000")
+                assertThat(org.orgNameLevel2).isEqualTo("오뚜기")
+                assertThat(org.costCenterLevel3).isEqualTo("1100")
+                assertThat(org.orgNameLevel3).isEqualTo("영업본부")
+            }
+            val level5Names = orgs.map { it.orgNameLevel5 }
+            assertThat(level5Names).containsExactly("테스트지점", "강남지점", "대전지점")
         }
     }
 

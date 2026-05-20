@@ -3,29 +3,30 @@ package com.otoki.powersales.common.service
 import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertCommand
+import io.mockk.CapturingSlot
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
-@ExtendWith(MockitoExtension::class)
 @DisplayName("SystemCodeMasterUpsertService 테스트")
 class SystemCodeMasterUpsertServiceTest {
 
-    @Mock
-    private lateinit var systemCodeMasterRepository: SystemCodeMasterRepository
+    private val systemCodeMasterRepository: SystemCodeMasterRepository = mockk()
 
-    @InjectMocks
-    private lateinit var service: SystemCodeMasterUpsertService
+    private val service = SystemCodeMasterUpsertService(
+        systemCodeMasterRepository,
+    )
+
+    private fun stubSaveAllCapture(): CapturingSlot<List<SystemCodeMaster>> {
+        val slot = slot<List<SystemCodeMaster>>()
+        every { systemCodeMasterRepository.saveAll(capture(slot)) } answers { firstArg<List<SystemCodeMaster>>() }
+        return slot
+    }
 
     @Nested
     @DisplayName("upsert - Happy Path")
@@ -34,7 +35,8 @@ class SystemCodeMasterUpsertServiceTest {
         @Test
         @DisplayName("신규 - INSERT, externalKey = company;group;detail")
         fun upsert_insertNew() {
-            whenever(systemCodeMasterRepository.findByExternalKey("1000;H10010;10")).thenReturn(null)
+            every { systemCodeMasterRepository.findByExternalKey("1000;H10010;10") } returns null
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(
                 listOf(
@@ -49,9 +51,7 @@ class SystemCodeMasterUpsertServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<List<SystemCodeMaster>>()
-            verify(systemCodeMasterRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved.externalKey).isEqualTo("1000;H10010;10")
             assertThat(saved.companyCode).isEqualTo("1000")
             assertThat(saved.groupCode).isEqualTo("H10010")
@@ -70,7 +70,8 @@ class SystemCodeMasterUpsertServiceTest {
                 externalKey = "1000;H10010;10",
                 detailCodeName = "기존이름"
             )
-            whenever(systemCodeMasterRepository.findByExternalKey("1000;H10010;10")).thenReturn(existing)
+            every { systemCodeMasterRepository.findByExternalKey("1000;H10010;10") } returns existing
+            val savedSlot = stubSaveAllCapture()
 
             service.upsert(
                 listOf(
@@ -85,9 +86,7 @@ class SystemCodeMasterUpsertServiceTest {
                 )
             )
 
-            val captor = argumentCaptor<List<SystemCodeMaster>>()
-            verify(systemCodeMasterRepository).saveAll(captor.capture())
-            val saved = captor.firstValue.single()
+            val saved = savedSlot.captured.single()
             assertThat(saved).isSameAs(existing)
             assertThat(saved.detailCodeName).isEqualTo("신규이름")
         }
@@ -116,7 +115,7 @@ class SystemCodeMasterUpsertServiceTest {
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().identifier).isNull()
             assertThat(result.failures.single().reason).contains("CompanyCode 필수")
-            verify(systemCodeMasterRepository, never()).saveAll(any<List<SystemCodeMaster>>())
+            verify(exactly = 0) { systemCodeMasterRepository.saveAll(any<List<SystemCodeMaster>>()) }
         }
 
         @Test

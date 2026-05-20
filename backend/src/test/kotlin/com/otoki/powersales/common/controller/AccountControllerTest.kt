@@ -12,16 +12,15 @@ import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.common.service.MyAccountService
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -41,19 +40,19 @@ class AccountControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var myAccountService: MyAccountService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
@@ -73,7 +72,6 @@ class AccountControllerTest {
         @Test
         @DisplayName("정상 조회 - 거래처 목록 반환 (addressDetail 포함)")
         fun getMyAccounts_Success() {
-            // given
             val accounts = listOf(
                 MyAccountInfo(
                     accountId = 1L,
@@ -96,10 +94,8 @@ class AccountControllerTest {
             )
             val response = MyAccountListResponse(stores = accounts, totalCount = 2)
 
-            whenever(myAccountService.getMyAccounts(eq(1L), eq(null)))
-                .thenReturn(response)
+            every { myAccountService.getMyAccounts(1L, null) } returns response
 
-            // when & then
             mockMvc.perform(
                 get("/api/v1/mobile/accounts/my")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -122,7 +118,6 @@ class AccountControllerTest {
         @Test
         @DisplayName("검색어 포함 조회 - 필터링된 결과 반환")
         fun getMyAccounts_WithKeyword_Success() {
-            // given
             val keyword = "경산"
             val accounts = listOf(
                 MyAccountInfo(
@@ -137,10 +132,8 @@ class AccountControllerTest {
             )
             val response = MyAccountListResponse(stores = accounts, totalCount = 1)
 
-            whenever(myAccountService.getMyAccounts(eq(1L), eq(keyword)))
-                .thenReturn(response)
+            every { myAccountService.getMyAccounts(1L, keyword) } returns response
 
-            // when & then
             mockMvc.perform(
                 get("/api/v1/mobile/accounts/my")
                     .param("keyword", keyword)
@@ -155,13 +148,10 @@ class AccountControllerTest {
         @Test
         @DisplayName("결과 없음 - 빈 목록 반환")
         fun getMyAccounts_EmptyResult() {
-            // given
             val response = MyAccountListResponse(stores = emptyList(), totalCount = 0)
 
-            whenever(myAccountService.getMyAccounts(eq(1L), eq(null)))
-                .thenReturn(response)
+            every { myAccountService.getMyAccounts(1L, null) } returns response
 
-            // when & then
             mockMvc.perform(
                 get("/api/v1/mobile/accounts/my")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -175,11 +165,8 @@ class AccountControllerTest {
         @Test
         @DisplayName("사용자 없음 - USER_NOT_FOUND 예외 발생")
         fun getMyAccounts_UserNotFound() {
-            // given
-            whenever(myAccountService.getMyAccounts(eq(1L), eq(null)))
-                .thenThrow(EmployeeNotFoundException())
+            every { myAccountService.getMyAccounts(1L, null) } throws EmployeeNotFoundException()
 
-            // when & then
             mockMvc.perform(
                 get("/api/v1/mobile/accounts/my")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -192,11 +179,9 @@ class AccountControllerTest {
         @Test
         @DisplayName("키워드 1자 - INVALID_PARAMETER 예외")
         fun getMyAccounts_keywordTooShort() {
-            // given
-            whenever(myAccountService.getMyAccounts(eq(1L), eq("가")))
-                .thenThrow(AccountInvalidParameterException("검색 키워드는 2자 이상이어야 합니다"))
+            every { myAccountService.getMyAccounts(1L, "가") } throws
+                AccountInvalidParameterException("검색 키워드는 2자 이상이어야 합니다")
 
-            // when & then
             mockMvc.perform(
                 get("/api/v1/mobile/accounts/my")
                     .param("keyword", "가")

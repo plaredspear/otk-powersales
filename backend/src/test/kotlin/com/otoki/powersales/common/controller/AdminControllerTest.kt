@@ -8,17 +8,17 @@ import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.auth.service.AuthService
-import org.junit.jupiter.api.BeforeEach
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.verify
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doNothing
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
@@ -34,19 +34,19 @@ class AdminControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var authService: AuthService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @Nested
@@ -56,27 +56,23 @@ class AdminControllerTest {
         @Test
         @DisplayName("성공 - ADMIN 권한으로 단말기 초기화")
         fun resetDevice_success() {
-            // Given
             setSecurityContext(UserRole.BRANCH_MANAGER)
-            doNothing().`when`(authService).resetDevice("20010585")
+            every { authService.resetDevice("20010585") } just Runs
 
-            // When & Then
             mockMvc.perform(post("/api/v1/admin/users/20010585/reset-device"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("단말기 등록이 초기화되었습니다"))
 
-            verify(authService).resetDevice("20010585")
+            verify { authService.resetDevice("20010585") }
         }
 
         @Test
         @DisplayName("실패 - 존재하지 않는 사번 시 404 USER_NOT_FOUND")
         fun resetDevice_userNotFound() {
-            // Given
             setSecurityContext(UserRole.BRANCH_MANAGER)
-            doThrow(EmployeeNotFoundException()).`when`(authService).resetDevice("99999999")
+            every { authService.resetDevice("99999999") } throws EmployeeNotFoundException()
 
-            // When & Then
             mockMvc.perform(post("/api/v1/admin/users/99999999/reset-device"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"))
