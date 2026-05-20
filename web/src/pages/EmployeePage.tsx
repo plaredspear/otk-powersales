@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useEmployees } from '@/hooks/employee/useEmployees';
+import { useWomanEmployees } from '@/hooks/employee/useEmployees';
 import type { Employee } from '@/api/employee';
-import { ROLE_OPTIONS_FOR_FILTER, type UserRole } from '@/constants/userRole';
 import { usePermission } from '@/hooks/usePermission';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
@@ -15,11 +14,6 @@ const STATUS_TAG: Record<string, string> = {
   휴직: 'orange',
   퇴직: 'red',
 };
-
-const ROLE_FILTER_OPTIONS = [
-  { value: '', label: '권한 전체' },
-  ...ROLE_OPTIONS_FOR_FILTER.map((opt) => ({ value: opt.value, label: opt.label })),
-];
 
 const STATUS_OPTIONS = [
   { value: '', label: '상태 전체' },
@@ -44,7 +38,6 @@ export default function EmployeePage() {
   const [status, setStatus] = useState<string | undefined>();
   const [costCenterCode, setCostCenterCode] = useState<string | undefined>();
   const [keyword, setKeyword] = useState<string | undefined>();
-  const [role, setRole] = useState<UserRole | undefined>();
   const [page, setPage] = useState(0);
   const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
@@ -53,11 +46,10 @@ export default function EmployeePage() {
   const canResetCredentials = hasPermission(RESET_PERMISSION);
   const canWrite = hasPermission(WRITE_PERMISSION);
 
-  const { data, isLoading, isError, error, refetch } = useEmployees({
+  const { data, isLoading, isError, error, refetch } = useWomanEmployees({
     status,
     costCenterCode,
     keyword,
-    role,
     page,
     size: PAGE_SIZE,
   });
@@ -197,12 +189,6 @@ export default function EmployeePage() {
           style={{ width: 140 }}
           value={costCenterCode ?? ''}
           onChange={(e) => { setCostCenterCode(e.target.value || undefined); setPage(0); }}
-        />
-        <Select
-          style={{ width: 140 }}
-          value={role ?? ''}
-          options={ROLE_FILTER_OPTIONS}
-          onChange={(val) => { setRole((val || undefined) as UserRole | undefined); setPage(0); }}
         />
         <Input.Search
           placeholder="사번 또는 이름 검색"
