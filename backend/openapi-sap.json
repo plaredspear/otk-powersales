@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:56348",
+    "url" : "http://localhost:56434",
     "description" : "Generated server url"
   } ],
   "security" : [ {
