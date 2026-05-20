@@ -147,7 +147,11 @@ val USER_METADATA = EntityMetadata(
         FieldMapping("Username", "username", nullable = false),
         FieldMapping("Email", "email"),
         FieldMapping("IsActive", "is_active", isString = false),
-        FieldMapping("DKRetail__EmployeeNumber__c", "employee_code", nullable = false),
+        // employee_code (DKRetail__EmployeeNumber__c) 는 nullable —
+        // SF 시스템 user (Platform Integration / Process Automated 등) + 부서 공용 계정
+        // (KAM1~4영업부 / 영업지원실 / 마케팅실 등) 은 사번이 없다. NULL 그대로 적재.
+        // backend user.employee_code 컬럼의 NOT NULL 제약은 별도 작업으로 풀어야 함.
+        FieldMapping("DKRetail__EmployeeNumber__c", "employee_code"),
         FieldMapping("Name", "name"),
         FieldMapping("LastName", "last_name"),
         FieldMapping("FirstName", "first_name"),

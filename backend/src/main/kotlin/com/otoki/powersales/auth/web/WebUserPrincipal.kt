@@ -27,7 +27,7 @@ import org.springframework.security.core.userdetails.UserDetails
 data class WebUserPrincipal(
     val userId: Long,
     val usernameValue: String,
-    val employeeCode: String,
+    val employeeCode: String?,
     val employeeId: Long?,
     val role: UserRole?,
     val costCenterCode: String?,

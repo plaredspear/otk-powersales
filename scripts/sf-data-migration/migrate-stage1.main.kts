@@ -1,7 +1,7 @@
 #!/usr/bin/env kotlin
 
 /**
- * Stage 1 — Raw INSERT (Spec #764, v3 — K2 cache 무효화 / Review 3종 제거 / PRODUCT_METADATA 정합).
+ * Stage 1 — Raw INSERT (Spec #764, v5 — K2 cache 무효화 / User.employee_code nullable 화).
  *
  * 책임: 추출된 CSV 를 staging 영역에 1:1 로 JDBC batch INSERT.
  *       - enum 변환 / transform 일체 수행하지 않음 (Stage 2 의 책임).

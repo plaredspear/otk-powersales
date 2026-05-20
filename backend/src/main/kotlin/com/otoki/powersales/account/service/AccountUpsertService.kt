@@ -66,7 +66,8 @@ class AccountUpsertService(
             emptyMap()
         } else {
             userRepository.findByEmployeeCodeIn(employeeCodes.distinct())
-                .associateBy { it.employeeCode }
+                // findByEmployeeCodeIn 의 결과는 사번 보유 user 만 — employeeCode non-null 보장.
+                .associateBy { it.employeeCode!! }
         }
 
         val orgLookup = OrganizationLookup.build(organizationRepository)

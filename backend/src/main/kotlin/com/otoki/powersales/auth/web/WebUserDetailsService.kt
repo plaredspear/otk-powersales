@@ -53,7 +53,8 @@ class WebUserDetailsService(
     override fun loadUserByUsername(username: String): WebUserPrincipal {
         val user = userRepository.findByUsername(username)
             ?: throw UsernameNotFoundException("사용자를 찾을 수 없습니다: $username")
-        val employee = employeeRepository.findByEmployeeCode(user.employeeCode).orElse(null)
+        // employeeCode 부재 user (SF 시스템 user / 부서 공용 계정) 는 Employee 매칭 자체 skip.
+        val employee = user.employeeCode?.let { employeeRepository.findByEmployeeCode(it).orElse(null) }
         return toPrincipal(user, employee)
     }
 

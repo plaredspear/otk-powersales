@@ -27,7 +27,7 @@ data class WebUserSummary(
     val userId: Long,
     val username: String,
     val name: String?,
-    val employeeCode: String,
+    val employeeCode: String?,
     val profileType: ProfileType,
     val isSalesSupport: Boolean,
     val role: UserRole?,

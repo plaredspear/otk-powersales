@@ -88,7 +88,8 @@ class WebAuthenticationService(
 
         user.recordLogin(LocalDateTime.now())
 
-        val employee: Employee? = employeeRepository.findByEmployeeCode(user.employeeCode).orElse(null)
+        // employeeCode 부재 user (SF 시스템 user / 부서 공용 계정) 는 Employee 매칭 자체 skip.
+        val employee: Employee? = user.employeeCode?.let { employeeRepository.findByEmployeeCode(it).orElse(null) }
         val permissions: Set<AdminPermission> = employee?.let { adminPermissionResolver.resolve(it) } ?: emptySet()
         val principal = principalFor(user, employee, permissions)
         val summary = summaryFor(user, employee, permissions)
@@ -145,7 +146,7 @@ class WebAuthenticationService(
         webRefreshTokenStore.delete(tokenId)
 
         val user = userRepository.findById(userId).orElseThrow { InvalidTokenException() }
-        val employee: Employee? = employeeRepository.findByEmployeeCode(user.employeeCode).orElse(null)
+        val employee: Employee? = user.employeeCode?.let { employeeRepository.findByEmployeeCode(it).orElse(null) }
         val permissions: Set<AdminPermission> = employee?.let { adminPermissionResolver.resolve(it) } ?: emptySet()
         val principal = principalFor(user, employee, permissions)
         val summary = summaryFor(user, employee, permissions)

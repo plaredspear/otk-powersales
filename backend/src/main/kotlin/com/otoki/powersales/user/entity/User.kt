@@ -57,8 +57,8 @@ class User(
     var isActive: Boolean = true,
 
     @SFField("DKRetail__EmployeeNumber__c")
-    @Column(name = "employee_code", nullable = false, unique = true, length = 20)
-    var employeeCode: String,
+    @Column(name = "employee_code", unique = true, length = 20)
+    var employeeCode: String?,
 
     @SFField("Name")
     @Column(name = "name", length = 121)

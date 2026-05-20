@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 data class AdminUserListItem(
     val id: Long,
     val username: String,
-    val employeeCode: String,
+    val employeeCode: String?,
     val name: String?,
     val email: String?,
     val profileType: String,
@@ -54,7 +54,7 @@ data class AdminUserListResponse(
 data class AdminUserDetailResponse(
     val id: Long,
     val username: String,
-    val employeeCode: String,
+    val employeeCode: String?,
     val name: String?,
     val firstName: String?,
     val lastName: String?,
