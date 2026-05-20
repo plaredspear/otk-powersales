@@ -2,6 +2,7 @@ package com.otoki.powersales.sfmigration.stage1
 
 import com.opencsv.CSVReaderBuilder
 import org.postgresql.PGConnection
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
@@ -26,7 +27,10 @@ import javax.sql.DataSource
 class Stage1S3CopyService(
     private val dataSource: DataSource,
     private val s3Client: S3Client,
+    private val progress: Stage1CopyProgress,
 ) {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * S3 의 CSV 1개를 적재.
@@ -38,8 +42,18 @@ class Stage1S3CopyService(
      */
     fun copyFromS3(targetName: String, s3Bucket: String, s3Key: String): Stage1CopyResult {
         val meta = Stage1Targets.get(targetName)
-            ?: error("Unknown target: $targetName (allowed: ${Stage1Targets.list().joinToString(", ")})")
+            ?: run {
+                val msg = "Unknown target: $targetName (allowed: ${Stage1Targets.list().joinToString(", ")})"
+                progress.finishWithFailure(msg)
+                error(msg)
+            }
 
+        log.info("[stage1-copy] begin target={} s3=s3://{}/{}", targetName, s3Bucket, s3Key)
+        // controller 가 이미 begin() 한 RUNNING 상태로 진입한 경우가 일반 경로. 다른 진입점
+        // (테스트 / 동기 호출 등) 에서 IDLE 상태로 호출되었다면 여기서 begin() 보강.
+        if (progress.status != Stage1CopyProgress.Status.RUNNING) {
+            progress.begin(targetName, s3Bucket, s3Key)
+        }
         val startedAt = System.currentTimeMillis()
         val allColumns = meta.fields.map { it.dbColumnName } + meta.extraStaticColumns.keys.toList()
         val columnsList = allColumns.joinToString(", ")
@@ -82,6 +96,7 @@ class Stage1S3CopyService(
                                     val arr = csv.readNext() ?: break
                                     if (arr.all { it.isBlank() }) continue
                                     totalRows++
+                                    progress.advanceProcessed()
                                     // NOT NULL pre-filter.
                                     val ok = requiredFields.all { field ->
                                         val idx = headerIndex[field.sfFieldName] ?: return@all false
@@ -89,6 +104,7 @@ class Stage1S3CopyService(
                                     }
                                     if (!ok) {
                                         filteredOut++
+                                        progress.advanceFiltered()
                                         continue
                                     }
                                     // 컬럼 순서대로 값 구성 + placeholder 적용.
@@ -130,7 +146,13 @@ class Stage1S3CopyService(
                 conn.createStatement().use { st -> st.executeUpdate("DROP TABLE IF EXISTS $stagingTable") }
 
                 conn.commit()
+                progress.setInserted(inserted.toLong())
+                progress.finishOk()
                 val elapsed = System.currentTimeMillis() - startedAt
+                log.info(
+                    "[stage1-copy] done target={} inserted={} total={} filtered={} elapsedMs={}",
+                    targetName, inserted, totalRows, filteredOut, elapsed,
+                )
                 return Stage1CopyResult(
                     targetName = targetName,
                     inserted = inserted,
@@ -141,6 +163,9 @@ class Stage1S3CopyService(
                 )
             } catch (e: Throwable) {
                 runCatching { conn.rollback() }
+                val msg = "${e.javaClass.simpleName}: ${e.message ?: "unknown"}"
+                progress.finishWithFailure(msg)
+                log.error("[stage1-copy] FAILED target={} reason={}", targetName, msg, e)
                 throw e
             }
         }
