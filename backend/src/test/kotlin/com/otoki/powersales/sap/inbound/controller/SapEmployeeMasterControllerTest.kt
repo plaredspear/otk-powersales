@@ -14,10 +14,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.kotlin.any
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -26,7 +22,9 @@ import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.every
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -41,20 +39,20 @@ class SapEmployeeMasterControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapEmployeeMasterService: SapEmployeeMasterService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -74,9 +72,7 @@ class SapEmployeeMasterControllerTest {
         @Test
         @DisplayName("성공 - 200, RESULT_CODE 200, 부분 실패 0")
         fun upsert_success() {
-            whenever(sapEmployeeMasterService.upsert(any())).thenReturn(
-                EmployeeMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
-            )
+            every { sapEmployeeMasterService.upsert(any()) } returns                 EmployeeMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
 
             val payload = """
                 {
@@ -101,12 +97,10 @@ class SapEmployeeMasterControllerTest {
         @Test
         @DisplayName("부분 실패 - 200, failures 페이로드 포함")
         fun upsert_partialFailure() {
-            whenever(sapEmployeeMasterService.upsert(any())).thenReturn(
-                EmployeeMasterDetail(
+            every { sapEmployeeMasterService.upsert(any()) } returns                 EmployeeMasterDetail(
                     successCount = 1,
                     failureCount = 1,
                     failures = listOf(FailureItem("100124", "EmployeeName 필수"))
-                )
             )
 
             val payload = """
@@ -142,7 +136,7 @@ class SapEmployeeMasterControllerTest {
                 .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
-            verify(sapEmployeeMasterService, never()).upsert(any())
+            verify(exactly = 0) { sapEmployeeMasterService.upsert(any()) }
         }
     }
 

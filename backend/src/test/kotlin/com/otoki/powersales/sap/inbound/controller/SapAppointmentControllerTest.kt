@@ -14,10 +14,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.kotlin.any
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -26,7 +22,9 @@ import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.every
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -41,20 +39,20 @@ class SapAppointmentControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapAppointmentService: SapAppointmentService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -74,9 +72,7 @@ class SapAppointmentControllerTest {
         @Test
         @DisplayName("성공 - 200, RESULT_CODE 200, success_count 1")
         fun insert_success() {
-            whenever(sapAppointmentService.insert(any())).thenReturn(
-                AppointmentDetail(successCount = 1, failureCount = 0, failures = emptyList())
-            )
+            every { sapAppointmentService.insert(any()) } returns                 AppointmentDetail(successCount = 1, failureCount = 0, failures = emptyList())
 
             val payload = """
                 {
@@ -109,12 +105,10 @@ class SapAppointmentControllerTest {
         @Test
         @DisplayName("부분 실패 - 200, failures 페이로드 포함")
         fun insert_partialFailure() {
-            whenever(sapAppointmentService.insert(any())).thenReturn(
-                AppointmentDetail(
+            every { sapAppointmentService.insert(any()) } returns                 AppointmentDetail(
                     successCount = 1,
                     failureCount = 1,
                     failures = listOf(FailureItem("100124", "JobCode 필수"))
-                )
             )
 
             val payload = """
@@ -150,7 +144,7 @@ class SapAppointmentControllerTest {
                 .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
-            verify(sapAppointmentService, never()).insert(any())
+            verify(exactly = 0) { sapAppointmentService.insert(any()) }
         }
     }
 

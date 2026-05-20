@@ -16,10 +16,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.kotlin.any
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -28,7 +24,9 @@ import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.every
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -43,23 +41,23 @@ class SapSalesHistoryControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapDailySalesHistoryService: SapDailySalesHistoryService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapMonthlySalesHistoryService: SapMonthlySalesHistoryService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -79,13 +77,11 @@ class SapSalesHistoryControllerTest {
         @Test
         @DisplayName("성공 - 200, RESULT_DETAIL.success_count=1, chunks 1개")
         fun upsert_success() {
-            whenever(sapDailySalesHistoryService.upsert(any())).thenReturn(
-                SalesHistoryDetail(
+            every { sapDailySalesHistoryService.upsert(any()) } returns                 SalesHistoryDetail(
                     successCount = 1,
                     failureCount = 0,
                     failures = emptyList(),
                     chunks = listOf(ChunkResult(0, ChunkResult.STATUS_SUCCESS, 1))
-                )
             )
 
             val payload = """
@@ -119,14 +115,14 @@ class SapSalesHistoryControllerTest {
                 .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
-            verify(sapDailySalesHistoryService, never()).upsert(any())
+            verify(exactly = 0) { sapDailySalesHistoryService.upsert(any()) }
         }
 
         @Test
         @DisplayName("실패 - 행 수 한도 초과 -> 413 PAYLOAD_TOO_LARGE")
         fun upsert_payloadTooLarge() {
-            whenever(sapDailySalesHistoryService.upsert(any()))
-                .thenThrow(SapPayloadTooLargeException(50000, 50001))
+            every { sapDailySalesHistoryService.upsert(any()) } throws
+                SapPayloadTooLargeException(50000, 50001)
 
             val payload = """
                 {
@@ -153,13 +149,11 @@ class SapSalesHistoryControllerTest {
         @Test
         @DisplayName("성공 - 200")
         fun upsert_success() {
-            whenever(sapMonthlySalesHistoryService.upsert(any())).thenReturn(
-                SalesHistoryDetail(
-                    successCount = 1,
-                    failureCount = 0,
-                    failures = emptyList(),
-                    chunks = listOf(ChunkResult(0, ChunkResult.STATUS_SUCCESS, 1))
-                )
+            every { sapMonthlySalesHistoryService.upsert(any()) } returns SalesHistoryDetail(
+                successCount = 1,
+                failureCount = 0,
+                failures = emptyList(),
+                chunks = listOf(ChunkResult(0, ChunkResult.STATUS_SUCCESS, 1))
             )
 
             val payload = """
@@ -198,7 +192,7 @@ class SapSalesHistoryControllerTest {
                 .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
-            verify(sapMonthlySalesHistoryService, never()).upsert(any())
+            verify(exactly = 0) { sapMonthlySalesHistoryService.upsert(any()) }
         }
     }
 

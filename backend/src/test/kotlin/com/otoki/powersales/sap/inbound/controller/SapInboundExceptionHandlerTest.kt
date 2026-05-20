@@ -4,18 +4,15 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.SapResultWrapper
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpServletRequest
@@ -31,7 +28,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 @DisplayName("SapInboundExceptionHandler 테스트")
 class SapInboundExceptionHandlerTest {
 
-    private val auditService: SapInboundAuditService = mock()
+    private val auditService: SapInboundAuditService = mockk()
     private val handler = SapInboundExceptionHandler(auditService)
 
     @BeforeEach
@@ -69,9 +66,9 @@ class SapInboundExceptionHandlerTest {
     fun handleAccessDenied_recordsScopeRejectionAudit() {
         handler.handleAccessDenied(AccessDeniedException("Access is denied"))
 
-        val captor = argumentCaptor<SapInboundAudit>()
-        verify(auditService).record(captor.capture())
-        val audit = captor.firstValue
+        val captor = slot<SapInboundAudit>()
+        verify { auditService.record(capture(captor)) }
+        val audit = captor.captured
 
         assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_REJECTED_SCOPE)
         assertThat(audit.clientId).isEqualTo("sap-otoki")
@@ -89,13 +86,13 @@ class SapInboundExceptionHandlerTest {
         val response = handler.handleAccessDenied(AccessDeniedException("Access is denied"))
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.FORBIDDEN)
-        verify(auditService, never()).record(any())
+        verify(exactly = 0) { auditService.record(any()) }
     }
 
     @Test
     @DisplayName("handleAccessDenied - audit 적재 실패해도 403 응답은 유지 (runCatching 격리)")
     fun handleAccessDenied_isolatesAuditFailure() {
-        doThrow(RuntimeException("DB down")).whenever(auditService).record(any())
+        every { auditService.record(any()) } throws RuntimeException("DB down")
 
         val response = handler.handleAccessDenied(AccessDeniedException("Access is denied"))
 

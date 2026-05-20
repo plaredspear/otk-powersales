@@ -16,10 +16,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.kotlin.any
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -28,7 +24,9 @@ import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.every
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -43,26 +41,26 @@ class SapProductMasterControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapProductMasterService: SapProductMasterService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapBarcodeMasterService: SapBarcodeMasterService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapSystemCodeMasterService: SapSystemCodeMasterService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -82,9 +80,7 @@ class SapProductMasterControllerTest {
         @Test
         @DisplayName("성공 - 200, RESULT_CODE 200, success_count=1")
         fun upsert_success() {
-            whenever(sapProductMasterService.upsert(any())).thenReturn(
-                ProductMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
-            )
+            every { sapProductMasterService.upsert(any()) } returns                 ProductMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
 
             val payload = """
                 {
@@ -107,12 +103,10 @@ class SapProductMasterControllerTest {
         @Test
         @DisplayName("부분 실패 - 200, failures 페이로드 포함")
         fun upsert_partialFailure() {
-            whenever(sapProductMasterService.upsert(any())).thenReturn(
-                ProductMasterDetail(
+            every { sapProductMasterService.upsert(any()) } returns                 ProductMasterDetail(
                     successCount = 1,
                     failureCount = 1,
                     failures = listOf(FailureItem("100200", "StandardPrice 변환 실패: abc"))
-                )
             )
 
             val payload = """
@@ -146,7 +140,7 @@ class SapProductMasterControllerTest {
                 .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
-            verify(sapProductMasterService, never()).upsert(any())
+            verify(exactly = 0) { sapProductMasterService.upsert(any()) }
         }
     }
 
@@ -157,9 +151,7 @@ class SapProductMasterControllerTest {
         @Test
         @DisplayName("성공 - 200, RESULT_CODE 200")
         fun upsert_success() {
-            whenever(sapBarcodeMasterService.upsert(any())).thenReturn(
-                ProductMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
-            )
+            every { sapBarcodeMasterService.upsert(any()) } returns                 ProductMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
 
             val payload = """
                 {
@@ -191,7 +183,7 @@ class SapProductMasterControllerTest {
                 .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
-            verify(sapBarcodeMasterService, never()).upsert(any())
+            verify(exactly = 0) { sapBarcodeMasterService.upsert(any()) }
         }
     }
 
@@ -202,9 +194,7 @@ class SapProductMasterControllerTest {
         @Test
         @DisplayName("성공 - 200, RESULT_CODE 200")
         fun upsert_success() {
-            whenever(sapSystemCodeMasterService.upsert(any())).thenReturn(
-                ProductMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
-            )
+            every { sapSystemCodeMasterService.upsert(any()) } returns                 ProductMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
 
             val payload = """
                 {
@@ -236,7 +226,7 @@ class SapProductMasterControllerTest {
                 .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
-            verify(sapSystemCodeMasterService, never()).upsert(any())
+            verify(exactly = 0) { sapSystemCodeMasterService.upsert(any()) }
         }
     }
 

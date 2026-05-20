@@ -11,11 +11,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -23,7 +18,10 @@ import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.context.bean.override.mockito.MockitoBean
+import io.mockk.every
+import io.mockk.slot
+import io.mockk.verify
+import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -41,20 +39,20 @@ class SapOrganizeMasterControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapOrganizeMasterService: SapOrganizeMasterService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
+    @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    @MockitoBean
+    @MockkBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
 
-    @MockitoBean
+    @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
@@ -95,8 +93,9 @@ class SapOrganizeMasterControllerTest {
         @Test
         @DisplayName("성공 - 200 + RESULT_CODE=200 + RESULT_DETAIL.success_count")
         fun replace_success() {
-            whenever(sapOrganizeMasterService.replaceAll(any()))
-                .thenReturn(OrganizeMasterDetail(successCount = 1, failureCount = 0, failures = emptyList()))
+            val captor = slot<List<com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterRequestItem>>()
+            every { sapOrganizeMasterService.replaceAll(capture(captor)) } returns
+                OrganizeMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
 
             mockMvc.perform(
                 post("/api/v1/sap/organization")
@@ -111,16 +110,15 @@ class SapOrganizeMasterControllerTest {
                 .andExpect(jsonPath("$.RESULT_DETAIL.failures").isArray)
                 .andExpect(jsonPath("$.RESULT_DETAIL.failures").isEmpty)
 
-            val captor = argumentCaptor<List<com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterRequestItem>>()
-            verify(sapOrganizeMasterService).replaceAll(captor.capture())
-            assert(captor.firstValue.size == 1)
+            assert(captor.captured.size == 1)
         }
 
         @Test
         @DisplayName("성공 - PascalCase 키가 정확히 매핑됨")
         fun replace_pascalCaseKeysMapped() {
-            whenever(sapOrganizeMasterService.replaceAll(any()))
-                .thenReturn(OrganizeMasterDetail(successCount = 1, failureCount = 0, failures = emptyList()))
+            val captor = slot<List<com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterRequestItem>>()
+            every { sapOrganizeMasterService.replaceAll(capture(captor)) } returns
+                OrganizeMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
 
             mockMvc.perform(
                 post("/api/v1/sap/organization")
@@ -129,9 +127,7 @@ class SapOrganizeMasterControllerTest {
             )
                 .andExpect(status().isOk)
 
-            val captor = argumentCaptor<List<com.otoki.powersales.sap.inbound.dto.organize.OrganizeMasterRequestItem>>()
-            verify(sapOrganizeMasterService).replaceAll(captor.capture())
-            val item = captor.firstValue.first()
+            val item = captor.captured.first()
             assert(item.ccCd2 == "1000")
             assert(item.orgCd5 == "11110")
             assert(item.orgNm5 == "서울지점")
@@ -140,8 +136,8 @@ class SapOrganizeMasterControllerTest {
         @Test
         @DisplayName("실패 - 서비스가 INVALID_PAYLOAD 예외를 던지면 422 + RESULT_CODE=INVALID_PAYLOAD")
         fun replace_invalidPayload() {
-            whenever(sapOrganizeMasterService.replaceAll(any()))
-                .thenThrow(SapInvalidPayloadException("필수 필드 누락 (line 2)"))
+            every { sapOrganizeMasterService.replaceAll(any()) } throws
+                SapInvalidPayloadException("필수 필드 누락 (line 2)")
 
             mockMvc.perform(
                 post("/api/v1/sap/organization")
@@ -166,7 +162,7 @@ class SapOrganizeMasterControllerTest {
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
-            verify(sapOrganizeMasterService, never()).replaceAll(any())
+            verify(exactly = 0) { sapOrganizeMasterService.replaceAll(any()) }
         }
     }
 }
