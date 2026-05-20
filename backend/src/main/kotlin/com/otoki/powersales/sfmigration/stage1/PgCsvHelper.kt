@@ -9,16 +9,22 @@ package com.otoki.powersales.sfmigration.stage1
  *  - 빈 문자열 → `""` (literal empty)
  *  - quote 포함 → `""` escape + 전체 quote
  *  - comma / newline / CR 포함 시 전체 quote
+ *  - NUL (U+0000) 은 PG text 컬럼이 거부
+ *    (`invalid byte sequence for encoding "UTF8": 0x00`) 하므로 silent strip.
+ *    SF export CSV 일부 셀에 잔존하는 경우가 있음 — 의미 없는 노이즈로 간주.
  */
 object PgCsvHelper {
+    private val NUL: Char = 0.toChar()
+
     fun escape(value: String?): String {
         if (value == null) return "\\N"
-        if (value.isEmpty()) return "\"\""
-        val needsQuote = value.any { it == ',' || it == '"' || it == '\n' || it == '\r' }
-        if (!needsQuote) return value
-        val sb = StringBuilder(value.length + 4)
+        val sanitized = stripNul(value)
+        if (sanitized.isEmpty()) return "\"\""
+        val needsQuote = sanitized.any { it == ',' || it == '"' || it == '\n' || it == '\r' }
+        if (!needsQuote) return sanitized
+        val sb = StringBuilder(sanitized.length + 4)
         sb.append('"')
-        for (c in value) {
+        for (c in sanitized) {
             if (c == '"') sb.append('"').append('"') else sb.append(c)
         }
         sb.append('"')
@@ -32,6 +38,13 @@ object PgCsvHelper {
             sb.append(escape(v))
         }
         sb.append('\n')
+        return sb.toString()
+    }
+
+    private fun stripNul(value: String): String {
+        if (value.indexOf(NUL) < 0) return value
+        val sb = StringBuilder(value.length)
+        for (c in value) if (c != NUL) sb.append(c)
         return sb.toString()
     }
 }
