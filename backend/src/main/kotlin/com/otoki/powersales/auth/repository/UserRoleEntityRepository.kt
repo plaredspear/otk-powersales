@@ -1,8 +1,8 @@
 package com.otoki.powersales.auth.repository
 
-import com.otoki.powersales.auth.entity.UserRoleEntity
+import com.otoki.powersales.auth.entity.UserRole
 import org.springframework.data.jpa.repository.JpaRepository
 
-interface UserRoleEntityRepository : JpaRepository<UserRoleEntity, Long> {
-    fun findBySfid(sfid: String): UserRoleEntity?
+interface UserRoleEntityRepository : JpaRepository<UserRole, Long> {
+    fun findBySfid(sfid: String): UserRole?
 }

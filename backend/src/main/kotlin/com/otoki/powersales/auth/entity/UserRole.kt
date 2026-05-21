@@ -26,7 +26,7 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "user_role")
 @SFObject("UserRole")
-class UserRoleEntity(
+class UserRole(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -23,12 +23,12 @@ class UserRoleEntitySFAnnotationTest {
     @DisplayName("AC1 — 클래스 @SFObject + 매핑 키셋")
     inner class ClassAndMapping {
 
-        private val mapping = SFSchemaUtils.getSFMapping(UserRoleEntity::class.java)
+        private val mapping = SFSchemaUtils.getSFMapping(UserRole::class.java)
 
         @Test
         @DisplayName("@SFObject 값은 'UserRole'")
         fun sfObjectValue() {
-            val annotation = UserRoleEntity::class.java.getAnnotation(SFObject::class.java)
+            val annotation = UserRole::class.java.getAnnotation(SFObject::class.java)
             assertThat(annotation).isNotNull
             assertThat(annotation.value).isEqualTo("UserRole")
         }
@@ -65,14 +65,14 @@ class UserRoleEntitySFAnnotationTest {
         @Test
         @DisplayName("PK(id) 필드에 @SFField 미부착")
         fun idHasNoSfField() {
-            val field = UserRoleEntity::class.java.getDeclaredField("id")
+            val field = UserRole::class.java.getDeclaredField("id")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
         }
 
         @Test
         @DisplayName("매핑 values 에 user_role_id 미등장")
         fun mappingValuesExcludePk() {
-            val mapping = SFSchemaUtils.getSFMapping(UserRoleEntity::class.java)
+            val mapping = SFSchemaUtils.getSFMapping(UserRole::class.java)
             assertThat(mapping.values).doesNotContain("user_role_id")
         }
     }
@@ -81,7 +81,7 @@ class UserRoleEntitySFAnnotationTest {
     @DisplayName("AC3 — Portal / Forecast / Access picklist 9 필드 미보존")
     inner class IrrelevantFieldsExcluded {
 
-        private val mapping = SFSchemaUtils.getSFMapping(UserRoleEntity::class.java)
+        private val mapping = SFSchemaUtils.getSFMapping(UserRole::class.java)
 
         @Test
         @DisplayName("PortalType / PortalAccountId / PortalAccountOwnerId 미보유")
