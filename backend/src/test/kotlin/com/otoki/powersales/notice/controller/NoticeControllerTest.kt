@@ -19,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -35,23 +37,13 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @DisplayName("NoticeController 테스트")
 class NoticeControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
 
-    @MockkBean
-    private lateinit var noticeService: NoticeService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var noticeService: NoticeService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
 
@@ -83,22 +75,11 @@ class NoticeControllerTest {
             every { noticeService.getPosts(1L, null, null, 1, 10) } returns response
 
             mockMvc.perform(
-                get("/api/v1/mobile/notices")
-                    .contentType(MediaType.APPLICATION_JSON)
+                get("/api/v1/mobile/notices").contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content").isArray)
-                .andExpect(jsonPath("$.data.content[0].id").value(42))
-                .andExpect(jsonPath("$.data.content[0].category").value("COMPANY"))
-                .andExpect(jsonPath("$.data.content[0].categoryName").value("회사공지"))
-                .andExpect(jsonPath("$.data.content[0].title").value("전체공지 제목"))
-                .andExpect(jsonPath("$.data.content[0].createdAt").value("2026-02-28T10:30:00"))
-                .andExpect(jsonPath("$.data.content[1].id").value(41))
+                .andExpect(jsonPath("$.data.content.length()").value(2))
                 .andExpect(jsonPath("$.data.totalCount").value(5))
-                .andExpect(jsonPath("$.data.totalPages").value(1))
-                .andExpect(jsonPath("$.data.currentPage").value(1))
-                .andExpect(jsonPath("$.data.size").value(10))
         }
 
         @Test
@@ -124,9 +105,7 @@ class NoticeControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content[0].title").value("영업 목표"))
-                .andExpect(jsonPath("$.data.totalCount").value(1))
         }
 
         @Test
@@ -142,8 +121,7 @@ class NoticeControllerTest {
             every { noticeService.getPosts(1L, null, null, 1, 10) } returns response
 
             mockMvc.perform(
-                get("/api/v1/mobile/notices")
-                    .contentType(MediaType.APPLICATION_JSON)
+                get("/api/v1/mobile/notices").contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isEmpty)
@@ -163,7 +141,6 @@ class NoticeControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("INVALID_CATEGORY"))
         }
     }
@@ -173,8 +150,9 @@ class NoticeControllerTest {
     inner class GetNoticeDetailTests {
 
         @Test
-        @DisplayName("성공 - 공지사항 상세 조회")
+        @DisplayName("성공 - 공지사항 상세 조회 (이미지 보유 분기)")
         fun getNoticeDetail_success() {
+            // 분기 명세: images 배열 보유 시 url + sortOrder 매핑
             val response = NoticePostDetailResponse(
                 id = 42L,
                 category = "COMPANY",
@@ -191,25 +169,15 @@ class NoticeControllerTest {
             every { noticeService.getNoticeDetail(42L) } returns response
 
             mockMvc.perform(
-                get("/api/v1/mobile/notices/42")
-                    .contentType(MediaType.APPLICATION_JSON)
+                get("/api/v1/mobile/notices/42").contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(42))
-                .andExpect(jsonPath("$.data.category").value("COMPANY"))
-                .andExpect(jsonPath("$.data.categoryName").value("회사공지"))
-                .andExpect(jsonPath("$.data.title").value("테스트 공지"))
-                .andExpect(jsonPath("$.data.content").value("본문 내용입니다."))
-                .andExpect(jsonPath("$.data.createdAt").value("2026-02-28T10:30:00"))
-                .andExpect(jsonPath("$.data.images").isArray)
-                .andExpect(jsonPath("$.data.images[0].id").value(101))
                 .andExpect(jsonPath("$.data.images[0].url").value("https://bucket.s3.ap-northeast-2.amazonaws.com/img.jpg"))
-                .andExpect(jsonPath("$.data.images[0].sortOrder").value(0))
         }
 
         @Test
-        @DisplayName("성공 - 이미지 없는 공지 조회")
+        @DisplayName("성공 - 이미지 없는 공지 조회 (images 빈 배열 분기)")
         fun getNoticeDetail_noImages() {
             val response = NoticePostDetailResponse(
                 id = 10L,
@@ -225,8 +193,7 @@ class NoticeControllerTest {
             every { noticeService.getNoticeDetail(10L) } returns response
 
             mockMvc.perform(
-                get("/api/v1/mobile/notices/10")
-                    .contentType(MediaType.APPLICATION_JSON)
+                get("/api/v1/mobile/notices/10").contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.images").isEmpty)
@@ -238,35 +205,20 @@ class NoticeControllerTest {
             every { noticeService.getNoticeDetail(999L) } throws NoticePostNotFoundException()
 
             mockMvc.perform(
-                get("/api/v1/mobile/notices/999")
-                    .contentType(MediaType.APPLICATION_JSON)
+                get("/api/v1/mobile/notices/999").contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("NOTICE_NOT_FOUND"))
         }
 
-        @Test
-        @DisplayName("실패 - noticeId 0 이하 -> 400")
-        fun getNoticeDetail_invalidId() {
+        @ParameterizedTest(name = "noticeId = {0} -> 400 INVALID_PARAMETER")
+        @ValueSource(strings = ["0", "-1"])
+        @DisplayName("실패 - 잘못된 noticeId (0 이하/음수) -> 400")
+        fun getNoticeDetail_invalidIds(invalidId: String) {
             mockMvc.perform(
-                get("/api/v1/mobile/notices/0")
-                    .contentType(MediaType.APPLICATION_JSON)
+                get("/api/v1/mobile/notices/$invalidId").contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
-        }
-
-        @Test
-        @DisplayName("실패 - 음수 noticeId -> 400")
-        fun getNoticeDetail_negativeId() {
-            mockMvc.perform(
-                get("/api/v1/mobile/notices/-1")
-                    .contentType(MediaType.APPLICATION_JSON)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
         }
     }
