@@ -6,7 +6,7 @@
     "version" : "v1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:62834",
+    "url" : "http://localhost:49896",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -2689,6 +2689,32 @@
       "post" : {
         "tags" : [ "sf-migration-stage-2-controller" ],
         "operationId" : "runPicklistMapping",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/sf-migration/stage2/picklist/{column}" : {
+      "post" : {
+        "tags" : [ "sf-migration-stage-2-controller" ],
+        "operationId" : "runPicklistColumn",
+        "parameters" : [ {
+          "name" : "column",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -5512,6 +5538,71 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseMyAccountListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/women-employees" : {
+      "get" : {
+        "tags" : [ "admin-woman-employee-controller" ],
+        "operationId" : "getWomanEmployees",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "costCenterCode",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "keyword",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeListResponse"
                 }
               }
             }
@@ -14639,7 +14730,7 @@
           },
           "profileType" : {
             "type" : "string",
-            "enum" : [ "MARKETING", "STAFF", "TEAM_LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_DIRECTOR", "DIVISION_HEAD", "SALES_REP", "SYSTEM_ADMIN" ]
+            "enum" : [ "MARKETING", "STAFF", "TEAM_LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_DIRECTOR", "DIVISION_HEAD", "SALES_REP", "SALES_REP_LEADER", "FACTORY_STAFF", "OLS", "SYSTEM_ADMIN" ]
           },
           "role" : {
             "type" : [ "string", "null" ],
@@ -15819,15 +15910,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
@@ -17779,6 +17870,125 @@
           }
         }
       },
+      "ApiResponseEmployeeListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/EmployeeListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "EmployeeListItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : [ "string", "null" ]
+          },
+          "gender" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "costCenterCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "role" : {
+            "type" : [ "string", "null" ]
+          },
+          "roleLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "appLoginActive" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "workPhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "jikchak" : {
+            "type" : [ "string", "null" ]
+          },
+          "jikwee" : {
+            "type" : [ "string", "null" ]
+          },
+          "jikgub" : {
+            "type" : [ "string", "null" ]
+          },
+          "jobCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "appointmentDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "ordDetailNode" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "EmployeeListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EmployeeListItem"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "AdminUserListItem" : {
         "type" : "object",
         "properties" : {
@@ -19218,15 +19428,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
@@ -21307,125 +21517,6 @@
           }
         }
       },
-      "ApiResponseEmployeeListResponse" : {
-        "type" : "object",
-        "properties" : {
-          "success" : {
-            "type" : "boolean"
-          },
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/EmployeeListResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
-      },
-      "EmployeeListItem" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "employeeCode" : {
-            "type" : "string"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "status" : {
-            "type" : [ "string", "null" ]
-          },
-          "gender" : {
-            "type" : [ "string", "null" ]
-          },
-          "orgName" : {
-            "type" : [ "string", "null" ]
-          },
-          "costCenterCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "role" : {
-            "type" : [ "string", "null" ]
-          },
-          "roleLabel" : {
-            "type" : [ "string", "null" ]
-          },
-          "startDate" : {
-            "type" : [ "string", "null" ]
-          },
-          "endDate" : {
-            "type" : [ "string", "null" ]
-          },
-          "appLoginActive" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "workPhone" : {
-            "type" : [ "string", "null" ]
-          },
-          "jikchak" : {
-            "type" : [ "string", "null" ]
-          },
-          "jikwee" : {
-            "type" : [ "string", "null" ]
-          },
-          "jikgub" : {
-            "type" : [ "string", "null" ]
-          },
-          "jobCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "appointmentDate" : {
-            "type" : [ "string", "null" ]
-          },
-          "ordDetailNode" : {
-            "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "EmployeeListResponse" : {
-        "type" : "object",
-        "properties" : {
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/EmployeeListItem"
-            }
-          },
-          "page" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }
-      },
       "AccountCategoryOptionResponse" : {
         "type" : "object",
         "properties" : {
@@ -22203,15 +22294,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
@@ -22470,15 +22561,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "pageable" : {
             "$ref" : "#/components/schemas/PageableObject"
