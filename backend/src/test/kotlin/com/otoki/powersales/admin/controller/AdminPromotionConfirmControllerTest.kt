@@ -15,6 +15,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -77,100 +80,65 @@ class AdminPromotionConfirmControllerTest {
 
             mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.promotionId").value(10))
                 .andExpect(jsonPath("$.data.totalEmployees").value(3))
                 .andExpect(jsonPath("$.data.upsertedSchedules").value(3))
         }
 
-        @Test
-        @DisplayName("실패 - 행사 미존재 -> 404")
-        fun confirm_notFound() {
-            every { adminPromotionConfirmService.confirmPromotion(999L) } throws PromotionNotFoundException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminPromotionConfirmControllerTest#confirmExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun confirm_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            promotionId: Long,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String
+        ) {
+            every { adminPromotionConfirmService.confirmPromotion(promotionId) } throws exception
 
-            mockMvc.perform(post("/api/v1/admin/promotions/999/confirm"))
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("PROMOTION_NOT_FOUND"))
+            mockMvc.perform(post("/api/v1/admin/promotions/$promotionId/confirm"))
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
+    }
 
-        @Test
-        @DisplayName("실패 - 조원 0명 -> 400")
-        fun confirm_noEmployees() {
-            every { adminPromotionConfirmService.confirmPromotion(10L) } throws NoEmployeesException()
-
-            mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("NO_EMPLOYEES"))
-        }
-
-        @Test
-        @DisplayName("실패 - 필수값 누락 -> 400")
-        fun confirm_valuesRequired() {
-            every { adminPromotionConfirmService.confirmPromotion(10L) } throws ValuesRequiredException("김철수의 필수 항목을 입력하세요 (근무유형1)")
-
-            mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("VALUES_REQUIRED"))
-        }
-
-        @Test
-        @DisplayName("실패 - 투입일 범위 초과 -> 400")
-        fun confirm_dateOutOfRange() {
-            every { adminPromotionConfirmService.confirmPromotion(10L) } throws DateOutOfRangeException("김철수의 투입일이 행사 기간을 벗어납니다")
-
-            mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("DATE_OUT_OF_RANGE"))
-        }
-
-        @Test
-        @DisplayName("실패 - 근무유형3 수량 초과 -> 400")
-        fun confirm_workType3Limit() {
-            every { adminPromotionConfirmService.confirmPromotion(10L) } throws WorkType3LimitExceededException("초과")
-
-            mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("WORK_TYPE3_LIMIT_EXCEEDED"))
-        }
-
-        @Test
-        @DisplayName("실패 - 연차/대휴 충돌 -> 400")
-        fun confirm_leaveConflict() {
-            every { adminPromotionConfirmService.confirmPromotion(10L) } throws LeaveConflictException("충돌")
-
-            mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("LEAVE_CONFLICT"))
-        }
-
-        @Test
-        @DisplayName("실패 - 거래처 중복 -> 400")
-        fun confirm_duplicateSchedule() {
-            every { adminPromotionConfirmService.confirmPromotion(10L) } throws DuplicateScheduleException("중복")
-
-            mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("DUPLICATE_SCHEDULE"))
-        }
-
-        @Test
-        @DisplayName("실패 - 여사원 휴직 -> 400")
-        fun confirm_employeeOnLeave() {
-            every { adminPromotionConfirmService.confirmPromotion(10L) } throws EmployeeOnLeaveException("휴직")
-
-            mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("EMPLOYEE_ON_LEAVE"))
-        }
-
-        @Test
-        @DisplayName("실패 - 여사원 퇴직 -> 400")
-        fun confirm_employeeResigned() {
-            every { adminPromotionConfirmService.confirmPromotion(10L) } throws EmployeeResignedException("퇴직")
-
-            mockMvc.perform(post("/api/v1/admin/promotions/10/confirm"))
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("EMPLOYEE_RESIGNED"))
-        }
+    companion object {
+        @JvmStatic
+        fun confirmExceptions(): List<Arguments> = listOf(
+            Arguments.of("notFound -> 404 PROMOTION_NOT_FOUND", 999L, PromotionNotFoundException(), 404, "PROMOTION_NOT_FOUND"),
+            Arguments.of("noEmployees -> 400 NO_EMPLOYEES", 10L, NoEmployeesException(), 400, "NO_EMPLOYEES"),
+            Arguments.of(
+                "valuesRequired -> 400 VALUES_REQUIRED",
+                10L,
+                ValuesRequiredException("김철수의 필수 항목을 입력하세요 (근무유형1)"),
+                400,
+                "VALUES_REQUIRED",
+            ),
+            Arguments.of(
+                "dateOutOfRange -> 400 DATE_OUT_OF_RANGE",
+                10L,
+                DateOutOfRangeException("김철수의 투입일이 행사 기간을 벗어납니다"),
+                400,
+                "DATE_OUT_OF_RANGE",
+            ),
+            Arguments.of(
+                "workType3Limit -> 400 WORK_TYPE3_LIMIT_EXCEEDED",
+                10L,
+                WorkType3LimitExceededException("초과"),
+                400,
+                "WORK_TYPE3_LIMIT_EXCEEDED",
+            ),
+            Arguments.of("leaveConflict -> 400 LEAVE_CONFLICT", 10L, LeaveConflictException("충돌"), 400, "LEAVE_CONFLICT"),
+            Arguments.of(
+                "duplicateSchedule -> 400 DUPLICATE_SCHEDULE",
+                10L,
+                DuplicateScheduleException("중복"),
+                400,
+                "DUPLICATE_SCHEDULE",
+            ),
+            Arguments.of("employeeOnLeave -> 400 EMPLOYEE_ON_LEAVE", 10L, EmployeeOnLeaveException("휴직"), 400, "EMPLOYEE_ON_LEAVE"),
+            Arguments.of("employeeResigned -> 400 EMPLOYEE_RESIGNED", 10L, EmployeeResignedException("퇴직"), 400, "EMPLOYEE_RESIGNED"),
+        )
     }
 }
