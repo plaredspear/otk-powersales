@@ -4,7 +4,7 @@ import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeItem
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.promotion.entity.Promotion
@@ -571,7 +571,7 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_adminClosedCriticalField_allowed() {
             val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
-            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER))
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee(role = UserRoleEnum.BRANCH_MANAGER))
             every { employeeRepository.findById(999L) } returns Optional.empty()
             every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
@@ -586,7 +586,7 @@ class AdminPromotionEmployeeServiceTest {
         fun updateEmployee_adminClosedScheduleDate_allowed() {
             val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
-            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER))
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee(role = UserRoleEnum.BRANCH_MANAGER))
 
             every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
@@ -1058,7 +1058,7 @@ class AdminPromotionEmployeeServiceTest {
         fun batchUpdate_adminClosedEmployeeModification_allowed() {
             val pe = createPe(id = 1L, teamMemberScheduleId = 100L, promoCloseByTm = true)
             every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
-            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee(role = UserRole.BRANCH_MANAGER))
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee(role = UserRoleEnum.BRANCH_MANAGER))
             every { employeeRepository.findById(999L) } returns Optional.empty()
 
             every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
@@ -1307,7 +1307,7 @@ class AdminPromotionEmployeeServiceTest {
         if (employeeId != null) it.employee = createEmployee()
     }
 
-    private fun createEmployee(role: UserRole? = null) = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사").also {
+    private fun createEmployee(role: UserRoleEnum? = null) = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사").also {
         it.role = role
     }
 

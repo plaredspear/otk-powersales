@@ -6,7 +6,7 @@ import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory2
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -130,7 +130,7 @@ class LeaderScheduleService(
             ?: return emptyList()
 
         return employeeRepository
-            .findByCostCenterCodeAndRole(costCenterCode, UserRole.WOMAN)
+            .findByCostCenterCodeAndRole(costCenterCode, UserRoleEnum.WOMAN)
             .sortedBy { it.employeeCode }
             .map { LeaderTeamMemberListResponse.from(it) }
     }
@@ -169,7 +169,7 @@ class LeaderScheduleService(
             .orElseThrow { EmployeeNotFoundException() }
 
     private fun requireLeader(employee: Employee) {
-        if (employee.role != UserRole.LEADER) {
+        if (employee.role != UserRoleEnum.LEADER) {
             throw LeaderScheduleNotLeaderException()
         }
     }

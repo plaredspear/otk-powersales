@@ -1,7 +1,6 @@
 package com.otoki.powersales.admin.service
 
-import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import io.mockk.every
@@ -29,7 +28,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withSalesDirector_returnsAllBranches() {
             // Given
             val userId = 1L
-            val employee = createTestEmployee(id = userId, role = UserRole.SALES_MANAGER, costCenterCode = "B001")
+            val employee = createTestEmployee(id = userId, role = UserRoleEnum.SALES_MANAGER, costCenterCode = "B001")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
@@ -45,7 +44,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withDivisionDirector_returnsAllBranches() {
             // Given
             val userId = 2L
-            val employee = createTestEmployee(id = userId, role = UserRole.BUSINESS_MANAGER, costCenterCode = "B002")
+            val employee = createTestEmployee(id = userId, role = UserRoleEnum.BUSINESS_MANAGER, costCenterCode = "B002")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
@@ -61,7 +60,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withSalesHeadquartersDirector_returnsAllBranches() {
             // Given
             val userId = 3L
-            val employee = createTestEmployee(id = userId, role = UserRole.HEADQUARTERS_MANAGER, costCenterCode = "B003")
+            val employee = createTestEmployee(id = userId, role = UserRoleEnum.HEADQUARTERS_MANAGER, costCenterCode = "B003")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
@@ -77,7 +76,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withSalesSupportOffice_returnsAllBranches() {
             // Given
             val userId = 4L
-            val employee = createTestEmployee(id = userId, role = UserRole.SALES_SUPPORT, costCenterCode = "B004")
+            val employee = createTestEmployee(id = userId, role = UserRoleEnum.SALES_SUPPORT, costCenterCode = "B004")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
@@ -95,7 +94,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withLeaderAndCostCenter_returnsBranchScope() {
             // Given
             val userId = 5L
-            val employee = createTestEmployee(id = userId, role = UserRole.LEADER, costCenterCode = "B100")
+            val employee = createTestEmployee(id = userId, role = UserRoleEnum.LEADER, costCenterCode = "B100")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
@@ -111,7 +110,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withBranchManagerAndCostCenter_returnsBranchScope() {
             // Given
             val userId = 6L
-            val employee = createTestEmployee(id = userId, role = UserRole.BRANCH_MANAGER, costCenterCode = "B200")
+            val employee = createTestEmployee(id = userId, role = UserRoleEnum.BRANCH_MANAGER, costCenterCode = "B200")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
@@ -127,7 +126,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withLeaderAndNullCostCenter_returnsEmptyBranchCodes() {
             // Given
             val userId = 7L
-            val employee = createTestEmployee(id = userId, role = UserRole.LEADER, costCenterCode = null)
+            val employee = createTestEmployee(id = userId, role = UserRoleEnum.LEADER, costCenterCode = null)
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
@@ -179,7 +178,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withUnknownAuthorityAndCostCenter_returnsEmpty() {
             // Given
             val userId = 10L
-            val employee = createTestEmployee(id = userId, role = UserRole.UNKNOWN, costCenterCode = "B400")
+            val employee = createTestEmployee(id = userId, role = UserRoleEnum.UNKNOWN, costCenterCode = "B400")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
@@ -195,7 +194,7 @@ class AdminDataScopeServiceTest {
         fun resolve_withUnknownAuthorityAndNullCostCenter_returnsEmptyBranchCodes() {
             // Given
             val userId = 11L
-            val employee = createTestEmployee(id = userId, role = UserRole.UNKNOWN, costCenterCode = null)
+            val employee = createTestEmployee(id = userId, role = UserRoleEnum.UNKNOWN, costCenterCode = null)
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
             // When
@@ -229,7 +228,7 @@ class AdminDataScopeServiceTest {
         id: Long = 1L,
         employeeCode: String = "12345678",
         name: String = "홍길동",
-        role: UserRole? = null,
+        role: UserRoleEnum? = null,
         costCenterCode: String? = null
     ): Employee {
         return Employee(

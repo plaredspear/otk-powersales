@@ -1,6 +1,6 @@
 package com.otoki.powersales.safetycheck.service
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
 import com.otoki.powersales.safetycheck.dto.response.MemberStatus
@@ -47,9 +47,9 @@ class AdminSafetyCheckService(
 
         // 1. 소속 여사원 조회 — 본부 통합 권한 (costCenterCode 3232) 은 3234·3236 두 사업소 통합
         val members = if (costCenterCode == SF_HQ_INTEGRATED_COST_CENTER) {
-            employeeRepository.findByCostCenterCodeInAndRole(SF_HQ_INTEGRATED_TARGETS, UserRole.WOMAN)
+            employeeRepository.findByCostCenterCodeInAndRole(SF_HQ_INTEGRATED_TARGETS, UserRoleEnum.WOMAN)
         } else {
-            employeeRepository.findByCostCenterCodeAndRole(costCenterCode, UserRole.WOMAN)
+            employeeRepository.findByCostCenterCodeAndRole(costCenterCode, UserRoleEnum.WOMAN)
         }.filter { it.isDeleted != true }
         if (members.isEmpty()) return emptyResponse(date)
 

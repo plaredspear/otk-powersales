@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -23,7 +23,6 @@ import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.every
 import io.mockk.just
 import io.mockk.Runs
-import io.mockk.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -67,7 +66,7 @@ class AdminEducationControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.BRANCH_MANAGER,
+            role = UserRoleEnum.BRANCH_MANAGER,
             costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,

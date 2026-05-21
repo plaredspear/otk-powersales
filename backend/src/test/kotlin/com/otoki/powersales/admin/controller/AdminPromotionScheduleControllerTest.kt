@@ -7,7 +7,7 @@ import com.otoki.powersales.schedule.dto.response.PromotionScheduleListResponse
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleMember
 import com.otoki.powersales.schedule.dto.response.SchedulePeriod
 import com.otoki.powersales.schedule.service.AdminPromotionScheduleService
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -58,7 +58,7 @@ class AdminPromotionScheduleControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.BRANCH_MANAGER,
+            role = UserRoleEnum.BRANCH_MANAGER,
             costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,

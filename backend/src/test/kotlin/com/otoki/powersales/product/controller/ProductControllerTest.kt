@@ -1,7 +1,7 @@
 package com.otoki.powersales.product.controller
 
 import com.otoki.powersales.product.dto.response.ProductDto
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.product.exception.InvalidSearchTypeException
 import com.otoki.powersales.common.security.GpsConsentFilter
@@ -52,7 +52,7 @@ class ProductControllerTest {
     @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
 
     @BeforeEach
     fun setUp() {

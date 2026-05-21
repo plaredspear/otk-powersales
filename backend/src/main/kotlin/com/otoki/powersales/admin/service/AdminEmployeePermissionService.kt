@@ -13,7 +13,7 @@ import com.otoki.powersales.admin.repository.RolePermissionRepository
 import com.otoki.powersales.admin.repository.UserPermissionRepository
 import com.otoki.powersales.admin.repository.deleteByRole
 import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -82,7 +82,7 @@ class AdminEmployeePermissionService(
             throw CannotModifyOwnAuthorityException()
         }
 
-        if (request.role !in UserRole.ALLOWED_FOR_ADMIN_LOGIN) {
+        if (request.role !in UserRoleEnum.ALLOWED_FOR_ADMIN_LOGIN) {
             throw InvalidAuthorityException(request.role.name)
         }
 
@@ -105,10 +105,10 @@ class AdminEmployeePermissionService(
     }
 
     @Transactional
-    fun updateRolePermissions(principal: WebUserPrincipal, role: UserRole, request: UpdateRolePermissionsRequest): RolePermissionsUpdateResponse {
+    fun updateRolePermissions(principal: WebUserPrincipal, role: UserRoleEnum, request: UpdateRolePermissionsRequest): RolePermissionsUpdateResponse {
         requireSystemAdmin(principal)
 
-        if (role !in UserRole.ALLOWED_FOR_ADMIN_LOGIN) {
+        if (role !in UserRoleEnum.ALLOWED_FOR_ADMIN_LOGIN) {
             throw InvalidAuthorityException(role.name)
         }
 
@@ -129,7 +129,7 @@ class AdminEmployeePermissionService(
     }
 
     private fun requireSystemAdmin(principal: WebUserPrincipal) {
-        if (principal.role != UserRole.SYSTEM_ADMIN) {
+        if (principal.role != UserRoleEnum.SYSTEM_ADMIN) {
             throw AdminForbiddenException()
         }
     }

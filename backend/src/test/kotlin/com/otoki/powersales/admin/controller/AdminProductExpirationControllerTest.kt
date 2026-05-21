@@ -15,7 +15,7 @@ import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -53,7 +53,7 @@ class AdminProductExpirationControllerTest {
     @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
     @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    private fun setUpPrincipal(userId: Long = 1L, role: UserRole = UserRole.WOMAN) {
+    private fun setUpPrincipal(userId: Long = 1L, role: UserRoleEnum = UserRoleEnum.WOMAN) {
         val principal = WebUserPrincipal(
             userId = 100L,
             usernameValue = "test@otokims.co.kr",

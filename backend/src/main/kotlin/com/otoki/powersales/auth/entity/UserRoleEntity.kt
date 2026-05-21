@@ -16,7 +16,7 @@ import java.time.LocalDateTime
  * SF 운영 UserRole (16 필드) 중 운영 audit 의미가 있는 7 필드만 보존. Portal / Forecast /
  * Opportunity·Case·Contact Access picklist 9 필드는 운영 무관으로 미보존.
  *
- * 클래스명 `UserRoleEntity` — 동일 패키지의 [UserRole] enum 과 충돌 회피. UserRole enum 은 backend 권한
+ * 클래스명 `UserRoleEntity` — 동일 패키지의 [UserRoleEnum] enum 과 충돌 회피. UserRole enum 은 backend 권한
  * 판정의 SoT (9종 운영 역할 + ALL_BRANCHES / BRANCH_SCOPE / ALLOWED_FOR_ADMIN_LOGIN set) 이며,
  * 본 entity 는 SF 원본 UserRole row 의 read-only audit lookup 테이블.
  *

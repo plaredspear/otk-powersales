@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.entity
 
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -17,7 +17,7 @@ class EmployeeTest {
         password: String = "encodedPassword",
         name: String = "홍길동",
         orgName: String = "서울지점",
-        role: UserRole? = null,
+        role: UserRoleEnum? = null,
         passwordChangeRequired: Boolean = true,
         agreementFlag: Boolean? = null
     ): Employee {
@@ -157,16 +157,16 @@ class EmployeeTest {
     fun role_StoredAsIs() {
         // given & when
         val nullRole = createTestEmployee(role = null)
-        val woman = createTestEmployee(role = UserRole.WOMAN)
-        val leader = createTestEmployee(role = UserRole.LEADER)
-        val branchManager = createTestEmployee(role = UserRole.BRANCH_MANAGER)
-        val unknown = createTestEmployee(role = UserRole.UNKNOWN)
+        val woman = createTestEmployee(role = UserRoleEnum.WOMAN)
+        val leader = createTestEmployee(role = UserRoleEnum.LEADER)
+        val branchManager = createTestEmployee(role = UserRoleEnum.BRANCH_MANAGER)
+        val unknown = createTestEmployee(role = UserRoleEnum.UNKNOWN)
 
         // then
         assertThat(nullRole.role).isNull()
-        assertThat(woman.role).isEqualTo(UserRole.WOMAN)
-        assertThat(leader.role).isEqualTo(UserRole.LEADER)
-        assertThat(branchManager.role).isEqualTo(UserRole.BRANCH_MANAGER)
-        assertThat(unknown.role).isEqualTo(UserRole.UNKNOWN)
+        assertThat(woman.role).isEqualTo(UserRoleEnum.WOMAN)
+        assertThat(leader.role).isEqualTo(UserRoleEnum.LEADER)
+        assertThat(branchManager.role).isEqualTo(UserRoleEnum.BRANCH_MANAGER)
+        assertThat(unknown.role).isEqualTo(UserRoleEnum.UNKNOWN)
     }
 }

@@ -15,7 +15,7 @@ import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
@@ -128,7 +128,7 @@ class AdminPromotionEmployeeService(
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
         validateClosedEmployeeModification(
             pe, resolved?.id, request.scheduleDate, normalizedWorkType3,
-            request.basePrice, request.dailyTargetCount, employee.role == UserRole.BRANCH_MANAGER
+            request.basePrice, request.dailyTargetCount, employee.role == UserRoleEnum.BRANCH_MANAGER
         )
 
         val promotion = pe.promotion ?: throw PromotionNotFoundException()
@@ -195,7 +195,7 @@ class AdminPromotionEmployeeService(
         // 권한 확인
         val employee = employeeRepository.findById(userId)
             .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
-        val isAdmin = employee.role == UserRole.BRANCH_MANAGER
+        val isAdmin = employee.role == UserRoleEnum.BRANCH_MANAGER
 
         // 전체 항목 검증 (에러 수집)
         val errors = mutableListOf<BatchItemError>()

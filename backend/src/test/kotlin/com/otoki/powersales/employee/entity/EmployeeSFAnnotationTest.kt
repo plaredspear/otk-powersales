@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.entity
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
@@ -126,10 +126,10 @@ class EmployeeSFAnnotationTest {
         @Test
         @DisplayName("UserRole.fromKorean 이 SF AppAuthority 4값 전체를 enum 매핑 (조장/여사원/지점장/AccountViewAll)")
         fun userRoleSfMappingAll() {
-            assertThat(UserRole.fromKorean("조장")).isEqualTo(UserRole.LEADER)
-            assertThat(UserRole.fromKorean("여사원")).isEqualTo(UserRole.WOMAN)
-            assertThat(UserRole.fromKorean("지점장")).isEqualTo(UserRole.BRANCH_MANAGER)
-            assertThat(UserRole.fromKorean("AccountViewAll")).isEqualTo(UserRole.ACCOUNT_VIEW_ALL)
+            assertThat(UserRoleEnum.fromKorean("조장")).isEqualTo(UserRoleEnum.LEADER)
+            assertThat(UserRoleEnum.fromKorean("여사원")).isEqualTo(UserRoleEnum.WOMAN)
+            assertThat(UserRoleEnum.fromKorean("지점장")).isEqualTo(UserRoleEnum.BRANCH_MANAGER)
+            assertThat(UserRoleEnum.fromKorean("AccountViewAll")).isEqualTo(UserRoleEnum.ACCOUNT_VIEW_ALL)
         }
     }
 

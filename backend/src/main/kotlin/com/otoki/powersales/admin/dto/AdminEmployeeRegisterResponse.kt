@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.dto
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import java.time.LocalDateTime
@@ -12,7 +12,7 @@ data class AdminEmployeeRegisterResponse(
     val employeeId: Long,
     val employeeCode: String,
     val name: String,
-    val role: UserRole,
+    val role: UserRoleEnum,
     val origin: EmployeeOrigin,
     val appLoginActive: Boolean,
     val passwordChangeRequired: Boolean,
@@ -24,7 +24,7 @@ data class AdminEmployeeRegisterResponse(
                 employeeId = entity.id,
                 employeeCode = entity.employeeCode,
                 name = entity.name,
-                role = entity.role ?: UserRole.SYSTEM_ADMIN,
+                role = entity.role ?: UserRoleEnum.SYSTEM_ADMIN,
                 origin = entity.origin ?: EmployeeOrigin.SAP,
                 appLoginActive = entity.appLoginActive ?: false,
                 passwordChangeRequired = entity.passwordChangeRequired ?: true,

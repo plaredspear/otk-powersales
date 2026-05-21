@@ -12,7 +12,7 @@ import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.exception.PPTMasterDuplicateException
 import com.otoki.powersales.promotion.exception.PPTMasterNotFoundException
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -32,7 +32,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @WebMvcTest(AdminPPTMasterController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -53,7 +52,7 @@ class AdminPPTMasterControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.BRANCH_MANAGER,
+            role = UserRoleEnum.BRANCH_MANAGER,
             costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,

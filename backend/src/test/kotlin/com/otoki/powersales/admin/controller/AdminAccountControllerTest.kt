@@ -18,7 +18,7 @@ import com.otoki.powersales.account.service.AdminAccountService
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -84,7 +84,7 @@ class AdminAccountControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.BRANCH_MANAGER,
+            role = UserRoleEnum.BRANCH_MANAGER,
             costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,

@@ -1,7 +1,7 @@
 package com.otoki.powersales.order.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -25,7 +25,6 @@ import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import io.mockk.every
-import io.mockk.verify
 import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -50,7 +49,7 @@ class OrderRequestCreatePostTest {
     @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
     @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    private val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
+    private val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
 
     @BeforeEach
     fun setUp() {

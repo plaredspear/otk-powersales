@@ -2,7 +2,7 @@ package com.otoki.powersales.auth.web.service
 
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.service.AdminPermissionResolver
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.CurrentPasswordRequiredException
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
@@ -209,7 +209,7 @@ class WebAuthenticationService(
      * null/빈 배열로 fallback. 동일 정보가 JWT claim 으로도 발급된다.
      */
     private fun summaryFor(user: User, employee: Employee?, permissions: Set<AdminPermission>): WebUserSummary {
-        val role: UserRole? = employee?.role
+        val role: UserRoleEnum? = employee?.role
         return WebUserSummary(
             userId = user.id,
             username = user.username,

@@ -6,7 +6,7 @@ import com.otoki.powersales.admin.dto.AdminEmployeeRegisterResponse
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
 import com.otoki.powersales.admin.service.AdminEmployeeRegisterService
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -53,7 +53,7 @@ class AdminEmployeeRegisterControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.SYSTEM_ADMIN,
+            role = UserRoleEnum.SYSTEM_ADMIN,
             costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,
@@ -82,7 +82,7 @@ class AdminEmployeeRegisterControllerTest {
         employeeId = 12345L,
         employeeCode = "ADMIN-001",
         name = "홍길동",
-        role = UserRole.SYSTEM_ADMIN,
+        role = UserRoleEnum.SYSTEM_ADMIN,
         origin = EmployeeOrigin.MANUAL,
         appLoginActive = false,
         passwordChangeRequired = true,

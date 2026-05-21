@@ -1,6 +1,6 @@
 package com.otoki.powersales.user.service
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
@@ -87,7 +87,7 @@ class UserProvisioningService(
         workEmail: String?,
         email: String?,
         birthDate: String?,
-        role: UserRole?,
+        role: UserRoleEnum?,
         appLoginActive: Boolean?,
         costCenterCode: String? = null,
         encodedPassword: String? = null,
@@ -118,7 +118,7 @@ class UserProvisioningService(
         workEmail: String?,
         email: String?,
         birthDate: String?,
-        role: UserRole?,
+        role: UserRoleEnum?,
         appLoginActive: Boolean?,
         costCenterCode: String? = null,
         overrideEncodedPassword: String? = null,
@@ -150,7 +150,7 @@ class UserProvisioningService(
             passwordChangeRequired = passwordChangeRequired,
             isActive = appLoginActive ?: true,
             profileType = profileTypeFor(role),
-            isSalesSupport = role == UserRole.SALES_SUPPORT,
+            isSalesSupport = role == UserRoleEnum.SALES_SUPPORT,
             costCenterCode = costCenterCode,
             isDeleted = false,
         )
@@ -159,20 +159,20 @@ class UserProvisioningService(
     }
 
     /**
-     * Employee 시점에 알 수 있는 [UserRole] → [ProfileType] 1차 매핑.
+     * Employee 시점에 알 수 있는 [UserRoleEnum] → [ProfileType] 1차 매핑.
      *
      * 운영 환경에서는 발령(Appointment) 후처리 시 `EmployeeProfileResolver` 가
      * Org__c + jikchak 기반으로 재산출하여 정정한다.
      */
-    private fun profileTypeFor(role: UserRole?): ProfileType = when (role) {
-        UserRole.SYSTEM_ADMIN -> ProfileType.SYSTEM_ADMIN
-        UserRole.LEADER -> ProfileType.TEAM_LEADER
-        UserRole.BRANCH_MANAGER -> ProfileType.BRANCH_MANAGER
-        UserRole.SALES_MANAGER -> ProfileType.SALES_MANAGER
-        UserRole.BUSINESS_MANAGER -> ProfileType.BUSINESS_DIRECTOR
-        UserRole.HEADQUARTERS_MANAGER -> ProfileType.DIVISION_HEAD
-        UserRole.SALES_SUPPORT -> ProfileType.STAFF
-        UserRole.WOMAN, UserRole.ACCOUNT_VIEW_ALL, UserRole.UNKNOWN, null -> ProfileType.SALES_REP
+    private fun profileTypeFor(role: UserRoleEnum?): ProfileType = when (role) {
+        UserRoleEnum.SYSTEM_ADMIN -> ProfileType.SYSTEM_ADMIN
+        UserRoleEnum.LEADER -> ProfileType.TEAM_LEADER
+        UserRoleEnum.BRANCH_MANAGER -> ProfileType.BRANCH_MANAGER
+        UserRoleEnum.SALES_MANAGER -> ProfileType.SALES_MANAGER
+        UserRoleEnum.BUSINESS_MANAGER -> ProfileType.BUSINESS_DIRECTOR
+        UserRoleEnum.HEADQUARTERS_MANAGER -> ProfileType.DIVISION_HEAD
+        UserRoleEnum.SALES_SUPPORT -> ProfileType.STAFF
+        UserRoleEnum.WOMAN, UserRoleEnum.ACCOUNT_VIEW_ALL, UserRoleEnum.UNKNOWN, null -> ProfileType.SALES_REP
     }
 
     companion object {

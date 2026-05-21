@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.security
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 
 /**
  * 운영 역할 × 권한 매트릭스 SoT (Single source of truth).
@@ -19,8 +19,8 @@ import com.otoki.powersales.auth.entity.UserRole
  */
 object RolePermissionMatrix {
 
-    val MATRIX: Map<UserRole, Set<AdminPermission>> = mapOf(
-        UserRole.SYSTEM_ADMIN to setOf(
+    val MATRIX: Map<UserRoleEnum, Set<AdminPermission>> = mapOf(
+        UserRoleEnum.SYSTEM_ADMIN to setOf(
             AdminPermission.DASHBOARD_READ,
             AdminPermission.EMPLOYEE_READ,
             AdminPermission.EMPLOYEE_WRITE,
@@ -53,7 +53,7 @@ object RolePermissionMatrix {
             AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
             AdminPermission.SF_MIGRATION_RUN,
         ),
-        UserRole.SALES_SUPPORT to setOf(
+        UserRoleEnum.SALES_SUPPORT to setOf(
             AdminPermission.DASHBOARD_READ,
             AdminPermission.EMPLOYEE_READ,
             AdminPermission.EMPLOYEE_WRITE,
@@ -75,7 +75,7 @@ object RolePermissionMatrix {
             AdminPermission.ATTENDANCE_LOG_READ,
             AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
-        UserRole.LEADER to setOf(
+        UserRoleEnum.LEADER to setOf(
             AdminPermission.DASHBOARD_READ,
             AdminPermission.EMPLOYEE_READ,
             AdminPermission.ACCOUNT_READ,
@@ -90,7 +90,7 @@ object RolePermissionMatrix {
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
             AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
-        UserRole.BRANCH_MANAGER to setOf(
+        UserRoleEnum.BRANCH_MANAGER to setOf(
             AdminPermission.DASHBOARD_READ,
             AdminPermission.EMPLOYEE_READ,
             AdminPermission.ACCOUNT_READ,
@@ -104,7 +104,7 @@ object RolePermissionMatrix {
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
             AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
-        UserRole.SALES_MANAGER to setOf(
+        UserRoleEnum.SALES_MANAGER to setOf(
             AdminPermission.DASHBOARD_READ,
             AdminPermission.EMPLOYEE_READ,
             AdminPermission.ACCOUNT_READ,
@@ -118,7 +118,7 @@ object RolePermissionMatrix {
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
             AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
-        UserRole.BUSINESS_MANAGER to setOf(
+        UserRoleEnum.BUSINESS_MANAGER to setOf(
             AdminPermission.DASHBOARD_READ,
             AdminPermission.EMPLOYEE_READ,
             AdminPermission.ACCOUNT_READ,
@@ -132,7 +132,7 @@ object RolePermissionMatrix {
             AdminPermission.PRODUCT_EXPIRATION_WRITE,
             AdminPermission.MONTHLY_SALES_DASHBOARD_READ,
         ),
-        UserRole.HEADQUARTERS_MANAGER to setOf(
+        UserRoleEnum.HEADQUARTERS_MANAGER to setOf(
             AdminPermission.DASHBOARD_READ,
             AdminPermission.EMPLOYEE_READ,
             AdminPermission.ACCOUNT_READ,
@@ -156,6 +156,6 @@ object RolePermissionMatrix {
         }
     }
 
-    fun asPairs(): List<Pair<UserRole, AdminPermission>> =
+    fun asPairs(): List<Pair<UserRoleEnum, AdminPermission>> =
         MATRIX.flatMap { (role, perms) -> perms.map { role to it } }
 }

@@ -14,7 +14,7 @@ import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.promotion.exception.*
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -62,7 +62,7 @@ class AdminPromotionControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.BRANCH_MANAGER,
+            role = UserRoleEnum.BRANCH_MANAGER,
             costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,

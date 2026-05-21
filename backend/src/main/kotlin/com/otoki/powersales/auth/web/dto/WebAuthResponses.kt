@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.web.dto
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.user.entity.ProfileType
 
 /**
@@ -30,7 +30,7 @@ data class WebUserSummary(
     val employeeCode: String?,
     val profileType: ProfileType,
     val isSalesSupport: Boolean,
-    val role: UserRole?,
+    val role: UserRoleEnum?,
     val roleLabel: String?,
     val orgName: String?,
     val costCenterCode: String?,

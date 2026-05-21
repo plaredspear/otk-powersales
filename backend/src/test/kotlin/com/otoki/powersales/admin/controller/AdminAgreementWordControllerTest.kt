@@ -4,7 +4,7 @@ import com.otoki.powersales.agreement.dto.request.AdminAgreementWordCreateReques
 import com.otoki.powersales.agreement.dto.response.AdminAgreementWordActiveResponse
 import com.otoki.powersales.agreement.dto.response.AdminAgreementWordCreateResponse
 import com.otoki.powersales.agreement.service.AdminAgreementWordService
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -57,7 +57,7 @@ class AdminAgreementWordControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.SYSTEM_ADMIN,
+            role = UserRoleEnum.SYSTEM_ADMIN,
             costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,

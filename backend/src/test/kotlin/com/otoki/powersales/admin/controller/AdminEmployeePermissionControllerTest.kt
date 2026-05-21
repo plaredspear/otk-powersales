@@ -16,7 +16,7 @@ import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.user.entity.ProfileType
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -58,7 +58,7 @@ class AdminEmployeePermissionControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.BRANCH_MANAGER,
+            role = UserRoleEnum.BRANCH_MANAGER,
             costCenterCode = "1234",
             profileType = ProfileType.STAFF,
             isSalesSupport = false,
@@ -180,7 +180,7 @@ class AdminEmployeePermissionControllerTest {
             )
             every { adminEmployeePermissionService.updateAuthority(any(), eq(2L), any()) } returns response
 
-            val request = UpdateAuthorityRequest(role = UserRole.SALES_MANAGER)
+            val request = UpdateAuthorityRequest(role = UserRoleEnum.SALES_MANAGER)
 
             mockMvc.perform(
                 put("/api/v1/admin/employees/2/authority")

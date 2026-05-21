@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.repository
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.employee.entity.QEmployeeInfo.Companion.employeeInfo
 import com.otoki.powersales.employee.entity.Employee
@@ -54,7 +54,7 @@ class EmployeeRepositoryCustomImpl(
 
     override fun findWithEmployeeInfoByCostCenterCodeAndRole(
         costCenterCode: String,
-        role: UserRole
+        role: UserRoleEnum
     ): List<Employee> {
         return queryFactory
             .selectFrom(employee)
@@ -68,7 +68,7 @@ class EmployeeRepositoryCustomImpl(
 
     override fun findActiveWomenByCostCenterCodes(costCenterCodes: List<String>?): List<Employee> {
         val builder = BooleanBuilder()
-        builder.and(employee.role.eq(UserRole.WOMAN))
+        builder.and(employee.role.eq(UserRoleEnum.WOMAN))
         builder.and(employee.appLoginActive.isTrue)
         builder.and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
         if (!costCenterCodes.isNullOrEmpty()) {
@@ -93,7 +93,7 @@ class EmployeeRepositoryCustomImpl(
         status: String?,
         branchCodes: List<String>?,
         keyword: String?,
-        role: UserRole?,
+        role: UserRoleEnum?,
         pageable: Pageable
     ): Page<Employee> {
         val where = BooleanBuilder()

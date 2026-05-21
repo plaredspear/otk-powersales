@@ -19,7 +19,7 @@ import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.user.entity.ProfileType
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -68,7 +68,7 @@ class AdminEmployeeControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.BRANCH_MANAGER,
+            role = UserRoleEnum.BRANCH_MANAGER,
             costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,
@@ -136,7 +136,7 @@ class AdminEmployeeControllerTest {
         @DisplayName("성공 - 필터 파라미터 전달")
         fun getEmployees_withFilters() {
             val response = EmployeeListResponse(content = emptyList(), page = 0, size = 10, totalElements = 0, totalPages = 0)
-            every { adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("홍"), eq(UserRole.LEADER), eq(0), eq(10)) } returns response
+            every { adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("홍"), eq(UserRoleEnum.LEADER), eq(0), eq(10)) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/employees")

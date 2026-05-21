@@ -7,7 +7,7 @@ import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
 import com.otoki.powersales.admin.exception.InvalidEmployeeCodeFormatException
 import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
 import com.otoki.powersales.admin.util.AdminPasswordPolicyValidator
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
@@ -39,7 +39,7 @@ class AdminEmployeeRegisterService(
      */
     @Transactional
     fun register(actor: WebUserPrincipal, request: AdminEmployeeRegisterRequest): AdminEmployeeRegisterResponse {
-        if (actor.role !in UserRole.MANAGE_PERMISSIONS) {
+        if (actor.role !in UserRoleEnum.MANAGE_PERMISSIONS) {
             throw AdminForbiddenException()
         }
 
@@ -68,7 +68,7 @@ class AdminEmployeeRegisterService(
             password = encodedPassword,
             passwordChangeRequired = true
         ).apply {
-            role = UserRole.SYSTEM_ADMIN
+            role = UserRoleEnum.SYSTEM_ADMIN
             origin = EmployeeOrigin.MANUAL
             appLoginActive = false
         }

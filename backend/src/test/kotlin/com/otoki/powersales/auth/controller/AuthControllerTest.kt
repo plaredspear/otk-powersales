@@ -4,7 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.dto.request.LoginRequest
 import com.otoki.powersales.auth.dto.response.*
 import com.otoki.powersales.common.dto.response.*
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
 import com.otoki.powersales.auth.exception.InvalidTokenException
@@ -72,7 +72,7 @@ class AuthControllerTest {
     @MockkBean
     private lateinit var passwordChangeRequiredFilter: PasswordChangeRequiredFilter
 
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
 
     @BeforeEach
     fun setUp() {

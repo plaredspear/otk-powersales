@@ -1,7 +1,7 @@
 package com.otoki.powersales.order.sap
 
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
@@ -11,7 +11,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @DisplayName("OrderRequestCancelPayloadFactory 테스트 (#597)")
 class OrderRequestCancelPayloadFactoryTest {
@@ -60,7 +59,7 @@ class OrderRequestCancelPayloadFactoryTest {
         deliveryDate = LocalDate.of(2026, 5, 6),
         totalAmount = BigDecimal("100000"),
         orderRequestStatus = OrderRequestStatus.APPROVED,
-        employee = Employee(id = 1L, employeeCode = "E001", name = "tester", role = UserRole.WOMAN),
+        employee = Employee(id = 1L, employeeCode = "E001", name = "tester", role = UserRoleEnum.WOMAN),
         account = Account(id = 1, name = "A1", externalKey = "EXT-1"),
     )
 

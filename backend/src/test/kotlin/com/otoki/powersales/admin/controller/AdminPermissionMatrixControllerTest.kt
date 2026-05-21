@@ -2,7 +2,7 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.response.*
 import com.otoki.powersales.admin.service.AdminPermissionMatrixService
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -54,7 +54,7 @@ class AdminPermissionMatrixControllerTest {
             usernameValue = "leader@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.LEADER,
+            role = UserRoleEnum.LEADER,
             costCenterCode = "1234",
             profileType = ProfileType.TEAM_LEADER,
             isSalesSupport = false,

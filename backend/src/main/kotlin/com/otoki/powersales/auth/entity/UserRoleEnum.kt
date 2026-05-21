@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
  * `UNKNOWN` 은 SF/SAP 동기화 시 매핑 실패한 값 또는 DB 의 미정의 값에 대한 fallback 이며,
  * 어떤 운영 그룹 상수에도 포함되지 않아 모든 권한 판정에서 false 가 된다.
  */
-enum class UserRole(val korean: String) {
+enum class UserRoleEnum(val korean: String) {
     WOMAN("여사원"),
     LEADER("조장"),
     BRANCH_MANAGER("지점장"),
@@ -25,32 +25,32 @@ enum class UserRole(val korean: String) {
     fun toKorean(): String = korean
 
     companion object {
-        private val logger = LoggerFactory.getLogger(UserRole::class.java)
+        private val logger = LoggerFactory.getLogger(UserRoleEnum::class.java)
 
         /** 전 지점 데이터 조회 가능 */
-        val ALL_BRANCHES: Set<UserRole> = setOf(
+        val ALL_BRANCHES: Set<UserRoleEnum> = setOf(
             SALES_MANAGER, BUSINESS_MANAGER, HEADQUARTERS_MANAGER, SALES_SUPPORT
         )
 
         /** 자기 지점만 조회 */
-        val BRANCH_SCOPE: Set<UserRole> = setOf(LEADER, BRANCH_MANAGER)
+        val BRANCH_SCOPE: Set<UserRoleEnum> = setOf(LEADER, BRANCH_MANAGER)
 
         /** 여사원 한정 */
-        val WOMAN_ONLY: Set<UserRole> = setOf(WOMAN)
+        val WOMAN_ONLY: Set<UserRoleEnum> = setOf(WOMAN)
 
         /** 관리자급 (일정 무제한 변경 등) */
-        val ADMIN_GRADE: Set<UserRole> = setOf(SYSTEM_ADMIN, SALES_SUPPORT)
+        val ADMIN_GRADE: Set<UserRoleEnum> = setOf(SYSTEM_ADMIN, SALES_SUPPORT)
 
         /** Web Admin 로그인 허용 (8개 운영 역할 중 WOMAN 제외 7개) */
-        val ALLOWED_FOR_ADMIN_LOGIN: Set<UserRole> = setOf(
+        val ALLOWED_FOR_ADMIN_LOGIN: Set<UserRoleEnum> = setOf(
             LEADER, BRANCH_MANAGER, SALES_MANAGER, BUSINESS_MANAGER,
             HEADQUARTERS_MANAGER, SALES_SUPPORT, SYSTEM_ADMIN
         )
 
         /** 권한 매트릭스 변경 가능 */
-        val MANAGE_PERMISSIONS: Set<UserRole> = setOf(SYSTEM_ADMIN)
+        val MANAGE_PERMISSIONS: Set<UserRoleEnum> = setOf(SYSTEM_ADMIN)
 
-        private val KOREAN_TO_OPERATIONAL_ROLE: Map<String, UserRole> = entries
+        private val KOREAN_TO_OPERATIONAL_ROLE: Map<String, UserRoleEnum> = entries
             .filter { it != UNKNOWN }
             .associateBy { it.korean }
 
@@ -61,7 +61,7 @@ enum class UserRole(val korean: String) {
          * - 운영 역할 8종 한글 매칭 → 해당 enum
          * - 매칭 실패 → WARN 로그 후 `UNKNOWN`
          */
-        fun fromKorean(value: String?): UserRole? {
+        fun fromKorean(value: String?): UserRoleEnum? {
             if (value.isNullOrEmpty()) return null
             val matched = KOREAN_TO_OPERATIONAL_ROLE[value]
             if (matched != null) return matched

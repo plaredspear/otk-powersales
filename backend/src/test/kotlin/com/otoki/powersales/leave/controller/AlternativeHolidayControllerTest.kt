@@ -11,7 +11,7 @@ import com.otoki.powersales.leave.dto.AlternativeHolidayRequest
 import com.otoki.powersales.leave.exception.AltHolidayConfirmDateIsWeekendException
 import com.otoki.powersales.leave.exception.AltHolidayDuplicateException
 import com.otoki.powersales.leave.service.AlternativeHolidayService
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
@@ -45,7 +45,7 @@ class AlternativeHolidayControllerTest {
 
     @BeforeEach
     fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
+        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
     }

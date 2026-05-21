@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.service
 
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.AccountInvalidParameterException
@@ -163,7 +163,7 @@ class MyAccountServiceTest {
         @DisplayName("조장 - 지점코드 기반 거래처 조회")
         fun getMyAccounts_leader_branchAccounts() {
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeCode = "20030117", role = UserRole.LEADER, costCenterCode = "1100")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", role = UserRoleEnum.LEADER, costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 10, name = "A마트", externalKey = "2001"),
                 createAccount(id = 11, name = "B식품", externalKey = "2002")
@@ -186,7 +186,7 @@ class MyAccountServiceTest {
         @DisplayName("조장 - costCenterCode null -> 빈 리스트")
         fun getMyAccounts_leader_noCostCenterCode() {
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeCode = "20030117", role = UserRole.LEADER, costCenterCode = null)
+            val employee = createEmployee(id = userId, employeeCode = "20030117", role = UserRoleEnum.LEADER, costCenterCode = null)
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
@@ -205,7 +205,7 @@ class MyAccountServiceTest {
         @DisplayName("키워드 검색 (거래처명) - '경산' 검색 -> 매칭 결과만 반환")
         fun getMyAccounts_searchByName() {
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeCode = "20030117", role = UserRole.LEADER, costCenterCode = "1100")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", role = UserRoleEnum.LEADER, costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 1, name = "(유)경산식품", externalKey = "1025172"),
                 createAccount(id = 2, name = "(주)대한식품", externalKey = "1025173")
@@ -224,7 +224,7 @@ class MyAccountServiceTest {
         @DisplayName("키워드 검색 (SAP 코드) - '1025' 검색 -> 매칭 결과만 반환")
         fun getMyAccounts_searchByCode() {
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeCode = "20030117", role = UserRole.LEADER, costCenterCode = "1100")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", role = UserRoleEnum.LEADER, costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 1, name = "A마트", externalKey = "1025172"),
                 createAccount(id = 2, name = "B식품", externalKey = "2001")
@@ -269,7 +269,7 @@ class MyAccountServiceTest {
         @DisplayName("거래처명 오름차순 정렬")
         fun getMyAccounts_sortedByAccountName() {
             val userId = 1L
-            val employee = createEmployee(id = userId, employeeCode = "20030117", role = UserRole.LEADER, costCenterCode = "1100")
+            val employee = createEmployee(id = userId, employeeCode = "20030117", role = UserRoleEnum.LEADER, costCenterCode = "1100")
             val accounts = listOf(
                 createAccount(id = 1, name = "홈플러스 서면점", externalKey = "1025173"),
                 createAccount(id = 2, name = "가나다식품", externalKey = "1025172"),
@@ -292,7 +292,7 @@ class MyAccountServiceTest {
         id: Long = 1L,
         employeeCode: String = "12345678",
         sfid: String? = null,
-        role: UserRole? = null,
+        role: UserRoleEnum? = null,
         costCenterCode: String? = null
     ): Employee {
         return Employee(

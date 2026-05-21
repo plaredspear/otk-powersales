@@ -2,7 +2,7 @@ package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.admin.exception.SapOriginEmployeeNotEditableException
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
@@ -36,14 +36,14 @@ class AdminEmployeeUpdateServiceTest {
         ).apply {
             origin = EmployeeOrigin.MANUAL
             jikchak = "기존직책"
-            role = UserRole.WOMAN
+            role = UserRoleEnum.WOMAN
         }
         every { employeeRepository.findWithEmployeeInfoById(10L) } returns existing
         every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
 
         val request = AdminEmployeeUpdateRequest(
             jikchak = "새직책",
-            role = UserRole.LEADER,
+            role = UserRoleEnum.LEADER,
             orgName = "신규조직",
         )
 

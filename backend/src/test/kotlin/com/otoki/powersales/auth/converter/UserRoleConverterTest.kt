@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.converter
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -23,25 +23,25 @@ class UserRoleConverterTest {
         @Test
         @DisplayName("LEADER → 'LEADER'")
         fun leader() {
-            assertThat(converter.convertToDatabaseColumn(UserRole.LEADER)).isEqualTo("LEADER")
+            assertThat(converter.convertToDatabaseColumn(UserRoleEnum.LEADER)).isEqualTo("LEADER")
         }
 
         @Test
         @DisplayName("WOMAN → 'WOMAN'")
         fun woman() {
-            assertThat(converter.convertToDatabaseColumn(UserRole.WOMAN)).isEqualTo("WOMAN")
+            assertThat(converter.convertToDatabaseColumn(UserRoleEnum.WOMAN)).isEqualTo("WOMAN")
         }
 
         @Test
         @DisplayName("SYSTEM_ADMIN → 'SYSTEM_ADMIN'")
         fun systemAdmin() {
-            assertThat(converter.convertToDatabaseColumn(UserRole.SYSTEM_ADMIN)).isEqualTo("SYSTEM_ADMIN")
+            assertThat(converter.convertToDatabaseColumn(UserRoleEnum.SYSTEM_ADMIN)).isEqualTo("SYSTEM_ADMIN")
         }
 
         @Test
         @DisplayName("ACCOUNT_VIEW_ALL → 'ACCOUNT_VIEW_ALL'")
         fun accountViewAll() {
-            assertThat(converter.convertToDatabaseColumn(UserRole.ACCOUNT_VIEW_ALL)).isEqualTo("ACCOUNT_VIEW_ALL")
+            assertThat(converter.convertToDatabaseColumn(UserRoleEnum.ACCOUNT_VIEW_ALL)).isEqualTo("ACCOUNT_VIEW_ALL")
         }
 
         @Test
@@ -58,19 +58,19 @@ class UserRoleConverterTest {
         @Test
         @DisplayName("'LEADER' → LEADER")
         fun leader() {
-            assertThat(converter.convertToEntityAttribute("LEADER")).isEqualTo(UserRole.LEADER)
+            assertThat(converter.convertToEntityAttribute("LEADER")).isEqualTo(UserRoleEnum.LEADER)
         }
 
         @Test
         @DisplayName("'SYSTEM_ADMIN' → SYSTEM_ADMIN")
         fun systemAdmin() {
-            assertThat(converter.convertToEntityAttribute("SYSTEM_ADMIN")).isEqualTo(UserRole.SYSTEM_ADMIN)
+            assertThat(converter.convertToEntityAttribute("SYSTEM_ADMIN")).isEqualTo(UserRoleEnum.SYSTEM_ADMIN)
         }
 
         @Test
         @DisplayName("'ACCOUNT_VIEW_ALL' → ACCOUNT_VIEW_ALL")
         fun accountViewAll() {
-            assertThat(converter.convertToEntityAttribute("ACCOUNT_VIEW_ALL")).isEqualTo(UserRole.ACCOUNT_VIEW_ALL)
+            assertThat(converter.convertToEntityAttribute("ACCOUNT_VIEW_ALL")).isEqualTo(UserRoleEnum.ACCOUNT_VIEW_ALL)
         }
 
         @Test
@@ -88,7 +88,7 @@ class UserRoleConverterTest {
         @Test
         @DisplayName("미지의 값 → UNKNOWN fallback")
         fun unknown() {
-            assertThat(converter.convertToEntityAttribute("INVALID_VALUE")).isEqualTo(UserRole.UNKNOWN)
+            assertThat(converter.convertToEntityAttribute("INVALID_VALUE")).isEqualTo(UserRoleEnum.UNKNOWN)
         }
     }
 }

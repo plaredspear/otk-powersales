@@ -10,7 +10,7 @@ import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.user.entity.ProfileType
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -26,7 +26,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 
 @WebMvcTest(AdminSafetyCheckController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -47,7 +46,7 @@ class AdminSafetyCheckControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.LEADER,
+            role = UserRoleEnum.LEADER,
             costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,

@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.security
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
@@ -11,7 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails
  */
 data class UserPrincipal(
     val userId: Long,
-    val role: UserRole,
+    val role: UserRoleEnum,
     val agreementFlag: Boolean = false,
     val passwordChangeRequired: Boolean = false
 ) : UserDetails {

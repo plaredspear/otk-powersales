@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.security
 
 import tools.jackson.databind.json.JsonMapper
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import io.mockk.Called
 import io.mockk.mockk
 import io.mockk.verify
@@ -120,7 +120,7 @@ class PasswordChangeRequiredFilterTest {
 
     private fun principal(passwordChangeRequired: Boolean) = UserPrincipal(
         userId = 1L,
-        role = UserRole.WOMAN,
+        role = UserRoleEnum.WOMAN,
         agreementFlag = true,
         passwordChangeRequired = passwordChangeRequired
     )

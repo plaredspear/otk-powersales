@@ -13,7 +13,7 @@ import org.hibernate.annotations.NotFoundAction
 import java.time.LocalDate
 import java.time.LocalDateTime
 import com.otoki.powersales.auth.converter.UserRoleConverter
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.enums.CrmWorkType
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.enums.Gender
@@ -75,7 +75,7 @@ class Employee(
     @HCColumn("dkretail__appauthority__c")
     @Convert(converter = UserRoleConverter::class)
     @Column(name = "role", length = 50)
-    var role: UserRole? = null,
+    var role: UserRoleEnum? = null,
 
     @SFField("DKRetail__OrgName__c")
     @HCColumn("dkretail__orgname__c")

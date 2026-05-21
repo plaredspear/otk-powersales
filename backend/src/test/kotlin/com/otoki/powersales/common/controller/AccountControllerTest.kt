@@ -3,7 +3,7 @@ package com.otoki.powersales.common.controller
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.common.dto.response.MyAccountInfo
 import com.otoki.powersales.common.dto.response.MyAccountListResponse
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.AccountInvalidParameterException
 import com.otoki.powersales.common.security.GpsConsentFilter
@@ -55,7 +55,7 @@ class AccountControllerTest {
     @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
 
     @BeforeEach
     fun setUp() {

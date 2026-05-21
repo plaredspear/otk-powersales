@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.config
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
@@ -63,7 +63,7 @@ class LocalDataInitializer(
         val encodedPassword = passwordEncoder.encode("1234")!!
 
         data class SeedEmployee(
-            val code: String, val name: String, val role: UserRole,
+            val code: String, val name: String, val role: UserRoleEnum,
             val orgName: String, val costCenterCode: String, val birthDate: String,
             val homePhone: String, val workPhone: String, val startDate: LocalDate,
             val workEmail: String
@@ -72,11 +72,11 @@ class LocalDataInitializer(
         val seeds = listOf(
             // 로컬 개발 만능 계정 — 모든 권한(MANAGE_PERMISSIONS / ADMIN_GRADE / ALL_BRANCHES /
             // ALLOWED_FOR_ADMIN_LOGIN / Account 검증 우회 등) 분기가 SYSTEM_ADMIN 기준이라 단일 role 로 충족.
-            SeedEmployee("99990001", "개발테스트", UserRole.SYSTEM_ADMIN, "테스트지점", "1111", "19850315", "02-1234-5678", "02-9876-5432", LocalDate.of(2015, 3, 1), "dev-test@otoki.local"),
-            SeedEmployee("99990002", "여사원테스트", UserRole.WOMAN, "테스트지점", "1111", "19920820", "02-2345-6789", "02-8765-4321", LocalDate.of(2018, 7, 1), "woman-test@otoki.local"),
-            SeedEmployee("99990003", "지점장테스트", UserRole.BRANCH_MANAGER, "테스트지점", "1111", "19780105", "02-3456-7890", "02-7654-3210", LocalDate.of(2010, 1, 15), "manager-test@otoki.local"),
-            SeedEmployee("99990004", "강남조장", UserRole.LEADER, "테스트지점", "1111", "19880510", "02-4567-8901", "02-6543-2109", LocalDate.of(2016, 5, 1), "leader-test@otoki.local"),
-            SeedEmployee("99990005", "강남여사원", UserRole.WOMAN, "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1), "woman-gn@otoki.local")
+            SeedEmployee("99990001", "개발테스트", UserRoleEnum.SYSTEM_ADMIN, "테스트지점", "1111", "19850315", "02-1234-5678", "02-9876-5432", LocalDate.of(2015, 3, 1), "dev-test@otoki.local"),
+            SeedEmployee("99990002", "여사원테스트", UserRoleEnum.WOMAN, "테스트지점", "1111", "19920820", "02-2345-6789", "02-8765-4321", LocalDate.of(2018, 7, 1), "woman-test@otoki.local"),
+            SeedEmployee("99990003", "지점장테스트", UserRoleEnum.BRANCH_MANAGER, "테스트지점", "1111", "19780105", "02-3456-7890", "02-7654-3210", LocalDate.of(2010, 1, 15), "manager-test@otoki.local"),
+            SeedEmployee("99990004", "강남조장", UserRoleEnum.LEADER, "테스트지점", "1111", "19880510", "02-4567-8901", "02-6543-2109", LocalDate.of(2016, 5, 1), "leader-test@otoki.local"),
+            SeedEmployee("99990005", "강남여사원", UserRoleEnum.WOMAN, "강남지점", "1112", "19950320", "02-5678-9012", "02-5432-1098", LocalDate.of(2020, 3, 1), "woman-gn@otoki.local")
         )
 
         for (seed in seeds) {
@@ -147,7 +147,7 @@ class LocalDataInitializer(
                 password = encodedPassword,
                 passwordChangeRequired = false
             ).apply {
-                role = UserRole.SYSTEM_ADMIN
+                role = UserRoleEnum.SYSTEM_ADMIN
                 origin = EmployeeOrigin.MANUAL
                 appLoginActive = false
                 workEmail = seed.workEmail
@@ -164,7 +164,7 @@ class LocalDataInitializer(
                 workEmail = seed.workEmail,
                 email = null,
                 birthDate = null,
-                role = UserRole.SYSTEM_ADMIN,
+                role = UserRoleEnum.SYSTEM_ADMIN,
                 appLoginActive = false,
                 encodedPassword = encodedPassword,
                 passwordChangeRequired = false,

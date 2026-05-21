@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.security
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -20,13 +20,13 @@ class RolePermissionMatrixTest {
     @DisplayName("매트릭스는 운영 역할 7종을 모두 포함한다 (WOMAN/ACCOUNT_VIEW_ALL/UNKNOWN 제외)")
     fun matrixCoversAllOperationalRoles() {
         val expected = setOf(
-            UserRole.SYSTEM_ADMIN,
-            UserRole.SALES_SUPPORT,
-            UserRole.LEADER,
-            UserRole.BRANCH_MANAGER,
-            UserRole.SALES_MANAGER,
-            UserRole.BUSINESS_MANAGER,
-            UserRole.HEADQUARTERS_MANAGER,
+            UserRoleEnum.SYSTEM_ADMIN,
+            UserRoleEnum.SALES_SUPPORT,
+            UserRoleEnum.LEADER,
+            UserRoleEnum.BRANCH_MANAGER,
+            UserRoleEnum.SALES_MANAGER,
+            UserRoleEnum.BUSINESS_MANAGER,
+            UserRoleEnum.HEADQUARTERS_MANAGER,
         )
         assertThat(RolePermissionMatrix.MATRIX.keys).isEqualTo(expected)
     }
@@ -34,7 +34,7 @@ class RolePermissionMatrixTest {
     @Test
     @DisplayName("SYSTEM_ADMIN 은 모든 AdminPermission 을 보유한다")
     fun systemAdminHoldsAllPermissions() {
-        val systemAdminPerms = RolePermissionMatrix.MATRIX[UserRole.SYSTEM_ADMIN].orEmpty()
+        val systemAdminPerms = RolePermissionMatrix.MATRIX[UserRoleEnum.SYSTEM_ADMIN].orEmpty()
         assertThat(systemAdminPerms).isEqualTo(AdminPermission.entries.toSet())
     }
 

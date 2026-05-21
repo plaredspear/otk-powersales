@@ -5,7 +5,7 @@ import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory2
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.account.entity.Account
@@ -1532,7 +1532,7 @@ class AttendanceServiceTest {
                 accountAbcTypeCode = "2110"
             )
 
-            val teamLeader = createEmployee(id = 99L, sfid = "LEADER001", name = "조장", role = UserRole.LEADER)
+            val teamLeader = createEmployee(id = 99L, sfid = "LEADER001", name = "조장", role = UserRoleEnum.LEADER)
 
             // 신규 생성될 TMS
             val newTms = createTeamMemberSchedule(
@@ -1546,7 +1546,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
             every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
-            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), UserRole.LEADER) } returns listOf(teamLeader)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), UserRoleEnum.LEADER) } returns listOf(teamLeader)
             every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } answers {
                 firstArg<TeamMemberSchedule>().also { _ ->
                     // simulate saved entity with id
@@ -1761,7 +1761,7 @@ class AttendanceServiceTest {
             every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
             every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
             every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns false
-            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), UserRole.LEADER) } returns emptyList()
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), UserRoleEnum.LEADER) } returns emptyList()
             every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns newTms
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
@@ -2389,7 +2389,7 @@ class AttendanceServiceTest {
         employeeCode: String = "USR001",
         name: String = "테스트 사용자",
         orgName: String? = "서울지점",
-        role: UserRole? = null,
+        role: UserRoleEnum? = null,
         costCenterCode: String? = null
     ): Employee {
         return Employee(

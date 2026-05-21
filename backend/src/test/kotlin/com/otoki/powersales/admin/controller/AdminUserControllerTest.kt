@@ -8,7 +8,7 @@ import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
 import com.otoki.powersales.admin.exception.AdminUserNotFoundException
 import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
 import com.otoki.powersales.admin.service.AdminUserService
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -59,7 +59,7 @@ class AdminUserControllerTest {
             usernameValue = "admin@otokims.co.kr",
             employeeCode = "ADMIN-OPS01",
             employeeId = 1L,
-            role = UserRole.SYSTEM_ADMIN,
+            role = UserRoleEnum.SYSTEM_ADMIN,
             costCenterCode = null,
             profileType = ProfileType.SYSTEM_ADMIN,
             isSalesSupport = false,

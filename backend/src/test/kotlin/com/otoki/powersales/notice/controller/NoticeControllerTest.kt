@@ -1,7 +1,7 @@
 package com.otoki.powersales.notice.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -53,7 +53,7 @@ class NoticeControllerTest {
     @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
 
     @BeforeEach
     fun setUp() {

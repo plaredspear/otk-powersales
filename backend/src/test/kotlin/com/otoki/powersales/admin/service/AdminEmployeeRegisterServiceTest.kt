@@ -6,7 +6,7 @@ import com.otoki.powersales.admin.exception.AdminPasswordPolicyViolationExceptio
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
 import com.otoki.powersales.admin.exception.InvalidEmployeeCodeFormatException
 import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
@@ -31,10 +31,10 @@ class AdminEmployeeRegisterServiceTest {
     private val passwordEncoder: PasswordEncoder = mockk()
     private val service = AdminEmployeeRegisterService(employeeRepository, passwordEncoder)
 
-    private val systemAdminActor = principal(employeeId = 1L, employeeCode = "ADMIN-OWNER", role = UserRole.SYSTEM_ADMIN)
-    private val womanActor = principal(employeeId = 2L, employeeCode = "EMP-001", role = UserRole.WOMAN)
+    private val systemAdminActor = principal(employeeId = 1L, employeeCode = "ADMIN-OWNER", role = UserRoleEnum.SYSTEM_ADMIN)
+    private val womanActor = principal(employeeId = 2L, employeeCode = "EMP-001", role = UserRoleEnum.WOMAN)
 
-    private fun principal(employeeId: Long, employeeCode: String, role: UserRole) = WebUserPrincipal(
+    private fun principal(employeeId: Long, employeeCode: String, role: UserRoleEnum) = WebUserPrincipal(
         userId = employeeId * 10,
         usernameValue = employeeCode,
         employeeCode = employeeCode,
@@ -86,13 +86,13 @@ class AdminEmployeeRegisterServiceTest {
 
             val saved = savedSlot.captured
             assertThat(saved.employeeCode).isEqualTo("ADMIN-001")
-            assertThat(saved.role).isEqualTo(UserRole.SYSTEM_ADMIN)
+            assertThat(saved.role).isEqualTo(UserRoleEnum.SYSTEM_ADMIN)
             assertThat(saved.origin).isEqualTo(EmployeeOrigin.MANUAL)
             assertThat(saved.appLoginActive).isFalse
             assertThat(saved.passwordChangeRequired).isTrue
             assertThat(saved.password).isEqualTo("\$2a\$10\$encoded")
 
-            assertThat(response.role).isEqualTo(UserRole.SYSTEM_ADMIN)
+            assertThat(response.role).isEqualTo(UserRoleEnum.SYSTEM_ADMIN)
             assertThat(response.origin).isEqualTo(EmployeeOrigin.MANUAL)
             assertThat(response.appLoginActive).isFalse
             assertThat(response.passwordChangeRequired).isTrue

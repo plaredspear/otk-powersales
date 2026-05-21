@@ -4,7 +4,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.RequiresPermission
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.employee.dto.response.EmployeeListResponse
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 여사원 현황 페이지 전용 — role 은 항상 [UserRole.WOMAN] 으로 고정.
+ * 여사원 현황 페이지 전용 — role 은 항상 [UserRoleEnum.WOMAN] 으로 고정.
  *
  * 권한 관리 (`/settings/admin-accounts`) 등 다른 role 도 보여야 하는 화면은
  * [AdminEmployeeController.getEmployees] 를 그대로 사용하고, 본 endpoint 는
@@ -45,7 +45,7 @@ class AdminWomanEmployeeController(
             status = status,
             costCenterCode = costCenterCode,
             keyword = keyword,
-            role = UserRole.WOMAN,
+            role = UserRoleEnum.WOMAN,
             page = page,
             size = size,
         )

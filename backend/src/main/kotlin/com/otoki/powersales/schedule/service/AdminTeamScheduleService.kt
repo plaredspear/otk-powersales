@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingType
@@ -83,8 +83,8 @@ class AdminTeamScheduleService(
         val role = principal.role
 
         return when {
-            role == UserRole.SYSTEM_ADMIN -> organizationRepository.findAllTeamScheduleBranches()
-            role != null && UserRole.ALL_BRANCHES.contains(role) ->
+            role == UserRoleEnum.SYSTEM_ADMIN -> organizationRepository.findAllTeamScheduleBranches()
+            role != null && UserRoleEnum.ALL_BRANCHES.contains(role) ->
                 organizationRepository.findTeamScheduleBranches(hrCode = null, allBranches = true)
             else ->
                 organizationRepository.findTeamScheduleBranches(
@@ -281,14 +281,14 @@ class AdminTeamScheduleService(
 
     @Transactional
     fun deleteSchedule(principal: WebUserPrincipal, scheduleId: Long) {
-        if (principal.role == UserRole.BRANCH_MANAGER) {
+        if (principal.role == UserRoleEnum.BRANCH_MANAGER) {
             throw TeamScheduleDeleteForbiddenException()
         }
 
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        if (principal.role != UserRole.SYSTEM_ADMIN && schedule.commuteLogSfid != null) {
+        if (principal.role != UserRoleEnum.SYSTEM_ADMIN && schedule.commuteLogSfid != null) {
             throw TeamScheduleWorkReportDeleteException()
         }
 

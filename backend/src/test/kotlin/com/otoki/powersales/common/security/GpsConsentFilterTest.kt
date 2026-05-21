@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.security
 
 import tools.jackson.databind.json.JsonMapper
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import io.mockk.Called
 import io.mockk.mockk
 import io.mockk.verify
@@ -36,7 +36,7 @@ class GpsConsentFilterTest {
     @Test
     @DisplayName("동의 완료 사용자 - 요청 통과")
     fun consentedUser_passesThrough() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN, agreementFlag = true)
+        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN, agreementFlag = true)
         setAuthentication(principal)
         request.requestURI = "/api/v1/mobile/notices"
 
@@ -48,7 +48,7 @@ class GpsConsentFilterTest {
     @Test
     @DisplayName("미동의 사용자 - 403 GPS_CONSENT_REQUIRED")
     fun unconsentedUser_returns403() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN, agreementFlag = false)
+        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN, agreementFlag = false)
         setAuthentication(principal)
         request.requestURI = "/api/v1/mobile/notices"
 
@@ -62,7 +62,7 @@ class GpsConsentFilterTest {
     @Test
     @DisplayName("면제 엔드포인트 - /auth/gps-consent/terms 미동의여도 통과")
     fun exemptPath_gpsConsentTerms_passesThrough() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN, agreementFlag = false)
+        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN, agreementFlag = false)
         setAuthentication(principal)
         request.requestURI = "/api/v1/mobile/auth/gps-consent/terms"
 
@@ -74,7 +74,7 @@ class GpsConsentFilterTest {
     @Test
     @DisplayName("면제 엔드포인트 - /auth/login 통과")
     fun exemptPath_login_passesThrough() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN, agreementFlag = false)
+        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN, agreementFlag = false)
         setAuthentication(principal)
         request.requestURI = "/api/v1/mobile/auth/login"
 
@@ -86,7 +86,7 @@ class GpsConsentFilterTest {
     @Test
     @DisplayName("면제 엔드포인트 - /auth/change-password 통과")
     fun exemptPath_changePassword_passesThrough() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN, agreementFlag = false)
+        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN, agreementFlag = false)
         setAuthentication(principal)
         request.requestURI = "/api/v1/mobile/auth/change-password"
 
@@ -98,7 +98,7 @@ class GpsConsentFilterTest {
     @Test
     @DisplayName("면제 엔드포인트 - /admin/ 경로 미동의여도 통과")
     fun exemptPath_admin_passesThrough() {
-        val principal = UserPrincipal(userId = 1L, role = UserRole.WOMAN, agreementFlag = false)
+        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN, agreementFlag = false)
         setAuthentication(principal)
         request.requestURI = "/api/v1/admin/notices"
 

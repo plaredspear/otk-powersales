@@ -1,7 +1,7 @@
 package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.dto.request.AdminEmployeeManualRegisterRequest
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
@@ -31,7 +31,7 @@ class AdminEmployeeManualRegisterServiceTest {
         val request = AdminEmployeeManualRegisterRequest(
             employeeCode = "100400",
             name = "신규여사원",
-            role = UserRole.WOMAN,
+            role = UserRoleEnum.WOMAN,
             homePhone = "010-1111-2222",
             orgName = "테스트조직",
             jobCode = "판촉직",
@@ -71,7 +71,7 @@ class AdminEmployeeManualRegisterServiceTest {
                 AdminEmployeeManualRegisterRequest(
                     employeeCode = "100600",
                     name = "잘못된관리자",
-                    role = UserRole.SYSTEM_ADMIN,
+                    role = UserRoleEnum.SYSTEM_ADMIN,
                 )
             )
         }.isInstanceOf(IllegalArgumentException::class.java)

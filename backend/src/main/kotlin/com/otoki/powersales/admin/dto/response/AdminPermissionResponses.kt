@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.dto.response
 
 import com.otoki.powersales.admin.service.PermissionResolveResult
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.entity.Employee
 
 data class EmployeePermissionDetailResponse(
@@ -53,7 +53,7 @@ data class RolePermissionsUpdateResponse(
     val permissions: List<String>
 ) {
     companion object {
-        fun of(role: UserRole, permissions: List<String>): RolePermissionsUpdateResponse =
+        fun of(role: UserRoleEnum, permissions: List<String>): RolePermissionsUpdateResponse =
             RolePermissionsUpdateResponse(role = role.name, roleLabel = role.toKorean(), permissions = permissions)
     }
 }

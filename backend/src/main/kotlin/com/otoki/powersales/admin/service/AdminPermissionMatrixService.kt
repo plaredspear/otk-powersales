@@ -3,7 +3,7 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.admin.dto.response.*
 import com.otoki.powersales.admin.repository.RolePermissionRepository
 import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
@@ -89,7 +89,7 @@ class AdminPermissionMatrixService(
         val role = employee.role
         val userPermissions = adminPermissionResolver.resolve(employee)
             .map { it.name }
-        val isSystemAdmin = role == UserRole.SYSTEM_ADMIN
+        val isSystemAdmin = role == UserRoleEnum.SYSTEM_ADMIN
 
         return PermissionMatrixResponse(
             permissions = permissions,
@@ -103,8 +103,8 @@ class AdminPermissionMatrixService(
         )
     }
 
-    private fun parseRole(name: String): UserRole? = try {
-        UserRole.valueOf(name)
+    private fun parseRole(name: String): UserRoleEnum? = try {
+        UserRoleEnum.valueOf(name)
     } catch (_: IllegalArgumentException) {
         null
     }

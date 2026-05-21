@@ -4,7 +4,7 @@ import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -63,7 +63,7 @@ class AdminWomanEmployeeControllerTest {
             usernameValue = "test@otokims.co.kr",
             employeeCode = "S001",
             employeeId = 1L,
-            role = UserRole.BRANCH_MANAGER,
+            role = UserRoleEnum.BRANCH_MANAGER,
             costCenterCode = null,
             profileType = ProfileType.STAFF,
             isSalesSupport = false,
@@ -116,7 +116,7 @@ class AdminWomanEmployeeControllerTest {
             totalPages = 1,
         )
         every {
-            adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(UserRole.WOMAN), any(), any())
+            adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(UserRoleEnum.WOMAN), any(), any())
         } returns response
 
         mockMvc.perform(get("/api/v1/admin/women-employees"))
@@ -126,7 +126,7 @@ class AdminWomanEmployeeControllerTest {
             .andExpect(jsonPath("$.data.content[0].roleLabel").value("여사원"))
 
         verify(exactly = 1) {
-            adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(UserRole.WOMAN), any(), any())
+            adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(UserRoleEnum.WOMAN), any(), any())
         }
     }
 
@@ -141,7 +141,7 @@ class AdminWomanEmployeeControllerTest {
             totalPages = 0,
         )
         every {
-            adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("김"), eq(UserRole.WOMAN), eq(0), eq(10))
+            adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("김"), eq(UserRoleEnum.WOMAN), eq(0), eq(10))
         } returns response
 
         mockMvc.perform(

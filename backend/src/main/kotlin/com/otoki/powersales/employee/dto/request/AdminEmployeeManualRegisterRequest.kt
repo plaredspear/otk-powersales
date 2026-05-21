@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.dto.request
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
@@ -32,7 +32,7 @@ data class AdminEmployeeManualRegisterRequest(
     @field:Size(max = 80, message = "이름은 80자 이하여야 합니다")
     val name: String,
 
-    val role: UserRole? = null,
+    val role: UserRoleEnum? = null,
 
     @field:Size(max = 100, message = "조직명은 100자 이하여야 합니다")
     val orgName: String? = null,

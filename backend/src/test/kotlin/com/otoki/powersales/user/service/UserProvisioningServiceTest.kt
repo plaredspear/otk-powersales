@@ -1,6 +1,6 @@
 package com.otoki.powersales.user.service
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
@@ -54,7 +54,7 @@ class UserProvisioningServiceTest {
                     workEmail = "hong@otokims.co.kr",
                     email = null,
                     birthDate = "19900315",
-                    role = UserRole.WOMAN,
+                    role = UserRoleEnum.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -82,7 +82,7 @@ class UserProvisioningServiceTest {
                     workEmail = null,
                     email = "kim@personal.com",
                     birthDate = "19850101",
-                    role = UserRole.WOMAN,
+                    role = UserRoleEnum.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -101,7 +101,7 @@ class UserProvisioningServiceTest {
                     workEmail = null,
                     email = null,
                     birthDate = "19900101",
-                    role = UserRole.WOMAN,
+                    role = UserRoleEnum.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -119,7 +119,7 @@ class UserProvisioningServiceTest {
                     workEmail = "park@otoki.com",
                     email = null,
                     birthDate = null,
-                    role = UserRole.WOMAN,
+                    role = UserRoleEnum.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -138,7 +138,7 @@ class UserProvisioningServiceTest {
                     workEmail = "choi@otoki.com",
                     email = null,
                     birthDate = "19880508",
-                    role = UserRole.WOMAN,
+                    role = UserRoleEnum.WOMAN,
                     appLoginActive = false,
                 )
             )
@@ -163,7 +163,7 @@ class UserProvisioningServiceTest {
                     workEmail = "dup@otoki.com",
                     email = null,
                     birthDate = "19900101",
-                    role = UserRole.WOMAN,
+                    role = UserRoleEnum.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -183,7 +183,7 @@ class UserProvisioningServiceTest {
                     workEmail = "err@otoki.com",
                     email = null,
                     birthDate = null,
-                    role = UserRole.WOMAN,
+                    role = UserRoleEnum.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -205,7 +205,7 @@ class UserProvisioningServiceTest {
                 workEmail = "dev@otoki.local",
                 email = null,
                 birthDate = "19850315",
-                role = UserRole.SALES_SUPPORT,
+                role = UserRoleEnum.SALES_SUPPORT,
                 appLoginActive = true,
                 encodedPassword = "pre_encoded",
                 passwordChangeRequired = false,
@@ -228,15 +228,15 @@ class UserProvisioningServiceTest {
         @DisplayName("P1 UserRole → ProfileType 9개 매핑 검증")
         fun profileTypeMapping_allRoles() {
             val cases = mapOf(
-                UserRole.SYSTEM_ADMIN to ProfileType.SYSTEM_ADMIN,
-                UserRole.LEADER to ProfileType.TEAM_LEADER,
-                UserRole.BRANCH_MANAGER to ProfileType.BRANCH_MANAGER,
-                UserRole.SALES_MANAGER to ProfileType.SALES_MANAGER,
-                UserRole.BUSINESS_MANAGER to ProfileType.BUSINESS_DIRECTOR,
-                UserRole.HEADQUARTERS_MANAGER to ProfileType.DIVISION_HEAD,
-                UserRole.SALES_SUPPORT to ProfileType.STAFF,
-                UserRole.WOMAN to ProfileType.SALES_REP,
-                UserRole.UNKNOWN to ProfileType.SALES_REP,
+                UserRoleEnum.SYSTEM_ADMIN to ProfileType.SYSTEM_ADMIN,
+                UserRoleEnum.LEADER to ProfileType.TEAM_LEADER,
+                UserRoleEnum.BRANCH_MANAGER to ProfileType.BRANCH_MANAGER,
+                UserRoleEnum.SALES_MANAGER to ProfileType.SALES_MANAGER,
+                UserRoleEnum.BUSINESS_MANAGER to ProfileType.BUSINESS_DIRECTOR,
+                UserRoleEnum.HEADQUARTERS_MANAGER to ProfileType.DIVISION_HEAD,
+                UserRoleEnum.SALES_SUPPORT to ProfileType.STAFF,
+                UserRoleEnum.WOMAN to ProfileType.SALES_REP,
+                UserRoleEnum.UNKNOWN to ProfileType.SALES_REP,
             )
 
             cases.forEach { (role, _) ->

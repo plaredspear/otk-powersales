@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.controller
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -23,7 +23,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import io.mockk.every
-import io.mockk.verify
 import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -56,7 +55,7 @@ class ClientOrderControllerTest {
     @MockkBean
     private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
 
     @BeforeEach
     fun setUp() {

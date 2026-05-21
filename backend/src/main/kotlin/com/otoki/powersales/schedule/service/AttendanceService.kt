@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.common.dto.response.AccountInfo
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.dto.response.AccountListResponse
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory2
@@ -503,7 +503,7 @@ class AttendanceService(
     private fun findTeamLeader(costCenterCode: String?): com.otoki.powersales.employee.entity.Employee? {
         if (costCenterCode.isNullOrBlank()) return null
         val leaders = employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
-            listOf(costCenterCode), UserRole.LEADER
+            listOf(costCenterCode), UserRoleEnum.LEADER
         )
         return leaders.firstOrNull()
     }

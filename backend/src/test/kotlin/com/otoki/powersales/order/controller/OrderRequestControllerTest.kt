@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.controller
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -59,7 +59,7 @@ class OrderRequestControllerTest {
     @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
     @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
 
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
 
     @BeforeEach
     fun setUp() {

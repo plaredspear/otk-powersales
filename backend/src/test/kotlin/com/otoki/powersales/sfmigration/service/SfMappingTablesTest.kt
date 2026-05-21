@@ -1,7 +1,7 @@
 package com.otoki.powersales.sfmigration.service
 
 import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.user.entity.ProfileType
 import org.assertj.core.api.Assertions.assertThat
@@ -25,7 +25,7 @@ class SfMappingTablesTest {
         @Test
         @DisplayName("모든 매핑 value 가 UserRole enum 에 존재한다")
         fun allValuesExistInUserRoleEnum() {
-            val roleNames = UserRole.entries.map { it.name }.toSet()
+            val roleNames = UserRoleEnum.entries.map { it.name }.toSet()
             val invalid = APP_AUTHORITY_TO_USER_ROLE.values.filterNot { it in roleNames }
             assertThat(invalid).isEmpty()
         }
@@ -33,7 +33,7 @@ class SfMappingTablesTest {
         @Test
         @DisplayName("fallback 값 UNKNOWN 이 UserRole enum 에 존재한다")
         fun fallbackExists() {
-            assertThat(UserRole.entries.map { it.name }).contains(USER_ROLE_FALLBACK)
+            assertThat(UserRoleEnum.entries.map { it.name }).contains(USER_ROLE_FALLBACK)
         }
     }
 

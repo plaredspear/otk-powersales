@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.security
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jwts
@@ -42,7 +42,7 @@ class JwtTokenProvider(
      */
     fun createAccessToken(
         userId: Long,
-        role: UserRole,
+        role: UserRoleEnum,
         agreementFlag: Boolean = false,
         passwordChangeRequired: Boolean = false
     ): String {
@@ -113,10 +113,10 @@ class JwtTokenProvider(
      * 신규 enum 매핑 실패 시(예: 구 토큰의 USER/ADMIN) `null` 을 반환하여
      * 호출부가 401(재로그인 필요)로 응답할 수 있도록 한다.
      */
-    fun getRoleFromToken(token: String): UserRole? {
+    fun getRoleFromToken(token: String): UserRoleEnum? {
         val roleName = parseClaims(token).get("role", String::class.java) ?: return null
         return try {
-            UserRole.valueOf(roleName)
+            UserRoleEnum.valueOf(roleName)
         } catch (_: IllegalArgumentException) {
             null
         }

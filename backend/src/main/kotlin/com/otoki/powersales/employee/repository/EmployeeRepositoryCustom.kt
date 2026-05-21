@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.repository
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.entity.Employee
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -15,7 +15,7 @@ interface EmployeeRepositoryCustom {
 
     fun findWithEmployeeInfoByCostCenterCodeInAndStatus(costCenterCodes: List<String>, status: String): List<Employee>
 
-    fun findWithEmployeeInfoByCostCenterCodeAndRole(costCenterCode: String, role: UserRole): List<Employee>
+    fun findWithEmployeeInfoByCostCenterCodeAndRole(costCenterCode: String, role: UserRoleEnum): List<Employee>
 
     /**
      * SF 레거시 `TeamMemberListController.fetchTeamMembers()` 정합.
@@ -33,7 +33,7 @@ interface EmployeeRepositoryCustom {
         status: String?,
         branchCodes: List<String>?,
         keyword: String?,
-        role: UserRole?,
+        role: UserRoleEnum?,
         pageable: Pageable
     ): Page<Employee>
 

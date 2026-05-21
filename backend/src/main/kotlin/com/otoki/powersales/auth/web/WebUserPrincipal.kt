@@ -1,7 +1,7 @@
 package com.otoki.powersales.auth.web
 
 import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.user.entity.ProfileType
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
@@ -29,7 +29,7 @@ data class WebUserPrincipal(
     val usernameValue: String,
     val employeeCode: String?,
     val employeeId: Long?,
-    val role: UserRole?,
+    val role: UserRoleEnum?,
     val costCenterCode: String?,
     val profileType: ProfileType,
     val isSalesSupport: Boolean,

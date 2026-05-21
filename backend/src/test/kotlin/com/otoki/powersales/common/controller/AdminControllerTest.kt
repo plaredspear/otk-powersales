@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.controller
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -56,7 +56,7 @@ class AdminControllerTest {
         @Test
         @DisplayName("성공 - ADMIN 권한으로 단말기 초기화")
         fun resetDevice_success() {
-            setSecurityContext(UserRole.BRANCH_MANAGER)
+            setSecurityContext(UserRoleEnum.BRANCH_MANAGER)
             every { authService.resetDevice("20010585") } just Runs
 
             mockMvc.perform(post("/api/v1/admin/users/20010585/reset-device"))
@@ -70,7 +70,7 @@ class AdminControllerTest {
         @Test
         @DisplayName("실패 - 존재하지 않는 사번 시 404 USER_NOT_FOUND")
         fun resetDevice_userNotFound() {
-            setSecurityContext(UserRole.BRANCH_MANAGER)
+            setSecurityContext(UserRoleEnum.BRANCH_MANAGER)
             every { authService.resetDevice("99999999") } throws EmployeeNotFoundException()
 
             mockMvc.perform(post("/api/v1/admin/users/99999999/reset-device"))
@@ -79,7 +79,7 @@ class AdminControllerTest {
         }
     }
 
-    private fun setSecurityContext(role: UserRole) {
+    private fun setSecurityContext(role: UserRoleEnum) {
         val principal = UserPrincipal(userId = 1L, role = role)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)

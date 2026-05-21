@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.UpdateAuthorityRequest
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.admin.dto.request.UpdateRolePermissionsRequest
 import com.otoki.powersales.admin.dto.request.UpdateUserPermissionsRequest
 import com.otoki.powersales.admin.entity.RolePermission
@@ -38,13 +38,13 @@ class AdminEmployeePermissionServiceTest {
 
     private lateinit var service: AdminEmployeePermissionService
 
-    private val systemAdmin = principal(employeeId = 1L, employeeCode = "00000001", role = UserRole.SYSTEM_ADMIN)
-    private val systemAdminEmployee = Employee(id = 1L, employeeCode = "00000001", name = "시스템관리자", role = UserRole.SYSTEM_ADMIN)
-    private val targetEmployee = Employee(id = 2L, employeeCode = "00000002", name = "홍길동", role = UserRole.BRANCH_MANAGER)
-    private val nonAdmin = principal(employeeId = 3L, employeeCode = "00000003", role = UserRole.LEADER)
+    private val systemAdmin = principal(employeeId = 1L, employeeCode = "00000001", role = UserRoleEnum.SYSTEM_ADMIN)
+    private val systemAdminEmployee = Employee(id = 1L, employeeCode = "00000001", name = "시스템관리자", role = UserRoleEnum.SYSTEM_ADMIN)
+    private val targetEmployee = Employee(id = 2L, employeeCode = "00000002", name = "홍길동", role = UserRoleEnum.BRANCH_MANAGER)
+    private val nonAdmin = principal(employeeId = 3L, employeeCode = "00000003", role = UserRoleEnum.LEADER)
     private val targetUser = User(id = 102L, username = "홍길동", employeeCode = "00000002", password = "x")
 
-    private fun principal(employeeId: Long, employeeCode: String, role: UserRole) = WebUserPrincipal(
+    private fun principal(employeeId: Long, employeeCode: String, role: UserRoleEnum) = WebUserPrincipal(
         userId = employeeId * 10,
         usernameValue = employeeCode,
         employeeCode = employeeCode,
@@ -197,7 +197,7 @@ class AdminEmployeePermissionServiceTest {
             every { adminPermissionResolver.resolve(targetEmployee) } returns
                 AdminPermission.entries.toSet() - AdminPermission.SCHEDULE_WRITE
 
-            val request = UpdateAuthorityRequest(role = UserRole.SALES_MANAGER)
+            val request = UpdateAuthorityRequest(role = UserRoleEnum.SALES_MANAGER)
 
             // When
             val result = service.updateAuthority(systemAdmin, 2L, request)
@@ -215,7 +215,7 @@ class AdminEmployeePermissionServiceTest {
             // Given
             every { employeeRepository.findById(1L) } returns Optional.of(systemAdminEmployee)
 
-            val request = UpdateAuthorityRequest(role = UserRole.LEADER)
+            val request = UpdateAuthorityRequest(role = UserRoleEnum.LEADER)
 
             // When & Then
             assertThatThrownBy { service.updateAuthority(systemAdmin, 1L, request) }
@@ -228,7 +228,7 @@ class AdminEmployeePermissionServiceTest {
             // Given
             every { employeeRepository.findById(2L) } returns Optional.of(targetEmployee)
 
-            val request = UpdateAuthorityRequest(role = UserRole.WOMAN)
+            val request = UpdateAuthorityRequest(role = UserRoleEnum.WOMAN)
 
             // When & Then
             assertThatThrownBy { service.updateAuthority(systemAdmin, 2L, request) }
@@ -253,7 +253,7 @@ class AdminEmployeePermissionServiceTest {
             )
 
             // When
-            val result = service.updateRolePermissions(systemAdmin, UserRole.BRANCH_MANAGER, request)
+            val result = service.updateRolePermissions(systemAdmin, UserRoleEnum.BRANCH_MANAGER, request)
 
             // Then
             assertThat(result.role).isEqualTo("BRANCH_MANAGER")
@@ -268,7 +268,7 @@ class AdminEmployeePermissionServiceTest {
             val request = UpdateRolePermissionsRequest(permissions = listOf("DASHBOARD_READ"))
 
             // When & Then
-            assertThatThrownBy { service.updateRolePermissions(systemAdmin, UserRole.WOMAN, request) }
+            assertThatThrownBy { service.updateRolePermissions(systemAdmin, UserRoleEnum.WOMAN, request) }
                 .isInstanceOf(InvalidAuthorityException::class.java)
         }
 
@@ -278,7 +278,7 @@ class AdminEmployeePermissionServiceTest {
             val request = UpdateRolePermissionsRequest(permissions = listOf("DASHBOARD_READ"))
 
             // When & Then — 비관리자 actor 로 호출
-            assertThatThrownBy { service.updateRolePermissions(nonAdmin, UserRole.BRANCH_MANAGER, request) }
+            assertThatThrownBy { service.updateRolePermissions(nonAdmin, UserRoleEnum.BRANCH_MANAGER, request) }
                 .isInstanceOf(AdminForbiddenException::class.java)
         }
     }

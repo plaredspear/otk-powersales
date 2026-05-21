@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.controller
 
 import com.otoki.powersales.common.dto.response.HomeResponse
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -44,7 +44,7 @@ class HomeControllerTest {
     @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
     @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
+    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
 
     @BeforeEach
     fun setUp() {
@@ -119,7 +119,7 @@ class HomeControllerTest {
         @Test
         @DisplayName("조장 홈 조회 성공 - role=LEADER, 안전점검 불필요, 팀원 다수 일정 + null serialization")
         fun getHomeData_leader_success() {
-            val leaderPrincipal = UserPrincipal(userId = 2L, role = UserRole.LEADER)
+            val leaderPrincipal = UserPrincipal(userId = 2L, role = UserRoleEnum.LEADER)
             val leaderAuth = UsernamePasswordAuthenticationToken(
                 leaderPrincipal, null, leaderPrincipal.authorities
             )

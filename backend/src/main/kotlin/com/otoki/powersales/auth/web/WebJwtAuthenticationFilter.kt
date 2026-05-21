@@ -1,7 +1,7 @@
 package com.otoki.powersales.auth.web
 
 import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.user.entity.ProfileType
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -42,8 +42,8 @@ class WebJwtAuthenticationFilter(
                     val profileType = ProfileType.fromValue(webJwtService.getProfileTypeFromToken(token))
                     val isSalesSupport = webJwtService.getIsSalesSupportFromToken(token)
                     val passwordChangeRequired = webJwtService.getPasswordChangeRequiredFromToken(token)
-                    val role: UserRole? = webJwtService.getRoleFromToken(token)?.let {
-                        runCatching { UserRole.valueOf(it) }.getOrNull()
+                    val role: UserRoleEnum? = webJwtService.getRoleFromToken(token)?.let {
+                        runCatching { UserRoleEnum.valueOf(it) }.getOrNull()
                     }
                     val permissions: Set<AdminPermission> = webJwtService.getPermissionsFromToken(token)
                         .mapNotNullTo(mutableSetOf()) { runCatching { AdminPermission.valueOf(it) }.getOrNull() }

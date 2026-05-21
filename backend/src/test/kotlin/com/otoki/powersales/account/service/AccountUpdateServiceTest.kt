@@ -8,7 +8,7 @@ import com.otoki.powersales.account.exception.AccountNamePrefixRequiredForUpdate
 import com.otoki.powersales.account.exception.AccountNotFoundException
 import com.otoki.powersales.account.exception.EmployeeNotFoundException
 import com.otoki.powersales.account.repository.AccountRepository
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.user.entity.ProfileType
@@ -36,7 +36,7 @@ class AccountUpdateServiceTest {
     )
 
     private val accountId = 1234
-    private fun webPrincipal(userId: Long, role: UserRole) = WebUserPrincipal(
+    private fun webPrincipal(userId: Long, role: UserRoleEnum) = WebUserPrincipal(
         userId = userId,
         usernameValue = "u$userId@otokims.co.kr",
         employeeCode = "S$userId",
@@ -52,8 +52,8 @@ class AccountUpdateServiceTest {
         active = true
     )
 
-    private val branchManagerPrincipal = webPrincipal(1L, UserRole.BRANCH_MANAGER)
-    private val systemAdminPrincipal = webPrincipal(9L, UserRole.SYSTEM_ADMIN)
+    private val branchManagerPrincipal = webPrincipal(1L, UserRoleEnum.BRANCH_MANAGER)
+    private val systemAdminPrincipal = webPrincipal(9L, UserRoleEnum.SYSTEM_ADMIN)
 
     private fun nativeAccount(
         id: Int = accountId,

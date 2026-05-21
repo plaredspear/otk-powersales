@@ -4,7 +4,7 @@ import com.otoki.powersales.admin.repository.RolePermissionRepository
 import com.otoki.powersales.admin.repository.UserPermissionRepository
 import com.otoki.powersales.admin.repository.findByRole
 import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -31,8 +31,8 @@ class AdminPermissionResolver(
     fun resolve(employee: Employee): Set<AdminPermission> =
         resolve(employee.role, employee.employeeCode)
 
-    private fun resolve(role: UserRole?, employeeCode: String): Set<AdminPermission> {
-        val rolePerms = if (role != null && role != UserRole.UNKNOWN) {
+    private fun resolve(role: UserRoleEnum?, employeeCode: String): Set<AdminPermission> {
+        val rolePerms = if (role != null && role != UserRoleEnum.UNKNOWN) {
             rolePermissionRepository.findByRole(role)
                 .mapNotNull { parsePermission(it.permission) }
                 .toSet()
@@ -40,7 +40,7 @@ class AdminPermissionResolver(
             emptySet()
         }
 
-        if (role == UserRole.UNKNOWN) {
+        if (role == UserRoleEnum.UNKNOWN) {
             return emptySet()
         }
 
@@ -58,7 +58,7 @@ class AdminPermissionResolver(
 
     fun resolveWithDetails(employee: Employee): PermissionResolveResult {
         val role = employee.role
-        if (role == UserRole.UNKNOWN) {
+        if (role == UserRoleEnum.UNKNOWN) {
             return PermissionResolveResult(
                 rolePermissions = emptyList(),
                 userPermissions = emptyList(),

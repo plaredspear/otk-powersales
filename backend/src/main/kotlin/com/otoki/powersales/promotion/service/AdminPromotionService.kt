@@ -14,7 +14,7 @@ import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionProductRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -177,7 +177,7 @@ class AdminPromotionService(
             if (promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(id)) {
                 val employee = employeeRepository.findById(userId)
                     .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
-                if (employee.role != UserRole.BRANCH_MANAGER) {
+                if (employee.role != UserRoleEnum.BRANCH_MANAGER) {
                     throw ClosedPromotionModificationException()
                 }
             }

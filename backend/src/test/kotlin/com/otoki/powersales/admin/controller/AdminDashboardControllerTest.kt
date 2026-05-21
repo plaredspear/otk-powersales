@@ -9,7 +9,7 @@ import com.otoki.powersales.admin.dto.response.StaffTypeCount
 import com.otoki.powersales.admin.dto.response.TotalByPosition
 import com.otoki.powersales.admin.dto.response.WorkTypeStats
 import com.otoki.powersales.admin.service.AdminDashboardService
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -64,7 +64,7 @@ class AdminDashboardControllerTest {
         usernameValue = "test@otokims.co.kr",
         employeeCode = "S001",
         employeeId = 1L,
-        role = UserRole.BRANCH_MANAGER,
+        role = UserRoleEnum.BRANCH_MANAGER,
         costCenterCode = null,
         profileType = ProfileType.STAFF,
         isSalesSupport = false,

@@ -3,7 +3,7 @@ package com.otoki.powersales.employee.service
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.employee.dto.response.EmployeeListResponse
@@ -28,7 +28,7 @@ class AdminEmployeeService(
         status: String?,
         costCenterCode: String?,
         keyword: String?,
-        role: UserRole?,
+        role: UserRoleEnum?,
         page: Int,
         size: Int
     ): EmployeeListResponse {

@@ -1,6 +1,6 @@
 package com.otoki.powersales.user.event
 
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 
 /**
  * Employee 신규 생성 이벤트.
@@ -20,7 +20,7 @@ data class EmployeeCreatedEvent(
     val workEmail: String?,
     val email: String?,
     val birthDate: String?,
-    val role: UserRole?,
+    val role: UserRoleEnum?,
     val appLoginActive: Boolean?,
     val costCenterCode: String? = null,
 )

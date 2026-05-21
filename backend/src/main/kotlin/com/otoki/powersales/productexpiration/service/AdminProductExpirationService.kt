@@ -8,7 +8,7 @@ import com.otoki.powersales.productexpiration.dto.response.AdminProductExpiratio
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationListResponse
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationResponse
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.ProductNotFoundException
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -160,8 +160,8 @@ class AdminProductExpirationService(
         val role = employee.role
 
         return when {
-            role == UserRole.SYSTEM_ADMIN || role in UserRole.Companion.ALL_BRANCHES || role == UserRole.BRANCH_MANAGER -> null
-            role == UserRole.LEADER -> {
+            role == UserRoleEnum.SYSTEM_ADMIN || role in UserRoleEnum.Companion.ALL_BRANCHES || role == UserRoleEnum.BRANCH_MANAGER -> null
+            role == UserRoleEnum.LEADER -> {
                 val orgName = employee.orgName
                 if (orgName != null) {
                     employeeRepository.findByOrgName(orgName).map { it.id }

@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -24,21 +24,21 @@ class AdminDataScopeService(
 
     fun resolve(principal: WebUserPrincipal): DataScope = resolve(principal.role, principal.costCenterCode)
 
-    private fun resolve(role: UserRole?, costCenterCode: String?): DataScope {
+    private fun resolve(role: UserRoleEnum?, costCenterCode: String?): DataScope {
         return when {
-            role == UserRole.SYSTEM_ADMIN -> DataScope(
+            role == UserRoleEnum.SYSTEM_ADMIN -> DataScope(
                 branchCodes = emptyList(),
                 isAllBranches = true
             )
-            role in UserRole.ALL_BRANCHES -> DataScope(
+            role in UserRoleEnum.ALL_BRANCHES -> DataScope(
                 branchCodes = emptyList(),
                 isAllBranches = true
             )
-            role == UserRole.UNKNOWN -> DataScope(
+            role == UserRoleEnum.UNKNOWN -> DataScope(
                 branchCodes = emptyList(),
                 isAllBranches = false
             )
-            role in UserRole.BRANCH_SCOPE || role == null -> DataScope(
+            role in UserRoleEnum.BRANCH_SCOPE || role == null -> DataScope(
                 branchCodes = listOfNotNull(costCenterCode),
                 isAllBranches = false
             )

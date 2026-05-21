@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
@@ -40,7 +40,6 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
 import java.time.LocalDateTime
-import com.otoki.powersales.common.util.TimeZones
 import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -83,18 +82,18 @@ class AdminScheduleService(
         val org = organizationRepository.findFirstByCostCenterCascade(costCenterCode)
             ?: throw OrganizationNotFoundException()
 
-        val employees = if (employee.role == UserRole.SALES_SUPPORT) {
+        val employees = if (employee.role == UserRoleEnum.SALES_SUPPORT) {
             val costCenterLevel3 = org.costCenterLevel3
                 ?: throw OrganizationNotFoundException()
             val costCenterCodes = organizationRepository.findByCostCenterLevel3(costCenterLevel3)
                 .mapNotNull { it.costCenterLevel5 }
                 .distinct()
             employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
-                costCenterCodes, UserRole.WOMAN, "재직"
+                costCenterCodes, UserRoleEnum.WOMAN, "재직"
             )
         } else {
             employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
-                costCenterCode, UserRole.WOMAN, "재직"
+                costCenterCode, UserRoleEnum.WOMAN, "재직"
             )
         }.sortedWith(compareBy({ it.orgName }, { it.employeeCode }))
 
@@ -222,7 +221,7 @@ class AdminScheduleService(
         // 여사원(FullName__c) → CostCenterCode → 조장 Employee → Employee.employeeCode == User.employeeCode → User.
         val costCenterCodes = cacheData.validRows.mapNotNull { it.costCenterCode }.distinct()
         val leadersByCostCenter = if (costCenterCodes.isNotEmpty()) {
-            employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes, UserRole.LEADER)
+            employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes, UserRoleEnum.LEADER)
                 .groupBy { it.costCenterCode }
         } else {
             emptyMap()
@@ -426,7 +425,7 @@ class AdminScheduleService(
         val costCenterCode = validatedRow.costCenterCode
         val ownerUser = if (!costCenterCode.isNullOrBlank()) {
             val leaders = employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
-                listOf(costCenterCode), UserRole.LEADER
+                listOf(costCenterCode), UserRoleEnum.LEADER
             )
             leaders.firstOrNull()
                 ?.employeeCode
@@ -493,7 +492,7 @@ class AdminScheduleService(
         requireScheduleScope(scope, schedule)
 
         // UC-05 차단 룰: 확정 후 ADMIN_GRADE 외 사용자가 종료일 외 필드 변경 시도하면 차단.
-        if (schedule.confirmed == true && user.role !in UserRole.ADMIN_GRADE) {
+        if (schedule.confirmed == true && user.role !in UserRoleEnum.ADMIN_GRADE) {
             val originalEmployeeCode = schedule.employee?.employeeCode
             val originalAccountCode = schedule.account?.externalKey
             val originalType3 = schedule.typeOfWork3?.displayName
@@ -565,7 +564,7 @@ class AdminScheduleService(
         val costCenterCode = validatedRow.costCenterCode
         val ownerUser = if (!costCenterCode.isNullOrBlank()) {
             employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
-                listOf(costCenterCode), UserRole.LEADER
+                listOf(costCenterCode), UserRoleEnum.LEADER
             ).firstOrNull()
                 ?.employeeCode
                 ?.let { code -> userRepository.findByEmployeeCodeIn(listOf(code)).firstOrNull() }
@@ -611,11 +610,11 @@ class AdminScheduleService(
         val user = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
-        if (user.role == UserRole.BRANCH_MANAGER) {
+        if (user.role == UserRoleEnum.BRANCH_MANAGER) {
             throw ScheduleDeleteForbiddenException()
         }
 
-        val isAdmin = user.role in UserRole.ADMIN_GRADE
+        val isAdmin = user.role in UserRoleEnum.ADMIN_GRADE
         val schedules = scheduleRepository.findAllById(ids).associateBy { it.id }
 
         var deletedCount = 0
@@ -686,12 +685,12 @@ class AdminScheduleService(
 
         val role = employee.role
 
-        if (role in UserRole.ADMIN_GRADE) {
+        if (role in UserRoleEnum.ADMIN_GRADE) {
             schedule.isDeleted = true
             return
         }
 
-        if (role == UserRole.BRANCH_MANAGER) {
+        if (role == UserRoleEnum.BRANCH_MANAGER) {
             throw ScheduleDeleteForbiddenException()
         }
 

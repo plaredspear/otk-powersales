@@ -1,7 +1,7 @@
 package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.dto.request.AdminEmployeeManualRegisterRequest
 import com.otoki.powersales.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.employee.entity.Employee
@@ -30,7 +30,7 @@ class AdminEmployeeManualRegisterService(
 
     @Transactional
     fun register(request: AdminEmployeeManualRegisterRequest): EmployeeDetailResponse {
-        require(request.role != UserRole.SYSTEM_ADMIN) {
+        require(request.role != UserRoleEnum.SYSTEM_ADMIN) {
             "SYSTEM_ADMIN 역할은 본 endpoint 에서 등록할 수 없습니다. ADMIN-prefix 등록 endpoint 를 사용하세요"
         }
 
