@@ -1,10 +1,7 @@
 package com.otoki.powersales.productexpiration.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.productexpiration.dto.response.ProductExpirationBatchDeleteResponse
 import com.otoki.powersales.productexpiration.dto.response.ProductExpirationItemResponse
 import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException
@@ -12,21 +9,15 @@ import com.otoki.powersales.productexpiration.exception.InvalidProductExpiration
 import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
 import com.otoki.powersales.productexpiration.service.ProductExpirationService
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -37,29 +28,10 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(ProductExpirationController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("ProductExpirationController 테스트")
-class ProductExpirationControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class ProductExpirationControllerTest : MobileControllerTestSupport() {
 
     @MockkBean
     private lateinit var productExpirationService: ProductExpirationService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @BeforeEach
-    fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-    }
 
     private fun createItemResponse(
         seq: Int = 1,

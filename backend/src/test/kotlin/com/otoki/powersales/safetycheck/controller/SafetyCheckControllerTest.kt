@@ -1,11 +1,7 @@
 package com.otoki.powersales.safetycheck.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
 import com.otoki.powersales.safetycheck.dto.response.MemberStatus
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckItemsResponse
@@ -16,22 +12,16 @@ import com.otoki.powersales.safetycheck.exception.AlreadySubmittedException
 import com.otoki.powersales.safetycheck.exception.RequiredItemsMissingException
 import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
 import com.otoki.powersales.safetycheck.service.SafetyCheckService
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import io.mockk.every
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -40,26 +30,10 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(SafetyCheckController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("SafetyCheckController 테스트")
-class SafetyCheckControllerTest {
-
-    @Autowired private lateinit var mockMvc: MockMvc
+class SafetyCheckControllerTest : MobileControllerTestSupport() {
 
     @MockkBean private lateinit var safetyCheckService: SafetyCheckService
     @MockkBean private lateinit var adminSafetyCheckService: AdminSafetyCheckService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-
-    @BeforeEach
-    fun setUp() {
-        val authentication = UsernamePasswordAuthenticationToken(
-            testPrincipal, null, testPrincipal.authorities
-        )
-        SecurityContextHolder.getContext().authentication = authentication
-    }
 
     @Nested
     @DisplayName("GET /api/v1/mobile/safety-check/items - 항목 조회")

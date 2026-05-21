@@ -1,10 +1,6 @@
 package com.otoki.powersales.order.controller
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.order.dto.response.ClientOrderDetailResponse
 import com.otoki.powersales.order.dto.response.ClientOrderItemResponse
 import com.otoki.powersales.order.enums.DeliveryStatus
@@ -12,19 +8,13 @@ import com.otoki.powersales.order.exception.ClientOrderForbiddenException
 import com.otoki.powersales.order.exception.InvalidSapOrderNumberException
 import com.otoki.powersales.order.exception.SapOrderNotFoundException
 import com.otoki.powersales.order.service.ClientOrderQueryService
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import io.mockk.every
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -34,34 +24,10 @@ import java.math.BigDecimal
 @WebMvcTest(ClientOrderController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("ClientOrderController 테스트 (#593)")
-class ClientOrderControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class ClientOrderControllerTest : MobileControllerTestSupport() {
 
     @MockkBean
     private lateinit var clientOrderQueryService: ClientOrderQueryService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-
-    @BeforeEach
-    fun setUp() {
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(testPrincipal, null, testPrincipal.authorities)
-    }
 
     @Nested
     @DisplayName("GET /api/v1/mobile/client-orders/{sapOrderNumber}")

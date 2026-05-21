@@ -1,32 +1,22 @@
 package com.otoki.powersales.order.controller
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.order.dto.response.OrderDraftDetailResponse
 import com.otoki.powersales.order.dto.response.OrderDraftLineResponse
 import com.otoki.powersales.order.dto.response.OrderDraftSaveResponse
 import com.otoki.powersales.order.exception.OrderDraftAccountForbiddenException
 import com.otoki.powersales.order.exception.OrderDraftInvalidRequestException
 import com.otoki.powersales.order.service.OrderDraftService
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -37,34 +27,10 @@ import java.math.BigDecimal
 @WebMvcTest(OrderDraftController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("OrderDraftController 테스트 (#596)")
-class OrderDraftControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class OrderDraftControllerTest : MobileControllerTestSupport() {
 
     @MockkBean
     private lateinit var orderDraftService: OrderDraftService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-
-    @BeforeEach
-    fun setUp() {
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(testPrincipal, null, testPrincipal.authorities)
-    }
 
     @Nested
     @DisplayName("POST /api/v1/mobile/orders/draft - 등록")

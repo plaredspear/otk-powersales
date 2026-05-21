@@ -1,11 +1,7 @@
 package com.otoki.powersales.order.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.order.dto.request.OrderRequestCreateLine
 import com.otoki.powersales.order.dto.request.OrderRequestCreateRequest
 import com.otoki.powersales.order.dto.response.OrderRequestCreateResponse
@@ -14,19 +10,14 @@ import com.otoki.powersales.order.exception.OrderAccountForbiddenException
 import com.otoki.powersales.order.exception.OrderLoanExceededException
 import com.otoki.powersales.order.service.OrderRequestCreateService
 import com.otoki.powersales.order.service.OrderRequestService
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import io.mockk.every
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -36,26 +27,13 @@ import java.time.LocalDate
 @WebMvcTest(OrderRequestController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("POST /api/v1/mobile/order-requests (#592)")
-class OrderRequestCreatePostTest {
+class OrderRequestCreatePostTest : MobileControllerTestSupport() {
 
-    @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     @MockkBean private lateinit var orderRequestService: OrderRequestService
     @MockkBean private lateinit var orderRequestCreateService: OrderRequestCreateService
     @MockkBean private lateinit var orderCancelService: com.otoki.powersales.order.service.OrderCancelService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    private val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-
-    @BeforeEach
-    fun setUp() {
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-    }
 
     @Test
     @DisplayName("성공 — 201 Created + 응답 검증")

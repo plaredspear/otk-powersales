@@ -1,20 +1,15 @@
 package com.otoki.powersales.leave.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.leave.dto.AlternativeHolidayCreateResponse
 import com.otoki.powersales.leave.dto.AlternativeHolidayListItemResponse
 import com.otoki.powersales.leave.dto.AlternativeHolidayRequest
 import com.otoki.powersales.leave.exception.AltHolidayConfirmDateIsWeekendException
 import com.otoki.powersales.leave.exception.AltHolidayDuplicateException
 import com.otoki.powersales.leave.service.AlternativeHolidayService
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -25,9 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -37,21 +29,10 @@ import java.time.LocalDate
 @WebMvcTest(AlternativeHolidayController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AlternativeHolidayController 테스트")
-class AlternativeHolidayControllerTest {
+class AlternativeHolidayControllerTest : MobileControllerTestSupport() {
 
-    @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
     @MockkBean private lateinit var alternativeHolidayService: AlternativeHolidayService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @BeforeEach
-    fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-    }
 
     @Nested
     @DisplayName("POST /api/v1/mobile/alternative-holidays - 대체휴무 신청")

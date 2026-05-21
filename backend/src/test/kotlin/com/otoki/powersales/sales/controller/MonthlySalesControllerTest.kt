@@ -1,67 +1,30 @@
 package com.otoki.powersales.sales.controller
 
 import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.sales.service.MonthlySalesService
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-/**
- * MonthlySalesController 테스트
- */
 @WebMvcTest(MonthlySalesController::class)
 @AutoConfigureMockMvc(addFilters = false)
-class MonthlySalesControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class MonthlySalesControllerTest : MobileControllerTestSupport() {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
     @MockkBean
     private lateinit var monthlySalesService: MonthlySalesService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-
-    @BeforeEach
-    fun setUp() {
-        val authentication = UsernamePasswordAuthenticationToken(
-            testPrincipal, null, testPrincipal.authorities
-        )
-        SecurityContextHolder.getContext().authentication = authentication
-    }
 
     // ========== getMonthlySales Tests ==========
 

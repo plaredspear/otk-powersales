@@ -1,20 +1,14 @@
 package com.otoki.powersales.common.controller
 
 import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.dto.response.MyAccountInfo
 import com.otoki.powersales.common.dto.response.MyAccountListResponse
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.AccountInvalidParameterException
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.common.service.MyAccountService
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -22,9 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -32,38 +23,13 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(AccountController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AccountController 테스트")
-class AccountControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class AccountControllerTest : MobileControllerTestSupport() {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
     @MockkBean
     private lateinit var myAccountService: MyAccountService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-
-    @BeforeEach
-    fun setUp() {
-        val authentication = UsernamePasswordAuthenticationToken(
-            testPrincipal, null, testPrincipal.authorities
-        )
-        SecurityContextHolder.getContext().authentication = authentication
-    }
 
     @Nested
     @DisplayName("GET /api/v1/mobile/accounts/my - 내 거래처 목록 조회")
