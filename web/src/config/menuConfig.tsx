@@ -94,6 +94,7 @@ export const menuRoute: MenuRoute = {
       children: [
         { path: '/product', name: '제품' },
         { path: '/account', name: '거래처', requiredPermission: 'ACCOUNT_READ' },
+        { path: '/settings/employees', name: '사원', requiredPermission: 'EMPLOYEE_READ' },
         { path: '/settings/organizations', name: '조직마스터' },
         { path: '/settings/holiday-masters', name: '공휴일 관리' },
         {

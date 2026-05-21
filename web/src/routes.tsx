@@ -22,6 +22,7 @@ const ProductPage = lazy(() => import('@/pages/ProductPage'));
 const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'));
 const AccountPage = lazy(() => import('@/pages/AccountPage'));
 const EmployeePage = lazy(() => import('@/pages/EmployeePage'));
+const EmployeeListPage = lazy(() => import('@/pages/settings/EmployeeListPage'));
 const EmployeeDetailPage = lazy(() => import('@/pages/EmployeeDetailPage'));
 const FieldInspectionPage = lazy(() => import('@/pages/FieldInspectionPage'));
 const ReportPage = lazy(() => import('@/pages/ReportPage'));
@@ -180,6 +181,7 @@ export const router = createBrowserRouter(
               children: [
                 { path: '/employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
                 { path: '/employee/:employeeId', element: <LazyWrapper><EmployeeDetailPage /></LazyWrapper> },
+                { path: '/settings/employees', element: <LazyWrapper><EmployeeListPage /></LazyWrapper> },
               ],
             },
             {
