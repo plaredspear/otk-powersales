@@ -18,6 +18,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -109,31 +112,24 @@ class ClaimQueryControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty)
         }
 
-        @Test
-        @DisplayName("실패 - 잘못된 날짜 형식 → 400")
-        fun getClaims_invalidDateFormat() {
-            every { claimQueryService.getClaims(1L, "20260401", null) } throws InvalidDateFormatException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.claim.controller.ClaimQueryControllerTest#getClaimsExceptions")
+        @DisplayName("실패 - 날짜 검증 예외 → 400 ErrorCode 매핑")
+        fun getClaims_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            startDate: String,
+            endDate: String?,
+            exception: Throwable,
+            expectedCode: String,
+        ) {
+            every { claimQueryService.getClaims(1L, startDate, endDate) } throws exception
 
-            mockMvc.perform(
-                get("/api/v1/mobile/claims")
-                    .param("startDate", "20260401")
-            )
+            val builder = get("/api/v1/mobile/claims").param("startDate", startDate)
+            if (endDate != null) builder.param("endDate", endDate)
+
+            mockMvc.perform(builder)
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("INVALID_DATE_FORMAT"))
-        }
-
-        @Test
-        @DisplayName("실패 - 역전된 날짜 범위 → 400")
-        fun getClaims_invalidDateRange() {
-            every { claimQueryService.getClaims(1L, "2026-04-10", "2026-04-01") } throws InvalidDateRangeException()
-
-            mockMvc.perform(
-                get("/api/v1/mobile/claims")
-                    .param("startDate", "2026-04-10")
-                    .param("endDate", "2026-04-01")
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("INVALID_DATE_RANGE"))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
     }
 
@@ -186,24 +182,37 @@ class ClaimQueryControllerTest {
                 .andExpect(jsonPath("$.data.photos[0].photoTypeLabel").value("불량 사진"))
         }
 
-        @Test
-        @DisplayName("실패 - 존재하지 않는 클레임 → 404")
-        fun getClaimDetail_notFound() {
-            every { claimQueryService.getClaimDetail(1L, 999L) } throws ClaimNotFoundException(999L)
+        // notFound (999L) / notOwner (2L) 둘 다 동일 ClaimNotFoundException → CLAIM_NOT_FOUND 매핑.
+        // 비즈니스 의미: service 의 "본인 클레임 확인" 정책으로 타인 클레임 접근도 NotFound 로 통합 응답 (정보 노출 방지).
+        @ParameterizedTest(name = "{0}")
+        @org.junit.jupiter.params.provider.ValueSource(longs = [999L, 2L])
+        @DisplayName("실패 - 미존재/타인 클레임 → 404 CLAIM_NOT_FOUND (둘 다 동일 응답 - 정보 노출 방지)")
+        fun getClaimDetail_notFoundCases(claimId: Long) {
+            every { claimQueryService.getClaimDetail(1L, claimId) } throws ClaimNotFoundException(claimId)
 
-            mockMvc.perform(get("/api/v1/mobile/claims/999"))
+            mockMvc.perform(get("/api/v1/mobile/claims/$claimId"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("CLAIM_NOT_FOUND"))
         }
+    }
 
-        @Test
-        @DisplayName("실패 - 타인 클레임 → 404")
-        fun getClaimDetail_notOwner() {
-            every { claimQueryService.getClaimDetail(1L, 2L) } throws ClaimNotFoundException(2L)
-
-            mockMvc.perform(get("/api/v1/mobile/claims/2"))
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("CLAIM_NOT_FOUND"))
-        }
+    companion object {
+        @JvmStatic
+        fun getClaimsExceptions(): List<Arguments> = listOf(
+            Arguments.of(
+                "invalidDateFormat -> INVALID_DATE_FORMAT",
+                "20260401",
+                null,
+                InvalidDateFormatException(),
+                "INVALID_DATE_FORMAT",
+            ),
+            Arguments.of(
+                "invalidDateRange -> INVALID_DATE_RANGE",
+                "2026-04-10",
+                "2026-04-01",
+                InvalidDateRangeException(),
+                "INVALID_DATE_RANGE",
+            ),
+        )
     }
 }
