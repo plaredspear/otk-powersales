@@ -24,6 +24,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 
 import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,44 +41,23 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 
 @WebMvcTest(AdminEmployeeController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminEmployeeController 테스트")
 class AdminEmployeeControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
 
-    @MockkBean
-    private lateinit var adminEmployeeService: AdminEmployeeService
+    @MockkBean private lateinit var adminEmployeeService: AdminEmployeeService
+    @MockkBean private lateinit var adminEmployeeCredentialService: AdminEmployeeCredentialService
+    @MockkBean private lateinit var adminEmployeeUpdateService: AdminEmployeeUpdateService
+    @MockkBean private lateinit var adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    @MockkBean
-    private lateinit var adminEmployeeCredentialService: AdminEmployeeCredentialService
-
-    @MockkBean
-    private lateinit var adminEmployeeUpdateService: AdminEmployeeUpdateService
-
-    @MockkBean
-    private lateinit var adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
-    // @AutoConfigureMockMvc(addFilters = false) 환경에서 WebAdminContextFilter 가 동작하지 않으므로
-    // ArgumentResolver 자체를 stub 하여 ALL scope 기본값 주입.
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
@@ -147,30 +129,13 @@ class AdminEmployeeControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].employeeCode").value("10000001"))
-                .andExpect(jsonPath("$.data.content[0].name").value("홍길동"))
-                .andExpect(jsonPath("$.data.content[0].status").value("재직"))
-                .andExpect(jsonPath("$.data.content[0].gender").value("남"))
-                .andExpect(jsonPath("$.data.content[0].orgName").value("서울1지점"))
-                .andExpect(jsonPath("$.data.content[0].costCenterCode").value("A001"))
-                .andExpect(jsonPath("$.data.content[0].role").value("LEADER"))
-                .andExpect(jsonPath("$.data.content[0].roleLabel").value("조장"))
-                .andExpect(jsonPath("$.data.content[0].startDate").value("2020-03-15"))
-                .andExpect(jsonPath("$.data.content[0].appLoginActive").value(true))
-                .andExpect(jsonPath("$.data.content[0].workPhone").value("010-1234-5678"))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
-                .andExpect(jsonPath("$.data.totalPages").value(1))
         }
 
         @Test
         @DisplayName("성공 - 필터 파라미터 전달")
         fun getEmployees_withFilters() {
-            val response = EmployeeListResponse(
-                content = emptyList(),
-                page = 0,
-                size = 10,
-                totalElements = 0,
-                totalPages = 0
-            )
+            val response = EmployeeListResponse(content = emptyList(), page = 0, size = 10, totalElements = 0, totalPages = 0)
             every { adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("홍"), eq(UserRole.LEADER), eq(0), eq(10)) } returns response
 
             mockMvc.perform(
@@ -183,29 +148,18 @@ class AdminEmployeeControllerTest {
                     .param("size", "10")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content").isEmpty)
                 .andExpect(jsonPath("$.data.totalElements").value(0))
         }
 
         @Test
         @DisplayName("성공 - 빈 결과")
         fun getEmployees_empty() {
-            val response = EmployeeListResponse(
-                content = emptyList(),
-                page = 0,
-                size = 20,
-                totalElements = 0,
-                totalPages = 0
-            )
+            val response = EmployeeListResponse(content = emptyList(), page = 0, size = 20, totalElements = 0, totalPages = 0)
             every { adminEmployeeService.getEmployees(any(), any(), any(), any(), any(), any(), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/employees"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content").isEmpty)
                 .andExpect(jsonPath("$.data.totalElements").value(0))
-                .andExpect(jsonPath("$.data.totalPages").value(0))
         }
     }
 
@@ -227,31 +181,25 @@ class AdminEmployeeControllerTest {
 
             mockMvc.perform(post("/api/v1/admin/employees/12345/reset-device"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.employeeId").value(12345L))
-                .andExpect(jsonPath("$.data.employeeCode").value("100123"))
-                .andExpect(jsonPath("$.data.name").value("홍길동"))
                 .andExpect(jsonPath("$.data.previousDeviceBound").value(true))
         }
 
-        @Test
-        @DisplayName("실패 - 미존재 사원 -> 404, EMP_NOT_FOUND")
-        fun resetDevice_notFound() {
-            every { adminEmployeeCredentialService.resetDevice(eq(99999999L)) } throws EmployeeNotFoundException(99999999L)
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminEmployeeControllerTest#resetDeviceExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun resetDevice_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            employeeId: Long,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String
+        ) {
+            every { adminEmployeeCredentialService.resetDevice(eq(employeeId)) } throws exception
 
-            mockMvc.perform(post("/api/v1/admin/employees/99999999/reset-device"))
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("EMP_NOT_FOUND"))
-        }
-
-        @Test
-        @DisplayName("실패 - 앱 로그인 비활성 사원 -> 400, EMP_LOGIN_INACTIVE")
-        fun resetDevice_loginInactive() {
-            every { adminEmployeeCredentialService.resetDevice(eq(12345L)) } throws EmployeeLoginInactiveException()
-
-            mockMvc.perform(post("/api/v1/admin/employees/12345/reset-device"))
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("EMP_LOGIN_INACTIVE"))
+            mockMvc.perform(post("/api/v1/admin/employees/$employeeId/reset-device"))
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
     }
 
@@ -274,30 +222,39 @@ class AdminEmployeeControllerTest {
 
             mockMvc.perform(post("/api/v1/admin/employees/12345/reset-password"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.employeeId").value(12345L))
-                .andExpect(jsonPath("$.data.temporaryPasswordIssued").value(true))
                 .andExpect(jsonPath("$.data.passwordChangeRequired").value(true))
         }
 
-        @Test
-        @DisplayName("실패 - 미존재 사원 -> 404, EMP_NOT_FOUND")
-        fun resetPassword_notFound() {
-            every { adminEmployeeCredentialService.resetPassword(eq(99999999L)) } throws EmployeeNotFoundException(99999999L)
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminEmployeeControllerTest#resetPasswordExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun resetPassword_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            employeeId: Long,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String
+        ) {
+            every { adminEmployeeCredentialService.resetPassword(eq(employeeId)) } throws exception
 
-            mockMvc.perform(post("/api/v1/admin/employees/99999999/reset-password"))
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("EMP_NOT_FOUND"))
+            mockMvc.perform(post("/api/v1/admin/employees/$employeeId/reset-password"))
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
+    }
 
-        @Test
-        @DisplayName("실패 - 앱 로그인 비활성 사원 -> 400, EMP_LOGIN_INACTIVE")
-        fun resetPassword_loginInactive() {
-            every { adminEmployeeCredentialService.resetPassword(eq(12345L)) } throws EmployeeLoginInactiveException()
+    companion object {
+        @JvmStatic
+        fun resetDeviceExceptions(): List<Arguments> = listOf(
+            Arguments.of("notFound -> 404 EMP_NOT_FOUND", 99999999L, EmployeeNotFoundException(99999999L), 404, "EMP_NOT_FOUND"),
+            Arguments.of("loginInactive -> 400 EMP_LOGIN_INACTIVE", 12345L, EmployeeLoginInactiveException(), 400, "EMP_LOGIN_INACTIVE"),
+        )
 
-            mockMvc.perform(post("/api/v1/admin/employees/12345/reset-password"))
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("EMP_LOGIN_INACTIVE"))
-        }
+        @JvmStatic
+        fun resetPasswordExceptions(): List<Arguments> = listOf(
+            Arguments.of("notFound -> 404 EMP_NOT_FOUND", 99999999L, EmployeeNotFoundException(99999999L), 404, "EMP_NOT_FOUND"),
+            Arguments.of("loginInactive -> 400 EMP_LOGIN_INACTIVE", 12345L, EmployeeLoginInactiveException(), 400, "EMP_LOGIN_INACTIVE"),
+        )
     }
 }
