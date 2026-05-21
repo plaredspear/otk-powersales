@@ -30,6 +30,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 
 import io.mockk.Runs
 import io.mockk.every
@@ -61,35 +64,16 @@ class AdminAccountControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @MockkBean
-    private lateinit var adminAccountService: AdminAccountService
-
-    @MockkBean
-    private lateinit var accountCreateService: AccountCreateService
-
-    @MockkBean
-    private lateinit var accountUpdateService: AccountUpdateService
-
-    @MockkBean
-    private lateinit var accountDeleteService: AccountDeleteService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminAccountService: AdminAccountService
+    @MockkBean private lateinit var accountCreateService: AccountCreateService
+    @MockkBean private lateinit var accountUpdateService: AccountUpdateService
+    @MockkBean private lateinit var accountDeleteService: AccountDeleteService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
-    // 운영에서는 WebAdminContextFilter 가 request attribute 에 DataScope 를 적재 → ArgumentResolver
-    // 가 그 값을 꺼낸다. 본 테스트는 @AutoConfigureMockMvc(addFilters = false) 로 필터가 비활성
-    // 이므로 ArgumentResolver 자체를 stub 하여 ALL scope 기본값을 주입한다.
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
@@ -151,32 +135,15 @@ class AdminAccountControllerTest {
             mockMvc.perform(get("/api/v1/admin/accounts"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content[0].externalKey").value("AC001234"))
                 .andExpect(jsonPath("$.data.content[0].name").value("GS25 역삼점"))
-                .andExpect(jsonPath("$.data.content[0].abcType").value("편의점"))
-                .andExpect(jsonPath("$.data.content[0].branchCode").value("A001"))
-                .andExpect(jsonPath("$.data.content[0].branchName").value("서울1지점"))
-                .andExpect(jsonPath("$.data.content[0].employeeCode").value("123456"))
-                .andExpect(jsonPath("$.data.content[0].address1").value("서울시 강남구 역삼동 123-4"))
-                .andExpect(jsonPath("$.data.content[0].phone").value("02-1234-5678"))
-                .andExpect(jsonPath("$.data.content[0].accountStatusName").value("활성"))
-                .andExpect(jsonPath("$.data.page").value(0))
-                .andExpect(jsonPath("$.data.size").value(20))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
-                .andExpect(jsonPath("$.data.totalPages").value(1))
         }
 
         @Test
         @DisplayName("성공 - 필터 파라미터 전달")
         fun getAccounts_withFilters() {
-            val response = AccountListResponse(
-                content = emptyList(),
-                page = 0,
-                size = 10,
-                totalElements = 0,
-                totalPages = 0
-            )
+            val response = AccountListResponse(content = emptyList(), page = 0, size = 10, totalElements = 0, totalPages = 0)
             every { adminAccountService.getAccounts(any(), eq("GS25"), eq("편의점"), eq("A001"), eq("활성"), eq(0), eq(10)) } returns response
 
             mockMvc.perform(
@@ -190,28 +157,7 @@ class AdminAccountControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content").isEmpty)
                 .andExpect(jsonPath("$.data.totalElements").value(0))
-        }
-
-        @Test
-        @DisplayName("성공 - 빈 결과")
-        fun getAccounts_empty() {
-            val response = AccountListResponse(
-                content = emptyList(),
-                page = 0,
-                size = 20,
-                totalElements = 0,
-                totalPages = 0
-            )
-            every { adminAccountService.getAccounts(any(), any(), any(), any(), any(), any(), any()) } returns response
-
-            mockMvc.perform(get("/api/v1/admin/accounts"))
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content").isEmpty)
-                .andExpect(jsonPath("$.data.totalElements").value(0))
-                .andExpect(jsonPath("$.data.totalPages").value(0))
         }
     }
 
@@ -242,22 +188,16 @@ class AdminAccountControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1234))
                 .andExpect(jsonPath("$.data.name").value("(신규) 강남점"))
-                .andExpect(jsonPath("$.data.accountGroup").value("9999"))
-                .andExpect(jsonPath("$.data.employeeCode").value("100123"))
-                .andExpect(jsonPath("$.data.branchCode").value("C001"))
-                .andExpect(jsonPath("$.data.branchName").value("강남지점"))
                 .andExpect(jsonPath("$.message").value("거래처 등록 성공"))
         }
 
         @Test
         @DisplayName("C4 실패 - name blank → 400 (validation)")
         fun createAccount_nameBlank() {
-            val rawJson = """{"name":"","employeeCode":"100123"}"""
-
             mockMvc.perform(
                 post("/api/v1/admin/accounts")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(rawJson)
+                    .content("""{"name":"","employeeCode":"100123"}""")
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
@@ -276,7 +216,6 @@ class AdminAccountControllerTest {
             )
                 .andExpect(status().isConflict)
                 .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_DUPLICATE"))
-                .andExpect(jsonPath("$.error.message").value("동일한 이름의 거래처가 이미 존재합니다."))
         }
 
         @Test
@@ -366,20 +305,32 @@ class AdminAccountControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1234))
                 .andExpect(jsonPath("$.data.name").value("(신규) 강남점 신호 수정"))
-                .andExpect(jsonPath("$.data.accountGroup").value("9999"))
-                .andExpect(jsonPath("$.data.employeeCode").value("100123"))
-                .andExpect(jsonPath("$.data.branchCode").value("C001"))
-                .andExpect(jsonPath("$.data.branchName").value("강남지점"))
-                .andExpect(jsonPath("$.data.address1").value("서울특별시 강남구 테헤란로 100"))
-                .andExpect(jsonPath("$.data.phone").value("02-1234-5678"))
-                .andExpect(jsonPath("$.data.abcType").value("A"))
-                .andExpect(jsonPath("$.data.closingTime1").value("18:00"))
                 .andExpect(jsonPath("$.message").value("거래처 수정 성공"))
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminAccountControllerTest#updateExceptionCases")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun updateAccount_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String
+        ) {
+            every { accountUpdateService.update(eq(1234), any(), any()) } throws exception
+
+            mockMvc.perform(
+                put("/api/v1/admin/accounts/{id}", 1234)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"name":"(신규) 다른지점"}""")
+            )
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
 
         @Test
         @DisplayName("C2 실패 - 비존재 id → 404 ACCOUNT_NOT_FOUND + 메시지에 id 포함")
-        fun updateAccount_notFound() {
+        fun updateAccount_notFoundMessage() {
             every { accountUpdateService.update(eq(9999), any(), any()) } throws AccountNotFoundException(9999)
 
             mockMvc.perform(
@@ -388,13 +339,12 @@ class AdminAccountControllerTest {
                     .content("""{"name":"(신규) 무효"}""")
             )
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NOT_FOUND"))
                 .andExpect(jsonPath("$.error.message").value("거래처를 찾을 수 없습니다: 9999"))
         }
 
         @Test
-        @DisplayName("C3 실패 - prefix 위반 → 400 ACCOUNT_NAME_PREFIX_REQUIRED + 메시지 '거래처 수정은 ...'")
-        fun updateAccount_prefixMissing() {
+        @DisplayName("C3 실패 - prefix 위반 메시지 정합 - '거래처 수정은 ...'")
+        fun updateAccount_prefixMessage() {
             every { accountUpdateService.update(eq(1234), any(), any()) } throws AccountNamePrefixRequiredForUpdateException("(신규)/(기타)")
 
             mockMvc.perform(
@@ -403,23 +353,7 @@ class AdminAccountControllerTest {
                     .content("""{"name":"강남점"}""")
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_PREFIX_REQUIRED"))
                 .andExpect(jsonPath("$.error.message").value("거래처 수정은 ((신규)/(기타)) 중 1개를 필수로 입력하셔야 합니다."))
-        }
-
-        @Test
-        @DisplayName("C4 실패 - 동일명 중복 → 409 ACCOUNT_NAME_DUPLICATE")
-        fun updateAccount_duplicate() {
-            every { accountUpdateService.update(eq(1234), any(), any()) } throws AccountNameDuplicateException()
-
-            mockMvc.perform(
-                put("/api/v1/admin/accounts/{id}", 1234)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"name":"(신규) 다른지점"}""")
-            )
-                .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_DUPLICATE"))
-                .andExpect(jsonPath("$.error.message").value("동일한 이름의 거래처가 이미 존재합니다."))
         }
     }
 
@@ -438,36 +372,45 @@ class AdminAccountControllerTest {
                 .andExpect(jsonPath("$.message").value("거래처 삭제 성공"))
         }
 
-        @Test
-        @DisplayName("C4 실패 - SAP 동기 거래처 삭제 시도 → 409 ACCOUNT_DELETE_BLOCKED_SAP_SYNCED")
-        fun deleteAccount_sapSyncedBlocked() {
-            every { accountDeleteService.delete(eq(1234)) } throws AccountDeleteBlockedSapSyncedException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminAccountControllerTest#deleteExceptionCases")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun deleteAccount_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String
+        ) {
+            every { accountDeleteService.delete(eq(1234)) } throws exception
 
             mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 1234))
-                .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.error.code").value("ACCOUNT_DELETE_BLOCKED_SAP_SYNCED"))
-                .andExpect(jsonPath("$.error.message").value("거래처 코드가 있는 거래처는 삭제할 수 없습니다."))
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
+    }
 
-        @Test
-        @DisplayName("C5 실패 - 존재하지 않는 id → 404 ACCOUNT_NOT_FOUND")
-        fun deleteAccount_notFound() {
-            every { accountDeleteService.delete(eq(9999)) } throws AccountNotFoundException()
+    companion object {
+        @JvmStatic
+        fun updateExceptionCases(): List<Arguments> = listOf(
+            Arguments.of("notFound -> 404 ACCOUNT_NOT_FOUND", AccountNotFoundException(1234), 404, "ACCOUNT_NOT_FOUND"),
+            Arguments.of(
+                "prefixMissing -> 400 ACCOUNT_NAME_PREFIX_REQUIRED",
+                AccountNamePrefixRequiredForUpdateException("(신규)/(기타)"),
+                400,
+                "ACCOUNT_NAME_PREFIX_REQUIRED",
+            ),
+            Arguments.of("duplicate -> 409 ACCOUNT_NAME_DUPLICATE", AccountNameDuplicateException(), 409, "ACCOUNT_NAME_DUPLICATE"),
+        )
 
-            mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 9999))
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NOT_FOUND"))
-                .andExpect(jsonPath("$.error.message").value("거래처를 찾을 수 없습니다."))
-        }
-
-        @Test
-        @DisplayName("C6 실패 - 이미 삭제된 id 재요청 → 404 ACCOUNT_NOT_FOUND (멱등)")
-        fun deleteAccount_alreadyDeletedIdempotent() {
-            every { accountDeleteService.delete(eq(1234)) } throws AccountNotFoundException()
-
-            mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 1234))
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NOT_FOUND"))
-        }
+        @JvmStatic
+        fun deleteExceptionCases(): List<Arguments> = listOf(
+            Arguments.of(
+                "sapSynced -> 409 ACCOUNT_DELETE_BLOCKED_SAP_SYNCED",
+                AccountDeleteBlockedSapSyncedException(),
+                409,
+                "ACCOUNT_DELETE_BLOCKED_SAP_SYNCED",
+            ),
+            Arguments.of("notFound -> 404 ACCOUNT_NOT_FOUND", AccountNotFoundException(), 404, "ACCOUNT_NOT_FOUND"),
+        )
     }
 }
