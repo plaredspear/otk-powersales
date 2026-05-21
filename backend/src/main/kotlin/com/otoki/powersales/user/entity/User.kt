@@ -116,9 +116,17 @@ class User(
     @Column(name = "profile_sfid", length = 18)
     var profileSfid: String? = null,
 
+    /** SF Profile lookup FK (Spec #780). Stage 2 fk substep 으로 [profileSfid] → profile_id 자동 채움 — read-only audit. */
+    @Column(name = "profile_id")
+    var profileId: Long? = null,
+
     @SFField("UserRoleId")
     @Column(name = "user_role_sfid", length = 18)
     var userRoleSfid: String? = null,
+
+    /** SF UserRole lookup FK (Spec #780). Stage 2 fk substep 으로 [userRoleSfid] → user_role_id 자동 채움 — read-only audit. */
+    @Column(name = "user_role_id")
+    var userRoleId: Long? = null,
 
     // -- Spec #759: EmployeeProfileResolver 산출 캐시 컬럼 --
 

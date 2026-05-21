@@ -1131,6 +1131,42 @@ object Stage1Targets {
         ),
     )
 
+    // Spec #780 — SF UserRole / Profile entity 신규 시스템 편입.
+    // SF describe 실측 결과 (UserRole 16→7 필드, Profile 573→8 필드). read-only audit lookup.
+
+    private val USER_ROLE = EntityMetadata(
+        targetName = "UserRole",
+        sObjectName = "UserRole",
+        tableName = "user_role",
+        csvFileName = "user_roles.csv",
+        fields = listOf(
+            FieldMapping("Id", "sfid", nullable = false),
+            FieldMapping("Name", "name", nullable = false),
+            FieldMapping("DeveloperName", "developer_name"),
+            FieldMapping("RollupDescription", "rollup_description"),
+            FieldMapping("ParentRoleId", "parent_user_role_sfid"),
+            FieldMapping("LastModifiedDate", "updated_at", nullable = false),
+            FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+        ),
+    )
+
+    private val PROFILE = EntityMetadata(
+        targetName = "Profile",
+        sObjectName = "Profile",
+        tableName = "profile",
+        csvFileName = "profiles.csv",
+        fields = listOf(
+            FieldMapping("Id", "sfid", nullable = false),
+            FieldMapping("Name", "name", nullable = false),
+            FieldMapping("UserType", "user_type"),
+            FieldMapping("Description", "description"),
+            FieldMapping("CreatedDate", "created_at", nullable = false),
+            FieldMapping("LastModifiedDate", "updated_at", nullable = false),
+            FieldMapping("CreatedById", "created_by_sfid"),
+            FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+        ),
+    )
+
     private val ALL: Map<String, EntityMetadata> = listOf(
         ORGANIZATION,
         EMPLOYEE,
@@ -1167,6 +1203,8 @@ object Stage1Targets {
         PUSH_MESSAGE_RECEIVER,
         TEAM_MEMBER_SCHEDULE,
         UPLOAD_FILE,
+        USER_ROLE,
+        PROFILE,
     ).associateBy { it.targetName }
 
     /**
@@ -1210,6 +1248,8 @@ object Stage1Targets {
         "PushMessageReceiver",
         "TeamMemberSchedule",
         "UploadFile",
+        "UserRole",
+        "Profile",
     )
 
     fun get(targetName: String): EntityMetadata? = ALL[targetName]
