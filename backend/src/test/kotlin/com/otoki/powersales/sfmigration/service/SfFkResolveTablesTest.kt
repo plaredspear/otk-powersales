@@ -104,10 +104,40 @@ class SfFkResolveTablesTest {
         @DisplayName("SKIP_FK_PREFIXES 에 등록된 prefix 는 null")
         fun skipPrefixes() {
             assertThat(deriveFkResolveSpec("product_code_sfid")).isNull()
-            assertThat(deriveFkResolveSpec("profile_sfid")).isNull()
-            assertThat(deriveFkResolveSpec("user_role_sfid")).isNull()
             assertThat(deriveFkResolveSpec("record_type_sfid")).isNull()
             assertThat(deriveFkResolveSpec("related_sfid")).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("Profile / UserRole FK (Spec #780)")
+    inner class ProfileAndUserRoleFk {
+
+        @Test
+        @DisplayName("profile_sfid → profile_id, ref profile.profile_id")
+        fun profileFk() {
+            val spec = deriveFkResolveSpec("profile_sfid")!!
+            assertThat(spec.idColumn).isEqualTo("profile_id")
+            assertThat(spec.refTable).isEqualTo("profile")
+            assertThat(spec.refIdColumn).isEqualTo("profile_id")
+        }
+
+        @Test
+        @DisplayName("user_role_sfid → user_role_id, ref user_role.user_role_id")
+        fun userRoleFk() {
+            val spec = deriveFkResolveSpec("user_role_sfid")!!
+            assertThat(spec.idColumn).isEqualTo("user_role_id")
+            assertThat(spec.refTable).isEqualTo("user_role")
+            assertThat(spec.refIdColumn).isEqualTo("user_role_id")
+        }
+
+        @Test
+        @DisplayName("parent_user_role_sfid → parent_user_role_id, ref user_role.user_role_id (자기참조)")
+        fun parentUserRoleSelfReference() {
+            val spec = deriveFkResolveSpec("parent_user_role_sfid")!!
+            assertThat(spec.idColumn).isEqualTo("parent_user_role_id")
+            assertThat(spec.refTable).isEqualTo("user_role")
+            assertThat(spec.refIdColumn).isEqualTo("user_role_id")
         }
     }
 }
