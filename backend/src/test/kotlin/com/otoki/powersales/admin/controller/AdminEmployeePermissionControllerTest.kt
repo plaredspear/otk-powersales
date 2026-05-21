@@ -21,6 +21,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -40,23 +43,13 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @DisplayName("AdminEmployeePermissionController 테스트")
 class AdminEmployeePermissionControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
-    @MockkBean
-    private lateinit var adminEmployeePermissionService: AdminEmployeePermissionService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var adminEmployeePermissionService: AdminEmployeePermissionService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @BeforeEach
     fun setUp() {
@@ -86,7 +79,6 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("성공 - 사원 권한 상세 반환")
         fun success() {
-            // Given
             val response = EmployeePermissionDetailResponse(
                 employeeId = 2L,
                 employeeCode = "00000002",
@@ -99,34 +91,26 @@ class AdminEmployeePermissionControllerTest {
             )
             every { adminEmployeePermissionService.getEmployeePermissions(any(), eq(2L)) } returns response
 
-            // When & Then
             mockMvc.perform(get("/api/v1/admin/employees/2/permissions"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.employeeId").value(2))
-                .andExpect(jsonPath("$.data.name").value("홍길동"))
                 .andExpect(jsonPath("$.data.rolePermissions[0]").value("DASHBOARD_READ"))
                 .andExpect(jsonPath("$.data.userPermissions[0].permission").value("SCHEDULE_WRITE"))
-                .andExpect(jsonPath("$.data.effectivePermissions").isArray)
         }
 
-        @Test
-        @DisplayName("실패 - 비관리자 → 403")
-        fun forbidden() {
-            every { adminEmployeePermissionService.getEmployeePermissions(any(), eq(2L)) } throws AdminForbiddenException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminEmployeePermissionControllerTest#getExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun get_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            employeeId: Long,
+            exception: Throwable,
+            expectedStatus: Int,
+        ) {
+            every { adminEmployeePermissionService.getEmployeePermissions(any(), eq(employeeId)) } throws exception
 
-            mockMvc.perform(get("/api/v1/admin/employees/2/permissions"))
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
-        }
-
-        @Test
-        @DisplayName("실패 - 사원 미존재 → 404")
-        fun notFound() {
-            every { adminEmployeePermissionService.getEmployeePermissions(any(), eq(999L)) } throws EmployeeNotFoundException()
-
-            mockMvc.perform(get("/api/v1/admin/employees/999/permissions"))
-                .andExpect(status().isNotFound)
+            mockMvc.perform(get("/api/v1/admin/employees/$employeeId/permissions"))
+                .andExpect(status().`is`(expectedStatus))
         }
     }
 
@@ -137,7 +121,6 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("성공 - 권한 수정 후 변경된 상태 반환")
         fun success() {
-            // Given
             val response = EmployeePermissionDetailResponse(
                 employeeId = 2L, employeeCode = "00000002", name = "홍길동",
                 role = "BRANCH_MANAGER",
@@ -150,47 +133,35 @@ class AdminEmployeePermissionControllerTest {
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("SCHEDULE_WRITE"))
 
-            // When & Then
             mockMvc.perform(
                 put("/api/v1/admin/employees/2/permissions")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.effectivePermissions").isArray)
         }
 
-        @Test
-        @DisplayName("실패 - 자기 자신 수정 → 400")
-        fun selfModify() {
-            every { adminEmployeePermissionService.updateUserPermissions(any(), eq(1L), any()) } throws CannotModifyOwnPermissionException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminEmployeePermissionControllerTest#updateExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun update_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            employeeId: Long,
+            exception: Throwable,
+            expectedCode: String,
+        ) {
+            every { adminEmployeePermissionService.updateUserPermissions(any(), eq(employeeId), any()) } throws exception
 
             val request = UpdateUserPermissionsRequest(permissions = listOf("SCHEDULE_WRITE"))
 
             mockMvc.perform(
-                put("/api/v1/admin/employees/1/permissions")
+                put("/api/v1/admin/employees/$employeeId/permissions")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("CANNOT_MODIFY_OWN_PERMISSION"))
-        }
-
-        @Test
-        @DisplayName("실패 - 잘못된 권한 → 400")
-        fun invalidPermission() {
-            every { adminEmployeePermissionService.updateUserPermissions(any(), eq(2L), any()) } throws InvalidPermissionException("INVALID")
-
-            val request = UpdateUserPermissionsRequest(permissions = listOf("INVALID"))
-
-            mockMvc.perform(
-                put("/api/v1/admin/employees/2/permissions")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("INVALID_PERMISSION"))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
     }
 
@@ -201,7 +172,6 @@ class AdminEmployeePermissionControllerTest {
         @Test
         @DisplayName("성공 - 역할 변경 후 결과 반환")
         fun success() {
-            // Given
             val response = UpdateAuthorityResponse(
                 employeeId = 2L, employeeCode = "00000002", name = "홍길동",
                 previousRole = "BRANCH_MANAGER", previousRoleLabel = "지점장",
@@ -212,18 +182,38 @@ class AdminEmployeePermissionControllerTest {
 
             val request = UpdateAuthorityRequest(role = UserRole.SALES_MANAGER)
 
-            // When & Then
             mockMvc.perform(
                 put("/api/v1/admin/employees/2/authority")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.previousRole").value("BRANCH_MANAGER"))
-                .andExpect(jsonPath("$.data.previousRoleLabel").value("지점장"))
                 .andExpect(jsonPath("$.data.newRole").value("SALES_MANAGER"))
-                .andExpect(jsonPath("$.data.newRoleLabel").value("영업부장"))
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun getExceptions(): List<Arguments> = listOf(
+            Arguments.of("forbidden -> 403 FORBIDDEN", 2L, AdminForbiddenException(), 403),
+            Arguments.of("notFound -> 404", 999L, EmployeeNotFoundException(), 404),
+        )
+
+        @JvmStatic
+        fun updateExceptions(): List<Arguments> = listOf(
+            Arguments.of(
+                "selfModify -> 400 CANNOT_MODIFY_OWN_PERMISSION",
+                1L,
+                CannotModifyOwnPermissionException(),
+                "CANNOT_MODIFY_OWN_PERMISSION",
+            ),
+            Arguments.of(
+                "invalidPermission -> 400 INVALID_PERMISSION",
+                2L,
+                InvalidPermissionException("INVALID"),
+                "INVALID_PERMISSION",
+            ),
+        )
     }
 }

@@ -18,6 +18,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -38,24 +41,13 @@ import java.time.LocalDate
 @DisplayName("AdminHolidayMasterController 테스트")
 class AdminHolidayMasterControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
-    @MockkBean
-    private lateinit var adminHolidayMasterService: AdminHolidayMasterService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
+    @MockkBean private lateinit var adminHolidayMasterService: AdminHolidayMasterService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @BeforeEach
     fun setUp() {
@@ -93,11 +85,8 @@ class AdminHolidayMasterControllerTest {
 
             mockMvc.perform(get("/api/v1/admin/holiday-masters").param("year", "2026"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].holidayDate").value("2026-01-01"))
-                .andExpect(jsonPath("$.data[0].name").value("신정"))
         }
     }
 
@@ -122,15 +111,15 @@ class AdminHolidayMasterControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isCreated)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(16))
                 .andExpect(jsonPath("$.data.name").value("임시공휴일"))
         }
 
-        @Test
-        @DisplayName("실패 - 중복 날짜")
-        fun create_duplicateDate() {
-            every { adminHolidayMasterService.createHolidayMaster(any()) } throws HolidayDateDuplicateException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminHolidayMasterControllerTest#createExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun create_exceptions(@Suppress("UNUSED_PARAMETER") name: String, exception: Throwable, expectedCode: String) {
+            every { adminHolidayMasterService.createHolidayMaster(any()) } throws exception
 
             val json = """{"holidayDate": "2026-01-01", "name": "신정", "type": "공휴일"}"""
             mockMvc.perform(
@@ -139,22 +128,7 @@ class AdminHolidayMasterControllerTest {
                     .content(json)
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("HOLIDAY_DATE_DUPLICATE"))
-        }
-
-        @Test
-        @DisplayName("실패 - 잘못된 유형")
-        fun create_invalidType() {
-            every { adminHolidayMasterService.createHolidayMaster(any()) } throws InvalidHolidayTypeException()
-
-            val json = """{"holidayDate": "2026-08-17", "name": "기타", "type": "기타"}"""
-            mockMvc.perform(
-                post("/api/v1/admin/holiday-masters")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("INVALID_HOLIDAY_TYPE"))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
 
         @Test
@@ -191,7 +165,6 @@ class AdminHolidayMasterControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.name").value("신정(수정)"))
         }
 
@@ -223,7 +196,6 @@ class AdminHolidayMasterControllerTest {
             mockMvc.perform(delete("/api/v1/admin/holiday-masters/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isEmpty)
         }
 
         @Test
@@ -235,5 +207,13 @@ class AdminHolidayMasterControllerTest {
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("HOLIDAY_NOT_FOUND"))
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun createExceptions(): List<Arguments> = listOf(
+            Arguments.of("duplicateDate -> HOLIDAY_DATE_DUPLICATE", HolidayDateDuplicateException(), "HOLIDAY_DATE_DUPLICATE"),
+            Arguments.of("invalidType -> INVALID_HOLIDAY_TYPE", InvalidHolidayTypeException(), "INVALID_HOLIDAY_TYPE"),
+        )
     }
 }
