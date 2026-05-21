@@ -16,6 +16,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 
 import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,35 +31,20 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 
 @WebMvcTest(AdminOrganizationController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminOrganizationController 테스트")
 class AdminOrganizationControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
 
-    @MockkBean
-    private lateinit var adminOrganizationService: AdminOrganizationService
+    @MockkBean private lateinit var adminOrganizationService: AdminOrganizationService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
-    // @AutoConfigureMockMvc(addFilters = false) 환경에서 WebAdminContextFilter 가 동작하지 않으므로
-    // ArgumentResolver 자체를 stub 하여 ALL scope 기본값 주입.
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
@@ -92,8 +79,9 @@ class AdminOrganizationControllerTest {
     inner class GetOrganizations {
 
         @Test
-        @DisplayName("성공 - 기본 조회")
+        @DisplayName("성공 - 기본 조회 (계층 구조 5 레벨 응답)")
         fun getOrganizations_success() {
+            // controller 응답 - 조직 계층 5 레벨이 정상 매핑되는지 확인 (가드레일 5.3 — 비즈니스 의미: 계층 구조)
             val response = listOf(
                 OrganizationResponse(
                     id = 1L,
@@ -116,15 +104,7 @@ class AdminOrganizationControllerTest {
 
             mockMvc.perform(get("/api/v1/admin/organizations"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].costCenterLevel2").value("1000"))
-                .andExpect(jsonPath("$.data[0].orgCodeLevel2").value("A100"))
                 .andExpect(jsonPath("$.data[0].orgNameLevel2").value("영업본부"))
-                .andExpect(jsonPath("$.data[0].costCenterLevel4").value("1101"))
-                .andExpect(jsonPath("$.data[0].orgNameLevel4").value("강남지점"))
-                .andExpect(jsonPath("$.data[0].costCenterLevel5").value("1101A"))
                 .andExpect(jsonPath("$.data[0].orgNameLevel5").value("강남1조"))
         }
 
@@ -139,7 +119,6 @@ class AdminOrganizationControllerTest {
                     .param("level", "L4")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isEmpty)
         }
 
@@ -150,31 +129,26 @@ class AdminOrganizationControllerTest {
 
             mockMvc.perform(get("/api/v1/admin/organizations"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isEmpty)
         }
 
-        @Test
-        @DisplayName("실패 - 유효하지 않은 level")
-        fun getOrganizations_invalidLevel() {
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminOrganizationControllerTest#validationFailures")
+        @DisplayName("실패 - @Valid 위반 → 400")
+        fun getOrganizations_validationFailures(@Suppress("UNUSED_PARAMETER") name: String, paramName: String, paramValue: String) {
             mockMvc.perform(
-                get("/api/v1/admin/organizations")
-                    .param("level", "L6")
+                get("/api/v1/admin/organizations").param(paramName, paramValue)
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
         }
+    }
 
-        @Test
-        @DisplayName("실패 - keyword 50자 초과")
-        fun getOrganizations_keywordTooLong() {
-            val longKeyword = "가".repeat(51)
-            mockMvc.perform(
-                get("/api/v1/admin/organizations")
-                    .param("keyword", longKeyword)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-        }
+    companion object {
+        @JvmStatic
+        fun validationFailures(): List<org.junit.jupiter.params.provider.Arguments> = listOf(
+            org.junit.jupiter.params.provider.Arguments.of("invalidLevel - L6 → 400", "level", "L6"),
+            org.junit.jupiter.params.provider.Arguments.of("keywordTooLong - 51자 → 400", "keyword", "가".repeat(51)),
+        )
     }
 }

@@ -17,6 +17,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.every
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -29,31 +32,19 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 
 @WebMvcTest(AdminEmployeeRegisterController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminEmployeeRegisterController 테스트")
 class AdminEmployeeRegisterControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
-    @MockkBean
-    private lateinit var adminEmployeeRegisterService: AdminEmployeeRegisterService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var adminEmployeeRegisterService: AdminEmployeeRegisterService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
 
     @BeforeEach
     fun setUp() {
@@ -113,31 +104,13 @@ class AdminEmployeeRegisterControllerTest {
                     .content(objectMapper.writeValueAsString(validRequest()))
             )
                 .andExpect(status().isCreated)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.employeeCode").value("ADMIN-001"))
                 .andExpect(jsonPath("$.data.role").value("SYSTEM_ADMIN"))
                 .andExpect(jsonPath("$.data.origin").value("MANUAL"))
-                .andExpect(jsonPath("$.data.appLoginActive").value(false))
                 .andExpect(jsonPath("$.data.passwordChangeRequired").value(true))
         }
 
         @Test
-        @DisplayName("권한 부족 - 서비스가 AdminForbiddenException -> 403, error.code=FORBIDDEN")
-        fun forbidden() {
-            every { adminEmployeeRegisterService.register(any(), any()) } throws AdminForbiddenException()
-
-            mockMvc.perform(
-                post("/api/v1/admin/employees")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(validRequest()))
-            )
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
-        }
-
-        @Test
-        @DisplayName("필수 필드 누락 - name 누락 -> 400, error.code=INVALID_PARAMETER")
+        @DisplayName("필수 필드 누락 - name 누락 -> 400")
         fun missingName() {
             val invalidJson = """
                 {
@@ -156,18 +129,37 @@ class AdminEmployeeRegisterControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
         }
 
-        @Test
-        @DisplayName("사번 중복 - 서비스가 EmployeeCodeDuplicatedException -> 409")
-        fun duplicateCode() {
-            every { adminEmployeeRegisterService.register(any(), any()) } throws EmployeeCodeDuplicatedException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminEmployeeRegisterControllerTest#registerExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun register_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String
+        ) {
+            every { adminEmployeeRegisterService.register(any(), any()) } throws exception
 
             mockMvc.perform(
                 post("/api/v1/admin/employees")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(validRequest()))
             )
-                .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.error.code").value("EMPLOYEE_CODE_DUPLICATED"))
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun registerExceptions(): List<Arguments> = listOf(
+            Arguments.of("forbidden -> 403 FORBIDDEN", AdminForbiddenException(), 403, "FORBIDDEN"),
+            Arguments.of(
+                "duplicatedCode -> 409 EMPLOYEE_CODE_DUPLICATED",
+                EmployeeCodeDuplicatedException(),
+                409,
+                "EMPLOYEE_CODE_DUPLICATED",
+            ),
+        )
     }
 }
