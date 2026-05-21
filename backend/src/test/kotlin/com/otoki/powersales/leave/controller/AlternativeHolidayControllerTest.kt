@@ -18,6 +18,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -84,31 +87,15 @@ class AlternativeHolidayControllerTest {
                 .andExpect(jsonPath("$.data.targetAltHolidayDate").value("2026-03-09"))
         }
 
-        @Test
-        @DisplayName("실패 - 신청일이 주말")
-        fun create_weekendTarget() {
-            every { alternativeHolidayService.createAlternativeHoliday(1L, any(), any()) } throws
-                AltHolidayConfirmDateIsWeekendException()
-
-            val request = AlternativeHolidayRequest(
-                actualWorkDate = LocalDate.of(2026, 3, 7),
-                targetAltHolidayDate = LocalDate.of(2026, 3, 7)
-            )
-
-            mockMvc.perform(
-                post("/api/v1/mobile/alternative-holidays")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("ALT_HOLIDAY_CONFIRM_DATE_IS_WEEKEND"))
-        }
-
-        @Test
-        @DisplayName("실패 - 중복 신청")
-        fun create_duplicate() {
-            every { alternativeHolidayService.createAlternativeHoliday(1L, any(), any()) } throws
-                AltHolidayDuplicateException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.leave.controller.AlternativeHolidayControllerTest#createExceptionCases")
+        @DisplayName("실패 - service 예외 → 400 ErrorCode 매핑")
+        fun create_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            exception: RuntimeException,
+            expectedCode: String,
+        ) {
+            every { alternativeHolidayService.createAlternativeHoliday(1L, any(), any()) } throws exception
 
             val request = AlternativeHolidayRequest(
                 actualWorkDate = LocalDate.of(2026, 3, 7),
@@ -121,7 +108,7 @@ class AlternativeHolidayControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("ALT_HOLIDAY_DUPLICATE"))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
 
         @Test
@@ -180,5 +167,13 @@ class AlternativeHolidayControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun createExceptionCases(): List<Arguments> = listOf(
+            Arguments.of("신청일 주말 -> ALT_HOLIDAY_CONFIRM_DATE_IS_WEEKEND", AltHolidayConfirmDateIsWeekendException(), "ALT_HOLIDAY_CONFIRM_DATE_IS_WEEKEND"),
+            Arguments.of("중복 신청 -> ALT_HOLIDAY_DUPLICATE", AltHolidayDuplicateException(), "ALT_HOLIDAY_DUPLICATE"),
+        )
     }
 }

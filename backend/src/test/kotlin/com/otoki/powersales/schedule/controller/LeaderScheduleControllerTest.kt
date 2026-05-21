@@ -27,6 +27,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -96,85 +99,19 @@ class LeaderScheduleControllerTest {
                 .andExpect(jsonPath("$.data.proxyRegisteredBy").value(leaderId))
         }
 
-        @Test
-        @DisplayName("실패 - 비조장 -> 403 NOT_LEADER")
-        fun create_notLeader() {
-            stubServiceThrows(LeaderScheduleNotLeaderException())
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.schedule.controller.LeaderScheduleControllerTest#createExceptionCases")
+        @DisplayName("실패 - service 예외 → status + errorCode 매핑")
+        fun create_exceptionMapping(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            exception: RuntimeException,
+            expectedStatus: Int,
+            expectedCode: String,
+        ) {
+            stubServiceThrows(exception)
             mockMvc.perform(postValid())
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("NOT_LEADER"))
-        }
-
-        @Test
-        @DisplayName("실패 - 다른 팀의 직원 -> 403 NOT_TEAM_MEMBER")
-        fun create_notTeamMember() {
-            stubServiceThrows(LeaderScheduleNotTeamMemberException())
-            mockMvc.perform(postValid())
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("NOT_TEAM_MEMBER"))
-        }
-
-        @Test
-        @DisplayName("실패 - 다른 거래처 -> 403 NOT_LEADER_ACCOUNT")
-        fun create_notLeaderAccount() {
-            stubServiceThrows(LeaderScheduleNotLeaderAccountException())
-            mockMvc.perform(postValid())
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("NOT_LEADER_ACCOUNT"))
-        }
-
-        @Test
-        @DisplayName("실패 - 휴직 직원 -> 403 TARGET_EMPLOYEE_INACTIVE")
-        fun create_targetInactive() {
-            stubServiceThrows(LeaderScheduleTargetEmployeeInactiveException())
-            mockMvc.perform(postValid())
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("TARGET_EMPLOYEE_INACTIVE"))
-        }
-
-        @Test
-        @DisplayName("실패 - 미존재 직원 -> 404 TARGET_EMPLOYEE_NOT_FOUND")
-        fun create_targetNotFound() {
-            stubServiceThrows(LeaderScheduleTargetEmployeeNotFoundException())
-            mockMvc.perform(postValid())
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("TARGET_EMPLOYEE_NOT_FOUND"))
-        }
-
-        @Test
-        @DisplayName("실패 - 근무 외 working_type -> 400 INVALID_WORKING_TYPE")
-        fun create_invalidWorkingType() {
-            stubServiceThrows(LeaderScheduleInvalidWorkingTypeException())
-            mockMvc.perform(postValid())
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("INVALID_WORKING_TYPE"))
-        }
-
-        @Test
-        @DisplayName("실패 - 거래처 누락 -> 400 ACCOUNT_REQUIRED")
-        fun create_accountRequired() {
-            stubServiceThrows(LeaderScheduleAccountRequiredException())
-            mockMvc.perform(postValid())
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("ACCOUNT_REQUIRED"))
-        }
-
-        @Test
-        @DisplayName("실패 - 연차 충돌 -> 409 DUPLICATE_LEAVE_SCHEDULE")
-        fun create_duplicateLeave() {
-            stubServiceThrows(LeaderScheduleDuplicateLeaveException())
-            mockMvc.perform(postValid())
-                .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.error.code").value("DUPLICATE_LEAVE_SCHEDULE"))
-        }
-
-        @Test
-        @DisplayName("실패 - 카테고리3 갯수 초과 -> 409 CATEGORY3_LIMIT_EXCEEDED")
-        fun create_category3Limit() {
-            stubServiceThrows(LeaderScheduleCategory3LimitExceededException())
-            mockMvc.perform(postValid())
-                .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.error.code").value("CATEGORY3_LIMIT_EXCEEDED"))
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
 
         @Test
@@ -296,4 +233,19 @@ class LeaderScheduleControllerTest {
         accountId = 90234,
         workingCategory1 = "진열"
     )
+
+    companion object {
+        @JvmStatic
+        fun createExceptionCases(): List<Arguments> = listOf(
+            Arguments.of("비조장 -> 403 NOT_LEADER", LeaderScheduleNotLeaderException(), 403, "NOT_LEADER"),
+            Arguments.of("다른 팀의 직원 -> 403 NOT_TEAM_MEMBER", LeaderScheduleNotTeamMemberException(), 403, "NOT_TEAM_MEMBER"),
+            Arguments.of("다른 거래처 -> 403 NOT_LEADER_ACCOUNT", LeaderScheduleNotLeaderAccountException(), 403, "NOT_LEADER_ACCOUNT"),
+            Arguments.of("휴직 직원 -> 403 TARGET_EMPLOYEE_INACTIVE", LeaderScheduleTargetEmployeeInactiveException(), 403, "TARGET_EMPLOYEE_INACTIVE"),
+            Arguments.of("미존재 직원 -> 404 TARGET_EMPLOYEE_NOT_FOUND", LeaderScheduleTargetEmployeeNotFoundException(), 404, "TARGET_EMPLOYEE_NOT_FOUND"),
+            Arguments.of("근무 외 working_type -> 400 INVALID_WORKING_TYPE", LeaderScheduleInvalidWorkingTypeException(), 400, "INVALID_WORKING_TYPE"),
+            Arguments.of("거래처 누락 -> 400 ACCOUNT_REQUIRED", LeaderScheduleAccountRequiredException(), 400, "ACCOUNT_REQUIRED"),
+            Arguments.of("연차 충돌 -> 409 DUPLICATE_LEAVE_SCHEDULE", LeaderScheduleDuplicateLeaveException(), 409, "DUPLICATE_LEAVE_SCHEDULE"),
+            Arguments.of("카테고리3 갯수 초과 -> 409 CATEGORY3_LIMIT_EXCEEDED", LeaderScheduleCategory3LimitExceededException(), 409, "CATEGORY3_LIMIT_EXCEEDED"),
+        )
+    }
 }
