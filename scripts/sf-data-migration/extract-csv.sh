@@ -54,7 +54,7 @@ set -euo pipefail
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PushMessage,PushMessageReceiver,TeamMemberSchedule,UploadFile,Permission"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PushMessage,PushMessageReceiver,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
 SKIP_GROUP_MEMBERS=0
 SKIP_VERIFY=0
 # SF CLI 기본 query 결과 limit 은 50,000 — Account 등 대용량 SObject 대응 위해 상향.
@@ -682,7 +682,25 @@ WHERE IsDeleted = FALSE
 EOF
 )
 
+# Spec #780 — SF UserRole / Profile entity 신규 시스템 편입.
+# SF describe 실측 (UserRole 16→7 필드, Profile 573→8 필드). 둘 다 IsDeleted 필드 부재.
 
+USER_ROLE_SOQL=$(cat <<'EOF'
+SELECT
+    Id, Name, DeveloperName, RollupDescription,
+    ParentRoleId,
+    LastModifiedDate, LastModifiedById
+FROM UserRole
+EOF
+)
+
+PROFILE_SOQL=$(cat <<'EOF'
+SELECT
+    Id, Name, UserType, Description,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
+FROM Profile
+EOF
+)
 
 GROUP_SOQL=$(cat <<'EOF'
 SELECT
@@ -1083,6 +1101,14 @@ fi
 
 if contains_target "UploadFile"; then
     run_query "UploadFile (UploadFile__c)" "$UPLOAD_FILE_SOQL" "$OUT_DIR/upload_files.csv"
+fi
+
+if contains_target "UserRole"; then
+    run_query "UserRole" "$USER_ROLE_SOQL" "$OUT_DIR/user_roles.csv"
+fi
+
+if contains_target "Profile"; then
+    run_query "Profile" "$PROFILE_SOQL" "$OUT_DIR/profiles.csv"
 fi
 
 if contains_target "Permission"; then

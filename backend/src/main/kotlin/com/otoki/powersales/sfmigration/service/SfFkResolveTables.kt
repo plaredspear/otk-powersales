@@ -68,21 +68,21 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
         "employee_input_criteria_master" to "employee_input_criteria_master_id"
     ),
     "category" to ("employee_input_criteria_master" to "employee_input_criteria_master_id"),
+    // Spec #780 — Profile / UserRole entity 신규 시스템 편입.
+    "profile" to ("profile" to "profile_id"),
+    "user_role" to ("user_role" to "user_role_id"),
+    "parent_user_role" to ("user_role" to "user_role_id"),
 )
 
 /**
  * FK 처리 제외 prefix.
  *
  * - product_code : code 기반 lookup (sfid 아님)
- * - profile      : Profile.Name (한글 문자열) lookup
- * - user_role    : UserRole 메타 — 별도 FK 컬럼 없음
  * - record_type  : SF RecordType 메타 — 별도 FK 컬럼 없음
  * - related      : Group.related polymorphic — 별도 처리
  */
 internal val SKIP_FK_PREFIXES: Set<String> = setOf(
     "product_code",
-    "profile",
-    "user_role",
     "record_type",
     "related",
 )

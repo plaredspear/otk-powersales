@@ -1259,6 +1259,44 @@ val UPLOAD_FILE_METADATA = EntityMetadata(
     )
 )
 
+// Spec #780 — SF UserRole / Profile entity 신규 시스템 편입.
+// SF describe 실측 (UserRole 16→7 필드, Profile 573→8 필드). read-only audit lookup.
+
+val USER_ROLE_METADATA = EntityMetadata(
+    targetName = "UserRole",
+    sObjectName = "UserRole",
+    tableName = "user_role",
+    pkColumn = "user_role_id",
+    conflictKey = "sfid",
+    fields = listOf(
+        FieldMapping("Id", "sfid", nullable = false),
+        FieldMapping("Name", "name", nullable = false),
+        FieldMapping("DeveloperName", "developer_name"),
+        FieldMapping("RollupDescription", "rollup_description"),
+        FieldMapping("ParentRoleId", "parent_user_role_sfid"),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedById", "last_modified_by_sfid")
+    )
+)
+
+val PROFILE_METADATA = EntityMetadata(
+    targetName = "Profile",
+    sObjectName = "Profile",
+    tableName = "profile",
+    pkColumn = "profile_id",
+    conflictKey = "sfid",
+    fields = listOf(
+        FieldMapping("Id", "sfid", nullable = false),
+        FieldMapping("Name", "name", nullable = false),
+        FieldMapping("UserType", "user_type"),
+        FieldMapping("Description", "description"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
+        FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("LastModifiedById", "last_modified_by_sfid")
+    )
+)
+
 data class PermissionStagingMetadata(
     val schemaName: String = "powersales",
     val stagingTableName: String = "sf_permission_set_assignment_raw",
@@ -1576,6 +1614,8 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "PushMessageReceiver" to TargetSpec(PUSH_MESSAGE_RECEIVER_METADATA, "PushMessageReceiver__c", "push_message_receivers.csv", "common/entity/PushMessageReceiver"),
     "TeamMemberSchedule" to TargetSpec(TEAM_MEMBER_SCHEDULE_METADATA, "DKRetail__TeamMemberSchedule__c", "team_member_schedules.csv", "schedule/entity/TeamMemberSchedule"),
     "UploadFile" to TargetSpec(UPLOAD_FILE_METADATA, "UploadFile__c", "upload_files.csv", "common/entity/UploadFile"),
+    "UserRole" to TargetSpec(USER_ROLE_METADATA, "UserRole", "user_roles.csv", "auth/entity/UserRoleEntity"),
+    "Profile" to TargetSpec(PROFILE_METADATA, "Profile", "profiles.csv", "auth/entity/Profile"),
     "Permission"   to TargetSpec(PERMISSION_METADATA, "PermissionSetAssignment", "permission_set_assignments.csv", null)
 )
 
@@ -1619,6 +1659,8 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "PushMessageReceiver",
     "TeamMemberSchedule",
     "UploadFile",
+    "UserRole",
+    "Profile",
     "Permission"
 )
 
@@ -1630,7 +1672,8 @@ val SUPPORTED_TARGETS = setOf(
     "ErpOrder", "ErpOrderProduct", "HolidayMaster", "InspectionTheme",
     "MonthlyFemaleEmployeeIntegrationSchedule", "MonthlySalesHistory", "NewProduct", "OrderRequest", "OrderRequestProduct",
     "ProductBarcode", "ProfessionalPromotionTeamHistory", "ProfessionalPromotionTeamMaster", "PromotionEmployee", "PushMessage",
-    "PushMessageReceiver", "TeamMemberSchedule", "UploadFile"
+    "PushMessageReceiver", "TeamMemberSchedule", "UploadFile",
+    "UserRole", "Profile"
 )
 
 fun sortTargetsByDependency(targets: List<String>): List<String> {
