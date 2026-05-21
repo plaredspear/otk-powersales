@@ -1614,7 +1614,7 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "PushMessageReceiver" to TargetSpec(PUSH_MESSAGE_RECEIVER_METADATA, "PushMessageReceiver__c", "push_message_receivers.csv", "common/entity/PushMessageReceiver"),
     "TeamMemberSchedule" to TargetSpec(TEAM_MEMBER_SCHEDULE_METADATA, "DKRetail__TeamMemberSchedule__c", "team_member_schedules.csv", "schedule/entity/TeamMemberSchedule"),
     "UploadFile" to TargetSpec(UPLOAD_FILE_METADATA, "UploadFile__c", "upload_files.csv", "common/entity/UploadFile"),
-    "UserRole" to TargetSpec(USER_ROLE_METADATA, "UserRole", "user_roles.csv", "auth/entity/UserRoleEntity"),
+    "UserRole" to TargetSpec(USER_ROLE_METADATA, "UserRole", "user_roles.csv", "auth/entity/UserRole"),
     "Profile" to TargetSpec(PROFILE_METADATA, "Profile", "profiles.csv", "auth/entity/Profile"),
     "Permission"   to TargetSpec(PERMISSION_METADATA, "PermissionSetAssignment", "permission_set_assignments.csv", null)
 )
