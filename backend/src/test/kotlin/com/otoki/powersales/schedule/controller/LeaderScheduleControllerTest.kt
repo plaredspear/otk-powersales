@@ -2,11 +2,7 @@ package com.otoki.powersales.schedule.controller
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
 import com.otoki.powersales.schedule.dto.response.LeaderScheduleCreateResponse
@@ -34,9 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -45,25 +38,17 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(LeaderScheduleController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("LeaderScheduleController 테스트")
-class LeaderScheduleControllerTest {
+class LeaderScheduleControllerTest : MobileControllerTestSupport() {
 
-    @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     @MockkBean private lateinit var leaderScheduleService: LeaderScheduleService
 
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
-
     private val leaderId = 4001L
-    private val testPrincipal = UserPrincipal(userId = leaderId, role = UserRoleEnum.LEADER)
 
     @BeforeEach
-    fun setUp() {
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(testPrincipal, null, testPrincipal.authorities)
+    fun setUpLeaderPrincipal() {
+        authenticateAs(leaderId, UserRoleEnum.LEADER)
     }
 
     @Nested

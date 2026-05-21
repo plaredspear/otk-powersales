@@ -3,12 +3,7 @@ package com.otoki.powersales.schedule.controller
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.common.dto.response.AccountInfo
 import com.otoki.powersales.common.dto.response.AccountListResponse
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusItem
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusResponse
@@ -16,7 +11,6 @@ import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.schedule.service.AttendanceService
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -27,9 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -38,38 +29,13 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(AttendanceController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AttendanceController 테스트")
-class AttendanceControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class AttendanceControllerTest : MobileControllerTestSupport() {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
     @MockkBean
     private lateinit var attendanceService: AttendanceService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-
-    @BeforeEach
-    fun setUp() {
-        val authentication = UsernamePasswordAuthenticationToken(
-            testPrincipal, null, testPrincipal.authorities
-        )
-        SecurityContextHolder.getContext().authentication = authentication
-    }
 
     // ========== POST /api/v1/mobile/attendance ==========
 
