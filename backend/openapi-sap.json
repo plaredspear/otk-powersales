@@ -1,407 +1,1220 @@
 {
-  "openapi" : "3.1.0",
-  "info" : {
-    "title" : "오뚜기 파워세일즈 API",
-    "description" : "B2B 영업사원 실적 조회 및 목표 관리 시스템 API",
-    "version" : "v1.0.0"
-  },
-  "servers" : [ {
-    "url" : "http://localhost:56116",
-    "description" : "Generated server url"
-  } ],
-  "security" : [ {
-    "Bearer Authentication" : [ ]
-  } ],
-  "paths" : {
-    "/api/v1/sap/system-code" : {
-      "post" : {
-        "tags" : [ "sap-product-master-controller" ],
-        "summary" : "시스템 공통 코드 마스터 적재 (UPSERT)",
-        "description" : "\n            SAP 시스템 공통 코드 마스터를 (CompanyCode + GroupCode + DetailCode) 복합키 기준으로 UPSERT 합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/SystemCodeMaster`\n            - 레거시 Apex 클래스: `IF_REST_SAP_SystemCodeMaster`\n        ",
-        "operationId" : "upsertSystemCode",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/SystemCodeMasterRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperProductMasterDetail"
-                }
-              }
-            }
+  "components" : {
+    "schemas" : {
+      "AccountCategoryRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AccountCategoryRequestItem"
+            },
+            "type" : [ "array", "null" ]
           }
-        }
-      }
-    },
-    "/api/v1/sap/product" : {
-      "post" : {
-        "tags" : [ "sap-product-master-controller" ],
-        "summary" : "제품 마스터 적재 (UPSERT)",
-        "description" : "\n            SAP 제품 마스터를 ProductCode 기준으로 UPSERT 합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/ProductMasterSend`\n            - 레거시 Apex 클래스: `IF_REST_SAP_ProductMasterSend`\n\n            **명명 주의**: 레거시명 `ProductMasterSend` 의 `Send` 접미사는 SF→SAP 송신을 의미하지 않습니다. 실제는 SAP→backend 인바운드 (UPSERT) 로 동작합니다.\n        ",
-        "operationId" : "upsertProduct",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ProductMasterRequest"
-              }
-            }
-          },
-          "required" : true
         },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperProductMasterDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sap/product-barcode" : {
-      "post" : {
-        "tags" : [ "sap-product-master-controller" ],
-        "summary" : "제품 바코드 마스터 적재 (UPSERT)",
-        "description" : "\n            SAP 제품 바코드 마스터를 (ProductCode + ProductUnit + ProductSequence) 복합키 기준으로 UPSERT 합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/BarcodeMaster`\n            - 레거시 Apex 클래스: `IF_REST_SAP_BarcodeMaster`\n        ",
-        "operationId" : "upsertProductBarcode",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/BarcodeMasterRequest"
-              }
-            }
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "AccountCategoryRequestItem" : {
+        "properties" : {
+          "AccountCode" : {
+            "type" : "string"
           },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperProductMasterDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sap/organization" : {
-      "post" : {
-        "tags" : [ "sap-organize-master-controller" ],
-        "summary" : "조직 마스터 적재 (DELETE→INSERT)",
-        "description" : "\n            SAP 조직 마스터 데이터를 전체 교체합니다 (파괴적 인터페이스).\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/OrganizeMasterReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_OrganizeMasterReceive`\n\n            **동작 차이**\n            - 신규는 직전 적재 건수 대비 ±20% 초과 변동 시 `422 SANITY_CHECK_FAILED` 로 거부 (레거시는 가드 없이 무조건 실행)\n        ",
-        "operationId" : "replaceOrganizations",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/OrganizeMasterRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperOrganizeMasterDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sap/oauth/token" : {
-      "post" : {
-        "tags" : [ "sap-token-controller" ],
-        "operationId" : "issueTokenForm",
-        "parameters" : [ {
-          "name" : "Authorization",
-          "in" : "header",
-          "required" : false,
-          "schema" : {
+          "Name" : {
             "type" : "string"
           }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/x-www-form-urlencoded" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "grant_type" : {
-                    "type" : "string"
-                  },
-                  "client_id" : {
-                    "type" : "string"
-                  },
-                  "client_secret" : {
-                    "type" : "string"
-                  },
-                  "scope" : {
-                    "type" : "string"
-                  }
-                }
-              }
+        },
+        "type" : "object"
+      },
+      "AccountMasterDetail" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FailureItem"
             },
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/TokenRequest"
-              }
-            }
+            "type" : "array"
           },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/TokenResponse"
-                }
-              }
-            }
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
-        }
+        },
+        "type" : "object"
+      },
+      "AppointmentDetail" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FailureItem"
+            },
+            "type" : "array"
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "AppointmentRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AppointmentRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "AppointmentRequestItem" : {
+        "properties" : {
+          "AfterOrgCode" : {
+            "type" : "string"
+          },
+          "AfterOrgName" : {
+            "type" : "string"
+          },
+          "AppointDate" : {
+            "type" : "string"
+          },
+          "EmployeeCode" : {
+            "type" : "string"
+          },
+          "Jikchak" : {
+            "type" : "string"
+          },
+          "Jikgub" : {
+            "type" : "string"
+          },
+          "Jikjong" : {
+            "type" : "string"
+          },
+          "Jikwee" : {
+            "type" : "string"
+          },
+          "JobCode" : {
+            "type" : "string"
+          },
+          "JobName" : {
+            "type" : "string"
+          },
+          "ManageType" : {
+            "type" : "string"
+          },
+          "OrdDetailCode" : {
+            "type" : "string"
+          },
+          "OrdDetailNode" : {
+            "type" : "string"
+          },
+          "WorkArea" : {
+            "type" : "string"
+          },
+          "WorkType" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AttendInfoDetail" : {
+        "properties" : {
+          "chunks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChunkResult"
+            },
+            "type" : "array"
+          },
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FailureItem"
+            },
+            "type" : "array"
+          },
+          "scheduleConversion" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ScheduleConversionSummary"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "AttendInfoRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AttendInfoRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "AttendInfoRequestItem" : {
+        "properties" : {
+          "AttendType" : {
+            "type" : "string"
+          },
+          "EmployeeCode" : {
+            "type" : "string"
+          },
+          "EndDate" : {
+            "type" : "string"
+          },
+          "StartDate" : {
+            "type" : "string"
+          },
+          "Status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "BarcodeMasterRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BarcodeMasterRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "BarcodeMasterRequestItem" : {
+        "properties" : {
+          "ProductBarcode" : {
+            "type" : "string"
+          },
+          "ProductCode" : {
+            "type" : "string"
+          },
+          "ProductName" : {
+            "type" : "string"
+          },
+          "ProductSequence" : {
+            "type" : "string"
+          },
+          "ProductUnit" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ChunkResult" : {
+        "properties" : {
+          "count" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "index" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ClaimStatusDetail" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ClaimStatusFailure"
+            },
+            "type" : "array"
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ClaimStatusFailure" : {
+        "properties" : {
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ClaimStatusRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ClaimStatusRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "ClaimStatusRequestItem" : {
+        "properties" : {
+          "ActionCode" : {
+            "type" : "string"
+          },
+          "COSMOSKey" : {
+            "type" : "string"
+          },
+          "ClaimSequence" : {
+            "type" : "string"
+          },
+          "ClaimStatus" : {
+            "type" : "string"
+          },
+          "Content" : {
+            "type" : "string"
+          },
+          "Name" : {
+            "type" : "string"
+          },
+          "ReasonType" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ClientMasterRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ClientMasterRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "ClientMasterRequestItem" : {
+        "properties" : {
+          "ABCType" : {
+            "type" : "string"
+          },
+          "ABCTypeCode" : {
+            "type" : "string"
+          },
+          "AccountGroup" : {
+            "type" : "string"
+          },
+          "AccountStatusCode" : {
+            "type" : "string"
+          },
+          "AccountStatusName" : {
+            "type" : "string"
+          },
+          "AccountType" : {
+            "type" : "string"
+          },
+          "Address1" : {
+            "type" : "string"
+          },
+          "Address2" : {
+            "type" : "string"
+          },
+          "BranchCode" : {
+            "type" : "string"
+          },
+          "BranchName" : {
+            "type" : "string"
+          },
+          "BusinessCategory" : {
+            "type" : "string"
+          },
+          "BusinessLicenseNumber" : {
+            "type" : "string"
+          },
+          "BusinessType" : {
+            "type" : "string"
+          },
+          "ClosingTime1" : {
+            "type" : "string"
+          },
+          "ClosingTime2" : {
+            "type" : "string"
+          },
+          "ClosingTime3" : {
+            "type" : "string"
+          },
+          "ConsignmentAcc" : {
+            "type" : "string"
+          },
+          "Distribution" : {
+            "type" : "string"
+          },
+          "DivisionCode" : {
+            "type" : "string"
+          },
+          "DivisionName" : {
+            "type" : "string"
+          },
+          "Email" : {
+            "type" : "string"
+          },
+          "EmployeeCode" : {
+            "type" : "string"
+          },
+          "MobilePhone" : {
+            "type" : "string"
+          },
+          "Name" : {
+            "type" : "string"
+          },
+          "Phone" : {
+            "type" : "string"
+          },
+          "Representative" : {
+            "type" : "string"
+          },
+          "SAPAccountCode" : {
+            "type" : "string"
+          },
+          "SalesDeptCode" : {
+            "type" : "string"
+          },
+          "SalesDeptName" : {
+            "type" : "string"
+          },
+          "WERK1" : {
+            "type" : "string"
+          },
+          "WERK1_TX" : {
+            "type" : "string"
+          },
+          "WERK2" : {
+            "type" : "string"
+          },
+          "WERK2_TX" : {
+            "type" : "string"
+          },
+          "WERK3" : {
+            "type" : "string"
+          },
+          "WERK3_TX" : {
+            "type" : "string"
+          },
+          "Zipcode" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DailySalesHistoryRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DailySalesHistoryRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "DailySalesHistoryRequestItem" : {
+        "properties" : {
+          "ERPDistributionAmount1" : {
+            "type" : "string"
+          },
+          "ERPDistributionAmount2" : {
+            "type" : "string"
+          },
+          "ERPDistributionAmount3" : {
+            "type" : "string"
+          },
+          "ERPSalesAmount1" : {
+            "type" : "string"
+          },
+          "ERPSalesAmount2" : {
+            "type" : "string"
+          },
+          "ERPSalesAmount3" : {
+            "type" : "string"
+          },
+          "LedgerAmount" : {
+            "type" : "string"
+          },
+          "SAPAccountCode" : {
+            "type" : "string"
+          },
+          "SalesDate" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EmployeeMasterDetail" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FailureItem"
+            },
+            "type" : "array"
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "EmployeeMasterRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EmployeeMasterRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "EmployeeMasterRequestItem" : {
+        "properties" : {
+          "Birthdate" : {
+            "type" : "string"
+          },
+          "Email" : {
+            "type" : "string"
+          },
+          "EmployeeCode" : {
+            "type" : "string"
+          },
+          "EmployeeName" : {
+            "type" : "string"
+          },
+          "EndDate" : {
+            "type" : "string"
+          },
+          "HomePhone" : {
+            "type" : "string"
+          },
+          "LockingFlag" : {
+            "type" : "string"
+          },
+          "OrgCode" : {
+            "type" : "string"
+          },
+          "Sex" : {
+            "type" : "string"
+          },
+          "StartDate" : {
+            "type" : "string"
+          },
+          "Status" : {
+            "type" : "string"
+          },
+          "WorkEmail" : {
+            "type" : "string"
+          },
+          "WorkPhone" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ErpOrderDetail" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ErpOrderFailure"
+            },
+            "type" : "array"
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ErpOrderFailure" : {
+        "properties" : {
+          "reason" : {
+            "type" : "string"
+          },
+          "sapOrderNumber" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "ErpOrderItemDetail" : {
+        "properties" : {
+          "ConfirmQuantity" : {
+            "type" : "string"
+          },
+          "ConfirmQuantity_Box" : {
+            "type" : "string"
+          },
+          "Confirm_Unit" : {
+            "type" : "string"
+          },
+          "DefaultReason" : {
+            "type" : "string"
+          },
+          "LineItemStatus" : {
+            "type" : "string"
+          },
+          "LineNumber" : {
+            "type" : "string"
+          },
+          "OrderQuantity" : {
+            "type" : "string"
+          },
+          "OrderSalesLineAmount" : {
+            "type" : "string"
+          },
+          "Plant" : {
+            "type" : "string"
+          },
+          "Plant_NM" : {
+            "type" : "string"
+          },
+          "ProductCode" : {
+            "type" : "string"
+          },
+          "ProductName" : {
+            "type" : "string"
+          },
+          "ReleaseAmount" : {
+            "type" : "string"
+          },
+          "ReleaseQuantity" : {
+            "type" : "string"
+          },
+          "SAPOrderNumber" : {
+            "type" : "string"
+          },
+          "ShippingAmount" : {
+            "type" : "string"
+          },
+          "ShippingCompleteTime" : {
+            "type" : "string"
+          },
+          "ShippingDriverName" : {
+            "type" : "string"
+          },
+          "ShippingDriverPhone" : {
+            "type" : "string"
+          },
+          "ShippingQuantity" : {
+            "type" : "string"
+          },
+          "ShippingQuantity_Box" : {
+            "type" : "string"
+          },
+          "ShippingScheduleTime" : {
+            "type" : "string"
+          },
+          "ShippingVehicle" : {
+            "type" : "string"
+          },
+          "Unit" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ErpOrderRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ErpOrderRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "ErpOrderRequestItem" : {
+        "properties" : {
+          "DeliveryRequestDate" : {
+            "type" : "string"
+          },
+          "EmployeeCode" : {
+            "type" : "string"
+          },
+          "EmployeeName" : {
+            "type" : "string"
+          },
+          "ItemDetailList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ErpOrderItemDetail"
+            },
+            "type" : "array"
+          },
+          "OrderChannel" : {
+            "type" : "string"
+          },
+          "OrderChannel_NM" : {
+            "type" : "string"
+          },
+          "OrderDate" : {
+            "type" : "string"
+          },
+          "OrderSalesAmount" : {
+            "type" : "string"
+          },
+          "OrderType" : {
+            "type" : "string"
+          },
+          "OrderType_NM" : {
+            "type" : "string"
+          },
+          "SAPAccountCode" : {
+            "type" : "string"
+          },
+          "SAPAccountName" : {
+            "type" : "string"
+          },
+          "SAPOrderNumber" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "FailureItem" : {
+        "properties" : {
+          "identifier" : {
+            "type" : [ "string", "null" ]
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "MonthlySalesHistoryRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MonthlySalesHistoryRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "MonthlySalesHistoryRequestItem" : {
+        "properties" : {
+          "ABCClosingAmount1" : {
+            "type" : "string"
+          },
+          "ABCClosingAmount2" : {
+            "type" : "string"
+          },
+          "ABCClosingAmount3" : {
+            "type" : "string"
+          },
+          "SAPAccountCode" : {
+            "type" : "string"
+          },
+          "SalesYearMonth" : {
+            "type" : "string"
+          },
+          "ShipClosingAmount" : {
+            "type" : "string"
+          },
+          "TotalLedgerAmount" : {
+            "type" : "string"
+          },
+          "rlsales" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "OrganizeMasterDetail" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FailureItem"
+            },
+            "type" : "array"
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "OrganizeMasterRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OrganizeMasterRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "OrganizeMasterRequestItem" : {
+        "properties" : {
+          "CC_CD2" : {
+            "type" : "string"
+          },
+          "CC_CD3" : {
+            "type" : "string"
+          },
+          "CC_CD4" : {
+            "type" : "string"
+          },
+          "CC_CD5" : {
+            "type" : "string"
+          },
+          "ORG_CD2" : {
+            "type" : "string"
+          },
+          "ORG_CD3" : {
+            "type" : "string"
+          },
+          "ORG_CD4" : {
+            "type" : "string"
+          },
+          "ORG_CD5" : {
+            "type" : "string"
+          },
+          "ORG_NM2" : {
+            "type" : "string"
+          },
+          "ORG_NM3" : {
+            "type" : "string"
+          },
+          "ORG_NM4" : {
+            "type" : "string"
+          },
+          "ORG_NM5" : {
+            "type" : "string"
+          },
+          "allNull" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "ProductMasterDetail" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FailureItem"
+            },
+            "type" : "array"
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ProductMasterRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProductMasterRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "ProductMasterRequestItem" : {
+        "properties" : {
+          "BoxReceivingQuantity" : {
+            "type" : "string"
+          },
+          "Category1" : {
+            "type" : "string"
+          },
+          "Category2" : {
+            "type" : "string"
+          },
+          "Category3" : {
+            "type" : "string"
+          },
+          "CategoryCode1" : {
+            "type" : "string"
+          },
+          "CategoryCode2" : {
+            "type" : "string"
+          },
+          "CategoryCode3" : {
+            "type" : "string"
+          },
+          "LaunchDate" : {
+            "type" : "string"
+          },
+          "LogisticsBarCode" : {
+            "type" : "string"
+          },
+          "Pallet" : {
+            "type" : "string"
+          },
+          "ProductBarcode" : {
+            "type" : "string"
+          },
+          "ProductCode" : {
+            "type" : "string"
+          },
+          "ProductName" : {
+            "type" : "string"
+          },
+          "ProductStatus" : {
+            "type" : "string"
+          },
+          "ProductType" : {
+            "type" : "string"
+          },
+          "ShelfLife" : {
+            "type" : "string"
+          },
+          "ShelfLifeUnit" : {
+            "type" : "string"
+          },
+          "StandardPrice" : {
+            "type" : "string"
+          },
+          "StoreCondition" : {
+            "type" : "string"
+          },
+          "SuperTax" : {
+            "type" : "string"
+          },
+          "TasteGift" : {
+            "type" : "string"
+          },
+          "Unit" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SalesHistoryDetail" : {
+        "properties" : {
+          "chunks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChunkResult"
+            },
+            "type" : "array"
+          },
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FailureItem"
+            },
+            "type" : "array"
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "SapResultWrapperAccountMasterDetail" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/AccountMasterDetail"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SapResultWrapperAppointmentDetail" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/AppointmentDetail"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SapResultWrapperAttendInfoDetail" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/AttendInfoDetail"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SapResultWrapperClaimStatusDetail" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/ClaimStatusDetail"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SapResultWrapperEmployeeMasterDetail" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/EmployeeMasterDetail"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SapResultWrapperErpOrderDetail" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/ErpOrderDetail"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SapResultWrapperOrganizeMasterDetail" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/OrganizeMasterDetail"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SapResultWrapperProductMasterDetail" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/ProductMasterDetail"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SapResultWrapperSalesHistoryDetail" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/SalesHistoryDetail"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ScheduleConversionSummary" : {
+        "properties" : {
+          "convertedScheduleCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "deletedScheduleCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "skippedAttendTypeFilter" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "skippedEmployeeNotFound" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "skippedIdempotent" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "skippedJobFilter" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "SystemCodeMasterRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SystemCodeMasterRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "SystemCodeMasterRequestItem" : {
+        "properties" : {
+          "CompanyCode" : {
+            "type" : "string"
+          },
+          "DetailCode" : {
+            "type" : "string"
+          },
+          "DetailCodeName" : {
+            "type" : "string"
+          },
+          "GroupCode" : {
+            "type" : "string"
+          },
+          "GroupCodeName" : {
+            "type" : "string"
+          },
+          "SEQ" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "TokenRequest" : {
+        "properties" : {
+          "client_id" : {
+            "type" : "string"
+          },
+          "client_secret" : {
+            "type" : "string"
+          },
+          "grant_type" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "TokenResponse" : {
+        "properties" : {
+          "access_token" : {
+            "type" : "string"
+          },
+          "expires_in" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "scope" : {
+            "type" : "string"
+          },
+          "token_type" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
       }
     },
-    "/api/v1/sap/monthly-sales-history" : {
-      "post" : {
-        "tags" : [ "sap-sales-history-controller" ],
-        "summary" : "월 매출 이력 적재 (청크 UPSERT)",
-        "description" : "\n            SAP 월 매출 이력을 (SAPAccountCode + SalesYearMonth) 기준으로 UPSERT 합니다.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/MonthlySalesHistory`\n            - 레거시 Apex 클래스: `IF_REST_SAP_MonthlySalesHistory`\n        ",
-        "operationId" : "upsertMonthly",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/MonthlySalesHistoryRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperSalesHistoryDetail"
-                }
-              }
-            }
-          }
-        }
+    "securitySchemes" : {
+      "Bearer Authentication" : {
+        "bearerFormat" : "JWT",
+        "name" : "Bearer Authentication",
+        "scheme" : "bearer",
+        "type" : "http"
       }
-    },
-    "/api/v1/sap/erp-order" : {
-      "post" : {
-        "tags" : [ "sap-erp-order-controller" ],
-        "summary" : "ERP 주문 적재 (헤더+라인 UPSERT)",
-        "description" : "\n            SAP ERP 주문 헤더와 라인을 단일 트랜잭션으로 UPSERT 합니다.\n            라인 UPSERT 키는 (SAPOrderNumber 선두 0 1자 제거 + LineNumber).\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/ClientOrderSearch`\n            - 레거시 Apex 클래스: `IF_REST_SAP_ClientOrderReceive`\n\n            **명명 주의**: 레거시 URL 의 `Search` 는 클래스명(`Receive`) 과 다르며 실제 동작은 적재(POST)입니다.\n        ",
-        "operationId" : "upsertErpOrder",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ErpOrderRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperErpOrderDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sap/employee" : {
-      "post" : {
-        "tags" : [ "sap-employee-master-controller" ],
-        "summary" : "직원 마스터 적재 (UPSERT)",
-        "description" : "\n            SAP 직원 마스터 데이터를 EmployeeCode 기준으로 UPSERT 합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/employeeMaster`\n            - 레거시 Apex 클래스: `IF_REST_SAP_EmployeeMaster`\n        ",
-        "operationId" : "upsertEmployee",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/EmployeeMasterRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperEmployeeMasterDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sap/daily-sales-history" : {
-      "post" : {
-        "tags" : [ "sap-sales-history-controller" ],
-        "summary" : "일 매출 이력 적재 (청크 UPSERT)",
-        "description" : "\n            SAP 일 매출 이력을 (SAPAccountCode + SalesDate) 기준으로 UPSERT 합니다.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/DailyErpSalesInfoReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_DailyErpSalesInfoReceive`\n        ",
-        "operationId" : "upsertDaily",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/DailySalesHistoryRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperSalesHistoryDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sap/claim-status" : {
-      "post" : {
-        "tags" : [ "sap-claim-status-controller" ],
-        "summary" : "클레임 상태 갱신 (UPDATE only)",
-        "description" : "\n            SAP 클레임 상태를 갱신합니다 (존재하는 클레임만, 없으면 행 단위 부분 실패).\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/ClaimReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_ClaimReceive`\n\n            **동작 범위 차이**: 레거시는 INSERT + UPDATE 둘 다 처리했으나, 신규는 **상태 UPDATE-only** 입니다. 신규 클레임 INSERT 시도는 `claim not found` 부분 실패로 응답됩니다.\n\n            **응답 코드 변경**: 레거시는 `RESULT_CODE` 로 `\"S\"` (성공) / `\"E\"` (실패) 변종을 사용했으나, 신규는 다른 인터페이스와 동일하게 `\"200\"` + `RESULT_DETAIL.failures[]` 행 단위 보고로 통일됩니다.\n        ",
-        "operationId" : "updateClaimStatus",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ClaimStatusRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperClaimStatusDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sap/attend-info" : {
-      "post" : {
-        "tags" : [ "sap-attend-info-controller" ],
-        "summary" : "출근 정보 적재 (UPSERT)",
-        "description" : "\n            SAP 출근 정보를 적재합니다.\n            한 호출 최대 행 수 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/AttendInfo`\n            - 레거시 Apex 클래스: `IF_REST_SAP_AttendInfo`\n        ",
-        "operationId" : "insertAttendInfo",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AttendInfoRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperAttendInfoDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sap/appointment" : {
-      "post" : {
-        "tags" : [ "sap-appointment-controller" ],
-        "summary" : "인사발령 적재 (UPSERT)",
-        "description" : "\n            SAP 인사발령 데이터를 적재합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/Appointment`\n            - 레거시 Apex 클래스: `IF_REST_SAP_Appointment`\n        ",
-        "operationId" : "insertAppointment",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AppointmentRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperAppointmentDetail"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
+    }
+  },
+  "info" : {
+    "description" : "B2B 영업사원 실적 조회 및 목표 관리 시스템 API",
+    "title" : "오뚜기 파워세일즈 API",
+    "version" : "v1.0.0"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
     "/api/v1/sap/account" : {
       "post" : {
-        "tags" : [ "sap-account-master-controller" ],
-        "summary" : "거래처 마스터 적재 (UPSERT)",
         "description" : "\n            SAP 거래처 마스터(매장) 데이터를 SAPAccountCode 기준으로 UPSERT 합니다.\n            EmployeeCode 가 직원 마스터에 존재하지 않으면 행 단위 부분 실패로 보고됩니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/ClientMasterReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_ClientMasterReceive`\n\n            **레거시 정정**: `BusinessLiicenseNumber` (오타) → `BusinessLicenseNumber`\n        ",
         "operationId" : "upsertAccount",
         "requestBody" : {
@@ -416,22 +1229,22 @@
         },
         "responses" : {
           "200" : {
-            "description" : "OK",
             "content" : {
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SapResultWrapperAccountMasterDetail"
                 }
               }
-            }
+            },
+            "description" : "OK"
           }
-        }
+        },
+        "summary" : "거래처 마스터 적재 (UPSERT)",
+        "tags" : [ "sap-account-master-controller" ]
       }
     },
     "/api/v1/sap/account-category" : {
       "post" : {
-        "tags" : [ "sap-account-master-controller" ],
-        "summary" : "거래처 카테고리 마스터 적재 (UPSERT)",
         "description" : "\n            SAP 거래처 카테고리(등급) 마스터를 AccountCode 기준으로 UPSERT 합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/AccountMaster`\n            - 레거시 Apex 클래스: `IF_REST_SAP_AccountMaster` (Salesforce `AccountCategoryMaster__c` SObject 매핑)\n\n            **명명 주의**: 레거시명 `AccountMaster` 는 Salesforce 표준 `Account` (거래처 본체) 와 다른 카테고리 마스터입니다. 거래처 본체는 `/account` (`ClientMasterReceive`).\n        ",
         "operationId" : "upsertAccountCategory",
         "requestBody" : {
@@ -446,1224 +1259,411 @@
         },
         "responses" : {
           "200" : {
-            "description" : "OK",
             "content" : {
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SapResultWrapperAccountMasterDetail"
                 }
               }
-            }
+            },
+            "description" : "OK"
           }
-        }
+        },
+        "summary" : "거래처 카테고리 마스터 적재 (UPSERT)",
+        "tags" : [ "sap-account-master-controller" ]
+      }
+    },
+    "/api/v1/sap/appointment" : {
+      "post" : {
+        "description" : "\n            SAP 인사발령 데이터를 적재합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/Appointment`\n            - 레거시 Apex 클래스: `IF_REST_SAP_Appointment`\n        ",
+        "operationId" : "insertAppointment",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AppointmentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperAppointmentDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "인사발령 적재 (UPSERT)",
+        "tags" : [ "sap-appointment-controller" ]
+      }
+    },
+    "/api/v1/sap/attend-info" : {
+      "post" : {
+        "description" : "\n            SAP 출근 정보를 적재합니다.\n            한 호출 최대 행 수 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/AttendInfo`\n            - 레거시 Apex 클래스: `IF_REST_SAP_AttendInfo`\n        ",
+        "operationId" : "insertAttendInfo",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AttendInfoRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperAttendInfoDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "출근 정보 적재 (UPSERT)",
+        "tags" : [ "sap-attend-info-controller" ]
+      }
+    },
+    "/api/v1/sap/claim-status" : {
+      "post" : {
+        "description" : "\n            SAP 클레임 상태를 갱신합니다 (존재하는 클레임만, 없으면 행 단위 부분 실패).\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/ClaimReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_ClaimReceive`\n\n            **동작 범위 차이**: 레거시는 INSERT + UPDATE 둘 다 처리했으나, 신규는 **상태 UPDATE-only** 입니다. 신규 클레임 INSERT 시도는 `claim not found` 부분 실패로 응답됩니다.\n\n            **응답 코드 변경**: 레거시는 `RESULT_CODE` 로 `\"S\"` (성공) / `\"E\"` (실패) 변종을 사용했으나, 신규는 다른 인터페이스와 동일하게 `\"200\"` + `RESULT_DETAIL.failures[]` 행 단위 보고로 통일됩니다.\n        ",
+        "operationId" : "updateClaimStatus",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClaimStatusRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperClaimStatusDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "클레임 상태 갱신 (UPDATE only)",
+        "tags" : [ "sap-claim-status-controller" ]
+      }
+    },
+    "/api/v1/sap/daily-sales-history" : {
+      "post" : {
+        "description" : "\n            SAP 일 매출 이력을 (SAPAccountCode + SalesDate) 기준으로 UPSERT 합니다.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/DailyErpSalesInfoReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_DailyErpSalesInfoReceive`\n        ",
+        "operationId" : "upsertDaily",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DailySalesHistoryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperSalesHistoryDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "일 매출 이력 적재 (청크 UPSERT)",
+        "tags" : [ "sap-sales-history-controller" ]
+      }
+    },
+    "/api/v1/sap/employee" : {
+      "post" : {
+        "description" : "\n            SAP 직원 마스터 데이터를 EmployeeCode 기준으로 UPSERT 합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/employeeMaster`\n            - 레거시 Apex 클래스: `IF_REST_SAP_EmployeeMaster`\n        ",
+        "operationId" : "upsertEmployee",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EmployeeMasterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperEmployeeMasterDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "직원 마스터 적재 (UPSERT)",
+        "tags" : [ "sap-employee-master-controller" ]
+      }
+    },
+    "/api/v1/sap/erp-order" : {
+      "post" : {
+        "description" : "\n            SAP ERP 주문 헤더와 라인을 단일 트랜잭션으로 UPSERT 합니다.\n            라인 UPSERT 키는 (SAPOrderNumber 선두 0 1자 제거 + LineNumber).\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/ClientOrderSearch`\n            - 레거시 Apex 클래스: `IF_REST_SAP_ClientOrderReceive`\n\n            **명명 주의**: 레거시 URL 의 `Search` 는 클래스명(`Receive`) 과 다르며 실제 동작은 적재(POST)입니다.\n        ",
+        "operationId" : "upsertErpOrder",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ErpOrderRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperErpOrderDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "ERP 주문 적재 (헤더+라인 UPSERT)",
+        "tags" : [ "sap-erp-order-controller" ]
+      }
+    },
+    "/api/v1/sap/monthly-sales-history" : {
+      "post" : {
+        "description" : "\n            SAP 월 매출 이력을 (SAPAccountCode + SalesYearMonth) 기준으로 UPSERT 합니다.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/MonthlySalesHistory`\n            - 레거시 Apex 클래스: `IF_REST_SAP_MonthlySalesHistory`\n        ",
+        "operationId" : "upsertMonthly",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MonthlySalesHistoryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperSalesHistoryDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "월 매출 이력 적재 (청크 UPSERT)",
+        "tags" : [ "sap-sales-history-controller" ]
+      }
+    },
+    "/api/v1/sap/oauth/token" : {
+      "post" : {
+        "operationId" : "issueTokenForm",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "Authorization",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TokenRequest"
+              }
+            },
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "properties" : {
+                  "client_id" : {
+                    "type" : "string"
+                  },
+                  "client_secret" : {
+                    "type" : "string"
+                  },
+                  "grant_type" : {
+                    "type" : "string"
+                  },
+                  "scope" : {
+                    "type" : "string"
+                  }
+                },
+                "type" : "object"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sap-token-controller" ]
+      }
+    },
+    "/api/v1/sap/organization" : {
+      "post" : {
+        "description" : "\n            SAP 조직 마스터 데이터를 전체 교체합니다 (파괴적 인터페이스).\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/OrganizeMasterReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_OrganizeMasterReceive`\n\n            **동작 차이**\n            - 신규는 직전 적재 건수 대비 ±20% 초과 변동 시 `422 SANITY_CHECK_FAILED` 로 거부 (레거시는 가드 없이 무조건 실행)\n        ",
+        "operationId" : "replaceOrganizations",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OrganizeMasterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperOrganizeMasterDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "조직 마스터 적재 (DELETE→INSERT)",
+        "tags" : [ "sap-organize-master-controller" ]
+      }
+    },
+    "/api/v1/sap/product" : {
+      "post" : {
+        "description" : "\n            SAP 제품 마스터를 ProductCode 기준으로 UPSERT 합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/ProductMasterSend`\n            - 레거시 Apex 클래스: `IF_REST_SAP_ProductMasterSend`\n\n            **명명 주의**: 레거시명 `ProductMasterSend` 의 `Send` 접미사는 SF→SAP 송신을 의미하지 않습니다. 실제는 SAP→backend 인바운드 (UPSERT) 로 동작합니다.\n        ",
+        "operationId" : "upsertProduct",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProductMasterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperProductMasterDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "제품 마스터 적재 (UPSERT)",
+        "tags" : [ "sap-product-master-controller" ]
+      }
+    },
+    "/api/v1/sap/product-barcode" : {
+      "post" : {
+        "description" : "\n            SAP 제품 바코드 마스터를 (ProductCode + ProductUnit + ProductSequence) 복합키 기준으로 UPSERT 합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/BarcodeMaster`\n            - 레거시 Apex 클래스: `IF_REST_SAP_BarcodeMaster`\n        ",
+        "operationId" : "upsertProductBarcode",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BarcodeMasterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperProductMasterDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "제품 바코드 마스터 적재 (UPSERT)",
+        "tags" : [ "sap-product-master-controller" ]
+      }
+    },
+    "/api/v1/sap/system-code" : {
+      "post" : {
+        "description" : "\n            SAP 시스템 공통 코드 마스터를 (CompanyCode + GroupCode + DetailCode) 복합키 기준으로 UPSERT 합니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/SystemCodeMaster`\n            - 레거시 Apex 클래스: `IF_REST_SAP_SystemCodeMaster`\n        ",
+        "operationId" : "upsertSystemCode",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SystemCodeMasterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SapResultWrapperProductMasterDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "시스템 공통 코드 마스터 적재 (UPSERT)",
+        "tags" : [ "sap-product-master-controller" ]
       }
     }
   },
-  "components" : {
-    "schemas" : {
-      "SystemCodeMasterRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/SystemCodeMasterRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "SystemCodeMasterRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "CompanyCode" : {
-            "type" : "string"
-          },
-          "GroupCode" : {
-            "type" : "string"
-          },
-          "DetailCode" : {
-            "type" : "string"
-          },
-          "GroupCodeName" : {
-            "type" : "string"
-          },
-          "DetailCodeName" : {
-            "type" : "string"
-          },
-          "SEQ" : {
-            "type" : "string"
-          }
-        }
-      },
-      "FailureItem" : {
-        "type" : "object",
-        "properties" : {
-          "identifier" : {
-            "type" : [ "string", "null" ]
-          },
-          "reason" : {
-            "type" : "string"
-          }
-        }
-      },
-      "ProductMasterDetail" : {
-        "type" : "object",
-        "properties" : {
-          "successCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failureCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failures" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/FailureItem"
-            }
-          }
-        }
-      },
-      "SapResultWrapperProductMasterDetail" : {
-        "type" : "object",
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/ProductMasterDetail"
-          }
-        }
-      },
-      "ProductMasterRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/ProductMasterRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "ProductMasterRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "ProductCode" : {
-            "type" : "string"
-          },
-          "ProductName" : {
-            "type" : "string"
-          },
-          "ProductBarcode" : {
-            "type" : "string"
-          },
-          "LogisticsBarCode" : {
-            "type" : "string"
-          },
-          "CategoryCode1" : {
-            "type" : "string"
-          },
-          "Category1" : {
-            "type" : "string"
-          },
-          "CategoryCode2" : {
-            "type" : "string"
-          },
-          "Category2" : {
-            "type" : "string"
-          },
-          "CategoryCode3" : {
-            "type" : "string"
-          },
-          "Category3" : {
-            "type" : "string"
-          },
-          "ProductStatus" : {
-            "type" : "string"
-          },
-          "StandardPrice" : {
-            "type" : "string"
-          },
-          "Unit" : {
-            "type" : "string"
-          },
-          "BoxReceivingQuantity" : {
-            "type" : "string"
-          },
-          "ShelfLife" : {
-            "type" : "string"
-          },
-          "ShelfLifeUnit" : {
-            "type" : "string"
-          },
-          "LaunchDate" : {
-            "type" : "string"
-          },
-          "StoreCondition" : {
-            "type" : "string"
-          },
-          "ProductType" : {
-            "type" : "string"
-          },
-          "SuperTax" : {
-            "type" : "string"
-          },
-          "TasteGift" : {
-            "type" : "string"
-          },
-          "Pallet" : {
-            "type" : "string"
-          }
-        }
-      },
-      "BarcodeMasterRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/BarcodeMasterRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "BarcodeMasterRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "ProductCode" : {
-            "type" : "string"
-          },
-          "ProductName" : {
-            "type" : "string"
-          },
-          "ProductUnit" : {
-            "type" : "string"
-          },
-          "ProductSequence" : {
-            "type" : "string"
-          },
-          "ProductBarcode" : {
-            "type" : "string"
-          }
-        }
-      },
-      "OrganizeMasterRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/OrganizeMasterRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "OrganizeMasterRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "CC_CD2" : {
-            "type" : "string"
-          },
-          "ORG_CD2" : {
-            "type" : "string"
-          },
-          "ORG_NM2" : {
-            "type" : "string"
-          },
-          "CC_CD3" : {
-            "type" : "string"
-          },
-          "ORG_CD3" : {
-            "type" : "string"
-          },
-          "ORG_NM3" : {
-            "type" : "string"
-          },
-          "CC_CD4" : {
-            "type" : "string"
-          },
-          "ORG_CD4" : {
-            "type" : "string"
-          },
-          "ORG_NM4" : {
-            "type" : "string"
-          },
-          "CC_CD5" : {
-            "type" : "string"
-          },
-          "ORG_CD5" : {
-            "type" : "string"
-          },
-          "ORG_NM5" : {
-            "type" : "string"
-          },
-          "allNull" : {
-            "type" : "boolean"
-          }
-        }
-      },
-      "OrganizeMasterDetail" : {
-        "type" : "object",
-        "properties" : {
-          "successCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failureCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failures" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/FailureItem"
-            }
-          }
-        }
-      },
-      "SapResultWrapperOrganizeMasterDetail" : {
-        "type" : "object",
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/OrganizeMasterDetail"
-          }
-        }
-      },
-      "TokenResponse" : {
-        "type" : "object",
-        "properties" : {
-          "access_token" : {
-            "type" : "string"
-          },
-          "token_type" : {
-            "type" : "string"
-          },
-          "expires_in" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "scope" : {
-            "type" : "string"
-          }
-        }
-      },
-      "TokenRequest" : {
-        "type" : "object",
-        "properties" : {
-          "grant_type" : {
-            "type" : "string"
-          },
-          "client_id" : {
-            "type" : "string"
-          },
-          "client_secret" : {
-            "type" : "string"
-          },
-          "scope" : {
-            "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "MonthlySalesHistoryRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/MonthlySalesHistoryRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "MonthlySalesHistoryRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "SAPAccountCode" : {
-            "type" : "string"
-          },
-          "SalesYearMonth" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount1" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount2" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount3" : {
-            "type" : "string"
-          },
-          "TotalLedgerAmount" : {
-            "type" : "string"
-          },
-          "ShipClosingAmount" : {
-            "type" : "string"
-          },
-          "rlsales" : {
-            "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "ChunkResult" : {
-        "type" : "object",
-        "properties" : {
-          "index" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "status" : {
-            "type" : "string"
-          },
-          "count" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "reason" : {
-            "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "SalesHistoryDetail" : {
-        "type" : "object",
-        "properties" : {
-          "successCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failureCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failures" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/FailureItem"
-            }
-          },
-          "chunks" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ChunkResult"
-            }
-          }
-        }
-      },
-      "SapResultWrapperSalesHistoryDetail" : {
-        "type" : "object",
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/SalesHistoryDetail"
-          }
-        }
-      },
-      "ErpOrderItemDetail" : {
-        "type" : "object",
-        "properties" : {
-          "SAPOrderNumber" : {
-            "type" : "string"
-          },
-          "LineNumber" : {
-            "type" : "string"
-          },
-          "ProductCode" : {
-            "type" : "string"
-          },
-          "ProductName" : {
-            "type" : "string"
-          },
-          "OrderQuantity" : {
-            "type" : "string"
-          },
-          "Unit" : {
-            "type" : "string"
-          },
-          "ConfirmQuantity_Box" : {
-            "type" : "string"
-          },
-          "ConfirmQuantity" : {
-            "type" : "string"
-          },
-          "Confirm_Unit" : {
-            "type" : "string"
-          },
-          "DefaultReason" : {
-            "type" : "string"
-          },
-          "LineItemStatus" : {
-            "type" : "string"
-          },
-          "ShippingDriverName" : {
-            "type" : "string"
-          },
-          "ShippingVehicle" : {
-            "type" : "string"
-          },
-          "ShippingDriverPhone" : {
-            "type" : "string"
-          },
-          "ShippingScheduleTime" : {
-            "type" : "string"
-          },
-          "ShippingCompleteTime" : {
-            "type" : "string"
-          },
-          "ShippingQuantity_Box" : {
-            "type" : "string"
-          },
-          "ShippingQuantity" : {
-            "type" : "string"
-          },
-          "OrderSalesLineAmount" : {
-            "type" : "string"
-          },
-          "ShippingAmount" : {
-            "type" : "string"
-          },
-          "Plant" : {
-            "type" : "string"
-          },
-          "Plant_NM" : {
-            "type" : "string"
-          },
-          "ReleaseQuantity" : {
-            "type" : "string"
-          },
-          "ReleaseAmount" : {
-            "type" : "string"
-          }
-        }
-      },
-      "ErpOrderRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/ErpOrderRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "ErpOrderRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "SAPOrderNumber" : {
-            "type" : "string"
-          },
-          "SAPAccountCode" : {
-            "type" : "string"
-          },
-          "SAPAccountName" : {
-            "type" : "string"
-          },
-          "DeliveryRequestDate" : {
-            "type" : "string"
-          },
-          "OrderDate" : {
-            "type" : "string"
-          },
-          "EmployeeCode" : {
-            "type" : "string"
-          },
-          "EmployeeName" : {
-            "type" : "string"
-          },
-          "OrderSalesAmount" : {
-            "type" : "string"
-          },
-          "OrderChannel" : {
-            "type" : "string"
-          },
-          "OrderChannel_NM" : {
-            "type" : "string"
-          },
-          "OrderType" : {
-            "type" : "string"
-          },
-          "OrderType_NM" : {
-            "type" : "string"
-          },
-          "ItemDetailList" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ErpOrderItemDetail"
-            }
-          }
-        }
-      },
-      "ErpOrderDetail" : {
-        "type" : "object",
-        "properties" : {
-          "successCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failureCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failures" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ErpOrderFailure"
-            }
-          }
-        }
-      },
-      "ErpOrderFailure" : {
-        "type" : "object",
-        "properties" : {
-          "sapOrderNumber" : {
-            "type" : [ "string", "null" ]
-          },
-          "reason" : {
-            "type" : "string"
-          }
-        }
-      },
-      "SapResultWrapperErpOrderDetail" : {
-        "type" : "object",
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/ErpOrderDetail"
-          }
-        }
-      },
-      "EmployeeMasterRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/EmployeeMasterRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "EmployeeMasterRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "EmployeeCode" : {
-            "type" : "string"
-          },
-          "EmployeeName" : {
-            "type" : "string"
-          },
-          "Sex" : {
-            "type" : "string"
-          },
-          "HomePhone" : {
-            "type" : "string"
-          },
-          "WorkPhone" : {
-            "type" : "string"
-          },
-          "WorkEmail" : {
-            "type" : "string"
-          },
-          "Email" : {
-            "type" : "string"
-          },
-          "StartDate" : {
-            "type" : "string"
-          },
-          "EndDate" : {
-            "type" : "string"
-          },
-          "Status" : {
-            "type" : "string"
-          },
-          "Birthdate" : {
-            "type" : "string"
-          },
-          "OrgCode" : {
-            "type" : "string"
-          },
-          "LockingFlag" : {
-            "type" : "string"
-          }
-        }
-      },
-      "EmployeeMasterDetail" : {
-        "type" : "object",
-        "properties" : {
-          "successCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failureCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failures" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/FailureItem"
-            }
-          }
-        }
-      },
-      "SapResultWrapperEmployeeMasterDetail" : {
-        "type" : "object",
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/EmployeeMasterDetail"
-          }
-        }
-      },
-      "DailySalesHistoryRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/DailySalesHistoryRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "DailySalesHistoryRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "SAPAccountCode" : {
-            "type" : "string"
-          },
-          "SalesDate" : {
-            "type" : "string"
-          },
-          "ERPSalesAmount1" : {
-            "type" : "string"
-          },
-          "ERPSalesAmount2" : {
-            "type" : "string"
-          },
-          "ERPSalesAmount3" : {
-            "type" : "string"
-          },
-          "ERPDistributionAmount1" : {
-            "type" : "string"
-          },
-          "ERPDistributionAmount2" : {
-            "type" : "string"
-          },
-          "ERPDistributionAmount3" : {
-            "type" : "string"
-          },
-          "LedgerAmount" : {
-            "type" : "string"
-          }
-        }
-      },
-      "ClaimStatusRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/ClaimStatusRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "ClaimStatusRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "Name" : {
-            "type" : "string"
-          },
-          "ClaimSequence" : {
-            "type" : "string"
-          },
-          "ActionCode" : {
-            "type" : "string"
-          },
-          "ClaimStatus" : {
-            "type" : "string"
-          },
-          "Content" : {
-            "type" : "string"
-          },
-          "ReasonType" : {
-            "type" : "string"
-          },
-          "COSMOSKey" : {
-            "type" : "string"
-          }
-        }
-      },
-      "ClaimStatusDetail" : {
-        "type" : "object",
-        "properties" : {
-          "successCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failureCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failures" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ClaimStatusFailure"
-            }
-          }
-        }
-      },
-      "ClaimStatusFailure" : {
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : [ "string", "null" ]
-          },
-          "reason" : {
-            "type" : "string"
-          }
-        }
-      },
-      "SapResultWrapperClaimStatusDetail" : {
-        "type" : "object",
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/ClaimStatusDetail"
-          }
-        }
-      },
-      "AttendInfoRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/AttendInfoRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "AttendInfoRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "EmployeeCode" : {
-            "type" : "string"
-          },
-          "StartDate" : {
-            "type" : "string"
-          },
-          "EndDate" : {
-            "type" : "string"
-          },
-          "AttendType" : {
-            "type" : "string"
-          },
-          "Status" : {
-            "type" : "string"
-          }
-        }
-      },
-      "AttendInfoDetail" : {
-        "type" : "object",
-        "properties" : {
-          "successCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failureCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failures" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/FailureItem"
-            }
-          },
-          "chunks" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ChunkResult"
-            }
-          },
-          "scheduleConversion" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ScheduleConversionSummary"
-            }, {
-              "type" : "null"
-            } ]
-          }
-        }
-      },
-      "SapResultWrapperAttendInfoDetail" : {
-        "type" : "object",
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/AttendInfoDetail"
-          }
-        }
-      },
-      "ScheduleConversionSummary" : {
-        "type" : "object",
-        "properties" : {
-          "convertedScheduleCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "deletedScheduleCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "skippedEmployeeNotFound" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "skippedJobFilter" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "skippedAttendTypeFilter" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "skippedIdempotent" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }
-      },
-      "AppointmentRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/AppointmentRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "AppointmentRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "EmployeeCode" : {
-            "type" : "string"
-          },
-          "AfterOrgCode" : {
-            "type" : "string"
-          },
-          "AfterOrgName" : {
-            "type" : "string"
-          },
-          "Jikchak" : {
-            "type" : "string"
-          },
-          "Jikwee" : {
-            "type" : "string"
-          },
-          "Jikgub" : {
-            "type" : "string"
-          },
-          "WorkType" : {
-            "type" : "string"
-          },
-          "ManageType" : {
-            "type" : "string"
-          },
-          "JobCode" : {
-            "type" : "string"
-          },
-          "WorkArea" : {
-            "type" : "string"
-          },
-          "Jikjong" : {
-            "type" : "string"
-          },
-          "AppointDate" : {
-            "type" : "string"
-          },
-          "JobName" : {
-            "type" : "string"
-          },
-          "OrdDetailCode" : {
-            "type" : "string"
-          },
-          "OrdDetailNode" : {
-            "type" : "string"
-          }
-        }
-      },
-      "AppointmentDetail" : {
-        "type" : "object",
-        "properties" : {
-          "successCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failureCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failures" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/FailureItem"
-            }
-          }
-        }
-      },
-      "SapResultWrapperAppointmentDetail" : {
-        "type" : "object",
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/AppointmentDetail"
-          }
-        }
-      },
-      "ClientMasterRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/ClientMasterRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "ClientMasterRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "SAPAccountCode" : {
-            "type" : "string"
-          },
-          "AccountType" : {
-            "type" : "string"
-          },
-          "Name" : {
-            "type" : "string"
-          },
-          "AccountStatusCode" : {
-            "type" : "string"
-          },
-          "AccountStatusName" : {
-            "type" : "string"
-          },
-          "AccountGroup" : {
-            "type" : "string"
-          },
-          "Phone" : {
-            "type" : "string"
-          },
-          "MobilePhone" : {
-            "type" : "string"
-          },
-          "Email" : {
-            "type" : "string"
-          },
-          "BusinessType" : {
-            "type" : "string"
-          },
-          "BusinessCategory" : {
-            "type" : "string"
-          },
-          "EmployeeCode" : {
-            "type" : "string"
-          },
-          "BusinessLicenseNumber" : {
-            "type" : "string"
-          },
-          "Representative" : {
-            "type" : "string"
-          },
-          "Zipcode" : {
-            "type" : "string"
-          },
-          "Address1" : {
-            "type" : "string"
-          },
-          "Address2" : {
-            "type" : "string"
-          },
-          "DivisionCode" : {
-            "type" : "string"
-          },
-          "DivisionName" : {
-            "type" : "string"
-          },
-          "SalesDeptCode" : {
-            "type" : "string"
-          },
-          "SalesDeptName" : {
-            "type" : "string"
-          },
-          "BranchCode" : {
-            "type" : "string"
-          },
-          "BranchName" : {
-            "type" : "string"
-          },
-          "ClosingTime1" : {
-            "type" : "string"
-          },
-          "ClosingTime2" : {
-            "type" : "string"
-          },
-          "ClosingTime3" : {
-            "type" : "string"
-          },
-          "ABCType" : {
-            "type" : "string"
-          },
-          "ABCTypeCode" : {
-            "type" : "string"
-          },
-          "Distribution" : {
-            "type" : "string"
-          },
-          "ConsignmentAcc" : {
-            "type" : "string"
-          },
-          "WERK1" : {
-            "type" : "string"
-          },
-          "WERK2" : {
-            "type" : "string"
-          },
-          "WERK3" : {
-            "type" : "string"
-          },
-          "WERK1_TX" : {
-            "type" : "string"
-          },
-          "WERK2_TX" : {
-            "type" : "string"
-          },
-          "WERK3_TX" : {
-            "type" : "string"
-          }
-        }
-      },
-      "AccountMasterDetail" : {
-        "type" : "object",
-        "properties" : {
-          "successCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failureCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "failures" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/FailureItem"
-            }
-          }
-        }
-      },
-      "SapResultWrapperAccountMasterDetail" : {
-        "type" : "object",
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/AccountMasterDetail"
-          }
-        }
-      },
-      "AccountCategoryRequest" : {
-        "type" : "object",
-        "properties" : {
-          "reqItemList" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "$ref" : "#/components/schemas/AccountCategoryRequestItem"
-            }
-          }
-        },
-        "required" : [ "reqItemList" ]
-      },
-      "AccountCategoryRequestItem" : {
-        "type" : "object",
-        "properties" : {
-          "AccountCode" : {
-            "type" : "string"
-          },
-          "Name" : {
-            "type" : "string"
-          }
-        }
-      }
-    },
-    "securitySchemes" : {
-      "Bearer Authentication" : {
-        "type" : "http",
-        "name" : "Bearer Authentication",
-        "scheme" : "bearer",
-        "bearerFormat" : "JWT"
-      }
-    }
-  }
+  "security" : [ {
+    "Bearer Authentication" : [ ]
+  } ],
+  "servers" : [ {
+    "description" : "Generated server url",
+    "url" : "http://localhost"
+  } ]
 }

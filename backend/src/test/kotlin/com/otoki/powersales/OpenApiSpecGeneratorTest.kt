@@ -1,7 +1,10 @@
 package com.otoki.powersales
 
+import tools.jackson.databind.JsonNode
 import tools.jackson.databind.SerializationFeature
 import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.node.ArrayNode
+import tools.jackson.databind.node.ObjectNode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -61,13 +64,47 @@ class OpenApiSpecGeneratorTest {
                 .withFailMessage { "paths 키 누락: $url" }
                 .isTrue()
 
-            val prettyJson = objectMapper.writeValueAsString(jsonNode)
+            // git diff 노이즈 제거: (1) servers[].url 의 RANDOM_PORT 정규화, (2) ObjectNode 키 재귀 정렬.
+            // RANDOM_PORT 와 JVM 리플렉션 순서 비결정성으로 인해 재생성 때마다 키 순서/포트가 흔들리는 문제를 차단한다.
+            normalizeServerUrls(jsonNode)
+            val canonical = sortKeysRecursively(jsonNode, objectMapper)
+
+            val prettyJson = objectMapper.writeValueAsString(canonical)
             val outputFile = File(System.getProperty("user.dir"), fileName)
             outputFile.writeText(prettyJson)
 
             assertThat(outputFile.exists()).isTrue()
             assertThat(outputFile.length()).isGreaterThan(0)
             println("OpenAPI spec generated: ${outputFile.absolutePath} (${outputFile.length()} bytes)")
+        }
+    }
+
+    private fun normalizeServerUrls(root: JsonNode) {
+        val servers = root.get("servers") as? ArrayNode ?: return
+        for (server in servers) {
+            val obj = server as? ObjectNode ?: continue
+            val url = obj.get("url")?.asString() ?: continue
+            // http://localhost:<port> 형태의 RANDOM_PORT 만 정규화. 외부 server URL 은 건드리지 않는다.
+            val normalized = url.replace(Regex("^http://localhost:\\d+"), "http://localhost")
+            obj.put("url", normalized)
+        }
+    }
+
+    private fun sortKeysRecursively(node: JsonNode, mapper: JsonMapper): JsonNode {
+        return when (node) {
+            is ObjectNode -> {
+                val sorted = mapper.createObjectNode()
+                node.propertyNames().asSequence().sorted().forEach { key ->
+                    sorted.set(key, sortKeysRecursively(node.get(key), mapper))
+                }
+                sorted
+            }
+            is ArrayNode -> {
+                val arr = mapper.createArrayNode()
+                node.forEach { element -> arr.add(sortKeysRecursively(element, mapper)) }
+                arr
+            }
+            else -> node
         }
     }
 }
