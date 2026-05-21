@@ -17,6 +17,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.every
 import io.mockk.just
 import io.mockk.Runs
@@ -248,34 +251,25 @@ class AdminEducationControllerTest {
                 .andExpect(jsonPath("$.data.attachments[0].fileKey").value("uuid.pdf"))
         }
 
-        @Test
-        @DisplayName("실패 - 빈 제목")
-        fun createPost_emptyTitle() {
-            every { educationService.createPost(eq(1L), eq(""), eq("내용"), eq("c00001"), null) } throws InvalidEducationParameterException("제목은 1~150자여야 합니다")
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminEducationControllerTest#createPostExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun createPost_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            title: String,
+            exception: Throwable,
+            expectedCode: String
+        ) {
+            every { educationService.createPost(eq(1L), eq(title), eq("내용"), eq("c00001"), null) } throws exception
 
             mockMvc.perform(
                 multipart("/api/v1/admin/education/posts")
-                    .param("title", "")
+                    .param("title", title)
                     .param("content", "내용")
                     .param("category", "c00001")
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
-        }
-
-        @Test
-        @DisplayName("실패 - 파일 수 초과")
-        fun createPost_fileLimitExceeded() {
-            every { educationService.createPost(eq(1L), eq("제목"), eq("내용"), eq("c00001"), null) } throws FileLimitExceededException()
-
-            mockMvc.perform(
-                multipart("/api/v1/admin/education/posts")
-                    .param("title", "제목")
-                    .param("content", "내용")
-                    .param("category", "c00001")
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("FILE_LIMIT_EXCEEDED"))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
     }
 
@@ -358,5 +352,18 @@ class AdminEducationControllerTest {
                 .andExpect(jsonPath("$.data[0].eduCodeNm").value("시식매뉴얼"))
                 .andExpect(jsonPath("$.data[1].eduCode").value("c00002"))
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun createPostExceptions(): List<Arguments> = listOf(
+            Arguments.of(
+                "emptyTitle -> INVALID_PARAMETER",
+                "",
+                InvalidEducationParameterException("제목은 1~150자여야 합니다"),
+                "INVALID_PARAMETER",
+            ),
+            Arguments.of("fileLimitExceeded -> FILE_LIMIT_EXCEEDED", "제목", FileLimitExceededException(), "FILE_LIMIT_EXCEEDED"),
+        )
     }
 }
