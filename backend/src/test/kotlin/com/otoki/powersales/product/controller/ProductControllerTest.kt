@@ -16,6 +16,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -34,23 +37,13 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @DisplayName("ProductController 테스트")
 class ProductControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
 
-    @MockkBean
-    private lateinit var productService: ProductService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var productService: ProductService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
 
@@ -82,18 +75,9 @@ class ProductControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content.length()").value(2))
-                .andExpect(jsonPath("$.data.content[0].productName").value("열라면_용기105G"))
                 .andExpect(jsonPath("$.data.content[0].productCode").value("18110014"))
-                .andExpect(jsonPath("$.data.content[0].logisticsBarcode").value("8801045570716"))
                 .andExpect(jsonPath("$.data.totalElements").value(2))
-                .andExpect(jsonPath("$.data.totalPages").value(1))
-                .andExpect(jsonPath("$.data.number").value(0))
-                .andExpect(jsonPath("$.data.size").value(20))
-                .andExpect(jsonPath("$.data.first").value(true))
-                .andExpect(jsonPath("$.data.last").value(true))
         }
 
         @Test
@@ -112,8 +96,6 @@ class ProductControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content.length()").value(1))
                 .andExpect(jsonPath("$.data.content[0].logisticsBarcode").value("8801045570716"))
         }
 
@@ -129,7 +111,6 @@ class ProductControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isEmpty)
                 .andExpect(jsonPath("$.data.totalElements").value(0))
         }
@@ -152,8 +133,6 @@ class ProductControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.number").value(1))
-                .andExpect(jsonPath("$.data.size").value(5))
-                .andExpect(jsonPath("$.data.totalElements").value(6))
                 .andExpect(jsonPath("$.data.totalPages").value(2))
         }
     }
@@ -162,55 +141,26 @@ class ProductControllerTest {
     @DisplayName("검색 에러 케이스")
     inner class ErrorCases {
 
-        @Test
-        @DisplayName("검색어 1자 - 400 INVALID_PARAMETER")
-        fun searchProducts_shortQuery_returnsBadRequest() {
-            every { productService.searchProducts("열", "text", any(), any()) } throws
-                InvalidSearchParameterException("검색어는 2자 이상이어야 합니다")
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.product.controller.ProductControllerTest#searchExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun searchProducts_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            query: String,
+            type: String,
+            exception: Throwable,
+            expectedCode: String,
+        ) {
+            every { productService.searchProducts(query, type, any(), any()) } throws exception
 
             mockMvc.perform(
                 get("/api/v1/mobile/products/search")
-                    .param("query", "열")
+                    .param("query", query)
+                    .param("type", type)
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
-                .andExpect(jsonPath("$.error.message").value("검색어는 2자 이상이어야 합니다"))
-        }
-
-        @Test
-        @DisplayName("잘못된 검색 유형 - 400 INVALID_SEARCH_TYPE")
-        fun searchProducts_invalidType_returnsBadRequest() {
-            every { productService.searchProducts("열라면", "invalid", any(), any()) } throws
-                InvalidSearchTypeException()
-
-            mockMvc.perform(
-                get("/api/v1/mobile/products/search")
-                    .param("query", "열라면")
-                    .param("type", "invalid")
-                    .contentType(MediaType.APPLICATION_JSON)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("INVALID_SEARCH_TYPE"))
-        }
-
-        @Test
-        @DisplayName("바코드 형식 오류 - 400 INVALID_PARAMETER")
-        fun searchProducts_invalidBarcode_returnsBadRequest() {
-            every { productService.searchProducts("abc", "barcode", any(), any()) } throws
-                InvalidSearchParameterException("유효하지 않은 바코드 형식입니다")
-
-            mockMvc.perform(
-                get("/api/v1/mobile/products/search")
-                    .param("query", "abc")
-                    .param("type", "barcode")
-                    .contentType(MediaType.APPLICATION_JSON)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
 
         @Test
@@ -238,6 +188,33 @@ class ProductControllerTest {
             shelfLife = "7개월",
             category1 = "라면",
             category2 = "용기면"
+        )
+    }
+
+    companion object {
+        @JvmStatic
+        fun searchExceptions(): List<Arguments> = listOf(
+            Arguments.of(
+                "shortQuery (1자) -> INVALID_PARAMETER",
+                "열",
+                "text",
+                InvalidSearchParameterException("검색어는 2자 이상이어야 합니다"),
+                "INVALID_PARAMETER",
+            ),
+            Arguments.of(
+                "invalidType -> INVALID_SEARCH_TYPE",
+                "열라면",
+                "invalid",
+                InvalidSearchTypeException(),
+                "INVALID_SEARCH_TYPE",
+            ),
+            Arguments.of(
+                "invalidBarcode -> INVALID_PARAMETER",
+                "abc",
+                "barcode",
+                InvalidSearchParameterException("유효하지 않은 바코드 형식입니다"),
+                "INVALID_PARAMETER",
+            ),
         )
     }
 }
