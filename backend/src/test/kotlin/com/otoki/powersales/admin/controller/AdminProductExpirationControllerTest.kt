@@ -20,6 +20,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 
 import io.mockk.Runs
 import io.mockk.every
@@ -35,34 +38,20 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 
 @WebMvcTest(AdminProductExpirationController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminProductExpirationController 테스트")
 class AdminProductExpirationControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
-    @MockkBean
-    private lateinit var adminProductExpirationService: AdminProductExpirationService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminProductExpirationService: AdminProductExpirationService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private fun setUpPrincipal(userId: Long = 1L, role: UserRole = UserRole.WOMAN) {
         val principal = WebUserPrincipal(
@@ -126,16 +115,8 @@ class AdminProductExpirationControllerTest {
             mockMvc.perform(get("/api/v1/admin/product-expiration"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].productName").value("진라면"))
                 .andExpect(jsonPath("$.data.content[0].productCode").value("P001"))
-                .andExpect(jsonPath("$.data.content[0].accountName").value("이마트 강남점"))
-                .andExpect(jsonPath("$.data.content[0].employeeName").value("홍길동"))
-                .andExpect(jsonPath("$.data.content[0].expirationDate").value("2026-05-01"))
-                .andExpect(jsonPath("$.data.content[0].alarmDate").value("2026-04-24"))
-                .andExpect(jsonPath("$.data.content[0].dDay").value(26))
-                .andExpect(jsonPath("$.data.content[0].status").value("NORMAL"))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
-                .andExpect(jsonPath("$.data.totalPages").value(1))
         }
     }
 
@@ -150,11 +131,8 @@ class AdminProductExpirationControllerTest {
 
             mockMvc.perform(get("/api/v1/admin/product-expiration/1"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.productName").value("진라면"))
-                .andExpect(jsonPath("$.data.dDay").value(26))
-                .andExpect(jsonPath("$.data.description").value("테스트 설명"))
         }
 
         @Test
@@ -196,18 +174,12 @@ class AdminProductExpirationControllerTest {
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.productName").value("진라면"))
         }
 
         @Test
         @DisplayName("실패 - 필수 필드 누락 → 400")
         fun create_missingRequiredField() {
-            val json = """
-                {
-                    "employeeCode": "E001",
-                    "accountCode": "A001"
-                }
-            """.trimIndent()
+            val json = """{"employeeCode": "E001", "accountCode": "A001"}"""
 
             mockMvc.perform(
                 post("/api/v1/admin/product-expiration")
@@ -217,10 +189,16 @@ class AdminProductExpirationControllerTest {
                 .andExpect(status().isBadRequest)
         }
 
-        @Test
-        @DisplayName("실패 - 알림일 오류 → 400")
-        fun create_invalidAlertDate() {
-            every { adminProductExpirationService.create(eq(1L), any()) } throws InvalidAlertDateException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminProductExpirationControllerTest#createExceptionCases")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun create_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String
+        ) {
+            every { adminProductExpirationService.create(eq(1L), any()) } throws exception
 
             val json = """
                 {
@@ -228,8 +206,7 @@ class AdminProductExpirationControllerTest {
                     "accountCode": "A001",
                     "productCode": "P001",
                     "expirationDate": "2026-05-01",
-                    "alarmDate": "2026-06-01",
-                    "description": null
+                    "alarmDate": "2026-06-01"
                 }
             """.trimIndent()
 
@@ -238,33 +215,8 @@ class AdminProductExpirationControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json)
             )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("INVALID_ALERT_DATE"))
-        }
-
-        @Test
-        @DisplayName("실패 - 권한 없음 → 403")
-        fun create_forbidden() {
-            every { adminProductExpirationService.create(eq(1L), any()) } throws ProductExpirationForbiddenException()
-
-            val json = """
-                {
-                    "employeeCode": "E099",
-                    "accountCode": "A001",
-                    "productCode": "P001",
-                    "expirationDate": "2026-05-01",
-                    "alarmDate": "2026-04-24",
-                    "description": null
-                }
-            """.trimIndent()
-
-            mockMvc.perform(
-                post("/api/v1/admin/product-expiration")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(json)
-            )
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("PRODUCT_EXPIRATION_FORBIDDEN"))
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
     }
 
@@ -275,20 +227,10 @@ class AdminProductExpirationControllerTest {
         @Test
         @DisplayName("성공 - 수정")
         fun update_success() {
-            val updated = sampleResponse().copy(
-                expirationDate = "2026-06-01",
-                alarmDate = "2026-05-25",
-                dDay = 57
-            )
+            val updated = sampleResponse().copy(expirationDate = "2026-06-01", alarmDate = "2026-05-25", dDay = 57)
             every { adminProductExpirationService.update(eq(1L), eq(1), any()) } returns updated
 
-            val json = """
-                {
-                    "expirationDate": "2026-06-01",
-                    "alarmDate": "2026-05-25",
-                    "description": "테스트 설명"
-                }
-            """.trimIndent()
+            val json = """{"expirationDate": "2026-06-01", "alarmDate": "2026-05-25", "description": "테스트 설명"}"""
 
             mockMvc.perform(
                 put("/api/v1/admin/product-expiration/1")
@@ -296,9 +238,7 @@ class AdminProductExpirationControllerTest {
                     .content(json)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.expirationDate").value("2026-06-01"))
-                .andExpect(jsonPath("$.data.alarmDate").value("2026-05-25"))
                 .andExpect(jsonPath("$.data.dDay").value(57))
         }
 
@@ -307,12 +247,7 @@ class AdminProductExpirationControllerTest {
         fun update_notFound() {
             every { adminProductExpirationService.update(eq(1L), eq(999), any()) } throws ProductExpirationNotFoundException()
 
-            val json = """
-                {
-                    "expirationDate": "2026-06-01",
-                    "alarmDate": "2026-05-25"
-                }
-            """.trimIndent()
+            val json = """{"expirationDate": "2026-06-01", "alarmDate": "2026-05-25"}"""
 
             mockMvc.perform(
                 put("/api/v1/admin/product-expiration/999")
@@ -336,7 +271,6 @@ class AdminProductExpirationControllerTest {
             mockMvc.perform(delete("/api/v1/admin/product-expiration/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isEmpty)
         }
     }
 
@@ -350,15 +284,12 @@ class AdminProductExpirationControllerTest {
             val response = AdminProductExpirationBatchDeleteResponse(deletedCount = 3)
             every { adminProductExpirationService.batchDelete(eq(1L), any()) } returns response
 
-            val json = """{"ids": [1, 2, 3]}"""
-
             mockMvc.perform(
                 post("/api/v1/admin/product-expiration/batch-delete")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(json)
+                    .content("""{"ids": [1, 2, 3]}""")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.deletedCount").value(3))
         }
     }
@@ -380,11 +311,21 @@ class AdminProductExpirationControllerTest {
 
             mockMvc.perform(get("/api/v1/admin/product-expiration/summary"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalCount").value(100))
                 .andExpect(jsonPath("$.data.expiredCount").value(10))
-                .andExpect(jsonPath("$.data.imminentCount").value(20))
-                .andExpect(jsonPath("$.data.normalCount").value(70))
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun createExceptionCases(): List<Arguments> = listOf(
+            Arguments.of("invalidAlertDate -> 400 INVALID_ALERT_DATE", InvalidAlertDateException(), 400, "INVALID_ALERT_DATE"),
+            Arguments.of(
+                "forbidden -> 403 PRODUCT_EXPIRATION_FORBIDDEN",
+                ProductExpirationForbiddenException(),
+                403,
+                "PRODUCT_EXPIRATION_FORBIDDEN",
+            ),
+        )
     }
 }

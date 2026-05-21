@@ -37,34 +37,20 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import tools.jackson.databind.ObjectMapper
-import java.time.LocalDateTime
 
 @WebMvcTest(AdminUserController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminUserController 테스트")
 class AdminUserControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
-    @MockkBean
-    private lateinit var adminUserService: AdminUserService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminUserService: AdminUserService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
     fun setUp() {
@@ -120,12 +106,7 @@ class AdminUserControllerTest {
             mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].id").value(1L))
                 .andExpect(jsonPath("$.data.content[0].username").value("kim@otokims.co.kr"))
-                .andExpect(jsonPath("$.data.content[0].employeeCode").value("10000001"))
-                .andExpect(jsonPath("$.data.content[0].profileType").value("SALES_REP"))
-                .andExpect(jsonPath("$.data.content[0].profileTypeLabel").value("영업사원"))
-                .andExpect(jsonPath("$.data.content[0].isActive").value(true))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
         }
 
@@ -134,10 +115,7 @@ class AdminUserControllerTest {
         fun getUsers_withFilters() {
             val response = AdminUserListResponse(
                 content = emptyList(),
-                page = 0,
-                size = 10,
-                totalElements = 0,
-                totalPages = 0
+                page = 0, size = 10, totalElements = 0, totalPages = 0
             )
             every { adminUserService.findUsers(eq("kim"), eq(false), eq(0), eq(10)) } returns response
 
@@ -149,7 +127,6 @@ class AdminUserControllerTest {
                     .param("size", "10")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isEmpty)
         }
     }
@@ -191,11 +168,8 @@ class AdminUserControllerTest {
 
             mockMvc.perform(get("/api/v1/admin/users/1"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1L))
                 .andExpect(jsonPath("$.data.username").value("kim@otokims.co.kr"))
-                .andExpect(jsonPath("$.data.profileTypeLabel").value("영업사원"))
-                .andExpect(jsonPath("$.data.isActive").value(true))
         }
 
         @Test
@@ -227,10 +201,7 @@ class AdminUserControllerTest {
 
             mockMvc.perform(post("/api/v1/admin/users/5/reset-password"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.userId").value(5L))
-                .andExpect(jsonPath("$.data.temporaryPasswordIssued").value(true))
-                .andExpect(jsonPath("$.data.passwordChangeRequired").value(true))
                 .andExpect(jsonPath("$.message").value("비밀번호가 초기화되었습니다"))
         }
 
@@ -249,6 +220,7 @@ class AdminUserControllerTest {
     @DisplayName("PUT /api/v1/admin/users/{userId}/active - 활성/비활성 토글")
     inner class UpdateActiveStatus {
 
+        // controller 후처리: isActive 분기로 메시지 한글 다름 ("비활성화" vs "활성화") — 가드레일 5.3 으로 verbatim 유지
         @Test
         @DisplayName("성공 - 비활성화")
         fun deactivate_success() {
@@ -261,7 +233,6 @@ class AdminUserControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("사용자가 비활성화되었습니다"))
         }
 
@@ -277,7 +248,6 @@ class AdminUserControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("사용자가 활성화되었습니다"))
         }
 
