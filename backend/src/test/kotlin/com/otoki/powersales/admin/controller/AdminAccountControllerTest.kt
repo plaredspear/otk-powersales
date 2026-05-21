@@ -18,13 +18,7 @@ import com.otoki.powersales.account.service.AdminAccountService
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.user.entity.ProfileType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import com.otoki.powersales.common.test.AdminControllerTestSupport
 import tools.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -42,10 +36,7 @@ import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -56,10 +47,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(AdminAccountController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminAccountController 테스트")
-class AdminAccountControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class AdminAccountControllerTest : AdminControllerTestSupport() {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
@@ -68,34 +56,13 @@ class AdminAccountControllerTest {
     @MockkBean private lateinit var accountCreateService: AccountCreateService
     @MockkBean private lateinit var accountUpdateService: AccountUpdateService
     @MockkBean private lateinit var accountDeleteService: AccountDeleteService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
-    fun setUp() {
-        val principal = WebUserPrincipal(
-            userId = 100L,
-            usernameValue = "test@otokims.co.kr",
-            employeeCode = "S001",
-            employeeId = 1L,
-            role = UserRoleEnum.BRANCH_MANAGER,
-            costCenterCode = null,
-            profileType = ProfileType.STAFF,
-            isSalesSupport = false,
-            passwordChangeRequired = false,
-            permissions = emptySet(),
-            encodedPassword = "",
-            grantedAuthorities = emptyList(),
-            active = true
-        )
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+    fun stubArgumentResolver() {
         every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
             val parameter = firstArg<MethodParameter>()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
