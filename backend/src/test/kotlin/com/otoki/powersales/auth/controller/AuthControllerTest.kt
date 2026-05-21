@@ -28,6 +28,9 @@ import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -206,32 +209,23 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
     }
 
-    @Test
-    @DisplayName("탈취 감지 - 재사용된 Refresh Token 시 401 TOKEN_REUSE_DETECTED")
-    fun refresh_tokenReuseDetected() {
-        every { authService.refreshAccessToken(any()) } throws TokenReuseDetectedException()
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("com.otoki.powersales.auth.controller.AuthControllerTest#refreshExceptions")
+    @DisplayName("Refresh 토큰 - 예외 → 401 ErrorCode 매핑")
+    fun refresh_exceptions(
+        @Suppress("UNUSED_PARAMETER") name: String,
+        exception: Throwable,
+        expectedCode: String,
+    ) {
+        every { authService.refreshAccessToken(any()) } throws exception
 
         mockMvc.perform(
             post("/api/v1/mobile/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"refreshToken": "reused-refresh-token"}""")
+                .content("""{"refreshToken": "bad-token"}""")
         )
             .andExpect(status().isUnauthorized)
-            .andExpect(jsonPath("$.error.code").value("TOKEN_REUSE_DETECTED"))
-    }
-
-    @Test
-    @DisplayName("유효하지 않은 토큰 - 변조된 Refresh Token 시 401 INVALID_TOKEN")
-    fun refresh_invalidToken() {
-        every { authService.refreshAccessToken(any()) } throws InvalidTokenException()
-
-        mockMvc.perform(
-            post("/api/v1/mobile/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"refreshToken": "tampered-token"}""")
-        )
-            .andExpect(status().isUnauthorized)
-            .andExpect(jsonPath("$.error.code").value("INVALID_TOKEN"))
+            .andExpect(jsonPath("$.error.code").value(expectedCode))
     }
 
     @Test
@@ -264,22 +258,28 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.data.accessToken").value("new-access"))
     }
 
-    @Test
-    @DisplayName("비밀번호 변경 - 현재 비밀번호 불일치 시 401 AUTH_CURRENT_PASSWORD_MISMATCH")
-    fun changePassword_wrongCurrentPassword() {
-        every { authService.changePassword(any<UserPrincipal>(), any()) } throws InvalidCurrentPasswordException()
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("com.otoki.powersales.auth.controller.AuthControllerTest#changePasswordExceptions")
+    @DisplayName("비밀번호 변경 - 예외 → ErrorCode 매핑")
+    fun changePassword_exceptions(
+        @Suppress("UNUSED_PARAMETER") name: String,
+        exception: Throwable,
+        expectedStatus: Int,
+        expectedCode: String,
+    ) {
+        every { authService.changePassword(any<UserPrincipal>(), any()) } throws exception
 
         mockMvc.perform(
             post("/api/v1/mobile/auth/change-password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"currentPassword": "wrongPass", "newPassword": "newPass1"}""")
         )
-            .andExpect(status().isUnauthorized)
-            .andExpect(jsonPath("$.error.code").value("AUTH_CURRENT_PASSWORD_MISMATCH"))
+            .andExpect(status().`is`(expectedStatus))
+            .andExpect(jsonPath("$.error.code").value(expectedCode))
     }
 
     @Test
-    @DisplayName("비밀번호 변경 - 새 비밀번호 누락 시 400 INVALID_PARAMETER")
+    @DisplayName("비밀번호 변경 - 새 비밀번호 누락 시 400 INVALID_PARAMETER (validation)")
     fun changePassword_missingNewPassword() {
         mockMvc.perform(
             post("/api/v1/mobile/auth/change-password")
@@ -291,8 +291,9 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("비밀번호 변경 - 정책 위반 시 400 AUTH_NEW_PASSWORD_INVALID + violations 배열")
+    @DisplayName("비밀번호 변경 - 정책 위반 시 400 AUTH_NEW_PASSWORD_INVALID + violations 배열 (별도 - details 검증)")
     fun changePassword_policyViolation() {
+        // controller 후처리: details.violations 배열 매핑 — 가드레일 5.3 으로 별도 검증
         every { authService.changePassword(any<UserPrincipal>(), any()) } throws
             NewPasswordPolicyViolationException(listOf("LENGTH_TOO_SHORT"))
 
@@ -304,20 +305,6 @@ class AuthControllerTest {
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error.code").value("AUTH_NEW_PASSWORD_INVALID"))
             .andExpect(jsonPath("$.error.details.violations[0]").value("LENGTH_TOO_SHORT"))
-    }
-
-    @Test
-    @DisplayName("비밀번호 변경 - 임시 비번 동일 시 400 AUTH_NEW_PASSWORD_SAME_AS_TEMP")
-    fun changePassword_sameAsTemporary() {
-        every { authService.changePassword(any<UserPrincipal>(), any()) } throws NewPasswordSameAsTemporaryException()
-
-        mockMvc.perform(
-            post("/api/v1/mobile/auth/change-password")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"newPassword": "1234"}""")
-        )
-            .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.error.code").value("AUTH_NEW_PASSWORD_SAME_AS_TEMP"))
     }
 
     // ========== Verify Password Tests ==========
@@ -453,5 +440,33 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/v1/mobile/auth/gps-consent"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.accessToken").value("new-token"))
+    }
+
+    companion object {
+        @JvmStatic
+        fun refreshExceptions(): List<Arguments> = listOf(
+            Arguments.of(
+                "tokenReuseDetected -> TOKEN_REUSE_DETECTED",
+                TokenReuseDetectedException(),
+                "TOKEN_REUSE_DETECTED",
+            ),
+            Arguments.of("invalidToken -> INVALID_TOKEN", InvalidTokenException(), "INVALID_TOKEN"),
+        )
+
+        @JvmStatic
+        fun changePasswordExceptions(): List<Arguments> = listOf(
+            Arguments.of(
+                "wrongCurrentPassword -> 401 AUTH_CURRENT_PASSWORD_MISMATCH",
+                InvalidCurrentPasswordException(),
+                401,
+                "AUTH_CURRENT_PASSWORD_MISMATCH",
+            ),
+            Arguments.of(
+                "sameAsTemporary -> 400 AUTH_NEW_PASSWORD_SAME_AS_TEMP",
+                NewPasswordSameAsTemporaryException(),
+                400,
+                "AUTH_NEW_PASSWORD_SAME_AS_TEMP",
+            ),
+        )
     }
 }
