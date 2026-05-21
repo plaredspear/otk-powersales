@@ -3,15 +3,8 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.request.NaverGeocodeTestRequest
 import com.otoki.powersales.admin.dto.response.NaverGeocodeTestResponse
 import com.otoki.powersales.admin.service.AdminNaverGeocodeService
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.naver.NaverApiException
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.user.entity.ProfileType
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import org.junit.jupiter.api.BeforeEach
+import com.otoki.powersales.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -20,10 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -32,37 +22,11 @@ import tools.jackson.databind.ObjectMapper
 @WebMvcTest(AdminNaverGeocodeController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminNaverGeocodeController 테스트")
-class AdminNaverGeocodeControllerTest {
+class AdminNaverGeocodeControllerTest : AdminControllerTestSupport() {
 
-    @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     @MockkBean private lateinit var adminNaverGeocodeService: AdminNaverGeocodeService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    @BeforeEach
-    fun setUp() {
-        val principal = WebUserPrincipal(
-            userId = 100L,
-            usernameValue = "test@otokims.co.kr",
-            employeeCode = "S001",
-            employeeId = 1L,
-            role = UserRoleEnum.BRANCH_MANAGER,
-            costCenterCode = null,
-            profileType = ProfileType.STAFF,
-            isSalesSupport = false,
-            passwordChangeRequired = false,
-            permissions = emptySet(),
-            encodedPassword = "",
-            grantedAuthorities = emptyList(),
-            active = true
-        )
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-    }
 
     @Nested
     @DisplayName("POST /api/v1/admin/naver-geocode/test - 변환 테스트")

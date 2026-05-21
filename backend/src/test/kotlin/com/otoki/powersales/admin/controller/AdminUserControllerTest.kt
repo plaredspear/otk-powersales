@@ -9,17 +9,12 @@ import com.otoki.powersales.admin.exception.AdminUserNotFoundException
 import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
 import com.otoki.powersales.admin.service.AdminUserService
 import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.user.entity.ProfileType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -27,10 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
@@ -41,36 +33,19 @@ import tools.jackson.databind.ObjectMapper
 @WebMvcTest(AdminUserController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminUserController 테스트")
-class AdminUserControllerTest {
+class AdminUserControllerTest : AdminControllerTestSupport() {
 
-    @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     @MockkBean private lateinit var adminUserService: AdminUserService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
-    fun setUp() {
-        val principal = WebUserPrincipal(
-            userId = 100L,
-            usernameValue = "admin@otokims.co.kr",
-            employeeCode = "ADMIN-OPS01",
-            employeeId = 1L,
+    fun setUpSystemAdminPrincipal() {
+        authenticateAsAdmin(
             role = UserRoleEnum.SYSTEM_ADMIN,
-            costCenterCode = null,
+            employeeCode = "ADMIN-OPS01",
             profileType = ProfileType.SYSTEM_ADMIN,
-            isSalesSupport = false,
-            passwordChangeRequired = false,
-            permissions = emptySet(),
-            encodedPassword = "",
-            grantedAuthorities = emptyList(),
-            active = true
         )
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
     }
 
     @Nested

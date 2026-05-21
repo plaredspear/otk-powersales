@@ -10,13 +10,9 @@ import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.admin.exception.CannotModifyOwnPermissionException
 import com.otoki.powersales.admin.exception.InvalidPermissionException
 import com.otoki.powersales.admin.service.AdminEmployeePermissionService
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -29,10 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -41,35 +34,15 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(AdminEmployeePermissionController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminEmployeePermissionController 테스트")
-class AdminEmployeePermissionControllerTest {
+class AdminEmployeePermissionControllerTest : AdminControllerTestSupport() {
 
-    @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     @MockkBean private lateinit var adminEmployeePermissionService: AdminEmployeePermissionService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @BeforeEach
-    fun setUp() {
-        val principal = WebUserPrincipal(
-            userId = 100L,
-            usernameValue = "test@otokims.co.kr",
-            employeeCode = "S001",
-            employeeId = 1L,
-            role = UserRoleEnum.BRANCH_MANAGER,
-            costCenterCode = "1234",
-            profileType = ProfileType.STAFF,
-            isSalesSupport = false,
-            passwordChangeRequired = false,
-            permissions = emptySet(),
-            encodedPassword = "",
-            grantedAuthorities = emptyList(),
-            active = true
-        )
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+    fun setUpWithCostCenter() {
+        authenticateAsAdmin(role = UserRoleEnum.BRANCH_MANAGER, costCenterCode = "1234")
     }
 
     @Nested

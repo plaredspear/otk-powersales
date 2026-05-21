@@ -6,19 +6,14 @@ import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
 import com.otoki.powersales.admin.service.AdminScheduledJobService
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import com.otoki.powersales.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import io.mockk.every
 import io.mockk.slot
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -27,15 +22,9 @@ import java.time.LocalDateTime
 @WebMvcTest(AdminScheduledJobController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminScheduledJobController 테스트")
-class AdminScheduledJobControllerTest {
-
-    @Autowired private lateinit var mockMvc: MockMvc
+class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
 
     @MockkBean private lateinit var adminScheduledJobService: AdminScheduledJobService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @Test
     @DisplayName("GET /runs - 필터 없이 호출 시 service 에 page=1, size=20 기본값 전달")
