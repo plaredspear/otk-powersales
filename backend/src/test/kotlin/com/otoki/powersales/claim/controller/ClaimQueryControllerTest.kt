@@ -7,26 +7,17 @@ import com.otoki.powersales.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.claim.exception.InvalidDateFormatException
 import com.otoki.powersales.claim.exception.InvalidDateRangeException
 import com.otoki.powersales.claim.service.ClaimQueryService
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -36,30 +27,10 @@ import java.math.BigDecimal
 @WebMvcTest(ClaimQueryController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("ClaimQueryController 테스트")
-class ClaimQueryControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class ClaimQueryControllerTest : MobileControllerTestSupport() {
 
     @MockkBean
     private lateinit var claimQueryService: ClaimQueryService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @BeforeEach
-    fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-    }
 
     @Nested
     @DisplayName("GET /api/v1/mobile/claims - 클레임 목록 조회")

@@ -1,11 +1,8 @@
 package com.otoki.powersales.promotion.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.promotion.dto.response.MobilePromotionDetailResponse
 import com.otoki.powersales.promotion.dto.response.MobilePromotionEmployeeItem
 import com.otoki.powersales.promotion.dto.response.MobilePromotionListItem
@@ -14,7 +11,6 @@ import com.otoki.powersales.promotion.exception.PromotionForbiddenException
 import com.otoki.powersales.promotion.exception.PromotionInvalidParameterException
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.promotion.service.MobilePromotionService
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
@@ -24,9 +20,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -35,10 +28,7 @@ import java.time.LocalDate
 @WebMvcTest(PromotionController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("PromotionController 테스트")
-class PromotionControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class PromotionControllerTest : MobileControllerTestSupport() {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
@@ -46,23 +36,9 @@ class PromotionControllerTest {
     @MockkBean
     private lateinit var mobilePromotionService: MobilePromotionService
 
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
-
     @BeforeEach
-    fun setUp() {
-        val principal = UserPrincipal(userId = 1L, role = UserRoleEnum.LEADER)
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+    fun setUpLeaderPrincipal() {
+        authenticateAs(userId = 1L, role = UserRoleEnum.LEADER)
     }
 
     @Nested

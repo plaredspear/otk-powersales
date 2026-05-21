@@ -1,58 +1,28 @@
 package com.otoki.powersales.common.controller
 
-import com.otoki.powersales.common.dto.response.HomeResponse
 import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.common.dto.response.HomeResponse
 import com.otoki.powersales.common.service.HomeService
-import org.junit.jupiter.api.BeforeEach
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-/**
- * HomeController 테스트
- * addFilters=false로 Security 필터 비활성화, 직접 SecurityContext 설정
- */
 @WebMvcTest(HomeController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("HomeController 테스트")
-class HomeControllerTest {
-
-    @Autowired private lateinit var mockMvc: MockMvc
+class HomeControllerTest : MobileControllerTestSupport() {
 
     @MockkBean private lateinit var homeService: HomeService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-
-    @BeforeEach
-    fun setUp() {
-        val authentication = UsernamePasswordAuthenticationToken(
-            testPrincipal, null, testPrincipal.authorities
-        )
-        SecurityContextHolder.getContext().authentication = authentication
-    }
 
     @Nested
     @DisplayName("GET /api/v1/mobile/home - 홈 데이터 조회")
@@ -119,11 +89,7 @@ class HomeControllerTest {
         @Test
         @DisplayName("조장 홈 조회 성공 - role=LEADER, 안전점검 불필요, 팀원 다수 일정 + null serialization")
         fun getHomeData_leader_success() {
-            val leaderPrincipal = UserPrincipal(userId = 2L, role = UserRoleEnum.LEADER)
-            val leaderAuth = UsernamePasswordAuthenticationToken(
-                leaderPrincipal, null, leaderPrincipal.authorities
-            )
-            SecurityContextHolder.getContext().authentication = leaderAuth
+            authenticateAs(userId = 2L, role = UserRoleEnum.LEADER)
 
             val commuteTime1 = java.time.LocalDateTime.of(2026, 2, 25, 8, 15, 0)
             val mockResponse = HomeResponse(

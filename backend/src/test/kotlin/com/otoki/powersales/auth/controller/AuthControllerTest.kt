@@ -4,7 +4,6 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.dto.request.LoginRequest
 import com.otoki.powersales.auth.dto.response.*
 import com.otoki.powersales.common.dto.response.*
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
 import com.otoki.powersales.auth.exception.InvalidTokenException
@@ -12,12 +11,9 @@ import com.otoki.powersales.auth.exception.NewPasswordPolicyViolationException
 import com.otoki.powersales.auth.exception.NewPasswordSameAsTemporaryException
 import com.otoki.powersales.auth.exception.TermsNotFoundException
 import com.otoki.powersales.auth.exception.TokenReuseDetectedException
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.PasswordChangeRequiredFilter
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.auth.service.AuthService
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.Runs
@@ -25,7 +21,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.verify
 import org.hamcrest.Matchers.containsString
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -35,24 +30,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-/**
- * AuthController 테스트
- * addFilters=false로 Security 필터 비활성화, 직접 SecurityContext 설정
- */
 @WebMvcTest(AuthController::class)
 @AutoConfigureMockMvc(addFilters = false)
-class AuthControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class AuthControllerTest : MobileControllerTestSupport() {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
@@ -61,29 +46,7 @@ class AuthControllerTest {
     private lateinit var authService: AuthService
 
     @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    @MockkBean
     private lateinit var passwordChangeRequiredFilter: PasswordChangeRequiredFilter
-
-    private val testPrincipal = UserPrincipal(userId = 1L, role = UserRoleEnum.WOMAN)
-
-    @BeforeEach
-    fun setUp() {
-        val authentication = UsernamePasswordAuthenticationToken(
-            testPrincipal, null, testPrincipal.authorities
-        )
-        SecurityContextHolder.getContext().authentication = authentication
-    }
 
     // ========== Login Tests ==========
 
