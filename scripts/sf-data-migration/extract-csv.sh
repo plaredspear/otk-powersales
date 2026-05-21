@@ -353,6 +353,23 @@ FROM DKRetail__Notice__c
 WHERE IsDeleted = FALSE
 EOF
 )
+SUGGESTION_SOQL=$(cat <<'EOF'
+SELECT
+    Id, Name,
+    DKRetail__Title__c, DKRetail__Description__c,
+    Category__c, Category1__c, Category2__c, Category3__c,
+    AccountId__c, DKRetail__SAPAccountCode__c,
+    DKRetail__EmployeeId__c,
+    DKRetail__ProductId__c, ProductCode__c,
+    OrgCostCenterCode__c,
+    CarNumber__c, ClaimDate__c, ClaimType__c, ClaimTypeMeasures__c,
+    LogisticsResponsibility__c, WERK1_TEXT2__c, WERK3_TEXT2__c,
+    ActionStatus__c, DuplicateProposalNum__c,
+    IsDeleted, CreatedDate, LastModifiedDate
+FROM DKRetail__Proposal__c
+WHERE IsDeleted = FALSE
+EOF
+)
 ACCOUNT_CATEGORY_MASTER_SOQL=$(cat <<'EOF'
 SELECT
     Id, AccountCode__c, Name, useSearch__c, OwnerId,
@@ -993,6 +1010,10 @@ fi
 
 if contains_target "Notice"; then
     run_query "Notice (DKRetail__Notice__c)" "$NOTICE_SOQL" "$OUT_DIR/notices.csv"
+fi
+
+if contains_target "Suggestion"; then
+    run_query "Suggestion (DKRetail__Proposal__c)" "$SUGGESTION_SOQL" "$OUT_DIR/suggestions.csv"
 fi
 
 if contains_target "AccountCategoryMaster"; then

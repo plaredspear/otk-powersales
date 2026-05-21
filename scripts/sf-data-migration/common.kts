@@ -406,6 +406,42 @@ val NOTICE_METADATA = EntityMetadata(
     )
 )
 
+val SUGGESTION_METADATA = EntityMetadata(
+    targetName = "Suggestion",
+    sObjectName = "DKRetail__Proposal__c",
+    tableName = "suggestion",
+    pkColumn = "suggestion_id",
+    conflictKey = "sfid",
+    fields = listOf(
+        FieldMapping("Id", "sfid", nullable = false),
+        FieldMapping("Name", "proposal_number", nullable = false),
+        FieldMapping("DKRetail__Title__c", "title", nullable = false),
+        FieldMapping("DKRetail__Description__c", "content", nullable = false),
+        FieldMapping("Category__c", "category", nullable = false),
+        FieldMapping("Category1__c", "category1"),
+        FieldMapping("Category2__c", "category2"),
+        FieldMapping("Category3__c", "category3"),
+        FieldMapping("AccountId__c", "account_sfid"),
+        FieldMapping("DKRetail__SAPAccountCode__c", "sap_account_code"),
+        FieldMapping("DKRetail__EmployeeId__c", "employee_sfid"),
+        FieldMapping("DKRetail__ProductId__c", "product_sfid"),
+        FieldMapping("ProductCode__c", "product_code"),
+        FieldMapping("OrgCostCenterCode__c", "org_cost_center_code"),
+        FieldMapping("CarNumber__c", "car_number"),
+        FieldMapping("ClaimDate__c", "claim_date", isString = false),
+        FieldMapping("ClaimType__c", "claim_type"),
+        FieldMapping("ClaimTypeMeasures__c", "claim_type_measures"),
+        FieldMapping("LogisticsResponsibility__c", "logistics_responsibility"),
+        FieldMapping("WERK1_TEXT2__c", "reception_logistics_center"),
+        FieldMapping("WERK3_TEXT2__c", "responsible_logistics_center"),
+        FieldMapping("ActionStatus__c", "action_status"),
+        FieldMapping("DuplicateProposalNum__c", "duplicate_proposal_num"),
+        FieldMapping("IsDeleted", "is_deleted", nullable = false, isString = false),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false)
+    )
+)
+
 val GROUP_METADATA = EntityMetadata(
     targetName = "Group",
     sObjectName = "Group",
@@ -1614,6 +1650,7 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "PushMessageReceiver" to TargetSpec(PUSH_MESSAGE_RECEIVER_METADATA, "PushMessageReceiver__c", "push_message_receivers.csv", "common/entity/PushMessageReceiver"),
     "TeamMemberSchedule" to TargetSpec(TEAM_MEMBER_SCHEDULE_METADATA, "DKRetail__TeamMemberSchedule__c", "team_member_schedules.csv", "schedule/entity/TeamMemberSchedule"),
     "UploadFile" to TargetSpec(UPLOAD_FILE_METADATA, "UploadFile__c", "upload_files.csv", "common/entity/UploadFile"),
+    "Suggestion" to TargetSpec(SUGGESTION_METADATA, "DKRetail__Proposal__c", "suggestions.csv", "suggestion/entity/Suggestion"),
     "UserRole" to TargetSpec(USER_ROLE_METADATA, "UserRole", "user_roles.csv", "auth/entity/UserRole"),
     "Profile" to TargetSpec(PROFILE_METADATA, "Profile", "profiles.csv", "auth/entity/Profile"),
     "Permission"   to TargetSpec(PERMISSION_METADATA, "PermissionSetAssignment", "permission_set_assignments.csv", null)
@@ -1659,6 +1696,7 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "PushMessageReceiver",
     "TeamMemberSchedule",
     "UploadFile",
+    "Suggestion",
     "UserRole",
     "Profile",
     "Permission"
@@ -1672,7 +1710,7 @@ val SUPPORTED_TARGETS = setOf(
     "ErpOrder", "ErpOrderProduct", "HolidayMaster", "InspectionTheme",
     "MonthlyFemaleEmployeeIntegrationSchedule", "MonthlySalesHistory", "NewProduct", "OrderRequest", "OrderRequestProduct",
     "ProductBarcode", "ProfessionalPromotionTeamHistory", "ProfessionalPromotionTeamMaster", "PromotionEmployee", "PushMessage",
-    "PushMessageReceiver", "TeamMemberSchedule", "UploadFile",
+    "PushMessageReceiver", "TeamMemberSchedule", "UploadFile", "Suggestion",
     "UserRole", "Profile"
 )
 

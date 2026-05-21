@@ -1,10 +1,12 @@
-/*
 package com.otoki.powersales.suggestion.repository
 
-import com.otoki.powersales.entity.*
-import com.otoki.powersales.common.entity.*
+import com.otoki.powersales.common.config.QueryDslConfig
+import com.otoki.powersales.suggestion.entity.Suggestion
+import com.otoki.powersales.suggestion.entity.SuggestionCategory
+import com.otoki.powersales.suggestion.entity.SuggestionStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -12,13 +14,13 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
+import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
-import com.otoki.powersales.common.config.QueryDslConfig
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
-@ActiveProfiles("test")
 @Import(QueryDslConfig::class)
+@ActiveProfiles("test")
 @DisplayName("SuggestionRepository 테스트")
 class SuggestionRepositoryTest {
 
@@ -28,134 +30,62 @@ class SuggestionRepositoryTest {
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
 
-    private lateinit var testUser1: User
-    private lateinit var testUser2: User
-
     @BeforeEach
     fun setUp() {
         suggestionRepository.deleteAll()
         testEntityManager.clear()
+    }
 
-        // 테스트 사용자 생성
-        testUser1 = testEntityManager.persistAndFlush(
-            User(
-                employeeCode = "10000001",
-                password = "encoded",
-                name = "홍길동",
-                orgName = "서울지점"
-            )
+    private fun persistSuggestion(
+        proposalNumber: String,
+        title: String = "테스트 제안",
+        category: SuggestionCategory = SuggestionCategory.NEW_PRODUCT,
+        content: String = "본문",
+        isDeleted: Boolean = false
+    ): Suggestion {
+        val s = Suggestion(
+            proposalNumber = proposalNumber,
+            title = title,
+            content = content,
+            category = category,
+            status = SuggestionStatus.SUBMITTED,
+            isDeleted = isDeleted
         )
-
-        testUser2 = testEntityManager.persistAndFlush(
-            User(
-                employeeCode = "10000002",
-                password = "encoded",
-                name = "김영희",
-                orgName = "부산지점"
-            )
-        )
+        return testEntityManager.persistAndFlush(s)
     }
 
     @Test
-    @DisplayName("신제품 제안을 저장할 수 있다")
-    fun saveNewProductSuggestion() {
-        // Given
-        val suggestion = Suggestion(
-            user = testUser1,
-            category = SuggestionCategory.NEW_PRODUCT,
-            productCode = null,
-            productName = null,
-            title = "저당 라면 시리즈 출시 제안",
-            content = "건강을 생각하는 소비자들을 위한 저당 라면 제품군을 제안합니다.",
-            status = SuggestionStatus.SUBMITTED
-        )
+    @DisplayName("저장 + 단건 조회 — soft-delete 제외 필터 동작")
+    fun saveAndFindByIdAndIsDeletedFalse() {
+        val saved = persistSuggestion(proposalNumber = "S-20260522-100001")
 
-        // When
-        val saved = suggestionRepository.save(suggestion)
+        val found = suggestionRepository.findByIdAndIsDeletedFalse(saved.id)
 
-        // Then
-        assertThat(saved.id).isGreaterThan(0)
-        assertThat(saved.user.id).isEqualTo(testUser1.id)
-        assertThat(saved.category).isEqualTo(SuggestionCategory.NEW_PRODUCT)
-        assertThat(saved.productCode).isNull()
-        assertThat(saved.productName).isNull()
-        assertThat(saved.title).isEqualTo("저당 라면 시리즈 출시 제안")
-        assertThat(saved.status).isEqualTo(SuggestionStatus.SUBMITTED)
+        assertThat(found).isNotNull
+        assertThat(found?.proposalNumber).isEqualTo("S-20260522-100001")
+        assertThat(found?.category).isEqualTo(SuggestionCategory.NEW_PRODUCT)
     }
 
     @Test
-    @DisplayName("기존제품 개선 제안을 저장할 수 있다")
-    fun saveExistingProductSuggestion() {
-        // Given
-        val suggestion = Suggestion(
-            user = testUser1,
-            category = SuggestionCategory.EXISTING_PRODUCT,
-            productCode = "PROD001",
-            productName = "진라면",
-            title = "진라면 컵라면 용기 개선 제안",
-            content = "용기를 더 견고하게 만들어 운반 시 찌그러짐을 방지할 수 있습니다.",
-            status = SuggestionStatus.SUBMITTED
-        )
+    @DisplayName("soft-delete row 는 findByIdAndIsDeletedFalse 결과에서 제외된다")
+    fun softDeletedRowExcluded() {
+        val saved = persistSuggestion(proposalNumber = "S-20260522-100002", isDeleted = true)
 
-        // When
-        val saved = suggestionRepository.save(suggestion)
+        val found = suggestionRepository.findByIdAndIsDeletedFalse(saved.id)
 
-        // Then
-        assertThat(saved.id).isGreaterThan(0)
-        assertThat(saved.user.id).isEqualTo(testUser1.id)
-        assertThat(saved.category).isEqualTo(SuggestionCategory.EXISTING_PRODUCT)
-        assertThat(saved.productCode).isEqualTo("PROD001")
-        assertThat(saved.productName).isEqualTo("진라면")
-        assertThat(saved.title).isEqualTo("진라면 컵라면 용기 개선 제안")
-        assertThat(saved.status).isEqualTo(SuggestionStatus.SUBMITTED)
+        assertThat(found).isNull()
     }
 
     @Test
-    @DisplayName("사용자별 제안 목록을 최신순으로 조회할 수 있다")
-    fun findByUserIdOrderByCreatedAtDesc() {
-        // Given
-        val suggestion1 = suggestionRepository.save(
-            Suggestion(
-                user = testUser1,
-                category = SuggestionCategory.NEW_PRODUCT,
-                title = "첫 번째 제안",
-                content = "첫 번째 제안 내용",
-                status = SuggestionStatus.SUBMITTED
-            )
-        )
+    @Disabled("PostgreSQL sequence 의존 — H2 in-memory 에서는 미지원. 통합 테스트 (실 PG) 로 보강 예정")
+    @DisplayName("nextProposalNumberSeqValue() 는 단조 증가 (race condition free 보장은 DB sequence 위임)")
+    fun nextProposalNumberSeqValueMonotonic() {
+        val first = suggestionRepository.nextProposalNumberSeqValue()
+        val second = suggestionRepository.nextProposalNumberSeqValue()
+        val third = suggestionRepository.nextProposalNumberSeqValue()
 
-        Thread.sleep(10) // createdAt 차이를 위한 대기
-
-        val suggestion2 = suggestionRepository.save(
-            Suggestion(
-                user = testUser1,
-                category = SuggestionCategory.EXISTING_PRODUCT,
-                productCode = "PROD001",
-                productName = "진라면",
-                title = "두 번째 제안",
-                content = "두 번째 제안 내용",
-                status = SuggestionStatus.SUBMITTED
-            )
-        )
-
-        // user2의 제안 (조회 대상 아님)
-        suggestionRepository.save(
-            Suggestion(
-                user = testUser2,
-                category = SuggestionCategory.NEW_PRODUCT,
-                title = "다른 사용자 제안",
-                content = "다른 사용자 제안 내용",
-                status = SuggestionStatus.SUBMITTED
-            )
-        )
-
-        // When
-        val suggestions = suggestionRepository.findByUserIdOrderByCreatedAtDesc(testUser1.id)
-
-        // Then
-        assertThat(suggestions).hasSize(2)
-        assertThat(suggestions[0].id).isEqualTo(suggestion2.id) // 최신순
-        assertThat(suggestions[1].id).isEqualTo(suggestion1.id)
+        assertThat(first).isGreaterThanOrEqualTo(100000)
+        assertThat(second).isEqualTo(first + 1)
+        assertThat(third).isEqualTo(first + 2)
     }
 }
-*/

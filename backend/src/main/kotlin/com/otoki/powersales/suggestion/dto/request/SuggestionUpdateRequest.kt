@@ -8,14 +8,12 @@ import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
 /**
- * 제안 등록 요청 DTO (Spec #664 P2-B §2.2).
+ * 제안 수정 요청 DTO (Spec #664 P2-B §2.3).
  *
- * multipart/form-data 의 `request` form field 로 전송된다 (Spring `@RequestPart` JSON binding).
- * 사진 파일은 `photos[]` MultipartFile 로 별도 처리.
- *
- * Category 분기 검증 (BR1~BR7) 은 Service 단에서 수행 — DTO 의 Bean Validation 은 기본 필드만.
+ * Category 분기 재검증 (BR1, BR2, BR4, BR5, BR6 — `beforeUpdate` 동등) 은 Service 단에서 수행.
+ * BR3 / BR7 (DuplicateProposalNum 관련) 은 `afterUpdate` 동등이라 update 시점에도 동일 검증.
  */
-data class SuggestionCreateRequest(
+data class SuggestionUpdateRequest(
     @field:NotNull(message = "제안구분은 필수입니다")
     val category: SuggestionCategory?,
 
@@ -25,14 +23,6 @@ data class SuggestionCreateRequest(
 
     @field:NotBlank(message = "제안 내용은 필수입니다")
     val content: String?,
-
-    @field:Size(max = 20, message = "제품코드는 최대 20자입니다")
-    val productCode: String? = null,
-
-    val accountId: Long? = null,
-
-    @field:Size(max = 100, message = "SAP 거래처 코드는 최대 100자입니다")
-    val sapAccountCode: String? = null,
 
     @field:Size(max = 200, message = "클레임 항목은 최대 200자입니다")
     val claimType: String? = null,
