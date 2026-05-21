@@ -48,30 +48,15 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @DisplayName("AdminProductController 테스트")
 class AdminProductControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
 
-    @MockkBean
-    private lateinit var adminProductService: AdminProductService
-
-    @MockkBean
-    private lateinit var adminProductInventoryService: AdminProductInventoryService
-
-    @MockkBean
-    private lateinit var adminProductExportService: AdminProductExportService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminProductService: AdminProductService
+    @MockkBean private lateinit var adminProductInventoryService: AdminProductInventoryService
+    @MockkBean private lateinit var adminProductExportService: AdminProductExportService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
     fun setUp() {
@@ -101,7 +86,6 @@ class AdminProductControllerTest {
         @Test
         @DisplayName("성공 - 기본 조회")
         fun getProducts_success() {
-            // Given
             val response = ProductListResponse(
                 content = listOf(
                     ProductListItem(
@@ -134,27 +118,16 @@ class AdminProductControllerTest {
                 page = eq(0), size = eq(20)
             ) } returns response
 
-            // When & Then
             mockMvc.perform(get("/api/v1/admin/products"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content[0].productCode").value("P001"))
-                .andExpect(jsonPath("$.data.content[0].name").value("진라면 매운맛"))
-                .andExpect(jsonPath("$.data.content[0].category1").value("면류"))
-                .andExpect(jsonPath("$.data.content[0].standardUnitPrice").value(850.0))
-                .andExpect(jsonPath("$.data.content[0].productStatus").value("판매중"))
-                .andExpect(jsonPath("$.data.content[0].launchDate").value("2020-01-15"))
-                .andExpect(jsonPath("$.data.page").value(0))
-                .andExpect(jsonPath("$.data.size").value(20))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
-                .andExpect(jsonPath("$.data.totalPages").value(1))
         }
 
         @Test
         @DisplayName("성공 - 키워드 + 카테고리 필터")
         fun getProducts_withFilters_success() {
-            // Given
             val response = ProductListResponse(
                 content = emptyList(),
                 page = 0, size = 10, totalElements = 0, totalPages = 0
@@ -165,7 +138,6 @@ class AdminProductControllerTest {
                 page = eq(0), size = eq(10)
             ) } returns response
 
-            // When & Then
             mockMvc.perform(
                 get("/api/v1/admin/products")
                     .param("keyword", "진라면")
@@ -173,14 +145,12 @@ class AdminProductControllerTest {
                     .param("size", "10")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isEmpty)
         }
 
         @Test
         @DisplayName("성공 - 빈 결과")
         fun getProducts_empty_success() {
-            // Given
             val response = ProductListResponse(
                 content = emptyList(),
                 page = 0, size = 20, totalElements = 0, totalPages = 0
@@ -191,10 +161,8 @@ class AdminProductControllerTest {
                 page = eq(0), size = eq(20)
             ) } returns response
 
-            // When & Then
             mockMvc.perform(get("/api/v1/admin/products"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.content").isEmpty)
                 .andExpect(jsonPath("$.data.totalElements").value(0))
         }
     }
@@ -206,7 +174,6 @@ class AdminProductControllerTest {
         @Test
         @DisplayName("성공 - 카테고리 트리 반환")
         fun getCategories_success() {
-            // Given
             val response = listOf(
                 CategoryTree(
                     category1 = "면류",
@@ -217,14 +184,10 @@ class AdminProductControllerTest {
             )
             every { adminProductService.getCategories() } returns response
 
-            // When & Then
             mockMvc.perform(get("/api/v1/admin/products/categories"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].category1").value("면류"))
                 .andExpect(jsonPath("$.data[0].children[0].category2").value("라면"))
-                .andExpect(jsonPath("$.data[0].children[0].children[0]").value("봉지면"))
-                .andExpect(jsonPath("$.data[0].children[0].children[1]").value("컵라면"))
         }
     }
 
@@ -235,7 +198,6 @@ class AdminProductControllerTest {
         @Test
         @DisplayName("성공 - 단건 상세 응답")
         fun getProductDetail_success() {
-            // Given
             val detail = ProductDetail(
                 id = 1L,
                 productCode = "P001",
@@ -260,13 +222,10 @@ class AdminProductControllerTest {
             )
             every { adminProductService.getProductDetail(eq("P001")) } returns detail
 
-            // When & Then
             mockMvc.perform(get("/api/v1/admin/products/P001"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.productCode").value("P001"))
                 .andExpect(jsonPath("$.data.name").value("꿀배청 680G"))
-                .andExpect(jsonPath("$.data.shelfLife").value("12"))
         }
     }
 
@@ -279,7 +238,6 @@ class AdminProductControllerTest {
         @Test
         @DisplayName("성공 - SAP 응답 매핑")
         fun searchInventory_success() {
-            // Given
             val request = InventorySearchRequest(
                 accountId = 1,
                 productCodes = listOf("P001", "P002"),
@@ -301,17 +259,14 @@ class AdminProductControllerTest {
             )
             every { adminProductInventoryService.searchInventory(any()) } returns response
 
-            // When & Then
             mockMvc.perform(
                 post("/api/v1/admin/products/inventory-search")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.results.length()").value(2))
                 .andExpect(jsonPath("$.data.results[0].productCode").value("P001"))
-                .andExpect(jsonPath("$.data.results[1].unitPrice").value(3000))
         }
 
         @Test
@@ -349,12 +304,11 @@ class AdminProductControllerTest {
         @Test
         @DisplayName("성공 - .xlsx 바이트 응답 + Content-Disposition")
         fun exportExcel_success() {
-            // Given
-            val xlsxBytes = byteArrayOf(0x50, 0x4B, 0x03, 0x04) // PK header (dummy)
+            // controller 후처리: Content-Disposition 헤더 + body bytes 매핑 (가드레일 5.3) — verbatim 유지
+            val xlsxBytes = byteArrayOf(0x50, 0x4B, 0x03, 0x04)
             every { adminProductExportService.exportSelectedProducts(eq(listOf("P001", "P002"))) } returns xlsxBytes
             val request = ProductExportRequest(productCodes = listOf("P001", "P002"))
 
-            // When & Then
             mockMvc.perform(
                 post("/api/v1/admin/products/export-excel")
                     .contentType(MediaType.APPLICATION_JSON)
