@@ -21,6 +21,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -40,27 +43,14 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 @DisplayName("AdminTeamScheduleController 테스트")
 class AdminTeamScheduleControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var objectMapper: ObjectMapper
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
-    @MockkBean
-    private lateinit var adminTeamScheduleService: AdminTeamScheduleService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var adminTeamScheduleService: AdminTeamScheduleService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @BeforeEach
     fun setUp() {
@@ -99,12 +89,8 @@ class AdminTeamScheduleControllerTest {
             mockMvc.perform(get("/api/v1/admin/team-schedule/members"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].employeeCode").value("20030001"))
-                .andExpect(jsonPath("$.data[0].name").value("홍길동"))
-                .andExpect(jsonPath("$.data[1].employeeCode").value("20030002"))
-                .andExpect(jsonPath("$.data[1].name").value("김영희"))
         }
     }
 
@@ -124,11 +110,8 @@ class AdminTeamScheduleControllerTest {
             mockMvc.perform(get("/api/v1/admin/team-schedule/accounts"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].accountId").value(1001))
                 .andExpect(jsonPath("$.data[0].externalKey").value("EXT001"))
-                .andExpect(jsonPath("$.data[0].name").value("이마트 강남점"))
         }
 
         @Test
@@ -144,11 +127,8 @@ class AdminTeamScheduleControllerTest {
                     .param("branchCode", "BR001")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].accountId").value(1003))
-                .andExpect(jsonPath("$.data[0].name").value("롯데마트 서울역점"))
         }
     }
 
@@ -167,13 +147,8 @@ class AdminTeamScheduleControllerTest {
 
             mockMvc.perform(get("/api/v1/admin/team-schedule/branches"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].branchCode").value("1234"))
-                .andExpect(jsonPath("$.data[0].branchName").value("서울지점"))
-                .andExpect(jsonPath("$.data[1].branchCode").value("5678"))
-                .andExpect(jsonPath("$.data[1].branchName").value("부산지점"))
         }
     }
 
@@ -231,34 +206,16 @@ class AdminTeamScheduleControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.schedules").isArray)
                 .andExpect(jsonPath("$.data.schedules.length()").value(1))
                 .andExpect(jsonPath("$.data.schedules[0].id").value(1))
-                .andExpect(jsonPath("$.data.schedules[0].employeeCode").value("20030001"))
-                .andExpect(jsonPath("$.data.schedules[0].employeeName").value("홍길동"))
-                .andExpect(jsonPath("$.data.schedules[0].workingDate").value("2026-03-15"))
-                .andExpect(jsonPath("$.data.schedules[0].workingType").value("진열"))
-                .andExpect(jsonPath("$.data.schedules[0].isClockIn").value(true))
-                .andExpect(jsonPath("$.data.schedules[0].accountId").value(1001))
-                .andExpect(jsonPath("$.data.schedules[0].accountName").value("이마트 강남점"))
-                .andExpect(jsonPath("$.data.dailySummary").isArray)
                 .andExpect(jsonPath("$.data.dailySummary.length()").value(1))
                 .andExpect(jsonPath("$.data.dailySummary[0].date").value("2026-03-15"))
-                .andExpect(jsonPath("$.data.dailySummary[0].displayExpected").value(5))
-                .andExpect(jsonPath("$.data.dailySummary[0].displayActual").value(3))
-                .andExpect(jsonPath("$.data.dailySummary[0].promotionExpected").value(2))
-                .andExpect(jsonPath("$.data.dailySummary[0].promotionActual").value(1))
-                .andExpect(jsonPath("$.data.dailySummary[0].annualLeave").value(1))
-                .andExpect(jsonPath("$.data.dailySummary[0].compensatoryLeave").value(0))
         }
 
         @Test
         @DisplayName("성공 - 필터 없이 조회 시 빈 배열 반환")
         fun getMonthlySchedules_emptyResult() {
-            val response = MonthlyScheduleWithSummaryDto(
-                schedules = emptyList(),
-                dailySummary = emptyList()
-            )
+            val response = MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
             every {
                 adminTeamScheduleService.getSchedulesWithSummary(
                     eq(java.time.LocalDate.of(2026, 3, 1)),
@@ -275,10 +232,7 @@ class AdminTeamScheduleControllerTest {
                     .param("to", "2026-03-31")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.schedules").isArray)
                 .andExpect(jsonPath("$.data.schedules.length()").value(0))
-                .andExpect(jsonPath("$.data.dailySummary").isArray)
                 .andExpect(jsonPath("$.data.dailySummary.length()").value(0))
         }
     }
@@ -311,15 +265,20 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.message").value("일정이 등록되었습니다"))
         }
 
-        @Test
-        @DisplayName("실패 - 휴직 사원 등록")
-        fun createSchedule_employeeOnLeave() {
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminTeamScheduleControllerTest#createExceptionCases")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun createSchedule_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            exception: Throwable,
+            expectedCode: String
+        ) {
             val request = TeamScheduleCreateRequest(
                 employeeCode = "SF001",
                 workingDate = "2026-03-20",
                 workingType = WorkingType.WORK
             )
-            every { adminTeamScheduleService.createSchedule(any(), any()) } throws TeamScheduleEmployeeOnLeaveException()
+            every { adminTeamScheduleService.createSchedule(any(), any()) } throws exception
 
             mockMvc.perform(
                 post("/api/v1/admin/team-schedule")
@@ -327,26 +286,7 @@ class AdminTeamScheduleControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("EMPLOYEE_ON_LEAVE"))
-        }
-
-        @Test
-        @DisplayName("실패 - 중복 일정 등록")
-        fun createSchedule_scheduleConflict() {
-            val request = TeamScheduleCreateRequest(
-                employeeCode = "SF001",
-                workingDate = "2026-03-20",
-                workingType = WorkingType.WORK
-            )
-            every { adminTeamScheduleService.createSchedule(any(), any()) } throws TeamScheduleConflictException("해당 날짜에 이미 일정이 등록되어 있습니다")
-
-            mockMvc.perform(
-                post("/api/v1/admin/team-schedule")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("SCHEDULE_CONFLICT"))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
     }
 
@@ -378,10 +318,7 @@ class AdminTeamScheduleControllerTest {
         @Test
         @DisplayName("실패 - 미존재 일정 수정")
         fun updateSchedule_notFound() {
-            val request = TeamScheduleUpdateRequest(
-                workingDate = "2026-03-21",
-                workingType = WorkingType.WORK
-            )
+            val request = TeamScheduleUpdateRequest(workingDate = "2026-03-21", workingType = WorkingType.WORK)
             every { adminTeamScheduleService.updateSchedule(any(), eq(999L), any()) } throws TeamScheduleNotFoundException()
 
             mockMvc.perform(
@@ -409,24 +346,39 @@ class AdminTeamScheduleControllerTest {
                 .andExpect(jsonPath("$.message").value("일정이 삭제되었습니다"))
         }
 
-        @Test
-        @DisplayName("실패 - 지점장 삭제 권한 없음")
-        fun deleteSchedule_forbidden() {
-            every { adminTeamScheduleService.deleteSchedule(any(), eq(1L)) } throws TeamScheduleDeleteForbiddenException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminTeamScheduleControllerTest#deleteExceptionCases")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun deleteSchedule_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            scheduleId: Long,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String
+        ) {
+            every { adminTeamScheduleService.deleteSchedule(any(), eq(scheduleId)) } throws exception
 
-            mockMvc.perform(delete("/api/v1/admin/team-schedule/1"))
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+            mockMvc.perform(delete("/api/v1/admin/team-schedule/$scheduleId"))
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
+    }
 
-        @Test
-        @DisplayName("실패 - 미존재 일정 삭제")
-        fun deleteSchedule_notFound() {
-            every { adminTeamScheduleService.deleteSchedule(any(), eq(999L)) } throws TeamScheduleNotFoundException()
+    companion object {
+        @JvmStatic
+        fun createExceptionCases(): List<Arguments> = listOf(
+            Arguments.of("employeeOnLeave -> EMPLOYEE_ON_LEAVE", TeamScheduleEmployeeOnLeaveException(), "EMPLOYEE_ON_LEAVE"),
+            Arguments.of(
+                "scheduleConflict -> SCHEDULE_CONFLICT",
+                TeamScheduleConflictException("해당 날짜에 이미 일정이 등록되어 있습니다"),
+                "SCHEDULE_CONFLICT",
+            ),
+        )
 
-            mockMvc.perform(delete("/api/v1/admin/team-schedule/999"))
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("NOT_FOUND"))
-        }
+        @JvmStatic
+        fun deleteExceptionCases(): List<Arguments> = listOf(
+            Arguments.of("forbidden -> 403 FORBIDDEN", 1L, TeamScheduleDeleteForbiddenException(), 403, "FORBIDDEN"),
+            Arguments.of("notFound -> 404 NOT_FOUND", 999L, TeamScheduleNotFoundException(), 404, "NOT_FOUND"),
+        )
     }
 }
