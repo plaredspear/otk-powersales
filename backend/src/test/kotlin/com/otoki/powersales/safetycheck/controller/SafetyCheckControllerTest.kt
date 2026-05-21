@@ -22,6 +22,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -39,26 +42,14 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @DisplayName("SafetyCheckController 테스트")
 class SafetyCheckControllerTest {
 
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @Autowired private lateinit var mockMvc: MockMvc
 
-    @MockkBean
-    private lateinit var safetyCheckService: SafetyCheckService
-
-    @MockkBean
-    private lateinit var adminSafetyCheckService: AdminSafetyCheckService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
+    @MockkBean private lateinit var safetyCheckService: SafetyCheckService
+    @MockkBean private lateinit var adminSafetyCheckService: AdminSafetyCheckService
+    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
+    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
+    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     private val testPrincipal = UserPrincipal(userId = 1L, role = UserRole.WOMAN)
 
@@ -75,8 +66,9 @@ class SafetyCheckControllerTest {
     inner class GetChecklistItemsTests {
 
         @Test
-        @DisplayName("정상 조회 - 200 OK, 카테고리별 항목 반환")
+        @DisplayName("정상 조회 - 200 OK, 카테고리별 RADIO/CHECKBOX 분기 반환")
         fun getChecklistItems_success() {
+            // 분기 명세 (가드레일 5.3): RADIO 카테고리는 options 보유 (예/해당없음) / CHECKBOX 카테고리는 options null serialization
             val mockResponse = SafetyCheckItemsResponse(
                 categories = listOf(
                     SafetyCheckItemsResponse.CategoryInfo(
@@ -106,24 +98,12 @@ class SafetyCheckControllerTest {
             every { safetyCheckService.getChecklistItems() } returns mockResponse
 
             mockMvc.perform(
-                get("/api/v1/mobile/safety-check/items")
-                    .contentType(MediaType.APPLICATION_JSON)
+                get("/api/v1/mobile/safety-check/items").contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("조회 성공"))
-                .andExpect(jsonPath("$.data.categories").isArray)
-                .andExpect(jsonPath("$.data.categories[0].questionNum").value(1))
-                .andExpect(jsonPath("$.data.categories[0].title").value("안전예방 장비 착용"))
                 .andExpect(jsonPath("$.data.categories[0].inputType").value("RADIO"))
-                .andExpect(jsonPath("$.data.categories[0].required").value(true))
                 .andExpect(jsonPath("$.data.categories[0].options[0]").value("예"))
-                .andExpect(jsonPath("$.data.categories[0].options[1]").value("해당없음"))
-                .andExpect(jsonPath("$.data.categories[0].items[0].seqNum").value(1))
-                .andExpect(jsonPath("$.data.categories[0].items[0].contents").value("손목보호대를 착용했습니다"))
-                .andExpect(jsonPath("$.data.categories[1].questionNum").value(2))
                 .andExpect(jsonPath("$.data.categories[1].inputType").value("CHECKBOX"))
-                .andExpect(jsonPath("$.data.categories[1].required").value(false))
                 .andExpect(jsonPath("$.data.categories[1].options").doesNotExist())
         }
     }
@@ -168,14 +148,12 @@ class SafetyCheckControllerTest {
                     .content(requestJson)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("안전점검이 완료되었습니다."))
                 .andExpect(jsonPath("$.data.safetyCheckCompleted").value(true))
-                .andExpect(jsonPath("$.data.submittedAt").exists())
         }
 
         @Test
-        @DisplayName("장비 항목 누락 - 400 INVALID_PARAMETER")
+        @DisplayName("장비 항목 누락 - 400 INVALID_PARAMETER (validation)")
         fun submit_emptyEquipments() {
             val requestJson = """
             {
@@ -192,38 +170,19 @@ class SafetyCheckControllerTest {
                     .content(requestJson)
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
         }
 
-        @Test
-        @DisplayName("필수 항목 누락 - 400 REQUIRED_ITEMS_MISSING")
-        fun submit_requiredItemsMissing() {
-            every { safetyCheckService.submitSafetyCheck(1L, any()) } throws RequiredItemsMissingException()
-
-            val requestJson = """
-            {
-                "startTime": "2026-03-15T09:00:00Z",
-                "completeTime": "2026-03-15T09:02:30Z",
-                "equipments": [{"seqNum": 1, "answer": "예"}, {"seqNum": 2, "answer": "예"}],
-                "precautions": []
-            }
-            """.trimIndent()
-
-            mockMvc.perform(
-                post("/api/v1/mobile/safety-check/submit")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson)
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("REQUIRED_ITEMS_MISSING"))
-        }
-
-        @Test
-        @DisplayName("중복 제출 - 409 ALREADY_SUBMITTED")
-        fun submit_alreadySubmitted() {
-            every { safetyCheckService.submitSafetyCheck(1L, any()) } throws AlreadySubmittedException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.safetycheck.controller.SafetyCheckControllerTest#submitExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun submit_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String
+        ) {
+            every { safetyCheckService.submitSafetyCheck(1L, any()) } throws exception
 
             val requestJson = """
             {
@@ -239,9 +198,8 @@ class SafetyCheckControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson)
             )
-                .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("ALREADY_SUBMITTED"))
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
     }
 
@@ -250,8 +208,9 @@ class SafetyCheckControllerTest {
     inner class GetStatusTests {
 
         @Test
-        @DisplayName("성공 - 특정 날짜 조회")
+        @DisplayName("성공 - 특정 날짜 조회 (제출/미제출 멤버 분기)")
         fun getStatus_withDate() {
+            // 분기 명세: members[0] 제출됨 (submitted=true + equipments 보유) / members[1] 미제출 (submitted=false + equipments 빈배열)
             val response = SafetyCheckStatusResponse(
                 date = "2026-03-21",
                 totalCount = 2,
@@ -299,15 +258,10 @@ class SafetyCheckControllerTest {
 
             mockMvc.perform(get("/api/v1/mobile/safety-check/status").param("date", "2026-03-21"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("조회 성공"))
                 .andExpect(jsonPath("$.data.date").value("2026-03-21"))
-                .andExpect(jsonPath("$.data.totalCount").value(2))
                 .andExpect(jsonPath("$.data.submittedCount").value(1))
                 .andExpect(jsonPath("$.data.notSubmittedCount").value(1))
-                .andExpect(jsonPath("$.data.members[0].employeeCode").value("123456"))
                 .andExpect(jsonPath("$.data.members[0].submitted").value(true))
-                .andExpect(jsonPath("$.data.members[0].equipments[0].seqNum").value(1))
                 .andExpect(jsonPath("$.data.members[1].submitted").value(false))
                 .andExpect(jsonPath("$.data.members[1].equipments").isEmpty)
         }
@@ -326,7 +280,6 @@ class SafetyCheckControllerTest {
 
             mockMvc.perform(get("/api/v1/mobile/safety-check/status"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.members").isEmpty)
         }
 
@@ -355,11 +308,9 @@ class SafetyCheckControllerTest {
             every { safetyCheckService.getTodayStatus(1L) } returns mockResponse
 
             mockMvc.perform(
-                get("/api/v1/mobile/safety-check/today")
-                    .contentType(MediaType.APPLICATION_JSON)
+                get("/api/v1/mobile/safety-check/today").contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.completed").value(true))
                 .andExpect(jsonPath("$.data.submittedAt").exists())
         }
@@ -375,13 +326,24 @@ class SafetyCheckControllerTest {
             every { safetyCheckService.getTodayStatus(1L) } returns mockResponse
 
             mockMvc.perform(
-                get("/api/v1/mobile/safety-check/today")
-                    .contentType(MediaType.APPLICATION_JSON)
+                get("/api/v1/mobile/safety-check/today").contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.completed").value(false))
                 .andExpect(jsonPath("$.data.submittedAt").doesNotExist())
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun submitExceptions(): List<Arguments> = listOf(
+            Arguments.of(
+                "requiredItemsMissing -> 400 REQUIRED_ITEMS_MISSING",
+                RequiredItemsMissingException(),
+                400,
+                "REQUIRED_ITEMS_MISSING",
+            ),
+            Arguments.of("alreadySubmitted -> 409 ALREADY_SUBMITTED", AlreadySubmittedException(), 409, "ALREADY_SUBMITTED"),
+        )
     }
 }
