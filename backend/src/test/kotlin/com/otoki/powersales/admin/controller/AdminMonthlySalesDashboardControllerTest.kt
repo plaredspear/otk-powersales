@@ -4,31 +4,21 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardDetailResponse
 import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardListItem
 import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardListResponse
 import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardSummaryResponse
 import com.otoki.powersales.sales.service.MonthlySalesAdminQueryService
 import com.otoki.powersales.sales.service.MonthlySalesDashboardExcelExporter
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.user.entity.ProfileType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-
 import io.mockk.every
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.core.MethodParameter
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
@@ -38,38 +28,16 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(AdminMonthlySalesDashboardController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminMonthlySalesDashboardController 테스트")
-class AdminMonthlySalesDashboardControllerTest {
-
-    @Autowired private lateinit var mockMvc: MockMvc
+class AdminMonthlySalesDashboardControllerTest : AdminControllerTestSupport() {
 
     @MockkBean private lateinit var queryService: MonthlySalesAdminQueryService
     @MockkBean private lateinit var excelExporter: MonthlySalesDashboardExcelExporter
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
 
     @MockkBean private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
-    fun setUp() {
-        val principal = WebUserPrincipal(
-            userId = 100L,
-            usernameValue = "test@otokims.co.kr",
-            employeeCode = "S001",
-            employeeId = 1L,
-            role = UserRoleEnum.SYSTEM_ADMIN,
-            costCenterCode = null,
-            profileType = ProfileType.STAFF,
-            isSalesSupport = false,
-            passwordChangeRequired = false,
-            permissions = emptySet(),
-            encodedPassword = "",
-            grantedAuthorities = emptyList(),
-            active = true,
-        )
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
+    fun setUpSystemAdminAndArgResolver() {
+        authenticateAsAdmin(role = UserRoleEnum.SYSTEM_ADMIN)
         every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
             val parameter = firstArg<MethodParameter>()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
