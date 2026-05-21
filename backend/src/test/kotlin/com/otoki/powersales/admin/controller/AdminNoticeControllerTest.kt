@@ -28,6 +28,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -233,34 +236,20 @@ class AdminNoticeControllerTest {
                 .andExpect(status().isBadRequest)
         }
 
-        @Test
-        @DisplayName("실패 - 지점 누락")
-        fun createNotice_branchRequired() {
-            every { noticeService.createNotice(any(), eq(1L)) } throws BranchRequiredException()
-
-            val request = NoticeCreateRequest(
-                title = "지점 공지",
-                category = "BRANCH",
-                content = "<p>내용</p>"
-            )
-
-            mockMvc.perform(
-                post("/api/v1/admin/notices")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("BRANCH_REQUIRED"))
-        }
-
-        @Test
-        @DisplayName("실패 - 잘못된 카테고리")
-        fun createNotice_invalidCategory() {
-            every { noticeService.createNotice(any(), eq(1L)) } throws InvalidNoticeCategoryException()
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminNoticeControllerTest#createNoticeExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun createNotice_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            category: String,
+            exception: Throwable,
+            expectedCode: String
+        ) {
+            every { noticeService.createNotice(any(), eq(1L)) } throws exception
 
             val request = NoticeCreateRequest(
                 title = "공지",
-                category = "UNKNOWN",
+                category = category,
                 content = "<p>내용</p>"
             )
 
@@ -270,7 +259,7 @@ class AdminNoticeControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.error.code").value("INVALID_CATEGORY"))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
         }
     }
 
@@ -418,5 +407,13 @@ class AdminNoticeControllerTest {
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("INVALID_IMAGE_ID"))
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun createNoticeExceptions(): List<Arguments> = listOf(
+            Arguments.of("branchRequired -> BRANCH_REQUIRED", "BRANCH", BranchRequiredException(), "BRANCH_REQUIRED"),
+            Arguments.of("invalidCategory -> INVALID_CATEGORY", "UNKNOWN", InvalidNoticeCategoryException(), "INVALID_CATEGORY"),
+        )
     }
 }
