@@ -1,17 +1,10 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.promotion.dto.response.PromotionConfirmResponse
 import com.otoki.powersales.promotion.service.AdminPromotionConfirmService
 import com.otoki.powersales.promotion.service.AdminPromotionEmployeeService
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.user.entity.ProfileType
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.promotion.exception.*
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -19,13 +12,9 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import io.mockk.every
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -33,36 +22,10 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(AdminPromotionEmployeeController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminPromotionEmployeeController - 행사 확정 테스트")
-class AdminPromotionConfirmControllerTest {
+class AdminPromotionConfirmControllerTest : AdminControllerTestSupport() {
 
-    @Autowired private lateinit var mockMvc: MockMvc
     @MockkBean private lateinit var adminPromotionEmployeeService: AdminPromotionEmployeeService
     @MockkBean private lateinit var adminPromotionConfirmService: AdminPromotionConfirmService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-    @MockkBean private lateinit var gpsConsentFilter: GpsConsentFilter
-
-    @BeforeEach
-    fun setUp() {
-        val principal = WebUserPrincipal(
-            userId = 100L,
-            usernameValue = "test@otokims.co.kr",
-            employeeCode = "S001",
-            employeeId = 1L,
-            role = UserRoleEnum.BRANCH_MANAGER,
-            costCenterCode = null,
-            profileType = ProfileType.STAFF,
-            isSalesSupport = false,
-            passwordChangeRequired = false,
-            permissions = emptySet(),
-            encodedPassword = "",
-            grantedAuthorities = emptyList(),
-            active = true
-        )
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-    }
 
     @Nested
     @DisplayName("POST /api/v1/admin/promotions/{promotionId}/confirm - 행사 확정")

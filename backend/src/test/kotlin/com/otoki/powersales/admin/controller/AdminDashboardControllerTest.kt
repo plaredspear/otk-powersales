@@ -9,27 +9,15 @@ import com.otoki.powersales.admin.dto.response.StaffTypeCount
 import com.otoki.powersales.admin.dto.response.TotalByPosition
 import com.otoki.powersales.admin.dto.response.WorkTypeStats
 import com.otoki.powersales.admin.service.AdminDashboardService
-import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.user.entity.ProfileType
-import org.junit.jupiter.api.BeforeEach
+import com.otoki.powersales.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-
 import io.mockk.every
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -37,51 +25,10 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(AdminDashboardController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminDashboardController 테스트 (스텁 모드)")
-class AdminDashboardControllerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+class AdminDashboardControllerTest : AdminControllerTestSupport() {
 
     @MockkBean
     private lateinit var adminDashboardService: AdminDashboardService
-
-    @MockkBean
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
-    @MockkBean
-    private lateinit var sapInboundAuditService: SapInboundAuditService
-
-    @MockkBean
-    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-
-    @MockkBean
-    private lateinit var gpsConsentFilter: GpsConsentFilter
-
-
-    private val testPrincipal = WebUserPrincipal(
-        userId = 100L,
-        usernameValue = "test@otokims.co.kr",
-        employeeCode = "S001",
-        employeeId = 1L,
-        role = UserRoleEnum.BRANCH_MANAGER,
-        costCenterCode = null,
-        profileType = ProfileType.STAFF,
-        isSalesSupport = false,
-        passwordChangeRequired = false,
-        permissions = emptySet(),
-        encodedPassword = "",
-        grantedAuthorities = emptyList(),
-        active = true
-    )
-
-    @BeforeEach
-    fun setUp() {
-        val authentication = UsernamePasswordAuthenticationToken(
-            testPrincipal, null, testPrincipal.authorities
-        )
-        SecurityContextHolder.getContext().authentication = authentication
-    }
 
     private fun emptyDashboardResponse(yearMonth: String): DashboardResponse = DashboardResponse(
         salesSummary = SalesSummary(

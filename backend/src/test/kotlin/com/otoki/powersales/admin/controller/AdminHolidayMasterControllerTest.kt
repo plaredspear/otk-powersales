@@ -1,20 +1,14 @@
 package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.leave.dto.request.HolidayMasterCreateRequest
 import com.otoki.powersales.leave.dto.request.HolidayMasterUpdateRequest
 import com.otoki.powersales.leave.dto.response.HolidayMasterResponse
 import com.otoki.powersales.leave.service.AdminHolidayMasterService
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.user.entity.ProfileType
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.leave.exception.HolidayDateDuplicateException
 import com.otoki.powersales.leave.exception.HolidayNotFoundException
 import com.otoki.powersales.leave.exception.InvalidHolidayTypeException
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -28,10 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import com.ninjasquad.springmockk.MockkBean
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.LocalDate
@@ -39,36 +30,11 @@ import java.time.LocalDate
 @WebMvcTest(AdminHolidayMasterController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AdminHolidayMasterController 테스트")
-class AdminHolidayMasterControllerTest {
+class AdminHolidayMasterControllerTest : AdminControllerTestSupport() {
 
-    @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     @MockkBean private lateinit var adminHolidayMasterService: AdminHolidayMasterService
-    @MockkBean private lateinit var jwtTokenProvider: JwtTokenProvider
-    @MockkBean private lateinit var sapInboundAuditService: SapInboundAuditService
-    @MockkBean private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
-
-    @BeforeEach
-    fun setUp() {
-        val principal = WebUserPrincipal(
-            userId = 100L,
-            usernameValue = "test@otokims.co.kr",
-            employeeCode = "S001",
-            employeeId = 1L,
-            role = UserRoleEnum.BRANCH_MANAGER,
-            costCenterCode = null,
-            profileType = ProfileType.STAFF,
-            isSalesSupport = false,
-            passwordChangeRequired = false,
-            permissions = emptySet(),
-            encodedPassword = "",
-            grantedAuthorities = emptyList(),
-            active = true
-        )
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-    }
 
     @Nested
     @DisplayName("GET /api/v1/admin/holiday-masters - 목록 조회")
