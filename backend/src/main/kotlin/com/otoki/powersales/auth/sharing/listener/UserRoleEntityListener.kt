@@ -6,7 +6,6 @@ import jakarta.persistence.PostPersist
 import jakarta.persistence.PostRemove
 import jakarta.persistence.PostUpdate
 import org.slf4j.LoggerFactory
-import org.springframework.beans.BeansException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
@@ -73,11 +72,8 @@ class UserRoleEntityListener : ApplicationContextAware {
 
     @Autowired
     override fun setApplicationContext(applicationContext: ApplicationContext) {
-        try {
-            eventPublisher = applicationContext.getBean(ApplicationEventPublisher::class.java)
-        } catch (e: BeansException) {
-            log.error("[user-role-listener] ApplicationEventPublisher 빈 조회 실패", e)
-        }
+        // ApplicationContext 자체가 ApplicationEventPublisher 를 구현 — getBean 조회 시 NoSuchBeanDefinitionException.
+        eventPublisher = applicationContext
     }
 
     companion object {
