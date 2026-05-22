@@ -1,6 +1,5 @@
 package com.otoki.powersales.auth.sharing.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.sharing.annotation.FlsField
 import com.otoki.powersales.auth.sharing.annotation.FlsFiltered
 import org.slf4j.LoggerFactory
@@ -32,7 +31,7 @@ import kotlin.reflect.full.memberProperties
 @RestControllerAdvice
 class FlsResponseBodyAdvice(
     private val flsService: FlsService,
-    private val objectMapper: ObjectMapper,
+    // objectMapper: 점진 도입 (Q2 옵션 1) 의 mask 변환 로직 활성화 시 재주입. Spring Boot 4 + Jackson 3 환경에서는 tools.jackson.databind.ObjectMapper 사용.
 ) : ResponseBodyAdvice<Any> {
 
     private val log = LoggerFactory.getLogger(javaClass)

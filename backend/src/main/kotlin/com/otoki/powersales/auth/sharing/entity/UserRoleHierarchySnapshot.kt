@@ -4,6 +4,8 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 
 /**
@@ -24,13 +26,15 @@ class UserRoleHierarchySnapshot(
     @Column(name = "user_role_id")
     val userRoleId: Long,
 
-    // PG 운영은 V175 의 jsonb 컬럼 정의 사용. entity 측 columnDefinition 미명시 — H2 호환 + Hibernate 자동 매핑.
+    // PG = jsonb (V175), H2 = JSON-as-text. Hibernate 6+ dialect 자동 매핑 (SapOutbox.payload / ScheduledJobRun.metadata 와 동일 패턴).
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "all_subordinate_ids", nullable = false)
     var allSubordinateIds: String,
 
     @Column(name = "depth", nullable = false)
     var depth: Int,
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "ancestor_path")
     var ancestorPath: String? = null,
 
