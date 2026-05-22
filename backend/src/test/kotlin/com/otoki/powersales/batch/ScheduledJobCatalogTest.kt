@@ -8,12 +8,13 @@ import org.junit.jupiter.api.Test
 class ScheduledJobCatalogTest {
 
     @Test
-    @DisplayName("카탈로그의 9개 jobName 이 각 *Batch.JOB_NAME 상수와 1:1 일치한다")
+    @DisplayName("카탈로그의 10개 jobName 이 각 *Batch.JOB_NAME 상수와 1:1 일치한다")
     fun jobNames_alignWithBatchConstants() {
         val expected = setOf(
             AgreementWordCycleBatch.JOB_NAME,
             AttendanceSapOutboundBatch.JOB_NAME,
             DisplayMasterSapOutboundBatch.JOB_NAME,
+            DisplayMasterLastMonthRevenueBatch.JOB_NAME,
             AccountNaverGeocodeBatch.JOB_NAME,
             PPTMasterExpireBatch.JOB_NAME,
             PPTMasterSyncBatch.JOB_NAME,
@@ -23,7 +24,7 @@ class ScheduledJobCatalogTest {
         )
 
         assertThat(ScheduledJobCatalog.JOB_NAMES.toSet()).isEqualTo(expected)
-        assertThat(ScheduledJobCatalog.ENTRIES).hasSize(9)
+        assertThat(ScheduledJobCatalog.ENTRIES).hasSize(10)
         assertThat(ScheduledJobCatalog.ENTRIES.map { it.jobName }).doesNotHaveDuplicates()
     }
 

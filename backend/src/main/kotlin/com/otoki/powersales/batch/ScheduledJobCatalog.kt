@@ -35,6 +35,11 @@ object ScheduledJobCatalog {
             description = "진열마스터 SAP outbound 전송 (기본 매일 01시)",
         ),
         Entry(
+            jobName = DisplayMasterLastMonthRevenueBatch.JOB_NAME,
+            cron = "\${app.batch.display.last-month-revenue.cron:0 0 2 * * *}",
+            description = "진열마스터 전월 매출 일괄 갱신 (기본 매일 02시) — legacy UpdateLastMonthRevenueBatch 동등",
+        ),
+        Entry(
             jobName = AccountNaverGeocodeBatch.JOB_NAME,
             cron = "\${app.account.naver-geocode.cron:0 0 2 * * *}",
             description = "거래처 주소 Naver geocode 변환 (기본 매일 02시)",
