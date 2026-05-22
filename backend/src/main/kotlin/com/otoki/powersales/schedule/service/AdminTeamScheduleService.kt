@@ -158,9 +158,9 @@ class AdminTeamScheduleService(
                 DailySummaryDto(
                     date = date?.toString() ?: "",
                     displayExpected = displaySchedules.size,
-                    displayActual = displaySchedules.count { it.commuteLogSfid != null },
+                    displayActual = displaySchedules.count { it.attendanceLog != null },
                     promotionExpected = promotionSchedules.size,
-                    promotionActual = promotionSchedules.count { it.commuteLogSfid != null },
+                    promotionActual = promotionSchedules.count { it.attendanceLog != null },
                     annualLeave = daySchedules.count { it.workingType == WorkingType.ANNUAL_LEAVE },
                     compensatoryLeave = daySchedules.count { it.workingType == WorkingType.ALT_HOLIDAY }
                 )
@@ -288,7 +288,7 @@ class AdminTeamScheduleService(
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        if (principal.role != UserRoleEnum.SYSTEM_ADMIN && schedule.commuteLogSfid != null) {
+        if (principal.role != UserRoleEnum.SYSTEM_ADMIN && schedule.attendanceLog != null) {
             throw TeamScheduleWorkReportDeleteException()
         }
 

@@ -2487,7 +2487,9 @@ class AttendanceServiceTest {
                     longitude = accountLongitude
                 )
             },
-            commuteLogSfid = commuteLogSfid
+            commuteLogSfid = commuteLogSfid,
+            // Spec #789 정합 — 출근 등록 가드는 attendance_log id-FK 기준. commuteLogSfid 채워진 fixture 는 attendance_log 도 함께 set.
+            attendanceLog = commuteLogSfid?.let { com.otoki.powersales.schedule.entity.AttendanceLog(id = 1L) }
         )
     }
 

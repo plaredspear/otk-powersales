@@ -30,6 +30,15 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     }
 
     @Transactional
+    override fun updateAttendanceLog(id: Long, attendanceLogId: Long) {
+        queryFactory
+            .update(teamMemberSchedule)
+            .set(teamMemberSchedule.attendanceLog.id, attendanceLogId)
+            .where(teamMemberSchedule.id.eq(id))
+            .execute()
+    }
+
+    @Transactional
     override fun updateSafetyCheckData(
         id: Long,
         equipment1: String?,
@@ -246,7 +255,8 @@ open class TeamMemberScheduleRepositoryCustomImpl(
                 teamMemberSchedule.employee.id.`in`(employeeIds),
                 teamMemberSchedule.workingDate.between(from, to),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
-                teamMemberSchedule.commuteLogSfid.isNotNull,
+                // Spec #789 — 출근 등록 여부 가드를 id-FK 로 전환 (sfid 비즈니스 로직 사용 금지 정책 정합).
+                teamMemberSchedule.attendanceLog.isNotNull,
                 teamMemberSchedule.account.isNotNull,
                 isNotDeleted()
             )
@@ -312,10 +322,8 @@ open class TeamMemberScheduleRepositoryCustomImpl(
                 )
             )
             .from(teamMemberSchedule)
-            .join(attendanceLog).on(
-                teamMemberSchedule.commuteLogSfid.eq(attendanceLog.sfid)
-                    .or(teamMemberSchedule.commuteLogSfid.eq(attendanceLog.id.stringValue()))
-            )
+            // Spec #789 — sfid 양방향 매칭 (#587 P1-B §1.4) → id-FK 단방향 JOIN (#672 audit 정합). attendance_log_id 는 V103 신설, V176 backfill.
+            .join(attendanceLog).on(teamMemberSchedule.attendanceLog.id.eq(attendanceLog.id))
             .join(employee).on(employee.id.eq(attendanceLog.employeeId))
             .join(account).on(account.id.eq(attendanceLog.accountId))
             .where(

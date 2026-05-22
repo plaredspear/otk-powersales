@@ -171,6 +171,8 @@ class AdminTeamScheduleServiceTest {
         },
         teamLeader = teamLeaderId?.let { Employee(id = it, employeeCode = "EMP$it", name = "팀장$it") },
         commuteLogSfid = commuteLogSfid,
+        // Spec #789 정합 — 출근 등록 가드는 attendance_log id-FK 기준.
+        attendanceLog = commuteLogSfid?.let { com.otoki.powersales.schedule.entity.AttendanceLog(id = 1L) },
         displayWorkSchedule = displayWorkSchedule
     )
 

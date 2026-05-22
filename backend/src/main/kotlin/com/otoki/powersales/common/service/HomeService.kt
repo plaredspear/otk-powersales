@@ -47,7 +47,7 @@ class HomeService(
          */
         private fun sortPriority(teamMemberSchedule: TeamMemberSchedule): Int {
             return when {
-                teamMemberSchedule.commuteLogSfid != null -> 0
+                teamMemberSchedule.attendanceLog != null -> 0
                 teamMemberSchedule.workingCategory1 != WorkingCategory1.DISPLAY -> 1
                 else -> 2
             }
@@ -216,7 +216,7 @@ class HomeService(
             accountId = teamMemberSchedule.account?.id,
             workCategory = teamMemberSchedule.workingCategory1?.displayName ?: "",
             workType = teamMemberSchedule.workingType?.displayName,
-            isCommuteRegistered = teamMemberSchedule.commuteLogSfid != null,
+            isCommuteRegistered = teamMemberSchedule.attendanceLog != null,
             commuteRegisteredAt = teamMemberSchedule.commuteReportDatetime
         )
     }
