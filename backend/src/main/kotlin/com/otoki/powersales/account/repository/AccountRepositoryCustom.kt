@@ -8,19 +8,27 @@ import org.springframework.data.domain.Pageable
 interface AccountRepositoryCustom {
 
     /**
-     * SF Sharing Rule 정책이 합성된 가시 Account 일람 (spec #782 P4-B).
+     * SF Sharing Rule 정책 + 검색 필터 + 페이지네이션을 합성한 가시 Account 일람 (spec #787).
+     *
+     * 본 spec 의 단일화 정책 — `searchForAdmin` (legacy branchCodes 필터) + 1차
+     * `findAllAccessibleByPolicy(Predicate): List` (sharing policy 만) 의 2 메서드를 본 메서드로 통합.
      *
      * Service layer 가 [com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator.buildPredicate]
-     * 결과를 [policyPredicate] 로 전달. Repository 는 Service 의존을 갖지 않음 — `@DataJpaTest` 호환.
+     * 결과를 [policyPredicate] 로 전달. Repository 는 Service 의존을 갖지 않음.
+     *
+     * @param policyPredicate SharingRulePolicyEvaluator 가 합성한 sharing policy Predicate
+     *                        (우선순위 1-6 평가: viewAllData / Owner / Hierarchy / SharingRule / branchCodes / ControlledByParent)
+     * @param keyword 거래처코드 (externalKey) / 거래처명 (name) 부분 일치 (lowercase 매칭)
+     * @param abcType ABC 유형 정확 일치
+     * @param accountStatusName 상태 정확 일치
+     * @param pageable 페이지네이션 + 정렬 (count query 정합 자동 처리)
      */
-    fun findAllAccessibleByPolicy(policyPredicate: Predicate): List<Account>
-
-    fun searchForAdmin(
+    fun findAllAccessibleByPolicy(
+        policyPredicate: Predicate,
         keyword: String?,
         abcType: String?,
-        branchCodes: List<String>?,
         accountStatusName: String?,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<Account>
 
     /**

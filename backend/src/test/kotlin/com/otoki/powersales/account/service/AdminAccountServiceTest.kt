@@ -1,24 +1,40 @@
 package com.otoki.powersales.account.service
 
-import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
+import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.dsl.EntityPathBase
+import com.querydsl.core.types.dsl.Expressions
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 
-@DisplayName("AdminAccountService 테스트")
+/**
+ * AdminAccountService 단위 테스트 (spec #787 — 단일화 후).
+ *
+ * 본 spec 단일화로 evaluator + Repository 합성 호출 패턴으로 검증 전환.
+ * - 기존 `searchForAdmin` mock 패턴 → `findAllAccessibleByPolicy` mock 패턴
+ * - 기존 별도 진입점 `getAccessibleAccountsByPolicy` 흡수 (별도 테스트 클래스 제거)
+ */
+@DisplayName("AdminAccountService 테스트 (spec #787 — 단일화)")
 class AdminAccountServiceTest {
 
     private val accountRepository: AccountRepository = mockk()
-    private val policyEvaluator: com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator =
-        mockk(relaxed = true)
+    private val policyEvaluator: SharingRulePolicyEvaluator = mockk()
+    // 실제 BooleanExpression 인스턴스 — mockk(relaxed=true) 는 BooleanBuilder.and() 의 cast 가 실패하므로
+    // QueryDSL Expressions 의 실 인스턴스를 사용해 BooleanBuilder 합성이 동작하도록 한다.
+    private val stubPolicyPredicate: Predicate = Expressions.asBoolean(true).isTrue
 
     private val adminAccountService = AdminAccountService(
         accountRepository,
@@ -26,135 +42,200 @@ class AdminAccountServiceTest {
     )
 
     @Nested
-    @DisplayName("getAccounts - 거래처 목록 조회")
+    @DisplayName("getAccounts — sharing policy 단일화")
     inner class GetAccountsTests {
 
         @Test
-        @DisplayName("전체 권한 - 필터 없이 조회 -> 전체 거래처 반환")
-        fun allBranches_noFilter() {
-            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+        @DisplayName("evaluator.buildPredicate 호출 (sObjectName=Account, entityPath=QAccount.account)")
+        fun servicePassesScopeToEvaluator() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true, userId = 100L)
+            stubFindAllAccessibleByPolicy(emptyList())
 
+            every {
+                policyEvaluator.buildPredicate(
+                    scope = scope,
+                    sObjectName = "Account",
+                    entityPath = any<EntityPathBase<*>>(),
+                )
+            } returns stubPolicyPredicate
+
+            adminAccountService.getAccounts(scope, null, null, null, null, 0, 20)
+
+            verify(exactly = 1) {
+                policyEvaluator.buildPredicate(
+                    scope = scope,
+                    sObjectName = "Account",
+                    entityPath = any<EntityPathBase<*>>(),
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("필터 없이 조회 → Repository.findAllAccessibleByPolicy 호출")
+        fun noFilter() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            stubEvaluator(scope)
             val accounts = listOf(createAccount(name = "GS25 역삼점", externalKey = "AC001234"))
-            val page = PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { accountRepository.searchForAdmin(null, null, null, null, any()) } returns page
+            stubFindAllAccessibleByPolicy(accounts)
 
             val result = adminAccountService.getAccounts(scope, null, null, null, null, 0, 20)
 
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].externalKey).isEqualTo("AC001234")
-            assertThat(result.content[0].name).isEqualTo("GS25 역삼점")
             assertThat(result.totalElements).isEqualTo(1)
             assertThat(result.totalPages).isEqualTo(1)
         }
 
         @Test
-        @DisplayName("전체 권한 + 지점 필터 -> 지정 지점만 조회")
-        fun allBranches_withBranchCode() {
-            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
-
-            val accounts = listOf(createAccount(branchCode = "A001"))
-            val page = PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { accountRepository.searchForAdmin(null, null, listOf("A001"), null, any()) } returns page
-
-            val result = adminAccountService.getAccounts(scope, null, null, "A001", null, 0, 20)
-
-            assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].branchCode).isEqualTo("A001")
-        }
-
-        @Test
-        @DisplayName("지점 권한 - 필터 없이 조회 -> 본인 지점 거래처만 반환")
-        fun branchOnly_noFilter() {
-            val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
-
-            val accounts = listOf(createAccount(branchCode = "A001"))
-            val page = PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { accountRepository.searchForAdmin(null, null, listOf("A001"), null, any()) } returns page
-
-            val result = adminAccountService.getAccounts(scope, null, null, null, null, 0, 20)
-
-            assertThat(result.content).hasSize(1)
-        }
-
-        @Test
-        @DisplayName("지점 권한 + 권한 외 지점 필터 -> 빈 결과")
-        fun branchOnly_forbiddenBranch() {
-            val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
-
-            val result = adminAccountService.getAccounts(scope, null, null, "B002", null, 0, 20)
-
-            assertThat(result.content).isEmpty()
-            assertThat(result.totalElements).isEqualTo(0)
-        }
-
-        @Test
-        @DisplayName("지점 권한 + branchCodes 비어있음 -> 빈 결과")
-        fun branchOnly_emptyBranchCodes() {
-            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
-
-            val result = adminAccountService.getAccounts(scope, null, null, null, null, 0, 20)
-
-            assertThat(result.content).isEmpty()
-            assertThat(result.totalElements).isEqualTo(0)
-        }
-
-        @Test
-        @DisplayName("키워드 필터 적용 -> 거래처코드/거래처명 부분 일치")
+        @DisplayName("keyword 필터 → Repository 에 keyword 전달")
         fun keywordFilter() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            stubEvaluator(scope)
+            stubFindAllAccessibleByPolicy(listOf(createAccount(name = "GS25 역삼점")))
 
-            val accounts = listOf(createAccount(name = "GS25 역삼점"))
-            val page = PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { accountRepository.searchForAdmin("GS25", null, null, null, any()) } returns page
+            adminAccountService.getAccounts(scope, "GS25", null, null, null, 0, 20)
 
-            val result = adminAccountService.getAccounts(scope, "GS25", null, null, null, 0, 20)
-
-            assertThat(result.content).hasSize(1)
+            verify(exactly = 1) {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = any(),
+                    keyword = "GS25",
+                    abcType = null,
+                    accountStatusName = null,
+                    pageable = any(),
+                )
+            }
         }
 
         @Test
-        @DisplayName("ABC유형 필터 적용 -> 해당 유형만 반환")
+        @DisplayName("abcType 필터 → Repository 에 abcType 전달")
         fun abcTypeFilter() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            stubEvaluator(scope)
+            stubFindAllAccessibleByPolicy(listOf(createAccount(abcType = "편의점")))
 
-            val accounts = listOf(createAccount(abcType = "편의점"))
-            val page = PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { accountRepository.searchForAdmin(null, "편의점", null, null, any()) } returns page
+            adminAccountService.getAccounts(scope, null, "편의점", null, null, 0, 20)
 
-            val result = adminAccountService.getAccounts(scope, null, "편의점", null, null, 0, 20)
-
-            assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].abcType).isEqualTo("편의점")
+            verify(exactly = 1) {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = any(),
+                    keyword = null,
+                    abcType = "편의점",
+                    accountStatusName = null,
+                    pageable = any(),
+                )
+            }
         }
 
         @Test
-        @DisplayName("상태 필터 적용 -> 해당 상태만 반환")
+        @DisplayName("accountStatusName 필터 → Repository 에 accountStatusName 전달")
         fun statusFilter() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            stubEvaluator(scope)
+            stubFindAllAccessibleByPolicy(listOf(createAccount(accountStatusName = "활성")))
 
-            val accounts = listOf(createAccount(accountStatusName = "활성"))
-            val page = PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { accountRepository.searchForAdmin(null, null, null, "활성", any()) } returns page
+            adminAccountService.getAccounts(scope, null, null, null, "활성", 0, 20)
 
-            val result = adminAccountService.getAccounts(scope, null, null, null, "활성", 0, 20)
-
-            assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].accountStatusName).isEqualTo("활성")
+            verify(exactly = 1) {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = any(),
+                    keyword = null,
+                    abcType = null,
+                    accountStatusName = "활성",
+                    pageable = any(),
+                )
+            }
         }
 
         @Test
-        @DisplayName("지점 권한 + 허용 지점 필터 -> 해당 지점 거래처 반환")
-        fun branchOnly_allowedBranch() {
-            val scope = DataScope(branchCodes = listOf("A001", "A002"), isAllBranches = false)
+        @DisplayName("branchCode request param → policyPredicate 에 AND 합성 (Repository policyPredicate 인자 변형)")
+        fun branchCodeAddedToPolicyPredicate() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            stubEvaluator(scope)
+            val composedSlot = slot<Predicate>()
+            every {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = capture(composedSlot),
+                    keyword = null,
+                    abcType = null,
+                    accountStatusName = null,
+                    pageable = any(),
+                )
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
 
-            val accounts = listOf(createAccount(branchCode = "A001"))
-            val page = PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { accountRepository.searchForAdmin(null, null, listOf("A001"), null, any()) } returns page
+            adminAccountService.getAccounts(scope, null, null, "A001", null, 0, 20)
 
-            val result = adminAccountService.getAccounts(scope, null, null, "A001", null, 0, 20)
-
-            assertThat(result.content).hasSize(1)
+            // composed predicate 가 evaluator 결과 + branchCode AND 합성
+            // BooleanBuilder 표현 — toString 에 stub + branchCode 모두 포함
+            assertThat(composedSlot.captured.toString()).contains("account.branchCode = A001")
         }
+
+        @Test
+        @DisplayName("페이지네이션 — Repository 가 반환한 Page 메타 보존")
+        fun paginationMeta() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            stubEvaluator(scope)
+            val accounts = (1..20).map { createAccount(id = it, name = "Acc-$it") }
+            every {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = any(),
+                    keyword = null,
+                    abcType = null,
+                    accountStatusName = null,
+                    pageable = any(),
+                )
+            } returns PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 100L)
+
+            val result = adminAccountService.getAccounts(scope, null, null, null, null, 0, 20)
+
+            assertThat(result.content).hasSize(20)
+            assertThat(result.totalElements).isEqualTo(100)
+            assertThat(result.totalPages).isEqualTo(5)
+            assertThat(result.page).isEqualTo(0)
+            assertThat(result.size).isEqualTo(20)
+        }
+
+        @Test
+        @DisplayName("pageable 정렬 — Sort.by(name).ascending() 적용")
+        fun sortByNameAsc() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            stubEvaluator(scope)
+            val pageableSlot = slot<Pageable>()
+            every {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = any(),
+                    keyword = null,
+                    abcType = null,
+                    accountStatusName = null,
+                    pageable = capture(pageableSlot),
+                )
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+
+            adminAccountService.getAccounts(scope, null, null, null, null, 0, 20)
+
+            assertThat(pageableSlot.captured.sort.toString()).isEqualTo("name: ASC")
+        }
+    }
+
+    private fun stubEvaluator(scope: DataScope) {
+        every {
+            policyEvaluator.buildPredicate(
+                scope = scope,
+                sObjectName = "Account",
+                entityPath = any<EntityPathBase<*>>(),
+            )
+        } returns stubPolicyPredicate
+    }
+
+    private fun stubFindAllAccessibleByPolicy(accounts: List<Account>) {
+        every {
+            accountRepository.findAllAccessibleByPolicy(
+                policyPredicate = any(),
+                keyword = any(),
+                abcType = any(),
+                accountStatusName = any(),
+                pageable = any(),
+            )
+        } returns PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), accounts.size.toLong())
     }
 
     private fun createAccount(

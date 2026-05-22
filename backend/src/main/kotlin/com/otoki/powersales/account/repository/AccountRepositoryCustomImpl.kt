@@ -13,27 +13,17 @@ class AccountRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory,
 ) : AccountRepositoryCustom {
 
-    override fun findAllAccessibleByPolicy(policyPredicate: Predicate): List<Account> {
-        return queryFactory
-            .selectFrom(account)
-            .where(
-                account.isDeleted.isNull.or(account.isDeleted.eq(false)),
-                policyPredicate,
-            )
-            .orderBy(account.name.asc())
-            .fetch()
-    }
-
-    override fun searchForAdmin(
+    override fun findAllAccessibleByPolicy(
+        policyPredicate: Predicate,
         keyword: String?,
         abcType: String?,
-        branchCodes: List<String>?,
         accountStatusName: String?,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<Account> {
         val builder = BooleanBuilder()
 
-        builder.and(account.isDeleted.isNull.or(account.isDeleted.eq(false)))
+        builder.and(notDeleted())
+        builder.and(policyPredicate)
 
         if (!keyword.isNullOrBlank()) {
             val lowerPattern = "%${keyword.lowercase()}%"
@@ -45,10 +35,6 @@ class AccountRepositoryCustomImpl(
 
         if (!abcType.isNullOrBlank()) {
             builder.and(account.abcType.eq(abcType))
-        }
-
-        if (branchCodes != null) {
-            builder.and(account.branchCode.`in`(branchCodes))
         }
 
         if (!accountStatusName.isNullOrBlank()) {
