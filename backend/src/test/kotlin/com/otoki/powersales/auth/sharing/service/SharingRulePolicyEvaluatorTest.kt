@@ -59,6 +59,7 @@ class SharingRulePolicyEvaluatorTest {
                     modifyAllDataSystem = false,
                     viewAllRecordsBySObject = mapOf("Account" to true),
                     modifyAllRecordsBySObject = emptyMap(),
+                    permissionSetIds = emptySet(),
                 ),
             )
             assertThat(evaluator.hasUnrestrictedAccess(scope, "Account")).isTrue

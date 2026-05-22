@@ -111,6 +111,7 @@ class SharingPolicyMatrixTest {
                 modifyAllDataSystem = false,
                 viewAllRecordsBySObject = mapOf("Account" to true),
                 modifyAllRecordsBySObject = emptyMap(),
+                permissionSetIds = emptySet(),
             ),
         )
         // Account 만 unrestricted, 다른 SObject 는 일반 분기

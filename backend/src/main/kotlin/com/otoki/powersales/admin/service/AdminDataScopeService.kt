@@ -6,6 +6,7 @@ import com.otoki.powersales.auth.sharing.repository.SharingPolicyQueryRepository
 import com.otoki.powersales.auth.sharing.service.GroupMembershipEvaluator
 import com.otoki.powersales.auth.sharing.service.PermissionSetEvaluator
 import com.otoki.powersales.auth.sharing.service.ProfileFlagsEvaluator
+import com.otoki.powersales.auth.sharing.service.RecordTypePermissionEvaluator
 import com.otoki.powersales.auth.sharing.service.UserRoleHierarchyTraversal
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
@@ -25,6 +26,7 @@ class AdminDataScopeService(
     private val profileFlagsEvaluator: ProfileFlagsEvaluator,
     private val permissionSetEvaluator: PermissionSetEvaluator,
     private val sharingPolicyQueryRepository: SharingPolicyQueryRepository,
+    private val recordTypePermissionEvaluator: RecordTypePermissionEvaluator,
 ) {
 
     private val log = LoggerFactory.getLogger(AdminDataScopeService::class.java)
@@ -119,6 +121,13 @@ class AdminDataScopeService(
             groupMemberships = groupMemberships,
         )
 
+        // spec #796 — Record Type 가시성 채움
+        val visibleRecordTypeIds = recordTypePermissionEvaluator.visibleRecordTypeIds(
+            userId = userId,
+            profileId = user.profileId,
+            permissionSetIds = permissionSetFlags.permissionSetIds,
+        )
+
         return legacyScope.copy(
             userId = userId,
             userRoleId = userRoleId,
@@ -127,6 +136,7 @@ class AdminDataScopeService(
             groupMemberships = groupMemberships,
             permissionSetFlags = permissionSetFlags,
             evaluatorRules = evaluatorRules,
+            visibleRecordTypeIds = visibleRecordTypeIds,
         )
     }
 }

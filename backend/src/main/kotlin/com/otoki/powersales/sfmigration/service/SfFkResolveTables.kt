@@ -180,18 +180,20 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
     "profile" to ("profile" to "profile_id"),
     "user_role" to ("user_role" to "user_role_id"),
     "parent_user_role" to ("user_role" to "user_role_id"),
+    // Spec #796 — RecordType FK 활성화. SObject row 의 RecordTypeId(sfid) → record_type.record_type_id 변환.
+    "record_type" to ("record_type" to "record_type_id"),
 )
 
 /**
  * FK 처리 제외 prefix.
  *
  * - product_code : code 기반 lookup (sfid 아님)
- * - record_type  : SF RecordType 메타 — 별도 FK 컬럼 없음
  * - related      : Group.related polymorphic — 별도 처리
+ *
+ * (record_type 은 spec #796 부터 FK_PREFIX_MAPPING 으로 활성화 — 본 set 에서 제거됨)
  */
 internal val SKIP_FK_PREFIXES: Set<String> = setOf(
     "product_code",
-    "record_type",
     "related",
     // spec #790 — group_member.user_or_group_sfid 는 POLYMORPHIC_USER_OR_GROUP_TABLES 가 별도 처리
     "user_or_group",

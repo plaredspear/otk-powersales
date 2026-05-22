@@ -40,4 +40,8 @@ class PermissionSetFlags(
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "object_permissions")
     var objectPermissions: String? = null,
+
+    // spec #796 — permission_set 정규 테이블 FK (Stage2 fk resolve 후 채움)
+    @Column(name = "permission_set_id")
+    var permissionSetId: Long? = null,
 )

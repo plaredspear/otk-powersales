@@ -114,7 +114,7 @@ class SfFkResolveTablesTest {
         @DisplayName("SKIP_FK_PREFIXES 에 등록된 prefix 는 null")
         fun skipPrefixes() {
             assertThat(deriveFkResolveSpec("product_code_sfid")).isNull()
-            assertThat(deriveFkResolveSpec("record_type_sfid")).isNull()
+            // spec #796 — record_type 은 SKIP 에서 FK_PREFIX_MAPPING 으로 이동 — record_type_sfid 는 더 이상 null 아님
             assertThat(deriveFkResolveSpec("related_sfid")).isNull()
         }
 
@@ -265,6 +265,20 @@ class SfFkResolveTablesTest {
             assertThat(spec.idColumn).isEqualTo("parent_user_role_id")
             assertThat(spec.refTable).isEqualTo("user_role")
             assertThat(spec.refIdColumn).isEqualTo("user_role_id")
+        }
+    }
+
+    @Nested
+    @DisplayName("RecordType FK (Spec #796)")
+    inner class RecordTypeFk {
+
+        @Test
+        @DisplayName("record_type_sfid → record_type_id, ref record_type.record_type_id")
+        fun recordTypeFk() {
+            val spec = deriveFkResolveSpec("record_type_sfid")!!
+            assertThat(spec.idColumn).isEqualTo("record_type_id")
+            assertThat(spec.refTable).isEqualTo("record_type")
+            assertThat(spec.refIdColumn).isEqualTo("record_type_id")
         }
     }
 }

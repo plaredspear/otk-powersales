@@ -14,6 +14,15 @@ data class PermissionSetSnapshot(
     val modifyAllDataSystem: Boolean,
     val viewAllRecordsBySObject: Map<String, Boolean>,
     val modifyAllRecordsBySObject: Map<String, Boolean>,
+    /**
+     * 사용자가 부여받은 PermissionSet 의 정규 id 집합 (spec #796).
+     *
+     * `permission_set_flags.permission_set_id` 를 통해 매핑된 정규 [permission_set.permission_set_id] 만 수집.
+     * Stage2 fk resolve 가 채우지 않은 PermissionSet (운영 미적재 또는 외부 추가) 은 본 집합에서 제외.
+     *
+     * RecordTypePermissionEvaluator / FlsService 가 본 집합으로 PermissionSet × RT/FLS lookup.
+     */
+    val permissionSetIds: Set<Long>,
 ) {
     fun hasViewAllRecords(sObjectName: String): Boolean =
         viewAllDataSystem || (viewAllRecordsBySObject[sObjectName] == true)
@@ -27,6 +36,7 @@ data class PermissionSetSnapshot(
             modifyAllDataSystem = false,
             viewAllRecordsBySObject = emptyMap(),
             modifyAllRecordsBySObject = emptyMap(),
+            permissionSetIds = emptySet(),
         )
     }
 }

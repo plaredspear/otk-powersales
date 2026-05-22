@@ -5,6 +5,7 @@ import com.otoki.powersales.auth.sharing.repository.SharingPolicyQueryRepository
 import com.otoki.powersales.auth.sharing.service.GroupMembershipEvaluator
 import com.otoki.powersales.auth.sharing.service.PermissionSetEvaluator
 import com.otoki.powersales.auth.sharing.service.ProfileFlagsEvaluator
+import com.otoki.powersales.auth.sharing.service.RecordTypePermissionEvaluator
 import com.otoki.powersales.auth.sharing.service.UserRoleHierarchyTraversal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -27,6 +28,7 @@ class AdminDataScopeServiceTest {
     private val profileFlagsEvaluator: ProfileFlagsEvaluator = mockk(relaxed = true)
     private val permissionSetEvaluator: PermissionSetEvaluator = mockk(relaxed = true)
     private val sharingPolicyQueryRepository: SharingPolicyQueryRepository = mockk(relaxed = true)
+    private val recordTypePermissionEvaluator: RecordTypePermissionEvaluator = mockk(relaxed = true)
 
     private val adminDataScopeService = AdminDataScopeService(
         employeeRepository = employeeRepository,
@@ -36,6 +38,7 @@ class AdminDataScopeServiceTest {
         profileFlagsEvaluator = profileFlagsEvaluator,
         permissionSetEvaluator = permissionSetEvaluator,
         sharingPolicyQueryRepository = sharingPolicyQueryRepository,
+        recordTypePermissionEvaluator = recordTypePermissionEvaluator,
     )
 
     @Nested

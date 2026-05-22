@@ -28,7 +28,7 @@ class PermissionSetEvaluator(
 ) {
     private val log = LoggerFactory.getLogger(PermissionSetEvaluator::class.java)
 
-    @Cacheable(value = ["permissionSetFlags"], key = "#userId")
+    @Cacheable(value = ["permissionSetFlags:v2"], key = "#userId")
     fun getPermissionSetSnapshot(userId: Long): PermissionSetSnapshot {
         val assignments = assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(userId)
         if (assignments.isEmpty()) return PermissionSetSnapshot.NONE
@@ -37,11 +37,15 @@ class PermissionSetEvaluator(
         var modifyAllDataSystem = false
         val viewAllRecordsAccum = mutableMapOf<String, Boolean>()
         val modifyAllRecordsAccum = mutableMapOf<String, Boolean>()
+        val permissionSetIdsAccum = mutableSetOf<Long>()
 
         assignments.forEach { assignment ->
             val flags = flagsRepository.findById(assignment.permissionSetFlagsId).orElse(null) ?: return@forEach
             if (flags.permissionsViewAllData) viewAllDataSystem = true
             if (flags.permissionsModifyAllData) modifyAllDataSystem = true
+
+            // spec #796 — permission_set 정규 id 가 Stage2 fk resolve 후 채워진 경우 수집
+            flags.permissionSetId?.let { permissionSetIdsAccum.add(it) }
 
             val objectPerms = parseObjectPermissions(flags.objectPermissions)
             objectPerms.forEach { (sObjectName, perms) ->
@@ -55,6 +59,7 @@ class PermissionSetEvaluator(
             modifyAllDataSystem = modifyAllDataSystem,
             viewAllRecordsBySObject = viewAllRecordsAccum,
             modifyAllRecordsBySObject = modifyAllRecordsAccum,
+            permissionSetIds = permissionSetIdsAccum,
         )
     }
 
