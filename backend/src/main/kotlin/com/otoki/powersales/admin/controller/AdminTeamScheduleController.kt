@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
+import com.otoki.powersales.schedule.dto.request.TeamScheduleMassDeleteRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.admin.security.AdminPermission
@@ -109,5 +110,26 @@ class AdminTeamScheduleController(
     ): ResponseEntity<ApiResponse<Any?>> {
         adminTeamScheduleService.deleteSchedule(principal, id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "일정이 삭제되었습니다"))
+    }
+
+    /**
+     * 여사원 일정 다건 삭제 (Spec #691 P1-B).
+     *
+     * legacy `MassDeleteTmScheduleController.doMassDelete` (VF `@RemoteAction` + 100건 + 진열 + CommuteLogId=null) 동등 endpoint.
+     * Q5 옵션 1 — 전체 rollback (legacy `delete deleteList;` `allOrNone=true` 동등) — 1건이라도 가드 fail 시 첫 실패 row 의 도메인 예외 throw.
+     */
+    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @PostMapping("/mass-delete")
+    fun massDelete(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @Valid @RequestBody request: TeamScheduleMassDeleteRequest
+    ): ResponseEntity<ApiResponse<TeamScheduleMassDeleteResponse>> {
+        val deletedCount = adminTeamScheduleService.massDelete(principal, request.ids)
+        return ResponseEntity.ok(
+            ApiResponse.success(
+                TeamScheduleMassDeleteResponse(deletedCount = deletedCount),
+                "일정이 삭제되었습니다"
+            )
+        )
     }
 }

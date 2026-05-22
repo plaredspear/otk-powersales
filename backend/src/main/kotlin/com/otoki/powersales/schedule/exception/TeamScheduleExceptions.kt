@@ -80,3 +80,23 @@ class TeamScheduleInvalidRangeException : BusinessException(
     message = "종료일은 시작일보다 같거나 뒤 날짜여야 합니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+/**
+ * 다건 삭제 endpoint 의 행 수 상한 (100건) 초과 (Spec #691 Q1 옵션 1).
+ * legacy `MassDeleteTmScheduleListButton.page:7` 의 client-side 100건 차단을 server-side 로 강화.
+ */
+class TeamScheduleMassDeleteRowLimitExceededException : BusinessException(
+    errorCode = "ROW_LIMIT_EXCEEDED",
+    message = "한 번에 100개 이하로만 삭제 가능합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 다건 삭제 endpoint 에서 `findAllById` 결과가 요청 ids 와 다름 (일부 ids 미존재) — Spec #691.
+ * legacy `MassDeleteTmScheduleController.cls:33` 클라이언트 ID 신뢰 보안 결함 회피 — 서버 측 ID 재검증.
+ */
+class TeamScheduleNotFoundPartialException(val missingIds: List<Long>) : BusinessException(
+    errorCode = "TEAM_SCHEDULE_NOT_FOUND_PARTIAL",
+    message = "일부 일정이 존재하지 않습니다 (ids=${missingIds.joinToString(",")})",
+    httpStatus = HttpStatus.NOT_FOUND
+)

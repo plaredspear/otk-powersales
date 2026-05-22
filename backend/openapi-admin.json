@@ -5003,6 +5003,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseTeamScheduleMassDeleteResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TeamScheduleMassDeleteResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseUnit" : {
         "properties" : {
           "error" : {
@@ -10012,6 +10041,29 @@
           },
           "workingType" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "TeamScheduleMassDeleteRequest" : {
+        "properties" : {
+          "ids" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "ids" ],
+        "type" : "object"
+      },
+      "TeamScheduleMassDeleteResponse" : {
+        "properties" : {
+          "deletedCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -16048,6 +16100,34 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-team-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/team-schedule/mass-delete" : {
+      "post" : {
+        "operationId" : "massDelete",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TeamScheduleMassDeleteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseTeamScheduleMassDeleteResponse"
                 }
               }
             },
