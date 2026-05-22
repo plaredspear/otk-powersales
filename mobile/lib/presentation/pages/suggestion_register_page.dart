@@ -1,20 +1,27 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../domain/entities/suggestion_form.dart';
 import '../providers/suggestion_register_provider.dart';
 import '../providers/suggestion_register_state.dart';
 import '../widgets/suggestion/suggestion_category_selector.dart';
+import '../widgets/suggestion/suggestion_logistics_claim_fields.dart';
 import '../widgets/suggestion/suggestion_photo_field.dart';
 import '../widgets/suggestion/suggestion_product_field.dart';
+
+const int _maxPhotoSizeBytes = 20 * 1024 * 1024;
 
 /// 제안하기 등록 페이지
 ///
 /// 기능:
-/// - 분류 선택 (신제품 제안 / 기존제품 상품가치향상)
-/// - 제품 선택 (기존제품일 때만, 바코드 스캔 또는 직접 선택)
+/// - 분류 선택 (신제품 제안 / 기존제품 상품가치향상 / 물류 클레임)
+/// - 카테고리 분기 입력 (제품 선택 또는 물류 클레임 6 필드)
 /// - 제목 입력
 /// - 내용 입력
-/// - 사진 첨부 (최대 2장)
+/// - 사진 첨부 (최대 2장, 20MB 가드)
 /// - 제출
 class SuggestionRegisterPage extends ConsumerStatefulWidget {
   const SuggestionRegisterPage({super.key});
@@ -28,6 +35,7 @@ class _SuggestionRegisterPageState
     extends ConsumerState<SuggestionRegisterPage> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void dispose() {
@@ -41,7 +49,6 @@ class _SuggestionRegisterPageState
     final state = ref.watch(suggestionRegisterProvider);
     final notifier = ref.read(suggestionRegisterProvider.notifier);
 
-    // 에러 메시지 표시
     ref.listen<SuggestionRegisterState>(
       suggestionRegisterProvider,
       (previous, next) {
@@ -54,7 +61,6 @@ class _SuggestionRegisterPageState
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(next.successMessage!)),
           );
-          // 성공 시 페이지 닫기
           Navigator.of(context).pop();
         }
       },
@@ -75,45 +81,59 @@ class _SuggestionRegisterPageState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 분류 선택
                   SuggestionCategorySelector(
                     selectedCategory: state.form.category,
                     onCategoryChanged: notifier.changeCategory,
                   ),
                   const SizedBox(height: 16),
 
-                  // 제품 선택
-                  SuggestionProductField(
-                    enabled: state.form.isExistingProduct,
-                    productName: state.form.productName,
-                    productCode: state.form.productCode,
-                    onBarcodePressed: _handleBarcodeScan,
-                    onSelectPressed: () => _showProductSelector(context),
-                  ),
+                  if (state.category == SuggestionCategory.logisticsClaim)
+                    SuggestionLogisticsClaimFields(
+                      accountName: state.form.accountName,
+                      claimType: state.form.claimType,
+                      claimDate: state.form.claimDate,
+                      carNumber: state.form.carNumber,
+                      logisticsResponsibility:
+                          state.form.logisticsResponsibility,
+                      duplicateProposalNum: state.form.duplicateProposalNum,
+                      onSelectAccount: _showAccountSelector,
+                      onClaimTypeChanged: notifier.updateClaimType,
+                      onClaimDateChanged: notifier.updateClaimDate,
+                      onCarNumberChanged: notifier.updateCarNumber,
+                      onLogisticsResponsibilityChanged:
+                          notifier.updateLogisticsResponsibility,
+                      onDuplicateProposalNumChanged:
+                          notifier.updateDuplicateProposalNum,
+                    )
+                  else
+                    SuggestionProductField(
+                      enabled: state.form.isExistingProduct,
+                      productName: state.form.productName,
+                      productCode: state.form.productCode,
+                      onBarcodePressed: _handleBarcodeScan,
+                      onSelectPressed: () => _showProductSelector(context),
+                    ),
                   const SizedBox(height: 16),
 
-                  // 제목 입력
                   _TitleField(
                     controller: _titleController,
                     onChanged: notifier.updateTitle,
                   ),
                   const SizedBox(height: 16),
 
-                  // 내용 입력
                   _ContentField(
                     controller: _contentController,
                     onChanged: notifier.updateContent,
                   ),
                   const SizedBox(height: 16),
 
-                  // 사진 첨부
                   SuggestionPhotoField(
                     photos: state.form.photos,
                     onAddPhoto: _handleAddPhoto,
                     onRemovePhoto: notifier.removePhoto,
                   ),
 
-                  const SizedBox(height: 80), // 하단 버튼 공간
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -121,7 +141,6 @@ class _SuggestionRegisterPageState
     );
   }
 
-  /// 하단 제출 버튼
   Widget _buildBottomButton(
     BuildContext context,
     SuggestionRegisterState state,
@@ -162,52 +181,59 @@ class _SuggestionRegisterPageState
     );
   }
 
-  /// 바코드 스캔
   Future<void> _handleBarcodeScan() async {
-    // TODO: 바코드 스캐너 실행
-    // 임시로 샘플 제품 선택
-    final notifier = ref.read(suggestionRegisterProvider.notifier);
-    notifier.selectProduct('P001', '진라면');
-
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('바코드 스캔 기능은 추후 구현 예정입니다')),
+        const SnackBar(content: Text('바코드 스캔 기능은 별 스펙에서 구현됩니다')),
       );
     }
   }
 
-  /// 제품 선택 다이얼로그
   Future<void> _showProductSelector(BuildContext context) async {
-    // TODO: 제품 검색 화면으로 이동
-    // 임시로 샘플 제품 선택
-    final notifier = ref.read(suggestionRegisterProvider.notifier);
-    notifier.selectProduct('P002', '진라면 매운맛');
-
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제품 선택 기능은 추후 구현 예정입니다')),
+        const SnackBar(content: Text('제품 선택 화면은 별 스펙에서 구현됩니다')),
       );
     }
   }
 
-  /// 사진 추가
+  Future<void> _showAccountSelector() async {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('거래처 선택 화면은 별 스펙에서 구현됩니다')),
+      );
+    }
+  }
+
   Future<void> _handleAddPhoto() async {
-    // TODO: 이미지 선택 구현 (image_picker 패키지 사용)
-    // 임시로 스낵바만 표시
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('사진 선택 기능은 추후 구현 예정입니다')),
-      );
+    final notifier = ref.read(suggestionRegisterProvider.notifier);
+    final XFile? picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 1920,
+    );
+    if (picked == null) return;
+
+    final file = File(picked.path);
+    final size = await file.length();
+    if (size > _maxPhotoSizeBytes) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('사진 1장은 최대 20MB 까지 첨부 가능합니다')),
+        );
+      }
+      return;
     }
+
+    notifier.addPhoto(file);
   }
 
-  /// 제출
   Future<void> _handleSubmit(SuggestionRegisterNotifier notifier) async {
     await notifier.submit();
   }
 }
 
-/// 제목 입력 필드
+/// 제목 입력 필드 (max 250 — backend `@Size(max=250)` 정합)
 class _TitleField extends StatelessWidget {
   const _TitleField({
     required this.controller,
@@ -232,12 +258,12 @@ class _TitleField extends StatelessWidget {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
-          maxLength: 100,
+          maxLength: 250,
           decoration: const InputDecoration(
             hintText: '제목을 입력하세요',
             border: OutlineInputBorder(),
             contentPadding: EdgeInsets.all(12),
-            counterText: '', // 글자 수 카운터 숨김
+            counterText: '',
           ),
           onChanged: onChanged,
         ),
@@ -246,7 +272,6 @@ class _TitleField extends StatelessWidget {
   }
 }
 
-/// 내용 입력 필드
 class _ContentField extends StatelessWidget {
   const _ContentField({
     required this.controller,
@@ -272,7 +297,7 @@ class _ContentField extends StatelessWidget {
         TextField(
           controller: controller,
           maxLines: 5,
-          maxLength: 500,
+          maxLength: 2000,
           decoration: const InputDecoration(
             hintText: '제안 내용을 상세하게 입력하세요',
             border: OutlineInputBorder(),

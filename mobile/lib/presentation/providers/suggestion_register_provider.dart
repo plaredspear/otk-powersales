@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/network/dio_provider.dart';
+import '../../data/datasources/suggestion_api_datasource.dart';
 import '../../data/datasources/suggestion_remote_datasource.dart';
 import '../../data/repositories/suggestion_repository_impl.dart';
 import '../../domain/entities/suggestion_form.dart';
@@ -10,14 +12,14 @@ import '../../domain/usecases/register_suggestion_usecase.dart';
 import 'suggestion_register_state.dart';
 
 // ============================================
-// 1. DataSource Provider (Mock)
+// 1. DataSource Provider
 // ============================================
 
-/// SuggestionRemoteDataSource Provider (임시 Mock)
+/// SuggestionRemoteDataSource Provider
 final suggestionRemoteDataSourceProvider =
     Provider<SuggestionRemoteDataSource>((ref) {
-  // TODO: 실제 구현으로 대체
-  throw UnimplementedError('SuggestionRemoteDataSource not implemented yet');
+  final dio = ref.watch(dioProvider);
+  return SuggestionApiDataSource(dio);
 });
 
 // ============================================
@@ -52,27 +54,32 @@ class SuggestionRegisterNotifier
         super(SuggestionRegisterState.initial());
 
   /// 분류 변경
+  ///
+  /// 카테고리 전환 시 다른 카테고리 전용 입력 필드를 초기화한다.
+  /// - 신제품: 제품 정보 / 물류 클레임 6 필드 제거
+  /// - 기존제품: 물류 클레임 6 필드 제거
+  /// - 물류 클레임: 제품 정보 제거
   void changeCategory(SuggestionCategory category) {
-    // 분류 변경 시 제품 정보 초기화
     final updatedForm = state.form.copyWith(category: category);
 
-    if (category == SuggestionCategory.newProduct) {
-      // 신제품으로 변경 시 제품 정보 제거
-      final clearedForm = updatedForm.copyWithNull(
-        productCode: true,
-        productName: true,
-      );
-      state = state.copyWith(
-        form: clearedForm,
-        clearProductName: true,
-        clearErrorMessage: true,
-      );
-    } else {
-      state = state.copyWith(
-        form: updatedForm,
-        clearErrorMessage: true,
-      );
-    }
+    final cleared = updatedForm.copyWithNull(
+      productCode: category != SuggestionCategory.existingProduct,
+      productName: category != SuggestionCategory.existingProduct,
+      accountId: category != SuggestionCategory.logisticsClaim,
+      accountName: category != SuggestionCategory.logisticsClaim,
+      sapAccountCode: category != SuggestionCategory.logisticsClaim,
+      claimType: category != SuggestionCategory.logisticsClaim,
+      claimDate: category != SuggestionCategory.logisticsClaim,
+      carNumber: category != SuggestionCategory.logisticsClaim,
+      logisticsResponsibility: category != SuggestionCategory.logisticsClaim,
+      duplicateProposalNum: category != SuggestionCategory.logisticsClaim,
+    );
+
+    state = state.copyWith(
+      form: cleared,
+      clearProductName: category != SuggestionCategory.existingProduct,
+      clearErrorMessage: true,
+    );
   }
 
   /// 제품 선택
@@ -135,6 +142,51 @@ class SuggestionRegisterNotifier
       form: updatedForm,
       clearErrorMessage: true,
     );
+  }
+
+  /// 거래처 선택 (물류 클레임 카테고리)
+  void selectAccount({
+    required int accountId,
+    required String accountName,
+    String? sapAccountCode,
+  }) {
+    if (!state.isLogisticsClaim) return;
+    final updatedForm = state.form.copyWith(
+      accountId: accountId,
+      accountName: accountName,
+      sapAccountCode: sapAccountCode,
+    );
+    state = state.copyWith(form: updatedForm, clearErrorMessage: true);
+  }
+
+  /// 클레임 항목 변경
+  void updateClaimType(String value) {
+    final updatedForm = state.form.copyWith(claimType: value);
+    state = state.copyWith(form: updatedForm, clearErrorMessage: true);
+  }
+
+  /// 클레임 일자 변경
+  void updateClaimDate(DateTime value) {
+    final updatedForm = state.form.copyWith(claimDate: value);
+    state = state.copyWith(form: updatedForm, clearErrorMessage: true);
+  }
+
+  /// 차량번호 변경
+  void updateCarNumber(String value) {
+    final updatedForm = state.form.copyWith(carNumber: value);
+    state = state.copyWith(form: updatedForm, clearErrorMessage: true);
+  }
+
+  /// 물류책임 변경
+  void updateLogisticsResponsibility(String value) {
+    final updatedForm = state.form.copyWith(logisticsResponsibility: value);
+    state = state.copyWith(form: updatedForm, clearErrorMessage: true);
+  }
+
+  /// 중복 제안번호 변경
+  void updateDuplicateProposalNum(String value) {
+    final updatedForm = state.form.copyWith(duplicateProposalNum: value);
+    state = state.copyWith(form: updatedForm, clearErrorMessage: true);
   }
 
   /// 제안 등록

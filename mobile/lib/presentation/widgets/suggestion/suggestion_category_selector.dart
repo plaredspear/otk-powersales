@@ -50,6 +50,18 @@ class SuggestionCategorySelector extends StatelessWidget {
             if (value != null) onCategoryChanged(value);
           },
         ),
+
+        // 물류 클레임
+        RadioListTile<SuggestionCategory>(
+          contentPadding: EdgeInsets.zero,
+          visualDensity: VisualDensity.compact,
+          title: const Text('물류 클레임'),
+          value: SuggestionCategory.logisticsClaim,
+          groupValue: selectedCategory,
+          onChanged: (value) {
+            if (value != null) onCategoryChanged(value);
+          },
+        ),
       ],
     );
   }
