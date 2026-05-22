@@ -34,7 +34,7 @@ class PermissionSetFlags(
     @Column(name = "permissions_modify_all_data", nullable = false)
     var permissionsModifyAllData: Boolean = false,
 
-    // PG 운영은 V173 의 jsonb 컬럼 정의 사용. entity 측 columnDefinition 미명시 — H2 호환 + Hibernate 자동 매핑.
+    // PG 운영은 V175 의 jsonb 컬럼 정의 사용. entity 측 columnDefinition 미명시 — H2 호환 + Hibernate 자동 매핑.
     @Column(name = "object_permissions")
     var objectPermissions: String? = null,
 )

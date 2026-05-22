@@ -24,7 +24,7 @@ class UserRoleHierarchySnapshot(
     @Column(name = "user_role_id")
     val userRoleId: Long,
 
-    // PG 운영은 V173 의 jsonb 컬럼 정의 사용. entity 측 columnDefinition 미명시 — H2 호환 + Hibernate 자동 매핑.
+    // PG 운영은 V175 의 jsonb 컬럼 정의 사용. entity 측 columnDefinition 미명시 — H2 호환 + Hibernate 자동 매핑.
     @Column(name = "all_subordinate_ids", nullable = false)
     var allSubordinateIds: String,
 

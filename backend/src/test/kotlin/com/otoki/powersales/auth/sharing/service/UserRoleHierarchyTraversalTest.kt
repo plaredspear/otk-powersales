@@ -18,7 +18,7 @@ import java.util.Optional
  * UserRoleHierarchyTraversal 단위 테스트 (spec #782 P2-B).
  *
  * EntityManager / native query 는 mock 처리 — application-level 재귀 (computeAncestorPath) 만 검증.
- * DB recursive CTE 동작은 통합 테스트 단계에서 별도 검증 (testcontainers + Flyway V173/V174 도입 시).
+ * DB recursive CTE 동작은 통합 테스트 단계에서 별도 검증 (testcontainers + Flyway V175/V174 도입 시).
  */
 class UserRoleHierarchyTraversalTest {
 

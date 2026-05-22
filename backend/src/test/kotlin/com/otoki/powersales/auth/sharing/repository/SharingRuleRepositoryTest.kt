@@ -105,7 +105,7 @@ class SharingRuleRepositoryTest {
     @Nested
     @DisplayName("SharingRuleCondition / Target — 부모 rule 참조")
     @Disabled(
-        "H2 ddl-auto 환경에서 cross-entity ddl 인식 이슈 — testcontainers (Postgres + Flyway V173) 환경 도입 후 활성화 (#782 P1-B 후속)",
+        "H2 ddl-auto 환경에서 cross-entity ddl 인식 이슈 — testcontainers (Postgres + Flyway V175) 환경 도입 후 활성화 (#782 P1-B 후속)",
     )
     inner class SharingRuleChildrenRoundTrip {
 
