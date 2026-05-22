@@ -31,9 +31,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
-import com.otoki.powersales.sales.enums.SalesMonth
-import com.otoki.powersales.sales.enums.SalesYear
-import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.schedule.service.internal.LastMonthRevenueLookup
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -56,7 +54,7 @@ class AdminScheduleService(
     private val uploadValidator: ScheduleUploadValidator,
     private val scheduleRepository: DisplayWorkScheduleRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
+    private val lastMonthRevenueLookup: LastMonthRevenueLookup,
     private val userRepository: UserRepository,
     private val redisTemplate: RedisTemplate<String, String>,
     private val objectMapper: ObjectMapper,
@@ -237,18 +235,7 @@ class AdminScheduleService(
         }
 
         // 전월 매출 일괄 조회
-        val today = LocalDate.now()
-        val lastMonth = today.minusMonths(1)
-        val salesYear = SalesYear.fromValueOrNull(lastMonth.year.toString())
-        val salesMonth = SalesMonth.fromValueOrNull(String.format("%02d", lastMonth.monthValue))
-        val accountsForRevenue = accountMap.values.toList()
-        val revenueByAccountId = if (accountsForRevenue.isNotEmpty() && salesYear != null && salesMonth != null) {
-            monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(
-                salesYear, salesMonth, accountsForRevenue
-            ).filter { it.account != null }.associateBy { it.account!!.id }
-        } else {
-            emptyMap()
-        }
+        val revenueByAccountId = lastMonthRevenueLookup.forAccounts(accountMap.values.toList())
 
         val entities = cacheData.validRows.map { row ->
             val costCenterCode = row.costCenterCode
@@ -260,8 +247,7 @@ class AdminScheduleService(
             } else {
                 null
             }
-            val lastMonthRevenue = revenueByAccountId[row.accountId]?.lastMonthResults
-                ?.setScale(0, java.math.RoundingMode.HALF_UP)
+            val lastMonthRevenue = revenueByAccountId[row.accountId]
 
             DisplayWorkSchedule(
                 employee = employeeMap[row.userId],
@@ -407,19 +393,7 @@ class AdminScheduleService(
         val validatedRow = result.validatedRow
 
         // 자동채움 1: 전월 매출액 (월별 매출 이력에서 lastMonth 의 lastMonthResults 조회)
-        val today = LocalDate.now()
-        val lastMonth = today.minusMonths(1)
-        val salesYear = SalesYear.fromValueOrNull(lastMonth.year.toString())
-        val salesMonth = SalesMonth.fromValueOrNull(String.format("%02d", lastMonth.monthValue))
-        val lastMonthRevenue = if (account != null && salesYear != null && salesMonth != null) {
-            monthlySalesHistoryRepository
-                .findBySalesYearAndSalesMonthAndAccountIn(salesYear, salesMonth, listOf(account))
-                .firstOrNull()
-                ?.lastMonthResults
-                ?.setScale(0, java.math.RoundingMode.HALF_UP)
-        } else {
-            null
-        }
+        val lastMonthRevenue = lastMonthRevenueLookup.forAccount(account)
 
         // 자동채움 2: 소속 조장 사용자 (조장 Employee.employeeCode → User)
         val costCenterCode = validatedRow.costCenterCode
@@ -547,19 +521,7 @@ class AdminScheduleService(
         val validatedRow = result.validatedRow
 
         // 자동채움 재실행 (거래처·사원이 바뀌었을 수 있으므로 항상 재계산)
-        val today = LocalDate.now()
-        val lastMonth = today.minusMonths(1)
-        val salesYear = SalesYear.fromValueOrNull(lastMonth.year.toString())
-        val salesMonth = SalesMonth.fromValueOrNull(String.format("%02d", lastMonth.monthValue))
-        val lastMonthRevenue = if (account != null && salesYear != null && salesMonth != null) {
-            monthlySalesHistoryRepository
-                .findBySalesYearAndSalesMonthAndAccountIn(salesYear, salesMonth, listOf(account))
-                .firstOrNull()
-                ?.lastMonthResults
-                ?.setScale(0, java.math.RoundingMode.HALF_UP)
-        } else {
-            null
-        }
+        val lastMonthRevenue = lastMonthRevenueLookup.forAccount(account)
 
         val costCenterCode = validatedRow.costCenterCode
         val ownerUser = if (!costCenterCode.isNullOrBlank()) {
