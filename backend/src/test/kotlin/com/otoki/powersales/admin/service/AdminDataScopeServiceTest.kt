@@ -1,8 +1,14 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.sharing.repository.SharingPolicyQueryRepository
+import com.otoki.powersales.auth.sharing.service.GroupMembershipEvaluator
+import com.otoki.powersales.auth.sharing.service.PermissionSetEvaluator
+import com.otoki.powersales.auth.sharing.service.ProfileFlagsEvaluator
+import com.otoki.powersales.auth.sharing.service.UserRoleHierarchyTraversal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -15,7 +21,22 @@ import org.junit.jupiter.api.Test
 class AdminDataScopeServiceTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
-    private val adminDataScopeService = AdminDataScopeService(employeeRepository)
+    private val userRepository: UserRepository = mockk(relaxed = true)
+    private val userRoleHierarchyTraversal: UserRoleHierarchyTraversal = mockk(relaxed = true)
+    private val groupMembershipEvaluator: GroupMembershipEvaluator = mockk(relaxed = true)
+    private val profileFlagsEvaluator: ProfileFlagsEvaluator = mockk(relaxed = true)
+    private val permissionSetEvaluator: PermissionSetEvaluator = mockk(relaxed = true)
+    private val sharingPolicyQueryRepository: SharingPolicyQueryRepository = mockk(relaxed = true)
+
+    private val adminDataScopeService = AdminDataScopeService(
+        employeeRepository = employeeRepository,
+        userRepository = userRepository,
+        userRoleHierarchyTraversal = userRoleHierarchyTraversal,
+        groupMembershipEvaluator = groupMembershipEvaluator,
+        profileFlagsEvaluator = profileFlagsEvaluator,
+        permissionSetEvaluator = permissionSetEvaluator,
+        sharingPolicyQueryRepository = sharingPolicyQueryRepository,
+    )
 
     @Nested
     @DisplayName("resolve")

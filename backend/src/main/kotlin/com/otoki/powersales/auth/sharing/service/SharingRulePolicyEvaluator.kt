@@ -1,0 +1,269 @@
+package com.otoki.powersales.auth.sharing.service
+
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.auth.sharing.SfSharingConstants
+import com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot
+import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.dsl.BooleanExpression
+import com.querydsl.core.types.dsl.EntityPathBase
+import com.querydsl.core.types.dsl.Expressions
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
+
+/**
+ * SF Sharing Rule 정책 evaluator — DataScope 입력으로 QueryDSL Predicate 합성 (spec #782 P3-B).
+ *
+ * Repository 의 admin read query 에 본 결과 Predicate 를 `where(...)` 절로 추가.
+ *
+ * ## 우선순위 평가 (높음 → 낮음)
+ * 1. **권한 매트릭스 최우선 분기** — Profile.viewAllData / PermissionSet.viewAllData /
+ *    PermissionSet.viewAllRecords[SObject] true 면 no-filter return (전체 row 가시).
+ * 2-5. **OR 합성** — Owner / Hierarchy / SharingRule / Legacy branchCodes 중 하나라도 매칭이면 가시.
+ * 6. **ControlledByParent** — 자식 SObject 의 read query 가 부모 SObject 의 가시성 흡수.
+ *
+ * ## EntityPath 접근
+ * `Expressions.stringPath(entityPath, "field_name")` 패턴으로 runtime field access — SObject 별
+ * 정적 Q-class 분기 회피. 단 `field_name` 은 entity 의 DB column name 이 아닌 JPA property name.
+ * SharingRule meta 의 `<field>` 는 SF API name (예: `CostCenterCode__c`) — 본 evaluator 가
+ * SF API name → JPA property 매핑 처리.
+ */
+@Service
+class SharingRulePolicyEvaluator {
+
+    private val log = LoggerFactory.getLogger(SharingRulePolicyEvaluator::class.java)
+
+    /**
+     * 본 SObject 의 read query 에 합성할 Predicate.
+     *
+     * @param scope AdminDataScopeService.resolve(principal) 결과
+     * @param sObjectName SF SObject API name (예: `Account`, `DKRetail__Promotion__c`)
+     * @param entityPath QueryDSL Q-class (예: `QAccount.account`, `QPromotion.promotion`)
+     */
+    fun buildPredicate(
+        scope: DataScope,
+        sObjectName: String,
+        entityPath: EntityPathBase<*>,
+    ): Predicate {
+        // 우선순위 1 — viewAllData / viewAllRecords[SObject]
+        if (hasUnrestrictedAccess(scope, sObjectName)) {
+            log.debug("[sharing-policy] {} userId={} — unrestricted access", sObjectName, scope.userId)
+            return Expressions.asBoolean(true).isTrue
+        }
+
+        val predicates = mutableListOf<BooleanExpression>()
+
+        // 2 — Owner
+        ownerPredicate(scope, entityPath)?.let { predicates += it }
+
+        // 3 — UserRole Hierarchy (record.owner.user_role_id IN allSubordinateUserRoleIds)
+        hierarchyPredicate(scope, entityPath)?.let { predicates += it }
+
+        // 4 — SharingRule 본문
+        sharingRulePredicate(scope, sObjectName, entityPath)?.let { predicates += it }
+
+        // 5 — Legacy branchCodes (기존 추상화)
+        legacyBranchPredicate(scope, entityPath)?.let { predicates += it }
+
+        // 6 — ControlledByParent — 부모 SObject 의 predicate join
+        // 자식 SObject 의 cross-entity join 합성은 Repository 호출 측이 직접 처리 (entityPath 가 부모 alias 지정).
+        // 본 evaluator 는 자식 read query 가 parent entityPath 전달 시 동일 로직으로 동작.
+
+        if (predicates.isEmpty()) {
+            log.debug("[sharing-policy] {} userId={} — deny (no matching predicate)", sObjectName, scope.userId)
+            return Expressions.asBoolean(false).isTrue
+        }
+
+        // OR 합성
+        return predicates.reduce { acc, expr -> acc.or(expr) }
+    }
+
+    /**
+     * 우선순위 1 — Profile.viewAllData 또는 PermissionSet.viewAllRecords[SObject] true 여부.
+     */
+    fun hasUnrestrictedAccess(scope: DataScope, sObjectName: String): Boolean {
+        if (scope.profileFlags.viewAllData) return true
+        if (scope.permissionSetFlags.hasViewAllRecords(sObjectName)) return true
+        return false
+    }
+
+    /**
+     * 우선순위 2 — Owner 매칭 (record.owner_id = userId).
+     *
+     * entityPath 의 `ownerId` Long? property 가 존재한다고 가정. 부재 시 null return (predicate 합성 생략).
+     */
+    fun ownerPredicate(scope: DataScope, entityPath: EntityPathBase<*>): BooleanExpression? {
+        val userId = scope.userId ?: return null
+        return try {
+            @Suppress("UNCHECKED_CAST")
+            val ownerIdPath = Expressions.numberPath(java.lang.Long::class.java, entityPath, "ownerId")
+            ownerIdPath.eq(userId as java.lang.Long)
+        } catch (e: Exception) {
+            log.debug("[sharing-policy] entity {} has no ownerId — skip owner predicate", entityPath, e)
+            null
+        }
+    }
+
+    /**
+     * 우선순위 3 — UserRole Hierarchy (record.owner.user_role_id IN allSubordinateUserRoleIds).
+     *
+     * entity 의 `owner` relation 의 `userRoleId` property 활용. 부재 시 null.
+     * scope.allSubordinateUserRoleIds 가 비어있으면 predicate 합성 생략.
+     */
+    fun hierarchyPredicate(scope: DataScope, entityPath: EntityPathBase<*>): BooleanExpression? {
+        if (scope.allSubordinateUserRoleIds.isEmpty()) return null
+        return try {
+            val path = Expressions.numberPath(java.lang.Long::class.java, entityPath, "owner.userRoleId")
+            // QueryDSL `.in(Collection<out Long>)` overload 정합 — Set<Long> 을 List<java.lang.Long> 으로 박싱.
+            val values: List<java.lang.Long> = scope.allSubordinateUserRoleIds.map { it as java.lang.Long }
+            path.`in`(values)
+        } catch (e: Exception) {
+            log.debug("[sharing-policy] entity {} has no owner.userRoleId — skip hierarchy predicate", entityPath, e)
+            null
+        }
+    }
+
+    /**
+     * 우선순위 4 — SharingRule 본문의 condition 평가.
+     *
+     * scope.evaluatorRules 중 본 SObject 매칭 rule 만 필터 → 각 rule 의 condition 을 QueryDSL Predicate 변환 →
+     * AND/OR logicConnector 로 합성 → 모든 rule 을 OR 로 합산.
+     */
+    fun sharingRulePredicate(
+        scope: DataScope,
+        sObjectName: String,
+        entityPath: EntityPathBase<*>,
+    ): BooleanExpression? {
+        val rules = scope.evaluatorRules.filter { it.sObjectName == sObjectName }
+        if (rules.isEmpty()) return null
+
+        val rulePredicates = rules.mapNotNull { rule ->
+            when (rule.ruleType) {
+                "CRITERIA" -> buildCriteriaRulePredicate(rule, entityPath)
+                "OWNER" -> {
+                    // 본 프로젝트 운영 0건 — 모든 sharingRule 본문이 CRITERIA. 안전 default: 매칭 없음.
+                    log.debug("[sharing-policy] OWNER rule {} skipped (0 운영 사례)", rule.developerName)
+                    null
+                }
+                else -> {
+                    log.warn("[sharing-policy] unknown ruleType {} for {}", rule.ruleType, rule.developerName)
+                    null
+                }
+            }
+        }
+        if (rulePredicates.isEmpty()) return null
+        return rulePredicates.reduce { acc, expr -> acc.or(expr) }
+    }
+
+    /**
+     * 우선순위 5 — Legacy branchCodes (기존 #759~#780 추상화 그대로).
+     *
+     * scope.isAllBranches true 면 전체 가시 — 본 메서드는 호출 안 됨 (우선순위 1 에서 흡수).
+     * scope.branchCodes 가 비어있으면 predicate 생략.
+     */
+    fun legacyBranchPredicate(scope: DataScope, entityPath: EntityPathBase<*>): BooleanExpression? {
+        if (scope.isAllBranches) return Expressions.asBoolean(true).isTrue
+        if (scope.branchCodes.isEmpty()) return null
+        return try {
+            Expressions.stringPath(entityPath, "costCenterCode").`in`(scope.branchCodes)
+        } catch (e: Exception) {
+            log.debug("[sharing-policy] entity {} has no costCenterCode — skip legacy branch predicate", entityPath, e)
+            null
+        }
+    }
+
+    /**
+     * CRITERIA rule 의 condition list → AND/OR 합성 Predicate.
+     */
+    private fun buildCriteriaRulePredicate(
+        rule: SharingRuleSnapshot,
+        entityPath: EntityPathBase<*>,
+    ): BooleanExpression? {
+        if (rule.conditions.isEmpty()) return null
+        val conditionPredicates = rule.conditions.sortedBy { it.conditionOrder }.mapNotNull { cond ->
+            buildConditionPredicate(cond, entityPath)
+        }
+        if (conditionPredicates.isEmpty()) return null
+
+        // logicConnector 기반 합성 — 첫 번째 condition 의 connector 는 null (단일) 또는 AND/OR
+        // 단순화: 모든 connector 가 동일하다고 가정 (혼합은 SF describe 운영상 부재).
+        // 혼합 케이스는 향후 정밀화 — 본 spec 1차 구현은 majority connector 채택.
+        val majority = rule.conditions.mapNotNull { it.logicConnector }.firstOrNull() ?: "AND"
+        return when (majority) {
+            "OR" -> conditionPredicates.reduce { acc, e -> acc.or(e) }
+            else -> conditionPredicates.reduce { acc, e -> acc.and(e) } // AND default
+        }
+    }
+
+    /**
+     * 단일 condition → QueryDSL Predicate. 11 operator 지원.
+     *
+     * SF API name (예: `CostCenterCode__c`) → JPA property (`costCenterCode`) 변환은 본 메서드에서 처리.
+     */
+    private fun buildConditionPredicate(
+        cond: SharingRuleSnapshot.ConditionSnapshot,
+        entityPath: EntityPathBase<*>,
+    ): BooleanExpression? {
+        val property = sfApiNameToJpaProperty(cond.field)
+        val value = cond.value ?: return null
+
+        return try {
+            val path = Expressions.stringPath(entityPath, property)
+            when (cond.operator) {
+                "equals" -> path.eq(value)
+                "notEqual" -> path.ne(value)
+                "lessThan" -> path.lt(value)
+                "greaterThan" -> path.gt(value)
+                "lessOrEqual" -> path.loe(value)
+                "greaterOrEqual" -> path.goe(value)
+                "contains" -> path.contains(value)
+                "notContain" -> path.contains(value).not()
+                "startsWith" -> path.startsWith(value)
+                "includes" -> path.`in`(value.split(",").map { it.trim() })
+                "excludes" -> path.`in`(value.split(",").map { it.trim() }).not()
+                else -> throw IllegalStateException(
+                    "Unknown sharingRule operator: ${cond.operator} (field=${cond.field}, value=$value)",
+                )
+            }
+        } catch (e: IllegalStateException) {
+            // unknown operator — re-throw (L4 정정)
+            throw e
+        } catch (e: Exception) {
+            log.warn(
+                "[sharing-policy] condition predicate build failed — field={} operator={} : {}",
+                cond.field, cond.operator, e.message,
+            )
+            null
+        }
+    }
+
+    /**
+     * SF API name → JPA property 변환.
+     * - `CostCenterCode__c` → `costCenterCode`
+     * - `AccountGroup__c` → `accountGroup`
+     * - `CreatedById` → `createdById`
+     * - `BranchCode__c` → `branchCode`
+     * - `HR_Code_c__c` → `hrCode` (특수 케이스 — 운영 데이터 정합)
+     */
+    internal fun sfApiNameToJpaProperty(sfFieldName: String): String {
+        // `__c` 제거
+        val stripped = sfFieldName.removeSuffix("__c")
+        // HR_Code_c 의 변형 처리
+        val normalized = stripped.replace("_c$".toRegex(), "")
+        // PascalCase → camelCase + 언더스코어 처리
+        val parts = normalized.split("_")
+        return if (parts.size == 1) {
+            normalized.replaceFirstChar { it.lowercase() }
+        } else {
+            parts.first().replaceFirstChar { it.lowercase() } +
+                parts.drop(1).joinToString("") { it.replaceFirstChar { c -> c.uppercase() } }
+        }
+    }
+
+    /**
+     * ControlledByParent SObject 의 read query — Repository 호출측이 parent entityPath 전달.
+     * `buildPredicate(scope, parentSObjectName, parentEntityPath)` 형태로 동일 메서드 재사용.
+     */
+    fun isControlledByParent(sObjectName: String): Boolean = SfSharingConstants.isControlledByParent(sObjectName)
+
+    fun parentSObjectOf(sObjectName: String): String? = SfSharingConstants.parentOf(sObjectName)
+}
