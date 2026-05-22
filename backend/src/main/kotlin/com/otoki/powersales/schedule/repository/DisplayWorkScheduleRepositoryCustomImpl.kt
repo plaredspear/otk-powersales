@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.data.support.PageableExecutionUtils
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -390,6 +391,36 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .offset(offset.toLong())
             .limit(limit.toLong())
             .fetch()
+    }
+
+    override fun findValidForLastMonthRevenuePaged(
+        date: LocalDate,
+        limit: Int,
+        offset: Int
+    ): List<DisplayWorkSchedule> {
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.employee).fetchJoin()
+            .leftJoin(displayWorkSchedule.account).fetchJoin()
+            .where(
+                isNotDeleted(),
+                displayWorkSchedule.startDate.loe(date),
+                displayWorkSchedule.endDate.goe(date)
+                    .or(displayWorkSchedule.endDate.isNull),
+                validDataEqualsValid(date)
+            )
+            .orderBy(displayWorkSchedule.id.asc())
+            .offset(offset.toLong())
+            .limit(limit.toLong())
+            .fetch()
+    }
+
+    override fun updateLastMonthRevenueById(id: Long, revenue: BigDecimal): Long {
+        return queryFactory
+            .update(displayWorkSchedule)
+            .set(displayWorkSchedule.lastMonthRevenue, revenue)
+            .where(displayWorkSchedule.id.eq(id))
+            .execute()
     }
 
     /**

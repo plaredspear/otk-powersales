@@ -433,6 +433,132 @@ class DisplayWorkScheduleRepositoryTest {
         }
     }
 
+    // ========== findValidForLastMonthRevenuePaged (Spec #690 — Confirmed 무관 + legacy SOQL 동등) ==========
+
+    @org.junit.jupiter.api.Nested
+    @DisplayName("findValidForLastMonthRevenuePaged — legacy UpdateLastMonthRevenueBatch SOQL 동등 (Confirmed 무관)")
+    inner class FindValidForLastMonthRevenuePagedTests {
+
+        @Test
+        @DisplayName("재직 + 확정 + 기간 안 → 조회됨 (SAP outbound batch 와 동일)")
+        fun activeConfirmed_returns() {
+            val activeEmp = persistEmployee("LMR001", status = "재직")
+            testEntityManager.persistAndFlush(createSapDws(employee = activeEmp))
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForLastMonthRevenuePaged(today, 100, 0)
+
+            assertThat(result).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("재직 + 미확정 (confirmed=false) → **조회됨** (legacy 동등 — SAP outbound batch 와 차이)")
+        fun activeUnconfirmed_returns() {
+            val activeEmp = persistEmployee("LMR002", status = "재직")
+            testEntityManager.persistAndFlush(createSapDws(employee = activeEmp, confirmed = false))
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForLastMonthRevenuePaged(today, 100, 0)
+
+            assertThat(result).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("퇴직 + endDate < today → 제외됨 ('종료' 분기 — ValidData != '유효')")
+        fun resignedPast_excluded() {
+            val resignedPast = persistEmployee(
+                "LMR003", status = "퇴직", endDate = today.minus(1, java.time.temporal.ChronoUnit.DAYS)
+            )
+            testEntityManager.persistAndFlush(createSapDws(employee = resignedPast))
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForLastMonthRevenuePaged(today, 100, 0)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("휴직 → 제외됨 ('예정' 분기 — ValidData != '유효')")
+        fun onLeave_excluded() {
+            val onLeave = persistEmployee("LMR004", status = "휴직")
+            testEntityManager.persistAndFlush(createSapDws(employee = onLeave))
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForLastMonthRevenuePaged(today, 100, 0)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("재직 + is_deleted=true → 제외됨")
+        fun deleted_excluded() {
+            val activeEmp = persistEmployee("LMR005", status = "재직")
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = activeEmp, isDeleted = true)
+            )
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForLastMonthRevenuePaged(today, 100, 0)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("기간 밖 (startDate > today) → 제외됨")
+        fun startDateFuture_excluded() {
+            val activeEmp = persistEmployee("LMR006", status = "재직")
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = activeEmp, startDate = today.plus(1, java.time.temporal.ChronoUnit.DAYS))
+            )
+            testEntityManager.clear()
+
+            val result = displayWorkScheduleRepository.findValidForLastMonthRevenuePaged(today, 100, 0)
+
+            assertThat(result).isEmpty()
+        }
+    }
+
+    // ========== updateLastMonthRevenueById (Spec #690 — native UPDATE + updated_at 무영향) ==========
+
+    @org.junit.jupiter.api.Nested
+    @DisplayName("updateLastMonthRevenueById — native UPDATE")
+    inner class UpdateLastMonthRevenueByIdTests {
+
+        @Test
+        @DisplayName("last_month_revenue 컬럼만 변경 + updated_at 자동 갱신 무영향 (legacy trigger bypass 의미 정합)")
+        fun updates_lastMonthRevenue_without_touching_updatedAt() {
+            val activeEmp = persistEmployee("LMR_UPD001", status = "재직")
+            val persisted = testEntityManager.persistAndFlush(createSapDws(employee = activeEmp))
+            val originalUpdatedAt = persisted.updatedAt
+            val originalId = persisted.id
+            testEntityManager.clear()
+
+            // updated_at 차이 검증을 위한 시간 여유 — 짧은 sleep
+            Thread.sleep(10)
+
+            val affected = displayWorkScheduleRepository.updateLastMonthRevenueById(
+                originalId, java.math.BigDecimal("12345")
+            )
+
+            testEntityManager.clear()
+            val reloaded = displayWorkScheduleRepository.findById(originalId).orElseThrow()
+            assertThat(affected).isEqualTo(1L)
+            assertThat(reloaded.lastMonthRevenue).isEqualByComparingTo(java.math.BigDecimal("12345"))
+            // updated_at 은 native UPDATE 의 영향을 받지 않음 — JPA Auditing 미개입
+            assertThat(reloaded.updatedAt).isEqualTo(originalUpdatedAt)
+        }
+
+        @Test
+        @DisplayName("id 부재 → 0 row 갱신")
+        fun missingId_returnsZero() {
+            val affected = displayWorkScheduleRepository.updateLastMonthRevenueById(
+                999_999L, java.math.BigDecimal("1")
+            )
+
+            assertThat(affected).isEqualTo(0L)
+        }
+    }
+
     // ========== Helpers ==========
 
     private fun persistEmployee(

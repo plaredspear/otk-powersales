@@ -5,6 +5,7 @@ import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.querydsl.core.types.Predicate
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import java.math.BigDecimal
 import java.time.LocalDate
 
 interface DisplayWorkScheduleRepositoryCustom {
@@ -76,4 +77,26 @@ interface DisplayWorkScheduleRepositoryCustom {
      * employee/account fetchJoin, id 오름차순.
      */
     fun findValidForDisplayMasterSapPaged(date: LocalDate, limit: Int, offset: Int): List<DisplayWorkSchedule>
+
+    /**
+     * DISPLAY lastMonthRevenue daily batch 용 페이지 조회 (spec #690).
+     *
+     * legacy `UpdateLastMonthRevenueBatch.cls:7-15` SOQL `WHERE ValidData__c='유효'` 100% 동등.
+     * SAP outbound batch ([findValidForDisplayMasterSapPaged]) 와의 차이: **Confirmed 조건 없음**
+     * (legacy 의도된 동작 — 미확정 schedule 도 매출 갱신 대상).
+     *
+     * 조건: isDeleted!=true, startDate<=date, (endDate>=date OR endDate IS NULL), validDataEqualsValid(date).
+     * employee/account fetchJoin, id 오름차순.
+     */
+    fun findValidForLastMonthRevenuePaged(date: LocalDate, limit: Int, offset: Int): List<DisplayWorkSchedule>
+
+    /**
+     * DisplayWorkSchedule 의 last_month_revenue 컬럼만 native UPDATE (spec #690).
+     *
+     * JPA save 회피 → BaseEntity 의 @LastModifiedDate updated_at 자동 갱신 영향 0
+     * (legacy `TriggerHandler.bypass` 의 "검증/자동 set 모두 스킵, 오직 매출만 갱신" 의미 정합).
+     *
+     * @return 갱신 row 수 (1 이면 성공, 0 이면 id 부재)
+     */
+    fun updateLastMonthRevenueById(id: Long, revenue: BigDecimal): Long
 }
