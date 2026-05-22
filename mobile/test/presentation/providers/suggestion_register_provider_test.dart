@@ -321,5 +321,94 @@ void main() {
         expect(notifier.state.successMessage, null);
       });
     });
+
+    group('물류 클레임 카테고리 분기', () {
+      test('물류 클레임으로 전환하면 제품 정보가 초기화된다', () {
+        // Given
+        notifier.changeCategory(SuggestionCategory.existingProduct);
+        notifier.selectProduct('12345678', '진라면');
+        expect(notifier.state.form.productCode, '12345678');
+
+        // When
+        notifier.changeCategory(SuggestionCategory.logisticsClaim);
+
+        // Then
+        expect(notifier.state.isLogisticsClaim, true);
+        expect(notifier.state.form.productCode, null);
+        expect(notifier.state.form.productName, null);
+      });
+
+      test('물류 클레임에서 신제품으로 전환하면 6 분기 입력이 초기화된다', () {
+        // Given
+        notifier.changeCategory(SuggestionCategory.logisticsClaim);
+        notifier.selectAccount(
+          accountId: 100,
+          accountName: '오뚜기 농협',
+          sapAccountCode: 'SAP-0001',
+        );
+        notifier.updateClaimType('파손');
+        notifier.updateClaimDate(DateTime(2026, 5, 22));
+        notifier.updateCarNumber('12가1234');
+        notifier.updateLogisticsResponsibility('운송사');
+        notifier.updateDuplicateProposalNum('PROP-001');
+
+        // When
+        notifier.changeCategory(SuggestionCategory.newProduct);
+
+        // Then
+        expect(notifier.state.isNewProduct, true);
+        expect(notifier.state.form.accountId, null);
+        expect(notifier.state.form.accountName, null);
+        expect(notifier.state.form.sapAccountCode, null);
+        expect(notifier.state.form.claimType, null);
+        expect(notifier.state.form.claimDate, null);
+        expect(notifier.state.form.carNumber, null);
+        expect(notifier.state.form.logisticsResponsibility, null);
+        expect(notifier.state.form.duplicateProposalNum, null);
+      });
+
+      test('selectAccount는 물류 클레임 카테고리에서만 동작한다', () {
+        // Given — 신제품 카테고리
+        notifier.selectAccount(
+          accountId: 100,
+          accountName: '오뚜기 농협',
+        );
+
+        // Then — 무시됨
+        expect(notifier.state.form.accountId, null);
+
+        // When — 물류 클레임 전환 후 호출
+        notifier.changeCategory(SuggestionCategory.logisticsClaim);
+        notifier.selectAccount(
+          accountId: 100,
+          accountName: '오뚜기 농협',
+          sapAccountCode: 'SAP-0001',
+        );
+
+        // Then
+        expect(notifier.state.form.accountId, 100);
+        expect(notifier.state.form.accountName, '오뚜기 농협');
+        expect(notifier.state.form.sapAccountCode, 'SAP-0001');
+      });
+
+      test('updateClaimType / updateClaimDate / 나머지 4 메서드가 form 에 반영된다', () {
+        // Given
+        notifier.changeCategory(SuggestionCategory.logisticsClaim);
+
+        // When
+        notifier.updateClaimType('파손');
+        notifier.updateClaimDate(DateTime(2026, 5, 22));
+        notifier.updateCarNumber('12가1234');
+        notifier.updateLogisticsResponsibility('운송사');
+        notifier.updateDuplicateProposalNum('PROP-001');
+
+        // Then
+        expect(notifier.state.form.claimType, '파손');
+        expect(notifier.state.form.claimDate, DateTime(2026, 5, 22));
+        expect(notifier.state.form.carNumber, '12가1234');
+        expect(notifier.state.form.logisticsResponsibility, '운송사');
+        expect(notifier.state.form.duplicateProposalNum, 'PROP-001');
+      });
+    });
   });
 }

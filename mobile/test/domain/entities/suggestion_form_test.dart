@@ -12,6 +12,8 @@ void main() {
       expect(SuggestionCategory.existingProduct.code, 'EXISTING_PRODUCT');
       expect(
           SuggestionCategory.existingProduct.displayName, '기존제품 상품가치향상');
+      expect(SuggestionCategory.logisticsClaim.code, 'LOGISTICS_CLAIM');
+      expect(SuggestionCategory.logisticsClaim.displayName, '물류 클레임');
     });
 
     test('fromCode가 올바른 enum 값을 반환한다', () {
@@ -19,10 +21,12 @@ void main() {
       final newProduct = SuggestionCategory.fromCode('NEW_PRODUCT');
       final existingProduct =
           SuggestionCategory.fromCode('EXISTING_PRODUCT');
+      final logisticsClaim = SuggestionCategory.fromCode('LOGISTICS_CLAIM');
 
       // Then
       expect(newProduct, SuggestionCategory.newProduct);
       expect(existingProduct, SuggestionCategory.existingProduct);
+      expect(logisticsClaim, SuggestionCategory.logisticsClaim);
     });
 
     test('fromCode에 잘못된 코드를 전달하면 기본값을 반환한다', () {
@@ -239,6 +243,43 @@ void main() {
         // Then
         expect(errors, contains('사진은 최대 2장까지 첨부 가능합니다'));
         expect(form.isValid, false);
+      });
+
+      test('물류 클레임 카테고리 — 거래처/클레임항목/클레임일자 미입력 시 에러', () {
+        // Given
+        final form = createValidForm(
+          category: SuggestionCategory.logisticsClaim,
+        );
+
+        // When
+        final errors = form.validate();
+
+        // Then
+        expect(errors, contains('거래처를 선택해주세요'));
+        expect(errors, contains('클레임 항목을 입력해주세요'));
+        expect(errors, contains('클레임 일자를 선택해주세요'));
+        expect(form.isValid, false);
+      });
+
+      test('물류 클레임 카테고리 — 3 필수 필드 채우면 유효', () {
+        // Given
+        final form = SuggestionRegisterForm(
+          category: SuggestionCategory.logisticsClaim,
+          title: '물류 클레임 제안',
+          content: '오배송이 자주 발생합니다',
+          accountId: 100,
+          accountName: '오뚜기 농협 하나로마트',
+          sapAccountCode: 'SAP-0001',
+          claimType: '파손',
+          claimDate: DateTime(2026, 5, 22),
+        );
+
+        // When
+        final errors = form.validate();
+
+        // Then
+        expect(errors, isEmpty);
+        expect(form.isValid, true);
       });
 
       test('여러 에러가 동시에 발생할 수 있다', () {

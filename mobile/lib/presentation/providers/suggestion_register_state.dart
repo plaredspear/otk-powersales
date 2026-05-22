@@ -90,6 +90,10 @@ class SuggestionRegisterState {
   /// 기존제품 제안 여부
   bool get isExistingProduct => category == SuggestionCategory.existingProduct;
 
+  /// 물류 클레임 여부
+  bool get isLogisticsClaim =>
+      category == SuggestionCategory.logisticsClaim;
+
   /// 제품 선택 여부
   bool get hasProduct => form.hasProduct;
 
