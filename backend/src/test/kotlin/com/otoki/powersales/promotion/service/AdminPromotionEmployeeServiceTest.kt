@@ -37,12 +37,15 @@ class AdminPromotionEmployeeServiceTest {
     private val promotionRepository: PromotionRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
+    private val policyEvaluator: com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator =
+        mockk(relaxed = true)
 
     private val service: AdminPromotionEmployeeService = AdminPromotionEmployeeService(
         promotionEmployeeRepository = promotionEmployeeRepository,
         promotionRepository = promotionRepository,
         employeeRepository = employeeRepository,
         teamMemberScheduleRepository = teamMemberScheduleRepository,
+        policyEvaluator = policyEvaluator,
     )
 
     // 원본 mockito 테스트가 @MockitoSettings(LENIENT) 였으므로 strict MockK 환경에서

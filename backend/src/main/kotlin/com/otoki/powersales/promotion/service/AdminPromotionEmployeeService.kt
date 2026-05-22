@@ -12,10 +12,13 @@ import com.otoki.powersales.promotion.dto.response.PromotionEmployeeDetailRespon
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeListResponse
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
+import com.otoki.powersales.promotion.entity.QPromotion.Companion.promotion as qPromotion
 import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
+import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
@@ -28,8 +31,27 @@ class AdminPromotionEmployeeService(
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val promotionRepository: PromotionRepository,
     private val employeeRepository: EmployeeRepository,
-    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val policyEvaluator: SharingRulePolicyEvaluator,
 ) {
+
+    /**
+     * SF Sharing Rule 정책이 합성된 가시 PromotionEmployee 일람 (spec #782 P4-B — ControlledByParent).
+     *
+     * SF_SHARING_MODEL[DKRetail__PromotionEmployee__c] = ControlledByParent (parent = DKRetail__Promotion__c).
+     * 본 메서드는 부모 Promotion entity 기준 [SharingRulePolicyEvaluator.buildPredicate] 호출 후 결과 Predicate 를
+     * [PromotionEmployeeRepository.findAllAccessibleByParentPolicy] 에 전달.
+     *
+     * Promotion 자체는 sharingRule 본문 부재 — Hierarchy + Legacy branchCodes + ownerPredicate 만 평가.
+     */
+    fun getAccessiblePromotionEmployeesByPolicy(scope: DataScope): List<PromotionEmployee> {
+        val parentPolicyPredicate = policyEvaluator.buildPredicate(
+            scope = scope,
+            sObjectName = "DKRetail__Promotion__c",
+            entityPath = qPromotion,
+        )
+        return promotionEmployeeRepository.findAllAccessibleByParentPolicy(parentPolicyPredicate)
+    }
 
     companion object {
         private val VALID_WORK_STATUSES = setOf("근무", "연차", "대휴")

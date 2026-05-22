@@ -17,9 +17,12 @@ import org.springframework.data.domain.Sort
 class AdminAccountServiceTest {
 
     private val accountRepository: AccountRepository = mockk()
+    private val policyEvaluator: com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator =
+        mockk(relaxed = true)
 
     private val adminAccountService = AdminAccountService(
         accountRepository,
+        policyEvaluator,
     )
 
     @Nested
