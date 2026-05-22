@@ -97,6 +97,43 @@ internal val NATURAL_KEY_FK_MAPPINGS: List<NaturalKeyFkSpec> = listOf(
         refColumn = "name",
         targetIdColumn = "profile_id",
     ),
+    // ──────────────────────────────────────────────────────────────────────
+    // spec #794 — Record Type 권한 FK 해소 (3 NATURAL_KEY_FK_MAPPINGS)
+    // ──────────────────────────────────────────────────────────────────────
+    // profile_record_type.profile_name → profile.profile_id
+    NaturalKeyFkSpec(
+        sourceTable = "profile_record_type",
+        sourceColumn = "profile_name",
+        refTable = "profile",
+        refColumn = "name",
+        targetIdColumn = "profile_id",
+    ),
+    // permission_set_record_type.permission_set_name → permission_set.permission_set_id
+    // (permission_set entity 가 없을 수 있어 fk substep 이 skip 처리됨)
+    NaturalKeyFkSpec(
+        sourceTable = "permission_set_record_type",
+        sourceColumn = "permission_set_name",
+        refTable = "permission_set",
+        refColumn = "name",
+        targetIdColumn = "permission_set_id",
+    ),
+    // ──────────────────────────────────────────────────────────────────────
+    // spec #795 — FLS FK 해소 (2 NATURAL_KEY_FK_MAPPINGS)
+    // ──────────────────────────────────────────────────────────────────────
+    NaturalKeyFkSpec(
+        sourceTable = "profile_field_permission",
+        sourceColumn = "profile_name",
+        refTable = "profile",
+        refColumn = "name",
+        targetIdColumn = "profile_id",
+    ),
+    NaturalKeyFkSpec(
+        sourceTable = "permission_set_field_permission",
+        sourceColumn = "permission_set_name",
+        refTable = "permission_set",
+        refColumn = "name",
+        targetIdColumn = "permission_set_id",
+    ),
 )
 
 /**

@@ -9,6 +9,7 @@ import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.EntityPathBase
 import com.querydsl.jpa.HQLTemplates
 import com.querydsl.jpa.JPQLSerializer
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -30,7 +31,7 @@ import org.junit.jupiter.api.Test
 @DisplayName("SharingRule 192 rule coverage — fixture 적재 + Predicate 합성 (spec #786)")
 class SharingRule192CoverageTest {
 
-    private val evaluator = SharingRulePolicyEvaluator()
+    private val evaluator = SharingRulePolicyEvaluator(mockk(relaxed = true))
     private val account = QAccount.account
     private val displayWorkSchedule = QDisplayWorkSchedule.displayWorkSchedule
     private val mfeis = QMonthlyFemaleEmployeeIntegrationSchedule.monthlyFemaleEmployeeIntegrationSchedule

@@ -10,6 +10,8 @@ import com.otoki.powersales.schedule.entity.QMonthlyFemaleEmployeeIntegrationSch
 import com.querydsl.core.types.dsl.EntityPathBase
 import com.querydsl.jpa.HQLTemplates
 import com.querydsl.jpa.JPQLSerializer
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -44,7 +46,12 @@ import java.util.stream.Stream
 @DisplayName("Sharing Policy Matrix — 9 UserRole × OwnerRole × 3 SObject 분기 (spec #786)")
 class SharingPolicyMatrixTest {
 
-    private val evaluator = SharingRulePolicyEvaluator()
+    private val sObjectSettingProvider = mockk<SObjectSettingProvider>(relaxed = true).also {
+        // 기본 동작 — Private OWD + hierarchy 활성 (기존 테스트 호환, spec #791)
+        every { it.orgWideDefault(any()) } returns SObjectSettingProvider.OWD_PRIVATE
+        every { it.allowHierarchyGrant(any()) } returns true
+    }
+    private val evaluator = SharingRulePolicyEvaluator(sObjectSettingProvider)
     private val account = QAccount.account
     private val displayWorkSchedule = QDisplayWorkSchedule.displayWorkSchedule
     private val mfeis = QMonthlyFemaleEmployeeIntegrationSchedule.monthlyFemaleEmployeeIntegrationSchedule

@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.sharing.service
 
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -19,7 +20,7 @@ import org.junit.jupiter.api.Test
 @DisplayName("SharingRulePolicyEvaluator — sfApiNameToJpaProperty corner case (spec #786)")
 class SfApiNameToJpaPropertyTest {
 
-    private val evaluator = SharingRulePolicyEvaluator()
+    private val evaluator = SharingRulePolicyEvaluator(mockk(relaxed = true))
 
     @Nested
     @DisplayName("SF managed namespace 패턴 — DKRetail__*__c")

@@ -4,6 +4,7 @@ import com.otoki.powersales.account.entity.QAccount
 import com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot
 import com.querydsl.jpa.HQLTemplates
 import com.querydsl.jpa.JPQLSerializer
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -24,7 +25,7 @@ import org.junit.jupiter.api.Test
 @DisplayName("Sharing Rule 누락 위험 — CreatedById 예외 + CVS 분기 (spec #786)")
 class SharingRuleMissingRiskTest {
 
-    private val evaluator = SharingRulePolicyEvaluator()
+    private val evaluator = SharingRulePolicyEvaluator(mockk(relaxed = true))
     private val account = QAccount.account
 
     private fun toJpql(expr: com.querydsl.core.types.dsl.BooleanExpression): String {

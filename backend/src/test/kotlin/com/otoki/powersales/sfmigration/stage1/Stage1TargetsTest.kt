@@ -171,4 +171,122 @@ class Stage1TargetsTest {
             assertThat(order.indexOf("GroupMember")).isGreaterThan(order.indexOf("Group"))
         }
     }
+
+    @Nested
+    @DisplayName("spec #791 — SObjectSetting / SObjectRelation 등록")
+    inner class SObjectSettingRegistration {
+
+        @Test
+        @DisplayName("SObjectSetting — sObjectName null (XML 메타 출처) + 4 fields")
+        fun sObjectSetting() {
+            val meta = Stage1Targets.get("SObjectSetting")
+            assertThat(meta).withFailMessage("SObjectSetting 미등록").isNotNull
+            assertThat(meta!!.sObjectName).isNull()
+            assertThat(meta.tableName).isEqualTo("sobject_setting")
+            assertThat(meta.csvFileName).isEqualTo("sobject-setting.csv")
+            val headers = meta.fields.map { it.sfFieldName }
+            assertThat(headers).containsExactly(
+                "sObjectName", "orgWideDefault", "allowHierarchyGrant", "parentSObjectName",
+            )
+        }
+
+        @Test
+        @DisplayName("SObjectRelation — sObjectName null (XML 메타 출처) + 4 fields")
+        fun sObjectRelation() {
+            val meta = Stage1Targets.get("SObjectRelation")
+            assertThat(meta).withFailMessage("SObjectRelation 미등록").isNotNull
+            assertThat(meta!!.sObjectName).isNull()
+            assertThat(meta.tableName).isEqualTo("sobject_relation")
+            assertThat(meta.csvFileName).isEqualTo("sobject-relation.csv")
+            val headers = meta.fields.map { it.sfFieldName }
+            assertThat(headers).containsExactly(
+                "childSObjectName", "parentSObjectName", "relationFieldName", "isMasterDetail",
+            )
+        }
+
+        @Test
+        @DisplayName("DEPENDENCY_ORDER 에 SObjectSetting / SObjectRelation 등록")
+        fun dependencyOrder() {
+            val order = Stage1Targets.DEPENDENCY_ORDER
+            assertThat(order).contains("SObjectSetting", "SObjectRelation")
+        }
+    }
+
+    @Nested
+    @DisplayName("spec #794 — RecordType / ProfileRecordType / PermissionSetRecordType 등록")
+    inner class RecordTypeRegistration {
+
+        @Test
+        @DisplayName("RecordType — sObjectName null + 5 fields")
+        fun recordType() {
+            val meta = Stage1Targets.get("RecordType")
+            assertThat(meta).isNotNull
+            assertThat(meta!!.sObjectName).isNull()
+            assertThat(meta.tableName).isEqualTo("record_type")
+            assertThat(meta.csvFileName).isEqualTo("record-type.csv")
+            val headers = meta.fields.map { it.sfFieldName }
+            assertThat(headers).containsExactly(
+                "sObjectName", "developerName", "label", "description", "isActive",
+            )
+        }
+
+        @Test
+        @DisplayName("ProfileRecordType — 5 fields + sObjectName 자연 키")
+        fun profileRecordType() {
+            val meta = Stage1Targets.get("ProfileRecordType")
+            assertThat(meta).isNotNull
+            assertThat(meta!!.tableName).isEqualTo("profile_record_type")
+            val headers = meta.fields.map { it.sfFieldName }
+            assertThat(headers).containsExactly(
+                "profileName", "sObjectName", "recordTypeDeveloperName", "visible", "isDefault",
+            )
+        }
+
+        @Test
+        @DisplayName("PermissionSetRecordType — 5 fields")
+        fun permissionSetRecordType() {
+            val meta = Stage1Targets.get("PermissionSetRecordType")
+            assertThat(meta).isNotNull
+            assertThat(meta!!.tableName).isEqualTo("permission_set_record_type")
+        }
+
+        @Test
+        @DisplayName("DEPENDENCY_ORDER 등록")
+        fun dependencyOrder() {
+            val order = Stage1Targets.DEPENDENCY_ORDER
+            assertThat(order).contains("RecordType", "ProfileRecordType", "PermissionSetRecordType")
+        }
+    }
+
+    @Nested
+    @DisplayName("spec #795 — ProfileFieldPermission / PermissionSetFieldPermission 등록")
+    inner class FieldPermissionRegistration {
+
+        @Test
+        @DisplayName("ProfileFieldPermission — 5 fields + sObjectName 자연 키")
+        fun profileFieldPermission() {
+            val meta = Stage1Targets.get("ProfileFieldPermission")
+            assertThat(meta).isNotNull
+            assertThat(meta!!.tableName).isEqualTo("profile_field_permission")
+            val headers = meta.fields.map { it.sfFieldName }
+            assertThat(headers).containsExactly(
+                "profileName", "sObjectName", "fieldName", "readable", "editable",
+            )
+        }
+
+        @Test
+        @DisplayName("PermissionSetFieldPermission — 5 fields")
+        fun permissionSetFieldPermission() {
+            val meta = Stage1Targets.get("PermissionSetFieldPermission")
+            assertThat(meta).isNotNull
+            assertThat(meta!!.tableName).isEqualTo("permission_set_field_permission")
+        }
+
+        @Test
+        @DisplayName("DEPENDENCY_ORDER 등록")
+        fun dependencyOrder() {
+            val order = Stage1Targets.DEPENDENCY_ORDER
+            assertThat(order).contains("ProfileFieldPermission", "PermissionSetFieldPermission")
+        }
+    }
 }

@@ -5,6 +5,7 @@ import com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.HQLTemplates
 import com.querydsl.jpa.JPQLSerializer
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -27,7 +28,7 @@ import org.junit.jupiter.api.Test
 @DisplayName("SharingRuleOperator — 11 operator JPQL 변환 검증 (spec #786)")
 class SharingRuleOperatorTest {
 
-    private val evaluator = SharingRulePolicyEvaluator()
+    private val evaluator = SharingRulePolicyEvaluator(mockk(relaxed = true))
     private val account = QAccount.account
 
     /**

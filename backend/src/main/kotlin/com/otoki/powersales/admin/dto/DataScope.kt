@@ -38,6 +38,7 @@ import com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot
  * @param accountGroups Account 의 CVS 사업부 분기 (1000/1010/3000 — 신규)
  * @param ownerExceptions DisplayWorkScheduleMaster / MFEIS 의 CreatedById 예외 user_id 일람 (신규)
  * @param evaluatorRules 본 User 에게 매칭되는 sharingRule 본문 일람 (신규)
+ * @param visibleRecordTypeIds Profile + PermissionSet 합산 가시 RT id 집합 (spec #794 — Q2 옵션 1: 빈 set 이면 record_type_id IS NOT NULL row 모두 차단)
  */
 data class DataScope(
     val branchCodes: List<String>,
@@ -53,6 +54,7 @@ data class DataScope(
     val accountGroups: List<String> = emptyList(),
     val ownerExceptions: List<Long> = emptyList(),
     val evaluatorRules: List<SharingRuleSnapshot> = emptyList(),
+    val visibleRecordTypeIds: Set<Long> = emptySet(),
 ) {
 
     fun effectiveBranchCodes(requestedBranchCode: String?): EffectiveBranchResult {

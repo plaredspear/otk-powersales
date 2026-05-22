@@ -1268,6 +1268,115 @@ object Stage1Targets {
         ),
     )
 
+    // ─────────────────────────────────────────────────────────
+    // spec #791 — SF OWD + master-detail relationship 메타
+    // (XML 메타 출처 — Custom SObject <sharingModel> / Standard Sharing.settings <sharingSettings>+<sharingHierarchy>)
+    // ─────────────────────────────────────────────────────────
+
+    private val SOBJECT_SETTING = EntityMetadata(
+        targetName = "SObjectSetting",
+        sObjectName = null, // XML 메타 출처 — #790 Q1 옵션 1 정합
+        tableName = "sobject_setting",
+        csvFileName = "sobject-setting.csv",
+        fields = listOf(
+            FieldMapping("sObjectName", "sobject_name", nullable = false),
+            FieldMapping("orgWideDefault", "org_wide_default", nullable = false, nullPlaceholder = "Private"),
+            FieldMapping("allowHierarchyGrant", "allow_hierarchy_grant", nullable = false, nullPlaceholder = "true"),
+            FieldMapping("parentSObjectName", "parent_sobject_name"),
+        ),
+    )
+
+    private val SOBJECT_RELATION = EntityMetadata(
+        targetName = "SObjectRelation",
+        sObjectName = null, // XML 메타 출처 — master-detail relationship 정규화 (#791 Q2 옵션 1)
+        tableName = "sobject_relation",
+        csvFileName = "sobject-relation.csv",
+        fields = listOf(
+            FieldMapping("childSObjectName", "child_sobject_name", nullable = false),
+            FieldMapping("parentSObjectName", "parent_sobject_name", nullable = false),
+            FieldMapping("relationFieldName", "relation_field_name", nullable = false),
+            FieldMapping("isMasterDetail", "is_master_detail", nullable = false, nullPlaceholder = "true"),
+        ),
+    )
+
+    // ─────────────────────────────────────────────────────────
+    // spec #794 — SF Record Type 별 분기 권한 (XML 메타 3 출처 정규화)
+    // ─────────────────────────────────────────────────────────
+
+    private val RECORD_TYPE = EntityMetadata(
+        targetName = "RecordType",
+        sObjectName = null, // XML 메타 출처 — Master RT 적재 안 함 (Q4 옵션 1)
+        tableName = "record_type",
+        csvFileName = "record-type.csv",
+        fields = listOf(
+            FieldMapping("sObjectName", "sobject_name", nullable = false),
+            FieldMapping("developerName", "developer_name", nullable = false),
+            FieldMapping("label", "label", nullable = false),
+            FieldMapping("description", "description"),
+            FieldMapping("isActive", "is_active", nullable = false, nullPlaceholder = "true"),
+        ),
+    )
+
+    private val PROFILE_RECORD_TYPE = EntityMetadata(
+        targetName = "ProfileRecordType",
+        sObjectName = null, // XML 메타 출처 (Profile 운영 0건 — PermissionSet 위임)
+        tableName = "profile_record_type",
+        csvFileName = "profile-record-type.csv",
+        fields = listOf(
+            FieldMapping("profileName", "profile_name", nullable = false),
+            FieldMapping("sObjectName", "sobject_name", nullable = false),
+            FieldMapping("recordTypeDeveloperName", "record_type_developer_name", nullable = false),
+            FieldMapping("visible", "visible", nullable = false, nullPlaceholder = "false"),
+            FieldMapping("isDefault", "is_default", nullable = false, nullPlaceholder = "false"),
+        ),
+    )
+
+    private val PERMISSION_SET_RECORD_TYPE = EntityMetadata(
+        targetName = "PermissionSetRecordType",
+        sObjectName = null, // XML 메타 출처 (운영 10건)
+        tableName = "permission_set_record_type",
+        csvFileName = "permission-set-record-type.csv",
+        fields = listOf(
+            FieldMapping("permissionSetName", "permission_set_name", nullable = false),
+            FieldMapping("sObjectName", "sobject_name", nullable = false),
+            FieldMapping("recordTypeDeveloperName", "record_type_developer_name", nullable = false),
+            FieldMapping("visible", "visible", nullable = false, nullPlaceholder = "false"),
+            FieldMapping("isDefault", "is_default", nullable = false, nullPlaceholder = "false"),
+        ),
+    )
+
+    // ─────────────────────────────────────────────────────────
+    // spec #795 — SF Field-Level Security (FLS, XML 메타 2 출처)
+    // ─────────────────────────────────────────────────────────
+
+    private val PROFILE_FIELD_PERMISSION = EntityMetadata(
+        targetName = "ProfileFieldPermission",
+        sObjectName = null, // XML 메타 출처 (Profile 운영 0건 — PermissionSet 위임)
+        tableName = "profile_field_permission",
+        csvFileName = "profile-field-permission.csv",
+        fields = listOf(
+            FieldMapping("profileName", "profile_name", nullable = false),
+            FieldMapping("sObjectName", "sobject_name", nullable = false),
+            FieldMapping("fieldName", "field_name", nullable = false),
+            FieldMapping("readable", "readable", nullable = false, nullPlaceholder = "false"),
+            FieldMapping("editable", "editable", nullable = false, nullPlaceholder = "false"),
+        ),
+    )
+
+    private val PERMISSION_SET_FIELD_PERMISSION = EntityMetadata(
+        targetName = "PermissionSetFieldPermission",
+        sObjectName = null, // XML 메타 출처 (운영 26 PermissionSet)
+        tableName = "permission_set_field_permission",
+        csvFileName = "permission-set-field-permission.csv",
+        fields = listOf(
+            FieldMapping("permissionSetName", "permission_set_name", nullable = false),
+            FieldMapping("sObjectName", "sobject_name", nullable = false),
+            FieldMapping("fieldName", "field_name", nullable = false),
+            FieldMapping("readable", "readable", nullable = false, nullPlaceholder = "false"),
+            FieldMapping("editable", "editable", nullable = false, nullPlaceholder = "false"),
+        ),
+    )
+
     private val ALL: Map<String, EntityMetadata> = listOf(
         ORGANIZATION,
         EMPLOYEE,
@@ -1314,6 +1423,16 @@ object Stage1Targets {
         PROFILE_FLAGS,
         PERMISSION_SET_FLAGS,
         GROUP_MEMBER,
+        // spec #791 — SF OWD + master-detail relationship
+        SOBJECT_SETTING,
+        SOBJECT_RELATION,
+        // spec #794 — SF Record Type 별 분기 권한
+        RECORD_TYPE,
+        PROFILE_RECORD_TYPE,
+        PERMISSION_SET_RECORD_TYPE,
+        // spec #795 — SF FLS (Field-Level Security)
+        PROFILE_FIELD_PERMISSION,
+        PERMISSION_SET_FIELD_PERMISSION,
     ).associateBy { it.targetName }
 
     /**
@@ -1367,6 +1486,16 @@ object Stage1Targets {
         "SharingRuleCondition",
         "SharingRuleTarget",
         "GroupMember",
+        // spec #791 — SF OWD + master-detail relationship (의존 없음 — 독립 메타)
+        "SObjectSetting",
+        "SObjectRelation",
+        // spec #794 — Record Type 권한 (RecordType 먼저, Profile/PermissionSet 의 RT visibility 는 자연 키로 join)
+        "RecordType",
+        "ProfileRecordType",
+        "PermissionSetRecordType",
+        // spec #795 — FLS (Field-Level Security)
+        "ProfileFieldPermission",
+        "PermissionSetFieldPermission",
     )
 
     fun get(targetName: String): EntityMetadata? = ALL[targetName]

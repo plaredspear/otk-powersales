@@ -2,6 +2,7 @@ package com.otoki.powersales.auth.sharing.service
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.sharing.SfSharingConstants
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -85,7 +86,7 @@ class SharingPolicyRepositoryIntegrationTest {
         assertThat(legacyScope.validateAccess("GHB99")).isFalse
 
         // 신규 차원이 default 인 상태에서도 hasUnrestrictedAccess 평가 — Profile/PermissionSet 모두 NONE
-        val evaluator = SharingRulePolicyEvaluator()
+        val evaluator = SharingRulePolicyEvaluator(mockk(relaxed = true))
         assertThat(evaluator.hasUnrestrictedAccess(legacyScope, "Account")).isFalse
     }
 }

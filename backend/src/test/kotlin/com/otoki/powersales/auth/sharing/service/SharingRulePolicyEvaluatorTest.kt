@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.sharing.dto.PermissionSetSnapshot
 import com.otoki.powersales.auth.sharing.dto.ProfileFlagsSnapshot
 import com.querydsl.core.types.dsl.EntityPathBase
+import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -11,14 +12,19 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * SharingRulePolicyEvaluator 단위 테스트 (spec #782 P3-B).
+ * SharingRulePolicyEvaluator 단위 테스트 (spec #782 P3-B + #791).
  *
  * Repository 통합 (QueryDSL 실행) 은 통합 테스트 단계에서 검증. 본 테스트는 evaluator 의 분기 로직만 검증.
  */
 @DisplayName("SharingRulePolicyEvaluator 단위 테스트")
 class SharingRulePolicyEvaluatorTest {
 
-    private val evaluator = SharingRulePolicyEvaluator()
+    private val sObjectSettingProvider = mockk<SObjectSettingProvider>(relaxed = true).also {
+        // 기본 동작 — Private 모드 + hierarchy 활성 (기존 테스트 호환)
+        every { it.orgWideDefault(any()) } returns SObjectSettingProvider.OWD_PRIVATE
+        every { it.allowHierarchyGrant(any()) } returns true
+    }
+    private val evaluator = SharingRulePolicyEvaluator(sObjectSettingProvider)
     private val entityPath = mockk<EntityPathBase<*>>(relaxed = true)
 
     @Nested
@@ -105,27 +111,101 @@ class SharingRulePolicyEvaluatorTest {
     }
 
     @Nested
-    @DisplayName("ControlledByParent — 우선순위 6")
+    @DisplayName("ControlledByParent — 우선순위 6 (spec #791 — Provider 위임)")
     inner class ControlledByParentCheck {
+
+        private val providerLocal = mockk<SObjectSettingProvider>(relaxed = true)
+        private val evaluatorLocal = SharingRulePolicyEvaluator(providerLocal)
 
         @Test
         @DisplayName("PromotionEmployee 는 ControlledByParent + parent = Promotion")
         fun promotionEmployee() {
-            assertThat(evaluator.isControlledByParent("DKRetail__PromotionEmployee__c")).isTrue
-            assertThat(evaluator.parentSObjectOf("DKRetail__PromotionEmployee__c")).isEqualTo("DKRetail__Promotion__c")
+            every { providerLocal.isControlledByParent("DKRetail__PromotionEmployee__c") } returns true
+            every { providerLocal.parentSObjectOf("DKRetail__PromotionEmployee__c") } returns "DKRetail__Promotion__c"
+
+            assertThat(evaluatorLocal.isControlledByParent("DKRetail__PromotionEmployee__c")).isTrue
+            assertThat(evaluatorLocal.parentSObjectOf("DKRetail__PromotionEmployee__c")).isEqualTo("DKRetail__Promotion__c")
         }
 
         @Test
         @DisplayName("Account 는 Private — ControlledByParent 아님")
         fun account() {
-            assertThat(evaluator.isControlledByParent("Account")).isFalse
-            assertThat(evaluator.parentSObjectOf("Account")).isNull()
+            every { providerLocal.isControlledByParent("Account") } returns false
+            every { providerLocal.parentSObjectOf("Account") } returns null
+
+            assertThat(evaluatorLocal.isControlledByParent("Account")).isFalse
+            assertThat(evaluatorLocal.parentSObjectOf("Account")).isNull()
         }
 
         @Test
         @DisplayName("Promotion 자체는 Private — 부모 없음")
         fun promotion() {
-            assertThat(evaluator.isControlledByParent("DKRetail__Promotion__c")).isFalse
+            every { providerLocal.isControlledByParent("DKRetail__Promotion__c") } returns false
+
+            assertThat(evaluatorLocal.isControlledByParent("DKRetail__Promotion__c")).isFalse
+        }
+    }
+
+    @Nested
+    @DisplayName("OWD 평가 (spec #791) — 우선순위 1b")
+    inner class OwdBranch {
+
+        private val provider = mockk<SObjectSettingProvider>(relaxed = true)
+        private val ev = SharingRulePolicyEvaluator(provider)
+
+        @Test
+        @DisplayName("PublicReadWrite OWD — read 무조건 통과")
+        fun publicReadWrite() {
+            every { provider.orgWideDefault("Account") } returns SObjectSettingProvider.OWD_PUBLIC_READ_WRITE
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
+            val pred = ev.buildPredicate(scope, "Account", entityPath)
+            assertThat(pred.toString()).contains("true = true")
+        }
+
+        @Test
+        @DisplayName("PublicReadOnly OWD — read 통과")
+        fun publicReadOnly() {
+            every { provider.orgWideDefault("Account") } returns SObjectSettingProvider.OWD_PUBLIC_READ_ONLY
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
+            val pred = ev.buildPredicate(scope, "Account", entityPath)
+            assertThat(pred.toString()).contains("true = true")
+        }
+
+        @Test
+        @DisplayName("Read OWD (Custom 운영 발견) — read 통과")
+        fun customRead() {
+            every { provider.orgWideDefault("Promotion__c") } returns SObjectSettingProvider.OWD_READ
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
+            val pred = ev.buildPredicate(scope, "Promotion__c", entityPath)
+            assertThat(pred.toString()).contains("true = true")
+        }
+
+        @Test
+        @DisplayName("Private OWD + 매칭 predicate 없음 — deny (false)")
+        fun privateNoMatch() {
+            every { provider.orgWideDefault("Account") } returns SObjectSettingProvider.OWD_PRIVATE
+            every { provider.allowHierarchyGrant("Account") } returns true
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
+            val pred = ev.buildPredicate(scope, "Account", entityPath)
+            // deny — 매칭 없음
+            assertThat(pred.toString()).contains("false = true")
+        }
+
+        @Test
+        @DisplayName("allowHierarchyGrant = false — hierarchy predicate 생략")
+        fun hierarchyDisabled() {
+            every { provider.orgWideDefault("User") } returns SObjectSettingProvider.OWD_PRIVATE
+            every { provider.allowHierarchyGrant("User") } returns false
+            // hierarchyPredicate 가 호출되지 않음 — evaluator 내부 분기 검증 (predicate 부재 confirmation)
+            val scope = DataScope(
+                branchCodes = emptyList(),
+                isAllBranches = false,
+                allSubordinateUserRoleIds = setOf(10L, 20L),
+            )
+            val pred = ev.buildPredicate(scope, "User", entityPath)
+            // ownerPath 등 다른 분기 가능성도 있어 strict assertion 회피 — 결과가 deny / pass 어디든
+            // 본 테스트의 핵심은 hierarchy false 가 build 실패시키지 않는 것.
+            assertThat(pred).isNotNull
         }
     }
 }

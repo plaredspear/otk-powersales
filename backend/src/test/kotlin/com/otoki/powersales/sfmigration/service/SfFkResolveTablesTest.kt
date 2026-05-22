@@ -184,10 +184,55 @@ class SfFkResolveTablesTest {
         }
 
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 4 entry — sharing 메타 4 entity 의 자연 키 매핑")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 8 entry — #790 sharing 4 + #794 record type 2 + #795 FLS 2")
         fun naturalKeyMappingsCount() {
-            // sharing_rule_condition + sharing_rule_target + user_role_hierarchy_snapshot + profile_flags = 4
-            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(4)
+            // sharing_rule_condition + sharing_rule_target + user_role_hierarchy_snapshot + profile_flags +
+            // profile_record_type + permission_set_record_type + profile_field_permission + permission_set_field_permission = 8
+            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(8)
+        }
+
+        @Test
+        @DisplayName("spec #795 — profile_field_permission.profile_name → profile.profile_id")
+        fun profileFieldPermission() {
+            val spec = NATURAL_KEY_FK_MAPPINGS.find {
+                it.sourceTable == "profile_field_permission" && it.sourceColumn == "profile_name"
+            }
+            assertThat(spec).isNotNull
+            assertThat(spec!!.refTable).isEqualTo("profile")
+            assertThat(spec.targetIdColumn).isEqualTo("profile_id")
+        }
+
+        @Test
+        @DisplayName("spec #795 — permission_set_field_permission.permission_set_name → permission_set.permission_set_id")
+        fun permissionSetFieldPermission() {
+            val spec = NATURAL_KEY_FK_MAPPINGS.find {
+                it.sourceTable == "permission_set_field_permission" && it.sourceColumn == "permission_set_name"
+            }
+            assertThat(spec).isNotNull
+            assertThat(spec!!.refTable).isEqualTo("permission_set")
+            assertThat(spec.targetIdColumn).isEqualTo("permission_set_id")
+        }
+
+        @Test
+        @DisplayName("spec #794 — profile_record_type.profile_name → profile.profile_id")
+        fun profileRecordType() {
+            val spec = NATURAL_KEY_FK_MAPPINGS.find {
+                it.sourceTable == "profile_record_type" && it.sourceColumn == "profile_name"
+            }
+            assertThat(spec).isNotNull
+            assertThat(spec!!.refTable).isEqualTo("profile")
+            assertThat(spec.targetIdColumn).isEqualTo("profile_id")
+        }
+
+        @Test
+        @DisplayName("spec #794 — permission_set_record_type.permission_set_name → permission_set.permission_set_id")
+        fun permissionSetRecordType() {
+            val spec = NATURAL_KEY_FK_MAPPINGS.find {
+                it.sourceTable == "permission_set_record_type" && it.sourceColumn == "permission_set_name"
+            }
+            assertThat(spec).isNotNull
+            assertThat(spec!!.refTable).isEqualTo("permission_set")
+            assertThat(spec.targetIdColumn).isEqualTo("permission_set_id")
         }
     }
 

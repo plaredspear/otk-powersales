@@ -110,6 +110,29 @@ class CacheConfig {
         const val CACHE_PROFILE_FLAGS = "profileFlags"
         const val CACHE_PERMISSION_SET_FLAGS = "permissionSetFlags"
 
+        /**
+         * spec #791 — SF OWD + master-detail relationship cache.
+         * spec #794 — Record Type 권한 cache.
+         * spec #795 — FLS field permission cache.
+         *
+         * #792 의 sharing recalc admin endpoint 가 본 cache name 들도 일괄 evict.
+         */
+        const val CACHE_SOBJECT_SETTING = "sobject-setting:v2"
+        const val CACHE_RECORD_TYPE_VISIBILITY = "record-type-visibility:v1"
+        const val CACHE_FIELD_PERMISSION = "field-permission:v1"
+
+        /** spec #792 — sharing recalc 가 일괄 evict 하는 cache name 일람 */
+        val SHARING_RELATED_CACHE_NAMES: List<String> = listOf(
+            CACHE_HIERARCHY_SUBORDINATES,
+            CACHE_HIERARCHY_ANCESTOR_PATH,
+            CACHE_MEMBER_GROUP_IDS,
+            CACHE_PROFILE_FLAGS,
+            CACHE_PERMISSION_SET_FLAGS,
+            CACHE_SOBJECT_SETTING,
+            CACHE_RECORD_TYPE_VISIBILITY,
+            CACHE_FIELD_PERMISSION,
+        )
+
         private val ORGANIZATION_TTL: Duration = Duration.ofHours(24)
         private val SHARING_POLICY_TTL: Duration = Duration.ofHours(1)
     }
@@ -164,6 +187,10 @@ class CacheConfig {
             CACHE_MEMBER_GROUP_IDS to sharingPolicyConfig,
             CACHE_PROFILE_FLAGS to sharingPolicyConfig,
             CACHE_PERMISSION_SET_FLAGS to sharingPolicyConfig,
+            // spec #791 / #794 / #795 — sharing 관련 cache
+            CACHE_SOBJECT_SETTING to sharingPolicyConfig,
+            CACHE_RECORD_TYPE_VISIBILITY to sharingPolicyConfig,
+            CACHE_FIELD_PERMISSION to sharingPolicyConfig,
         )
         return RedisCacheManagerBuilderCustomizer { builder ->
             builder.withInitialCacheConfigurations(perCacheConfig)

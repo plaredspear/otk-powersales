@@ -1,7 +1,6 @@
 package com.otoki.powersales.auth.sharing.service
 
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.sharing.SfSharingConstants
 import com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.dsl.BooleanExpression
@@ -28,7 +27,10 @@ import org.springframework.stereotype.Service
  * SF API name → JPA property 매핑 처리.
  */
 @Service
-class SharingRulePolicyEvaluator {
+class SharingRulePolicyEvaluator(
+    private val sObjectSettingProvider: SObjectSettingProvider,
+    private val recordTypePermissionEvaluator: RecordTypePermissionEvaluator? = null,
+) {
 
     private val log = LoggerFactory.getLogger(SharingRulePolicyEvaluator::class.java)
 
@@ -50,13 +52,30 @@ class SharingRulePolicyEvaluator {
             return Expressions.asBoolean(true).isTrue
         }
 
+        // 우선순위 1b — OWD 평가 (spec #791)
+        // PublicReadWrite / ReadWrite — 전체 row 가시 (조건 평가 생략)
+        // PublicReadOnly / Read — read 무조건 가시 (본 evaluator 는 read context — 통과)
+        // Private / ControlledByParent / fallback — 아래 OR 합성으로 진행
+        val owd = sObjectSettingProvider.orgWideDefault(sObjectName)
+        if (owd == SObjectSettingProvider.OWD_PUBLIC_READ_WRITE ||
+            owd == SObjectSettingProvider.OWD_READ_WRITE ||
+            owd == SObjectSettingProvider.OWD_PUBLIC_READ_ONLY ||
+            owd == SObjectSettingProvider.OWD_READ
+        ) {
+            log.debug("[sharing-policy] {} userId={} owd={} — read pass", sObjectName, scope.userId, owd)
+            return Expressions.asBoolean(true).isTrue
+        }
+
         val predicates = mutableListOf<BooleanExpression>()
 
         // 2 — Owner
         ownerPredicate(scope, entityPath)?.let { predicates += it }
 
         // 3 — UserRole Hierarchy (record.owner.user_role_id IN allSubordinateUserRoleIds)
-        hierarchyPredicate(scope, entityPath)?.let { predicates += it }
+        // OWD 의 hierarchy 옵트인 (spec #791) 이 true 일 때만 평가
+        if (sObjectSettingProvider.allowHierarchyGrant(sObjectName)) {
+            hierarchyPredicate(scope, entityPath)?.let { predicates += it }
+        }
 
         // 4 — SharingRule 본문
         sharingRulePredicate(scope, sObjectName, entityPath)?.let { predicates += it }
@@ -74,7 +93,40 @@ class SharingRulePolicyEvaluator {
         }
 
         // OR 합성
-        return predicates.reduce { acc, expr -> acc.or(expr) }
+        val mainPredicate = predicates.reduce { acc, expr -> acc.or(expr) }
+
+        // 7 — Record Type 권한 분기 (spec #794)
+        // entity 의 record_type_id 컬럼이 있는 경우만 AND 합성.
+        // Q1 옵션 1: 컬럼 부재 시 자동 skip (catch 분기로 skip)
+        // Q2 옵션 1: visibleRecordTypeIds 가 빈 set 이면 sObject 의 record_type_id IS NOT NULL row 차단
+        val rtPredicate = recordTypeAndPredicate(scope, entityPath)
+        return if (rtPredicate != null) mainPredicate.and(rtPredicate) else mainPredicate
+    }
+
+    /**
+     * record_type_id 분기 — Q1 옵션 1 (NULL OR 분기) + Q2 옵션 1 (가시 RT 0건 시 NOT NULL row 차단).
+     *
+     * entity 가 record_type_id 컬럼을 보유하지 않으면 null return (catch 분기 — skip).
+     */
+    internal fun recordTypeAndPredicate(
+        scope: DataScope,
+        entityPath: EntityPathBase<*>,
+    ): BooleanExpression? {
+        return try {
+            val path = Expressions.numberPath(java.lang.Long::class.java, entityPath, "recordTypeId")
+            if (scope.visibleRecordTypeIds.isEmpty()) {
+                // Q2 옵션 1: 가시 RT 0건 — record_type_id IS NOT NULL row 차단
+                // 즉 record_type_id IS NULL row 만 통과 (Q1 옵션 1 동등)
+                path.isNull
+            } else {
+                // record_type_id IS NULL OR record_type_id IN visibleRecordTypeIds
+                val values: List<java.lang.Long> = scope.visibleRecordTypeIds.map { it as java.lang.Long }
+                path.isNull.or(path.`in`(values))
+            }
+        } catch (e: Exception) {
+            log.debug("[sharing-policy] entity {} has no recordTypeId — skip RT predicate", entityPath, e)
+            null
+        }
     }
 
     /**
@@ -263,7 +315,7 @@ class SharingRulePolicyEvaluator {
      * ControlledByParent SObject 의 read query — Repository 호출측이 parent entityPath 전달.
      * `buildPredicate(scope, parentSObjectName, parentEntityPath)` 형태로 동일 메서드 재사용.
      */
-    fun isControlledByParent(sObjectName: String): Boolean = SfSharingConstants.isControlledByParent(sObjectName)
+    fun isControlledByParent(sObjectName: String): Boolean = sObjectSettingProvider.isControlledByParent(sObjectName)
 
-    fun parentSObjectOf(sObjectName: String): String? = SfSharingConstants.parentOf(sObjectName)
+    fun parentSObjectOf(sObjectName: String): String? = sObjectSettingProvider.parentSObjectOf(sObjectName)
 }

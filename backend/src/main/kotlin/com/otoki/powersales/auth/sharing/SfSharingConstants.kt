@@ -3,11 +3,19 @@ package com.otoki.powersales.auth.sharing
 /**
  * SF SharingModel / ControlledByParent 정합 상수 (spec #782 P3-B).
  *
+ * **DEPRECATED** (spec #791) — 본 const map 은 DB-driven 으로 전환. 신규 코드는
+ * `SObjectSettingProvider` 사용. 본 파일은 backward compat 목적 잠시 유지 — DB 미적재 환경
+ * (테스트 등) 의 fallback 또는 신규 OWD/parent 메타 추가 시 초기 seed 참고 자료.
+ *
  * 출처: `_raw/<SObject>.json` describe API 의 `controllableByParent` / 메타 `sharingModel`.
  *
  * 본 프로젝트 운영 — 6 SObject 만 sharingRule 본문 보유. 나머지 233 SObject 는 빈 본문 (UserRole
- * Hierarchy 자동 적용만 사용). 본 const map 은 P4-B 의 sharing policy 적용 분기에서 활용.
+ * Hierarchy 자동 적용만 사용).
  */
+@Deprecated(
+    "Use SObjectSettingProvider (DB-driven, spec #791). Const map is kept only for legacy reference.",
+    ReplaceWith("SObjectSettingProvider"),
+)
 object SfSharingConstants {
 
     /**

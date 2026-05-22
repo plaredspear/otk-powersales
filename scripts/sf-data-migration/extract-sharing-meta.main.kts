@@ -313,6 +313,285 @@ CSVWriter(PrintWriter(permsetFlagsCsv)).use { w ->
 println("[permission-set-flags] $permsetCount 건 → $permsetFlagsCsv")
 
 // =============================================================================
+// 5) sobject-setting — OWD + hierarchy 옵트인 (spec #791)
+//
+// XML 메타 3 출처 정규화:
+//   - Custom SObject: objects/<Name>__c/<Name>__c.object-meta.xml 의 <sharingModel>
+//   - Standard SObject: settings/Sharing.settings-meta.xml 의 <sharingSettings>
+//   - Hierarchy 옵트인: settings/Sharing.settings-meta.xml 의 <sharingHierarchy>
+// =============================================================================
+
+val objectsDir = src.resolve("objects")
+val sharingSettingsFile = src.resolve("settings/Sharing.settings-meta.xml")
+val sObjectSettingCsv = out.resolve("sobject-setting.csv")
+
+// Custom SObject 의 <sharingModel> 1차 수집 — sObjectName → owd
+val customOwd = mutableMapOf<String, String>()
+if (objectsDir.isDirectory) {
+    objectsDir.listFiles { f -> f.isDirectory }?.forEach { dir ->
+        val sObjectName = dir.name
+        val metaFile = dir.resolve("$sObjectName.object-meta.xml")
+        if (metaFile.isFile) {
+            try {
+                val root = parseXml(metaFile)
+                val owd = root.childText("sharingModel")
+                if (owd != null) customOwd[sObjectName] = owd
+            } catch (_: Exception) {
+                // 깨진 파일 skip
+            }
+        }
+    }
+}
+
+// Standard SObject — Sharing.settings-meta.xml 의 <sharingSettings> 블록
+val standardOwd = mutableMapOf<String, String>()
+val hierarchyGrant = mutableMapOf<String, Boolean>()
+if (sharingSettingsFile.isFile) {
+    val root = parseXml(sharingSettingsFile)
+    root.childElements("sharingSettings").forEach { ss ->
+        val obj = ss.childText("object") ?: return@forEach
+        val owd = ss.childText("internalSharingModel") ?: return@forEach
+        standardOwd[obj] = owd
+    }
+    root.childElements("sharingHierarchy").forEach { sh ->
+        val obj = sh.childText("object") ?: return@forEach
+        val grant = sh.childText("grantAccessUsingHierarchies")?.toBoolean() ?: true
+        hierarchyGrant[obj] = grant
+    }
+}
+
+// 합집합 출력 — Custom + Standard
+var sObjectSettingCount = 0
+CSVWriter(PrintWriter(sObjectSettingCsv)).use { w ->
+    w.writeNext(arrayOf("sObjectName", "orgWideDefault", "allowHierarchyGrant", "parentSObjectName"))
+    val all = (customOwd.keys + standardOwd.keys).sorted()
+    all.forEach { name ->
+        val owd = customOwd[name] ?: standardOwd[name] ?: "Private"
+        val grant = hierarchyGrant[name] ?: true
+        w.writeNext(arrayOf(name, owd, grant.toString(), ""))
+        sObjectSettingCount++
+    }
+}
+println("[sobject-setting] $sObjectSettingCount 건 → $sObjectSettingCsv")
+
+// =============================================================================
+// 6) sobject-relation — master-detail relationship (spec #791 Q2 옵션 1)
+//
+// objects/<SObject>/fields/<Field>__c.field-meta.xml 의 <type>MasterDetail</type> + <referenceTo>
+// =============================================================================
+
+val sObjectRelationCsv = out.resolve("sobject-relation.csv")
+
+var sObjectRelationCount = 0
+CSVWriter(PrintWriter(sObjectRelationCsv)).use { w ->
+    w.writeNext(arrayOf("childSObjectName", "parentSObjectName", "relationFieldName", "isMasterDetail"))
+
+    if (objectsDir.isDirectory) {
+        objectsDir.listFiles { f -> f.isDirectory }?.sortedBy { it.name }?.forEach { dir ->
+            val childName = dir.name
+            val fieldsDir = dir.resolve("fields")
+            if (fieldsDir.isDirectory) {
+                fieldsDir.listFiles { f -> f.name.endsWith(".field-meta.xml") }?.forEach { fieldFile ->
+                    try {
+                        val root = parseXml(fieldFile)
+                        val type = root.childText("type") ?: return@forEach
+                        if (type != "MasterDetail") return@forEach
+                        val fullName = root.childText("fullName") ?: return@forEach
+                        val referenceTo = root.childText("referenceTo") ?: return@forEach
+                        w.writeNext(arrayOf(childName, referenceTo, fullName, "true"))
+                        sObjectRelationCount++
+                    } catch (_: Exception) {
+                        // 깨진 파일 skip
+                    }
+                }
+            }
+        }
+    }
+}
+println("[sobject-relation] $sObjectRelationCount 건 → $sObjectRelationCsv")
+
+// =============================================================================
+// 7) record-type — RecordType 정의 (spec #794)
+//
+// XML 출처: objects/<SObject>/recordTypes/<DeveloperName>.recordType-meta.xml
+// Master RT 는 적재하지 않음 (Q4 옵션 1 — record_type_id IS NULL 이 곧 Master 의미)
+// =============================================================================
+
+val recordTypeCsv = out.resolve("record-type.csv")
+var recordTypeCount = 0
+
+CSVWriter(PrintWriter(recordTypeCsv)).use { w ->
+    w.writeNext(arrayOf("sObjectName", "developerName", "label", "description", "isActive"))
+
+    if (objectsDir.isDirectory) {
+        objectsDir.listFiles { f -> f.isDirectory }?.sortedBy { it.name }?.forEach { dir ->
+            val sObjectName = dir.name
+            val recordTypesDir = dir.resolve("recordTypes")
+            if (recordTypesDir.isDirectory) {
+                recordTypesDir.listFiles { f -> f.name.endsWith(".recordType-meta.xml") }?.forEach { file ->
+                    try {
+                        val root = parseXml(file)
+                        val developerName = root.childText("fullName") ?: return@forEach
+                        val label = root.childText("label") ?: developerName
+                        val description = root.childText("description")
+                        val isActive = root.childText("active")?.toBoolean() ?: true
+                        w.writeNext(arrayOf(sObjectName, developerName, label, description ?: "", isActive.toString()))
+                        recordTypeCount++
+                    } catch (_: Exception) {
+                        // 깨진 파일 skip
+                    }
+                }
+            }
+        }
+    }
+}
+println("[record-type] $recordTypeCount 건 → $recordTypeCsv")
+
+// =============================================================================
+// 8) profile-record-type — Profile × RecordType visibility (spec #794)
+//
+// XML 출처: profiles/<Name>.profile-meta.xml 의 <recordTypeVisibilities>
+// 운영 0건 (Profile 위임 패턴 — PermissionSet 위임)
+// =============================================================================
+
+val profileRecordTypeCsv = out.resolve("profile-record-type.csv")
+var profileRecordTypeCount = 0
+
+CSVWriter(PrintWriter(profileRecordTypeCsv)).use { w ->
+    w.writeNext(arrayOf("profileName", "sObjectName", "recordTypeDeveloperName", "visible", "isDefault"))
+
+    if (profilesDir.isDirectory) {
+        profilesDir.listFiles { f -> f.name.endsWith(".profile-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
+            val profileName = file.name.removeSuffix(".profile-meta.xml")
+            try {
+                val root = parseXml(file)
+                root.childElements("recordTypeVisibilities").forEach { rtv ->
+                    // <recordType> 값은 "SObject.DeveloperName" 형식 — split 으로 분리
+                    val recordTypeFull = rtv.childText("recordType") ?: return@forEach
+                    val parts = recordTypeFull.split(".", limit = 2)
+                    if (parts.size != 2) return@forEach
+                    val sObjectName = parts[0]
+                    val rtDevName = parts[1]
+                    val visible = rtv.childText("visible")?.toBoolean() ?: false
+                    val isDefault = rtv.childText("default")?.toBoolean() ?: false
+                    w.writeNext(arrayOf(profileName, sObjectName, rtDevName, visible.toString(), isDefault.toString()))
+                    profileRecordTypeCount++
+                }
+            } catch (_: Exception) {
+                // 깨진 파일 skip
+            }
+        }
+    }
+}
+println("[profile-record-type] $profileRecordTypeCount 건 → $profileRecordTypeCsv")
+
+// =============================================================================
+// 9) permission-set-record-type — PermissionSet × RecordType visibility (spec #794)
+// =============================================================================
+
+val permSetRecordTypeCsv = out.resolve("permission-set-record-type.csv")
+var permSetRecordTypeCount = 0
+
+CSVWriter(PrintWriter(permSetRecordTypeCsv)).use { w ->
+    w.writeNext(arrayOf("permissionSetName", "sObjectName", "recordTypeDeveloperName", "visible", "isDefault"))
+
+    if (permsetsDir.isDirectory) {
+        permsetsDir.listFiles { f -> f.name.endsWith(".permissionset-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
+            val permsetName = file.name.removeSuffix(".permissionset-meta.xml")
+            try {
+                val root = parseXml(file)
+                root.childElements("recordTypeVisibilities").forEach { rtv ->
+                    val recordTypeFull = rtv.childText("recordType") ?: return@forEach
+                    val parts = recordTypeFull.split(".", limit = 2)
+                    if (parts.size != 2) return@forEach
+                    val sObjectName = parts[0]
+                    val rtDevName = parts[1]
+                    val visible = rtv.childText("visible")?.toBoolean() ?: false
+                    val isDefault = rtv.childText("default")?.toBoolean() ?: false
+                    w.writeNext(arrayOf(permsetName, sObjectName, rtDevName, visible.toString(), isDefault.toString()))
+                    permSetRecordTypeCount++
+                }
+            } catch (_: Exception) {
+                // 깨진 파일 skip
+            }
+        }
+    }
+}
+println("[permission-set-record-type] $permSetRecordTypeCount 건 → $permSetRecordTypeCsv")
+
+// =============================================================================
+// 10) profile-field-permission — Profile × Field FLS (spec #795)
+//
+// XML 출처: profiles/<Name>.profile-meta.xml 의 <fieldPermissions>
+// 운영 0건 (Profile 위임 패턴 — PermissionSet 측 사용)
+// =============================================================================
+
+val profileFieldPermissionCsv = out.resolve("profile-field-permission.csv")
+var profileFieldPermissionCount = 0
+
+CSVWriter(PrintWriter(profileFieldPermissionCsv)).use { w ->
+    w.writeNext(arrayOf("profileName", "sObjectName", "fieldName", "readable", "editable"))
+
+    if (profilesDir.isDirectory) {
+        profilesDir.listFiles { f -> f.name.endsWith(".profile-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
+            val profileName = file.name.removeSuffix(".profile-meta.xml")
+            try {
+                val root = parseXml(file)
+                root.childElements("fieldPermissions").forEach { fp ->
+                    // <field> 값은 "SObject.FieldApiName" 형식
+                    val fieldFull = fp.childText("field") ?: return@forEach
+                    val parts = fieldFull.split(".", limit = 2)
+                    if (parts.size != 2) return@forEach
+                    val sObjectName = parts[0]
+                    val fieldName = parts[1]
+                    val readable = fp.childText("readable")?.toBoolean() ?: false
+                    val editable = fp.childText("editable")?.toBoolean() ?: false
+                    w.writeNext(arrayOf(profileName, sObjectName, fieldName, readable.toString(), editable.toString()))
+                    profileFieldPermissionCount++
+                }
+            } catch (_: Exception) {
+                // 깨진 파일 skip
+            }
+        }
+    }
+}
+println("[profile-field-permission] $profileFieldPermissionCount 건 → $profileFieldPermissionCsv")
+
+// =============================================================================
+// 11) permission-set-field-permission — PermissionSet × Field FLS (spec #795)
+// =============================================================================
+
+val permSetFieldPermissionCsv = out.resolve("permission-set-field-permission.csv")
+var permSetFieldPermissionCount = 0
+
+CSVWriter(PrintWriter(permSetFieldPermissionCsv)).use { w ->
+    w.writeNext(arrayOf("permissionSetName", "sObjectName", "fieldName", "readable", "editable"))
+
+    if (permsetsDir.isDirectory) {
+        permsetsDir.listFiles { f -> f.name.endsWith(".permissionset-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
+            val permsetName = file.name.removeSuffix(".permissionset-meta.xml")
+            try {
+                val root = parseXml(file)
+                root.childElements("fieldPermissions").forEach { fp ->
+                    val fieldFull = fp.childText("field") ?: return@forEach
+                    val parts = fieldFull.split(".", limit = 2)
+                    if (parts.size != 2) return@forEach
+                    val sObjectName = parts[0]
+                    val fieldName = parts[1]
+                    val readable = fp.childText("readable")?.toBoolean() ?: false
+                    val editable = fp.childText("editable")?.toBoolean() ?: false
+                    w.writeNext(arrayOf(permsetName, sObjectName, fieldName, readable.toString(), editable.toString()))
+                    permSetFieldPermissionCount++
+                }
+            } catch (_: Exception) {
+                // 깨진 파일 skip
+            }
+        }
+    }
+}
+println("[permission-set-field-permission] $permSetFieldPermissionCount 건 → $permSetFieldPermissionCsv")
+
+// =============================================================================
 // 요약
 // =============================================================================
 
@@ -324,5 +603,12 @@ println("  sharing-rule-target.csv   : $sharingRuleTargetCount 건")
 println("  user-role-hierarchy.csv   : $roleCount 건")
 println("  profile-flags.csv         : $profileCount 건")
 println("  permission-set-flags.csv  : $permsetCount 건")
+println("  sobject-setting.csv       : $sObjectSettingCount 건  [spec #791]")
+println("  sobject-relation.csv      : $sObjectRelationCount 건  [spec #791]")
+println("  record-type.csv           : $recordTypeCount 건  [spec #794]")
+println("  profile-record-type.csv   : $profileRecordTypeCount 건  [spec #794]")
+println("  permission-set-record-type.csv: $permSetRecordTypeCount 건  [spec #794]")
+println("  profile-field-permission.csv: $profileFieldPermissionCount 건  [spec #795]")
+println("  permission-set-field-permission.csv: $permSetFieldPermissionCount 건  [spec #795]")
 println()
 println("후속 단계: Stage 1 적재 (migrate-stage1.main.kts) + Stage 2 fk substep (sharing_rule_target.target_sfid 분기)")
