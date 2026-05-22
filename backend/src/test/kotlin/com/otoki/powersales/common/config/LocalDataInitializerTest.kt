@@ -1,33 +1,27 @@
 package com.otoki.powersales.common.config
 
-import com.otoki.powersales.common.entity.AgreementWord
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.repository.AgreementWordRepository
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.organization.entity.Organization
-import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.user.service.UserProvisioningService
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.BeforeEach
-import jakarta.persistence.EntityManager
-import jakarta.persistence.Query
-import org.springframework.boot.DefaultApplicationArguments
-import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.transaction.support.TransactionTemplate
-import java.util.Optional
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.verify
+import jakarta.persistence.EntityManager
+import jakarta.persistence.Query
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.springframework.boot.DefaultApplicationArguments
+import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.transaction.support.TransactionTemplate
+
 @DisplayName("LocalDataInitializer 테스트")
 class LocalDataInitializerTest {
 
@@ -39,24 +33,17 @@ class LocalDataInitializerTest {
 
     private val agreementWordRepository: AgreementWordRepository = mockk()
 
-    private val accountRepository: AccountRepository = mockk()
-
-    private val organizationRepository: OrganizationRepository = mockk()
-
     private val transactionTemplate: TransactionTemplate = mockk()
 
     private val entityManager: EntityManager = mockk()
 
     private val savedEmployees = mutableListOf<Employee>()
-    private val savedAccounts = mutableListOf<Account>()
 
     private val localDataInitializer = LocalDataInitializer(
         employeeRepository,
         userProvisioningService,
         passwordEncoder,
         agreementWordRepository,
-        accountRepository,
-        organizationRepository,
         transactionTemplate,
         entityManager,
     )
@@ -64,13 +51,11 @@ class LocalDataInitializerTest {
     @BeforeEach
     fun setUp() {
         savedEmployees.clear()
-        savedAccounts.clear()
         every { transactionTemplate.executeWithoutResult(any()) } answers {
             val callback = firstArg<java.util.function.Consumer<org.springframework.transaction.TransactionStatus>>()
             callback.accept(mockk<org.springframework.transaction.TransactionStatus>(relaxed = true))
             null
-         }
-        // 원본 LENIENT mode 호환: UserProvisioningService.provisionForSeed (Unit) 기본 stub
+        }
         every {
             userProvisioningService.provisionForSeed(
                 employeeCode = any(),
@@ -122,29 +107,6 @@ class LocalDataInitializerTest {
         every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns true
     }
 
-    private fun stubAllAccountsExist() {
-        for (i in 1..8) {
-            every { accountRepository.findByExternalKey("TEST-ACC-%03d".format(i)) } returns Account(externalKey = "TEST-ACC-%03d".format(i))
-        }
-    }
-
-    private fun stubAllAccountsNotExist() {
-        for (i in 1..8) {
-            every { accountRepository.findByExternalKey("TEST-ACC-%03d".format(i)) } returns null
-        }
-        every { accountRepository.save(any<Account>()) } answers {
-            val acc = firstArg<Account>()
-            savedAccounts.add(acc)
-            acc
-        }
-    }
-
-    private fun stubOtherSeedsExist() {
-        every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(AgreementWord(name = "AGR-STUB-001"))
-        every { organizationRepository.count() } returns 1L
-        stubAllAccountsExist()
-    }
-
     private fun captureAllSavedEmployees(): List<Employee> {
         verify(exactly = 7) { employeeRepository.save(any<Employee>()) }
         return savedEmployees.toList()
@@ -157,14 +119,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("정상 생성 - DB에 00000001 없음 -> 만능 개발 계정 필드 검증")
         fun createsLeaderUser_whenNotExists() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val leader = employees.find { it.employeeCode == "99990001" }!!
             assertThat(leader.name).isEqualTo("개발테스트")
@@ -179,14 +137,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("역할 검증 - 만능 개발 계정 -> UserRole.SYSTEM_ADMIN")
         fun leaderUser_hasSalesSupportRole() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val leader = employees.find { it.employeeCode == "99990001" }!!
             assertThat(leader.role).isEqualTo(UserRoleEnum.SYSTEM_ADMIN)
@@ -195,14 +149,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("멱등성 - DB에 00000001 존재 -> save 미호출")
         fun skipsLeader_whenAlreadyExists() {
-            // Given
             stubAllUsersExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             verify(exactly = 0) { employeeRepository.save(any<Employee>()) }
         }
     }
@@ -214,14 +164,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("정상 생성 - DB에 00000002 없음 -> 여사원 사용자 필드 검증")
         fun createsSalesUser_whenNotExists() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val salesUser = employees.find { it.employeeCode == "99990002" }!!
             assertThat(salesUser.name).isEqualTo("여사원테스트")
@@ -236,14 +182,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("역할 검증 - 여사원 사용자 -> UserRole.WOMAN")
         fun salesUser_hasUserRole() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val salesUser = employees.find { it.employeeCode == "99990002" }!!
             assertThat(salesUser.role).isEqualTo(UserRoleEnum.WOMAN)
@@ -252,7 +194,6 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("멱등성 - DB에 00000002 존재 -> 해당 사용자 save 미호출")
         fun skipsSalesUser_whenAlreadyExists() {
-            // Given
             every { employeeRepository.existsByEmployeeCode("99990001") } returns false
             every { employeeRepository.existsByEmployeeCode("99990002") } returns true
             every { employeeRepository.existsByEmployeeCode("99990003") } returns false
@@ -264,15 +205,11 @@ class LocalDataInitializerTest {
             every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
             every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
-            
-            val captor = savedEmployees; verify(exactly = 6) { employeeRepository.save(any<Employee>()) }
-            val savedIds = captor.map { it.employeeCode }
+            verify(exactly = 6) { employeeRepository.save(any<Employee>()) }
+            val savedIds = savedEmployees.map { it.employeeCode }
             assertThat(savedIds).doesNotContain("99990002")
         }
     }
@@ -284,14 +221,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("정상 생성 - DB에 00000003 없음 -> 지점장 사용자 필드 검증")
         fun createsAdminUser_whenNotExists() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val admin = employees.find { it.employeeCode == "99990003" }!!
             assertThat(admin.name).isEqualTo("지점장테스트")
@@ -306,14 +239,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("역할 검증 - 지점장 사용자 -> UserRole.BRANCH_MANAGER")
         fun adminUser_hasAdminRole() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val admin = employees.find { it.employeeCode == "99990003" }!!
             assertThat(admin.role).isEqualTo(UserRoleEnum.BRANCH_MANAGER)
@@ -322,7 +251,6 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("멱등성 - DB에 00000003 존재 -> 해당 사용자 save 미호출")
         fun skipsAdminUser_whenAlreadyExists() {
-            // Given
             every { employeeRepository.existsByEmployeeCode("99990001") } returns false
             every { employeeRepository.existsByEmployeeCode("99990002") } returns false
             every { employeeRepository.existsByEmployeeCode("99990003") } returns true
@@ -334,15 +262,11 @@ class LocalDataInitializerTest {
             every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
             every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
-            
-            val captor = savedEmployees; verify(exactly = 6) { employeeRepository.save(any<Employee>()) }
-            val savedIds = captor.map { it.employeeCode }
+            verify(exactly = 6) { employeeRepository.save(any<Employee>()) }
+            val savedIds = savedEmployees.map { it.employeeCode }
             assertThat(savedIds).doesNotContain("99990003")
         }
     }
@@ -354,14 +278,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("정상 생성 - ADMIN-99999999 없음 -> ADMIN- prefix + role/origin/appLoginActive 정책 준수")
         fun createsSystemAdminUser_whenNotExists() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val sysAdmin = employees.find { it.employeeCode == "ADMIN-99999999" }!!
             assertThat(sysAdmin.employeeCode).startsWith("ADMIN-")
@@ -377,14 +297,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("SAP 미수신 필드 null - 수동 등록은 SAP 마스터에 존재하지 않음")
         fun systemAdmin_hasNullSapOnlyFields() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val sysAdmin = employees.find { it.employeeCode == "ADMIN-99999999" }!!
             assertThat(sysAdmin.status).isNull()
@@ -398,14 +314,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("MANAGE_PERMISSIONS 권한 충족 - SYSTEM_ADMIN 시드는 관리자 등록 API 호출 자격을 가진다")
         fun systemAdmin_satisfiesManagePermissions() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val sysAdmin = employees.find { it.employeeCode == "ADMIN-99999999" }!!
             assertThat(sysAdmin.role).isIn(UserRoleEnum.MANAGE_PERMISSIONS)
@@ -414,14 +326,10 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("정상 생성 - ADMIN-99990001 두 번째 SYSTEM_ADMIN 도 동일 정책 적용")
         fun createsSecondSystemAdmin_whenNotExists() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val sysAdmin2 = employees.find { it.employeeCode == "ADMIN-99990001" }!!
             assertThat(sysAdmin2.employeeCode).startsWith("ADMIN-")
@@ -437,7 +345,6 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("멱등성 - ADMIN-99999999 / ADMIN-99990001 모두 존재 -> 해당 사용자 save 미호출")
         fun skipsSystemAdmin_whenAlreadyExists() {
-            // Given
             every { employeeRepository.existsByEmployeeCode("99990001") } returns false
             every { employeeRepository.existsByEmployeeCode("99990002") } returns false
             every { employeeRepository.existsByEmployeeCode("99990003") } returns false
@@ -449,15 +356,11 @@ class LocalDataInitializerTest {
             every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
             every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
-            
-            val captor = savedEmployees; verify(exactly = 5) { employeeRepository.save(any<Employee>()) }
-            val savedIds = captor.map { it.employeeCode }
+            verify(exactly = 5) { employeeRepository.save(any<Employee>()) }
+            val savedIds = savedEmployees.map { it.employeeCode }
             assertThat(savedIds).doesNotContain("ADMIN-99999999", "ADMIN-99990001")
         }
     }
@@ -469,7 +372,6 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("부분 존재 - 00000001만 존재 -> 나머지 6명만 생성")
         fun createsOnlyMissing_whenPartiallyExists() {
-            // Given
             every { employeeRepository.existsByEmployeeCode("99990001") } returns true
             every { employeeRepository.existsByEmployeeCode("99990002") } returns false
             every { employeeRepository.existsByEmployeeCode("99990003") } returns false
@@ -481,29 +383,21 @@ class LocalDataInitializerTest {
             every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
             every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
-            
-            val captor = savedEmployees; verify(exactly = 6) { employeeRepository.save(any<Employee>()) }
-            val savedIds = captor.map { it.employeeCode }
+            verify(exactly = 6) { employeeRepository.save(any<Employee>()) }
+            val savedIds = savedEmployees.map { it.employeeCode }
             assertThat(savedIds).containsExactly("99990002", "99990003", "99990004", "99990005", "ADMIN-99999999", "ADMIN-99990001")
         }
 
         @Test
         @DisplayName("테스트지점 소속 검증 - 00000001~00000004 테스트지점, ADMIN-* 시스템개발자조직")
         fun testBranchUsers() {
-            // Given
             stubAllUsersNotExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             val employees = captureAllSavedEmployees()
             val testBranchEmployees = employees.filter { it.orgName == "테스트지점" }
             assertThat(testBranchEmployees).hasSize(4)
@@ -518,213 +412,11 @@ class LocalDataInitializerTest {
         @Test
         @DisplayName("전체 멱등성 - 일곱 사용자 모두 존재 -> save 미호출")
         fun noSave_whenAllExist() {
-            // Given
             stubAllUsersExist()
-            stubOtherSeedsExist()
 
-            // When
             localDataInitializer.run(DefaultApplicationArguments())
 
-            // Then
             verify(exactly = 0) { employeeRepository.save(any<Employee>()) }
         }
     }
-
-    @Nested
-    @DisplayName("run - GPS 동의 약관 시드 생성")
-    inner class AgreementWordSeedTests {
-
-        @Test
-        @DisplayName("정상 생성 - 활성 약관 없음 -> AgreementWord 생성 및 저장")
-        fun run_createsAgreementWord_whenNotExists() {
-            // Given
-            stubAllUsersExist()
-            every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.empty()
-            every { agreementWordRepository.save(any<AgreementWord>()) } answers {  firstArg<AgreementWord>()  }
-            every { organizationRepository.count() } returns 1L
-
-            // When
-            localDataInitializer.run(DefaultApplicationArguments())
-
-            // Then
-            verify { agreementWordRepository.save(any<AgreementWord>()) }
-        }
-
-        @Test
-        @DisplayName("멱등성 - 활성 약관 이미 존재 -> 저장 skip")
-        fun run_skipsAgreementWord_whenAlreadyExists() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-
-            // When
-            localDataInitializer.run(DefaultApplicationArguments())
-
-            // Then
-            verify(exactly = 0) { agreementWordRepository.save(any<AgreementWord>()) }
-        }
-
-        @Test
-        @DisplayName("정상 생성 - 생성된 AgreementWord의 필드 확인")
-        fun run_createsAgreementWordWithCorrectData() {
-            // Given
-            stubAllUsersExist()
-            every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.empty()
-            every { agreementWordRepository.save(any<AgreementWord>()) } answers {  firstArg<AgreementWord>()  }
-            every { organizationRepository.count() } returns 1L
-
-            // When
-            localDataInitializer.run(DefaultApplicationArguments())
-
-            // Then
-            val awSlot = slot<AgreementWord>()
-            verify { agreementWordRepository.save(capture(awSlot)) }
-            val aw = awSlot.captured
-            assertThat(aw.name).isEqualTo("AGR-LOCAL-001")
-            assertThat(aw.contents).contains("[LOCAL 개발용]")
-            assertThat(aw.contents).contains("위치정보 수집·이용 동의서")
-            assertThat(aw.active).isTrue()
-            assertThat(aw.isDeleted).isFalse()
-            assertThat(aw.activeDate).isNotNull()
-            assertThat(aw.createdAt).isNotNull()
-        }
-    }
-
-    @Nested
-    @DisplayName("seedAccount - 거래처 시드 생성")
-    inner class AccountSeedTests {
-
-        @Test
-        @DisplayName("정상 생성 - 거래처 없음 -> 8건 생성")
-        fun createsAccounts_whenNotExists() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-            stubAllAccountsNotExist()
-
-            // When
-            localDataInitializer.run(DefaultApplicationArguments())
-
-            // Then
-            verify(exactly = 8) { accountRepository.save(any<Account>()) }
-        }
-
-        @Test
-        @DisplayName("멱등성 - 거래처 이미 존재 -> save 미호출")
-        fun skipsAccounts_whenAlreadyExists() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-
-            // When
-            localDataInitializer.run(DefaultApplicationArguments())
-
-            // Then
-            verify(exactly = 0) { accountRepository.save(any<Account>()) }
-        }
-
-        @Test
-        @DisplayName("테스트지점 거래처 5건 + 강남지점 거래처 3건 검증")
-        fun createsAccountsWithCorrectBranches() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-            stubAllAccountsNotExist()
-
-            // When
-            localDataInitializer.run(DefaultApplicationArguments())
-
-            // Then
-            
-            val captor = savedAccounts; verify(exactly = 8) { accountRepository.save(any<Account>()) }
-
-            val testBranch = captor.filter { it.branchCode == "1111" }
-            val gangnamBranch = captor.filter { it.branchCode == "1112" }
-            assertThat(testBranch).hasSize(5)
-            assertThat(gangnamBranch).hasSize(3)
-        }
-    }
-
-    @Nested
-    @DisplayName("run - 조직마스터 시드 생성")
-    inner class OrgSeedTests {
-
-        @Test
-        @DisplayName("정상 생성 - org 테이블 비어있음 -> Org 3건 생성")
-        fun run_createsOrgs_whenNotExists() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-            every { organizationRepository.count() } returns 0L
-
-            // When
-            localDataInitializer.run(DefaultApplicationArguments())
-
-            // Then
-            val orgsSlot = slot<List<Organization>>()
-            verify { organizationRepository.saveAll(capture(orgsSlot)) }
-            assertThat(orgsSlot.captured).hasSize(3)
-        }
-
-        @Test
-        @DisplayName("멱등성 - org 테이블에 데이터 존재 -> 저장 skip")
-        fun run_skipsOrgs_whenAlreadyExists() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-            every { organizationRepository.count() } returns 3L
-
-            // When
-            localDataInitializer.run(DefaultApplicationArguments())
-
-            // Then
-            verify(exactly = 0) { organizationRepository.saveAll(any<List<Organization>>()) }
-        }
-
-        @Test
-        @DisplayName("테스트지점 연결 확인 - orgNameLevel5에 테스트지점 포함")
-        fun run_createsOrgsWithTestBranch() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-            every { organizationRepository.count() } returns 0L
-
-            // When
-            localDataInitializer.run(DefaultApplicationArguments())
-
-
-            // Then
-            val orgsSlot = slot<List<Organization>>()
-            verify { organizationRepository.saveAll(capture(orgsSlot)) }
-            val testBranch = orgsSlot.captured.filter { it.orgNameLevel5 == "테스트지점" }
-            assertThat(testBranch).hasSize(1)
-            assertThat(testBranch[0].costCenterLevel5).isEqualTo("1111")
-        }
-
-        @Test
-        @DisplayName("시드 데이터 필드 검증 - 3건의 계층 구조")
-        fun run_createsOrgsWithCorrectData() {
-            // Given
-            stubAllUsersExist()
-            stubOtherSeedsExist()
-            every { organizationRepository.count() } returns 0L
-
-            // When
-            localDataInitializer.run(DefaultApplicationArguments())
-
-            // Then
-            val orgsSlot = slot<List<Organization>>()
-            verify { organizationRepository.saveAll(capture(orgsSlot)) }
-            val orgs = orgsSlot.captured
-            orgs.forEach { org ->
-                assertThat(org.costCenterLevel2).isEqualTo("1000")
-                assertThat(org.orgNameLevel2).isEqualTo("오뚜기")
-                assertThat(org.costCenterLevel3).isEqualTo("1100")
-                assertThat(org.orgNameLevel3).isEqualTo("영업본부")
-            }
-            val level5Names = orgs.map { it.orgNameLevel5 }
-            assertThat(level5Names).containsExactly("테스트지점", "강남지점", "대전지점")
-        }
-    }
-
 }
