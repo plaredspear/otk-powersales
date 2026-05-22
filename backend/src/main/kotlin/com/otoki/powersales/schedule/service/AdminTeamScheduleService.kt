@@ -288,11 +288,7 @@ class AdminTeamScheduleService(
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        if (principal.role != UserRoleEnum.SYSTEM_ADMIN && schedule.attendanceLog != null) {
-            throw TeamScheduleWorkReportDeleteException()
-        }
-
-        teamScheduleValidator.validateDisplayMasterLink(principal.role, schedule)
+        validateDeleteGuards(principal, schedule)
 
         val employeeId = schedule.employee?.id
         val accountId = schedule.account?.id
@@ -303,6 +299,78 @@ class AdminTeamScheduleService(
         if (employeeId != null && accountId != null && workingDate != null && schedule.workingType == WorkingType.WORK) {
             adminMonthlyIntegrationService.refreshIntegration(employeeId, accountId, YearMonth.from(workingDate))
         }
+    }
+
+    /**
+     * 여사원 일정 다건 삭제 (Spec #691 P1-B).
+     *
+     * legacy `MassDeleteTmScheduleController.doMassDelete` (VF `@RemoteAction` 100건 제한 + 진열 + CommuteLogId=null 필터)
+     * 의 신규 대응 endpoint. 단건 `deleteSchedule` 의 가드 4종 + MFEIS cascade 를 재활용.
+     *
+     * **Q5 옵션 1 — 전체 rollback** (legacy `delete deleteList;` `allOrNone=true` 동등):
+     * 1건이라도 가드 fail 시 첫 실패 row 의 도메인 예외 throw → `@Transactional` 전체 rollback.
+     *
+     * **Q4 옵션 1 — MFEIS batch refresh**: 삭제된 schedule 들의 `workingType == WORK` 그룹을
+     * `(employeeId, accountId, YearMonth)` groupBy 후 그룹 당 1회만 `refreshIntegration` 호출.
+     */
+    @Transactional
+    fun massDelete(principal: WebUserPrincipal, ids: List<Long>): Int {
+        if (principal.role == UserRoleEnum.BRANCH_MANAGER) {
+            throw TeamScheduleDeleteForbiddenException()
+        }
+
+        val distinctIds = ids.distinct()
+        if (distinctIds.size > MAX_MASS_DELETE_ROWS) {
+            throw TeamScheduleMassDeleteRowLimitExceededException()
+        }
+
+        val schedules = teamMemberScheduleRepository.findAllById(distinctIds)
+        val foundIds = schedules.map { it.id }.toSet()
+        val missing = distinctIds.filter { it !in foundIds }
+        if (missing.isNotEmpty()) {
+            throw TeamScheduleNotFoundPartialException(missing)
+        }
+
+        // Q5 옵션 1 — 1건 가드 fail 시 도메인 예외 throw → @Transactional 전체 rollback (legacy allOrNone=true 동등)
+        schedules.forEach { schedule -> validateDeleteGuards(principal, schedule) }
+
+        val refreshTargets = schedules
+            .filter { it.workingType == WorkingType.WORK }
+            .mapNotNull { schedule ->
+                val empId = schedule.employee?.id
+                val accId = schedule.account?.id
+                val date = schedule.workingDate
+                if (empId != null && accId != null && date != null) {
+                    Triple(empId, accId, YearMonth.from(date))
+                } else null
+            }
+            .distinct()
+
+        teamMemberScheduleRepository.deleteAll(schedules)
+
+        // Q4 옵션 1 — (employeeId × accountId × YearMonth) groupBy 후 그룹 당 1회 refresh
+        for ((empId, accId, yearMonth) in refreshTargets) {
+            adminMonthlyIntegrationService.refreshIntegration(empId, accId, yearMonth)
+        }
+
+        return schedules.size
+    }
+
+    /**
+     * 단건/다건 삭제 공통 가드 — (a) 출근완료 보호 (b) 진열마스터 link 차단.
+     *
+     * - (a) `principal.role != SYSTEM_ADMIN AND schedule.attendanceLog != null` → `TeamScheduleWorkReportDeleteException`
+     *   (legacy `deleteblock` 동등, #789 P1-B 머지 후 attendanceLog id-FK 가드)
+     * - (b) `teamScheduleValidator.validateDisplayMasterLink(principal.role, schedule)`
+     *   (legacy `checkDisplayMaster` 동등)
+     *
+     * BRANCH_MANAGER 차단은 호출 측에서 (단건/다건 시작 시 1회) 검사하므로 본 helper 범위 외.
+     */
+    private fun validateDeleteGuards(principal: WebUserPrincipal, schedule: TeamMemberSchedule) {
+        if (principal.role != UserRoleEnum.SYSTEM_ADMIN && schedule.attendanceLog != null) {
+            throw TeamScheduleWorkReportDeleteException()
+        }
+        teamScheduleValidator.validateDisplayMasterLink(principal.role, schedule)
     }
 
     // --- Private helpers ---
@@ -316,5 +384,8 @@ class AdminTeamScheduleService(
 
         /** 기간 조회 상한 — 운영 부하 worst case 회피. ChronoUnit.DAYS.between(from, to) 가 이 값을 초과하면 거부 */
         private const val MAX_RANGE_DAYS = 91L
+
+        /** Spec #691 P1-B — mass-delete endpoint 의 row 상한 (legacy VF page client-side 100건 차단 동등 server-side) */
+        const val MAX_MASS_DELETE_ROWS = 100
     }
 }

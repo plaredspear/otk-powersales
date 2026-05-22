@@ -1422,4 +1422,173 @@ class AdminTeamScheduleServiceTest {
             verify { teamMemberScheduleRepository.delete(schedule) }
         }
     }
+
+    // ========== massDelete (Spec #691 P1-B) ==========
+
+    @Nested
+    @DisplayName("massDelete - 일정 다건 삭제 (Spec #691 — legacy MassDeleteTmScheduleController 동등)")
+    inner class MassDeleteTests {
+
+        @Test
+        @DisplayName("정상 일괄 삭제 + MFEIS batch refresh (employeeId × accountId × YearMonth groupBy)")
+        fun massDelete_success() {
+            // Given
+            val leader = createEmployee(id = 10L, role = UserRoleEnum.LEADER)
+            // 동일 (employee=11, account=21, YearMonth=2026-05) 그룹 — s100 + s101 → refresh 1회만 (Q4 옵션 1 검증)
+            val s100 = createSchedule(id = 100L, employeeId = 11L, accountId = 21, workingDate = java.time.LocalDate.of(2026, 5, 10))
+            val s101 = createSchedule(id = 101L, employeeId = 11L, accountId = 21, workingDate = java.time.LocalDate.of(2026, 5, 15))
+            // 다른 그룹 (employee=12, account=22, YearMonth=2026-05) → refresh 1회
+            val s102 = createSchedule(id = 102L, employeeId = 12L, accountId = 22, workingDate = java.time.LocalDate.of(2026, 5, 20))
+
+            every { teamMemberScheduleRepository.findAllById(listOf(100L, 101L, 102L)) } returns listOf(s100, s101, s102)
+
+            // When
+            val deletedCount = service.massDelete(principalOf(leader), listOf(100L, 101L, 102L))
+
+            // Then
+            assertThat(deletedCount).isEqualTo(3)
+            verify { teamMemberScheduleRepository.deleteAll(listOf(s100, s101, s102)) }
+            // Q4 옵션 1 — 2개 그룹만 refresh 호출 (s100 + s101 동일 그룹 통합)
+            verify(exactly = 1) {
+                adminMonthlyIntegrationService.refreshIntegration(11L, 21, java.time.YearMonth.of(2026, 5))
+            }
+            verify(exactly = 1) {
+                adminMonthlyIntegrationService.refreshIntegration(12L, 22, java.time.YearMonth.of(2026, 5))
+            }
+        }
+
+        @Test
+        @DisplayName("지점장 호출 - FORBIDDEN (delete 전 즉시 차단)")
+        fun massDelete_forbiddenForBranchManager() {
+            // Given
+            val branchManager = createEmployee(id = 10L, role = UserRoleEnum.BRANCH_MANAGER)
+
+            // When & Then
+            assertThatThrownBy { service.massDelete(principalOf(branchManager), listOf(100L)) }
+                .isInstanceOf(TeamScheduleDeleteForbiddenException::class.java)
+            verify(exactly = 0) { teamMemberScheduleRepository.findAllById(any<List<Long>>()) }
+            verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any<List<TeamMemberSchedule>>()) }
+        }
+
+        @Test
+        @DisplayName("100건 초과 - ROW_LIMIT_EXCEEDED (Q1 옵션 1 — legacy 100건 임계값 동등)")
+        fun massDelete_rowLimitExceeded() {
+            // Given
+            val leader = createEmployee(id = 10L, role = UserRoleEnum.LEADER)
+            val ids = (1L..101L).toList()
+
+            // When & Then
+            assertThatThrownBy { service.massDelete(principalOf(leader), ids) }
+                .isInstanceOf(com.otoki.powersales.schedule.exception.TeamScheduleMassDeleteRowLimitExceededException::class.java)
+            verify(exactly = 0) { teamMemberScheduleRepository.findAllById(any<List<Long>>()) }
+        }
+
+        @Test
+        @DisplayName("100건 경계 (distinct 후) - 정상 처리")
+        fun massDelete_exactly100_success() {
+            // Given
+            val leader = createEmployee(id = 10L, role = UserRoleEnum.LEADER)
+            val ids = (1L..100L).toList()
+            val schedules = ids.map { createSchedule(id = it) }
+
+            every { teamMemberScheduleRepository.findAllById(ids) } returns schedules
+
+            // When
+            val deletedCount = service.massDelete(principalOf(leader), ids)
+
+            // Then
+            assertThat(deletedCount).isEqualTo(100)
+        }
+
+        @Test
+        @DisplayName("중복 ids 는 distinct 후 100건 임계 적용")
+        fun massDelete_duplicateIdsCollapsedBeforeLimit() {
+            // Given
+            val leader = createEmployee(id = 10L, role = UserRoleEnum.LEADER)
+            val ids = (1L..50L).toList() + (1L..50L).toList() // 100건이지만 distinct 50건
+            val distinct = (1L..50L).toList()
+            val schedules = distinct.map { createSchedule(id = it) }
+
+            every { teamMemberScheduleRepository.findAllById(distinct) } returns schedules
+
+            // When
+            val deletedCount = service.massDelete(principalOf(leader), ids)
+
+            // Then
+            assertThat(deletedCount).isEqualTo(50)
+        }
+
+        @Test
+        @DisplayName("일부 ids 미존재 - TEAM_SCHEDULE_NOT_FOUND_PARTIAL (legacy 클라이언트 ID 신뢰 회피)")
+        fun massDelete_notFoundPartial() {
+            // Given
+            val leader = createEmployee(id = 10L, role = UserRoleEnum.LEADER)
+            val s100 = createSchedule(id = 100L)
+            every { teamMemberScheduleRepository.findAllById(listOf(100L, 101L)) } returns listOf(s100)
+
+            // When & Then
+            assertThatThrownBy { service.massDelete(principalOf(leader), listOf(100L, 101L)) }
+                .isInstanceOfSatisfying(com.otoki.powersales.schedule.exception.TeamScheduleNotFoundPartialException::class.java) {
+                    assertThat(it.missingIds).containsExactly(101L)
+                }
+            verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any<List<TeamMemberSchedule>>()) }
+        }
+
+        @Test
+        @DisplayName("Q5 옵션 1 - 1건 가드 fail (출근완료) 시 전체 rollback (delete 미호출, 도메인 예외 throw)")
+        fun massDelete_q5OptionOne_anyGuardFail_throwsAndNoDelete() {
+            // Given
+            val leader = createEmployee(id = 10L, role = UserRoleEnum.LEADER)
+            val s100 = createSchedule(id = 100L, commuteLogSfid = null)
+            // s101 은 출근완료 (attendanceLog != null) — leader 는 SYSTEM_ADMIN 아니라 차단
+            val s101 = createSchedule(id = 101L, commuteLogSfid = "CL101")
+
+            every { teamMemberScheduleRepository.findAllById(listOf(100L, 101L)) } returns listOf(s100, s101)
+
+            // When & Then
+            assertThatThrownBy { service.massDelete(principalOf(leader), listOf(100L, 101L)) }
+                .isInstanceOf(TeamScheduleWorkReportDeleteException::class.java)
+            // Q5 옵션 1 — 가드 fail 시 deleteAll 미호출 (전체 rollback, legacy allOrNone=true 동등)
+            verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any<List<TeamMemberSchedule>>()) }
+            verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("Q5 옵션 1 - 1건 가드 fail (진열마스터 link) 시 전체 rollback")
+        fun massDelete_q5OptionOne_displayMasterLinkFail_throwsAndNoDelete() {
+            // Given
+            val leader = createEmployee(id = 10L, role = UserRoleEnum.LEADER)
+            val s100 = createSchedule(id = 100L, commuteLogSfid = null)
+            val s101 = createSchedule(
+                id = 101L, commuteLogSfid = null,
+                workingCategory1 = WorkingCategory1.DISPLAY,
+                displayWorkSchedule = dummyDisplayMaster()
+            )
+
+            every { teamMemberScheduleRepository.findAllById(listOf(100L, 101L)) } returns listOf(s100, s101)
+
+            // When & Then
+            assertThatThrownBy { service.massDelete(principalOf(leader), listOf(100L, 101L)) }
+                .isInstanceOf(TeamScheduleDisplayMasterLinkException::class.java)
+            verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any<List<TeamMemberSchedule>>()) }
+        }
+
+        @Test
+        @DisplayName("출근완료 일정 일괄 삭제 (시스템관리자) - 가드 우회 + 삭제 성공")
+        fun massDelete_workReportCompleted_systemAdmin_success() {
+            // Given
+            val admin = createEmployee(id = 10L, role = UserRoleEnum.SYSTEM_ADMIN)
+            val s100 = createSchedule(id = 100L, commuteLogSfid = "CL100")
+            val s101 = createSchedule(id = 101L, commuteLogSfid = "CL101")
+
+            every { teamMemberScheduleRepository.findAllById(listOf(100L, 101L)) } returns listOf(s100, s101)
+
+            // When
+            val deletedCount = service.massDelete(principalOf(admin), listOf(100L, 101L))
+
+            // Then
+            assertThat(deletedCount).isEqualTo(2)
+            verify { teamMemberScheduleRepository.deleteAll(listOf(s100, s101)) }
+        }
+    }
 }

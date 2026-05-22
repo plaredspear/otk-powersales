@@ -86,3 +86,11 @@ data class MonthlyScheduleWithSummaryDto(
 data class TeamScheduleCreateResultDto(
     val id: Long
 )
+
+/**
+ * 여사원 일정 다건 삭제 응답 (Spec #691 P1-B, Q5 옵션 1 — 전체 rollback 정책).
+ * 1건이라도 가드 fail 시 도메인 예외 throw → @Transactional 전체 rollback → 본 DTO 미반환.
+ */
+data class TeamScheduleMassDeleteResponse(
+    val deletedCount: Int
+)

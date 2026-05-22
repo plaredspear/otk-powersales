@@ -8,6 +8,7 @@ import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
+import com.otoki.powersales.schedule.dto.request.TeamScheduleMassDeleteRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.exception.*
@@ -335,6 +336,62 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
         }
     }
 
+    @Nested
+    @DisplayName("POST /api/v1/admin/team-schedule/mass-delete - 일정 다건 삭제 (Spec #691 P1-B)")
+    inner class MassDelete {
+
+        @Test
+        @DisplayName("성공 - 다건 삭제 + deletedCount 응답")
+        fun massDelete_success() {
+            val request = TeamScheduleMassDeleteRequest(ids = listOf(1L, 2L, 3L))
+            every { adminTeamScheduleService.massDelete(any(), eq(listOf(1L, 2L, 3L))) } returns 3
+
+            mockMvc.perform(
+                post("/api/v1/admin/team-schedule/mass-delete")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("일정이 삭제되었습니다"))
+                .andExpect(jsonPath("$.data.deletedCount").value(3))
+        }
+
+        @Test
+        @DisplayName("validation - 빈 ids 배열 → 400 BAD_REQUEST")
+        fun massDelete_emptyIds_validationFails() {
+            val request = TeamScheduleMassDeleteRequest(ids = emptyList())
+
+            mockMvc.perform(
+                post("/api/v1/admin/team-schedule/mass-delete")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isBadRequest)
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.admin.controller.AdminTeamScheduleControllerTest#massDeleteExceptionCases")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun massDelete_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String
+        ) {
+            val request = TeamScheduleMassDeleteRequest(ids = listOf(1L, 2L))
+            every { adminTeamScheduleService.massDelete(any(), any()) } throws exception
+
+            mockMvc.perform(
+                post("/api/v1/admin/team-schedule/mass-delete")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
+        }
+    }
+
     companion object {
         @JvmStatic
         fun createExceptionCases(): List<Arguments> = listOf(
@@ -350,6 +407,15 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
         fun deleteExceptionCases(): List<Arguments> = listOf(
             Arguments.of("forbidden -> 403 FORBIDDEN", 1L, TeamScheduleDeleteForbiddenException(), 403, "FORBIDDEN"),
             Arguments.of("notFound -> 404 NOT_FOUND", 999L, TeamScheduleNotFoundException(), 404, "NOT_FOUND"),
+        )
+
+        @JvmStatic
+        fun massDeleteExceptionCases(): List<Arguments> = listOf(
+            Arguments.of("rowLimit -> 400 ROW_LIMIT_EXCEEDED", TeamScheduleMassDeleteRowLimitExceededException(), 400, "ROW_LIMIT_EXCEEDED"),
+            Arguments.of("notFoundPartial -> 404 TEAM_SCHEDULE_NOT_FOUND_PARTIAL", TeamScheduleNotFoundPartialException(listOf(99L)), 404, "TEAM_SCHEDULE_NOT_FOUND_PARTIAL"),
+            Arguments.of("workReportDelete -> 409 WORK_REPORT_DELETE_CONSTRAINT (Q5 옵션 1 전체 rollback)", TeamScheduleWorkReportDeleteException(), 409, "WORK_REPORT_DELETE_CONSTRAINT"),
+            Arguments.of("displayMasterLink -> 409 DISPLAY_MASTER_LINK_CONSTRAINT", TeamScheduleDisplayMasterLinkException(), 409, "DISPLAY_MASTER_LINK_CONSTRAINT"),
+            Arguments.of("branchManager -> 403 FORBIDDEN", TeamScheduleDeleteForbiddenException(), 403, "FORBIDDEN"),
         )
     }
 }
