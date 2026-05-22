@@ -5,7 +5,6 @@ import com.otoki.powersales.common.entity.converter.PushMessageBranchConverter
 import com.otoki.powersales.common.enums.PushMessageBranch
 import com.otoki.powersales.common.enums.PushMessageBranchCode
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -18,7 +17,6 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(name = "push_message")
-@HCTable("pushmessage__c")
 @SFObject("PushMessage__c")
 class PushMessage(
 
@@ -32,47 +30,39 @@ class PushMessage(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("Message__c")
-    @HCColumn("message__c")
     @Column(name = "message", length = 500)
     val message: String? = null,
 
     @SFField("ScheduleDate__c")
-    @HCColumn("scheduledate__c")
     @Column(name = "schedule_date")
     val scheduleDate: LocalDateTime? = null,
 
     // --- Spec #615: SF 누락 비수식 4개 도입 ---
 
     @SFField("EmployeeId__c")
-    @HCColumn("employeeid__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
     @SFField("Branch__c")
-    @HCColumn("branch__c")
     @Convert(converter = PushMessageBranchConverter::class)
     @Column(name = "branch", length = 100)
     val branch: PushMessageBranch? = null,
 
     @SFField("BranchCode__c")
-    @HCColumn("branchcode__c")
     @Convert(converter = PushMessageBranchCodeConverter::class)
     @Column(name = "branch_code", length = 40)
     val branchCode: PushMessageBranchCode? = null,
 
     @SFField("SObjectRecordId__c")
-    @HCColumn("sobjectrecordid__c")
     @Column(name = "s_object_record_id", length = 50)
     val sObjectRecordId: String? = null,
 
     // -- Spec #709: Group A — IsDeleted --
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
@@ -81,17 +71,14 @@ class PushMessage(
     // *_id: SF User → Employee 매핑 결과 FK.
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 

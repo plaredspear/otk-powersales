@@ -2,7 +2,6 @@ package com.otoki.powersales.promotion.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.product.entity.Product
@@ -17,7 +16,6 @@ import jakarta.persistence.*
 @Entity
 @Table(name = "promotion_product")
 @SFObject("DKRetail__PromotionProduct__c")
-@HCTable("dkretail__promotionproduct__c")
 class PromotionProduct(
 
     @Id
@@ -30,7 +28,6 @@ class PromotionProduct(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
@@ -40,7 +37,6 @@ class PromotionProduct(
     val promotionId: Long,
 
     @SFField("DKRetail__PromotionId__c")
-    @HCColumn("dkretail__promotionid__c")
     @Column(name = "promotion_sfid", length = 18)
     var promotionSfid: String? = null,
 
@@ -49,39 +45,32 @@ class PromotionProduct(
     var productId: Long? = null,
 
     @SFField("DKRetail__ProductId__c")
-    @HCColumn("dkretail__productid__c")
     @Column(name = "product_sfid", length = 18)
     var productSfid: String? = null,
 
     // SF: DKRetail__Price__c (Number(18,0))
     @SFField("DKRetail__Price__c")
-    @HCColumn("dkretail__price__c")
     @Column(name = "price")
     var price: Long? = null,
 
     // SF: PromotionIdExt__c (Text(100), externalId) — 레거시 upsert 외부 키
     @SFField("PromotionIdExt__c")
-    @HCColumn("promotionidext__c")
     @Column(name = "promotion_id_ext", length = 100)
     var promotionIdExt: String? = null,
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 

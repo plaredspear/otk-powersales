@@ -1,8 +1,6 @@
 package com.otoki.powersales.order.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -13,7 +11,6 @@ import java.math.BigDecimal
 @Entity
 @Table(name = "erp_order_product")
 @SFObject("ERP_OrderProduct__c")
-@HCTable("erp_orderproduct__c")
 class ErpOrderProduct(
 
     @Id
@@ -25,7 +22,6 @@ class ErpOrderProduct(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
@@ -34,12 +30,10 @@ class ErpOrderProduct(
     var erpOrder: ErpOrder? = null,
 
     @SFField("ERPOrderId__c")
-    @HCColumn("erporderid__c")
     @Column(name = "erp_order_sfid", length = 18)
     var erpOrderSfid: String? = null,
 
     @SFField("SAPOrderNumber__c")
-    @HCColumn("sapordernumber__c")
     @Column(name = "sap_order_number", nullable = false, length = 255)
     val sapOrderNumber: String,
 
@@ -152,22 +146,18 @@ class ErpOrderProduct(
     // 하나만 채워지며 XOR CHECK 제약으로 enforce. sfid prefix `005` = User / `00G` = Group.
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

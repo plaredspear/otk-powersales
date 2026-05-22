@@ -2,7 +2,6 @@ package com.otoki.powersales.schedule.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
@@ -36,7 +35,6 @@ import java.time.LocalDate
 @Entity
 @Table(name = "display_work_schedule")
 @SFObject("DisplayWorkScheduleMaster__c")
-@HCTable("displayworkschedulemaster__c")
 class DisplayWorkSchedule(
 
     @Id
@@ -49,86 +47,70 @@ class DisplayWorkSchedule(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("Account__c")
-    @HCColumn("account__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
     @SFField("FullName__c")
-    @HCColumn("fullname__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
     @SFField("StartDate__c")
-    @HCColumn("startdate__c")
     @Column(name = "start_date")
     var startDate: LocalDate? = null,
 
     @SFField("EndDate__c")
-    @HCColumn("enddate__c")
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
 
     @SFField("Confirmed__c")
-    @HCColumn("confirmed__c")
     @Column(name = "confirmed")
     var confirmed: Boolean? = null,
 
     @SFField("TypeOfWork1__c")
-    @HCColumn("typeofwork1__c")
     @Column(name = "type_of_work1", length = 255)
     @Convert(converter = TypeOfWork1Converter::class)
     val typeOfWork1: TypeOfWork1? = null,
 
     @SFField("TypeOfWork3__c")
-    @HCColumn("typeofwork3__c")
     @Column(name = "type_of_work3", length = 255)
     @Convert(converter = TypeOfWork3Converter::class)
     var typeOfWork3: TypeOfWork3? = null,
 
     @SFField("TypeOfWork4__c")
-    @HCColumn("typeofwork4__c")
     @Column(name = "type_of_work4", length = 255)
     @Convert(converter = SecondWorkTypeConverter::class)
     var typeOfWork4: SecondWorkType? = null,
 
     @SFField("TypeOfWork5__c")
-    @HCColumn("typeofwork5__c")
     @Column(name = "type_of_work5", length = 255)
     @Convert(converter = TypeOfWork5Converter::class)
     var typeOfWork5: TypeOfWork5? = null,
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     val ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("CostCenterCode__c")
-    @HCColumn("costcentercode__c")
     @Column(name = "cost_center_code", length = 20)
     var costCenterCode: String? = null,
 
     @SFField("LastMonthRevenue__c")
-    @HCColumn("lastmonthrevenue__c")
     @Column(name = "last_month_revenue", precision = 18, scale = 0)
     var lastMonthRevenue: BigDecimal? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

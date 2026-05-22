@@ -1,7 +1,6 @@
 package com.otoki.powersales.common.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -21,7 +20,6 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(name = "agreement_word")
-@HCTable("agreementword__c")
 @SFObject("AgreementWord__c")
 class AgreementWord(
 
@@ -30,34 +28,28 @@ class AgreementWord(
     @Column(name = "agreement_word_id")
     val id: Int = 0,
 
-    @HCColumn("name")
     @SFField("Name")
     @Column(name = "name", length = 80, nullable = false)
     val name: String,
 
-    @HCColumn("contents__c")
     @SFField("Contents__c")
     @Column(name = "contents", length = 8000)
     val contents: String? = null,
 
-    @HCColumn("active__c")
     @SFField("Active__c")
     @Column(name = "active", nullable = false)
     var active: Boolean = false,
 
-    @HCColumn("activedate__c")
     @SFField("ActiveDate__c")
     @Column(name = "active_date")
     var activeDate: LocalDate? = null,
 
-    @HCColumn("afteractivedate__c")
     @SFField("AfterActiveDate__c")
     @Column(name = "after_active_date")
     var afterActiveDate: LocalDate? = null,
 
     // -- Spec #707: Group A — IsDeleted --
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
@@ -67,30 +59,25 @@ class AgreementWord(
 
     // -- Spec #707: Group A — CreatedDate (BaseEntity 미상속 자체 매핑) --
     @SFField("CreatedDate")
-    @HCColumn("createddate")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 
     @SFField("LastModifiedDate")
-    @HCColumn("lastmodifieddate")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now(),
 
     // -- Spec #707: Group A — OwnerId / CreatedById / LastModifiedById (R-2 패턴) --
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 

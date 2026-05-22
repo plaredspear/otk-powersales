@@ -2,7 +2,6 @@ package com.otoki.powersales.product.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -27,7 +26,6 @@ import java.time.LocalDate
 @Entity
 @Table(name = "new_product")
 @SFObject("NewProduct__c")
-@HCTable("newproduct__c")
 class NewProduct(
 
     @Id
@@ -40,118 +38,97 @@ class NewProduct(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     // -- Custom 필드 (15개) --
 
     @SFField("Customer_Survey__c")
-    @HCColumn("customer_survey__c")
     @Column(name = "customer_survey")
     val customerSurvey: LocalDate? = null,
 
     @SFField("Initiator__c")
-    @HCColumn("initiator__c")
     @Convert(converter = InitiatorConverter::class)
     @Column(name = "initiator", length = 255)
     val initiator: Initiator? = null,
 
     @SFField("ManagementType__c")
-    @HCColumn("managementtype__c")
     @Convert(converter = ManagementTypeConverter::class)
     @Column(name = "management_type", length = 255)
     val managementType: ManagementType? = null,
 
     @SFField("Marketability_Review_Report__c")
-    @HCColumn("marketability_review_report__c")
     @Column(name = "marketability_review_report")
     val marketabilityReviewReport: LocalDate? = null,
 
     @SFField("Product_Code__c")
-    @HCColumn("product_code__c")
     @Column(name = "product_code_sfid", length = 18)
     val productCodeSfid: String? = null,
 
     @SFField("Product_Name__c")
-    @HCColumn("product_name__c")
     @Column(name = "product_name", nullable = false, length = 100)
     val productName: String,
 
     @SFField("Product_code1__c")
-    @HCColumn("product_code1__c")
     @Column(name = "product_code1", columnDefinition = "TEXT")
     val productCode1: String? = null,
 
     @SFField("Purpose__c")
-    @HCColumn("purpose__c")
     @Column(name = "purpose", nullable = false, length = 255)
     val purpose: String,
 
     @SFField("Release_Review_Report__c")
-    @HCColumn("release_review_report__c")
     @Column(name = "release_review_report", nullable = false)
     val releaseReviewReport: LocalDate,
 
     @SFField("Release__c")
-    @HCColumn("release__c")
     @Column(name = "release", nullable = false)
     val release: LocalDate,
 
     @SFField("Status__c")
-    @HCColumn("status__c")
     @Convert(converter = NewProductStatusConverter::class)
     @Column(name = "status", nullable = false, length = 255)
     val status: NewProductStatus,
 
     @SFField("firstpropose__c")
-    @HCColumn("firstpropose__c")
     @Column(name = "firstpropose", nullable = false)
     val firstpropose: LocalDate,
 
     @SFField("friday_taste__c")
-    @HCColumn("friday_taste__c")
     @Column(name = "friday_taste", nullable = false)
     val fridayTaste: LocalDate,
 
     @SFField("Upload_Description__c")
-    @HCColumn("upload_description__c")
     @Column(name = "upload_description", length = 255)
     val uploadDescription: String? = null,
 
     @SFField("MarketingTeam__c")
-    @HCColumn("marketingteam__c")
     @Column(name = "marketing_team", length = 255)
     val marketingTeam: String? = null,
 
     // -- Group A — IsDeleted --
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     // -- Group A — RecordType sfid (FK 미신설 — Q1) --
 
     @SFField("RecordTypeId")
-    @HCColumn("recordtypeid")
     @Column(name = "record_type_sfid", length = 18)
     var recordTypeSfid: String? = null,
 
     // -- Group A — Owner / CreatedBy / LastModifiedBy (R-2 패턴) --
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 

@@ -2,7 +2,6 @@ package com.otoki.powersales.employee.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.converter.CrmWorkTypeConverter
@@ -34,7 +33,6 @@ import com.otoki.powersales.user.entity.User
 @Entity
 @Table(name = "employee")
 @SFObject("DKRetail__Employee__c")
-@HCTable("dkretail__employee__c")
 class Employee(
 
     @Id
@@ -47,58 +45,47 @@ class Employee(
     val sfid: String? = null,
 
     @SFField("DKRetail__EmpCode__c")
-    @HCColumn("dkretail__empcode__c")
     @Column(name = "employee_code", unique = true, length = 100)
     val employeeCode: String,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     var name: String,
 
     @SFField("DKRetail__Birthdate__c")
-    @HCColumn("dkretail__birthdate__c")
     @Column(name = "birth_date", length = 10)
     var birthDate: String? = null,
 
     @SFField("DKRetail__Status__c")
-    @HCColumn("dkretail__status__c")
     @Column(name = "status", length = 40)
     var status: String? = null,
 
     @SFField("DKRetail__APPLoginActive__c")
-    @HCColumn("dkretail__apploginactive__c")
     @Column(name = "app_login_active")
     var appLoginActive: Boolean? = null,
 
     @SFField("DKRetail__AppAuthority__c")
-    @HCColumn("dkretail__appauthority__c")
     @Convert(converter = UserRoleConverter::class)
     @Column(name = "role", length = 50)
     var role: UserRoleEnum? = null,
 
     @SFField("DKRetail__OrgName__c")
-    @HCColumn("dkretail__orgname__c")
     @Column(name = "org_name", length = 100)
     var orgName: String? = null,
 
     @SFField("CostCenterCode__c")
-    @HCColumn("costcentercode__c")
     @Column(name = "cost_center_code", length = 10)
     var costCenterCode: String? = null,
 
     @SFField("DKRetail__WorkPhone__c")
-    @HCColumn("dkretail__workphone__c")
     @Column(name = "work_phone", length = 255)
     var workPhone: String? = null,
 
     @SFField("Phone__c")
-    @HCColumn("phone__c")
     @Column(name = "phone", length = 40)
     var phone: String? = null,
 
     @SFField("DKRetail__HomePhone__c")
-    @HCColumn("dkretail__homephone__c")
     @Column(name = "home_phone", length = 255)
     var homePhone: String? = null,
 
@@ -113,13 +100,11 @@ class Employee(
     // 외부 키는 `Sex` 이며 Salesforce/SAP 호환을 위해 유지한다 (Spec #565)
     // Spec #713: @Enumerated → GenderConverter 전환 (SF 원본값 `남`/`여` 저장 + MALE/FEMALE backward compat)
     @SFField("DKRetail__Sex__c")
-    @HCColumn("dkretail__sex__c")
     @Convert(converter = GenderConverter::class)
     @Column(name = "gender", length = 10)
     var gender: Gender? = null,
 
     @SFField("DKRetail__StartDate__c")
-    @HCColumn("dkretail__startdate__c")
     @Column(name = "start_date")
     var startDate: LocalDate? = null,
 
@@ -128,12 +113,10 @@ class Employee(
     var endDate: LocalDate? = null,
 
     @SFField("AgreementFlag__c")
-    @HCColumn("agreementflag__c")
     @Column(name = "agreement_flag")
     var agreementFlag: Boolean? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
@@ -201,12 +184,10 @@ class Employee(
     var usedAnnualLeave: java.math.BigDecimal? = null,
 
     @SFField("DKRetail__ManagerId__c")
-    @HCColumn("dkretail__managerid__c")
     @Column(name = "manager_sfid", length = 18)
     var managerSfid: String? = null,
 
     @SFField("PostponedAppointment__c")
-    @HCColumn("postponedappointment__c")
     @Column(name = "postponed_appointment_sfid", length = 18)
     var postponedAppointmentSfid: String? = null,
 
@@ -221,12 +202,10 @@ class Employee(
     // -- Spec #713: SF Object 정합 (Group A + Reference R-2) --
 
     @SFField("OfficePhone__c")
-    @HCColumn("officephone__c")
     @Column(name = "office_phone", length = 40)
     var officePhone: String? = null,
 
     @SFField("DKRetail__CRM_WorkType__c")
-    @HCColumn("dkretail__crm_worktype__c")
     @Convert(converter = CrmWorkTypeConverter::class)
     @Column(name = "crm_work_type", length = 255)
     var crmWorkType: CrmWorkType? = null,
@@ -235,18 +214,15 @@ class Employee(
     // owner_sfid 는 SF 원본 식별자 보존 (sync buffer). owner_user_id / owner_group_id 둘 중
     // 하나만 채워지며 DB CHECK XOR 제약으로 enforce. sfid prefix `005` = User / `00G` = Group.
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     // CreatedById / LastModifiedById: SF `referenceTo = [User]`. FK 타입은 backend User entity.
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 

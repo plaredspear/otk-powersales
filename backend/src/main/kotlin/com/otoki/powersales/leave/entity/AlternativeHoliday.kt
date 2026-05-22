@@ -2,7 +2,6 @@ package com.otoki.powersales.leave.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -16,7 +15,6 @@ import java.time.LocalDate
 @Entity
 @Table(name = "alternative_holiday")
 @SFObject("DKRetail__AlternativeHoliday__c")
-@HCTable("dkretail__alternativeholiday__c")
 class AlternativeHoliday(
 
     @Id
@@ -29,7 +27,6 @@ class AlternativeHoliday(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
@@ -37,33 +34,27 @@ class AlternativeHoliday(
     val employeeId: Long? = null,
 
     @SFField("DKRetail__EmployeeId__c")
-    @HCColumn("dkretail__employeeid__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
     @SFField("DKRetail__ActualWorkDate__c")
-    @HCColumn("dkretail__actualworkdate__c")
     @Column(name = "actual_work_date", nullable = false)
     val actualWorkDate: LocalDate,
 
     @SFField("DKRetail__TargetAltHolidayDate__c")
-    @HCColumn("dkretail__targetaltholidaydate__c")
     @Column(name = "target_alt_holiday_date", nullable = false)
     val targetAltHolidayDate: LocalDate,
 
     @SFField("DKRetail__ConfirmAltHolidayDate__c")
-    @HCColumn("dkretail__confirmaltholidaydate__c")
     @Column(name = "confirm_alt_holiday_date")
     var confirmAltHolidayDate: LocalDate? = null,
 
     @SFField("DKRetail__Status__c")
-    @HCColumn("dkretail__status__c")
     @Convert(converter = AltHolidayStatusConverter::class)
     @Column(name = "status", nullable = false, length = 255)
     var status: AltHolidayStatus = AltHolidayStatus.NEW,
 
     @SFField("DKRetail__ChangeReason__c")
-    @HCColumn("dkretail__changereason__c")
     @Column(name = "change_reason", length = 255)
     var changeReason: String? = null,
 
@@ -71,22 +62,18 @@ class AlternativeHoliday(
     val createdByEmpNo: String? = null,
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

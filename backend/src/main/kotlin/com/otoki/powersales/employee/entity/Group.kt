@@ -2,7 +2,6 @@ package com.otoki.powersales.employee.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.auth.entity.UserRole
@@ -40,7 +39,6 @@ import jakarta.persistence.Table
 @Entity
 @Table(name = "\"group\"")
 @SFObject("Group")
-@HCTable("group")
 class Group(
 
     @Id
@@ -53,60 +51,49 @@ class Group(
     var sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", nullable = false, length = 40)
     var name: String,
 
     @SFField("DeveloperName")
-    @HCColumn("developername")
     @Column(name = "developer_name", length = 80)
     var developerName: String? = null,
 
     @SFField("Type")
-    @HCColumn("type")
     @Convert(converter = GroupTypeConverter::class)
     @Column(name = "type", nullable = false, length = 40)
     var type: GroupType,
 
     @SFField("RelatedId")
-    @HCColumn("relatedid")
     @Column(name = "related_sfid", length = 18)
     var relatedSfid: String? = null,
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("Email")
-    @HCColumn("email")
     @Column(name = "email", length = 255)
     var email: String? = null,
 
     @SFField("DoesSendEmailToMembers")
-    @HCColumn("doessendemailtomembers")
     @Column(name = "does_send_email_to_members", nullable = false)
     var doesSendEmailToMembers: Boolean = false,
 
     @SFField("DoesIncludeBosses")
-    @HCColumn("doesincludebosses")
     @Column(name = "does_include_bosses", nullable = false)
     var doesIncludeBosses: Boolean = false,
 
     @SFField("Description")
-    @HCColumn("description")
     @Column(name = "description", columnDefinition = "TEXT")
     var description: String? = null,
 
     // -- Group A R-2 audit (User FK — Spec #757) --
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 

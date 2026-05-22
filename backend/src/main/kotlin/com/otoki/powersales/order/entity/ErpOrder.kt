@@ -2,8 +2,6 @@ package com.otoki.powersales.order.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
@@ -13,7 +11,6 @@ import java.time.LocalDate
 @Entity
 @Table(name = "erp_order")
 @SFObject("ERP_Order__c")
-@HCTable("erp_order__c")
 class ErpOrder(
 
     @Id
@@ -77,17 +74,14 @@ class ErpOrder(
     var accountSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

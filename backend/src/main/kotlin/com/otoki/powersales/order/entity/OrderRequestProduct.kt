@@ -2,7 +2,6 @@ package com.otoki.powersales.order.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -43,7 +42,6 @@ import java.time.LocalDateTime
     ],
 )
 @SFObject("DKRetail__OrderRequestProduct__c")
-@HCTable("dkretail__orderrequestproduct__c")
 class OrderRequestProduct(
 
     @Id
@@ -52,27 +50,22 @@ class OrderRequestProduct(
     val id: Long = 0,
 
     @SFField("DKRetail__RequestNumber__c")
-    @HCColumn("dkretail__requestnumber__c")
     @Column(name = "order_request_sfid", length = 18)
     val orderRequestSfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
     @SFField("LineNumber__c")
-    @HCColumn("linenumber__c")
     @Column(name = "line_number", nullable = false)
     val lineNumber: BigDecimal,
 
     @SFField("DKRetail__LineNumber__c")
-    @HCColumn("dkretail__linenumber__c")
     @Column(name = "dk_line_number", length = 30)
     var dkLineNumber: String? = null,
 
     @SFField("ProductCode__c")
-    @HCColumn("productcode__c")
     @Column(name = "product_code", nullable = false, length = 255)
     val productCode: String,
 
@@ -80,17 +73,14 @@ class OrderRequestProduct(
     val productName: String,
 
     @SFField("TotalQuantity_Box__c")
-    @HCColumn("totalquantity_box__c")
     @Column(name = "quantity_boxes", nullable = false, precision = 18, scale = 2)
     val quantityBoxes: BigDecimal = BigDecimal.ZERO,
 
     @SFField("TotalQuantity_Each__c")
-    @HCColumn("totalquantity_each__c")
     @Column(name = "quantity_pieces", nullable = false)
     val quantityPieces: BigDecimal = BigDecimal.ZERO,
 
     @SFField("DKRetail__OrderingUnit__c")
-    @HCColumn("dkretail__orderingunit__c")
     @Column(name = "unit", nullable = false, length = 40)
     val unit: String,
 
@@ -98,7 +88,6 @@ class OrderRequestProduct(
     val unitPrice: BigDecimal? = BigDecimal.ZERO,
 
     @SFField("DKRetail__TotalAmount__c")
-    @HCColumn("dkretail__totalamount__c")
     @Column(name = "amount", nullable = false, precision = 18, scale = 2)
     val amount: BigDecimal = BigDecimal.ZERO,
 
@@ -115,7 +104,6 @@ class OrderRequestProduct(
     val dcQuantity: Int? = 0,
 
     @SFField("DKRetail__LineChangeType__c")
-    @HCColumn("dkretail__linechangetype__c")
     @Column(name = "line_change_type", length = 10)
     var lineChangeType: String? = null,
 
@@ -146,12 +134,10 @@ class OrderRequestProduct(
     val boxQuantity: BigDecimal? = null,
 
     @SFField("DKRetail__TotalCount__c")
-    @HCColumn("dkretail__totalcount__c")
     @Column(name = "dk_total_count", precision = 18, scale = 0)
     var dkTotalCount: BigDecimal? = null,
 
     @SFField("TotalCount__c")
-    @HCColumn("totalcount__c")
     @Column(name = "total_count", precision = 18, scale = 0)
     var totalCount: BigDecimal? = null,
 
@@ -170,22 +156,18 @@ class OrderRequestProduct(
     // 하나만 채워지며 XOR CHECK 제약으로 enforce. sfid prefix `005` = User / `00G` = Group.
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

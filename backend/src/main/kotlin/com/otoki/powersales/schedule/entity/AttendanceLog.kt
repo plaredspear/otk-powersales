@@ -3,7 +3,6 @@ package com.otoki.powersales.schedule.entity
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -22,7 +21,6 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "attendance_log")
 @SFObject("DKRetail__CommuteLog__c")
-@HCTable("dkretail__commutelog__c")
 class AttendanceLog(
 
     @Id
@@ -35,12 +33,10 @@ class AttendanceLog(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("DKRetail__EmployeeId__c")
-    @HCColumn("dkretail__employeeid__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
@@ -48,12 +44,10 @@ class AttendanceLog(
     val employeeId: Long? = null,
 
     @SFField("DKRetail__CommuteDate__c")
-    @HCColumn("dkretail__commutedate__c")
     @Column(name = "attendance_date")
     val attendanceDate: LocalDateTime? = null,
 
     @SFField("DKRetail__AccId__c")
-    @HCColumn("dkretail__accid__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
@@ -61,13 +55,11 @@ class AttendanceLog(
     val accountId: Int? = null,
 
     @SFField("DKRetail__SecondWorkType__c")
-    @HCColumn("dkretail__secondworktype__c")
     @Column(name = "second_work_type", length = 255)
     @Convert(converter = SecondWorkTypeConverter::class)
     val secondWorkType: SecondWorkType? = null,
 
     @SFField("DKRetail__Reason__c")
-    @HCColumn("dkretail__reason__c")
     @Column(name = "reason", length = 255)
     val reason: String? = null,
 
@@ -81,22 +73,18 @@ class AttendanceLog(
     val attendanceType: AttendanceType? = AttendanceType.REGULAR,
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

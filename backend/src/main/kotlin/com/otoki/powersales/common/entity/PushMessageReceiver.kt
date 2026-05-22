@@ -1,7 +1,6 @@
 package com.otoki.powersales.common.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -20,7 +19,6 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(name = "push_message_receiver")
-@HCTable("pushmessagereceiver__c")
 @SFObject("PushMessageReceiver__c")
 class PushMessageReceiver(
 
@@ -34,7 +32,6 @@ class PushMessageReceiver(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
@@ -42,7 +39,6 @@ class PushMessageReceiver(
     val employeeId: Long? = null,
 
     @SFField("EmployeeId__c")
-    @HCColumn("employeeid__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
@@ -50,24 +46,20 @@ class PushMessageReceiver(
     val pushMessageId: Int? = null,
 
     @SFField("MessageId__c")
-    @HCColumn("messageid__c")
     @Column(name = "push_message_sfid", length = 18)
     val pushMessageSfid: String? = null,
 
     // -- Spec #710: Group A — IsDeleted --
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     @SFField("CreatedDate")
-    @HCColumn("createddate")
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 
     @SFField("LastModifiedDate")
-    @HCColumn("systemmodstamp")
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now(),
@@ -77,12 +69,10 @@ class PushMessageReceiver(
     // *_id: SF User → Employee 매핑 결과 FK.
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 

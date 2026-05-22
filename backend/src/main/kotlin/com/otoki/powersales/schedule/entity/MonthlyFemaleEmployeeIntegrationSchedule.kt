@@ -1,8 +1,6 @@
 package com.otoki.powersales.schedule.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
@@ -20,7 +18,6 @@ import java.math.BigDecimal
 @Entity
 @Table(name = "monthly_female_employee_integration_schedule")
 @SFObject("MonthlyFemaleEmployeeIntegrationSchedule__c")
-@HCTable("monthlyfemaleemployeeintegrationschedule__c")
 class MonthlyFemaleEmployeeIntegrationSchedule(
 
     @Id
@@ -32,128 +29,103 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("ExternalKey__c")
-    @HCColumn("externalkey__c")
     @Column(name = "external_key", length = 255, unique = true)
     val externalKey: String? = null,
 
     @SFField("Year__c")
-    @HCColumn("year__c")
     @Column(name = "year", length = 255)
     val year: String? = null,
 
     @SFField("Month__c")
-    @HCColumn("month__c")
     @Column(name = "month", length = 255)
     val month: String? = null,
 
     @SFField("Account__c")
-    @HCColumn("account__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
     @SFField("FullName__c")
-    @HCColumn("fullname__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
     @SFField("CostCenterCode__c")
-    @HCColumn("costcentercode__c")
     @Column(name = "cost_center_code", length = 40)
     val costCenterCode: String? = null,
 
     @SFField("WorkingCategory1__c")
-    @HCColumn("workingcategory1__c")
     @Column(name = "working_category1", length = 255)
     val workingCategory1: String? = null,
 
     @SFField("WorkingCategory3__c")
-    @HCColumn("workingcategory3__c")
     @Column(name = "working_category3", length = 255)
     val workingCategory3: String? = null,
 
     @SFField("WorkingCategory4__c")
-    @HCColumn("workingcategory4__c")
     @Column(name = "working_category4", length = 255)
     val workingCategory4: String? = null,
 
     @SFField("WorkingCategory5__c")
-    @HCColumn("workingcategory5__c")
     @Column(name = "working_category5", length = 255)
     val workingCategory5: String? = null,
 
     @SFField("EmpBranchName__c")
-    @HCColumn("empbranchname__c")
     @Column(name = "emp_branch_name", length = 255)
     val empBranchName: String? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
-    @HCColumn("professionalpromotionteam__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @Column(name = "professional_promotion_team", length = 255)
     val professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
 
     @SFField("WorkingDaysMonth__c")
-    @HCColumn("workingdaysmonth__c")
     @Column(name = "working_days_month", precision = 18, scale = 4)
     val workingDaysMonth: BigDecimal? = null,
 
     @SFField("NumberOfInputs__c")
-    @HCColumn("numberofinputs__c")
     @Column(name = "number_of_inputs")
     val numberOfInputs: BigDecimal? = null,
 
     @SFField("EquivalentNumberOfWorkingDays__c")
-    @HCColumn("equivalentnumberofworkingdays__c")
     @Column(name = "equivalent_number_of_working_days", precision = 18, scale = 4)
     val equivalentNumberOfWorkingDays: BigDecimal? = null,
 
     @SFField("ConvertedHeadcount__c")
-    @HCColumn("convertedheadcount__c")
     @Column(name = "converted_headcount", precision = 18, scale = 4)
     val convertedHeadcount: BigDecimal? = null,
 
     @SFField("EDI_POS__c")
-    @HCColumn("edi_pos__c")
     @Column(name = "edi_pos")
     val ediPos: BigDecimal? = null,
 
     @SFField("ThisMonthAmount__c")
-    @HCColumn("thismonthamount__c")
     @Column(name = "this_month_amount")
     val thisMonthAmount: BigDecimal? = null,
 
     @SFField("AccountConvertedHeadcount__c")
-    @HCColumn("accountconvertedheadcount__c")
     @Column(name = "account_converted_headcount", precision = 18, scale = 4)
     val accountConvertedHeadcount: BigDecimal? = null,
 
     @SFField("EmployeeInputCriteriaMaster__c")
-    @HCColumn("employeeinputcriteriamaster__c")
     @Column(name = "employee_input_criteria_master_sfid", length = 18)
     val employeeInputCriteriaMasterSfid: String? = null,
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

@@ -2,7 +2,6 @@ package com.otoki.powersales.organization.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -22,7 +21,6 @@ import jakarta.persistence.*
 @Entity
 @Table(name = "organization")
 @SFObject("Org__c")
-@HCTable("org__c")
 class Organization(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,92 +32,74 @@ class Organization(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
     @SFField("CostCenterLevel2__c")
-    @HCColumn("costcenterlevel2__c")
     @Column(name = "cc_cd2", length = 100)
     val costCenterLevel2: String? = null,
 
     @SFField("OrgCodeLevel2__c")
-    @HCColumn("orgcodelevel2__c")
     @Column(name = "org_cd2", length = 100)
     val orgCodeLevel2: String? = null,
 
     @SFField("OrgNameLevel2__c")
-    @HCColumn("orgnamelevel2__c")
     @Column(name = "org_nm2", length = 100)
     val orgNameLevel2: String? = null,
 
     @SFField("CostCenterLevel3__c")
-    @HCColumn("costcenterlevel3__c")
     @Column(name = "cc_cd3", length = 100)
     val costCenterLevel3: String? = null,
 
     @SFField("OrgCodeLevel3__c")
-    @HCColumn("orgcodelevel3__c")
     @Column(name = "org_cd3", length = 100)
     val orgCodeLevel3: String? = null,
 
     @SFField("OrgNameLevel3__c")
-    @HCColumn("orgnamelevel3__c")
     @Column(name = "org_nm3", length = 100)
     val orgNameLevel3: String? = null,
 
     @SFField("CostCenterLevel4__c")
-    @HCColumn("costcenterlevel4__c")
     @Column(name = "cc_cd4", length = 100)
     val costCenterLevel4: String? = null,
 
     @SFField("OrgCodeLevel4__c")
-    @HCColumn("orgcodelevel4__c")
     @Column(name = "org_cd4", length = 100)
     val orgCodeLevel4: String? = null,
 
     @SFField("OrgNameLevel4__c")
-    @HCColumn("orgnamelevel4__c")
     @Column(name = "org_nm4", length = 100)
     val orgNameLevel4: String? = null,
 
     @SFField("CostCenterLevel5__c")
-    @HCColumn("costcenterlevel5__c")
     @Column(name = "cc_cd5", length = 100)
     val costCenterLevel5: String? = null,
 
     @SFField("OrgCodeLevel5__c")
-    @HCColumn("orgcodelevel5__c")
     @Column(name = "org_cd5", length = 100)
     val orgCodeLevel5: String? = null,
 
     @SFField("OrgNameLevel5__c")
-    @HCColumn("orgnamelevel5__c")
     @Column(name = "org_nm5", length = 100)
     val orgNameLevel5: String? = null,
 
     @SFField("ExternalKey__c")
-    @HCColumn("externalkey__c")
     @Column(name = "external_key", length = 100)
     val externalKey: String? = null,
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

@@ -12,7 +12,6 @@ import com.otoki.powersales.common.entity.converter.WorkingCategory3Converter
 import com.otoki.powersales.common.entity.converter.WorkingCategory5Converter
 import com.otoki.powersales.common.entity.converter.WorkingTypeConverter
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -32,7 +31,6 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "team_member_schedule")
 @SFObject("DKRetail__TeamMemberSchedule__c")
-@HCTable("dkretail__teammemberschedule__c")
 class TeamMemberSchedule(
 
     @Id
@@ -45,51 +43,42 @@ class TeamMemberSchedule(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("DKRetail__EmployeeId__c")
-    @HCColumn("dkretail__employeeid__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
     @SFField("DKRetail__WorkingDate__c")
-    @HCColumn("dkretail__workingdate__c")
     @Column(name = "working_date")
     var workingDate: LocalDate? = null,
 
     @SFField("DKRetail__WorkingType__c")
-    @HCColumn("dkretail__workingtype__c")
     @Column(name = "working_type", length = 255)
     @Convert(converter = WorkingTypeConverter::class)
     var workingType: WorkingType? = null,
 
     @SFField("DKRetail__WorkingCategory1__c")
-    @HCColumn("dkretail__workingcategory1__c")
     @Column(name = "working_category1", length = 255)
     @Convert(converter = WorkingCategory1Converter::class)
     var workingCategory1: WorkingCategory1? = null,
 
     @SFField("DKRetail__WorkingCategory2__c")
-    @HCColumn("dkretail__workingcategory2__c")
     @Column(name = "working_category2", length = 255)
     @Convert(converter = WorkingCategory2Converter::class)
     val workingCategory2: WorkingCategory2? = null,
 
     @SFField("DKRetail__WorkingCategory3__c")
-    @HCColumn("dkretail__workingcategory3__c")
     @Column(name = "working_category3", length = 255)
     @Convert(converter = WorkingCategory3Converter::class)
     var workingCategory3: WorkingCategory3? = null,
 
     @SFField("WorkingCategory4__c")
-    @HCColumn("workingcategory4__c")
     @Column(name = "working_category4", length = 255)
     var workingCategory4: String? = null,
 
     @SFField("AccountId__c")
-    @HCColumn("accountid__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
@@ -99,22 +88,18 @@ class TeamMemberSchedule(
      * 실 운영값은 SF Id 18자 고정으로 추정되나 SF org 메타가 정비되기 전까지는 SF 정합 우선 (추후 SF org length=18 좁힘 시 entity 도 동반 축소 예정).
      */
     @SFField("teamleadersfid__c")
-    @HCColumn("teamleadersfid__c")
     @Column(name = "team_leader_sfid", length = 100)
     val teamLeaderSfid: String? = null,
 
     @SFField("DKRetail__AltHolidayId__c")
-    @HCColumn("dkretail__altholidayid__c")
     @Column(name = "alt_holiday_sfid", length = 18)
     val altHolidaySfid: String? = null,
 
     @SFField("DKRetail__CommuteLogId__c")
-    @HCColumn("dkretail__commutelogid__c")
     @Column(name = "commute_log_sfid", length = 18)
     var commuteLogSfid: String? = null,
 
     @SFField("DKRetail__PromotionEmpId__c")
-    @HCColumn("dkretail__promotionempid__c")
     @Column(name = "promotion_employee_sfid", length = 18)
     val promotionEmployeeSfid: String? = null,
 
@@ -123,119 +108,96 @@ class TeamMemberSchedule(
      * 진열 출근 시 마스터의 sfid 를 그대로 카피. 마이그레이션 후 display_work_schedule_id 가 채워진다.
      */
     @SFField("DisplayWorkScheduleMaster__c")
-    @HCColumn("displayworkschedulemaster__c")
     @Column(name = "display_work_schedule_sfid", length = 18)
     val displayWorkScheduleSfid: String? = null,
 
     @SFField("CommuteReportDateTime__c")
-    @HCColumn("commutereportdatetime__c")
     @Column(name = "commute_report_datetime")
     val commuteReportDatetime: LocalDateTime? = null,
 
     @SFField("ID__c")
-    @HCColumn("id__c")
     @Column(name = "id_field", length = 30)
     val idField: String? = null,
 
     @SFField("TraversalFlag__c")
-    @HCColumn("traversalflag__c")
     @Column(name = "traversal_flag", length = 10)
     val traversalFlag: String? = null,
 
     @SFField("Equipment1__c")
-    @HCColumn("equipment1__c")
     @Column(name = "equipment1", length = 10)
     val equipment1: String? = null,
 
     @SFField("Equipment2__c")
-    @HCColumn("equipment2__c")
     @Column(name = "equipment2", length = 10)
     val equipment2: String? = null,
 
     @SFField("Equipment3__c")
-    @HCColumn("equipment3__c")
     @Column(name = "equipment3", length = 10)
     val equipment3: String? = null,
 
     @SFField("Equipment4__c")
-    @HCColumn("equipment4__c")
     @Column(name = "equipment4", length = 10)
     val equipment4: String? = null,
 
     @SFField("Equipment5__c")
-    @HCColumn("equipment5__c")
     @Column(name = "equipment5", length = 10)
     val equipment5: String? = null,
 
     @SFField("Equipment6__c")
-    @HCColumn("equipment6__c")
     @Column(name = "equipment6", length = 10)
     val equipment6: String? = null,
 
     @SFField("Equipment7__c")
-    @HCColumn("equipment7__c")
     @Column(name = "equipment7", length = 10)
     val equipment7: String? = null,
 
     @SFField("Equipment8__c")
-    @HCColumn("equipment8__c")
     @Column(name = "equipment8", length = 10)
     val equipment8: String? = null,
 
     @SFField("Equipment9__c")
-    @HCColumn("equipment9__c")
     @Column(name = "equipment9", length = 10)
     val equipment9: String? = null,
 
     @SFField("Equipment10__c")
-    @HCColumn("equipment10__c")
     @Column(name = "equipment10", length = 10)
     val equipment10: String? = null,
 
     @SFField("Yes_ChkCnt__c")
-    @HCColumn("yes_chkcnt__c")
     @Column(name = "yes_chk_cnt")
     val yesChkCnt: Double? = null,
 
     @SFField("No_ChkCnt__c")
-    @HCColumn("no_chkcnt__c")
     @Column(name = "no_chk_cnt")
     val noChkCnt: Double? = null,
 
     @SFField("precaution_chk__c")
-    @HCColumn("precaution_chk__c")
     @Column(name = "precaution_chk")
     val precautionChk: Double? = null,
 
     @SFField("precaution__c")
-    @HCColumn("precaution__c")
     @Column(name = "precaution", length = 3000)
     val precaution: String? = null,
 
     @SFField("StartTime__c")
-    @HCColumn("starttime__c")
     @Column(name = "start_time")
     val startTime: LocalDateTime? = null,
 
     @SFField("CompleteTime__c")
-    @HCColumn("completetime__c")
     @Column(name = "complete_time")
     val completeTime: LocalDateTime? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     // -- Spec #609: SF 누락 컬럼 7개 신규 도입 (Q1 옵션 1) --
 
     @SFField("HRCode__c")
-    @HCColumn("hrcode__c")
     @Column(name = "hr_code", length = 255)
     var hrCode: String? = null,
 
     @SFField("DKRetail__PromotionEmpIdExt__c")
-    @HCColumn("dkretail__promotionempidext__c")
     @Column(name = "promotion_emp_id_ext", length = 30)
     var promotionEmpIdExt: String? = null,
 
@@ -245,33 +207,27 @@ class TeamMemberSchedule(
      * 본 entity 한정으로 enum 매핑 환원 — Converter 부착 금지.
      */
     @SFField("SecondWorkType__c")
-    @HCColumn("secondworktype__c")
     @Column(name = "second_work_type", length = 255)
     var secondWorkType: String? = null,
 
     @SFField("WorkingCategory5__c")
-    @HCColumn("workingcategory5__c")
     @Column(name = "working_category5", length = 255)
     @Convert(converter = WorkingCategory5Converter::class)
     var workingCategory5: WorkingCategory5? = null,
 
     @SFField("ref_accountName__c")
-    @HCColumn("ref_accountname__c")
     @Column(name = "ref_account_name", length = 255)
     var refAccountName: String? = null,
 
     @SFField("MonthlyFemaleEmployeeIntegrationSchedule__c")
-    @HCColumn("monthlyfemaleemployeeintegrationschedule__c")
     @Column(name = "monthly_female_employee_integration_schedule_sfid", length = 18)
     var monthlyFemaleEmployeeIntegrationScheduleSfid: String? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
-    @HCColumn("professionalpromotionteam__c")
     @Column(name = "professional_promotion_team", length = 255)
     var professionalPromotionTeam: String? = null,
 
     @SFField("CostCenterCode__c")
-    @HCColumn("costcentercode__c")
     @Column(name = "cost_center_code", length = 255)
     var costCenterCode: String? = null,
 
@@ -285,17 +241,14 @@ class TeamMemberSchedule(
     // -- Group A R-2: Owner polymorphic [Group, User] / CreatedBy User / LastModifiedBy User --
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 

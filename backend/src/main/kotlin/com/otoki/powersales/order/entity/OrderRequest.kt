@@ -3,7 +3,6 @@ package com.otoki.powersales.order.entity
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -41,7 +40,6 @@ import java.time.LocalDateTime
     ],
 )
 @SFObject("DKRetail__OrderRequest__c")
-@HCTable("dkretail__orderrequest__c")
 class OrderRequest(
 
     @Id
@@ -50,7 +48,6 @@ class OrderRequest(
     val id: Long = 0,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "order_request_number", nullable = false, unique = true, length = 80)
     val orderRequestNumber: String,
 
@@ -62,32 +59,26 @@ class OrderRequest(
     val clientRequestId: String? = null,
 
     @SFField("DKRetail__EmployeeId__c")
-    @HCColumn("dkretail__employeeid__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
     @SFField("DKRetail__AccountId__c")
-    @HCColumn("dkretail__accountid__c")
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
     @SFField("OrderDate__c")
-    @HCColumn("orderdate__c")
     @Column(name = "order_date", nullable = false)
     val orderDate: LocalDateTime,
 
     @SFField("DKRetail__OrderDate__c")
-    @HCColumn("dkretail__orderdate__c")
     @Column(name = "dk_order_date")
     var dkOrderDate: LocalDate? = null,
 
     @SFField("DKRetail__RequestDate__c")
-    @HCColumn("dkretail__requestdate__c")
     @Column(name = "delivery_date", nullable = false)
     val deliveryDate: LocalDate,
 
     @SFField("TotalOrderAmount__c")
-    @HCColumn("totalorderamount__c")
     @Column(name = "total_amount", nullable = false, precision = 18, scale = 2)
     val totalAmount: BigDecimal = BigDecimal.ZERO,
 
@@ -95,7 +86,6 @@ class OrderRequest(
     var totalApprovedAmount: BigDecimal? = BigDecimal.ZERO,
 
     @SFField("DKRetail__RequestStatus__c")
-    @HCColumn("dkretail__requeststatus__c")
     @Column(name = "order_request_status", nullable = false, length = 255)
     @Convert(converter = OrderRequestStatusConverter::class)
     var orderRequestStatus: OrderRequestStatus = OrderRequestStatus.DRAFT,
@@ -121,22 +111,18 @@ class OrderRequest(
     val account: Account? = null,
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

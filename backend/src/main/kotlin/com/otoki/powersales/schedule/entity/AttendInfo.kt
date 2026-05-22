@@ -2,7 +2,6 @@ package com.otoki.powersales.schedule.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -11,7 +10,6 @@ import jakarta.persistence.*
 
 @Entity
 @SFObject("AttendInfo__c")
-@HCTable("attendinfo__c")
 @Table(
     name = "attend_info",
     indexes = [
@@ -31,52 +29,42 @@ class AttendInfo(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
     @SFField("EmployeeCode__c")
-    @HCColumn("employeecode__c")
     @Column(name = "employee_code", nullable = false, length = 100)
     val employeeCode: String,
 
     @SFField("StartDate__c")
-    @HCColumn("startdate__c")
     @Column(name = "start_date", nullable = false, length = 100)
     var startDate: String,
 
     @SFField("EndDate__c")
-    @HCColumn("enddate__c")
     @Column(name = "end_date", length = 100)
     var endDate: String? = null,
 
     @SFField("AttendType__c")
-    @HCColumn("attendtype__c")
     @Column(name = "attend_type", length = 100)
     var attendType: String? = null,
 
     @SFField("Status__c")
-    @HCColumn("status__c")
     @Column(name = "status", length = 100)
     var status: String? = null,
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

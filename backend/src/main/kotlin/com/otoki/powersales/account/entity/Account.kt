@@ -7,7 +7,6 @@ import com.otoki.powersales.account.entity.converter.IndustryConverter
 import com.otoki.powersales.account.entity.converter.OwnershipConverter
 import com.otoki.powersales.account.entity.converter.RatingConverter
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.entity.BaseEntity
@@ -24,7 +23,6 @@ import java.time.LocalTime
 @Entity
 @Table(name = "account")
 @SFObject("Account")
-@HCTable("account")
 class Account(
 
     @Id
@@ -37,118 +35,95 @@ class Account(
     val sfid: String? = null,
 
     @SFField("Name")
-    @HCColumn("name")
     @Column(name = "name", length = 255)
     var name: String? = null,
 
     @SFField("Phone")
-    @HCColumn("phone")
     @Column(name = "phone", length = 40)
     var phone: String? = null,
 
     @SFField("MobilePhone__c")
-    @HCColumn("mobilephone__c")
     @Column(name = "mobile_phone", length = 40)
     var mobilePhone: String? = null,
 
     @SFField("Address1__c")
-    @HCColumn("address1__c")
     @Column(name = "address1", length = 120)
     var address1: String? = null,
 
     @SFField("Address2__c")
-    @HCColumn("address2__c")
     @Column(name = "address2", length = 120)
     var address2: String? = null,
 
     @SFField("Representative__c")
-    @HCColumn("representative__c")
     @Column(name = "representative", length = 100)
     var representative: String? = null,
 
     @SFField("ABCType__c")
-    @HCColumn("abctype__c")
     @Column(name = "abc_type", length = 20)
     var abcType: String? = null,
 
     @SFField("ABCTypeCode__c")
-    @HCColumn("abctypecode__c")
     @Column(name = "abc_type_code", length = 40)
     var abcTypeCode: String? = null,
 
     @SFField("ExternalKey__c")
-    @HCColumn("externalkey__c")
     @Column(name = "external_key", unique = true, length = 100)
     var externalKey: String? = null,
 
     @SFField("AccountGroup__c")
-    @HCColumn("accountgroup__c")
     @Column(name = "account_group", length = 10)
     var accountGroup: String? = null,
 
     @SFField("BranchCode__c")
-    @HCColumn("branchcode__c")
     @Column(name = "branch_code", length = 100)
     var branchCode: String? = null,
 
     @SFField("BranchName__c")
-    @HCColumn("branchname__c")
     @Column(name = "branch_name", length = 250)
     var branchName: String? = null,
 
     @SFField("Zipcode__c")
-    @HCColumn("zipcode__c")
     @Column(name = "zip_code", length = 100)
     var zipCode: String? = null,
 
     @SFField("Latitude__c")
-    @HCColumn("latitude__c")
     @Column(name = "latitude", length = 100)
     var latitude: String? = null,
 
     @SFField("Longitude__c")
-    @HCColumn("longitude__c")
     @Column(name = "longitude", length = 100)
     var longitude: String? = null,
 
     @SFField("ClosingTime1__c")
-    @HCColumn("closingtime1__c")
     @Column(name = "closing_time1", length = 50)
     var closingTime1: String? = null,
 
     @SFField("ClosingTime2__c")
-    @HCColumn("closingtime2__c")
     @Column(name = "closing_time2", length = 50)
     var closingTime2: String? = null,
 
     @SFField("ClosingTime3__c")
-    @HCColumn("closingtime3__c")
     @Column(name = "closing_time3", length = 50)
     var closingTime3: String? = null,
 
     @SFField("Industry")
-    @HCColumn("industry")
     @Convert(converter = IndustryConverter::class)
     @Column(name = "industry", length = 255)
     var industry: Industry? = null,
 
     @SFField("WERK1_TX__c")
-    @HCColumn("werk1_tx__c")
     @Column(name = "werk1_tx", length = 255)
     var werk1Tx: String? = null,
 
     @SFField("WERK2_TX__c")
-    @HCColumn("werk2_tx__c")
     @Column(name = "werk2_tx", length = 255)
     var werk2Tx: String? = null,
 
     @SFField("WERK3_TX__c")
-    @HCColumn("werk3_tx__c")
     @Column(name = "werk3_tx", length = 255)
     var werk3Tx: String? = null,
 
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 
@@ -327,17 +302,14 @@ class Account(
     // SF sobject 메타 정합 (referenceTo == User). application 코드는 FK 컬럼만 사용, sfid 직접 JOIN 금지.
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
