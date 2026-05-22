@@ -11,10 +11,9 @@ import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.account.repository.AccountRepository
-import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.schedule.service.internal.LastMonthRevenueLookup
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.SchedulePreset
@@ -65,7 +64,7 @@ class AdminScheduleServiceTest {
 
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
 
-    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository = mockk(relaxUnitFun = true)
+    private val lastMonthRevenueLookup: LastMonthRevenueLookup = mockk(relaxUnitFun = true)
 
     private val userRepository: UserRepository = mockk(relaxUnitFun = true)
 
@@ -87,7 +86,7 @@ class AdminScheduleServiceTest {
         uploadValidator,
         scheduleRepository,
         teamMemberScheduleRepository,
-        monthlySalesHistoryRepository,
+        lastMonthRevenueLookup,
         userRepository,
         redisTemplate,
         objectMapper,
@@ -96,7 +95,8 @@ class AdminScheduleServiceTest {
     @org.junit.jupiter.api.BeforeEach
     fun setUpDefaults() {
         // 부수 호출 default — 개별 테스트가 override 가능 (MockK 는 마지막 stub 우선)
-        every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), any()) } returns emptyList()
+        every { lastMonthRevenueLookup.forAccounts(any(), any()) } returns emptyMap()
+        every { lastMonthRevenueLookup.forAccount(any(), any()) } returns null
     }
 
     @Nested
@@ -629,18 +629,13 @@ class AdminScheduleServiceTest {
             )
             val json = objectMapper.writeValueAsString(cacheData)
             val account = Account(id = 1, externalKey = "EXT001")
-            val salesHistory = MonthlySalesHistory(
-                id = 1,
-                account = account,
-                lastMonthResults = BigDecimal("5000000")
-            )
 
             every { redisTemplate.opsForValue() } returns valueOperations
             every { valueOperations.get("schedule:upload:$uploadId") } returns json
             every { employeeRepository.findAllById(listOf(1L)) } returns listOf(createEmployee(id = 1L))
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRoleEnum.LEADER) } returns emptyList()
             every { accountRepository.findByIdIn(listOf(1)) } returns listOf(account)
-            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))) } returns listOf(salesHistory)
+            every { lastMonthRevenueLookup.forAccounts(eq(listOf(account)), any()) } returns mapOf(account.id to BigDecimal("5000000"))
             every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
             every { redisTemplate.delete(any<String>()) } returns true
 
@@ -999,7 +994,7 @@ class AdminScheduleServiceTest {
                 eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
             ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRoleEnum.LEADER) } returns emptyList()
-            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))) } returns emptyList()
+            every { lastMonthRevenueLookup.forAccount(eq(originalAccount), any()) } returns null
 
             val result = adminScheduleService.updateSchedule(scope, userId, scheduleId, baseRequest)
 
@@ -1057,7 +1052,7 @@ class AdminScheduleServiceTest {
                 eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
             ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRoleEnum.LEADER) } returns emptyList()
-            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))) } returns emptyList()
+            every { lastMonthRevenueLookup.forAccount(eq(originalAccount), any()) } returns null
 
             adminScheduleService.updateSchedule(scope, userId, scheduleId, baseRequest.copy(typeOfWork3 = "고정"))
 
@@ -1102,7 +1097,7 @@ class AdminScheduleServiceTest {
                 eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
             ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRoleEnum.LEADER) } returns emptyList()
-            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(originalAccount))) } returns emptyList()
+            every { lastMonthRevenueLookup.forAccount(eq(originalAccount), any()) } returns null
 
             adminScheduleService.updateSchedule(
                 scope, userId, scheduleId,
@@ -1466,7 +1461,7 @@ class AdminScheduleServiceTest {
                 eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
             ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRoleEnum.LEADER) } returns emptyList()
-            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))) } returns emptyList()
+            every { lastMonthRevenueLookup.forAccount(eq(account), any()) } returns null
             every { scheduleRepository.save(any<DisplayWorkSchedule>()) } answers { firstArg<DisplayWorkSchedule>() }
 
             val result = adminScheduleService.createSchedule(scope, userId, baseRequest)
@@ -1552,7 +1547,7 @@ class AdminScheduleServiceTest {
             ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRoleEnum.LEADER) } returns listOf(leaderEmp)
             every { userRepository.findByEmployeeCodeIn(listOf("20030099")) } returns listOf(leaderUser)
-            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))) } returns emptyList()
+            every { lastMonthRevenueLookup.forAccount(eq(account), any()) } returns null
             every { scheduleRepository.save(any<DisplayWorkSchedule>()) } answers { firstArg<DisplayWorkSchedule>() }
 
             adminScheduleService.createSchedule(scope, userId, baseRequest)
@@ -1591,10 +1586,6 @@ class AdminScheduleServiceTest {
                 startDate = LocalDate.of(2026, 5, 1), endDate = null,
                 costCenterCode = "A10010", accountExternalKey = "ACC001"
             )
-            val salesHistory = MonthlySalesHistory(
-                id = 1, account = account, lastMonthResults = BigDecimal("3500000")
-            )
-
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
             every { accountRepository.findByExternalKey("ACC001") } returns account
             every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
@@ -1603,7 +1594,7 @@ class AdminScheduleServiceTest {
                 eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
             ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), UserRoleEnum.LEADER) } returns emptyList()
-            every { monthlySalesHistoryRepository.findBySalesYearAndSalesMonthAndAccountIn(any(), any(), eq(listOf(account))) } returns listOf(salesHistory)
+            every { lastMonthRevenueLookup.forAccount(eq(account), any()) } returns BigDecimal("3500000")
             every { scheduleRepository.save(any<DisplayWorkSchedule>()) } answers { firstArg<DisplayWorkSchedule>() }
 
             val result = adminScheduleService.createSchedule(scope, userId, baseRequest)
