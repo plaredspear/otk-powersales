@@ -1167,6 +1167,107 @@ object Stage1Targets {
         ),
     )
 
+    // ─────────────────────────────────────────────────────────
+    // spec #790 — SF Sharing 메타 7 entity 적재
+    // (XML 메타 출처 6 entity + SOQL 출처 GroupMember 1 entity)
+    // ─────────────────────────────────────────────────────────
+
+    private val SHARING_RULE = EntityMetadata(
+        targetName = "SharingRule",
+        sObjectName = null, // XML 메타 출처 — Q1 옵션 1 (nullable + 자동 skip)
+        tableName = "sharing_rule",
+        csvFileName = "sharing-rule.csv",
+        fields = listOf(
+            FieldMapping("developerName", "developer_name", nullable = false),
+            FieldMapping("sObjectName", "s_object_name", nullable = false),
+            FieldMapping("ruleType", "rule_type", nullable = false),
+            FieldMapping("label", "label"),
+            FieldMapping("accessLevel", "access_level", nullable = false, nullPlaceholder = "Read"),
+            FieldMapping("includeOwnedByAll", "include_owned_by_all", nullable = false, nullPlaceholder = "false"),
+        ),
+    )
+
+    private val SHARING_RULE_CONDITION = EntityMetadata(
+        targetName = "SharingRuleCondition",
+        sObjectName = null,
+        tableName = "sharing_rule_condition",
+        csvFileName = "sharing-rule-condition.csv",
+        fields = listOf(
+            FieldMapping("parentDeveloperName", "sharing_rule_developer_name", nullable = false),
+            FieldMapping("field", "field", nullable = false),
+            FieldMapping("operator", "operator", nullable = false),
+            FieldMapping("value", "condition_value"),
+            FieldMapping("conditionOrder", "condition_order", nullable = false),
+            FieldMapping("logicConnector", "logic_connector"),
+        ),
+    )
+
+    private val SHARING_RULE_TARGET = EntityMetadata(
+        targetName = "SharingRuleTarget",
+        sObjectName = null,
+        tableName = "sharing_rule_target",
+        csvFileName = "sharing-rule-target.csv",
+        fields = listOf(
+            FieldMapping("parentDeveloperName", "sharing_rule_developer_name", nullable = false),
+            FieldMapping("targetType", "target_type", nullable = false),
+            FieldMapping("targetDeveloperName", "target_developer_name"),
+        ),
+    )
+
+    private val USER_ROLE_HIERARCHY_SNAPSHOT = EntityMetadata(
+        targetName = "UserRoleHierarchySnapshot",
+        sObjectName = null,
+        tableName = "user_role_hierarchy_snapshot",
+        csvFileName = "user-role-hierarchy.csv",
+        fields = listOf(
+            FieldMapping("developerName", "developer_name", nullable = false),
+            FieldMapping("name", "name", nullable = false),
+            FieldMapping("parentDeveloperName", "parent_developer_name"),
+            FieldMapping("description", "description"),
+            FieldMapping("mayForecastManagerShare", "may_forecast_manager_share"),
+        ),
+    )
+
+    private val PROFILE_FLAGS = EntityMetadata(
+        targetName = "ProfileFlags",
+        sObjectName = null,
+        tableName = "profile_flags",
+        csvFileName = "profile-flags.csv",
+        fields = listOf(
+            FieldMapping("profileName", "profile_name", nullable = false),
+            FieldMapping("permissionsViewAllData", "permissions_view_all_data", nullable = false, nullPlaceholder = "false"),
+            FieldMapping("permissionsModifyAllData", "permissions_modify_all_data", nullable = false, nullPlaceholder = "false"),
+            FieldMapping("permissionsViewAllUsers", "permissions_view_all_users", nullable = false, nullPlaceholder = "false"),
+            FieldMapping("permissionsManageUsers", "permissions_manage_users", nullable = false, nullPlaceholder = "false"),
+            FieldMapping("permissionsApiEnabled", "permissions_api_enabled", nullable = false, nullPlaceholder = "false"),
+        ),
+    )
+
+    private val PERMISSION_SET_FLAGS = EntityMetadata(
+        targetName = "PermissionSetFlags",
+        sObjectName = null,
+        tableName = "permission_set_flags",
+        csvFileName = "permission-set-flags.csv",
+        fields = listOf(
+            FieldMapping("permissionSetName", "permission_set_name", nullable = false),
+            FieldMapping("permissionsViewAllData", "permissions_view_all_data", nullable = false, nullPlaceholder = "false"),
+            FieldMapping("permissionsModifyAllData", "permissions_modify_all_data", nullable = false, nullPlaceholder = "false"),
+            FieldMapping("objectPermissionsJson", "object_permissions"),
+        ),
+    )
+
+    private val GROUP_MEMBER = EntityMetadata(
+        targetName = "GroupMember",
+        sObjectName = "GroupMember", // SOQL 출처 — extract-csv.sh
+        tableName = "group_member",
+        csvFileName = "group_members.csv",
+        fields = listOf(
+            FieldMapping("Id", "sfid", nullable = false),
+            FieldMapping("GroupId", "group_sfid", nullable = false),
+            FieldMapping("UserOrGroupId", "user_or_group_sfid", nullable = false),
+        ),
+    )
+
     private val ALL: Map<String, EntityMetadata> = listOf(
         ORGANIZATION,
         EMPLOYEE,
@@ -1205,6 +1306,14 @@ object Stage1Targets {
         UPLOAD_FILE,
         USER_ROLE,
         PROFILE,
+        // spec #790 — SF Sharing 메타
+        SHARING_RULE,
+        SHARING_RULE_CONDITION,
+        SHARING_RULE_TARGET,
+        USER_ROLE_HIERARCHY_SNAPSHOT,
+        PROFILE_FLAGS,
+        PERMISSION_SET_FLAGS,
+        GROUP_MEMBER,
     ).associateBy { it.targetName }
 
     /**
@@ -1250,6 +1359,14 @@ object Stage1Targets {
         "UploadFile",
         "UserRole",
         "Profile",
+        // spec #790 — SF Sharing 메타 (UserRole / Profile / Group 적재 후)
+        "UserRoleHierarchySnapshot",
+        "ProfileFlags",
+        "PermissionSetFlags",
+        "SharingRule",
+        "SharingRuleCondition",
+        "SharingRuleTarget",
+        "GroupMember",
     )
 
     fun get(targetName: String): EntityMetadata? = ALL[targetName]

@@ -2,9 +2,11 @@ package com.otoki.powersales.sfmigration.controller
 
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.auth.sharing.service.UserRoleHierarchyTraversal
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.sfmigration.dto.SfFkResolveProgressResponse
 import com.otoki.powersales.sfmigration.dto.SfMigrationStage2Response
+import com.otoki.powersales.sfmigration.dto.SubstepResult
 import com.otoki.powersales.sfmigration.service.SfFkResolveProgress
 import com.otoki.powersales.sfmigration.service.SfMigrationStage2FkService
 import com.otoki.powersales.sfmigration.service.SfMigrationStage2Service
@@ -30,6 +32,7 @@ class SfMigrationStage2Controller(
     private val service: SfMigrationStage2Service,
     private val fkService: SfMigrationStage2FkService,
     private val fkProgress: SfFkResolveProgress,
+    private val hierarchyTraversal: UserRoleHierarchyTraversal,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -107,6 +110,42 @@ class SfMigrationStage2Controller(
     @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
     fun runPermissionMapping(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = service.runPermissionMapping()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * spec #790 — UserRole hierarchy snapshot 재계산 endpoint.
+     *
+     * cut-over 시점에 user_role 적재 + Stage 2 fk substep 이 모든 user_role_id 를 채운 후 1회 호출.
+     * 본 endpoint 는 [UserRoleHierarchyTraversal.recomputeAll] wrapper — `user_role.parent_user_role_id`
+     * 트리 기반으로 `all_subordinate_ids` (jsonb) + `depth` + `ancestor_path` + `snapshot_at` 재계산.
+     *
+     * 운영 후 admin 사용자가 UserRole entity 를 변경하면 [com.otoki.powersales.auth.sharing.listener.UserRoleEntityListener]
+     * + [com.otoki.powersales.auth.sharing.service.UserRoleHierarchyEventHandler] (spec #788) 가 자동 invalidate.
+     * 본 endpoint 는 그 자동화 메커니즘과 별개로 batch 1회 / incident 복구 용도.
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/user-role-hierarchy")
+    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    fun runUserRoleHierarchyRecalc(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        log.info("[user-role-hierarchy] recompute all triggered by admin endpoint")
+        val before = System.currentTimeMillis()
+        hierarchyTraversal.recomputeAll()
+        val elapsed = System.currentTimeMillis() - before
+        log.info("[user-role-hierarchy] recompute all complete in {} ms", elapsed)
+
+        // recomputeAll 은 row 카운트 반환 안 함 — Service 내부 logger 가 상세 박제.
+        // 응답은 wrapper 한정으로 totalRowsAffected = 0 (의미: 본 endpoint 는 row 변경 카운트가 아니라
+        // snapshot 재계산 트리거 — 실측 변경 row 수는 logger 에서 확인).
+        val response = SfMigrationStage2Response(
+            substep = "userRoleHierarchy",
+            results = listOf(
+                SubstepResult(
+                    label = "user_role_hierarchy_snapshot.recalculated",
+                    rowsAffected = 0,
+                ),
+            ),
+            totalRowsAffected = 0,
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

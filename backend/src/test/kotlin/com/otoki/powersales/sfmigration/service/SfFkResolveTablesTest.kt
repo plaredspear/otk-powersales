@@ -117,6 +117,78 @@ class SfFkResolveTablesTest {
             assertThat(deriveFkResolveSpec("record_type_sfid")).isNull()
             assertThat(deriveFkResolveSpec("related_sfid")).isNull()
         }
+
+        @Test
+        @DisplayName("user_or_group_sfid → null (spec #790 POLYMORPHIC_USER_OR_GROUP_TABLES 가 별도 처리)")
+        fun userOrGroupPolymorphic() {
+            assertThat(deriveFkResolveSpec("user_or_group_sfid")).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("Polymorphic 화이트리스트 (spec #790)")
+    inner class PolymorphicWhitelists {
+
+        @Test
+        @DisplayName("POLYMORPHIC_USER_OR_GROUP_TABLES 에 group_member 포함")
+        fun userOrGroupTables() {
+            assertThat(POLYMORPHIC_USER_OR_GROUP_TABLES).contains("group_member")
+        }
+
+        @Test
+        @DisplayName("POLYMORPHIC_OWNER_TABLES / POLYMORPHIC_RELATED_TABLES 는 본 spec 변경 없음")
+        fun otherPolymorphicTables() {
+            // spec #790 은 user_or_group 만 추가 — 기존 owner/related 표는 그대로
+            assertThat(POLYMORPHIC_OWNER_TABLES).contains("organization", "order_request")
+            assertThat(POLYMORPHIC_RELATED_TABLES).contains("group")
+        }
+    }
+
+    @Nested
+    @DisplayName("자연 키 FK 매핑 (spec #790)")
+    inner class NaturalKeyFk {
+
+        @Test
+        @DisplayName("sharing_rule_condition.sharing_rule_developer_name → sharing_rule.developer_name → sharing_rule_id")
+        fun sharingRuleConditionByDeveloperName() {
+            val spec = NATURAL_KEY_FK_MAPPINGS.find {
+                it.sourceTable == "sharing_rule_condition" && it.sourceColumn == "sharing_rule_developer_name"
+            }
+            assertThat(spec).isNotNull
+            assertThat(spec!!.refTable).isEqualTo("sharing_rule")
+            assertThat(spec.refColumn).isEqualTo("developer_name")
+            assertThat(spec.targetIdColumn).isEqualTo("sharing_rule_id")
+        }
+
+        @Test
+        @DisplayName("user_role_hierarchy_snapshot.developer_name → user_role.developer_name → user_role_id")
+        fun userRoleHierarchyByDeveloperName() {
+            val spec = NATURAL_KEY_FK_MAPPINGS.find {
+                it.sourceTable == "user_role_hierarchy_snapshot" && it.sourceColumn == "developer_name"
+            }
+            assertThat(spec).isNotNull
+            assertThat(spec!!.refTable).isEqualTo("user_role")
+            assertThat(spec.targetIdColumn).isEqualTo("user_role_id")
+        }
+
+        @Test
+        @DisplayName("profile_flags.profile_name → profile.name → profile_id")
+        fun profileFlagsByName() {
+            val spec = NATURAL_KEY_FK_MAPPINGS.find {
+                it.sourceTable == "profile_flags" && it.sourceColumn == "profile_name"
+            }
+            assertThat(spec).isNotNull
+            assertThat(spec!!.refTable).isEqualTo("profile")
+            assertThat(spec.refColumn).isEqualTo("name")
+            assertThat(spec.targetIdColumn).isEqualTo("profile_id")
+        }
+
+        @Test
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 4 entry — sharing 메타 4 entity 의 자연 키 매핑")
+        fun naturalKeyMappingsCount() {
+            // sharing_rule_condition + sharing_rule_target + user_role_hierarchy_snapshot + profile_flags = 4
+            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(4)
+        }
     }
 
     @Nested

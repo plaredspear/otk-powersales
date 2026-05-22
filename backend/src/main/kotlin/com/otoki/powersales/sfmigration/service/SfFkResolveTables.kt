@@ -38,6 +38,68 @@ internal val POLYMORPHIC_RELATED_TABLES: Set<String> = setOf(
 )
 
 /**
+ * Polymorphic user-or-group entity 화이트리스트 — user_or_group_sfid prefix `005` = User, `00G` = Group 분기 (spec #790).
+ * SF describe `GroupMember.UserOrGroupId.referenceTo = [Group, User]` 정합.
+ * group_member 1건 — Stage 2 fk substep 이 user_or_group_id + user_or_group_type 채움.
+ */
+internal val POLYMORPHIC_USER_OR_GROUP_TABLES: Set<String> = setOf(
+    "group_member",
+)
+
+/**
+ * 자연 키 lookup FK 화이트리스트 — sfid 가 아닌 developerName / profileName / permissionSetName 등으로 lookup (spec #790).
+ *
+ * 본 표는 SfMigrationStage2FkService 가 sharing 메타 entity 의 fk resolve 시 참조.
+ * 키: (sourceTable, sourceColumn) → 값: (refTable, refColumn, idColumn)
+ *
+ * 예: ("sharing_rule_condition", "sharing_rule_developer_name") → ("sharing_rule", "developer_name", "sharing_rule_id")
+ *   → UPDATE sharing_rule_condition c SET sharing_rule_id = sr.sharing_rule_id
+ *     FROM sharing_rule sr WHERE sr.developer_name = c.sharing_rule_developer_name
+ */
+internal data class NaturalKeyFkSpec(
+    val sourceTable: String,
+    val sourceColumn: String,
+    val refTable: String,
+    val refColumn: String,
+    val targetIdColumn: String,
+)
+
+internal val NATURAL_KEY_FK_MAPPINGS: List<NaturalKeyFkSpec> = listOf(
+    // sharing_rule_condition.sharing_rule_developer_name → sharing_rule.sharing_rule_id
+    NaturalKeyFkSpec(
+        sourceTable = "sharing_rule_condition",
+        sourceColumn = "sharing_rule_developer_name",
+        refTable = "sharing_rule",
+        refColumn = "developer_name",
+        targetIdColumn = "sharing_rule_id",
+    ),
+    // sharing_rule_target.sharing_rule_developer_name → sharing_rule.sharing_rule_id
+    NaturalKeyFkSpec(
+        sourceTable = "sharing_rule_target",
+        sourceColumn = "sharing_rule_developer_name",
+        refTable = "sharing_rule",
+        refColumn = "developer_name",
+        targetIdColumn = "sharing_rule_id",
+    ),
+    // user_role_hierarchy_snapshot.developer_name → user_role.user_role_id
+    NaturalKeyFkSpec(
+        sourceTable = "user_role_hierarchy_snapshot",
+        sourceColumn = "developer_name",
+        refTable = "user_role",
+        refColumn = "developer_name",
+        targetIdColumn = "user_role_id",
+    ),
+    // profile_flags.profile_name → profile.profile_id
+    NaturalKeyFkSpec(
+        sourceTable = "profile_flags",
+        sourceColumn = "profile_name",
+        refTable = "profile",
+        refColumn = "name",
+        targetIdColumn = "profile_id",
+    ),
+)
+
+/**
  * sfid prefix → (refTable, refIdColumn) 명시 매핑. 본 표에 없는 prefix 는 자동 추론.
  */
 internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
@@ -94,6 +156,8 @@ internal val SKIP_FK_PREFIXES: Set<String> = setOf(
     "product_code",
     "record_type",
     "related",
+    // spec #790 — group_member.user_or_group_sfid 는 POLYMORPHIC_USER_OR_GROUP_TABLES 가 별도 처리
+    "user_or_group",
 )
 
 /**

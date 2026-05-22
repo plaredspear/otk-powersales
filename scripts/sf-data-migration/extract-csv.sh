@@ -57,6 +57,8 @@ OUT_DIR=""
 TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PushMessage,PushMessageReceiver,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
 SKIP_GROUP_MEMBERS=0
 SKIP_VERIFY=0
+# spec #790 Q4 채택 — XML 메타 (extract-sharing-meta.sh) 자동 포함, --skip-sharing-meta 로 제외 가능
+INCLUDE_SHARING_META=1
 # SF CLI 기본 query 결과 limit 은 50,000 — Account 등 대용량 SObject 대응 위해 상향.
 # 환경변수로 이미 설정되어 있으면 그 값을 존중.
 MAX_QUERY_LIMIT="${SF_ORG_MAX_QUERY_LIMIT:-200000}"
@@ -89,6 +91,14 @@ while [[ $# -gt 0 ]]; do
             SKIP_GROUP_MEMBERS=1
             shift
             ;;
+        --include-sharing-meta)
+            INCLUDE_SHARING_META=1
+            shift
+            ;;
+        --skip-sharing-meta)
+            INCLUDE_SHARING_META=0
+            shift
+            ;;
         --max-query-limit)
             MAX_QUERY_LIMIT="$2"
             shift 2
@@ -119,7 +129,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown arg: $1" >&2
-            echo "Usage: $0 [--org <alias>] [--target=<list>] [--api-version <ver>] [--out-dir <dir>] [--skip-group-members] [--max-query-limit <N>] [--skip-verify] [--bulk-threshold <N>] [--bulk] [--no-bulk] [--bulk-wait <min>]" >&2
+            echo "Usage: $0 [--org <alias>] [--target=<list>] [--api-version <ver>] [--out-dir <dir>] [--skip-group-members] [--skip-sharing-meta] [--include-sharing-meta] [--max-query-limit <N>] [--skip-verify] [--bulk-threshold <N>] [--bulk] [--no-bulk] [--bulk-wait <min>]" >&2
             exit 1
             ;;
     esac
@@ -269,9 +279,18 @@ EOF
 
 GM_SOQL=$(cat <<'EOF'
 SELECT
-    GroupId, Group.Name, UserOrGroupId
+    Id, GroupId, Group.Name, UserOrGroupId
 FROM GroupMember
 WHERE Group.Type = 'Regular'
+EOF
+)
+
+# spec #790 Q3 채택 — PermissionSet 자체 SOQL (sfid 채움용)
+PS_SOQL=$(cat <<'EOF'
+SELECT
+    Id, Name, Label
+FROM PermissionSet
+WHERE IsCustom = TRUE
 EOF
 )
 
@@ -1133,6 +1152,9 @@ if contains_target "Profile"; then
 fi
 
 if contains_target "Permission"; then
+    # spec #790 Q3 — PermissionSet 자체 (sfid 채움용)
+    run_query "PermissionSet" "$PS_SOQL" "$OUT_DIR/permission_sets.csv"
+
     run_query "PermissionSetAssignment" "$PSA_SOQL" "$OUT_DIR/permission_set_assignments.csv"
 
     if [[ "$SKIP_GROUP_MEMBERS" -eq 0 ]]; then
@@ -1140,6 +1162,24 @@ if contains_target "Permission"; then
     else
         echo "[info] Skipping GroupMember extraction (--skip-group-members)"
     fi
+fi
+
+# spec #790 Q4 — XML 메타 (sharing 정책) 자동 포함
+if [[ "$INCLUDE_SHARING_META" -eq 1 ]]; then
+    echo
+    echo "[sharing-meta] extract-sharing-meta.sh 실행 — XML 메타 → 6 CSV"
+    SHARING_META_DIR="${OUT_DIR}"
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [[ -x "$SCRIPT_DIR/extract-sharing-meta.sh" ]]; then
+        "$SCRIPT_DIR/extract-sharing-meta.sh" --out-dir "$SHARING_META_DIR" || {
+            echo "[sharing-meta] extract-sharing-meta.sh 실패 — 이후 단계 진행 중단" >&2
+            exit 1
+        }
+    else
+        echo "[sharing-meta] extract-sharing-meta.sh 미존재 또는 실행 권한 없음 — skip" >&2
+    fi
+else
+    echo "[info] Skipping sharing meta extraction (--skip-sharing-meta)"
 fi
 
 SCRIPT_END_EPOCH="$(date +%s)"

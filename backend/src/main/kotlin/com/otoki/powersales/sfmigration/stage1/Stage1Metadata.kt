@@ -23,7 +23,13 @@ data class FieldMapping(
 
 data class EntityMetadata(
     val targetName: String,
-    val sObjectName: String,
+    /**
+     * SF SObject API 명. SOQL 출처 entity 는 필수, XML 메타 출처 entity (spec #790) 는 null.
+     *
+     * null 인 경우 `verify-metadata.main.kts` 의 `@SFField` 정합 검사 + `extract-csv.sh` 의 SOQL 출력
+     * 양쪽에서 자동 skip — XML 메타 (`sf force source retrieve`) 가 별도 경로로 처리.
+     */
+    val sObjectName: String?,
     val schemaName: String = "powersales",
     val tableName: String,
     val csvFileName: String,
