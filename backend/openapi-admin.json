@@ -5537,6 +5537,27 @@
         },
         "type" : "object"
       },
+      "ConditionSnapshot" : {
+        "properties" : {
+          "conditionOrder" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "field" : {
+            "type" : "string"
+          },
+          "logicConnector" : {
+            "type" : [ "string", "null" ]
+          },
+          "operator" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "ConfirmByIdsResponse" : {
         "properties" : {
           "confirmedCount" : {
@@ -5618,14 +5639,72 @@
       },
       "DataScope" : {
         "properties" : {
+          "accessLevel" : {
+            "type" : "string"
+          },
+          "accountGroups" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "allBranches" : {
             "type" : "boolean"
+          },
+          "allSubordinateUserRoleIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array",
+            "uniqueItems" : true
           },
           "branchCodes" : {
             "items" : {
               "type" : "string"
             },
             "type" : "array"
+          },
+          "evaluatorRules" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SharingRuleSnapshot"
+            },
+            "type" : "array"
+          },
+          "groupMemberships" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "hrCodes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "ownerExceptions" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "permissionSetFlags" : {
+            "$ref" : "#/components/schemas/PermissionSetSnapshot"
+          },
+          "profileFlags" : {
+            "$ref" : "#/components/schemas/ProfileFlagsSnapshot"
+          },
+          "userId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "userRoleId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           }
         },
         "type" : "object"
@@ -7478,6 +7557,29 @@
         },
         "type" : "object"
       },
+      "PermissionSetSnapshot" : {
+        "properties" : {
+          "modifyAllDataSystem" : {
+            "type" : "boolean"
+          },
+          "modifyAllRecordsBySObject" : {
+            "additionalProperties" : {
+              "type" : "boolean"
+            },
+            "type" : "object"
+          },
+          "viewAllDataSystem" : {
+            "type" : "boolean"
+          },
+          "viewAllRecordsBySObject" : {
+            "additionalProperties" : {
+              "type" : "boolean"
+            },
+            "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
       "PreviousMonthData" : {
         "properties" : {
           "byWorkType" : {
@@ -7701,6 +7803,26 @@
           "totalPages" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ProfileFlagsSnapshot" : {
+        "properties" : {
+          "apiEnabled" : {
+            "type" : "boolean"
+          },
+          "manageUsers" : {
+            "type" : "boolean"
+          },
+          "modifyAllData" : {
+            "type" : "boolean"
+          },
+          "viewAllData" : {
+            "type" : "boolean"
+          },
+          "viewAllUsers" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -9658,6 +9780,36 @@
           "totalRowsAffected" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "SharingRuleSnapshot" : {
+        "properties" : {
+          "accessLevel" : {
+            "type" : "string"
+          },
+          "conditions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ConditionSnapshot"
+            },
+            "type" : "array"
+          },
+          "developerName" : {
+            "type" : "string"
+          },
+          "includeOwnedByAll" : {
+            "type" : "boolean"
+          },
+          "ruleType" : {
+            "type" : "string"
+          },
+          "sharingRuleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sobjectName" : {
+            "type" : "string"
           }
         },
         "type" : "object"
