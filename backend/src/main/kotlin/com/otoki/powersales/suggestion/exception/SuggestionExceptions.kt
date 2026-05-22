@@ -1,34 +1,33 @@
-/*
 package com.otoki.powersales.suggestion.exception
 
 import com.otoki.powersales.common.exception.BusinessException
-
 import org.springframework.http.HttpStatus
 
-/ **
- * 기존제품 선택 시 제품 코드 필수
- * /
-class ProductRequiredForExistingException : BusinessException(
-    errorCode = "PRODUCT_REQUIRED_FOR_EXISTING",
-    message = "기존제품 선택 시 제품 코드는 필수입니다",
+/**
+ * BR1~BR7 — Category 분기 검증 위반 (P2-B §2.4).
+ *
+ * 레거시 `ProposalTriggerHandler.cls` 의 `addError` 호출이 신규에서 400 Bad Request 로 처리.
+ */
+class SuggestionValidationException(message: String) : BusinessException(
+    errorCode = "SUGGESTION_VALIDATION",
+    message = message,
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
-/ **
- * 유효하지 않은 사진 파일
- * /
-class InvalidPhotoException(detail: String = "사진 파일 형식이 올바르지 않습니다") : BusinessException(
-    errorCode = "INVALID_PHOTO",
-    message = detail,
-    httpStatus = HttpStatus.BAD_REQUEST
+class SuggestionNotFoundException : BusinessException(
+    errorCode = "SUGGESTION_NOT_FOUND",
+    message = "제안을 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
 )
 
-/ **
- * 사진 용량 초과
- * /
-class PhotoSizeExceededException : BusinessException(
-    errorCode = "PHOTO_SIZE_EXCEEDED",
-    message = "사진 용량이 초과되었습니다 (최대 10MB)",
+class SuggestionAccessDeniedException : BusinessException(
+    errorCode = "SUGGESTION_ACCESS_DENIED",
+    message = "본인이 등록한 제안만 접근할 수 있습니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)
+
+class InvalidSuggestionIdException : BusinessException(
+    errorCode = "INVALID_PARAMETER",
+    message = "유효하지 않은 제안 ID 입니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
-*/

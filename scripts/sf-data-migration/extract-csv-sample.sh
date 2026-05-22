@@ -242,6 +242,23 @@ FROM DKRetail__Notice__c
 WHERE IsDeleted = FALSE
 EOF
 )
+SUGGESTION_SOQL=$(cat <<'EOF'
+SELECT
+    Id, Name,
+    DKRetail__Title__c, DKRetail__Description__c,
+    Category__c, Category1__c, Category2__c, Category3__c,
+    AccountId__c, DKRetail__SAPAccountCode__c,
+    DKRetail__EmployeeId__c,
+    DKRetail__ProductId__c, ProductCode__c,
+    OrgCostCenterCode__c,
+    CarNumber__c, ClaimDate__c, ClaimType__c, ClaimTypeMeasures__c,
+    LogisticsResponsibility__c, WERK1_TEXT2__c, WERK3_TEXT2__c,
+    ActionStatus__c, DuplicateProposalNum__c,
+    IsDeleted, CreatedDate, LastModifiedDate
+FROM DKRetail__Proposal__c
+WHERE IsDeleted = FALSE
+EOF
+)
 ACCOUNT_CATEGORY_MASTER_SOQL=$(cat <<'EOF'
 SELECT
     Id, AccountCode__c, Name, useSearch__c, OwnerId,
@@ -638,6 +655,7 @@ for target in "${TARGET_ARR[@]}"; do
         Employee) run_query "Employee (DKRetail__Employee__c)" "$EMPLOYEE_SOQL" "$OUT_DIR/employees.csv" ;;
         User) run_query "User" "$USER_SOQL" "$OUT_DIR/users.csv" ;;
         Notice) run_query "Notice (DKRetail__Notice__c)" "$NOTICE_SOQL" "$OUT_DIR/notices.csv" ;;
+        Suggestion) run_query "Suggestion (DKRetail__Proposal__c)" "$SUGGESTION_SOQL" "$OUT_DIR/suggestions.csv" ;;
         AccountCategoryMaster) run_query "AccountCategoryMaster" "$ACCOUNT_CATEGORY_MASTER_SOQL" "$OUT_DIR/account_category_masters.csv" ;;
         AgreementHistory) run_query "AgreementHistory" "$AGREEMENT_HISTORY_SOQL" "$OUT_DIR/agreement_historys.csv" ;;
         AgreementWord) run_query "AgreementWord" "$AGREEMENT_WORD_SOQL" "$OUT_DIR/agreement_words.csv" ;;

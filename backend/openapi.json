@@ -5113,6 +5113,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePageSuggestionListItem" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PageSuggestionListItem"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePermissionMatrixResponse" : {
         "properties" : {
           "data" : {
@@ -6162,6 +6191,64 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/SfMigrationStage2Response"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseSuggestionCreateResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SuggestionCreateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseSuggestionResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SuggestionResponse"
             }, {
               "type" : "null"
             } ]
@@ -11145,6 +11232,52 @@
         },
         "type" : "object"
       },
+      "PageSuggestionListItem" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SuggestionListItem"
+            },
+            "type" : "array"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "number" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numberOfElements" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "PageableObject" : {
         "properties" : {
           "offset" : {
@@ -14119,6 +14252,259 @@
         },
         "type" : "object"
       },
+      "SuggestionAttachment" : {
+        "properties" : {
+          "fileName" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "s3Url" : {
+            "type" : "string"
+          },
+          "sortOrder" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "SuggestionCreateRequest" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "actionStatus" : {
+            "enum" : [ "UNCONFIRMED", "IN_PROGRESS", "COMPLETED", "DUPLICATE_RECEPTION" ],
+            "type" : [ "string", "null" ]
+          },
+          "carNumber" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
+            "type" : [ "string", "null" ]
+          },
+          "claimDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "claimType" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "content" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "duplicateProposalNum" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "logisticsResponsibility" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "maxLength" : 250,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "category", "content", "title" ],
+        "type" : "object"
+      },
+      "SuggestionCreateResponse" : {
+        "properties" : {
+          "attachments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SuggestionAttachment"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "proposalNumber" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SuggestionListItem" : {
+        "properties" : {
+          "category" : {
+            "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
+            "type" : "string"
+          },
+          "categoryName" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "proposalNumber" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SuggestionResponse" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "actionStatus" : {
+            "enum" : [ "UNCONFIRMED", "IN_PROGRESS", "COMPLETED", "DUPLICATE_RECEPTION" ],
+            "type" : [ "string", "null" ]
+          },
+          "attachments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SuggestionAttachment"
+            },
+            "type" : "array"
+          },
+          "carNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
+            "type" : "string"
+          },
+          "categoryName" : {
+            "type" : "string"
+          },
+          "claimDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "claimType" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimTypeMeasures" : {
+            "type" : [ "string", "null" ]
+          },
+          "content" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "duplicateProposalNum" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "logisticsResponsibility" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "proposalNumber" : {
+            "type" : "string"
+          },
+          "receptionLogisticsCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "responsibleLogisticsCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "enum" : [ "SUBMITTED", "IN_REVIEW", "ACCEPTED", "REJECTED" ],
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SuggestionUpdateRequest" : {
+        "properties" : {
+          "actionStatus" : {
+            "enum" : [ "UNCONFIRMED", "IN_PROGRESS", "COMPLETED", "DUPLICATE_RECEPTION" ],
+            "type" : [ "string", "null" ]
+          },
+          "carNumber" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
+            "type" : [ "string", "null" ]
+          },
+          "claimDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "claimType" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "content" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "duplicateProposalNum" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "logisticsResponsibility" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "maxLength" : 250,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "category", "content", "title" ],
+        "type" : "object"
+      },
       "SystemCodeMasterRequest" : {
         "properties" : {
           "reqItemList" : {
@@ -15186,7 +15572,7 @@
         "tags" : [ "admin-attend-info-controller" ]
       },
       "post" : {
-        "operationId" : "create_2",
+        "operationId" : "create_3",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -15264,7 +15650,7 @@
         "tags" : [ "admin-attend-info-controller" ]
       },
       "put" : {
-        "operationId" : "update_2",
+        "operationId" : "update_3",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -15850,7 +16236,7 @@
         "tags" : [ "admin-employee-input-criteria-master-controller" ]
       },
       "post" : {
-        "operationId" : "create_1",
+        "operationId" : "create_2",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -15974,7 +16360,7 @@
         "tags" : [ "admin-employee-input-criteria-master-controller" ]
       },
       "put" : {
-        "operationId" : "update_1",
+        "operationId" : "update_2",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -17407,7 +17793,7 @@
         "tags" : [ "admin-product-expiration-controller" ]
       },
       "post" : {
-        "operationId" : "create",
+        "operationId" : "create_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -17506,7 +17892,7 @@
         "tags" : [ "admin-product-expiration-controller" ]
       },
       "get" : {
-        "operationId" : "getDetail",
+        "operationId" : "getDetail_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -17531,7 +17917,7 @@
         "tags" : [ "admin-product-expiration-controller" ]
       },
       "put" : {
-        "operationId" : "update",
+        "operationId" : "update_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -18407,7 +18793,7 @@
     },
     "/api/v1/admin/sales/monthly/detail/{customerId}" : {
       "get" : {
-        "operationId" : "getDetail_2",
+        "operationId" : "getDetail_3",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -19825,7 +20211,7 @@
     },
     "/api/v1/admin/schedules/sales-comparison/detail" : {
       "get" : {
-        "operationId" : "getDetail_1",
+        "operationId" : "getDetail_2",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -22318,6 +22704,168 @@
           }
         },
         "tags" : [ "monthly-sales-controller" ]
+      }
+    },
+    "/api/v1/mobile/suggestions" : {
+      "get" : {
+        "operationId" : "listMine",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePageSuggestionListItem"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "suggestion-controller" ]
+      },
+      "post" : {
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "photos" : {
+                    "items" : {
+                      "format" : "binary",
+                      "type" : "string"
+                    },
+                    "type" : "array"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/SuggestionCreateRequest"
+                  }
+                },
+                "required" : [ "request" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSuggestionCreateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "suggestion-controller" ]
+      }
+    },
+    "/api/v1/mobile/suggestions/{suggestionId}" : {
+      "delete" : {
+        "operationId" : "softDelete",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "suggestionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "suggestion-controller" ]
+      },
+      "get" : {
+        "operationId" : "getDetail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "suggestionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSuggestionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "suggestion-controller" ]
+      },
+      "put" : {
+        "operationId" : "update",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "suggestionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SuggestionUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSuggestionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "suggestion-controller" ]
       }
     },
     "/api/v1/sap/account" : {
