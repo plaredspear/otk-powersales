@@ -12,4 +12,6 @@ interface GroupRepository : JpaRepository<Group, Long> {
     fun findBySfid(sfid: String): Optional<Group>
 
     fun existsBySfid(sfid: String): Boolean
+
+    fun findByDeveloperName(developerName: String): Group?
 }

@@ -1,0 +1,38 @@
+package com.otoki.powersales.auth.sharing.entity
+
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.Table
+import java.time.LocalDateTime
+
+/**
+ * UserRole 트리의 정적 스냅샷 (spec #782 P1-B).
+ *
+ * 본 UserRole 의 모든 하위 자손 user_role_id set 을 jsonb 박제. evaluator hot path 에서
+ * 매 평가 시 트리 traverse 회피 — 정적 lookup 1회.
+ *
+ * 갱신은 P2-B 의 UserRoleHierarchyTraversal Service 가 담당.
+ *
+ * jsonb 컬럼은 application layer 에서 Jackson 으로 List<Long> ↔ JSON 직렬화 (의존성 추가 회피).
+ */
+@Entity
+@Table(name = "user_role_hierarchy_snapshot")
+class UserRoleHierarchySnapshot(
+
+    @Id
+    @Column(name = "user_role_id")
+    val userRoleId: Long,
+
+    @Column(name = "all_subordinate_ids", nullable = false, columnDefinition = "jsonb")
+    var allSubordinateIds: String,
+
+    @Column(name = "depth", nullable = false)
+    var depth: Int,
+
+    @Column(name = "ancestor_path", columnDefinition = "jsonb")
+    var ancestorPath: String? = null,
+
+    @Column(name = "snapshot_at", nullable = false)
+    var snapshotAt: LocalDateTime = LocalDateTime.now(),
+)
