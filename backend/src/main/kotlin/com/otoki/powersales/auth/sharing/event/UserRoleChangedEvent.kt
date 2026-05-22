@@ -1,10 +1,11 @@
 package com.otoki.powersales.auth.sharing.event
 
 /**
- * UserRole entity 변경 이벤트 (spec #788).
+ * UserRole entity 변경 이벤트.
  *
- * 발행: [com.otoki.powersales.auth.sharing.listener.UserRoleEntityListener] —
- *   JPA `@PostPersist` / `@PostUpdate` / `@PostRemove` 시점에 자동 발행.
+ * 발행: UserRole 을 변경하는 Service 가 `ApplicationEventPublisher.publishEvent` 로 명시 발행.
+ *   (SF Stage1 CSV 적재는 `COPY FROM` raw SQL 경로 — entity listener 가 발화하지 않으므로
+ *   `SfMigrationStage2Controller.runUserRoleHierarchyRecalc()` 가 batch 차원에서 재계산을 담당.)
  *
  * 수신: [com.otoki.powersales.auth.sharing.service.UserRoleHierarchyEventHandler] —
  *   `@TransactionalEventListener(AFTER_COMMIT)` 로 수신 후 hierarchy snapshot + cache 갱신.

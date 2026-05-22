@@ -9,10 +9,10 @@ import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 
 /**
- * UserRole 변경 시 hierarchy snapshot + cache 자동 갱신 핸들러 (spec #788).
+ * UserRole 변경 시 hierarchy snapshot + cache 자동 갱신 핸들러.
  *
- * 수신: [com.otoki.powersales.auth.sharing.listener.UserRoleEntityListener] 가 발행한
- *   [UserRoleChangedEvent] — `@TransactionalEventListener(AFTER_COMMIT)` 로 트랜잭션 commit 후 동작.
+ * 수신: UserRole 변경 Service 가 명시 발행한 [UserRoleChangedEvent] —
+ *   `@TransactionalEventListener(AFTER_COMMIT)` 로 트랜잭션 commit 후 동작.
  *
  * ## 처리 흐름
  *

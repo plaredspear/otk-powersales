@@ -120,8 +120,8 @@ class SfMigrationStage2Controller(
      * 본 endpoint 는 [UserRoleHierarchyTraversal.recomputeAll] wrapper — `user_role.parent_user_role_id`
      * 트리 기반으로 `all_subordinate_ids` (jsonb) + `depth` + `ancestor_path` + `snapshot_at` 재계산.
      *
-     * 운영 후 admin 사용자가 UserRole entity 를 변경하면 [com.otoki.powersales.auth.sharing.listener.UserRoleEntityListener]
-     * + [com.otoki.powersales.auth.sharing.service.UserRoleHierarchyEventHandler] (spec #788) 가 자동 invalidate.
+     * 운영 후 admin 사용자가 UserRole entity 를 변경하는 Service 가 [com.otoki.powersales.auth.sharing.event.UserRoleChangedEvent]
+     * 를 명시 발행하면 [com.otoki.powersales.auth.sharing.service.UserRoleHierarchyEventHandler] 가 자동 invalidate.
      * 본 endpoint 는 그 자동화 메커니즘과 별개로 batch 1회 / incident 복구 용도.
      */
     @PostMapping("/api/v1/admin/sf-migration/stage2/user-role-hierarchy")
