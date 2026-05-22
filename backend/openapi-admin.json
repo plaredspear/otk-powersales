@@ -4365,6 +4365,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseRecalcResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RecalcResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseRecalcStatus" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RecalcStatus"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseResetDeviceResponse" : {
         "properties" : {
           "data" : {
@@ -5734,6 +5792,14 @@
           "userRoleId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          },
+          "visibleRecordTypeIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array",
+            "uniqueItems" : true
           }
         },
         "type" : "object"
@@ -8487,6 +8553,46 @@
           },
           "value" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "RecalcResult" : {
+        "properties" : {
+          "durationMs" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "evictedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "RecalcStatus" : {
+        "properties" : {
+          "lastDurationMs" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "lastEvictedCount" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "lastRecalcAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "lastRecalcSObjectName" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastRecalcScope" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastRecalcTriggeredByUserId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           }
         },
         "type" : "object"
@@ -14020,7 +14126,7 @@
     },
     "/api/v1/admin/safety-check/status" : {
       "get" : {
-        "operationId" : "getStatus",
+        "operationId" : "getStatus_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "date",
@@ -15981,6 +16087,68 @@
           }
         },
         "tags" : [ "sf-migration-stage-2-controller" ]
+      }
+    },
+    "/api/v1/admin/sharing/recalc/all" : {
+      "post" : {
+        "operationId" : "recalcAll",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRecalcResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sharing-recalc-admin-controller" ]
+      }
+    },
+    "/api/v1/admin/sharing/recalc/sobject/{sObjectName}" : {
+      "post" : {
+        "operationId" : "recalcSObject",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "sObjectName",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRecalcResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sharing-recalc-admin-controller" ]
+      }
+    },
+    "/api/v1/admin/sharing/recalc/status" : {
+      "get" : {
+        "operationId" : "getStatus",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRecalcStatus"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sharing-recalc-admin-controller" ]
       }
     },
     "/api/v1/admin/team-schedule" : {
