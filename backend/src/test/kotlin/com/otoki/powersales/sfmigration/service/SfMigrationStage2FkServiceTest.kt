@@ -188,4 +188,33 @@ class SfMigrationStage2FkServiceTest {
         assertThat(sql).contains("src.erp_order_product_id > :lastPk")
         assertThat(sql).contains("src.erp_order_product_id <= :upperPk")
     }
+
+    @Test
+    @DisplayName("polymorphicRelated — Group.related_sfid prefix 005/00E 분기 (spec #782 P2-B)")
+    fun polymorphicRelatedGroup() {
+        // group 테이블 — related_sfid + related_user_id + related_user_role_id 의 polymorphic 분기.
+        // related 컬럼은 deriveFkResolveSpec 에서 SKIP_FK_PREFIXES 로 제외되어 columns 비어있고
+        // polymorphicRelated 분기로만 SQL 생성.
+        val plan = SfMigrationStage2FkService.TablePlan(
+            columns = emptyList(),
+            polymorphicOwner = false,
+            pkColumn = "group_id",
+            polymorphicRelated = true,
+        )
+
+        val sql = service.buildChunkUpdateSql("group", plan)
+
+        assertThat(sql).contains("UPDATE powersales.\"group\" t")
+        // User 분기 (005 prefix → related_user_id)
+        assertThat(sql).contains("related_user_id = CASE WHEN src.related_sfid LIKE '005%'")
+        assertThat(sql).contains("j_related_user.user_id")
+        assertThat(sql).contains("LEFT JOIN powersales.\"user\" j_related_user")
+        // UserRole 분기 (00E prefix → related_user_role_id)
+        assertThat(sql).contains("related_user_role_id = CASE WHEN src.related_sfid LIKE '00E%'")
+        assertThat(sql).contains("j_related_user_role.user_role_id")
+        assertThat(sql).contains("LEFT JOIN powersales.user_role j_related_user_role")
+        // WHERE 절 — 두 분기의 NULL 조건
+        assertThat(sql).contains("(t.related_user_id IS NULL AND src.related_sfid LIKE '005%')")
+        assertThat(sql).contains("(t.related_user_role_id IS NULL AND src.related_sfid LIKE '00E%')")
+    }
 }

@@ -47,7 +47,10 @@ class SfMigrationStage2FkService(
                 val updated = applyOneTableFkResolve(tableName, plan, errors)
                 totalUpdated += updated
                 val result = SubstepResult(
-                    label = "$tableName (${plan.columns.size} FK${if (plan.polymorphicOwner) " + polymorphic owner" else ""})",
+                    label = "$tableName (${plan.columns.size} FK${buildString {
+                if (plan.polymorphicOwner) append(" + polymorphic owner")
+                if (plan.polymorphicRelated) append(" + polymorphic related")
+            }})",
                     rowsAffected = updated,
                 )
                 results += result
@@ -84,6 +87,9 @@ class SfMigrationStage2FkService(
         val columns: List<ColumnPlan>,
         val polymorphicOwner: Boolean,
         val pkColumn: String,
+        // spec #782 P2-B — Group.related_sfid prefix 005/00E 분기 (User/UserRole typed FK).
+        // 기존 테스트 호출 호환성 위해 default false — POLYMORPHIC_RELATED_TABLES 화이트리스트로 활성화.
+        val polymorphicRelated: Boolean = false,
     )
 
     /**
@@ -123,8 +129,13 @@ class SfMigrationStage2FkService(
                 columnExists(tableName, "owner_group_id") &&
                 columnExists(tableName, "owner_sfid")
 
-            if (columns.isEmpty() && !polymorphic) return@mapNotNull null
-            tableName to TablePlan(columns, polymorphic, pkColumn)
+            val polymorphicRelated = tableName in POLYMORPHIC_RELATED_TABLES &&
+                columnExists(tableName, "related_user_id") &&
+                columnExists(tableName, "related_user_role_id") &&
+                columnExists(tableName, "related_sfid")
+
+            if (columns.isEmpty() && !polymorphic && !polymorphicRelated) return@mapNotNull null
+            tableName to TablePlan(columns, polymorphic, pkColumn, polymorphicRelated)
         }.toMap()
     }
 
@@ -152,7 +163,10 @@ class SfMigrationStage2FkService(
             "[fk] {} start — maxPk={}, {} chunks of {} rows ({} FK{})",
             tableName, maxPk, chunkCount, chunkSize,
             plan.columns.size,
-            if (plan.polymorphicOwner) " + polymorphic owner" else "",
+            buildString {
+                if (plan.polymorphicOwner) append(" + polymorphic owner")
+                if (plan.polymorphicRelated) append(" + polymorphic related")
+            },
         )
         progress.beginTable(tableName, chunkCount.toInt())
 
@@ -210,6 +224,8 @@ class SfMigrationStage2FkService(
             // polymorphic 분기로 대체 (아래 별도 처리). 일반 owner FK 가 polymorphic 테이블에서는
             // 중복 처리되지 않도록 owner_sfid 컬럼은 polymorphic 블록에 위임.
             if (plan.polymorphicOwner && col.sfidColumn == "owner_sfid") continue
+            // 동일 패턴 — related_sfid 도 polymorphicRelated 블록에 위임.
+            if (plan.polymorphicRelated && col.sfidColumn == "related_sfid") continue
 
             val refTable = quoteIdent(col.spec.refTable)
             val alias = col.joinAlias
@@ -232,6 +248,23 @@ class SfMigrationStage2FkService(
                 "ON $groupAlias.sfid = src.owner_sfid AND src.owner_sfid LIKE '00G%'"
             whereOrClauses += "(t.owner_user_id IS NULL AND src.owner_sfid LIKE '005%')"
             whereOrClauses += "(t.owner_group_id IS NULL AND src.owner_sfid LIKE '00G%')"
+        }
+
+        if (plan.polymorphicRelated) {
+            // spec #782 P2-B — Group.related_sfid prefix 005 → related_user_id, 00E → related_user_role_id.
+            // SF describe `Group.RelatedId.referenceTo = [User, UserRole]` 정합.
+            val userAlias = "j_related_user"
+            val userRoleAlias = "j_related_user_role"
+            setClauses += "related_user_id = CASE WHEN src.related_sfid LIKE '005%' " +
+                "THEN COALESCE(t.related_user_id, $userAlias.user_id) ELSE t.related_user_id END"
+            setClauses += "related_user_role_id = CASE WHEN src.related_sfid LIKE '00E%' " +
+                "THEN COALESCE(t.related_user_role_id, $userRoleAlias.user_role_id) ELSE t.related_user_role_id END"
+            joinClauses += "LEFT JOIN $schemaName.\"user\" $userAlias " +
+                "ON $userAlias.sfid = src.related_sfid AND src.related_sfid LIKE '005%'"
+            joinClauses += "LEFT JOIN $schemaName.user_role $userRoleAlias " +
+                "ON $userRoleAlias.sfid = src.related_sfid AND src.related_sfid LIKE '00E%'"
+            whereOrClauses += "(t.related_user_id IS NULL AND src.related_sfid LIKE '005%')"
+            whereOrClauses += "(t.related_user_role_id IS NULL AND src.related_sfid LIKE '00E%')"
         }
 
         return """

@@ -14,4 +14,9 @@ interface GroupRepository : JpaRepository<Group, Long> {
     fun existsBySfid(sfid: String): Boolean
 
     fun findByDeveloperName(developerName: String): Group?
+
+    // spec #782 P2-B — typed FK 직접 사용 (Group.RelatedId polymorphic 의 User/UserRole 분기).
+    fun findAllByRelatedUserId(relatedUserId: Long): List<Group>
+
+    fun findAllByRelatedUserRoleId(relatedUserRoleId: Long): List<Group>
 }

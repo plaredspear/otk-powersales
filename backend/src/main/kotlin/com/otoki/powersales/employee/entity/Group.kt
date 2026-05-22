@@ -5,6 +5,7 @@ import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.converter.GroupTypeConverter
 import com.otoki.powersales.employee.enums.GroupType
 import com.otoki.powersales.user.entity.User
@@ -111,10 +112,16 @@ class Group(
 
     // -- Relations --
 
-    // RelatedId polymorphic [User, UserRole] — User 분기만 FK (UserRole 미매핑)
+    // RelatedId polymorphic [User, UserRole] — typed FK 2개 (spec #782 P2-B v1.4).
+    // Stage 2 fk substep 이 related_sfid prefix 005 → relatedUserId, 00E → relatedUserRoleId 분기 채움.
+    // CHECK 제약 — 정확히 0 또는 1만 NOT NULL (Type=Regular/Queue 는 RelatedId 부재).
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_user_id")
     var relatedUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_user_role_id")
+    var relatedUserRole: UserRole? = null,
 
     // OwnerId polymorphic [Organization, User] — User 분기만 FK (Organization 미매핑)
     @ManyToOne(fetch = FetchType.LAZY)

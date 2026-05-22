@@ -29,6 +29,15 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
 )
 
 /**
+ * Polymorphic related entity 화이트리스트 — related_sfid prefix `005` = User, `00E` = UserRole 분기 (spec #782 P2-B).
+ * SF describe `Group.RelatedId.referenceTo = [User, UserRole]` 정합.
+ * related_user_id / related_user_role_id 두 컬럼이 동시 존재하는 entity 가 대상 — 현재 `group` 1건.
+ */
+internal val POLYMORPHIC_RELATED_TABLES: Set<String> = setOf(
+    "group",
+)
+
+/**
  * sfid prefix → (refTable, refIdColumn) 명시 매핑. 본 표에 없는 prefix 는 자동 추론.
  */
 internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(

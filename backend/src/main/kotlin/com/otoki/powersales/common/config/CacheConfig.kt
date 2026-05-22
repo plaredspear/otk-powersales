@@ -98,7 +98,20 @@ class CacheConfig {
          */
         const val CACHE_TEAM_SCHEDULE_BRANCHES = "teamScheduleBranchesV2"
 
+        /**
+         * SF Sharing Rule 정책 evaluator cache name (spec #782 P2-B).
+         *
+         * 모두 1h TTL — 정책 변경 빈도 매우 낮음 (사원당 1~2년/회). UserRole entity / PermissionSetAssignment
+         * 변경 시 @CacheEvict 로 즉시 invalidate.
+         */
+        const val CACHE_HIERARCHY_SUBORDINATES = "hierarchySubordinates"
+        const val CACHE_HIERARCHY_ANCESTOR_PATH = "hierarchyAncestorPath"
+        const val CACHE_MEMBER_GROUP_IDS = "memberGroupIds"
+        const val CACHE_PROFILE_FLAGS = "profileFlags"
+        const val CACHE_PERMISSION_SET_FLAGS = "permissionSetFlags"
+
         private val ORGANIZATION_TTL: Duration = Duration.ofHours(24)
+        private val SHARING_POLICY_TTL: Duration = Duration.ofHours(1)
     }
 
     /**
@@ -142,9 +155,15 @@ class CacheConfig {
     @Bean
     @Profile("!test & !local")
     fun perCacheTtlCustomizer(defaultConfig: RedisCacheConfiguration): RedisCacheManagerBuilderCustomizer {
+        val sharingPolicyConfig = defaultConfig.entryTtl(SHARING_POLICY_TTL)
         val perCacheConfig = mapOf(
             CACHE_ORGANIZATION_CASCADE to defaultConfig,
             CACHE_TEAM_SCHEDULE_BRANCHES to defaultConfig,
+            CACHE_HIERARCHY_SUBORDINATES to sharingPolicyConfig,
+            CACHE_HIERARCHY_ANCESTOR_PATH to sharingPolicyConfig,
+            CACHE_MEMBER_GROUP_IDS to sharingPolicyConfig,
+            CACHE_PROFILE_FLAGS to sharingPolicyConfig,
+            CACHE_PERMISSION_SET_FLAGS to sharingPolicyConfig,
         )
         return RedisCacheManagerBuilderCustomizer { builder ->
             builder.withInitialCacheConfigurations(perCacheConfig)
