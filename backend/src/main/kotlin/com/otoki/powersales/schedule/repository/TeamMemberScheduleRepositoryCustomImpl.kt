@@ -21,15 +21,6 @@ open class TeamMemberScheduleRepositoryCustomImpl(
 ) : TeamMemberScheduleRepositoryCustom {
 
     @Transactional
-    override fun updateCommuteLogId(id: Long, commuteLogSfid: String) {
-        queryFactory
-            .update(teamMemberSchedule)
-            .set(teamMemberSchedule.commuteLogSfid, commuteLogSfid)
-            .where(teamMemberSchedule.id.eq(id))
-            .execute()
-    }
-
-    @Transactional
     override fun updateAttendanceLog(id: Long, attendanceLogId: Long) {
         queryFactory
             .update(teamMemberSchedule)

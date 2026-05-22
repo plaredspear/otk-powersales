@@ -199,41 +199,6 @@ class TeamMemberScheduleRepositoryTest {
     }
 
     @Nested
-    @DisplayName("updateCommuteLogId - commuteLogSfid 업데이트")
-    inner class UpdateCommuteLogIdTests {
-
-        @Test
-        @DisplayName("정상 업데이트 - id 일치 시 commuteLogSfid 변경")
-        fun updateCommuteLogId_success() {
-            // Given
-            val teamMemberSchedule = TeamMemberSchedule(
-                sfid = "SF001",
-                employee = testEmployee,
-                workingDate = LocalDate.now(),
-                workingType = WorkingType.WORK
-            )
-            testEntityManager.persistAndFlush(teamMemberSchedule)
-            testEntityManager.clear()
-
-            // When
-            teamMemberScheduleRepository.updateCommuteLogId(teamMemberSchedule.id, "OK")
-            testEntityManager.clear()
-
-            // Then
-            val updated = teamMemberScheduleRepository.findById(teamMemberSchedule.id)
-            assertThat(updated).isPresent
-            assertThat(updated.get().commuteLogSfid).isEqualTo("OK")
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 id - 에러 없이 0건 업데이트")
-        fun updateCommuteLogId_nonExistentSfid() {
-            // When & Then (에러 없이 실행)
-            teamMemberScheduleRepository.updateCommuteLogId(99999L, "OK")
-        }
-    }
-
-    @Nested
     @DisplayName("updateAttendanceLog - attendance_log id-FK 업데이트 (Spec #789)")
     inner class UpdateAttendanceLogTests {
 

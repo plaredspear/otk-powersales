@@ -7,8 +7,6 @@ import java.time.LocalDateTime
 
 interface TeamMemberScheduleRepositoryCustom {
 
-    fun updateCommuteLogId(id: Long, commuteLogSfid: String)
-
     /**
      * 출근 등록 시점의 attendance_log id-FK 채움 (Spec #789 — sfid 비즈니스 로직 사용 금지 정책 정합).
      * 운영에서는 HC sync 가 sfid 컬럼을 채우고 본 메서드는 application 레이어 backlink 보강 책임 (dev mock 측 동등 시뮬레이션 포함).
