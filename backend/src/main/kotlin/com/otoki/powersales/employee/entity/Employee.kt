@@ -348,7 +348,6 @@ class Employee(
     fun changePassword(newEncodedPassword: String) {
         this.password = newEncodedPassword
         this.passwordChangeRequired = false
-        this.updatedAt = LocalDateTime.now()
     }
 
     /**
@@ -359,7 +358,6 @@ class Employee(
     fun resetPasswordToTemporary(encodedTemporaryPassword: String) {
         this.password = encodedTemporaryPassword
         this.passwordChangeRequired = true
-        this.updatedAt = LocalDateTime.now()
     }
 
     fun requiresGpsConsent(): Boolean {
@@ -371,21 +369,13 @@ class Employee(
         if (agreementNumber != null) {
             this.lastAgreementNumber = agreementNumber
         }
-        this.updatedAt = LocalDateTime.now()
     }
 
     fun bindDevice(deviceId: String) {
         this.deviceUuid = deviceId
-        this.updatedAt = LocalDateTime.now()
     }
 
     fun resetDevice() {
         this.deviceUuid = null
-        this.updatedAt = LocalDateTime.now()
-    }
-
-    @PreUpdate
-    fun onPreUpdate() {
-        this.updatedAt = LocalDateTime.now()
     }
 }

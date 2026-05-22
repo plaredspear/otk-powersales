@@ -405,6 +405,5 @@ class TeamMemberSchedule(
         this.workingCategory3 = workingCategory3
         this.workingCategory4 = workingCategory4
         this.promotionEmployee = promotionEmployee
-        this.updatedAt = LocalDateTime.now()
     }
 }

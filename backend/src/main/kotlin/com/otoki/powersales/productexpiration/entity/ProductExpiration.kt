@@ -98,6 +98,5 @@ class ProductExpiration(
         this.expirationDate = expirationDate
         this.alarmDate = alarmDate
         this.description = description
-        this.updatedAt = LocalDateTime.now()
     }
 }
