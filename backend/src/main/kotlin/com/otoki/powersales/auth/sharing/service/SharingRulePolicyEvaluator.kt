@@ -174,7 +174,7 @@ class SharingRulePolicyEvaluator {
     /**
      * CRITERIA rule 의 condition list → AND/OR 합성 Predicate.
      */
-    private fun buildCriteriaRulePredicate(
+    internal fun buildCriteriaRulePredicate(
         rule: SharingRuleSnapshot,
         entityPath: EntityPathBase<*>,
     ): BooleanExpression? {
@@ -199,7 +199,7 @@ class SharingRulePolicyEvaluator {
      *
      * SF API name (예: `CostCenterCode__c`) → JPA property (`costCenterCode`) 변환은 본 메서드에서 처리.
      */
-    private fun buildConditionPredicate(
+    internal fun buildConditionPredicate(
         cond: SharingRuleSnapshot.ConditionSnapshot,
         entityPath: EntityPathBase<*>,
     ): BooleanExpression? {
