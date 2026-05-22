@@ -31,7 +31,8 @@ class SharingRuleCondition(
     @Column(name = "operator", nullable = false, length = 20)
     var operator: String,
 
-    @Column(name = "value", columnDefinition = "TEXT")
+    // value 는 H2 / 일부 DB reserved keyword 라 condition_value 로 컬럼명 회피.
+    @Column(name = "condition_value", columnDefinition = "TEXT")
     var value: String? = null,
 
     @Column(name = "condition_order", nullable = false)

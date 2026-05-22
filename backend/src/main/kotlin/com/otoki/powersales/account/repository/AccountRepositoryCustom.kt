@@ -1,10 +1,19 @@
 package com.otoki.powersales.account.repository
 
 import com.otoki.powersales.account.entity.Account
+import com.querydsl.core.types.Predicate
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 
 interface AccountRepositoryCustom {
+
+    /**
+     * SF Sharing Rule 정책이 합성된 가시 Account 일람 (spec #782 P4-B).
+     *
+     * Service layer 가 [com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator.buildPredicate]
+     * 결과를 [policyPredicate] 로 전달. Repository 는 Service 의존을 갖지 않음 — `@DataJpaTest` 호환.
+     */
+    fun findAllAccessibleByPolicy(policyPredicate: Predicate): List<Account>
 
     fun searchForAdmin(
         keyword: String?,

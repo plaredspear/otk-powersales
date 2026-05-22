@@ -24,13 +24,14 @@ class UserRoleHierarchySnapshot(
     @Column(name = "user_role_id")
     val userRoleId: Long,
 
-    @Column(name = "all_subordinate_ids", nullable = false, columnDefinition = "jsonb")
+    // PG 운영은 V173 의 jsonb 컬럼 정의 사용. entity 측 columnDefinition 미명시 — H2 호환 + Hibernate 자동 매핑.
+    @Column(name = "all_subordinate_ids", nullable = false)
     var allSubordinateIds: String,
 
     @Column(name = "depth", nullable = false)
     var depth: Int,
 
-    @Column(name = "ancestor_path", columnDefinition = "jsonb")
+    @Column(name = "ancestor_path")
     var ancestorPath: String? = null,
 
     @Column(name = "snapshot_at", nullable = false)

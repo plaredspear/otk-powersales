@@ -31,7 +31,8 @@ CREATE TABLE powersales.sharing_rule_condition (
     sharing_rule_id           BIGINT       NOT NULL REFERENCES powersales.sharing_rule (sharing_rule_id) ON DELETE CASCADE,
     field                     VARCHAR(80)  NOT NULL,
     operator                  VARCHAR(20)  NOT NULL,
-    value                     TEXT,
+    -- value 는 H2 / 일부 DB reserved keyword 라 condition_value 로 회피.
+    condition_value           TEXT,
     condition_order           INTEGER      NOT NULL,
     logic_connector           VARCHAR(10)
 );

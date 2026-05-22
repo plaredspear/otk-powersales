@@ -3,14 +3,26 @@ package com.otoki.powersales.account.repository
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.entity.QAccount.Companion.account
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.support.PageableExecutionUtils
 
 class AccountRepositoryCustomImpl(
-    private val queryFactory: JPAQueryFactory
+    private val queryFactory: JPAQueryFactory,
 ) : AccountRepositoryCustom {
+
+    override fun findAllAccessibleByPolicy(policyPredicate: Predicate): List<Account> {
+        return queryFactory
+            .selectFrom(account)
+            .where(
+                account.isDeleted.isNull.or(account.isDeleted.eq(false)),
+                policyPredicate,
+            )
+            .orderBy(account.name.asc())
+            .fetch()
+    }
 
     override fun searchForAdmin(
         keyword: String?,
