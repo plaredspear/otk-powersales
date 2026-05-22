@@ -20864,6 +20864,24 @@
         "tags" : [ "sf-migration-stage-2-controller" ]
       }
     },
+    "/api/v1/admin/sf-migration/stage2/user-role-hierarchy" : {
+      "post" : {
+        "operationId" : "runUserRoleHierarchyRecalc",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sf-migration-stage-2-controller" ]
+      }
+    },
     "/api/v1/admin/team-schedule" : {
       "get" : {
         "operationId" : "getSchedules",
