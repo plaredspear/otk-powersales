@@ -81,6 +81,16 @@ class SfFkResolveTablesTest {
             val spec = deriveFkResolveSpec("category_sfid")!!
             assertThat(spec.refTable).isEqualTo("employee_input_criteria_master")
         }
+
+        @Test
+        @DisplayName("commute_log_sfid → attendance_log_id (Spec #789 — entity 명 alias), ref attendance_log.attendance_log_id")
+        fun commuteLogAlias() {
+            val spec = deriveFkResolveSpec("commute_log_sfid")!!
+            assertThat(spec.sfidColumn).isEqualTo("commute_log_sfid")
+            assertThat(spec.idColumn).isEqualTo("attendance_log_id")
+            assertThat(spec.refTable).isEqualTo("attendance_log")
+            assertThat(spec.refIdColumn).isEqualTo("attendance_log_id")
+        }
     }
 
     @Nested

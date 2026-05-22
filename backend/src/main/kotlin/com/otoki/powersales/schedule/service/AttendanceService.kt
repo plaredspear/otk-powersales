@@ -95,7 +95,7 @@ class AttendanceService(
                 address = account?.address1,
                 latitude = account?.latitude?.toDoubleOrNull(),
                 longitude = account?.longitude?.toDoubleOrNull(),
-                isRegistered = tms.commuteLogSfid != null,
+                isRegistered = tms.attendanceLog != null,
                 source = "schedule"
             )
         }
@@ -219,8 +219,8 @@ class AttendanceService(
         val displayMaster = resolved.displayMaster
         val isEventBranch = resolved.isEventBranch
 
-        // 3. 중복 등록 검증 — 분기별 적절한 예외 throw
-        if (teamMemberSchedule.commuteLogSfid != null) {
+        // 3. 중복 등록 검증 — 분기별 적절한 예외 throw (Spec #789 — id-FK 가드)
+        if (teamMemberSchedule.attendanceLog != null) {
             when {
                 displayMaster != null -> throw DisplayAttendanceDuplicateException()
                 isEventBranch -> throw EventAttendanceDuplicateException()
@@ -304,7 +304,7 @@ class AttendanceService(
         // 8. 출근 현황 집계
         val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
         val totalCount = todayTeamMemberSchedules.size
-        val registeredCount = todayTeamMemberSchedules.count { it.commuteLogSfid != null || it.id == teamMemberSchedule.id }
+        val registeredCount = todayTeamMemberSchedules.count { it.attendanceLog != null || it.id == teamMemberSchedule.id }
 
         // Spec #587 §1.6/§1.5 — 분기별 attendanceType 결정 + 응답 필드 채움
         val attendanceType = when {
@@ -350,7 +350,7 @@ class AttendanceService(
                 scheduleId = teamMemberSchedule.id,
                 accountName = teamMemberSchedule.account?.name ?: "",
                 workCategory = teamMemberSchedule.workingCategory1?.displayName ?: "",
-                status = if (teamMemberSchedule.commuteLogSfid != null) "REGISTERED" else "PENDING"
+                status = if (teamMemberSchedule.attendanceLog != null) "REGISTERED" else "PENDING"
             )
         }
 
@@ -457,8 +457,8 @@ class AttendanceService(
 
     /**
      * 행사 분기 (Spec #587 P2-B §1.2): 사전 배정된 TMS row 를 직접 조회하고 본인/일자/미출근 검증을 수행한다.
-     * 검증 순서: 일정 존재 → 본인 할당 → 일자 일치 → 미출근 (commute_log_id IS NULL).
-     * 미출근 검증은 step 3 의 공통 commuteLogSfid 가드에서 수행 (분기별 적절한 예외 throw).
+     * 검증 순서: 일정 존재 → 본인 할당 → 일자 일치 → 미출근 (attendance_log IS NULL).
+     * 미출근 검증은 step 3 의 공통 attendanceLog 가드에서 수행 (분기별 적절한 예외 throw). (Spec #789)
      */
     private fun resolveByEventSchedule(
         eventScheduleId: Long,

@@ -232,4 +232,40 @@ class TeamMemberScheduleRepositoryTest {
             teamMemberScheduleRepository.updateCommuteLogId(99999L, "OK")
         }
     }
+
+    @Nested
+    @DisplayName("updateAttendanceLog - attendance_log id-FK 업데이트 (Spec #789)")
+    inner class UpdateAttendanceLogTests {
+
+        @Test
+        @DisplayName("정상 업데이트 - id 일치 시 attendance_log id-FK 변경")
+        fun updateAttendanceLog_success() {
+            // Given
+            val attendanceLog = testEntityManager.persistAndFlush(com.otoki.powersales.schedule.entity.AttendanceLog())
+            val teamMemberSchedule = TeamMemberSchedule(
+                sfid = "SF789",
+                employee = testEmployee,
+                workingDate = LocalDate.now(),
+                workingType = WorkingType.WORK
+            )
+            testEntityManager.persistAndFlush(teamMemberSchedule)
+            testEntityManager.clear()
+
+            // When
+            teamMemberScheduleRepository.updateAttendanceLog(teamMemberSchedule.id, attendanceLog.id)
+            testEntityManager.clear()
+
+            // Then
+            val updated = teamMemberScheduleRepository.findById(teamMemberSchedule.id)
+            assertThat(updated).isPresent
+            assertThat(updated.get().attendanceLog?.id).isEqualTo(attendanceLog.id)
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 schedule id - 에러 없이 0건 업데이트")
+        fun updateAttendanceLog_nonExistentSchedule() {
+            // When & Then (에러 없이 실행)
+            teamMemberScheduleRepository.updateAttendanceLog(99999L, 1L)
+        }
+    }
 }

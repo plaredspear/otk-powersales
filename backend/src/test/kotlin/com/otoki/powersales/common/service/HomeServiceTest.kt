@@ -569,6 +569,8 @@ class HomeServiceTest {
             workingCategory1 = workingCategory1,
             workingCategory2 = workingCategory2,
             commuteLogSfid = commuteLogSfid,
+            // Spec #789 정합 — 출근 등록 가드는 attendance_log id-FK 기준.
+            attendanceLog = commuteLogSfid?.let { com.otoki.powersales.schedule.entity.AttendanceLog(id = 1L) },
             commuteReportDatetime = commuteReportDatetime
         )
     }
