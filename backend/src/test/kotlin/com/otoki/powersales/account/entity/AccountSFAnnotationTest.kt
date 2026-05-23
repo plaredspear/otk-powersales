@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test
  *   - AC2: `@SFField` 매핑 키셋 (68개 — 22 기존 + 17 SAP 보존 + 23 신규 + 1 Spec #644 OwnerId
  *          + 3 Spec #703 Group A (IsDeleted/CreatedById/LastModifiedById) + 2 BaseEntity (CreatedDate/LastModifiedDate))
  *   - AC3: PK / FK 미부착
- *   - AC5: `@HCColumn` 매핑 (29개 — 25 기존 + 2 BaseEntity + 2 Spec #703 (createdbyid/lastmodifiedbyid))
  *   - AC8: parent_sfid `@SFField("ParentId")` 부착
  *   - AC9: AccountType / FreezerType enum + Converter 검증
  *   - AC10 (#703): Group A 신규 어노테이션 + Reference FK 검증
@@ -166,80 +165,6 @@ class AccountSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC5 — @HCColumn 매핑 보존")
-    inner class HcColumnPreservation {
-
-        private val hcMapping = SFSchemaUtils.getHCMapping(Account::class.java)
-
-        @Test
-        @DisplayName("@HCColumn 매핑 (sfid + 22개 매핑 + isdeleted + Spec #644 ownerid + Spec #703 createdbyid/lastmodifiedbyid + BaseEntity createddate/lastmodifieddate = 29개)")
-        fun hcMappingUnchanged() {
-            assertThat(hcMapping["sfid"]).isEqualTo("sfid")
-            assertThat(hcMapping["name"]).isEqualTo("name")
-            assertThat(hcMapping["phone"]).isEqualTo("phone")
-            assertThat(hcMapping["externalkey__c"]).isEqualTo("external_key")
-            assertThat(hcMapping["industry"]).isEqualTo("industry")
-            assertThat(hcMapping["werk1_tx__c"]).isEqualTo("werk1_tx")
-            assertThat(hcMapping["isdeleted"]).isEqualTo("is_deleted")
-            assertThat(hcMapping["ownerid"]).isEqualTo("owner_sfid")
-            assertThat(hcMapping["createdbyid"]).isEqualTo("created_by_sfid")
-            assertThat(hcMapping["lastmodifiedbyid"]).isEqualTo("last_modified_by_sfid")
-            assertThat(hcMapping["createddate"]).isEqualTo("created_at")
-            assertThat(hcMapping["lastmodifieddate"]).isEqualTo("updated_at")
-            assertThat(hcMapping).hasSize(29)
-        }
-
-        @Test
-        @DisplayName("신규 23개 컬럼 + SAP 보존 17개 컬럼에 @HCColumn 미부착")
-        fun newColumnsHaveNoHcColumn() {
-            assertThat(hcMapping.values).doesNotContain(
-                // SAP 보존 17개
-                "account_status_name",
-                "employee_code",
-                "distribution",
-                "account_status_code",
-                "business_type",
-                "business_category",
-                "business_license_number",
-                "email",
-                "division_name",
-                "sales_dept_name",
-                "consignment_acc",
-                "werk1",
-                "werk2",
-                "werk3",
-                "sales_dept_cost_center",
-                "division_cost_center",
-                // account_type 은 SAP 보존 (Spec #142 도입 시 @HCColumn 미부착)
-                // 신규 23개
-                "account_number",
-                "site",
-                "account_source",
-                "branch_cost_center",
-                "division_code",
-                "sales_dept_code",
-                "logistics_name",
-                "logistics_code",
-                "freezer_installed",
-                "freezer_type",
-                "remaining_credit",
-                "total_credit",
-                "map_coordinate",
-                "order_end_time",
-                "first_installed",
-                "description",
-                "website",
-                "fax",
-                "annual_revenue",
-                "number_of_employees",
-                "parent_sfid",
-                "rating",
-                "ownership",
-            )
-        }
-    }
-
-    @Nested
     @DisplayName("AC8 — parent_sfid lookup 매핑")
     inner class LookupSfid {
 
@@ -274,7 +199,7 @@ class AccountSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("created_by_sfid 필드 + @SFField(\"CreatedById\") + @HCColumn(\"createdbyid\") + length 18")
+        @DisplayName("created_by_sfid 필드 + @SFField(\"CreatedById\") + length 18")
         fun createdBySfidField() {
             val field = Account::class.java.getDeclaredField("createdBySfid")
             assertThat(field.type).isEqualTo(String::class.java)
@@ -282,11 +207,10 @@ class AccountSFAnnotationTest {
             assertThat(column.name).isEqualTo("created_by_sfid")
             assertThat(column.length).isEqualTo(18)
             assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("CreatedById")
-            assertThat(field.getAnnotation(com.otoki.powersales.common.salesforce.HCColumn::class.java).value).isEqualTo("createdbyid")
         }
 
         @Test
-        @DisplayName("last_modified_by_sfid 필드 + @SFField(\"LastModifiedById\") + @HCColumn(\"lastmodifiedbyid\") + length 18")
+        @DisplayName("last_modified_by_sfid 필드 + @SFField(\"LastModifiedById\") + length 18")
         fun lastModifiedBySfidField() {
             val field = Account::class.java.getDeclaredField("lastModifiedBySfid")
             assertThat(field.type).isEqualTo(String::class.java)
@@ -294,7 +218,6 @@ class AccountSFAnnotationTest {
             assertThat(column.name).isEqualTo("last_modified_by_sfid")
             assertThat(column.length).isEqualTo(18)
             assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("LastModifiedById")
-            assertThat(field.getAnnotation(com.otoki.powersales.common.salesforce.HCColumn::class.java).value).isEqualTo("lastmodifiedbyid")
         }
 
         @Test

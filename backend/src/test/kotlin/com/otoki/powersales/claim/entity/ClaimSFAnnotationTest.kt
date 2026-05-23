@@ -8,7 +8,6 @@ import com.otoki.powersales.claim.enums.ClaimChannel
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
@@ -270,21 +269,17 @@ class ClaimSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("ownerSfid / createdBySfid / lastModifiedBySfid — @SFField + @HCColumn 부착")
+        @DisplayName("ownerSfid / createdBySfid / lastModifiedBySfid — @SFField 부착")
         fun sfidBuffers() {
             mapOf(
-                "ownerSfid" to ("OwnerId" to "ownerid"),
-                "createdBySfid" to ("CreatedById" to "createdbyid"),
-                "lastModifiedBySfid" to ("LastModifiedById" to "lastmodifiedbyid")
-            ).forEach { (fieldName, expected) ->
-                val (sfName, hcName) = expected
+                "ownerSfid" to "OwnerId",
+                "createdBySfid" to "CreatedById",
+                "lastModifiedBySfid" to "LastModifiedById"
+            ).forEach { (fieldName, sfName) ->
                 val field = Claim::class.java.getDeclaredField(fieldName)
                 val sfField = field.getAnnotation(SFField::class.java)
-                val hcColumn = field.getAnnotation(HCColumn::class.java)
                 assertThat(sfField).withFailMessage("$fieldName 에 @SFField 미부착").isNotNull
                 assertThat(sfField.value).isEqualTo(sfName)
-                assertThat(hcColumn).withFailMessage("$fieldName 에 @HCColumn 미부착").isNotNull
-                assertThat(hcColumn.value).isEqualTo(hcName)
             }
         }
     }

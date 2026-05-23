@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.sharing.service
 
-import com.otoki.powersales.auth.repository.UserRoleEntityRepository
+import com.otoki.powersales.auth.repository.UserRoleRepository
 import com.otoki.powersales.auth.sharing.entity.UserRoleHierarchySnapshot
 import com.otoki.powersales.auth.sharing.repository.UserRoleHierarchySnapshotRepository
 import jakarta.persistence.EntityManager
@@ -28,7 +28,7 @@ import java.time.LocalDateTime
 @Service
 class UserRoleHierarchyTraversal(
     private val snapshotRepository: UserRoleHierarchySnapshotRepository,
-    private val userRoleRepository: UserRoleEntityRepository,
+    private val userRoleRepository: UserRoleRepository,
     private val objectMapper: ObjectMapper,
 ) {
     @PersistenceContext

@@ -1,6 +1,5 @@
 package com.otoki.powersales.common.entity
 
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -23,7 +22,6 @@ class UploadFile(
     @Column(name = "upload_file_id")
     val id: Long = 0,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 
@@ -80,8 +78,7 @@ class UploadFile(
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 
-    // SystemModstamp: @HCColumn 유지, @SFField 부여 안 함 (§6.3 note)
-    @HCColumn("systemmodstamp")
+    // SystemModstamp: @SFField 부여 안 함 (§6.3 note)
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now(),

@@ -1,7 +1,6 @@
 package com.otoki.powersales.organization.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -27,7 +26,6 @@ class Organization(
     @Column(name = "organization_id")
     val id: Long = 0,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 

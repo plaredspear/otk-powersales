@@ -4,7 +4,6 @@ import com.otoki.powersales.common.entity.converter.PushMessageBranchCodeConvert
 import com.otoki.powersales.common.entity.converter.PushMessageBranchConverter
 import com.otoki.powersales.common.enums.PushMessageBranch
 import com.otoki.powersales.common.enums.PushMessageBranchCode
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -25,7 +24,6 @@ class PushMessage(
     @Column(name = "push_message_id")
     val id: Int = 0,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 

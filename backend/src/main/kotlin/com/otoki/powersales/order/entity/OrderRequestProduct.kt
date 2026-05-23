@@ -1,7 +1,6 @@
 package com.otoki.powersales.order.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -141,7 +140,6 @@ class OrderRequestProduct(
     @Column(name = "total_count", precision = 18, scale = 0)
     var totalCount: BigDecimal? = null,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 

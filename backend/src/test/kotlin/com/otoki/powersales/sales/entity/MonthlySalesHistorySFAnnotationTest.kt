@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test
  *   - AC1: 클래스 `@SFObject` 부착
  *   - AC2: `@SFField` 매핑 키셋 (37개 — 18 기존 + 2 SAP 보존 + 17 신규)
  *   - AC3: PK / FK 미부착 단언
- *   - AC5: 기존 `@HCColumn` 매핑 보존
  */
 @DisplayName("MonthlySalesHistory SF 어노테이션 검증 (Spec #601)")
 class MonthlySalesHistorySFAnnotationTest {
@@ -120,35 +119,4 @@ class MonthlySalesHistorySFAnnotationTest {
         }
     }
 
-    @Nested
-    @DisplayName("AC5 — @HCColumn 매핑 (Spec #729 — sf-align 으로 전체 HC 매핑 보강)")
-    inner class HcColumnPreservation {
-
-        private val hcMapping = SFSchemaUtils.getHCMapping(MonthlySalesHistory::class.java)
-
-        @Test
-        @DisplayName("Spec #729 — HC 매핑 lastmodifieddate / lastmodifiedbyid 채택 (systemmodstamp 폐기). Spec #740: account_externalkey HC 제거")
-        fun hcMappingUnchanged() {
-            assertThat(hcMapping["sfid"]).isEqualTo("sfid")
-            assertThat(hcMapping["name"]).isEqualTo("name")
-            assertThat(hcMapping["salesyear__c"]).isEqualTo("sales_year")
-            assertThat(hcMapping["salesmonth__c"]).isEqualTo("sales_month")
-            assertThat(hcMapping["isdeleted"]).isEqualTo("is_deleted")
-            assertThat(hcMapping["createddate"]).isEqualTo("created_at")
-            assertThat(hcMapping["lastmodifieddate"]).isEqualTo("updated_at")
-        }
-
-        @Test
-        @DisplayName("Spec #729 — sf-align 으로 전체 HC 매핑 보강 (17개 신규 컬럼도 @HCColumn 부착)")
-        fun allColumnsHaveHcColumn() {
-            // Spec #729 정합: 모든 SF Custom 매핑 컬럼에 @HCColumn 부착 (한국어 → 영어 매핑 통일)
-            assertThat(hcMapping["accountid__c"]).isEqualTo("account_sfid")
-            assertThat(hcMapping["sapaccountcode__c"]).isEqualTo("sap_account_code")
-            assertThat(hcMapping["salesdate__c"]).isEqualTo("sales_date")
-            assertThat(hcMapping["lastmonthlysaleshistory__c"]).isEqualTo("last_monthly_sales_history_sfid")
-            assertThat(hcMapping["confirm__c"]).isEqualTo("is_confirmed")
-            assertThat(hcMapping["remark__c"]).isEqualTo("remark")
-            assertThat(hcMapping["thismonthtarget__c"]).isEqualTo("this_month_target")
-        }
-    }
 }

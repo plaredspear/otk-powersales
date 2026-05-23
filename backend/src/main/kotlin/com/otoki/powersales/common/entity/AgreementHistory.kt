@@ -1,6 +1,5 @@
 package com.otoki.powersales.common.entity
 
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -54,7 +53,6 @@ class AgreementHistory(
 
     // -- Spec #706: Group A — IsDeleted --
     @SFField("IsDeleted")
-    @HCColumn("isdeleted")
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 
@@ -67,17 +65,14 @@ class AgreementHistory(
     // SalesforceMigrationTool 이 Phase 2 에서 *_sfid → user.sfid → user.user_id lookup 으로 FK 채움.
 
     @SFField("OwnerId")
-    @HCColumn("ownerid")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
 
     @SFField("CreatedById")
-    @HCColumn("createdbyid")
     @Column(name = "created_by_sfid", length = 18)
     var createdBySfid: String? = null,
 
     @SFField("LastModifiedById")
-    @HCColumn("lastmodifiedbyid")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 

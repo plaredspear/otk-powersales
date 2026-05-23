@@ -1,7 +1,6 @@
 package com.otoki.powersales.product.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -22,7 +21,6 @@ class ProductBarcode(
     @Column(name = "product_barcode_id")
     val id: Int = 0,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 

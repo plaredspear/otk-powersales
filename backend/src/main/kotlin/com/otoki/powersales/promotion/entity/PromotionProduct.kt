@@ -1,7 +1,6 @@
 package com.otoki.powersales.promotion.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.product.entity.Product
@@ -23,7 +22,6 @@ class PromotionProduct(
     @Column(name = "promotion_product_id")
     val id: Long = 0,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 

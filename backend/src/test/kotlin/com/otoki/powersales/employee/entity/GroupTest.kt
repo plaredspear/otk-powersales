@@ -1,6 +1,5 @@
 package com.otoki.powersales.employee.entity
 
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
@@ -20,7 +19,6 @@ import org.junit.jupiter.api.Test
  * 검증 분류:
  *   - AC1: 클래스 @SFObject / @Table 어노테이션
  *   - AC2: @SFField 매핑 키셋 (SF Group 의 11 필드 + BaseEntity 2 = 13)
- *   - AC3: @HCColumn 매핑 키셋
  *   - AC4: Type 컬럼 GroupTypeConverter 부착
  */
 @DisplayName("Group SF 어노테이션 검증 (Spec #755)")
@@ -101,34 +99,6 @@ class GroupTest {
     }
 
     @Nested
-    @DisplayName("AC3 — @HCColumn 매핑")
-    inner class HcColumnMapping {
-
-        private val mapping = SFSchemaUtils.getHCMapping(Group::class.java)
-
-        @Test
-        @DisplayName("sfid + 11 SF 필드 + BaseEntity 2 = 14")
-        fun mappingKeySize() {
-            assertThat(mapping).hasSize(14)
-        }
-
-        @Test
-        @DisplayName("sfid → sfid")
-        fun sfidMapping() {
-            assertThat(mapping["sfid"]).isEqualTo("sfid")
-        }
-
-        @Test
-        @DisplayName("SF API name 소문자 형 — relatedid/ownerid/createdbyid/lastmodifiedbyid")
-        fun hcLowercaseMapping() {
-            assertThat(mapping["relatedid"]).isEqualTo("related_sfid")
-            assertThat(mapping["ownerid"]).isEqualTo("owner_sfid")
-            assertThat(mapping["createdbyid"]).isEqualTo("created_by_sfid")
-            assertThat(mapping["lastmodifiedbyid"]).isEqualTo("last_modified_by_sfid")
-        }
-    }
-
-    @Nested
     @DisplayName("AC4 — Type 컬럼 Converter")
     inner class TypeConverter {
 
@@ -150,13 +120,5 @@ class GroupTest {
             assertThat(sfField.value).isEqualTo("Type")
         }
 
-        @Test
-        @DisplayName("type 필드 @HCColumn('type') 부착")
-        fun typeHcColumn() {
-            val field = Group::class.java.declaredFields.first { it.name == "type" }
-            val hc = field.getAnnotation(HCColumn::class.java)
-            assertThat(hc).isNotNull
-            assertThat(hc.value).isEqualTo("type")
-        }
     }
 }

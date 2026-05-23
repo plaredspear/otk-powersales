@@ -2,7 +2,6 @@ package com.otoki.powersales.sales.entity
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -29,7 +28,6 @@ class MonthlySalesHistory(
     @Column(name = "monthly_sales_history_id")
     val id: Long = 0,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 

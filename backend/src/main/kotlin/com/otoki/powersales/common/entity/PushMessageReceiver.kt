@@ -1,6 +1,5 @@
 package com.otoki.powersales.common.entity
 
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -27,7 +26,6 @@ class PushMessageReceiver(
     @Column(name = "push_message_receiver_id")
     val id: Int = 0,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 

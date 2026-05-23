@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test
  *   - AC2: `@SFField` 매핑 키셋 (7개 — 5 기존 OK + 2 누락 매핑)
  *     * 스펙 §6.1 "기존 OK 6개"는 작성 오류 — 실제 @SFField 부착 5개 (sfid 는 미부착이므로 제외)
  *   - AC3: PK 미부착
- *   - AC4: @HCColumn 매핑 보존
  */
 @DisplayName("OrderRequest SF 어노테이션 검증 (Spec #610)")
 class OrderRequestSFAnnotationTest {
@@ -92,18 +91,4 @@ class OrderRequestSFAnnotationTest {
         }
     }
 
-    @Nested
-    @DisplayName("AC4 — @HCColumn 매핑 보존")
-    inner class HcColumnPreservation {
-
-        @Test
-        @DisplayName("기존 @HCColumn 매핑이 변경 없음 (sfid 포함)")
-        fun hcMappingUnchanged() {
-            val hcMapping = SFSchemaUtils.getHCMapping(OrderRequest::class.java)
-            assertThat(hcMapping["sfid"]).isEqualTo("sfid")
-            assertThat(hcMapping["dkretail__employeeid__c"]).isEqualTo("employee_sfid")
-            assertThat(hcMapping["dkretail__accountid__c"]).isEqualTo("account_sfid")
-            assertThat(hcMapping["name"]).isEqualTo("order_request_number")
-        }
-    }
 }

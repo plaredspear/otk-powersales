@@ -1,6 +1,5 @@
 package com.otoki.powersales.common.entity
 
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -53,7 +52,6 @@ class AgreementWord(
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 

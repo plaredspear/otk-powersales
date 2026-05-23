@@ -1,6 +1,5 @@
 package com.otoki.powersales.inspection.entity
 
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
@@ -18,7 +17,6 @@ import org.junit.jupiter.api.Test
  *   - AC1: @SFObject + 매핑 키셋
  *   - AC2: @SFField 매핑 키셋 (13개 — 7 도메인 + 1 IsDeleted + 3 Reference + 2 BaseEntity)
  *   - AC3: PK 미부착
- *   - AC5: @HCColumn 매핑
  *   - AC10 (#714): Group A 신규 어노테이션 + Reference FK 검증
  */
 @DisplayName("InspectionTheme SF 어노테이션 검증 (Spec #633 / #714)")
@@ -91,48 +89,6 @@ class InspectionThemeSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC5 — @HCColumn 매핑")
-    inner class HcColumnMapping {
-
-        private val hcMapping = SFSchemaUtils.getHCMapping(InspectionTheme::class.java)
-
-        @Test
-        @DisplayName("@HCColumn 매핑 수 = 14 (9 기존 + 2 BaseEntity + 3 신규 Reference sfid)")
-        fun hcMappingSize() {
-            assertThat(hcMapping).hasSize(14)
-        }
-
-        @Test
-        @DisplayName("기존 HC 매핑 9개 무변경")
-        fun existingHcMappings() {
-            assertThat(hcMapping["sfid"]).isEqualTo("sfid")
-            assertThat(hcMapping["name"]).isEqualTo("name")
-            assertThat(hcMapping["title__c"]).isEqualTo("title")
-            assertThat(hcMapping["startdate__c"]).isEqualTo("start_date")
-            assertThat(hcMapping["enddate__c"]).isEqualTo("end_date")
-            assertThat(hcMapping["department__c"]).isEqualTo("department")
-            assertThat(hcMapping["branchcode__c"]).isEqualTo("branch_code")
-            assertThat(hcMapping["publicflag__c"]).isEqualTo("public_flag")
-            assertThat(hcMapping["isdeleted"]).isEqualTo("is_deleted")
-        }
-
-        @Test
-        @DisplayName("BaseEntity HC 매핑 (createddate / lastmodifieddate)")
-        fun baseEntityHcMappings() {
-            assertThat(hcMapping["createddate"]).isEqualTo("created_at")
-            assertThat(hcMapping["lastmodifieddate"]).isEqualTo("updated_at")
-        }
-
-        @Test
-        @DisplayName("신규 Reference sfid HC 매핑 (ownerid / createdbyid / lastmodifiedbyid)")
-        fun referenceHcMappings() {
-            assertThat(hcMapping["ownerid"]).isEqualTo("owner_sfid")
-            assertThat(hcMapping["createdbyid"]).isEqualTo("created_by_sfid")
-            assertThat(hcMapping["lastmodifiedbyid"]).isEqualTo("last_modified_by_sfid")
-        }
-    }
-
-    @Nested
     @DisplayName("AC10 (#714) — Group A 신규 어노테이션 + Reference FK")
     inner class Spec714GroupAAndReference {
 
@@ -146,7 +102,7 @@ class InspectionThemeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("owner_sfid 필드 + @SFField(\"OwnerId\") + @HCColumn(\"ownerid\") + length 18")
+        @DisplayName("owner_sfid 필드 + @SFField(\"OwnerId\") + length 18")
         fun ownerSfidField() {
             val field = InspectionTheme::class.java.getDeclaredField("ownerSfid")
             assertThat(field.type).isEqualTo(String::class.java)
@@ -154,11 +110,10 @@ class InspectionThemeSFAnnotationTest {
             assertThat(column.name).isEqualTo("owner_sfid")
             assertThat(column.length).isEqualTo(18)
             assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("OwnerId")
-            assertThat(field.getAnnotation(HCColumn::class.java).value).isEqualTo("ownerid")
         }
 
         @Test
-        @DisplayName("created_by_sfid 필드 + @SFField(\"CreatedById\") + @HCColumn(\"createdbyid\") + length 18")
+        @DisplayName("created_by_sfid 필드 + @SFField(\"CreatedById\") + length 18")
         fun createdBySfidField() {
             val field = InspectionTheme::class.java.getDeclaredField("createdBySfid")
             assertThat(field.type).isEqualTo(String::class.java)
@@ -166,11 +121,10 @@ class InspectionThemeSFAnnotationTest {
             assertThat(column.name).isEqualTo("created_by_sfid")
             assertThat(column.length).isEqualTo(18)
             assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("CreatedById")
-            assertThat(field.getAnnotation(HCColumn::class.java).value).isEqualTo("createdbyid")
         }
 
         @Test
-        @DisplayName("last_modified_by_sfid 필드 + @SFField(\"LastModifiedById\") + @HCColumn(\"lastmodifiedbyid\") + length 18")
+        @DisplayName("last_modified_by_sfid 필드 + @SFField(\"LastModifiedById\") + length 18")
         fun lastModifiedBySfidField() {
             val field = InspectionTheme::class.java.getDeclaredField("lastModifiedBySfid")
             assertThat(field.type).isEqualTo(String::class.java)
@@ -178,7 +132,6 @@ class InspectionThemeSFAnnotationTest {
             assertThat(column.name).isEqualTo("last_modified_by_sfid")
             assertThat(column.length).isEqualTo(18)
             assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("LastModifiedById")
-            assertThat(field.getAnnotation(HCColumn::class.java).value).isEqualTo("lastmodifiedbyid")
         }
 
         @Test

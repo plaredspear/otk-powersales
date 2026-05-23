@@ -2,7 +2,6 @@ package com.otoki.powersales.order.entity
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
@@ -96,7 +95,6 @@ class OrderRequest(
     @Column(name = "client_deadline_time", length = 5)
     val clientDeadlineTime: String? = null,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 

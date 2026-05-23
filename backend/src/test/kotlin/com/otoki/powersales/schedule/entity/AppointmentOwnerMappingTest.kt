@@ -1,6 +1,5 @@
 package com.otoki.powersales.schedule.entity
 
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
 import com.otoki.powersales.employee.entity.Group
@@ -34,15 +33,6 @@ class AppointmentOwnerMappingTest {
             val sfField = field.getAnnotation(SFField::class.java)
             assertThat(sfField).isNotNull
             assertThat(sfField.value).isEqualTo("OwnerId")
-        }
-
-        @Test
-        @DisplayName("ownerSfid 필드 @HCColumn('ownerid') 부착")
-        fun ownerSfidHcColumn() {
-            val field = Appointment::class.java.declaredFields.first { it.name == "ownerSfid" }
-            val hc = field.getAnnotation(HCColumn::class.java)
-            assertThat(hc).isNotNull
-            assertThat(hc.value).isEqualTo("ownerid")
         }
 
         @Test

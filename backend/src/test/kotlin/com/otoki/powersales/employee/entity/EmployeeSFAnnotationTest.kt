@@ -98,7 +98,7 @@ class EmployeeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("sfid 필드에 @SFField 미부착 (관례 — HCColumn 만)")
+        @DisplayName("sfid 필드에 @SFField 미부착 (관례)")
         fun sfidHasNoSfField() {
             val field = Employee::class.java.getDeclaredField("sfid")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
@@ -147,7 +147,7 @@ class EmployeeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("owner_sfid 필드 + @SFField(\"OwnerId\") + @HCColumn(\"ownerid\") + length 18")
+        @DisplayName("owner_sfid 필드 + @SFField(\"OwnerId\") + length 18")
         fun ownerSfidField() {
             val field = Employee::class.java.getDeclaredField("ownerSfid")
             assertThat(field.type).isEqualTo(String::class.java)
@@ -155,11 +155,10 @@ class EmployeeSFAnnotationTest {
             assertThat(column.name).isEqualTo("owner_sfid")
             assertThat(column.length).isEqualTo(18)
             assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("OwnerId")
-            assertThat(field.getAnnotation(com.otoki.powersales.common.salesforce.HCColumn::class.java).value).isEqualTo("ownerid")
         }
 
         @Test
-        @DisplayName("created_by_sfid 필드 + @SFField(\"CreatedById\") + @HCColumn(\"createdbyid\") + length 18")
+        @DisplayName("created_by_sfid 필드 + @SFField(\"CreatedById\") + length 18")
         fun createdBySfidField() {
             val field = Employee::class.java.getDeclaredField("createdBySfid")
             assertThat(field.type).isEqualTo(String::class.java)
@@ -167,11 +166,10 @@ class EmployeeSFAnnotationTest {
             assertThat(column.name).isEqualTo("created_by_sfid")
             assertThat(column.length).isEqualTo(18)
             assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("CreatedById")
-            assertThat(field.getAnnotation(com.otoki.powersales.common.salesforce.HCColumn::class.java).value).isEqualTo("createdbyid")
         }
 
         @Test
-        @DisplayName("last_modified_by_sfid 필드 + @SFField(\"LastModifiedById\") + @HCColumn(\"lastmodifiedbyid\") + length 18")
+        @DisplayName("last_modified_by_sfid 필드 + @SFField(\"LastModifiedById\") + length 18")
         fun lastModifiedBySfidField() {
             val field = Employee::class.java.getDeclaredField("lastModifiedBySfid")
             assertThat(field.type).isEqualTo(String::class.java)
@@ -179,7 +177,6 @@ class EmployeeSFAnnotationTest {
             assertThat(column.name).isEqualTo("last_modified_by_sfid")
             assertThat(column.length).isEqualTo(18)
             assertThat(field.getAnnotation(SFField::class.java).value).isEqualTo("LastModifiedById")
-            assertThat(field.getAnnotation(com.otoki.powersales.common.salesforce.HCColumn::class.java).value).isEqualTo("lastmodifiedbyid")
         }
 
         @Test

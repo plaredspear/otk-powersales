@@ -1,7 +1,6 @@
 package com.otoki.powersales.employee.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.auth.entity.UserRole
@@ -46,7 +45,6 @@ class Group(
     @Column(name = "group_id")
     val id: Long = 0,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     var sfid: String? = null,
 

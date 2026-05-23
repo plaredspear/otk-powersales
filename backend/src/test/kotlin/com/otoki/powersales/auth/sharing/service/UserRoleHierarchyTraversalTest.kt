@@ -1,7 +1,7 @@
 package com.otoki.powersales.auth.sharing.service
 
 import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.auth.repository.UserRoleEntityRepository
+import com.otoki.powersales.auth.repository.UserRoleRepository
 import com.otoki.powersales.auth.sharing.repository.UserRoleHierarchySnapshotRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -23,7 +23,7 @@ import java.util.Optional
 class UserRoleHierarchyTraversalTest {
 
     private val snapshotRepository = mockk<UserRoleHierarchySnapshotRepository>(relaxed = true)
-    private val userRoleRepository = mockk<UserRoleEntityRepository>(relaxed = true)
+    private val userRoleRepository = mockk<UserRoleRepository>(relaxed = true)
     private val objectMapper: ObjectMapper = jacksonObjectMapper()
 
     private lateinit var traversal: UserRoleHierarchyTraversal

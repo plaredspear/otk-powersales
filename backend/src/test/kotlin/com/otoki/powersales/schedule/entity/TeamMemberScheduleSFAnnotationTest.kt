@@ -96,7 +96,7 @@ class TeamMemberScheduleSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("sfid 필드에 @SFField 미부착 (관례 — HCColumn 만)")
+        @DisplayName("sfid 필드에 @SFField 미부착 (관례)")
         fun sfidHasNoSfField() {
             val field = TeamMemberSchedule::class.java.getDeclaredField("sfid")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()

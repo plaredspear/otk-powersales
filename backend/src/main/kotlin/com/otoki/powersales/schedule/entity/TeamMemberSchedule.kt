@@ -11,7 +11,6 @@ import com.otoki.powersales.common.entity.converter.WorkingCategory2Converter
 import com.otoki.powersales.common.entity.converter.WorkingCategory3Converter
 import com.otoki.powersales.common.entity.converter.WorkingCategory5Converter
 import com.otoki.powersales.common.entity.converter.WorkingTypeConverter
-import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
@@ -38,7 +37,6 @@ class TeamMemberSchedule(
     @Column(name = "team_member_schedule_id")
     val id: Long = 0,
 
-    @HCColumn("sfid")
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 
