@@ -21,23 +21,6 @@ internal val APP_AUTHORITY_TO_USER_ROLE: Map<String, String> = mapOf(
 )
 internal const val USER_ROLE_FALLBACK = "UNKNOWN"
 
-/**
- * employee.professional_promotion_team picklist 정정.
- *
- * DB 저장 형식: `ProfessionalPromotionTeamTypeConverter` 가 `displayName` (한글) 으로 보존하므로
- * 결과값도 한글 유지. SF 운영 raw 값 그대로가 backend Converter 인식 형식과 동일 (identity map).
- *
- * 본 substep 의 실 효용은 (a) 미정의 한글 값 → fallback (현재 NULL) 변환 + (b) 매핑 표 외 값 가드.
- * identity 매핑이라 변환 자체는 row 변화 없지만 fallback 정합 + Stage 2 멱등성 검증 단언 (테스트) 으로 의미 유지.
- */
-internal val PPT_KOREAN_TO_ENUM: Map<String, String> = mapOf(
-    "라면세일조" to "라면세일조",
-    "프레시세일조_냉장" to "프레시세일조_냉장",
-    "프레시세일조_냉동" to "프레시세일조_냉동",
-    "프레시세일조_만두" to "프레시세일조_만두",
-    "카레행사조" to "카레행사조",
-)
-
 internal val PERMISSION_SET_TO_PERMISSIONS: Map<String, List<String>> = mapOf(
     "Employee_View_All" to listOf("EMPLOYEE_READ"),
     "Activity_View_All" to listOf("SCHEDULE_READ"),

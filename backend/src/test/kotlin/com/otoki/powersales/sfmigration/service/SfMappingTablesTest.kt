@@ -3,8 +3,6 @@ package com.otoki.powersales.sfmigration.service
 import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.converter.UserRoleConverter
 import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
-import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.converter.ProfileTypeConverter
 import org.assertj.core.api.Assertions.assertThat
@@ -46,27 +44,6 @@ class SfMappingTablesTest {
         @DisplayName("fallback 값 UNKNOWN 이 UserRole enum 에 존재한다")
         fun fallbackExists() {
             assertThat(UserRoleEnum.entries.map { it.name }).contains(USER_ROLE_FALLBACK)
-        }
-    }
-
-    @Nested
-    @DisplayName("PPT_KOREAN_TO_ENUM — employee.professional_promotion_team / ProfessionalPromotionTeamTypeConverter")
-    inner class PptMapping {
-
-        private val converter = ProfessionalPromotionTeamTypeConverter()
-
-        @Test
-        @DisplayName("모든 매핑 결과값이 Converter 가 인식하는 displayName (한글) 형식")
-        fun allValuesConvertibleByConverter() {
-            val invalid = PPT_KOREAN_TO_ENUM.values.filter { value ->
-                converter.convertToEntityAttribute(value) == null
-            }
-            assertThat(invalid)
-                .withFailMessage(
-                    "PPT_KOREAN_TO_ENUM 의 다음 결과값이 ProfessionalPromotionTeamTypeConverter 인식 실패: %s",
-                    invalid,
-                )
-                .isEmpty()
         }
     }
 

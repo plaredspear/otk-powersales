@@ -30,15 +30,16 @@ class SfMigrationStage2Service(
     /**
      * Stage 2-B — 한글 picklist 값을 enum 값으로 일괄 UPDATE.
      *
-     * 4개 컬럼 (Employee.role / Employee.professional_promotion_team / User.profile_type /
-     * User.cost_center_code derived 캐시) 을 순차 호출. admin UI 의 "일괄 실행" 진입점.
-     * 매칭 실패 row 는 fallback 값 또는 NULL 로 처리.
+     * 3개 컬럼 (Employee.role / User.profile_type / User.cost_center_code derived 캐시) 을
+     * 순차 호출. admin UI 의 "일괄 실행" 진입점. 매칭 실패 row 는 fallback 또는 NULL 처리.
+     *
+     * Employee.professional_promotion_team 은 SF picklist 한글 값과 backend Converter 인식
+     * 형식 (displayName 한글) 이 identity 라 변환 substep 불필요 — Stage 1 raw 적재로 충분.
      */
     @Transactional
     fun runPicklistMapping(): SfMigrationStage2Response {
         val results = mutableListOf<SubstepResult>()
         results += runPicklistEmployeeRole().results
-        results += runPicklistEmployeePpt().results
         results += runPicklistUserProfileType().results
         results += runUserCostCenterCodeSync().results
 
@@ -61,22 +62,6 @@ class SfMigrationStage2Service(
         return singleResultResponse(
             substep = "picklist.employee_role",
             label = "Employee.role",
-            rows = rows,
-        )
-    }
-
-    /** Stage 2-B (employee.professional_promotion_team) — 한글 → ProfessionalPromotionTeamType enum.name */
-    @Transactional
-    fun runPicklistEmployeePpt(): SfMigrationStage2Response {
-        val rows = applyMapping(
-            tableName = "employee",
-            columnName = "professional_promotion_team",
-            mapping = PPT_KOREAN_TO_ENUM,
-            fallbackValue = null,
-        )
-        return singleResultResponse(
-            substep = "picklist.employee_ppt",
-            label = "Employee.professional_promotion_team",
             rows = rows,
         )
     }

@@ -90,8 +90,8 @@ class SfMigrationStage2Controller(
     }
 
     /**
-     * Stage 2-B 의 4개 컬럼 중 1개만 개별 실행. column 값:
-     * - `employee_role` / `employee_ppt` / `user_profile_type` / `user_cost_center_code`
+     * Stage 2-B 의 3개 컬럼 중 1개만 개별 실행. column 값:
+     * - `employee_role` / `user_profile_type` / `user_cost_center_code`
      */
     @PostMapping("/api/v1/admin/sf-migration/stage2/picklist/{column}")
     @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
@@ -100,7 +100,6 @@ class SfMigrationStage2Controller(
     ): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = when (column) {
             "employee_role" -> service.runPicklistEmployeeRole()
-            "employee_ppt" -> service.runPicklistEmployeePpt()
             "user_profile_type" -> service.runPicklistUserProfileType()
             "user_cost_center_code" -> service.runUserCostCenterCodeSync()
             else -> return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(

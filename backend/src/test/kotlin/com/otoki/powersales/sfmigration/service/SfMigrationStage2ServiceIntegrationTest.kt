@@ -100,10 +100,10 @@ class SfMigrationStage2ServiceIntegrationTest {
 
     @Test
     @Transactional
-    @DisplayName("Stage 2-B picklist — 한글 role/ppt/profile_type 을 enum 으로 일괄 변환")
+    @DisplayName("Stage 2-B picklist — 한글 role/profile_type 을 enum 으로 일괄 변환")
     fun runPicklistMapping() {
-        em.createNativeQuery("INSERT INTO powersales.employee (employee_code, role, professional_promotion_team, cost_center_code) VALUES ('E001', '여사원', '라면세일조', '3233')").executeUpdate()
-        em.createNativeQuery("INSERT INTO powersales.employee (employee_code, role, professional_promotion_team, cost_center_code) VALUES ('E002', '지점장', '프레시세일조_냉장', '4001')").executeUpdate()
+        em.createNativeQuery("INSERT INTO powersales.employee (employee_code, role, cost_center_code) VALUES ('E001', '여사원', '3233')").executeUpdate()
+        em.createNativeQuery("INSERT INTO powersales.employee (employee_code, role, cost_center_code) VALUES ('E002', '지점장', '4001')").executeUpdate()
         em.createNativeQuery("INSERT INTO powersales.employee (employee_code, role) VALUES ('E003', '알수없는역할')").executeUpdate()
         em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_type) VALUES ('E001', '8. 마케팅')").executeUpdate()
         em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_type) VALUES ('E002', '4. 지점장')").executeUpdate()
@@ -117,9 +117,6 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("WOMAN")
         assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E002'")).isEqualTo("BRANCH_MANAGER")
         assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E003'")).isEqualTo("UNKNOWN")
-
-        assertThat(strOf("SELECT professional_promotion_team FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("라면세일조")
-        assertThat(strOf("SELECT professional_promotion_team FROM powersales.employee WHERE employee_code = 'E002'")).isEqualTo("프레시세일조_냉장")
 
         assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E001'")).isEqualTo("8.마케팅")
         assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E002'")).isEqualTo("4.지점장")
@@ -135,7 +132,7 @@ class SfMigrationStage2ServiceIntegrationTest {
     @Transactional
     @DisplayName("Stage 2-B 개별 — runPicklistEmployeeRole 만 호출 시 role 만 변환")
     fun runPicklistEmployeeRole_only() {
-        em.createNativeQuery("INSERT INTO powersales.employee (employee_code, role, professional_promotion_team) VALUES ('E001', '여사원', '라면세일조')").executeUpdate()
+        em.createNativeQuery("INSERT INTO powersales.employee (employee_code, role) VALUES ('E001', '여사원')").executeUpdate()
         em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_type) VALUES ('E001', '8. 마케팅')").executeUpdate()
 
         val response = service.runPicklistEmployeeRole()
@@ -143,21 +140,7 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(response.substep).isEqualTo("picklist.employee_role")
         assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("WOMAN")
         // 다른 컬럼은 미변환 (개별 실행이므로)
-        assertThat(strOf("SELECT professional_promotion_team FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("라면세일조")
         assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E001'")).isEqualTo("8. 마케팅")
-    }
-
-    @Test
-    @Transactional
-    @DisplayName("Stage 2-B 개별 — runPicklistEmployeePpt 만 호출 시 ppt 만 변환")
-    fun runPicklistEmployeePpt_only() {
-        em.createNativeQuery("INSERT INTO powersales.employee (employee_code, role, professional_promotion_team) VALUES ('E001', '여사원', '라면세일조')").executeUpdate()
-
-        val response = service.runPicklistEmployeePpt()
-
-        assertThat(response.substep).isEqualTo("picklist.employee_ppt")
-        assertThat(strOf("SELECT professional_promotion_team FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("라면세일조")
-        assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("여사원")
     }
 
     @Test
