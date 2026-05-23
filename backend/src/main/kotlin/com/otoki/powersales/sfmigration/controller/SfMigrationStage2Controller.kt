@@ -9,6 +9,7 @@ import com.otoki.powersales.sfmigration.dto.SfMigrationStage2Response
 import com.otoki.powersales.sfmigration.dto.SubstepResult
 import com.otoki.powersales.sfmigration.service.SfFkResolveProgress
 import com.otoki.powersales.sfmigration.service.SfMigrationStage2FkService
+import com.otoki.powersales.sfmigration.service.SfMigrationStage2NaturalKeyFkService
 import com.otoki.powersales.sfmigration.service.SfMigrationStage2Service
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -31,6 +32,7 @@ import java.util.concurrent.Executors
 class SfMigrationStage2Controller(
     private val service: SfMigrationStage2Service,
     private val fkService: SfMigrationStage2FkService,
+    private val naturalKeyFkService: SfMigrationStage2NaturalKeyFkService,
     private val fkProgress: SfFkResolveProgress,
     private val hierarchyTraversal: UserRoleHierarchyTraversal,
 ) {
@@ -63,6 +65,21 @@ class SfMigrationStage2Controller(
     @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
     fun getFkProgress(): ResponseEntity<ApiResponse<SfFkResolveProgressResponse>> {
         return ResponseEntity.ok(ApiResponse.success(fkProgress.toResponse()))
+    }
+
+    /**
+     * spec #800 — Natural Key FK Resolve.
+     *
+     * `NATURAL_KEY_FK_MAPPINGS` (9 entry) 일괄 적용. sfid prefix 기반이 아니라
+     * developer_name / name / 외부 sfid 컬럼 기반 join 으로 id 채움.
+     *
+     * 운영 cut-over 시점에 fk substep 직후 1회 호출.
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/fk-natural-key")
+    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    fun runNaturalKeyFkResolve(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = naturalKeyFkService.runNaturalKeyFkResolve()
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @PostMapping("/api/v1/admin/sf-migration/stage2/picklist")
