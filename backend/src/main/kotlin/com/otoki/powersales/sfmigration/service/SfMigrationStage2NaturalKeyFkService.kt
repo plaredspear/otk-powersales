@@ -68,13 +68,81 @@ class SfMigrationStage2NaturalKeyFkService(
             }
         }
 
-        log.info("[fk-natural-key] done — total {} rows updated across {} mappings", totalUpdated, NATURAL_KEY_FK_MAPPINGS.size)
+        // sharing_rule_target — polymorphic target_id resolve.
+        // 단일 NaturalKeyFkSpec 으로 표현 불가 (target_type 별 ref table 분기) — 전용 method 처리.
+        totalUpdated += resolveSharingRuleTarget(results)
+
+        log.info("[fk-natural-key] done — total {} rows updated", totalUpdated)
 
         return SfMigrationStage2Response(
             substep = "fk-natural-key",
             results = results,
             totalRowsAffected = totalUpdated,
         )
+    }
+
+    /**
+     * sharing_rule_target.target_id 채움 — target_type 별 ref table 분기.
+     *
+     * SF retrieve XML 의 `<sharedTo>` 본문 element 가 DeveloperName 만 보존하므로
+     * target_sfid 는 채울 출처 없음 (영구 NULL). target_developer_name + target_type
+     * 자연 키만으로 target_id resolve.
+     *
+     * target_type 매칭:
+     *   - 'ROLE' / 'ROLE_AND_SUBORDINATES' / 'ROLE_AND_SUBORDINATES_INTERNAL'
+     *     → user_role.developer_name lookup → user_role_id
+     *   - 'GROUP' → "group".developer_name lookup → group_id
+     *   - 'USER'  → user.employee_code (혹은 SF 매핑 자연 키) — SF retrieve 의 `<user>` 본문
+     *              은 username 형식이라 신규 시스템 employee_code 와 정합 불일치 → 운영 0건
+     *              대응이라 본 분기는 noop, 향후 사용 시 매핑 키 결정 필요.
+     */
+    private fun resolveSharingRuleTarget(results: MutableList<SubstepResult>): Int {
+        var totalUpdated = 0
+
+        // ROLE / ROLE_AND_SUBORDINATES / ROLE_AND_SUBORDINATES_INTERNAL → user_role.user_role_id
+        val roleSql = """
+            UPDATE powersales.sharing_rule_target s
+            SET target_id = r.user_role_id
+            FROM powersales.user_role r
+            WHERE r.developer_name = s.target_developer_name
+              AND s.target_type IN ('ROLE', 'ROLE_AND_SUBORDINATES', 'ROLE_AND_SUBORDINATES_INTERNAL')
+              AND s.target_id IS NULL
+        """.trimIndent()
+        val roleUpdated = em.createNativeQuery(roleSql).executeUpdate()
+        results += SubstepResult(
+            label = "sharing_rule_target.target_developer_name (target_type=ROLE*) → user_role.user_role_id",
+            rowsAffected = roleUpdated,
+        )
+        totalUpdated += roleUpdated
+        log.info("[fk-natural-key] sharing_rule_target target_type=ROLE* : updated={}", roleUpdated)
+
+        // GROUP → "group".group_id
+        val groupSql = """
+            UPDATE powersales.sharing_rule_target s
+            SET target_id = r.group_id
+            FROM powersales."group" r
+            WHERE r.developer_name = s.target_developer_name
+              AND s.target_type = 'GROUP'
+              AND s.target_id IS NULL
+        """.trimIndent()
+        val groupUpdated = em.createNativeQuery(groupSql).executeUpdate()
+        results += SubstepResult(
+            label = "sharing_rule_target.target_developer_name (target_type=GROUP) → group.group_id",
+            rowsAffected = groupUpdated,
+        )
+        totalUpdated += groupUpdated
+        log.info("[fk-natural-key] sharing_rule_target target_type=GROUP : updated={}", groupUpdated)
+
+        val unmatchedSql = """
+            SELECT COUNT(*) FROM powersales.sharing_rule_target
+            WHERE target_id IS NULL AND target_developer_name IS NOT NULL
+        """.trimIndent()
+        val unmatched = (em.createNativeQuery(unmatchedSql).singleResult as Number).toLong()
+        if (unmatched > 0) {
+            log.warn("[fk-natural-key] sharing_rule_target : {} row 매칭 실패 (target_developer_name 매칭 안 됨)", unmatched)
+        }
+
+        return totalUpdated
     }
 
     /**
@@ -113,8 +181,8 @@ class SfMigrationStage2NaturalKeyFkService(
     }
 
     /**
-     * PG reserved keyword `user` 대응. 본 service 가 처리하는 ref/source 중 `user` 는 미사용이지만
-     * 향후 확장 안전성을 위해 동일 패턴 유지.
+     * PG reserved keyword `user` / `group` 대응.
      */
-    private fun quoteIdentifier(name: String): String = if (name == "user") "\"user\"" else name
+    private fun quoteIdentifier(name: String): String =
+        if (name == "user" || name == "group") "\"$name\"" else name
 }

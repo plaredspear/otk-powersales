@@ -84,7 +84,7 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
     inner class RunNaturalKeyFkResolve {
 
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 9 entry 모두에 대해 UPDATE 1회 + countUnmatched 2회 (전/후) — 총 27회 createNativeQuery")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 9 entry + sharing_rule_target 2 분기 모두에 대해 UPDATE 11회 + COUNT 19회")
         fun allMappingsExecuted() {
             val updateQuery = mockk<Query>()
             every { updateQuery.executeUpdate() } returns 10
@@ -98,20 +98,22 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
             val response = service.runNaturalKeyFkResolve()
 
             assertThat(response.substep).isEqualTo("fk-natural-key")
-            assertThat(response.results).hasSize(NATURAL_KEY_FK_MAPPINGS.size)
-            assertThat(response.totalRowsAffected).isEqualTo(NATURAL_KEY_FK_MAPPINGS.size * 10)
+            // 9 NaturalKey + 2 sharing_rule_target (ROLE*/GROUP) = 11 SubstepResult
+            assertThat(response.results).hasSize(NATURAL_KEY_FK_MAPPINGS.size + 2)
+            assertThat(response.totalRowsAffected).isEqualTo((NATURAL_KEY_FK_MAPPINGS.size + 2) * 10)
 
-            // UPDATE 9회 + countUnmatched 18회 (각 매핑마다 전/후 2회) = 27회
-            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size) {
+            // UPDATE: 9 (NaturalKey) + 2 (sharing_rule_target ROLE*/GROUP) = 11회
+            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size + 2) {
                 em.createNativeQuery(match<String> { it.trimStart().startsWith("UPDATE") })
             }
-            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2) {
+            // SELECT COUNT: 9 NaturalKey × 2 (전/후) + 1 (sharing_rule_target unmatched 측정) = 19회
+            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 1) {
                 em.createNativeQuery(match<String> { it.trimStart().startsWith("SELECT") })
             }
         }
 
         @Test
-        @DisplayName("결과 SubstepResult.label 은 'sourceTable.sourceColumn → refTable.targetIdColumn' 패턴")
+        @DisplayName("결과 SubstepResult.label 은 'sourceTable.sourceColumn → refTable.targetIdColumn' 패턴 + sharing_rule_target 전용 분기 label")
         fun substepResultLabelFormat() {
             val updateQuery = mockk<Query>()
             every { updateQuery.executeUpdate() } returns 0
@@ -128,6 +130,8 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
                 "sharing_rule_condition.sharing_rule_developer_name → sharing_rule.sharing_rule_id",
                 "profile_flags.profile_name → profile.profile_id",
                 "permission_set_assignment.permission_set_sfid → permission_set_flags.permission_set_flags_id",
+                "sharing_rule_target.target_developer_name (target_type=ROLE*) → user_role.user_role_id",
+                "sharing_rule_target.target_developer_name (target_type=GROUP) → group.group_id",
             )
         }
 

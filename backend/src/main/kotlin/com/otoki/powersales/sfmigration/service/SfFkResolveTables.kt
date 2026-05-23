@@ -202,14 +202,17 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
  *
  * - product_code : code 기반 lookup (sfid 아님)
  * - related      : Group.related polymorphic — 별도 처리
- *
- * (record_type 은 spec #796 부터 FK_PREFIX_MAPPING 으로 활성화 — 본 set 에서 제거됨)
+ * - user_or_group : group_member 의 polymorphic — POLYMORPHIC_USER_OR_GROUP_TABLES 가 별도 처리
+ * - target       : sharing_rule_target.target_sfid 는 SF retrieve XML 출처에서 부재 (SF
+ *                  자체가 sharedTo 본문 element 의 DeveloperName 으로만 식별).
+ *                  target_id 채움은 NaturalKey FK Service 의 sharing_rule_target 전용 분기
+ *                  (target_developer_name + target_type) 가 처리. sfid prefix 경로 skip.
  */
 internal val SKIP_FK_PREFIXES: Set<String> = setOf(
     "product_code",
     "related",
-    // spec #790 — group_member.user_or_group_sfid 는 POLYMORPHIC_USER_OR_GROUP_TABLES 가 별도 처리
     "user_or_group",
+    "target",
 )
 
 /**

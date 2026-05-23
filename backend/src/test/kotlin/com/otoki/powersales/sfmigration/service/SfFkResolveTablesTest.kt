@@ -123,6 +123,12 @@ class SfFkResolveTablesTest {
         fun userOrGroupPolymorphic() {
             assertThat(deriveFkResolveSpec("user_or_group_sfid")).isNull()
         }
+
+        @Test
+        @DisplayName("target_sfid → null (sharing_rule_target 의 target_id 는 NaturalKey FK Service 가 target_developer_name + target_type 분기 처리)")
+        fun targetPolymorphic() {
+            assertThat(deriveFkResolveSpec("target_sfid")).isNull()
+        }
     }
 
     @Nested
