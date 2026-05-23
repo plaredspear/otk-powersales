@@ -21,12 +21,21 @@ internal val APP_AUTHORITY_TO_USER_ROLE: Map<String, String> = mapOf(
 )
 internal const val USER_ROLE_FALLBACK = "UNKNOWN"
 
+/**
+ * employee.professional_promotion_team picklist 정정.
+ *
+ * DB 저장 형식: `ProfessionalPromotionTeamTypeConverter` 가 `displayName` (한글) 으로 보존하므로
+ * 결과값도 한글 유지. SF 운영 raw 값 그대로가 backend Converter 인식 형식과 동일 (identity map).
+ *
+ * 본 substep 의 실 효용은 (a) 미정의 한글 값 → fallback (현재 NULL) 변환 + (b) 매핑 표 외 값 가드.
+ * identity 매핑이라 변환 자체는 row 변화 없지만 fallback 정합 + Stage 2 멱등성 검증 단언 (테스트) 으로 의미 유지.
+ */
 internal val PPT_KOREAN_TO_ENUM: Map<String, String> = mapOf(
-    "라면세일조" to "RAMEN_SALE",
-    "프레시세일조_냉장" to "FRESH_SALE_REFRIGERATED",
-    "프레시세일조_냉동" to "FRESH_SALE_FROZEN",
-    "프레시세일조_만두" to "FRESH_SALE_DUMPLING",
-    "카레행사조" to "CURRY_PROMOTION",
+    "라면세일조" to "라면세일조",
+    "프레시세일조_냉장" to "프레시세일조_냉장",
+    "프레시세일조_냉동" to "프레시세일조_냉동",
+    "프레시세일조_만두" to "프레시세일조_만두",
+    "카레행사조" to "카레행사조",
 )
 
 internal val PERMISSION_SET_TO_PERMISSIONS: Map<String, List<String>> = mapOf(
@@ -51,22 +60,52 @@ internal val PERMISSION_SET_TO_PERMISSIONS: Map<String, List<String>> = mapOf(
     "ProfessionalPromotionTeam" to listOf("PROMOTION_READ", "PROMOTION_WRITE"),
 )
 
+/**
+ * user.profile_type picklist 정정.
+ *
+ * DB 저장 형식: `ProfileTypeConverter` 가 `ProfileType.value` (SF raw 값, 예: "5.영업사원") 으로 저장.
+ * V169 마이그레이션이 backend enum.name → SF raw 값 일괄 정정한 이력 (Spec #759/#760 hotfix) 와 정합.
+ *
+ * 결과값은 모두 `ProfileType.value` (운영 raw 값 형식, 숫자prefix 포함 한글) 로 통일.
+ * 매핑 키는 SF Profile.Name 의 운영 변형 (공백 포함 / 정규화 / i18n) 까지 커버.
+ */
 internal val PROFILE_NAME_TO_PROFILE_TYPE: Map<String, String> = mapOf(
-    "8. 마케팅" to "MARKETING",
-    "마케팅" to "MARKETING",
-    "9. Staff" to "STAFF",
-    "Staff" to "STAFF",
-    "6. 조장" to "TEAM_LEADER",
-    "조장" to "TEAM_LEADER",
-    "4. 지점장" to "BRANCH_MANAGER",
-    "지점장" to "BRANCH_MANAGER",
-    "영업부장" to "SALES_MANAGER",
-    "사업부장" to "BUSINESS_DIRECTOR",
-    "본부장" to "DIVISION_HEAD",
-    "5. 영업사원" to "SALES_REP",
-    "영업사원" to "SALES_REP",
-    "시스템 관리자" to "SYSTEM_ADMIN",
-    "System Administrator" to "SYSTEM_ADMIN",
-    "システム管理者" to "SYSTEM_ADMIN",
+    // MARKETING — ProfileType.value = "8.마케팅"
+    "8. 마케팅" to "8.마케팅",
+    "8.마케팅" to "8.마케팅",
+    "마케팅" to "8.마케팅",
+    // STAFF — ProfileType.value = "9. Staff"
+    "9. Staff" to "9. Staff",
+    "9.Staff" to "9. Staff",
+    "Staff" to "9. Staff",
+    // TEAM_LEADER — ProfileType.value = "6.조장"
+    "6. 조장" to "6.조장",
+    "6.조장" to "6.조장",
+    "조장" to "6.조장",
+    // BRANCH_MANAGER — ProfileType.value = "4.지점장"
+    "4. 지점장" to "4.지점장",
+    "4.지점장" to "4.지점장",
+    "지점장" to "4.지점장",
+    // SALES_MANAGER — ProfileType.value = "3.영업부장"
+    "3. 영업부장" to "3.영업부장",
+    "3.영업부장" to "3.영업부장",
+    "영업부장" to "3.영업부장",
+    // BUSINESS_DIRECTOR — ProfileType.value = "2.사업부장"
+    "2. 사업부장" to "2.사업부장",
+    "2.사업부장" to "2.사업부장",
+    "사업부장" to "2.사업부장",
+    // DIVISION_HEAD — ProfileType.value = "1.본부장"
+    "1. 본부장" to "1.본부장",
+    "1.본부장" to "1.본부장",
+    "본부장" to "1.본부장",
+    // SALES_REP — ProfileType.value = "5.영업사원"
+    "5. 영업사원" to "5.영업사원",
+    "5.영업사원" to "5.영업사원",
+    "영업사원" to "5.영업사원",
+    // SYSTEM_ADMIN — ProfileType.value = "시스템 관리자"
+    "시스템 관리자" to "시스템 관리자",
+    "System Administrator" to "시스템 관리자",
+    "システム管理者" to "시스템 관리자",
+    "SYSTEM_ADMIN" to "시스템 관리자",
 )
-internal const val PROFILE_TYPE_FALLBACK = "STAFF"
+internal const val PROFILE_TYPE_FALLBACK = "9. Staff"

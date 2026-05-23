@@ -118,12 +118,12 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E002'")).isEqualTo("BRANCH_MANAGER")
         assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E003'")).isEqualTo("UNKNOWN")
 
-        assertThat(strOf("SELECT professional_promotion_team FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("RAMEN_SALE")
-        assertThat(strOf("SELECT professional_promotion_team FROM powersales.employee WHERE employee_code = 'E002'")).isEqualTo("FRESH_SALE_REFRIGERATED")
+        assertThat(strOf("SELECT professional_promotion_team FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("라면세일조")
+        assertThat(strOf("SELECT professional_promotion_team FROM powersales.employee WHERE employee_code = 'E002'")).isEqualTo("프레시세일조_냉장")
 
-        assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E001'")).isEqualTo("MARKETING")
-        assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E002'")).isEqualTo("BRANCH_MANAGER")
-        assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E003'")).isEqualTo("STAFF")
+        assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E001'")).isEqualTo("8.마케팅")
+        assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E002'")).isEqualTo("4.지점장")
+        assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E003'")).isEqualTo("9. Staff")
 
         // Employee.cost_center_code → User.cost_center_code 동기화 검증
         assertThat(strOf("SELECT cost_center_code FROM powersales.\"user\" WHERE employee_code = 'E001'")).isEqualTo("3233")
@@ -156,7 +156,7 @@ class SfMigrationStage2ServiceIntegrationTest {
         val response = service.runPicklistEmployeePpt()
 
         assertThat(response.substep).isEqualTo("picklist.employee_ppt")
-        assertThat(strOf("SELECT professional_promotion_team FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("RAMEN_SALE")
+        assertThat(strOf("SELECT professional_promotion_team FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("라면세일조")
         assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("여사원")
     }
 
@@ -169,7 +169,7 @@ class SfMigrationStage2ServiceIntegrationTest {
         val response = service.runPicklistUserProfileType()
 
         assertThat(response.substep).isEqualTo("picklist.user_profile_type")
-        assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E001'")).isEqualTo("MARKETING")
+        assertThat(strOf("SELECT profile_type FROM powersales.\"user\" WHERE employee_code = 'E001'")).isEqualTo("8.마케팅")
     }
 
     @Test
