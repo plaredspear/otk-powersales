@@ -50,7 +50,7 @@ class AdminEmployeeUpdateServiceTest {
         val response = service.update(10L, request)
 
         assertThat(response.jikchak).isEqualTo("새직책")
-        assertThat(response.role).isEqualTo("LEADER")
+        assertThat(response.role).isEqualTo(AppAuthority.LEADER)
         assertThat(response.orgName).isEqualTo("신규조직")
     }
 

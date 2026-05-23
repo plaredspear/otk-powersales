@@ -35,14 +35,14 @@ class AccountUpdateServiceTest {
     )
 
     private val accountId = 1234
-    private fun webPrincipal(userId: Long, role: String?) = WebUserPrincipal(
+    private fun webPrincipal(userId: Long, role: String?, profileName: String = "9. Staff") = WebUserPrincipal(
         userId = userId,
         usernameValue = "u$userId@otokims.co.kr",
         employeeCode = "S$userId",
         employeeId = userId,
         role = role,
         costCenterCode = null,
-        profileName = "9. Staff",
+        profileName = profileName,
         isSalesSupport = false,
         passwordChangeRequired = false,
         permissions = emptySet(),
@@ -52,7 +52,7 @@ class AccountUpdateServiceTest {
     )
 
     private val branchManagerPrincipal = webPrincipal(1L, AppAuthority.BRANCH_MANAGER)
-    private val systemAdminPrincipal = webPrincipal(9L, null)
+    private val systemAdminPrincipal = webPrincipal(9L, null, profileName = "시스템 관리자")
 
     private fun nativeAccount(
         id: Int = accountId,

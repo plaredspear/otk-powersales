@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.service
 
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.auth.entity.Profile
 import com.otoki.powersales.auth.sharing.repository.SharingPolicyQueryRepository
 import com.otoki.powersales.auth.sharing.service.GroupMembershipEvaluator
 import com.otoki.powersales.auth.sharing.service.PermissionSetEvaluator
@@ -9,9 +9,11 @@ import com.otoki.powersales.auth.sharing.service.RecordTypePermissionEvaluator
 import com.otoki.powersales.auth.sharing.service.UserRoleHierarchyTraversal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every
 import io.mockk.mockk
+import java.util.Optional
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -43,190 +45,208 @@ class AdminDataScopeServiceTest {
         recordTypePermissionEvaluator = recordTypePermissionEvaluator,
     )
 
+    init {
+        // relaxed mockk 는 Optional<Profile> / User 의 generic 추론 실패로 Object 반환 → ClassCastException.
+        // 명시적 stub default 부여.
+        every { profileRepository.findById(any()) } returns Optional.empty<Profile>()
+        every { userRepository.findByEmployeeCode(any()) } returns null
+    }
+
+    /**
+     * service 가 employee.employeeCode → user → profile.name 체인으로 분기.
+     * profileName 을 직접 stub 하기 위한 helper.
+     */
+    private fun stubProfile(employeeCode: String, profileName: String?, isSalesSupport: Boolean = false) {
+        val profileId = if (profileName != null) 100L else null
+        val user = User(
+            username = "user-$employeeCode",
+            employeeCode = employeeCode,
+            password = "x",
+            profileId = profileId,
+            isSalesSupport = isSalesSupport,
+        )
+        every { userRepository.findByEmployeeCode(employeeCode) } returns user
+        if (profileName != null) {
+            val profile = Profile(id = profileId!!, name = profileName)
+            every { profileRepository.findById(profileId) } returns Optional.of(profile)
+        }
+    }
+
     @Nested
     @DisplayName("resolve")
     inner class Resolve {
 
-        // ========== 전체 지점 권한 (ALL_BRANCHES_AUTHORITIES) ==========
+        // ========== 전체 지점 권한 (ALL_BRANCHES_PROFILES + 시스템 관리자 + isSalesSupport) ==========
 
         @Test
-        @DisplayName("영업부장 - userId 조회 -> isAllBranches=true, branchCodes 비어있음")
+        @DisplayName("Profile=영업부장 -> isAllBranches=true, branchCodes 비어있음")
         fun resolve_withSalesDirector_returnsAllBranches() {
-            // Given
             val userId = 1L
-            val employee = createTestEmployee(id = userId, role = null, costCenterCode = "B001")
+            val employee = createTestEmployee(id = userId, costCenterCode = "B001")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            stubProfile(employee.employeeCode, profileName = "3.영업부장")
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
             assertThat(result.isAllBranches).isTrue()
             assertThat(result.branchCodes).isEmpty()
         }
 
         @Test
-        @DisplayName("사업부장 - userId 조회 -> isAllBranches=true, branchCodes 비어있음")
+        @DisplayName("Profile=사업부장 -> isAllBranches=true, branchCodes 비어있음")
         fun resolve_withDivisionDirector_returnsAllBranches() {
-            // Given
             val userId = 2L
-            val employee = createTestEmployee(id = userId, role = null, costCenterCode = "B002")
+            val employee = createTestEmployee(id = userId, costCenterCode = "B002")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            stubProfile(employee.employeeCode, profileName = "2.사업부장")
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
             assertThat(result.isAllBranches).isTrue()
             assertThat(result.branchCodes).isEmpty()
         }
 
         @Test
-        @DisplayName("영업본부장 - userId 조회 -> isAllBranches=true, branchCodes 비어있음")
+        @DisplayName("Profile=본부장 -> isAllBranches=true, branchCodes 비어있음")
         fun resolve_withSalesHeadquartersDirector_returnsAllBranches() {
-            // Given
             val userId = 3L
-            val employee = createTestEmployee(id = userId, role = null, costCenterCode = "B003")
+            val employee = createTestEmployee(id = userId, costCenterCode = "B003")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            stubProfile(employee.employeeCode, profileName = "1.본부장")
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
             assertThat(result.isAllBranches).isTrue()
             assertThat(result.branchCodes).isEmpty()
         }
 
         @Test
-        @DisplayName("영업지원실 - userId 조회 -> isAllBranches=true, branchCodes 비어있음")
+        @DisplayName("isSalesSupport=true (영업지원실) -> isAllBranches=true, branchCodes 비어있음")
         fun resolve_withSalesSupportOffice_returnsAllBranches() {
-            // Given
             val userId = 4L
-            val employee = createTestEmployee(id = userId, role = null, costCenterCode = "B004")
+            val employee = createTestEmployee(id = userId, costCenterCode = "B004")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            stubProfile(employee.employeeCode, profileName = "9. Staff", isSalesSupport = true)
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
             assertThat(result.isAllBranches).isTrue()
             assertThat(result.branchCodes).isEmpty()
         }
 
-        // ========== 지점 한정 권한 (BRANCH_ONLY_AUTHORITIES) ==========
-
         @Test
-        @DisplayName("조장 + costCenterCode 있음 - userId 조회 -> isAllBranches=false, branchCodes에 costCenterCode 포함")
-        fun resolve_withLeaderAndCostCenter_returnsBranchScope() {
-            // Given
-            val userId = 5L
-            val employee = createTestEmployee(id = userId, role = AppAuthority.LEADER, costCenterCode = "B100")
+        @DisplayName("Profile=시스템 관리자 -> isAllBranches=true, branchCodes 비어있음")
+        fun resolve_withSystemAdmin_returnsAllBranches() {
+            val userId = 12L
+            val employee = createTestEmployee(id = userId, costCenterCode = "B999")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            stubProfile(employee.employeeCode, profileName = "시스템 관리자")
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
+            assertThat(result.isAllBranches).isTrue()
+            assertThat(result.branchCodes).isEmpty()
+        }
+
+        // ========== 지점 한정 (그 외 Profile + costCenterCode) ==========
+
+        @Test
+        @DisplayName("일반 Profile + costCenterCode 있음 -> isAllBranches=false, branchCodes 포함")
+        fun resolve_withLeaderAndCostCenter_returnsBranchScope() {
+            val userId = 5L
+            val employee = createTestEmployee(id = userId, costCenterCode = "B100")
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            stubProfile(employee.employeeCode, profileName = "9. Staff")
+
+            val result = adminDataScopeService.resolve(userId)
+
             assertThat(result.isAllBranches).isFalse()
             assertThat(result.branchCodes).containsExactly("B100")
         }
 
         @Test
-        @DisplayName("지점장 + costCenterCode 있음 - userId 조회 -> isAllBranches=false, branchCodes에 costCenterCode 포함")
+        @DisplayName("일반 Profile + 다른 costCenterCode -> isAllBranches=false, branchCodes 포함")
         fun resolve_withBranchManagerAndCostCenter_returnsBranchScope() {
-            // Given
             val userId = 6L
-            val employee = createTestEmployee(id = userId, role = AppAuthority.BRANCH_MANAGER, costCenterCode = "B200")
+            val employee = createTestEmployee(id = userId, costCenterCode = "B200")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            stubProfile(employee.employeeCode, profileName = "8. Manager")
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
             assertThat(result.isAllBranches).isFalse()
             assertThat(result.branchCodes).containsExactly("B200")
         }
 
         @Test
-        @DisplayName("조장 + costCenterCode null - userId 조회 -> isAllBranches=false, branchCodes 비어있음")
+        @DisplayName("일반 Profile + costCenterCode null -> isAllBranches=false, branchCodes 비어있음")
         fun resolve_withLeaderAndNullCostCenter_returnsEmptyBranchCodes() {
-            // Given
             val userId = 7L
-            val employee = createTestEmployee(id = userId, role = AppAuthority.LEADER, costCenterCode = null)
+            val employee = createTestEmployee(id = userId, costCenterCode = null)
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            stubProfile(employee.employeeCode, profileName = "9. Staff")
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
             assertThat(result.isAllBranches).isFalse()
             assertThat(result.branchCodes).isEmpty()
         }
 
-        // ========== appAuthority가 null인 경우 ==========
+        // ========== Profile 미지정 ==========
 
         @Test
-        @DisplayName("appAuthority null + costCenterCode 있음 - userId 조회 -> isAllBranches=false, branchCodes에 costCenterCode 포함")
+        @DisplayName("Profile 미지정 + costCenterCode 있음 -> isAllBranches=false, branchCodes 포함")
         fun resolve_withNullAuthorityAndCostCenter_returnsBranchScope() {
-            // Given
             val userId = 8L
-            val employee = createTestEmployee(id = userId, role = null, costCenterCode = "B300")
+            val employee = createTestEmployee(id = userId, costCenterCode = "B300")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            stubProfile(employee.employeeCode, profileName = null)
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
             assertThat(result.isAllBranches).isFalse()
             assertThat(result.branchCodes).containsExactly("B300")
         }
 
         @Test
-        @DisplayName("appAuthority null + costCenterCode null - userId 조회 -> isAllBranches=false, branchCodes 비어있음")
+        @DisplayName("Profile 미지정 + costCenterCode null -> isAllBranches=false, branchCodes 비어있음")
         fun resolve_withNullAuthorityAndNullCostCenter_returnsEmptyBranchCodes() {
-            // Given
             val userId = 9L
-            val employee = createTestEmployee(id = userId, role = null, costCenterCode = null)
+            val employee = createTestEmployee(id = userId, costCenterCode = null)
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            stubProfile(employee.employeeCode, profileName = null)
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
             assertThat(result.isAllBranches).isFalse()
             assertThat(result.branchCodes).isEmpty()
         }
 
-        // ========== 기타 권한 (else 분기) ==========
+        // ========== User 미존재 (Employee 만 존재) ==========
 
         @Test
-        @DisplayName("UNKNOWN 권한 - 빈 데이터 스코프 반환 (Spec #573)")
+        @DisplayName("User 미존재 + costCenterCode 있음 -> isAllBranches=false, branchCodes 포함")
         fun resolve_withUnknownAuthorityAndCostCenter_returnsEmpty() {
-            // Given
             val userId = 10L
-            val employee = createTestEmployee(id = userId, role = null, costCenterCode = "B400")
+            val employee = createTestEmployee(id = userId, costCenterCode = "B400")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            // User stub 부재 → init 의 default (null) 적용
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
             assertThat(result.isAllBranches).isFalse()
-            assertThat(result.branchCodes).isEmpty()
+            assertThat(result.branchCodes).containsExactly("B400")
         }
 
         @Test
-        @DisplayName("알 수 없는 권한 + costCenterCode null - userId 조회 -> isAllBranches=false, branchCodes 비어있음")
+        @DisplayName("User 미존재 + costCenterCode null -> isAllBranches=false, branchCodes 비어있음")
         fun resolve_withUnknownAuthorityAndNullCostCenter_returnsEmptyBranchCodes() {
-            // Given
             val userId = 11L
-            val employee = createTestEmployee(id = userId, role = null, costCenterCode = null)
+            val employee = createTestEmployee(id = userId, costCenterCode = null)
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
 
-            // When
             val result = adminDataScopeService.resolve(userId)
 
-            // Then
             assertThat(result.isAllBranches).isFalse()
             assertThat(result.branchCodes).isEmpty()
         }
@@ -252,16 +272,15 @@ class AdminDataScopeServiceTest {
 
     private fun createTestEmployee(
         id: Long = 1L,
-        employeeCode: String = "12345678",
+        employeeCode: String = "EMP-$id",
         name: String = "홍길동",
-        role: String? = null,
         costCenterCode: String? = null
     ): Employee {
         return Employee(
             id = id,
             employeeCode = employeeCode,
             name = name,
-            role = role,
+            role = null,
             costCenterCode = costCenterCode
         )
     }

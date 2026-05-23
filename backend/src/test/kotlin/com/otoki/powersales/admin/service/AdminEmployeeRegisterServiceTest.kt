@@ -30,17 +30,17 @@ class AdminEmployeeRegisterServiceTest {
     private val passwordEncoder: PasswordEncoder = mockk()
     private val service = AdminEmployeeRegisterService(employeeRepository, passwordEncoder)
 
-    private val systemAdminActor = principal(employeeId = 1L, employeeCode = "ADMIN-OWNER", role = null)
-    private val womanActor = principal(employeeId = 2L, employeeCode = "EMP-001", role = AppAuthority.WOMAN)
+    private val systemAdminActor = principal(employeeId = 1L, employeeCode = "ADMIN-OWNER", role = null, profileName = "시스템 관리자")
+    private val womanActor = principal(employeeId = 2L, employeeCode = "EMP-001", role = AppAuthority.WOMAN, profileName = "9. Staff")
 
-    private fun principal(employeeId: Long, employeeCode: String, role: String?) = WebUserPrincipal(
+    private fun principal(employeeId: Long, employeeCode: String, role: String?, profileName: String) = WebUserPrincipal(
         userId = employeeId * 10,
         usernameValue = employeeCode,
         employeeCode = employeeCode,
         employeeId = employeeId,
         role = role,
         costCenterCode = null,
-        profileName = "9. Staff",
+        profileName = profileName,
         isSalesSupport = false,
         passwordChangeRequired = false,
         permissions = emptySet(),

@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.auth.permission.SfPermissionInspectionService
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.employee.dto.response.EmployeeListResponse
@@ -41,6 +42,7 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
     @MockkBean private lateinit var adminEmployeeCredentialService: AdminEmployeeCredentialService
     @MockkBean private lateinit var adminEmployeeUpdateService: AdminEmployeeUpdateService
     @MockkBean private lateinit var adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService
+    @MockkBean private lateinit var sfPermissionInspectionService: SfPermissionInspectionService
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver

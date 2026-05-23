@@ -25,15 +25,15 @@ import org.springframework.transaction.support.TransactionTemplate
 @DisplayName("LocalDataInitializer 테스트")
 class LocalDataInitializerTest {
 
-    private val employeeRepository: EmployeeRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk(relaxed = true)
 
     private val userRepository: com.otoki.powersales.user.repository.UserRepository = mockk(relaxed = true)
 
-    private val userProvisioningService: UserProvisioningService = mockk()
+    private val userProvisioningService: UserProvisioningService = mockk(relaxed = true)
 
     private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk(relaxed = true)
 
-    private val passwordEncoder: PasswordEncoder = mockk()
+    private val passwordEncoder: PasswordEncoder = mockk(relaxed = true)
 
     private val agreementWordRepository: AgreementWordRepository = mockk()
 
@@ -62,6 +62,9 @@ class LocalDataInitializerTest {
             callback.accept(mockk<org.springframework.transaction.TransactionStatus>(relaxed = true))
             null
         }
+        // relaxed mockk 는 User? 의 generic 추론 실패로 Object 반환 → ClassCastException.
+        // 명시적 null stub 으로 우회.
+        every { userRepository.findByEmployeeCode(any()) } returns null
         every {
             userProvisioningService.provisionForSeed(
                 employeeCode = any(),
@@ -72,6 +75,7 @@ class LocalDataInitializerTest {
                 role = any(),
                 appLoginActive = any(),
                 costCenterCode = any(),
+                isSalesSupport = any(),
                 encodedPassword = any(),
                 passwordChangeRequired = any(),
             )

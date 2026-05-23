@@ -45,7 +45,7 @@ class AdminEmployeeManualRegisterServiceTest {
         assertThat(response.appLoginActive).isFalse()
         assertThat(response.phone).isEqualTo("010-1111-2222")
         assertThat(response.homePhone).isEqualTo("010-1111-2222")
-        assertThat(response.role).isEqualTo("WOMAN")
+        assertThat(response.role).isEqualTo(AppAuthority.WOMAN)
     }
 
     @Test
@@ -63,18 +63,4 @@ class AdminEmployeeManualRegisterServiceTest {
         }.isInstanceOf(EmployeeCodeDuplicatedException::class.java)
     }
 
-    @Test
-    @DisplayName("SYSTEM_ADMIN 역할 -> require 실패 (IllegalArgumentException)")
-    fun register_systemAdminRoleRejected() {
-        assertThatThrownBy {
-            service.register(
-                AdminEmployeeManualRegisterRequest(
-                    employeeCode = "100600",
-                    name = "잘못된관리자",
-                    role = null,
-                )
-            )
-        }.isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("SYSTEM_ADMIN")
-    }
 }

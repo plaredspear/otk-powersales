@@ -71,7 +71,11 @@ class AdminTeamScheduleServiceTest {
         get() = principalOf(createEmployee(id = 10L, role = null))
 
     /** Employee fixture 를 service 시그니처가 요구하는 WebUserPrincipal 로 변환. */
-    private fun principalOf(employee: Employee): com.otoki.powersales.auth.web.WebUserPrincipal =
+    private fun principalOf(
+        employee: Employee,
+        profileName: String = "9. Staff",
+        isSalesSupport: Boolean = false,
+    ): com.otoki.powersales.auth.web.WebUserPrincipal =
         com.otoki.powersales.auth.web.WebUserPrincipal(
             userId = employee.id * 10,
             usernameValue = employee.employeeCode,
@@ -79,8 +83,8 @@ class AdminTeamScheduleServiceTest {
             employeeId = employee.id,
             role = employee.role,
             costCenterCode = employee.costCenterCode,
-            profileName = "9. Staff",
-            isSalesSupport = false,
+            profileName = profileName,
+            isSalesSupport = isSalesSupport,
             passwordChangeRequired = false,
             permissions = emptySet(),
             encodedPassword = "",
@@ -304,7 +308,7 @@ class AdminTeamScheduleServiceTest {
             )
             every { organizationRepository.findAllTeamScheduleBranches() } returns branches
 
-            val result = service.getBranches(principalOf(admin))
+            val result = service.getBranches(principalOf(admin, profileName = "시스템 관리자"))
 
             assertThat(result).hasSize(2)
             assertThat(result[0].branchCode).isEqualTo("5460")
@@ -318,7 +322,7 @@ class AdminTeamScheduleServiceTest {
             val branches = listOf(com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"))
             every { organizationRepository.findTeamScheduleBranches(null, true) } returns branches
 
-            val result = service.getBranches(principalOf(supporter))
+            val result = service.getBranches(principalOf(supporter, isSalesSupport = true))
 
             assertThat(result).hasSize(1)
             assertThat(result[0].branchCode).isEqualTo("5460")
@@ -1349,7 +1353,7 @@ class AdminTeamScheduleServiceTest {
             every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
 
             // When
-            service.deleteSchedule(principalOf(admin), 100L)
+            service.deleteSchedule(principalOf(admin, profileName = "시스템 관리자"), 100L)
 
             // Then
             verify { teamMemberScheduleRepository.delete(schedule) }
@@ -1584,7 +1588,7 @@ class AdminTeamScheduleServiceTest {
             every { teamMemberScheduleRepository.findAllById(listOf(100L, 101L)) } returns listOf(s100, s101)
 
             // When
-            val deletedCount = service.massDelete(principalOf(admin), listOf(100L, 101L))
+            val deletedCount = service.massDelete(principalOf(admin, profileName = "시스템 관리자"), listOf(100L, 101L))
 
             // Then
             assertThat(deletedCount).isEqualTo(2)

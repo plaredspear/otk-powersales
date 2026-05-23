@@ -54,6 +54,12 @@ class AdminProductExpirationServiceTest {
         productRepository,
     )
 
+    init {
+        // relaxed mockk 의 generic 추론 실패로 Object→Profile/User cast 실패 방지.
+        every { profileRepository.findById(any()) } returns Optional.empty<com.otoki.powersales.auth.entity.Profile>()
+        every { userRepository.findByEmployeeCode(any()) } returns null
+    }
+
     // ── Helper factory methods ──────────────────────────────────────
 
     private fun createEmployee(

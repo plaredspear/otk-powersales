@@ -103,7 +103,7 @@ class AuthServiceTest {
         assertThat(response.user.employeeCode).isEqualTo(employeeCode)
         assertThat(response.user.name).isEqualTo("홍길동")
         assertThat(response.user.orgName).isEqualTo("서울지점")
-        assertThat(response.user.role).isEqualTo("SALES_MANAGER")
+        assertThat(response.user.role).isNull()
         assertThat(response.token.accessToken).isEqualTo(accessToken)
         assertThat(response.token.refreshToken).isEqualTo(refreshToken)
         assertThat(response.token.expiresIn).isEqualTo(expiresIn)

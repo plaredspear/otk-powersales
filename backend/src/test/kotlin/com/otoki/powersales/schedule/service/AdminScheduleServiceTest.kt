@@ -100,6 +100,8 @@ class AdminScheduleServiceTest {
         // 부수 호출 default — 개별 테스트가 override 가능 (MockK 는 마지막 stub 우선)
         every { lastMonthRevenueLookup.forAccounts(any(), any()) } returns emptyMap()
         every { lastMonthRevenueLookup.forAccount(any(), any()) } returns null
+        // relaxUnitFun mockk 도 User? 의 generic 추론 실패 → 명시적 stub.
+        every { userRepository.findByEmployeeCode(any()) } returns null
     }
 
     @Nested
@@ -205,7 +207,8 @@ class AdminScheduleServiceTest {
             val costCenterCode = "1111"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = null)
             // cascade 결과 (DTO) — UC: SALES_SUPPORT 케이스에서 costCenterLevel3 를 expand 키로 사용
-            val orgCache = orgCacheDto(costCenterLevel3 = "CC3")
+            // SF 정합: orgCodeLevel3="3475" 영업지원실 분기 진입
+            val orgCache = orgCacheDto(costCenterLevel3 = "CC3", orgCodeLevel3 = "3475")
             // findByCostCenterLevel3 결과는 Organization entity 리스트 (캐시 대상 아님)
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
             val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
@@ -280,7 +283,8 @@ class AdminScheduleServiceTest {
             val userId = 1L
             val costCenterCode = "1111"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = null)
-            val orgCache = orgCacheDto(costCenterLevel3 = "CC3")
+            // SF 정합: orgCodeLevel3="3475" 영업지원실 분기 진입
+            val orgCache = orgCacheDto(costCenterLevel3 = "CC3", orgCodeLevel3 = "3475")
             val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
             val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
 
@@ -1036,7 +1040,12 @@ class AdminScheduleServiceTest {
             val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
             val originalAccount = createAccount(id = 1, externalKey = "ACC001")
             val schedule = createSchedule(id = scheduleId, confirmed = true, employee = originalEmployee, account = originalAccount)
-            val adminUser = createEmployee(id = userId, role = null)
+            val adminUser = createEmployee(id = userId, employeeCode = "ADMIN001", role = null)
+            // isAdminGrade(adminUser.employeeCode) → User → isSalesSupport=true 로 SYSTEM_ADMIN 동등 bypass
+            val sysAdminUser = com.otoki.powersales.user.entity.User(
+                username = "admin", employeeCode = "ADMIN001", password = "x", isSalesSupport = true,
+            )
+            every { userRepository.findByEmployeeCode("ADMIN001") } returns sysAdminUser
             val validatedRow = ScheduleUploadValidator.ValidatedRow(
                 userId = 1L, userEmployeeCode = "20030001", accountId = 1,
                 typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
@@ -1161,11 +1170,15 @@ class AdminScheduleServiceTest {
         @Test
         @DisplayName("ADMIN_GRADE - 확정/연결 여부 무관 전체 삭제")
         fun batchDelete_adminAllSucceed() {
-            val admin = createEmployee(id = userId, role = null)
+            val admin = createEmployee(id = userId, employeeCode = "ADMIN001", role = null)
             val scope = mockAdminScopeForUser(admin)
             val s1 = createSchedule(id = 11L, confirmed = true)
             val s2 = createSchedule(id = 12L, confirmed = false)
 
+            // isAdminGrade(employeeCode) → User → isSalesSupport=true 로 ADMIN_GRADE bypass
+            every { userRepository.findByEmployeeCode("ADMIN001") } returns com.otoki.powersales.user.entity.User(
+                username = "admin", employeeCode = "ADMIN001", password = "x", isSalesSupport = true,
+            )
             every { employeeRepository.findById(userId) } returns Optional.of(admin)
             every { scheduleRepository.findAllById(listOf(11L, 12L)) } returns listOf(s1, s2)
 
@@ -1269,9 +1282,13 @@ class AdminScheduleServiceTest {
         @DisplayName("시스템관리자 삭제 - 확정+여사원일정 존재해도 삭제 성공")
         fun deleteSchedule_systemAdmin_success() {
             val scope = mockAdminScope()
-            val employee = createEmployee(id = userId, role = null)
+            val employee = createEmployee(id = userId, employeeCode = "ADMIN001", role = null)
             val schedule = createSchedule(id = scheduleId, confirmed = true)
 
+            // isAdminGrade(employeeCode) → User → isSalesSupport=true 로 ADMIN_GRADE bypass
+            every { userRepository.findByEmployeeCode("ADMIN001") } returns com.otoki.powersales.user.entity.User(
+                username = "admin", employeeCode = "ADMIN001", password = "x", isSalesSupport = true,
+            )
             every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
@@ -1284,9 +1301,12 @@ class AdminScheduleServiceTest {
         @DisplayName("영업지원실 삭제 - 확정+여사원일정 존재해도 삭제 성공")
         fun deleteSchedule_salesSupport_success() {
             val scope = mockAdminScope()
-            val employee = createEmployee(id = userId, role = null)
+            val employee = createEmployee(id = userId, employeeCode = "SS001", role = null)
             val schedule = createSchedule(id = scheduleId, confirmed = true)
 
+            every { userRepository.findByEmployeeCode("SS001") } returns com.otoki.powersales.user.entity.User(
+                username = "ss", employeeCode = "SS001", password = "x", isSalesSupport = true,
+            )
             every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
