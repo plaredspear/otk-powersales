@@ -1,7 +1,6 @@
 package com.otoki.powersales.employee.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
@@ -19,7 +18,7 @@ import org.junit.jupiter.api.Test
  * 단일 권위: SF prod raw JSON (`docs/plan/old_source_260408/sf-object-meta/prod/_raw/Group.json`)
  *
  * 검증 분류:
- *   - AC1: 클래스 @SFObject / @HCTable / @Table 어노테이션
+ *   - AC1: 클래스 @SFObject / @Table 어노테이션
  *   - AC2: @SFField 매핑 키셋 (SF Group 의 11 필드 + BaseEntity 2 = 13)
  *   - AC3: @HCColumn 매핑 키셋
  *   - AC4: Type 컬럼 GroupTypeConverter 부착
@@ -37,14 +36,6 @@ class GroupTest {
             val annotation = Group::class.java.getAnnotation(SFObject::class.java)
             assertThat(annotation).isNotNull
             assertThat(annotation.value).isEqualTo("Group")
-        }
-
-        @Test
-        @DisplayName("@HCTable 값은 'group'")
-        fun hcTableValue() {
-            val annotation = Group::class.java.getAnnotation(HCTable::class.java)
-            assertThat(annotation).isNotNull
-            assertThat(annotation.value).isEqualTo("group")
         }
 
         @Test

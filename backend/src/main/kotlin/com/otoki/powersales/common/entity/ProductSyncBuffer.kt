@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -14,7 +14,7 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(name = "product_sync_buffer")
-@HCTable("if_product__c")
+@HerokuOnly("if_product__c")
 class ProductSyncBuffer(
 
     @Id

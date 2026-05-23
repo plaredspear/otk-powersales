@@ -6,7 +6,6 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -251,30 +250,4 @@ class SFSchemaUtilsTest {
         }
     }
 
-    @Nested
-    @DisplayName("generateImportSql - Import SQL 생성")
-    inner class GenerateImportSqlTests {
-
-        @Test
-        @DisplayName("Account 엔티티 - SELECT FROM salesforce.account 형태 SQL 반환")
-        fun generateImportSql_account() {
-            val sql = SFSchemaUtils.generateImportSql(Account::class.java)
-
-            assertThat(sql).startsWith("SELECT ")
-            assertThat(sql).contains("FROM salesforce.account")
-            // 25개 HC 컬럼이 포함되어야 함
-            assertThat(sql).contains("sfid")
-            assertThat(sql).contains("name")
-        }
-
-        @Test
-        @DisplayName("HCTable 미존재 - IllegalArgumentException 발생")
-        fun generateImportSql_noHCTable() {
-            assertThatThrownBy { SFSchemaUtils.generateImportSql(NoHCTableEntity::class.java) }
-                .isInstanceOf(IllegalArgumentException::class.java)
-        }
-    }
-
-    // @HCTable 없는 테스트용 클래스
-    private class NoHCTableEntity
 }

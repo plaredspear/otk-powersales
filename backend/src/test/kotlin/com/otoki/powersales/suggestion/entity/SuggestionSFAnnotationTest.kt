@@ -1,7 +1,7 @@
 package com.otoki.powersales.suggestion.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import org.assertj.core.api.Assertions.assertThat
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test
  * 검증 분류:
  *   - AC1: 클래스 `@SFObject("DKRetail__Proposal__c")` 부착
  *   - AC2: 활성 컬럼 `@SFField` 부착 (P1-B §2.2 매핑 표 ✅ 컬럼)
- *   - AC3: **신규 entity HC 어노테이션 금지 정책 가드** — `@HCTable` / `@HCColumn` 부재 verify
+ *   - AC3: **SF 매핑 entity 의 Heroku 마커 부재 가드** — `@HerokuOnly` / `@HCColumn` 부재 verify
  *     (`backend-conventions.md` §"Heroku Connect 어노테이션 정책")
  */
 @DisplayName("Suggestion SF 어노테이션 검증 (Spec #664)")
@@ -37,15 +37,15 @@ class SuggestionSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC3 — 신규 entity HC 어노테이션 금지 정책 가드")
-    inner class NoHCAnnotations {
+    @DisplayName("AC3 — SF 매핑 entity 의 Heroku 마커 부재 가드")
+    inner class NoHerokuAnnotations {
 
         @Test
-        @DisplayName("클래스에 @HCTable 부착 금지")
-        fun classNoHCTable() {
-            val annotation = Suggestion::class.java.getAnnotation(HCTable::class.java)
+        @DisplayName("클래스에 @HerokuOnly 부착 금지")
+        fun classNoHerokuOnly() {
+            val annotation = Suggestion::class.java.getAnnotation(HerokuOnly::class.java)
             assertThat(annotation)
-                .withFailMessage("신규 entity Suggestion 에 @HCTable 부착은 정책 위반 (backend-conventions.md §\"Heroku Connect 어노테이션 정책\")")
+                .withFailMessage("SF 매핑 entity Suggestion 에 @HerokuOnly 부착은 정책 위반 (backend-conventions.md §\"Heroku Connect 어노테이션 정책\")")
                 .isNull()
         }
 
@@ -58,7 +58,7 @@ class SuggestionSFAnnotationTest {
 
             assertThat(violations)
                 .withFailMessage(
-                    "신규 entity Suggestion 의 다음 필드가 @HCColumn 부착 — 정책 위반: %s",
+                    "SF 매핑 entity Suggestion 의 다음 필드가 @HCColumn 부착 — 정책 위반: %s",
                     violations.joinToString(", ")
                 )
                 .isEmpty()

@@ -61,26 +61,6 @@ object SFSchemaUtils {
     }
 
     /**
-     * @HCTable + @HCColumn 기반으로 SELECT SQL을 생성한다.
-     * HC Column과 Dev DB Column이 동일하면 컬럼명만, 다르면 hc_col AS dev_col 형태.
-     * @param schema 스키마명 (기본값: salesforce)
-     */
-    fun generateImportSql(entityClass: Class<*>, schema: String = "salesforce"): String {
-        val tableName = entityClass.getAnnotation(HCTable::class.java)?.value
-            ?: throw IllegalArgumentException("${entityClass.simpleName} does not have @HCTable annotation")
-
-        val columns = collectFieldsIncludingInherited(entityClass)
-            .filter { it.isAnnotationPresent(HCColumn::class.java) }
-            .map { field ->
-                val hcName = field.getAnnotation(HCColumn::class.java).value
-                val colName = field.getAnnotation(Column::class.java)?.name ?: field.name
-                if (hcName == colName) hcName else "$hcName AS $colName"
-            }
-
-        return "SELECT ${columns.joinToString(", ")} FROM $schema.$tableName"
-    }
-
-    /**
      * 본 클래스 + 부모(@MappedSuperclass 등) 클래스의 declaredFields 를 모두 수집한다.
      *
      * 본 클래스 필드를 먼저, 그 다음 부모 필드를 추가. BaseEntity 의 createdAt/updatedAt 에 부여된 @SFField/@HCColumn 인식용.

@@ -1,7 +1,7 @@
 package com.otoki.powersales.draft.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -17,7 +17,7 @@ import com.otoki.powersales.common.entity.AuditedEntity
  */
 @Entity
 @Table(name = "tmp_order_product")
-@HCTable("tmp_order_product")
+@HerokuOnly("tmp_order_product")
 class TmpOrderProduct(
 
     @Id

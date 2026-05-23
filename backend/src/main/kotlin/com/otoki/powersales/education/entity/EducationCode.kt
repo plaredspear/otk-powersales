@@ -2,7 +2,7 @@ package com.otoki.powersales.education.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 
 /**
@@ -13,7 +13,7 @@ import jakarta.persistence.*
  */
 @Entity
 @Table(name = "education_code")
-@HCTable("education_code_mng")
+@HerokuOnly("education_code_mng")
 class EducationCode(
 
     @Id

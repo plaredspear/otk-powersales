@@ -1,7 +1,7 @@
 package com.otoki.powersales.product.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -16,7 +16,7 @@ import com.otoki.powersales.common.entity.AuditedEntity
 @Entity
 @Table(name = "product_favorite")
 @IdClass(ProductFavoriteId::class)
-@HCTable("product_favorites")
+@HerokuOnly("product_favorites")
 class FavoriteProduct(
 
     @Id

@@ -1,7 +1,7 @@
 package com.otoki.powersales.education.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import com.otoki.powersales.employee.entity.Employee
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
@@ -16,7 +16,7 @@ import com.otoki.powersales.common.entity.AuditedEntity
  */
 @Entity
 @Table(name = "education_post")
-@HCTable("education_mng")
+@HerokuOnly("education_mng")
 class EducationPost(
 
     @Id

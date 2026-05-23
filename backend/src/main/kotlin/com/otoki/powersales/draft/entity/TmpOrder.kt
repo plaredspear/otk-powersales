@@ -1,7 +1,7 @@
 package com.otoki.powersales.draft.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -22,7 +22,7 @@ import com.otoki.powersales.common.entity.AuditedEntity
         UniqueConstraint(name = "tmp_order_employee_id_uk", columnNames = ["employee_id"]),
     ],
 )
-@HCTable("tmp_order")
+@HerokuOnly("tmp_order")
 class TmpOrder(
 
     @Id

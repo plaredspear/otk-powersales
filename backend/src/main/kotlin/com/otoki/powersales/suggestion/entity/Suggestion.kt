@@ -21,7 +21,7 @@ import java.time.LocalDate
  * - origin spec: #664 P1-B
  *
  * ## 어노테이션 정책
- * `@SFObject` + `@SFField` 만 부착 — 신규 entity 의 `@HCTable` / `@HCColumn` 부착은 정책상 금지
+ * `@SFObject` + `@SFField` 만 부착 — SF 매핑 entity 에 `@HerokuOnly` / `@HCColumn` 부착은 정책상 금지
  * (`backend-conventions.md` §"Heroku Connect 어노테이션 정책").
  *
  * ## Q3 옵션 B (레거시 동등 — R17 WERK bug 재현)

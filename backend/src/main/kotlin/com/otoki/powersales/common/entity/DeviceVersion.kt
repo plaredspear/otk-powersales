@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "device_version")
 @IdClass(DeviceVersionId::class)
-@HCTable("device_version_mng")
+@HerokuOnly("device_version_mng")
 class DeviceVersion(
 
     @Id

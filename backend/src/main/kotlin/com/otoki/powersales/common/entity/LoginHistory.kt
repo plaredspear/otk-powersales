@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import com.otoki.powersales.employee.entity.EmployeeInfo
 import jakarta.persistence.*
 import java.time.LocalDateTime
@@ -11,7 +11,7 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(name = "login_history")
-@HCTable("employee_his")
+@HerokuOnly("employee_his")
 class LoginHistory(
 
     @Id

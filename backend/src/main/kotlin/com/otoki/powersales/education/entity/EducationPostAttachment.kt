@@ -1,7 +1,7 @@
 package com.otoki.powersales.education.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 
 /**
@@ -12,7 +12,7 @@ import jakarta.persistence.*
  */
 @Entity
 @Table(name = "education_post_attachment")
-@HCTable("education_file_mng")
+@HerokuOnly("education_file_mng")
 class EducationPostAttachment(
 
     @Id

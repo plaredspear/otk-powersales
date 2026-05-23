@@ -2,12 +2,12 @@ package com.otoki.powersales.safetycheck.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HCTable
+import com.otoki.powersales.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 
 @Entity
 @Table(name = "safety_check_item")
-@HCTable("safetycheck_list")
+@HerokuOnly("safetycheck_list")
 class SafetyCheckItem(
 
     @Id
