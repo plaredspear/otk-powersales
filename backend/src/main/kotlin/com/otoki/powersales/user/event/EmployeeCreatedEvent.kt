@@ -1,7 +1,5 @@
 package com.otoki.powersales.user.event
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
-
 /**
  * Employee 신규 생성 이벤트.
  *
@@ -13,6 +11,8 @@ import com.otoki.powersales.auth.entity.UserRoleEnum
  * User 생성 실패는 Employee 트랜잭션에 영향을 주지 않는다.
  *
  * 필드: User 생성에 필요한 최소 스냅샷만 담는다 (Employee entity 직접 참조 금지 — detach 회피 + 락 회피).
+ *
+ * `role`: SF `DKRetail__AppAuthority__c` picklist 4종 raw value 또는 null.
  */
 data class EmployeeCreatedEvent(
     val employeeCode: String,
@@ -20,7 +20,7 @@ data class EmployeeCreatedEvent(
     val workEmail: String?,
     val email: String?,
     val birthDate: String?,
-    val role: UserRoleEnum?,
+    val role: String?,
     val appLoginActive: Boolean?,
     val costCenterCode: String? = null,
 )

@@ -91,8 +91,10 @@ class SfMigrationStage2Controller(
     }
 
     /**
-     * Stage 2-B 의 2개 컬럼 중 1개만 개별 실행. column 값:
-     * - `employee_role` / `user_cost_center_code`
+     * Stage 2-B 의 1개 컬럼 개별 실행. column 값:
+     * - `user_cost_center_code`
+     *
+     * spec #807 이후 `employee_role` 분기 폐기 — SF AppAuthority picklist value 가 곧 저장값.
      */
     @PostMapping("/api/v1/admin/sf-migration/stage2/picklist/{column}")
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
@@ -100,7 +102,6 @@ class SfMigrationStage2Controller(
         @PathVariable column: String,
     ): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = when (column) {
-            "employee_role" -> service.runPicklistEmployeeRole()
             "user_cost_center_code" -> service.runUserCostCenterCodeSync()
             else -> return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 ApiResponse.success(

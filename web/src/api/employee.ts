@@ -1,5 +1,5 @@
 import client from './client';
-import type { UserRole } from '@/constants/userRole';
+import type { AppAuthority } from "@/constants/userRole";
 import type { PPTTeamType } from '@/constants/pptTeamType';
 import type { ApiResponse } from './types';
 
@@ -8,7 +8,7 @@ export interface FetchEmployeesParams {
   status?: string;
   costCenterCode?: string;
   keyword?: string;
-  role?: UserRole;
+  role?: AppAuthority;
   page?: number;
   size?: number;
 }
@@ -32,8 +32,7 @@ export interface Employee {
   gender: string | null;
   orgName: string | null;
   costCenterCode: string | null;
-  role: UserRole | null;
-  roleLabel: string | null;
+  role: AppAuthority | null;
   startDate: string | null;
   endDate: string | null;
   appLoginActive: boolean | null;
@@ -95,8 +94,7 @@ export interface EmployeeDetail {
   email: string | null;
 
   // 앱 설정
-  role: UserRole | null;
-  roleLabel: string | null;
+  role: AppAuthority | null;
   appLoginActive: boolean | null;
   lockingFlag: boolean | null;
   professionalPromotionTeam: PPTTeamType | null;
@@ -111,7 +109,7 @@ export interface EmployeeDetail {
 
 export interface EmployeeUpdateRequest {
   status?: string;
-  role?: UserRole;
+  role?: AppAuthority;
   orgName?: string;
   costCenterCode?: string;
   workArea?: string;
@@ -139,7 +137,7 @@ export interface EmployeeUpdateRequest {
 export interface EmployeeManualRegisterRequest {
   employeeCode: string;
   name: string;
-  role?: UserRole;
+  role?: AppAuthority;
   orgName?: string;
   costCenterCode?: string;
   jobCode?: string;

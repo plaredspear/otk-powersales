@@ -3,7 +3,7 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.employee.dto.response.EmployeeListResponse
@@ -71,8 +71,8 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
                         gender = "남",
                         orgName = "서울1지점",
                         costCenterCode = "A001",
-                        role = "LEADER",
-                        roleLabel = "조장",
+                        role = "조장",
+                        
                         startDate = "2020-03-15",
                         endDate = null,
                         appLoginActive = true,
@@ -103,14 +103,14 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 필터 파라미터 전달")
         fun getEmployees_withFilters() {
             val response = EmployeeListResponse(content = emptyList(), page = 0, size = 10, totalElements = 0, totalPages = 0)
-            every { adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("홍"), eq(UserRoleEnum.LEADER), eq(0), eq(10)) } returns response
+            every { adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("홍"), eq(AppAuthority.LEADER), eq(0), eq(10)) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/employees")
                     .param("status", "재직")
                     .param("costCenterCode", "A001")
                     .param("keyword", "홍")
-                    .param("role", "LEADER")
+                    .param("role", "조장")
                     .param("page", "0")
                     .param("size", "10")
             )

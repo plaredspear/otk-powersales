@@ -4,7 +4,7 @@ import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
@@ -637,7 +637,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
             every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns true
-            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(role = UserRoleEnum.BRANCH_MANAGER))
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(role = AppAuthority.BRANCH_MANAGER))
 
             val newAccount = createAccount(id = 200, name = "GS25 강남점")
             every { accountRepository.findById(200) } returns Optional.of(newAccount)
@@ -667,7 +667,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
             every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns true
-            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(role = UserRoleEnum.BRANCH_MANAGER))
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(role = AppAuthority.BRANCH_MANAGER))
             every { promotionEmployeeRepository.findMinScheduleDateByPromotionId(1L) } returns LocalDate.of(2026, 3, 10)
             every { promotionEmployeeRepository.findMaxScheduleDateByPromotionId(1L) } returns LocalDate.of(2026, 3, 18)
             every { accountRepository.findById(100) } returns Optional.of(createAccount())
@@ -689,7 +689,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion()
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
             every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns true
-            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(role = UserRoleEnum.LEADER))
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee(role = AppAuthority.LEADER))
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
@@ -1144,7 +1144,7 @@ class AdminPromotionServiceTest {
         id: Long = 1L,
         employeeCode: String = "20030117",
         costCenterCode: String? = "1101",
-        role: UserRoleEnum? = null
+        role: String? = null
     ) = Employee(id = id, employeeCode = employeeCode, name = "테스트 사용자").also {
         it.costCenterCode = costCenterCode
         it.role = role

@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.test
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
@@ -44,10 +44,10 @@ abstract class MobileControllerTestSupport {
 
     @BeforeEach
     fun setUpMobileSecurityContext() {
-        authenticateAs(userId = 1L, role = UserRoleEnum.WOMAN)
+        authenticateAs(userId = 1L, role = AppAuthority.WOMAN)
     }
 
-    protected fun authenticateAs(userId: Long, role: UserRoleEnum) {
+    protected fun authenticateAs(userId: Long, role: String?) {
         val principal = UserPrincipal(userId = userId, role = role)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)

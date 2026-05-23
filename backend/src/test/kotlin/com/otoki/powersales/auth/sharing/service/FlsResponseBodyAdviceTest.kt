@@ -1,7 +1,7 @@
 package com.otoki.powersales.auth.sharing.service
 
 // import removed (spec #801)
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.sharing.annotation.FlsField
 import com.otoki.powersales.auth.sharing.annotation.FlsFiltered
 import com.otoki.powersales.auth.sharing.dto.PermissionSetSnapshot
@@ -184,7 +184,7 @@ class FlsResponseBodyAdviceTest {
         usernameValue = "user$userId",
         employeeCode = null,
         employeeId = null,
-        role = UserRoleEnum.SYSTEM_ADMIN,
+        role = null,
         costCenterCode = null,
         profileName = "9. Staff",
         isSalesSupport = false,

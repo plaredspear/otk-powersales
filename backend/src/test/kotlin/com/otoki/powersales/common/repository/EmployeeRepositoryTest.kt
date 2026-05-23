@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.repository
 
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -164,19 +164,19 @@ class EmployeeRepositoryTest {
             employeeCode = "20010585",
             name = "일반사원",
             orgName = "서울1지점",
-            role = UserRoleEnum.WOMAN
+            role = AppAuthority.WOMAN
         )
         val leader = createTestEmployee(
             employeeCode = "20010586",
             name = "팀장",
             orgName = "서울1지점",
-            role = UserRoleEnum.LEADER
+            role = AppAuthority.LEADER
         )
         val admin = createTestEmployee(
             employeeCode = "20010587",
             name = "관리자",
             orgName = "서울1지점",
-            role = UserRoleEnum.BRANCH_MANAGER
+            role = AppAuthority.BRANCH_MANAGER
         )
         testEntityManager.persistAndFlush(emp)
         testEntityManager.persistAndFlush(leader)
@@ -189,9 +189,9 @@ class EmployeeRepositoryTest {
         // Then
         assertThat(result).hasSize(3)
         assertThat(result.map { it.role }).containsExactlyInAnyOrder(
-            UserRoleEnum.WOMAN,
-            UserRoleEnum.LEADER,
-            UserRoleEnum.BRANCH_MANAGER
+            AppAuthority.WOMAN,
+            AppAuthority.LEADER,
+            AppAuthority.BRANCH_MANAGER
         )
     }
 
@@ -202,7 +202,7 @@ class EmployeeRepositoryTest {
         employeeCode: String = "20010585",
         name: String = "홍길동",
         orgName: String = "부산1지점",
-        role: UserRoleEnum? = null
+        role: String? = null
     ): Employee {
         return Employee(
             employeeCode = employeeCode,

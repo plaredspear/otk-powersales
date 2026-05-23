@@ -1,7 +1,5 @@
 package com.otoki.powersales.auth.web.dto
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
-
 /**
  * Web 로그인 응답 (Spec #760 §5.1).
  */
@@ -21,6 +19,9 @@ data class WebLoginResponse(
  * 동일 정보는 JWT access token claim 에도 실려서, 후속 API 요청 시 Filter 가 토큰만으로
  * principal 을 복원할 수 있다 (network round-trip 절감 + 권한 매트릭스 변경 시 재로그인 또는
  * access token 만료 후 반영).
+ *
+ * `role`: SF DKRetail__AppAuthority__c picklist value (`여사원` / `조장` / `지점장` / `AccountViewAll`) 또는 null.
+ * SF picklist value 자체가 한글 label 이라 별도 roleLabel 필드 부재 (spec #807).
  */
 data class WebUserSummary(
     val userId: Long,
@@ -29,8 +30,7 @@ data class WebUserSummary(
     val employeeCode: String?,
     val profileName: String? = null,
     val isSalesSupport: Boolean,
-    val role: UserRoleEnum?,
-    val roleLabel: String?,
+    val role: String?,
     val orgName: String?,
     val costCenterCode: String?,
     val permissions: List<String>

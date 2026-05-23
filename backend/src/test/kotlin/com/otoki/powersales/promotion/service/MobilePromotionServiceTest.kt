@@ -2,7 +2,7 @@ package com.otoki.powersales.promotion.service
 
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.enums.PromotionType
@@ -54,7 +54,7 @@ class MobilePromotionServiceTest {
         employeeCode: String = "20030117",
         name: String = "테스트사원",
         status: String? = "재직",
-        role: UserRoleEnum? = null,
+        role: String? = null,
         costCenterCode: String? = "1234"
     ): Employee = Employee(
         id = id,
@@ -143,7 +143,7 @@ class MobilePromotionServiceTest {
         @Test
         @DisplayName("조장 행사 목록 조회 - 동일 지점 행사 반환, myScheduleDate null")
         fun getPromotions_leader_returnsPromotionsWithNullMyScheduleDate() {
-            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = UserRoleEnum.LEADER, costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = AppAuthority.LEADER, costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, account = createAccount(id = 100), promotionType = PromotionType.SAMPLING)
             val account = createAccount(id = 100, name = "이마트 성수점")
             val pageable = PageRequest.of(0, 20)
@@ -174,7 +174,7 @@ class MobilePromotionServiceTest {
         @Test
         @DisplayName("여사원 행사 목록 조회 - 배정 행사 반환, myScheduleDate 포함")
         fun getPromotions_woman_returnsPromotionsWithMyScheduleDate() {
-            val woman = createEmployee(id = 20L, employeeCode = "20030002", role = UserRoleEnum.WOMAN, costCenterCode = "1234")
+            val woman = createEmployee(id = 20L, employeeCode = "20030002", role = AppAuthority.WOMAN, costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, account = createAccount(id = 100), promotionType = PromotionType.SAMPLING)
             val account = createAccount(id = 100)
             val pageable = PageRequest.of(0, 20)
@@ -202,7 +202,7 @@ class MobilePromotionServiceTest {
         @Test
         @DisplayName("날짜 필터 - start_date, end_date 전달")
         fun getPromotions_withDateFilter_passesToRepository() {
-            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = UserRoleEnum.LEADER, costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = AppAuthority.LEADER, costCenterCode = "1234")
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl<Promotion>(emptyList(), pageable, 0)
 
@@ -235,7 +235,7 @@ class MobilePromotionServiceTest {
         @Test
         @DisplayName("키워드 검색 - keyword 전달")
         fun getPromotions_withKeyword_passesToRepository() {
-            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = UserRoleEnum.LEADER, costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = AppAuthority.LEADER, costCenterCode = "1234")
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl<Promotion>(emptyList(), pageable, 0)
 
@@ -313,7 +313,7 @@ class MobilePromotionServiceTest {
         @Test
         @DisplayName("조장 행사 상세 조회 - 같은 지점 행사 조회 성공 + 조원 목록 반환")
         fun getPromotion_leader_sameBranch_returnsDetailWithEmployees() {
-            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = UserRoleEnum.LEADER, costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = AppAuthority.LEADER, costCenterCode = "1234")
             val account = createAccount(id = 100, name = "이마트 성수점")
             val promotion = createPromotion(
                 id = 1L,
@@ -361,7 +361,7 @@ class MobilePromotionServiceTest {
         @Test
         @DisplayName("여사원 행사 상세 조회 - 배정된 행사 조회 성공")
         fun getPromotion_woman_assigned_returnsDetail() {
-            val woman = createEmployee(id = 20L, employeeCode = "20030002", role = UserRoleEnum.WOMAN, costCenterCode = "1234")
+            val woman = createEmployee(id = 20L, employeeCode = "20030002", role = AppAuthority.WOMAN, costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, costCenterCode = "1234", account = createAccount(id = 100))
             val employee = createPromotionEmployee(id = 10L, promotionId = 1L, employeeId = 20L)
 
@@ -382,7 +382,7 @@ class MobilePromotionServiceTest {
         @Test
         @DisplayName("삭제된 행사 상세 조회 - PROMOTION_NOT_FOUND 예외 발생")
         fun getPromotion_deleted_throwsNotFound() {
-            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = UserRoleEnum.LEADER, costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = AppAuthority.LEADER, costCenterCode = "1234")
             val deletedPromotion = createPromotion(id = 1L, isDeleted = true)
 
             every { employeeRepository.findById(10L) } returns Optional.of(leader)
@@ -395,7 +395,7 @@ class MobilePromotionServiceTest {
         @Test
         @DisplayName("다른 지점 행사 조회 (조장) - PROMOTION_FORBIDDEN 예외 발생")
         fun getPromotion_leader_differentBranch_throwsForbidden() {
-            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = UserRoleEnum.LEADER, costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = AppAuthority.LEADER, costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, costCenterCode = "5678")
 
             every { employeeRepository.findById(10L) } returns Optional.of(leader)
@@ -408,7 +408,7 @@ class MobilePromotionServiceTest {
         @Test
         @DisplayName("미배정 행사 조회 (여사원) - PROMOTION_FORBIDDEN 예외 발생")
         fun getPromotion_woman_notAssigned_throwsForbidden() {
-            val woman = createEmployee(id = 20L, employeeCode = "20030002", role = UserRoleEnum.WOMAN, costCenterCode = "1234")
+            val woman = createEmployee(id = 20L, employeeCode = "20030002", role = AppAuthority.WOMAN, costCenterCode = "1234")
             val promotion = createPromotion(id = 1L, costCenterCode = "1234")
 
             every { employeeRepository.findById(20L) } returns Optional.of(woman)
@@ -422,7 +422,7 @@ class MobilePromotionServiceTest {
         @Test
         @DisplayName("존재하지 않는 행사 조회 - PROMOTION_NOT_FOUND 예외 발생")
         fun getPromotion_nonExistent_throwsNotFound() {
-            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = UserRoleEnum.LEADER, costCenterCode = "1234")
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = AppAuthority.LEADER, costCenterCode = "1234")
 
             every { employeeRepository.findById(10L) } returns Optional.of(leader)
             every { promotionRepository.findById(999L) } returns Optional.empty()

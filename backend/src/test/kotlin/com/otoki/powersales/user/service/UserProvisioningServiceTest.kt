@@ -1,7 +1,7 @@
 package com.otoki.powersales.user.service
 
 import com.otoki.powersales.auth.entity.Profile
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
@@ -62,7 +62,7 @@ class UserProvisioningServiceTest {
                     workEmail = "hong@otokims.co.kr",
                     email = null,
                     birthDate = "19900315",
-                    role = UserRoleEnum.WOMAN,
+                    role = AppAuthority.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -90,7 +90,7 @@ class UserProvisioningServiceTest {
                     workEmail = null,
                     email = "kim@personal.com",
                     birthDate = "19850101",
-                    role = UserRoleEnum.WOMAN,
+                    role = AppAuthority.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -109,7 +109,7 @@ class UserProvisioningServiceTest {
                     workEmail = null,
                     email = null,
                     birthDate = "19900101",
-                    role = UserRoleEnum.WOMAN,
+                    role = AppAuthority.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -127,7 +127,7 @@ class UserProvisioningServiceTest {
                     workEmail = "park@otoki.com",
                     email = null,
                     birthDate = null,
-                    role = UserRoleEnum.WOMAN,
+                    role = AppAuthority.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -146,7 +146,7 @@ class UserProvisioningServiceTest {
                     workEmail = "choi@otoki.com",
                     email = null,
                     birthDate = "19880508",
-                    role = UserRoleEnum.WOMAN,
+                    role = AppAuthority.WOMAN,
                     appLoginActive = false,
                 )
             )
@@ -171,7 +171,7 @@ class UserProvisioningServiceTest {
                     workEmail = "dup@otoki.com",
                     email = null,
                     birthDate = "19900101",
-                    role = UserRoleEnum.WOMAN,
+                    role = AppAuthority.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -191,7 +191,7 @@ class UserProvisioningServiceTest {
                     workEmail = "err@otoki.com",
                     email = null,
                     birthDate = null,
-                    role = UserRoleEnum.WOMAN,
+                    role = AppAuthority.WOMAN,
                     appLoginActive = true,
                 )
             )
@@ -205,7 +205,7 @@ class UserProvisioningServiceTest {
     inner class SeedPath {
 
         @Test
-        @DisplayName("S1 시드 — encodedPassword override + passwordChangeRequired=false 반영")
+        @DisplayName("S1 시드 — encodedPassword override + passwordChangeRequired=false + isSalesSupport=true 반영")
         fun provisionForSeed_overridesPasswordAndFlag() {
             service.provisionForSeed(
                 employeeCode = "99990001",
@@ -213,8 +213,9 @@ class UserProvisioningServiceTest {
                 workEmail = "dev@otoki.local",
                 email = null,
                 birthDate = "19850315",
-                role = UserRoleEnum.SALES_SUPPORT,
+                role = null,
                 appLoginActive = true,
+                isSalesSupport = true,
                 encodedPassword = "pre_encoded",
                 passwordChangeRequired = false,
             )
@@ -223,35 +224,33 @@ class UserProvisioningServiceTest {
             val saved = savedUsers[0]
             assertThat(saved.password).isEqualTo("pre_encoded")
             assertThat(saved.passwordChangeRequired).isFalse()
-            assertThat(saved.profileId).isEqualTo(PROFILE_NAME_TO_ID["9. Staff"])
+            // role=null → 5.영업사원 fallback (spec #807). isSalesSupport 는 명시 인자.
+            assertThat(saved.profileId).isEqualTo(PROFILE_NAME_TO_ID["5.영업사원"])
             assertThat(saved.isSalesSupport).isTrue()
         }
     }
 
     @Nested
-    @DisplayName("UserRoleEnum → Profile.id 매핑")
+    @DisplayName("SF AppAuthority picklist → Profile.id 매핑")
     inner class ProfileIdMapping {
 
         @Test
-        @DisplayName("P1 UserRole → Profile.name → id 9개 매핑 검증")
-        fun profileIdMapping_allRoles() {
+        @DisplayName("P1 SF AppAuthority picklist 4종 + null → Profile.id 매핑")
+        fun profileIdMapping_allPicklist() {
             val cases = listOf(
-                UserRoleEnum.SYSTEM_ADMIN to "시스템 관리자",
-                UserRoleEnum.LEADER to "6.조장",
-                UserRoleEnum.BRANCH_MANAGER to "4.지점장",
-                UserRoleEnum.SALES_MANAGER to "3.영업부장",
-                UserRoleEnum.BUSINESS_MANAGER to "2.사업부장",
-                UserRoleEnum.HEADQUARTERS_MANAGER to "1.본부장",
-                UserRoleEnum.SALES_SUPPORT to "9. Staff",
-                UserRoleEnum.WOMAN to "5.영업사원",
-                UserRoleEnum.UNKNOWN to "5.영업사원",
+                "code_leader" to AppAuthority.LEADER to "6.조장",
+                "code_branch" to AppAuthority.BRANCH_MANAGER to "4.지점장",
+                "code_woman" to AppAuthority.WOMAN to "5.영업사원",
+                "code_acc" to AppAuthority.ACCOUNT_VIEW_ALL to "5.영업사원",
+                "code_null" to null to "5.영업사원",
             )
 
-            cases.forEach { (role, _) ->
+            cases.forEach { (codeAndRole, _) ->
+                val (code, role) = codeAndRole
                 service.provisionForSeed(
-                    employeeCode = "P_$role",
+                    employeeCode = code,
                     name = "테스트",
-                    workEmail = "$role@otoki.local",
+                    workEmail = "$code@otoki.local",
                     email = null,
                     birthDate = null,
                     role = role,
@@ -261,18 +260,23 @@ class UserProvisioningServiceTest {
 
             verify(exactly = cases.size) { userRepository.save(any<User>()) }
             val byProfile = savedUsers.associate { it.employeeCode to it.profileId }
-            cases.forEach { (role, expectedName) ->
-                assertThat(byProfile["P_$role"]).isEqualTo(PROFILE_NAME_TO_ID[expectedName])
+            cases.forEach { (codeAndRole, expectedName) ->
+                val (code, _) = codeAndRole
+                assertThat(byProfile[code]).isEqualTo(PROFILE_NAME_TO_ID[expectedName])
             }
         }
 
         @Test
-        @DisplayName("[Sanity] SystemAdminProfilePolicy 매핑 정합 — UserRole → Profile.name")
+        @DisplayName("[Sanity] SystemAdminProfilePolicy 매핑 정합 — AppAuthority picklist → Profile.name")
         fun policyMapping() {
-            assertThat(SystemAdminProfilePolicy.profileNameForRole(UserRoleEnum.SYSTEM_ADMIN))
-                .isEqualTo("시스템 관리자")
-            assertThat(SystemAdminProfilePolicy.profileNameForRole(UserRoleEnum.WOMAN))
+            assertThat(SystemAdminProfilePolicy.profileNameForRole(null))
                 .isEqualTo("5.영업사원")
+            assertThat(SystemAdminProfilePolicy.profileNameForRole(AppAuthority.WOMAN))
+                .isEqualTo("5.영업사원")
+            assertThat(SystemAdminProfilePolicy.profileNameForRole(AppAuthority.LEADER))
+                .isEqualTo("6.조장")
+            assertThat(SystemAdminProfilePolicy.profileNameForRole(AppAuthority.BRANCH_MANAGER))
+                .isEqualTo("4.지점장")
         }
     }
 

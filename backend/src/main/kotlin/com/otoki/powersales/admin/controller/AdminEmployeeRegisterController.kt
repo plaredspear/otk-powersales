@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController
  * 시스템 관리자 수동 등록 컨트롤러.
  *
  * `POST /api/v1/admin/employees` 단일 엔드포인트만 제공한다.
- * 호출자 권한 (UserRole.MANAGE_PERMISSIONS) 검증은 서비스 계층에서 수행된다.
+ * 호출자 권한 (Profile.name == "시스템 관리자") 검증은 서비스 계층에서 수행된다.
  */
 @RestController
 @RequestMapping("/api/v1/admin/employees")

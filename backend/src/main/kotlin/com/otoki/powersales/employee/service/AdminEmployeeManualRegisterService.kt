@@ -1,7 +1,6 @@
 package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.dto.request.AdminEmployeeManualRegisterRequest
 import com.otoki.powersales.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.employee.entity.Employee
@@ -17,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 정책
  * - origin = MANUAL 로 고정 저장 → SAP 인입 갱신 대상에서 자동 제외 (Spec #579 동등).
- * - SYSTEM_ADMIN 역할은 본 endpoint 에서 등록 금지 — 별도 ADMIN-prefix endpoint 사용.
+ * - 시스템 관리자 등록은 본 endpoint 사용 불가 — 별도 ADMIN-prefix endpoint 사용. 본 endpoint 는 SF AppAuthority picklist 4종 (여사원/조장/지점장/AccountViewAll) 또는 null 만 허용.
  * - appLoginActive 는 등록 시점에는 false 로 시작 — 비밀번호 초기화 후 활성화하는 운영 절차.
  * - 본 service 는 비밀번호를 설정하지 않으므로 등록 후 `POST /{id}/reset-password` 로 임시 비밀번호 발급 필요.
  */
@@ -30,9 +29,7 @@ class AdminEmployeeManualRegisterService(
 
     @Transactional
     fun register(request: AdminEmployeeManualRegisterRequest): EmployeeDetailResponse {
-        require(request.role != UserRoleEnum.SYSTEM_ADMIN) {
-            "SYSTEM_ADMIN 역할은 본 endpoint 에서 등록할 수 없습니다. ADMIN-prefix 등록 endpoint 를 사용하세요"
-        }
+        // request.role 의 SF picklist 4종 검증은 @Pattern validation 에서 처리됨. 시스템 관리자 등록은 ADMIN-prefix endpoint 사용.
 
         if (employeeRepository.existsByEmployeeCode(request.employeeCode)) {
             throw EmployeeCodeDuplicatedException()

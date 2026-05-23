@@ -113,9 +113,11 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(response.substep).isEqualTo("picklist")
         assertThat(response.totalRowsAffected).isGreaterThan(0)
 
-        assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("WOMAN")
-        assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E002'")).isEqualTo("BRANCH_MANAGER")
-        assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E003'")).isEqualTo("UNKNOWN")
+        // spec #807 — Employee.role enum 변환 검증 폐기 (SF AppAuthority picklist value 가 곧 저장값).
+        // Stage 1 적재 raw 값이 그대로 유지됨을 확인.
+        assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("여사원")
+        assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E002'")).isEqualTo("지점장")
+        assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E003'")).isEqualTo("알수없는역할")
 
         // Employee.cost_center_code → User.cost_center_code 동기화 검증
         assertThat(strOf("SELECT cost_center_code FROM powersales.\"user\" WHERE employee_code = 'E001'")).isEqualTo("3233")
@@ -123,18 +125,7 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(strOf("SELECT cost_center_code FROM powersales.\"user\" WHERE employee_code = 'E003'")).isNull()
     }
 
-    @Test
-    @Transactional
-    @DisplayName("Stage 2-B 개별 — runPicklistEmployeeRole 만 호출 시 role 만 변환")
-    fun runPicklistEmployeeRole_only() {
-        em.createNativeQuery("INSERT INTO powersales.employee (employee_code, role) VALUES ('E001', '여사원')").executeUpdate()
-        em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code) VALUES ('E001')").executeUpdate()
-
-        val response = service.runPicklistEmployeeRole()
-
-        assertThat(response.substep).isEqualTo("picklist.employee_role")
-        assertThat(strOf("SELECT role FROM powersales.employee WHERE employee_code = 'E001'")).isEqualTo("WOMAN")
-    }
+    // spec #807 — runPicklistEmployeeRole substep 폐기 (SF AppAuthority picklist value 가 곧 저장값).
 
     @Test
     @Transactional

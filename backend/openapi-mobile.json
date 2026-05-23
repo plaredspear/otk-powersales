@@ -4270,9 +4270,6 @@
           },
           "role" : {
             "type" : [ "string", "null" ]
-          },
-          "roleLabel" : {
-            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"

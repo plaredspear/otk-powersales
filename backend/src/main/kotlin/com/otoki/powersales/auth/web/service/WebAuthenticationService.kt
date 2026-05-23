@@ -1,6 +1,5 @@
 package com.otoki.powersales.auth.web.service
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.auth.exception.CurrentPasswordRequiredException
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
@@ -209,7 +208,6 @@ class WebAuthenticationService(
      * null/빈 배열로 fallback. 동일 정보가 JWT claim 으로도 발급된다.
      */
     private fun summaryFor(user: User, employee: Employee?, permissions: Set<String>): WebUserSummary {
-        val role: UserRoleEnum? = employee?.role
         val profileName: String? = user.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
         return WebUserSummary(
             userId = user.id,
@@ -218,8 +216,7 @@ class WebAuthenticationService(
             employeeCode = user.employeeCode,
             profileName = profileName,
             isSalesSupport = user.isSalesSupport ?: false,
-            role = role,
-            roleLabel = role?.toKorean(),
+            role = employee?.role,
             orgName = employee?.orgName,
             costCenterCode = user.costCenterCode,
             permissions = permissions.toList()

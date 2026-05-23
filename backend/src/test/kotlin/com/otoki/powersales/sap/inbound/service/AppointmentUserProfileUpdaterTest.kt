@@ -1,6 +1,6 @@
 package com.otoki.powersales.sap.inbound.service
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.employee.entity.Employee
@@ -84,7 +84,7 @@ class AppointmentUserProfileUpdaterTest {
 
             updater.updateUserProfiles(listOf(appointment), today)
 
-            assertThat(employee.role).isEqualTo(UserRoleEnum.LEADER)
+            assertThat(employee.role).isEqualTo(AppAuthority.LEADER)
             assertThat(employee.appLoginActive).isTrue()
             assertThat(employee.jikchak).isEqualTo("조장")
             assertThat(employee.jikwee).isEqualTo("사원")
@@ -114,7 +114,7 @@ class AppointmentUserProfileUpdaterTest {
 
             updater.updateUserProfiles(listOf(appointment), today)
 
-            assertThat(employee.role).isEqualTo(UserRoleEnum.WOMAN)
+            assertThat(employee.role).isEqualTo(AppAuthority.WOMAN)
             assertThat(employee.appLoginActive).isTrue()
             assertThat(employee.professionalPromotionTeam).isNull()
         }
@@ -122,7 +122,7 @@ class AppointmentUserProfileUpdaterTest {
         @Test
         @DisplayName("일반직 - jobCode=B001 -> role/appLoginActive 변경 없음")
         fun immediateGeneral() {
-            val employee = createEmployee(role = UserRoleEnum.UNKNOWN, appLoginActive = false)
+            val employee = createEmployee(role = null, appLoginActive = false)
             every { employeeRepository.findByEmployeeCode("100234") } returns Optional.of(employee)
 
             val appointment = createAppointment(
@@ -133,7 +133,7 @@ class AppointmentUserProfileUpdaterTest {
 
             updater.updateUserProfiles(listOf(appointment), today)
 
-            assertThat(employee.role).isEqualTo(UserRoleEnum.UNKNOWN)
+            assertThat(employee.role).isEqualTo(null)
             assertThat(employee.appLoginActive).isFalse()
             assertThat(employee.costCenterCode).isEqualTo("1111")
             assertThat(employee.jikchak).isEqualTo("사원")
@@ -154,7 +154,7 @@ class AppointmentUserProfileUpdaterTest {
 
             updater.updateUserProfiles(listOf(appointment), today)
 
-            assertThat(employee.role).isEqualTo(UserRoleEnum.WOMAN)
+            assertThat(employee.role).isEqualTo(AppAuthority.WOMAN)
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
     }
@@ -238,7 +238,7 @@ class AppointmentUserProfileUpdaterTest {
             updater.updateUserProfiles(listOf(appointment), today)
 
             assertThat(employee.crmWorkStartDate).isEqualTo(LocalDate.of(2026, 3, 23))
-            assertThat(employee.role).isEqualTo(UserRoleEnum.LEADER)
+            assertThat(employee.role).isEqualTo(AppAuthority.LEADER)
             assertThat(employee.appLoginActive).isTrue()
             assertThat(employee.orgName).isEqualTo("기존지점")
             assertThat(employee.costCenterCode).isEqualTo("0000")
@@ -308,7 +308,7 @@ class AppointmentUserProfileUpdaterTest {
         fun promotionLeader() {
             val employee = createEmployee()
             updater.applyJobCodeAuthority(employee, "A049", "D0052")
-            assertThat(employee.role).isEqualTo(UserRoleEnum.LEADER)
+            assertThat(employee.role).isEqualTo(AppAuthority.LEADER)
             assertThat(employee.appLoginActive).isTrue()
         }
 
@@ -317,25 +317,25 @@ class AppointmentUserProfileUpdaterTest {
         fun ladyWorker() {
             val employee = createEmployee()
             updater.applyJobCodeAuthority(employee, "A053", "D0053")
-            assertThat(employee.role).isEqualTo(UserRoleEnum.WOMAN)
+            assertThat(employee.role).isEqualTo(AppAuthority.WOMAN)
             assertThat(employee.appLoginActive).isTrue()
         }
 
         @Test
         @DisplayName("일반직 - B001 -> 변경 없음")
         fun generalNoChange() {
-            val employee = createEmployee(role = UserRoleEnum.UNKNOWN, appLoginActive = false)
+            val employee = createEmployee(role = null, appLoginActive = false)
             updater.applyJobCodeAuthority(employee, "B001", "D0053")
-            assertThat(employee.role).isEqualTo(UserRoleEnum.UNKNOWN)
+            assertThat(employee.role).isEqualTo(null)
             assertThat(employee.appLoginActive).isFalse()
         }
 
         @Test
         @DisplayName("jobCode null -> 변경 없음")
         fun nullJobCode() {
-            val employee = createEmployee(role = UserRoleEnum.UNKNOWN)
+            val employee = createEmployee(role = null)
             updater.applyJobCodeAuthority(employee, null, "D0052")
-            assertThat(employee.role).isEqualTo(UserRoleEnum.UNKNOWN)
+            assertThat(employee.role).isEqualTo(null)
         }
     }
 
@@ -346,7 +346,7 @@ class AppointmentUserProfileUpdaterTest {
         @Test
         @DisplayName("여사원 + 전보 -> 미배정(null)으로 초기화")
         fun resetToGeneral() {
-            val employee = createEmployee(role = UserRoleEnum.WOMAN, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
+            val employee = createEmployee(role = AppAuthority.WOMAN, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             updater.applyProfessionalPromotionTeamReset(employee, "전보")
             assertThat(employee.professionalPromotionTeam).isNull()
         }
@@ -354,7 +354,7 @@ class AppointmentUserProfileUpdaterTest {
         @Test
         @DisplayName("여사원 + 승진 -> 기존 값 유지")
         fun keepOnPromotion() {
-            val employee = createEmployee(role = UserRoleEnum.WOMAN, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
+            val employee = createEmployee(role = AppAuthority.WOMAN, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             updater.applyProfessionalPromotionTeamReset(employee, "승진")
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
@@ -362,7 +362,7 @@ class AppointmentUserProfileUpdaterTest {
         @Test
         @DisplayName("조장 -> 초기화 안 함")
         fun leaderNoReset() {
-            val employee = createEmployee(role = UserRoleEnum.LEADER, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
+            val employee = createEmployee(role = AppAuthority.LEADER, professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
             updater.applyProfessionalPromotionTeamReset(employee, "전보")
             assertThat(employee.professionalPromotionTeam).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
@@ -396,7 +396,7 @@ class AppointmentUserProfileUpdaterTest {
     private fun createEmployee(
         id: Long = 1L,
         employeeCode: String = "100234",
-        role: UserRoleEnum? = null,
+        role: String? = null,
         appLoginActive: Boolean? = null,
         orgName: String? = null,
         costCenterCode: String? = null,

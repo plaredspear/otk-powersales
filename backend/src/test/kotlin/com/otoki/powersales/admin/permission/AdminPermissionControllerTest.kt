@@ -14,7 +14,7 @@ import com.otoki.powersales.admin.permission.dto.PermissionSetSummary
 import com.otoki.powersales.admin.permission.dto.ProfileDetail
 import com.otoki.powersales.admin.permission.dto.ProfileFlagsSummary
 import com.otoki.powersales.admin.permission.dto.ProfileSummary
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -37,7 +37,7 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
 
     @BeforeEach
     fun setUpPrincipal() {
-        authenticateAsAdmin(role = UserRoleEnum.SYSTEM_ADMIN)
+        authenticateAsAdmin(role = null)
     }
 
     @Test

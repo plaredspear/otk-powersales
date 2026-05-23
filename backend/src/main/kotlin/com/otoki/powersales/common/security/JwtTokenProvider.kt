@@ -1,7 +1,6 @@
 package com.otoki.powersales.common.security
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jwts
@@ -42,7 +41,7 @@ class JwtTokenProvider(
      */
     fun createAccessToken(
         userId: Long,
-        role: UserRoleEnum,
+        role: String?,
         agreementFlag: Boolean = false,
         passwordChangeRequired: Boolean = false
     ): String {
@@ -51,7 +50,7 @@ class JwtTokenProvider(
 
         return Jwts.builder()
             .subject(userId.toString())
-            .claim("role", role.name)
+            .claim("role", role)
             .claim("type", "access")
             .claim("audience", AUDIENCE_MOBILE)
             .claim("agreement_flag", agreementFlag)
@@ -108,18 +107,12 @@ class JwtTokenProvider(
     }
 
     /**
-     * 토큰에서 role 추출
+     * 토큰에서 role 추출 (SF DKRetail__AppAuthority__c picklist value).
      *
-     * 신규 enum 매핑 실패 시(예: 구 토큰의 USER/ADMIN) `null` 을 반환하여
-     * 호출부가 401(재로그인 필요)로 응답할 수 있도록 한다.
+     * 부재 시 null — 호출부가 401(재로그인 필요) 처리.
      */
-    fun getRoleFromToken(token: String): UserRoleEnum? {
-        val roleName = parseClaims(token).get("role", String::class.java) ?: return null
-        return try {
-            UserRoleEnum.valueOf(roleName)
-        } catch (_: IllegalArgumentException) {
-            null
-        }
+    fun getRoleFromToken(token: String): String? {
+        return parseClaims(token).get("role", String::class.java)
     }
 
     /**

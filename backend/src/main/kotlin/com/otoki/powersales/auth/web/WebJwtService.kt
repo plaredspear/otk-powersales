@@ -1,6 +1,5 @@
 package com.otoki.powersales.auth.web
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.security.JwtTokenProvider
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
@@ -39,7 +38,7 @@ class WebJwtService(
      * `permissions` 는 [com.otoki.powersales.admin.service.AdminPermissionResolver] 산출 결과를
      * 그대로 실어 web 의 권한 가드(usePermission) 가 별도 API 호출 없이 동작하도록 한다.
      */
-    fun createAccessToken(principal: WebUserPrincipal, role: UserRoleEnum?, permissions: List<String>): String {
+    fun createAccessToken(principal: WebUserPrincipal, role: String?, permissions: List<String>): String {
         val now = Date()
         val expiry = Date(now.time + accessExpiration)
         return Jwts.builder()
@@ -53,7 +52,7 @@ class WebJwtService(
             .claim("profile_name", principal.profileName)
             .claim("is_sales_support", principal.isSalesSupport)
             .claim("password_change_required", principal.passwordChangeRequired)
-            .claim("role", role?.name)
+            .claim("role", role)
             .claim("permissions", permissions)
             .issuedAt(now)
             .expiration(expiry)

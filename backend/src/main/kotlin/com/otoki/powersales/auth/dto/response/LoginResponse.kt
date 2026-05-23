@@ -20,8 +20,8 @@ data class UserInfo(
     val employeeCode: String,
     val name: String,
     val orgName: String?,
-    val role: String?,
-    val roleLabel: String?
+    /** SF DKRetail__AppAuthority__c picklist value (`여사원` / `조장` / `지점장` / `AccountViewAll`) 또는 null. */
+    val role: String?
 ) {
     companion object {
         fun from(employee: Employee): UserInfo {
@@ -30,8 +30,7 @@ data class UserInfo(
                 employeeCode = employee.employeeCode,
                 name = employee.name,
                 orgName = employee.orgName,
-                role = employee.role?.name,
-                roleLabel = employee.role?.toKorean()
+                role = employee.role
             )
         }
     }

@@ -1,6 +1,5 @@
 package com.otoki.powersales.employee.dto.request
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
@@ -32,7 +31,12 @@ data class AdminEmployeeManualRegisterRequest(
     @field:Size(max = 80, message = "이름은 80자 이하여야 합니다")
     val name: String,
 
-    val role: UserRoleEnum? = null,
+    /** SF DKRetail__AppAuthority__c picklist 4종 raw value (여사원 / 조장 / 지점장 / AccountViewAll). */
+    @field:Pattern(
+        regexp = "^(여사원|조장|지점장|AccountViewAll)$",
+        message = "AppAuthority 는 '여사원' / '조장' / '지점장' / 'AccountViewAll' 중 하나여야 합니다"
+    )
+    val role: String? = null,
 
     @field:Size(max = 100, message = "조직명은 100자 이하여야 합니다")
     val orgName: String? = null,

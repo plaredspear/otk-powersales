@@ -8,7 +8,9 @@ import com.otoki.powersales.productexpiration.dto.response.AdminProductExpiratio
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationListResponse
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationResponse
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.auth.repository.ProfileRepository
+import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.ProductNotFoundException
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -29,6 +31,8 @@ import java.time.LocalDate
 class AdminProductExpirationService(
     private val productExpirationRepository: ProductExpirationRepository,
     private val employeeRepository: EmployeeRepository,
+    private val userRepository: UserRepository,
+    private val profileRepository: ProfileRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository
 ) {
@@ -158,10 +162,14 @@ class AdminProductExpirationService(
             .orElseThrow { EmployeeNotFoundException() }
 
         val role = employee.role
+        val user = userRepository.findByEmployeeCode(employee.employeeCode)
+        val profileName = user?.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
+        val isAllBranches = profileName == "시스템 관리자" || user?.isSalesSupport == true ||
+            profileName in setOf("1.본부장", "2.사업부장", "3.영업부장")
 
         return when {
-            role == UserRoleEnum.SYSTEM_ADMIN || role in UserRoleEnum.Companion.ALL_BRANCHES || role == UserRoleEnum.BRANCH_MANAGER -> null
-            role == UserRoleEnum.LEADER -> {
+            isAllBranches || role == AppAuthority.BRANCH_MANAGER -> null
+            role == AppAuthority.LEADER -> {
                 val orgName = employee.orgName
                 if (orgName != null) {
                     employeeRepository.findByOrgName(orgName).map { it.id }

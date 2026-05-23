@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.entity
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
@@ -124,12 +124,12 @@ class EmployeeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("UserRole.fromKorean 이 SF AppAuthority 4값 전체를 enum 매핑 (조장/여사원/지점장/AccountViewAll)")
-        fun userRoleSfMappingAll() {
-            assertThat(UserRoleEnum.fromKorean("조장")).isEqualTo(UserRoleEnum.LEADER)
-            assertThat(UserRoleEnum.fromKorean("여사원")).isEqualTo(UserRoleEnum.WOMAN)
-            assertThat(UserRoleEnum.fromKorean("지점장")).isEqualTo(UserRoleEnum.BRANCH_MANAGER)
-            assertThat(UserRoleEnum.fromKorean("AccountViewAll")).isEqualTo(UserRoleEnum.ACCOUNT_VIEW_ALL)
+        @DisplayName("AppAuthority 상수 4값 — SF picklist value 정합 (조장/여사원/지점장/AccountViewAll)")
+        fun appAuthorityValues() {
+            assertThat(AppAuthority.LEADER).isEqualTo("조장")
+            assertThat(AppAuthority.WOMAN).isEqualTo("여사원")
+            assertThat(AppAuthority.BRANCH_MANAGER).isEqualTo("지점장")
+            assertThat(AppAuthority.ACCOUNT_VIEW_ALL).isEqualTo("AccountViewAll")
         }
     }
 

@@ -8,7 +8,7 @@ import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
 import com.otoki.powersales.admin.exception.AdminUserNotFoundException
 import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
 import com.otoki.powersales.admin.service.AdminUserService
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -41,7 +41,7 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
     @BeforeEach
     fun setUpSystemAdminPrincipal() {
         authenticateAsAdmin(
-            role = UserRoleEnum.SYSTEM_ADMIN,
+            role = null,
             employeeCode = "ADMIN-OPS01",
             profileName = "시스템 관리자",
         )

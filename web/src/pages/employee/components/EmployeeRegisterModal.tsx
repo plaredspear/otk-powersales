@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import dayjs, { Dayjs } from 'dayjs';
 import type { EmployeeManualRegisterRequest } from '@/api/employee';
 import { useManualRegisterEmployee } from '@/hooks/employee/useEmployee';
-import { type UserRole, ROLE_LABELS } from '@/constants/userRole';
+import type { AppAuthority } from '@/constants/userRole';
 import { PPT_TEAM_TYPES, type PPTTeamType } from '@/constants/pptTeamType';
 
 interface EmployeeRegisterModalProps {
@@ -14,7 +14,7 @@ interface EmployeeRegisterModalProps {
 interface FormValues {
   employeeCode: string;
   name: string;
-  role?: UserRole;
+  role?: AppAuthority;
   orgName?: string;
   costCenterCode?: string;
   jobCode?: string;
@@ -30,15 +30,12 @@ interface FormValues {
 
 const PPT_OPTIONS = PPT_TEAM_TYPES.map((v) => ({ value: v, label: v }));
 
-// 수동 등록 가능 역할 — SYSTEM_ADMIN 은 별도 ADMIN-prefix endpoint
-const MANUAL_REGISTER_ROLES: Array<{ value: UserRole; label: string }> = [
-  { value: 'WOMAN', label: ROLE_LABELS.WOMAN },
-  { value: 'LEADER', label: ROLE_LABELS.LEADER },
-  { value: 'BRANCH_MANAGER', label: ROLE_LABELS.BRANCH_MANAGER },
-  { value: 'SALES_MANAGER', label: ROLE_LABELS.SALES_MANAGER },
-  { value: 'BUSINESS_MANAGER', label: ROLE_LABELS.BUSINESS_MANAGER },
-  { value: 'HEADQUARTERS_MANAGER', label: ROLE_LABELS.HEADQUARTERS_MANAGER },
-  { value: 'SALES_SUPPORT', label: ROLE_LABELS.SALES_SUPPORT },
+// 수동 등록 가능 역할 — SF DKRetail__AppAuthority__c picklist 4종. 시스템 관리자는 별도 ADMIN-prefix endpoint.
+const MANUAL_REGISTER_ROLES: Array<{ value: AppAuthority; label: string }> = [
+  { value: '여사원', label: '여사원' },
+  { value: '조장', label: '조장' },
+  { value: '지점장', label: '지점장' },
+  { value: 'AccountViewAll', label: 'AccountViewAll' },
 ];
 
 export default function EmployeeRegisterModal({ open, onClose }: EmployeeRegisterModalProps) {

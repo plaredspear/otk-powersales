@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.test
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
@@ -46,12 +46,12 @@ abstract class AdminControllerTestSupport {
 
     @BeforeEach
     fun setUpAdminSecurityContext() {
-        authenticateAsAdmin(role = UserRoleEnum.BRANCH_MANAGER)
+        authenticateAsAdmin(role = AppAuthority.BRANCH_MANAGER)
     }
 
     protected fun authenticateAsAdmin(
         userId: Long = 100L,
-        role: UserRoleEnum,
+        role: String?,
         employeeCode: String = "S001",
         employeeId: Long = 1L,
         costCenterCode: String? = null,

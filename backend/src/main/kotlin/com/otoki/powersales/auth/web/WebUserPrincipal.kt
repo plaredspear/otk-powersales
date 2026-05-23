@@ -1,6 +1,5 @@
 package com.otoki.powersales.auth.web
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
@@ -28,7 +27,8 @@ data class WebUserPrincipal(
     val usernameValue: String,
     val employeeCode: String?,
     val employeeId: Long?,
-    val role: UserRoleEnum?,
+    /** SF DKRetail__AppAuthority__c picklist value 또는 null (Employee.role). */
+    val role: String?,
     val costCenterCode: String?,
     val profileName: String? = null,
     val profileId: Long? = null,

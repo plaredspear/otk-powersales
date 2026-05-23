@@ -2,7 +2,7 @@ package com.otoki.powersales.safetycheck.service
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -67,12 +67,12 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("정상 조회 - 일부 제출, 일부 미제출")
         fun getStatus_partialSubmission() {
-            val admin = createEmployee(adminUserId, "10000001", "관리자", UserRoleEnum.LEADER, "CC001")
-            val member1 = createEmployee(42L, "123456", "홍길동", UserRoleEnum.WOMAN, "CC001")
-            val member2 = createEmployee(55L, "654321", "김영희", UserRoleEnum.WOMAN, "CC001")
+            val admin = createEmployee(adminUserId, "10000001", "관리자", AppAuthority.LEADER, "CC001")
+            val member1 = createEmployee(42L, "123456", "홍길동", AppAuthority.WOMAN, "CC001")
+            val member2 = createEmployee(55L, "654321", "김영희", AppAuthority.WOMAN, "CC001")
 
             every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
-            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRoleEnum.WOMAN) } returns
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", AppAuthority.WOMAN) } returns
                 listOf(member1, member2)
 
             val schedule1 = createSchedule(1L, 42L, today, WorkingType.WORK, accountId = 100)
@@ -116,9 +116,9 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("오늘 날짜 기본 조회 - date 미지정 시 오늘 기준")
         fun getStatus_defaultToday() {
-            val admin = createEmployee(adminUserId, "10000001", "관리자", UserRoleEnum.LEADER, "CC001")
+            val admin = createEmployee(adminUserId, "10000001", "관리자", AppAuthority.LEADER, "CC001")
             every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
-            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRoleEnum.WOMAN) } returns emptyList()
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", AppAuthority.WOMAN) } returns emptyList()
 
             val result = service.getStatus(adminUserId, LocalDate.now())
 
@@ -129,12 +129,12 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("전원 제출 완료")
         fun getStatus_allSubmitted() {
-            val admin = createEmployee(adminUserId, "10000001", "관리자", UserRoleEnum.LEADER, "CC001")
-            val member1 = createEmployee(42L, "123456", "홍길동", UserRoleEnum.WOMAN, "CC001")
-            val member2 = createEmployee(55L, "654321", "김영희", UserRoleEnum.WOMAN, "CC001")
+            val admin = createEmployee(adminUserId, "10000001", "관리자", AppAuthority.LEADER, "CC001")
+            val member1 = createEmployee(42L, "123456", "홍길동", AppAuthority.WOMAN, "CC001")
+            val member2 = createEmployee(55L, "654321", "김영희", AppAuthority.WOMAN, "CC001")
 
             every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
-            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRoleEnum.WOMAN) } returns
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", AppAuthority.WOMAN) } returns
                 listOf(member1, member2)
 
             val schedule1 = createSchedule(1L, 42L, today, WorkingType.WORK)
@@ -159,11 +159,11 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("스케줄 없는 날짜 - 대상 인원 0명")
         fun getStatus_noSchedules() {
-            val admin = createEmployee(adminUserId, "10000001", "관리자", UserRoleEnum.LEADER, "CC001")
-            val member = createEmployee(42L, "123456", "홍길동", UserRoleEnum.WOMAN, "CC001")
+            val admin = createEmployee(adminUserId, "10000001", "관리자", AppAuthority.LEADER, "CC001")
+            val member = createEmployee(42L, "123456", "홍길동", AppAuthority.WOMAN, "CC001")
 
             every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
-            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRoleEnum.WOMAN) } returns listOf(member)
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", AppAuthority.WOMAN) } returns listOf(member)
             every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns emptyList()
 
             val result = service.getStatus(adminUserId, today)
@@ -175,12 +175,12 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("연차 스케줄 제외 - 근무 유형만 대상")
         fun getStatus_excludeNonWorkSchedules() {
-            val admin = createEmployee(adminUserId, "10000001", "관리자", UserRoleEnum.LEADER, "CC001")
-            val member1 = createEmployee(42L, "123456", "홍길동", UserRoleEnum.WOMAN, "CC001")
-            val member2 = createEmployee(55L, "654321", "김영희", UserRoleEnum.WOMAN, "CC001")
+            val admin = createEmployee(adminUserId, "10000001", "관리자", AppAuthority.LEADER, "CC001")
+            val member1 = createEmployee(42L, "123456", "홍길동", AppAuthority.WOMAN, "CC001")
+            val member2 = createEmployee(55L, "654321", "김영희", AppAuthority.WOMAN, "CC001")
 
             every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
-            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRoleEnum.WOMAN) } returns
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", AppAuthority.WOMAN) } returns
                 listOf(member1, member2)
 
             val workSchedule = createSchedule(1L, 42L, today, WorkingType.WORK)
@@ -202,11 +202,11 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("복수 스케줄 - traversalFlag 'O' 우선")
         fun getStatus_multipleSchedules_traversalFlagPriority() {
-            val admin = createEmployee(adminUserId, "10000001", "관리자", UserRoleEnum.LEADER, "CC001")
-            val member = createEmployee(42L, "123456", "홍길동", UserRoleEnum.WOMAN, "CC001")
+            val admin = createEmployee(adminUserId, "10000001", "관리자", AppAuthority.LEADER, "CC001")
+            val member = createEmployee(42L, "123456", "홍길동", AppAuthority.WOMAN, "CC001")
 
             every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
-            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRoleEnum.WOMAN) } returns listOf(member)
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", AppAuthority.WOMAN) } returns listOf(member)
 
             val schedule1 = createSchedule(1L, 42L, today, WorkingType.WORK, accountId = 100, traversalFlag = null)
             val schedule2 = createSchedule(2L, 42L, today, WorkingType.WORK, accountId = 200, traversalFlag = "O")
@@ -228,7 +228,7 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("costCenterCode 없는 사용자 - 빈 결과")
         fun getStatus_noCostCenterCode() {
-            val admin = createEmployee(adminUserId, "10000001", "관리자", UserRoleEnum.LEADER, null)
+            val admin = createEmployee(adminUserId, "10000001", "관리자", AppAuthority.LEADER, null)
             every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
 
             val result = service.getStatus(adminUserId, today)
@@ -249,12 +249,12 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("삭제된 여사원 제외")
         fun getStatus_excludeDeletedMembers() {
-            val admin = createEmployee(adminUserId, "10000001", "관리자", UserRoleEnum.LEADER, "CC001")
-            val activeMember = createEmployee(42L, "123456", "홍길동", UserRoleEnum.WOMAN, "CC001")
-            val deletedMember = createEmployee(55L, "654321", "김영희", UserRoleEnum.WOMAN, "CC001", isDeleted = true)
+            val admin = createEmployee(adminUserId, "10000001", "관리자", AppAuthority.LEADER, "CC001")
+            val activeMember = createEmployee(42L, "123456", "홍길동", AppAuthority.WOMAN, "CC001")
+            val deletedMember = createEmployee(55L, "654321", "김영희", AppAuthority.WOMAN, "CC001", isDeleted = true)
 
             every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
-            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRoleEnum.WOMAN) } returns
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", AppAuthority.WOMAN) } returns
                 listOf(activeMember, deletedMember)
 
             val schedule = createSchedule(1L, 42L, today, WorkingType.WORK)
@@ -272,13 +272,13 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("본부 통합 권한 - costCenterCode 3232 사용자는 3234·3236 두 사업소 통합 조회 (SF callOut HRcode 3232 분기 정합)")
         fun getStatus_hqIntegratedScope_3232to3234and3236() {
-            val hqManager = createEmployee(adminUserId, "10000099", "본부관리자", UserRoleEnum.LEADER, "3232")
-            val memberAt3234 = createEmployee(42L, "123456", "홍길동", UserRoleEnum.WOMAN, "3234")
-            val memberAt3236 = createEmployee(55L, "654321", "김영희", UserRoleEnum.WOMAN, "3236")
+            val hqManager = createEmployee(adminUserId, "10000099", "본부관리자", AppAuthority.LEADER, "3232")
+            val memberAt3234 = createEmployee(42L, "123456", "홍길동", AppAuthority.WOMAN, "3234")
+            val memberAt3236 = createEmployee(55L, "654321", "김영희", AppAuthority.WOMAN, "3236")
 
             every { employeeRepository.findById(adminUserId) } returns Optional.of(hqManager)
             every {
-                employeeRepository.findByCostCenterCodeInAndRole(listOf("3234", "3236"), UserRoleEnum.WOMAN)
+                employeeRepository.findByCostCenterCodeInAndRole(listOf("3234", "3236"), AppAuthority.WOMAN)
             } returns listOf(memberAt3234, memberAt3236)
 
             val schedule1 = createSchedule(1L, 42L, today, WorkingType.WORK)
@@ -298,11 +298,11 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("일반 사업소 사용자 (3234 단일) - 본부 통합 분기 적용 안 됨, 단일 사업소만 조회")
         fun getStatus_normalScope_singleCostCenter() {
-            val leader = createEmployee(adminUserId, "20100001", "조장", UserRoleEnum.LEADER, "3234")
-            val member = createEmployee(42L, "123456", "홍길동", UserRoleEnum.WOMAN, "3234")
+            val leader = createEmployee(adminUserId, "20100001", "조장", AppAuthority.LEADER, "3234")
+            val member = createEmployee(42L, "123456", "홍길동", AppAuthority.WOMAN, "3234")
 
             every { employeeRepository.findById(adminUserId) } returns Optional.of(leader)
-            every { employeeRepository.findByCostCenterCodeAndRole("3234", UserRoleEnum.WOMAN) } returns listOf(member)
+            every { employeeRepository.findByCostCenterCodeAndRole("3234", AppAuthority.WOMAN) } returns listOf(member)
 
             val schedule = createSchedule(1L, 42L, today, WorkingType.WORK)
             every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns
@@ -320,13 +320,13 @@ class AdminSafetyCheckServiceTest {
         @Test
         @DisplayName("결과 정렬 - 사원명 가나다순")
         fun getStatus_sortedByName() {
-            val admin = createEmployee(adminUserId, "10000001", "관리자", UserRoleEnum.LEADER, "CC001")
-            val member1 = createEmployee(42L, "111111", "홍길동", UserRoleEnum.WOMAN, "CC001")
-            val member2 = createEmployee(55L, "222222", "김영희", UserRoleEnum.WOMAN, "CC001")
-            val member3 = createEmployee(66L, "333333", "박민수", UserRoleEnum.WOMAN, "CC001")
+            val admin = createEmployee(adminUserId, "10000001", "관리자", AppAuthority.LEADER, "CC001")
+            val member1 = createEmployee(42L, "111111", "홍길동", AppAuthority.WOMAN, "CC001")
+            val member2 = createEmployee(55L, "222222", "김영희", AppAuthority.WOMAN, "CC001")
+            val member3 = createEmployee(66L, "333333", "박민수", AppAuthority.WOMAN, "CC001")
 
             every { employeeRepository.findById(adminUserId) } returns Optional.of(admin)
-            every { employeeRepository.findByCostCenterCodeAndRole("CC001", UserRoleEnum.WOMAN) } returns
+            every { employeeRepository.findByCostCenterCodeAndRole("CC001", AppAuthority.WOMAN) } returns
                 listOf(member1, member2, member3)
 
             every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, any()) } returns
@@ -352,7 +352,7 @@ class AdminSafetyCheckServiceTest {
         id: Long,
         employeeCode: String,
         name: String,
-        role: UserRoleEnum?,
+        role: String?,
         costCenterCode: String?,
         isDeleted: Boolean? = null
     ): Employee {

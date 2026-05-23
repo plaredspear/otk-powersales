@@ -4,7 +4,7 @@ import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.employee.dto.response.EmployeeListResponse
@@ -55,8 +55,8 @@ class AdminWomanEmployeeControllerTest : AdminControllerTestSupport() {
                     gender = "여",
                     orgName = "서울1지점",
                     costCenterCode = "A001",
-                    role = "WOMAN",
-                    roleLabel = "여사원",
+                    role = "여사원",
+                    
                     startDate = "2020-03-15",
                     endDate = null,
                     appLoginActive = true,
@@ -75,17 +75,16 @@ class AdminWomanEmployeeControllerTest : AdminControllerTestSupport() {
             totalPages = 1,
         )
         every {
-            adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(UserRoleEnum.WOMAN), any(), any())
+            adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(AppAuthority.WOMAN), any(), any())
         } returns response
 
         mockMvc.perform(get("/api/v1/admin/women-employees"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.content[0].role").value("WOMAN"))
-            .andExpect(jsonPath("$.data.content[0].roleLabel").value("여사원"))
+            .andExpect(jsonPath("$.data.content[0].role").value("여사원"))
 
         verify(exactly = 1) {
-            adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(UserRoleEnum.WOMAN), any(), any())
+            adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(AppAuthority.WOMAN), any(), any())
         }
     }
 
@@ -100,7 +99,7 @@ class AdminWomanEmployeeControllerTest : AdminControllerTestSupport() {
             totalPages = 0,
         )
         every {
-            adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("김"), eq(UserRoleEnum.WOMAN), eq(0), eq(10))
+            adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("김"), eq(AppAuthority.WOMAN), eq(0), eq(10))
         } returns response
 
         mockMvc.perform(

@@ -10,7 +10,6 @@ import com.otoki.powersales.account.exception.AccountNotFoundException
 import com.otoki.powersales.account.exception.EmployeeNotFoundException
 import com.otoki.powersales.account.policy.AccountNamePrefix
 import com.otoki.powersales.account.repository.AccountRepository
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
@@ -36,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional
  * ## 신규 차이
  * - **진입점**: SF Lightning UI native → 관리자 웹 (`PUT /api/v1/admin/accounts/{id}`). 모바일은 거래처 조회 단독 유지. 결정 근거: 스펙 §3 Q-C.
  * - **bypass 패턴 자연 소멸**: SAP 인바운드 / Naver Geocode batch 가 별도 endpoint 로 분리되어 신규에는 bypass 분기 부재. 본 service 는 native 거래처 관리자 수정 단일 흐름.
- * - **검증 우회 권한**: SF "시스템 관리자 Profile" → [UserRoleEnum.SYSTEM_ADMIN] (한글 "시스템관리자"). prefix + 동일명 중복 검증 모두 skip. blank/Account 존재/employee 존재 검증은 SYSTEM_ADMIN 도 적용. 결정 근거: 스펙 §3 Q-A.
+ * - **검증 우회 권한**: SF "시스템 관리자 Profile" — Profile.name == "시스템 관리자". prefix + 동일명 중복 검증 모두 skip. blank/Account 존재/employee 존재 검증은 시스템 관리자도 적용. 결정 근거: 스펙 §3 Q-A.
  * - **prefix 검증 발동**: 레거시 코드 동등 — Name 변경 여부와 무관하게 항상 발동 (페이로드에 name 포함 시만, PUT 부분 갱신 시맨틱 적용). 결정 근거: 스펙 §3 Q-B.
  * - **prefix 출처**: SF Custom Label `AccountPrefix` → application Constants [AccountNamePrefix] (#640 재사용). 변경 시 1곳만 갱신.
  * - **prefix 메시지 분기**: 신규 [AccountNamePrefixRequiredForUpdateException] — errorCode 는 `ACCOUNT_NAME_PREFIX_REQUIRED` 동일 (#640 와 호환), 메시지만 "거래처 수정은 ..." 으로 분기.
@@ -89,7 +88,7 @@ class AccountUpdateService(
         val name = requestName.trim()
         if (name.isBlank()) throw AccountNameBlankException()
 
-        val isSystemAdmin = principal.role == UserRoleEnum.SYSTEM_ADMIN
+        val isSystemAdmin = principal.profileName == "시스템 관리자"
         if (!isSystemAdmin) {
             // Q-B 항상 발동 — Name 변경 여부와 무관 (레거시 코드 동등)
             if (!AccountNamePrefix.isValidName(name)) {

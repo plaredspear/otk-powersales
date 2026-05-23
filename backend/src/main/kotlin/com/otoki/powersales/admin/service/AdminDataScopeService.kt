@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.repository.ProfileRepository
 import com.otoki.powersales.auth.sharing.repository.SharingPolicyQueryRepository
 import com.otoki.powersales.auth.sharing.service.GroupMembershipEvaluator
 import com.otoki.powersales.auth.sharing.service.PermissionSetEvaluator
@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional
 class AdminDataScopeService(
     private val employeeRepository: EmployeeRepository,
     private val userRepository: UserRepository,
+    private val profileRepository: ProfileRepository,
     private val userRoleHierarchyTraversal: UserRoleHierarchyTraversal,
     private val groupMembershipEvaluator: GroupMembershipEvaluator,
     private val profileFlagsEvaluator: ProfileFlagsEvaluator,
@@ -37,50 +38,52 @@ class AdminDataScopeService(
     fun resolve(userId: Long): DataScope {
         val employee = employeeRepository.findWithEmployeeInfoById(userId)
             ?: throw IllegalStateException("사용자를 찾을 수 없습니다: $userId")
-        return resolveLegacy(employee.role, employee.costCenterCode)
+        val user = userRepository.findByEmployeeCode(employee.employeeCode)
+        val profileName = user?.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
+        return resolveLegacy(profileName, user?.isSalesSupport ?: false, employee.costCenterCode)
     }
 
     /**
      * 기존 API (backward compat) — Employee 직접. sharing policy 신규 차원 미채움.
      */
-    fun resolve(employee: Employee): DataScope = resolveLegacy(employee.role, employee.costCenterCode)
+    fun resolve(employee: Employee): DataScope {
+        val user = userRepository.findByEmployeeCode(employee.employeeCode)
+        val profileName = user?.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
+        return resolveLegacy(profileName, user?.isSalesSupport ?: false, employee.costCenterCode)
+    }
 
     /**
      * 신규 admin read 진입점 — principal.userId 는 User.id (spec #782 P3-B).
      * 4 evaluator 호출 + sharingRule 본문 일람 조회로 DataScope 의 신규 차원 채움.
      */
     fun resolve(principal: WebUserPrincipal): DataScope {
-        val legacyScope = resolveLegacy(principal.role, principal.costCenterCode)
+        val legacyScope = resolveLegacy(principal.profileName, principal.isSalesSupport, principal.costCenterCode)
         return enrichWithSharingPolicy(legacyScope, principal.userId)
     }
 
     /**
      * 기존 4 분기 (spec #759~#780) — backward compat.
-     * SYSTEM_ADMIN / ALL_BRANCHES → isAllBranches=true / UNKNOWN → 빈 scope / BRANCH_SCOPE (+ null) → costCenter scope.
+     * Profile.name == "시스템 관리자" OR isSalesSupport OR ALL_BRANCHES_PROFILES → isAllBranches=true
+     * 그 외 → costCenterCode scope.
+     *
+     * SF 정합: AppointmentTriggerHanlder.cls:344-365 의 Profile.Name 분기 + Org.OrgCodeLevel3='3475' (영업지원실).
      */
-    private fun resolveLegacy(role: UserRoleEnum?, costCenterCode: String?): DataScope {
-        return when {
-            role == UserRoleEnum.SYSTEM_ADMIN -> DataScope(
-                branchCodes = emptyList(),
-                isAllBranches = true,
-            )
-            role in UserRoleEnum.ALL_BRANCHES -> DataScope(
-                branchCodes = emptyList(),
-                isAllBranches = true,
-            )
-            role == UserRoleEnum.UNKNOWN -> DataScope(
-                branchCodes = emptyList(),
-                isAllBranches = false,
-            )
-            role in UserRoleEnum.BRANCH_SCOPE || role == null -> DataScope(
-                branchCodes = listOfNotNull(costCenterCode),
-                isAllBranches = false,
-            )
-            else -> DataScope(
-                branchCodes = listOfNotNull(costCenterCode),
-                isAllBranches = false,
-            )
+    private fun resolveLegacy(profileName: String?, isSalesSupport: Boolean, costCenterCode: String?): DataScope {
+        val isAllBranches = profileName == SYSTEM_ADMIN_PROFILE_NAME ||
+            isSalesSupport ||
+            profileName in ALL_BRANCHES_PROFILES
+        return if (isAllBranches) {
+            DataScope(branchCodes = emptyList(), isAllBranches = true)
+        } else {
+            DataScope(branchCodes = listOfNotNull(costCenterCode), isAllBranches = false)
         }
+    }
+
+    companion object {
+        private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
+        private val ALL_BRANCHES_PROFILES: Set<String> = setOf(
+            "1.본부장", "2.사업부장", "3.영업부장"
+        )
     }
 
     /**

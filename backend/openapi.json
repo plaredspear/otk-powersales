@@ -1240,7 +1240,7 @@
             "type" : [ "string", "null" ]
           },
           "role" : {
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ],
+            "pattern" : "^(여사원|조장|지점장|AccountViewAll)$",
             "type" : [ "string", "null" ]
           },
           "startDate" : {
@@ -1336,8 +1336,7 @@
             "type" : "boolean"
           },
           "role" : {
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ],
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -1437,7 +1436,7 @@
             "type" : [ "string", "null" ]
           },
           "role" : {
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ],
+            "pattern" : "^(여사원|조장|지점장|AccountViewAll)$",
             "type" : [ "string", "null" ]
           },
           "startDate" : {
@@ -8773,9 +8772,6 @@
           "role" : {
             "type" : [ "string", "null" ]
           },
-          "roleLabel" : {
-            "type" : [ "string", "null" ]
-          },
           "startDate" : {
             "type" : [ "string", "null" ]
           },
@@ -8982,9 +8978,6 @@
             "type" : [ "string", "null" ]
           },
           "role" : {
-            "type" : [ "string", "null" ]
-          },
-          "roleLabel" : {
             "type" : [ "string", "null" ]
           },
           "startDate" : {
@@ -15814,9 +15807,6 @@
           },
           "role" : {
             "type" : [ "string", "null" ]
-          },
-          "roleLabel" : {
-            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -15939,10 +15929,6 @@
             "type" : [ "string", "null" ]
           },
           "role" : {
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ],
-            "type" : [ "string", "null" ]
-          },
-          "roleLabel" : {
             "type" : [ "string", "null" ]
           },
           "salesSupport" : {
@@ -17379,7 +17365,6 @@
           "name" : "role",
           "required" : false,
           "schema" : {
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ],
             "type" : "string"
           }
         }, {

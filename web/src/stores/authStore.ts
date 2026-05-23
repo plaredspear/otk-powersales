@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { login as loginApi } from '@/api/auth';
-import type { UserRole } from '@/constants/userRole';
+import type { AppAuthority } from '@/constants/userRole';
 
 /**
  * Web Admin 인증 사용자 (Spec #760).
@@ -14,8 +14,10 @@ export interface AuthUser {
   username: string;
   name: string;
   orgName: string | null;
-  role: UserRole | null;
-  roleLabel: string | null;
+  /** SF DKRetail__AppAuthority__c picklist value 또는 null. picklist value 자체가 한글 label. */
+  role: AppAuthority | null;
+  /** SF Profile.Name (시스템 관리자 / 5.영업사원 / 4.지점장 등). 라우터 가드 입력. */
+  profileName?: string | null;
   costCenterCode: string | null;
   permissions: string[];
 }
@@ -45,7 +47,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       name: data.user.name ?? '',
       orgName: data.user.orgName,
       role: data.user.role,
-      roleLabel: data.user.roleLabel,
+      profileName: data.user.profileName,
       costCenterCode: data.user.costCenterCode,
       permissions: data.user.permissions ?? [],
     };

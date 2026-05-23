@@ -1,7 +1,7 @@
 package com.otoki.powersales.order.sap
 
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
@@ -59,7 +59,7 @@ class OrderRequestCancelPayloadFactoryTest {
         deliveryDate = LocalDate.of(2026, 5, 6),
         totalAmount = BigDecimal("100000"),
         orderRequestStatus = OrderRequestStatus.APPROVED,
-        employee = Employee(id = 1L, employeeCode = "E001", name = "tester", role = UserRoleEnum.WOMAN),
+        employee = Employee(id = 1L, employeeCode = "E001", name = "tester", role = AppAuthority.WOMAN),
         account = Account(id = 1, name = "A1", externalKey = "EXT-1"),
     )
 

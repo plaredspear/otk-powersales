@@ -11,8 +11,6 @@ import org.hibernate.annotations.NotFound
 import org.hibernate.annotations.NotFoundAction
 import java.time.LocalDate
 import java.time.LocalDateTime
-import com.otoki.powersales.auth.converter.UserRoleConverter
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.enums.CrmWorkType
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.enums.Gender
@@ -64,10 +62,15 @@ class Employee(
     @Column(name = "app_login_active")
     var appLoginActive: Boolean? = null,
 
+    /**
+     * SF `DKRetail__AppAuthority__c` picklist 4종 (조장 / 여사원 / 지점장 / AccountViewAll) raw value.
+     *
+     * 운영 분기는 [AppAuthority] 상수 비교 (`employee.role == AppAuthority.WOMAN` 등).
+     * SAP 발령 → role 변환은 [AppAuthorityMapper.fromSapCodes] 사용.
+     */
     @SFField("DKRetail__AppAuthority__c")
-    @Convert(converter = UserRoleConverter::class)
     @Column(name = "role", length = 50)
-    var role: UserRoleEnum? = null,
+    var role: String? = null,
 
     @SFField("DKRetail__OrgName__c")
     @Column(name = "org_name", length = 100)

@@ -1,6 +1,5 @@
 package com.otoki.powersales.employee.repository
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.entity.Employee
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
@@ -42,7 +41,7 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
      */
     fun findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
         costCenterCode: String,
-        role: UserRoleEnum,
+        role: String,
         status: String
     ): List<Employee>
 
@@ -54,22 +53,22 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     /**
      * 조직(costCenterCode) + 역할(role)로 사원 조회 (여사원 일정관리)
      */
-    fun findByCostCenterCodeAndRole(costCenterCode: String, role: UserRoleEnum): List<Employee>
+    fun findByCostCenterCodeAndRole(costCenterCode: String, role: String): List<Employee>
 
     /**
      * 조직 목록(costCenterCode IN) + 역할(role)로 사원 일괄 조회 (진열스케줄 업로드 - 조장 조회)
      */
-    fun findByCostCenterCodeInAndRole(costCenterCodes: List<String>, role: UserRoleEnum): List<Employee>
+    fun findByCostCenterCodeInAndRole(costCenterCodes: List<String>, role: String): List<Employee>
 
     /**
      * 조직 목록(costCenterCode IN) + 역할(role) + 앱 로그인 활성으로 사원 조회
      */
-    fun findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes: List<String>, role: UserRoleEnum): List<Employee>
+    fun findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes: List<String>, role: String): List<Employee>
 
     /**
      * 역할(role) + 상태(status)로 사원 조회 (전문행사조 엑셀 템플릿용)
      */
-    fun findByRoleAndStatus(role: UserRoleEnum, status: String): List<Employee>
+    fun findByRoleAndStatus(role: String, status: String): List<Employee>
 
     fun findByCrmWorkStartDateIsNotNullAndCrmWorkStartDateLessThanEqual(date: LocalDate): List<Employee>
 
@@ -78,7 +77,7 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
      */
     fun findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
         costCenterCodes: List<String>,
-        role: UserRoleEnum,
+        role: String,
         status: String
     ): List<Employee>
 }

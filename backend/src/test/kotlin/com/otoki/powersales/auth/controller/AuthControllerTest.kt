@@ -55,7 +55,7 @@ class AuthControllerTest : MobileControllerTestSupport() {
     fun login_success() {
         val request = LoginRequest(employeeCode = "12345678", password = "password123")
         val mockResponse = LoginResponse(
-            user = UserInfo(1L, "12345678", "홍길동", "서울지점", "WOMAN", "여사원"),
+            user = UserInfo(1L, "12345678", "홍길동", "서울지점", "여사원"),
             token = TokenInfo("access-token", "refresh-token", 3600),
             passwordChangeRequired = false,
             requiresGpsConsent = false
@@ -79,7 +79,7 @@ class AuthControllerTest : MobileControllerTestSupport() {
     @DisplayName("초기 비밀번호로 로그인 - 200 OK, password_change_required=true")
     fun login_initialPassword() {
         val mockResponse = LoginResponse(
-            user = UserInfo(2L, "87654321", "김철수", "부산지점", "WOMAN", "여사원"),
+            user = UserInfo(2L, "87654321", "김철수", "부산지점", "여사원"),
             token = TokenInfo("access-token", "refresh-token", 3600),
             passwordChangeRequired = true,
             requiresGpsConsent = true

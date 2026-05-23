@@ -7,7 +7,7 @@ import com.otoki.powersales.auth.dto.request.LoginRequest
 import com.otoki.powersales.auth.dto.request.RefreshTokenRequest
 import com.otoki.powersales.auth.dto.request.VerifyPasswordRequest
 import com.otoki.powersales.auth.permission.SfPermissionResolver
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.dto.response.*
 import com.otoki.powersales.auth.policy.PasswordPolicyValidator
 import com.otoki.powersales.common.dto.response.*
@@ -84,7 +84,7 @@ class AuthService(
         val passwordChangeRequired = employee.passwordChangeRequired ?: true
         val accessToken = jwtTokenProvider.createAccessToken(
             employee.id,
-            employee.role ?: UserRoleEnum.WOMAN,
+            employee.role ?: AppAuthority.WOMAN,
             employee.agreementFlag == true,
             passwordChangeRequired
         )
@@ -194,7 +194,7 @@ class AuthService(
 
         val accessToken = jwtTokenProvider.createAccessToken(
             employee.id,
-            employee.role ?: UserRoleEnum.WOMAN,
+            employee.role ?: AppAuthority.WOMAN,
             employee.agreementFlag == true,
             false
         )
@@ -258,7 +258,7 @@ class AuthService(
 
         // 7. 새 토큰 발급 (동일 familyId, 새 tokenId)
         val newTokenId = UUID.randomUUID().toString()
-        val newAccessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: UserRoleEnum.WOMAN, employee.agreementFlag == true)
+        val newAccessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: AppAuthority.WOMAN, employee.agreementFlag == true)
         val newRefreshToken = jwtTokenProvider.createRefreshToken(employee.id, familyId, newTokenId)
 
         // 8. Redis에 새 Refresh Token 저장
@@ -361,7 +361,7 @@ class AuthService(
 
         employee.recordGpsConsent(terms.name)
 
-        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: UserRoleEnum.WOMAN, true)
+        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: AppAuthority.WOMAN, true)
 
         return GpsConsentRecordResponse(
             accessToken = accessToken,

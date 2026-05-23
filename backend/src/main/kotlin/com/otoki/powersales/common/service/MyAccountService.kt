@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.service
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.dto.response.MyAccountInfo
 import com.otoki.powersales.common.dto.response.MyAccountListResponse
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
@@ -34,7 +34,7 @@ class MyAccountService(
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
-        val accounts = if (employee.role == UserRoleEnum.LEADER) {
+        val accounts = if (employee.role == AppAuthority.LEADER) {
             getLeaderAccounts(employee.costCenterCode)
         } else {
             getEmployeeAccounts(employee.id)

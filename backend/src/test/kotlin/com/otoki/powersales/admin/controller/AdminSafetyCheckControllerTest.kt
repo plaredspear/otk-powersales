@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
 import com.otoki.powersales.safetycheck.dto.response.MemberStatus
@@ -27,7 +27,7 @@ class AdminSafetyCheckControllerTest : AdminControllerTestSupport() {
 
     @BeforeEach
     fun setUpLeaderPrincipal() {
-        authenticateAsAdmin(role = UserRoleEnum.LEADER)
+        authenticateAsAdmin(role = AppAuthority.LEADER)
     }
 
     @Nested

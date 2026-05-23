@@ -7,7 +7,6 @@ import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
 import com.otoki.powersales.admin.exception.InvalidEmployeeCodeFormatException
 import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
 import com.otoki.powersales.admin.util.AdminPasswordPolicyValidator
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
@@ -21,8 +20,9 @@ import org.springframework.transaction.annotation.Transactional
 /**
  * 시스템 관리자 수동 등록 서비스 (Spec #579).
  *
- * - 호출자는 `UserRole.MANAGE_PERMISSIONS` 집합 (현재 SYSTEM_ADMIN 단일 원소) 에 속해야 한다.
- * - 등록되는 모든 직원은 `role = SYSTEM_ADMIN`, `origin = MANUAL`, `appLoginActive = false` 로 고정 저장된다.
+ * - 호출자는 `Profile.name == "시스템 관리자"` 여야 한다.
+ * - 등록되는 모든 직원은 `role = null` (AppAuthority picklist 부재), `origin = MANUAL`, `appLoginActive = false` 로 고정 저장된다.
+ *   (시스템 관리자 직무는 SF AppAuthority picklist 에 없음 — Profile.Name 으로만 표현)
  * - 비밀번호는 [AdminPasswordPolicyValidator] 검증 후 BCrypt 해시로 저장된다.
  */
 @Service
@@ -39,7 +39,7 @@ class AdminEmployeeRegisterService(
      */
     @Transactional
     fun register(actor: WebUserPrincipal, request: AdminEmployeeRegisterRequest): AdminEmployeeRegisterResponse {
-        if (actor.role !in UserRoleEnum.MANAGE_PERMISSIONS) {
+        if (actor.profileName != SYSTEM_ADMIN_PROFILE_NAME) {
             throw AdminForbiddenException()
         }
 
@@ -68,7 +68,8 @@ class AdminEmployeeRegisterService(
             password = encodedPassword,
             passwordChangeRequired = true
         ).apply {
-            role = UserRoleEnum.SYSTEM_ADMIN
+            // 시스템 관리자: SF AppAuthority picklist 부재 → role=null. Profile.Name 으로만 표현.
+            role = null
             origin = EmployeeOrigin.MANUAL
             appLoginActive = false
         }
@@ -91,5 +92,6 @@ class AdminEmployeeRegisterService(
 
     companion object {
         private val EMPLOYEE_CODE_PATTERN = Regex("^ADMIN-[A-Za-z0-9_-]{1,30}$")
+        private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
     }
 }

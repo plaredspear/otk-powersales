@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import type { UserRole } from '@/constants/userRole';
+import type { AppAuthority } from '@/constants/userRole';
 import type { ApiResponse } from './types';
 
 interface LoginRequest {
@@ -20,8 +20,7 @@ export interface AdminUserInfo {
   employeeCode: string;
   profileName: string | null;
   isSalesSupport: boolean;
-  role: UserRole | null;
-  roleLabel: string | null;
+  role: AppAuthority | null;
   orgName: string | null;
   costCenterCode: string | null;
   permissions: string[];

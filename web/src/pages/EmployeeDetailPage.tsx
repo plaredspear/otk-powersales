@@ -13,7 +13,6 @@ import {
 import type { Employee, EmployeeDetail } from '@/api/employee';
 import { useEmployee } from '@/hooks/employee/useEmployee';
 import { usePermission } from '@/hooks/usePermission';
-import { roleLabel } from '@/constants/userRole';
 import EmployeeEditModal from '@/pages/employee/components/EmployeeEditModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
@@ -29,7 +28,6 @@ function toEmployeeListItem(detail: EmployeeDetail): Employee {
     orgName: detail.orgName,
     costCenterCode: detail.costCenterCode,
     role: detail.role,
-    roleLabel: detail.roleLabel,
     startDate: detail.startDate,
     endDate: detail.endDate,
     appLoginActive: detail.appLoginActive,
@@ -196,7 +194,7 @@ export default function EmployeeDetailPage() {
       <Card title="앱 설정" style={{ marginBottom: 12 }}>
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="권한">
-            {employee.roleLabel ?? roleLabel(employee.role)}
+            {employee.role ?? '-'}
           </Descriptions.Item>
           <Descriptions.Item label="앱 로그인">
             {employee.appLoginActive === true ? (

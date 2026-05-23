@@ -2,7 +2,7 @@ package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import io.mockk.every
@@ -181,7 +181,7 @@ class AdminEmployeeServiceTest {
         name: String = "테스트",
         status: String? = "재직",
         costCenterCode: String? = "A001",
-        role: UserRoleEnum? = null
+        role: String? = null
     ): Employee = Employee(
         id = id,
         employeeCode = employeeCode,

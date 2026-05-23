@@ -1,7 +1,7 @@
 package com.otoki.powersales.order.service
 
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.util.TimeZones
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -239,7 +239,7 @@ class OrderCancelServiceTest {
     }
 
     private fun stubEmployee() {
-        val employee = Employee(id = userId, employeeCode = employeeCode, name = "tester", role = UserRoleEnum.WOMAN)
+        val employee = Employee(id = userId, employeeCode = employeeCode, name = "tester", role = AppAuthority.WOMAN)
         every { employeeRepository.findById(userId) } returns Optional.of(employee)
     }
 
@@ -266,7 +266,7 @@ class OrderCancelServiceTest {
     private fun orderRequest(
         status: OrderRequestStatus,
         deliveryDate: LocalDate = LocalDate.of(2026, 5, 4),
-        employee: Employee = Employee(id = userId, employeeCode = employeeCode, name = "tester", role = UserRoleEnum.WOMAN),
+        employee: Employee = Employee(id = userId, employeeCode = employeeCode, name = "tester", role = AppAuthority.WOMAN),
     ) = OrderRequest(
         id = orderRequestId,
         orderRequestNumber = "ORD-20260504-000001",

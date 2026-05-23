@@ -140,7 +140,7 @@ export const router = createBrowserRouter(
             { path: '/settings/holiday-masters', element: <LazyWrapper><HolidayMasterListPage /></LazyWrapper> },
             { path: '/settings/employee-input-criteria-masters', element: <LazyWrapper><EmployeeInputCriteriaMasterListPage /></LazyWrapper> },
             {
-              element: <RoleRoute allowedRoles={['SYSTEM_ADMIN']} />,
+              element: <RoleRoute allowedProfileNames={['시스템 관리자']} />,
               children: [
                 { path: '/settings/admin-accounts/new', element: <LazyWrapper><AdminAccountRegisterPage /></LazyWrapper> },
               ],

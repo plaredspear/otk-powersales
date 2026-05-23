@@ -15,7 +15,7 @@ import com.otoki.powersales.promotion.dto.response.PPTMasterHistoryListResponse
 import com.otoki.powersales.promotion.dto.response.PPTMasterHistoryResponse
 import com.otoki.powersales.promotion.dto.response.PPTMasterListResponse
 import com.otoki.powersales.promotion.dto.response.PPTMasterResponse
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
@@ -286,7 +286,7 @@ class AdminPPTMasterService(
     }
 
     fun generateExcelTemplate(): ByteArray {
-        val employees = employeeRepository.findByRoleAndStatus(UserRoleEnum.WOMAN, "재직")
+        val employees = employeeRepository.findByRoleAndStatus(AppAuthority.WOMAN, "재직")
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("전문행사조마스터")
@@ -302,7 +302,7 @@ class AdminPPTMasterService(
             row.createCell(0).setCellValue(emp.orgName ?: "")
             row.createCell(1).setCellValue(emp.employeeCode)
             row.createCell(2).setCellValue(emp.name)
-            row.createCell(3).setCellValue(emp.role?.toKorean() ?: "")
+            row.createCell(3).setCellValue(emp.role ?: "")
         }
 
         val out = ByteArrayOutputStream()

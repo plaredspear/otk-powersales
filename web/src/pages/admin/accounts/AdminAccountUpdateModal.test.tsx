@@ -50,7 +50,6 @@ const sampleEmployee: Employee = {
   orgName: '서초지점',
   costCenterCode: 'C002',
   role: null,
-  roleLabel: null,
   startDate: null,
   endDate: null,
   appLoginActive: true,

@@ -1,7 +1,7 @@
 package com.otoki.powersales.auth.permission
 
 import com.otoki.powersales.auth.entity.Profile
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.repository.ProfileRepository
 import com.otoki.powersales.auth.sharing.entity.ProfileFlags
 import com.otoki.powersales.auth.sharing.repository.ProfileFlagsRepository
@@ -88,9 +88,11 @@ class ProfileBootstrapRunner(
 }
 
 /**
- * 12종 Profile 의 SoT + UserRoleEnum → Profile.name 매핑.
+ * 12종 Profile 의 SoT + AppAuthority picklist → Profile.name 매핑.
  *
  * Profile.name (한글) 이 권한 모델 입력 SoT — ROLE_ 산출 / EmployeeProfileResolver / UserProvisioningService 가 본 매핑을 공유.
+ * AppAuthority picklist 부재 (영업부장 / 사업부장 / 본부장 / Staff 등) 직위는 [profileNameForRole] 의 null fallback —
+ * 운영 환경에서는 EmployeeProfileResolver.resolveProfileId 의 Org + jikchak 분기로 정확한 Profile 산출.
  */
 object SystemAdminProfilePolicy {
 
@@ -113,16 +115,16 @@ object SystemAdminProfilePolicy {
     )
 
     /**
-     * UserRoleEnum → Profile.name 매핑 — Provisioning / Seed 시점 profileId 결정.
+     * SF AppAuthority picklist value → Profile.name 매핑 — Provisioning / Seed 시점 profileId 결정.
+     *
+     * SF picklist 4종 (조장 / 여사원 / 지점장 / AccountViewAll) 만 입력 가능.
+     * null 또는 매칭 부재 시 5.영업사원 fallback.
      */
-    fun profileNameForRole(role: UserRoleEnum?): String = when (role) {
-        UserRoleEnum.SYSTEM_ADMIN -> SYSTEM_ADMIN_PROFILE_NAME
-        UserRoleEnum.LEADER -> "6.조장"
-        UserRoleEnum.BRANCH_MANAGER -> "4.지점장"
-        UserRoleEnum.SALES_MANAGER -> "3.영업부장"
-        UserRoleEnum.BUSINESS_MANAGER -> "2.사업부장"
-        UserRoleEnum.HEADQUARTERS_MANAGER -> "1.본부장"
-        UserRoleEnum.SALES_SUPPORT -> "9. Staff"
-        UserRoleEnum.WOMAN, UserRoleEnum.ACCOUNT_VIEW_ALL, UserRoleEnum.UNKNOWN, null -> "5.영업사원"
+    fun profileNameForRole(role: String?): String = when (role) {
+        AppAuthority.LEADER -> "6.조장"
+        AppAuthority.BRANCH_MANAGER -> "4.지점장"
+        AppAuthority.WOMAN -> "5.영업사원"
+        AppAuthority.ACCOUNT_VIEW_ALL -> "5.영업사원"
+        else -> "5.영업사원"
     }
 }

@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.config
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
@@ -27,7 +27,11 @@ class LocalDataInitializerTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
 
+    private val userRepository: com.otoki.powersales.user.repository.UserRepository = mockk(relaxed = true)
+
     private val userProvisioningService: UserProvisioningService = mockk()
+
+    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk(relaxed = true)
 
     private val passwordEncoder: PasswordEncoder = mockk()
 
@@ -41,7 +45,9 @@ class LocalDataInitializerTest {
 
     private val localDataInitializer = LocalDataInitializer(
         employeeRepository,
+        userRepository,
         userProvisioningService,
+        profileRepository,
         passwordEncoder,
         agreementWordRepository,
         transactionTemplate,
@@ -129,7 +135,7 @@ class LocalDataInitializerTest {
             assertThat(leader.status).isEqualTo("재직")
             assertThat(leader.appLoginActive).isTrue()
             assertThat(leader.orgName).isEqualTo("테스트지점")
-            assertThat(leader.role).isEqualTo(UserRoleEnum.SYSTEM_ADMIN)
+            assertThat(leader.role).isEqualTo(null)
             assertThat(leader.password).isEqualTo("encoded_password")
             assertThat(leader.passwordChangeRequired).isFalse()
         }
@@ -143,7 +149,7 @@ class LocalDataInitializerTest {
 
             val employees = captureAllSavedEmployees()
             val leader = employees.find { it.employeeCode == "99990001" }!!
-            assertThat(leader.role).isEqualTo(UserRoleEnum.SYSTEM_ADMIN)
+            assertThat(leader.role).isEqualTo(null)
         }
 
         @Test
@@ -174,7 +180,7 @@ class LocalDataInitializerTest {
             assertThat(salesUser.status).isEqualTo("재직")
             assertThat(salesUser.appLoginActive).isTrue()
             assertThat(salesUser.orgName).isEqualTo("테스트지점")
-            assertThat(salesUser.role).isEqualTo(UserRoleEnum.WOMAN)
+            assertThat(salesUser.role).isEqualTo(AppAuthority.WOMAN)
             assertThat(salesUser.password).isEqualTo("encoded_password")
             assertThat(salesUser.passwordChangeRequired).isFalse()
         }
@@ -188,7 +194,7 @@ class LocalDataInitializerTest {
 
             val employees = captureAllSavedEmployees()
             val salesUser = employees.find { it.employeeCode == "99990002" }!!
-            assertThat(salesUser.role).isEqualTo(UserRoleEnum.WOMAN)
+            assertThat(salesUser.role).isEqualTo(AppAuthority.WOMAN)
         }
 
         @Test
@@ -231,7 +237,7 @@ class LocalDataInitializerTest {
             assertThat(admin.status).isEqualTo("재직")
             assertThat(admin.appLoginActive).isTrue()
             assertThat(admin.orgName).isEqualTo("테스트지점")
-            assertThat(admin.role).isEqualTo(UserRoleEnum.BRANCH_MANAGER)
+            assertThat(admin.role).isEqualTo(AppAuthority.BRANCH_MANAGER)
             assertThat(admin.password).isEqualTo("encoded_password")
             assertThat(admin.passwordChangeRequired).isFalse()
         }
@@ -245,7 +251,7 @@ class LocalDataInitializerTest {
 
             val employees = captureAllSavedEmployees()
             val admin = employees.find { it.employeeCode == "99990003" }!!
-            assertThat(admin.role).isEqualTo(UserRoleEnum.BRANCH_MANAGER)
+            assertThat(admin.role).isEqualTo(AppAuthority.BRANCH_MANAGER)
         }
 
         @Test
@@ -286,7 +292,7 @@ class LocalDataInitializerTest {
             val sysAdmin = employees.find { it.employeeCode == "ADMIN-99999999" }!!
             assertThat(sysAdmin.employeeCode).startsWith("ADMIN-")
             assertThat(sysAdmin.name).isEqualTo("시스템개발자")
-            assertThat(sysAdmin.role).isEqualTo(UserRoleEnum.SYSTEM_ADMIN)
+            assertThat(sysAdmin.role).isEqualTo(null)
             assertThat(sysAdmin.origin).isEqualTo(EmployeeOrigin.MANUAL)
             assertThat(sysAdmin.appLoginActive).isFalse()
             assertThat(sysAdmin.orgName).isEqualTo("시스템개발자조직")
@@ -312,15 +318,15 @@ class LocalDataInitializerTest {
         }
 
         @Test
-        @DisplayName("MANAGE_PERMISSIONS 권한 충족 - SYSTEM_ADMIN 시드는 관리자 등록 API 호출 자격을 가진다")
-        fun systemAdmin_satisfiesManagePermissions() {
+        @DisplayName("시스템 관리자 시드 — Employee.role 은 null (SF AppAuthority picklist 부재)")
+        fun systemAdmin_hasNullRole() {
             stubAllUsersNotExist()
 
             localDataInitializer.run(DefaultApplicationArguments())
 
             val employees = captureAllSavedEmployees()
             val sysAdmin = employees.find { it.employeeCode == "ADMIN-99999999" }!!
-            assertThat(sysAdmin.role).isIn(UserRoleEnum.MANAGE_PERMISSIONS)
+            assertThat(sysAdmin.role).isNull()
         }
 
         @Test
@@ -334,7 +340,7 @@ class LocalDataInitializerTest {
             val sysAdmin2 = employees.find { it.employeeCode == "ADMIN-99990001" }!!
             assertThat(sysAdmin2.employeeCode).startsWith("ADMIN-")
             assertThat(sysAdmin2.name).isEqualTo("시스템개발자2")
-            assertThat(sysAdmin2.role).isEqualTo(UserRoleEnum.SYSTEM_ADMIN)
+            assertThat(sysAdmin2.role).isEqualTo(null)
             assertThat(sysAdmin2.origin).isEqualTo(EmployeeOrigin.MANUAL)
             assertThat(sysAdmin2.appLoginActive).isFalse()
             assertThat(sysAdmin2.orgName).isEqualTo("시스템개발자조직")

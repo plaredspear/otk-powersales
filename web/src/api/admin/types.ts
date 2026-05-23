@@ -1,4 +1,3 @@
-import type { UserRole } from '@/constants/userRole';
 
 /**
  * 시스템 관리자 수동 등록 (Spec #579).
@@ -22,7 +21,8 @@ export interface AdminAccountRegisterResponse {
   employeeId: number;
   employeeCode: string;
   name: string;
-  role: UserRole;
+  /** SF DKRetail__AppAuthority__c picklist value 또는 null (시스템 관리자는 null). */
+  role: string | null;
   origin: 'SAP' | 'MANUAL';
   appLoginActive: boolean;
   passwordChangeRequired: boolean;

@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingType
@@ -80,11 +80,12 @@ class AdminTeamScheduleService(
      * - 그 외 (LEADER, BRANCH_MANAGER, WOMAN 등): 본인 `costCenterCode` 기준 조직 트리 + Retail/제1/CVS사업부
      */
     fun getBranches(principal: WebUserPrincipal): List<BranchResponse> {
-        val role = principal.role
+        val profileName = principal.profileName
+        val isAllBranches = principal.isSalesSupport || profileName in ALL_BRANCHES_PROFILES
 
         return when {
-            role == UserRoleEnum.SYSTEM_ADMIN -> organizationRepository.findAllTeamScheduleBranches()
-            role != null && UserRoleEnum.ALL_BRANCHES.contains(role) ->
+            profileName == SYSTEM_ADMIN_PROFILE_NAME -> organizationRepository.findAllTeamScheduleBranches()
+            isAllBranches ->
                 organizationRepository.findTeamScheduleBranches(hrCode = null, allBranches = true)
             else ->
                 organizationRepository.findTeamScheduleBranches(
@@ -221,7 +222,7 @@ class AdminTeamScheduleService(
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { TeamScheduleNotFoundException() }
 
-        teamScheduleValidator.validateDisplayMasterLink(principal.role, schedule)
+        teamScheduleValidator.validateDisplayMasterLink(actorIsAdminGrade(principal), schedule)
 
         val employee = schedule.employee
         if (employee != null) {
@@ -281,7 +282,7 @@ class AdminTeamScheduleService(
 
     @Transactional
     fun deleteSchedule(principal: WebUserPrincipal, scheduleId: Long) {
-        if (principal.role == UserRoleEnum.BRANCH_MANAGER) {
+        if (principal.role == AppAuthority.BRANCH_MANAGER) {
             throw TeamScheduleDeleteForbiddenException()
         }
 
@@ -315,7 +316,7 @@ class AdminTeamScheduleService(
      */
     @Transactional
     fun massDelete(principal: WebUserPrincipal, ids: List<Long>): Int {
-        if (principal.role == UserRoleEnum.BRANCH_MANAGER) {
+        if (principal.role == AppAuthority.BRANCH_MANAGER) {
             throw TeamScheduleDeleteForbiddenException()
         }
 
@@ -361,21 +362,37 @@ class AdminTeamScheduleService(
      *
      * - (a) `principal.role != SYSTEM_ADMIN AND schedule.attendanceLog != null` → `TeamScheduleWorkReportDeleteException`
      *   (legacy `deleteblock` 동등, #789 P1-B 머지 후 attendanceLog id-FK 가드)
-     * - (b) `teamScheduleValidator.validateDisplayMasterLink(principal.role, schedule)`
+     * - (b) `teamScheduleValidator.validateDisplayMasterLink(actorIsAdminGrade(principal), schedule)`
      *   (legacy `checkDisplayMaster` 동등)
      *
      * BRANCH_MANAGER 차단은 호출 측에서 (단건/다건 시작 시 1회) 검사하므로 본 helper 범위 외.
      */
     private fun validateDeleteGuards(principal: WebUserPrincipal, schedule: TeamMemberSchedule) {
-        if (principal.role != UserRoleEnum.SYSTEM_ADMIN && schedule.attendanceLog != null) {
+        if (principal.profileName != SYSTEM_ADMIN_PROFILE_NAME && schedule.attendanceLog != null) {
             throw TeamScheduleWorkReportDeleteException()
         }
-        teamScheduleValidator.validateDisplayMasterLink(principal.role, schedule)
+        teamScheduleValidator.validateDisplayMasterLink(actorIsAdminGrade(principal), schedule)
     }
 
     // --- Private helpers ---
 
+    /**
+     * SF ADMIN_GRADE 동등 — Profile.Name == "시스템 관리자" OR User.isSalesSupport.
+     *
+     * `validateDisplayMasterLink` 의 차단 우회 권한 분기에 사용.
+     */
+    private fun actorIsAdminGrade(principal: WebUserPrincipal): Boolean =
+        principal.isSalesSupport || principal.profileName == SYSTEM_ADMIN_PROFILE_NAME
+
     companion object {
+        /** SF 시스템 관리자 Profile.Name (ProfileBootstrapRunner SoT). */
+        private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
+
+        /** SF "전 지점 가시" Profile.Name 집합 — 영업본부 / 사업부장 등. SF AppointmentTriggerHanlder.cls:344-365 정합. */
+        private val ALL_BRANCHES_PROFILES: Set<String> = setOf(
+            "1.본부장", "2.사업부장", "3.영업부장"
+        )
+
         /** SF `TeamMemberListController.fetchTeamMembers` 특수 사번 하드코딩 분기 — 인천 cost center 광역 매핑 */
         private val SF_SPECIAL_EMPLOYEE_CODES = setOf("19951029", "20001013", "20060052", "20050308")
 

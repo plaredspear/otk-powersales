@@ -243,12 +243,12 @@ export default function ProductExpirationPage() {
   return (
     <div>
       {/* Scope Badge */}
-      {user?.role === 'LEADER' && (
+      {user?.role === '조장' && (
         <Tag color="blue" style={{ marginBottom: 16, fontSize: 14, padding: '4px 12px' }}>
           내 팀 ({user.orgName ?? ''})
         </Tag>
       )}
-      {user?.role === 'WOMAN' && (
+      {user?.role === '여사원' && (
         <Tag style={{ marginBottom: 16, fontSize: 14, padding: '4px 12px' }}>
           내 데이터
         </Tag>

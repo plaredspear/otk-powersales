@@ -13,7 +13,7 @@ import com.otoki.powersales.common.entity.AgreementHistory
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.common.entity.LoginHistory
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.exception.*
 import com.otoki.powersales.common.repository.AgreementHistoryRepository
 import com.otoki.powersales.common.repository.AgreementWordRepository
@@ -90,7 +90,7 @@ class AuthServiceTest {
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
         every { passwordEncoder.matches(rawPassword, encodedPassword) } returns true
         every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
-        every { jwtTokenProvider.createAccessToken(employee.id, any<UserRoleEnum>(), false, any()) } returns accessToken
+        every { jwtTokenProvider.createAccessToken(employee.id, any<String>(), false, any()) } returns accessToken
         every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns refreshToken
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns expiresIn
         every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
@@ -125,7 +125,7 @@ class AuthServiceTest {
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
         every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
-        every { jwtTokenProvider.createAccessToken(employee.id, any<UserRoleEnum>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createAccessToken(employee.id, any<String>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
         every { loginHistoryRepository.save(capture(historySlot)) } answers { firstArg() }
@@ -150,7 +150,7 @@ class AuthServiceTest {
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
         every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
         every { loginHistoryRepository.save(any<LoginHistory>()) } throws RuntimeException("DB error")
-        every { jwtTokenProvider.createAccessToken(employee.id, any<UserRoleEnum>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createAccessToken(employee.id, any<String>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
@@ -208,7 +208,7 @@ class AuthServiceTest {
         every { passwordEncoder.matches("old_password", "encoded_old") } returns true
         every { passwordEncoder.encode("newpass1") } returns "encoded_new"
         every { employeeRepository.save(capture(empSlot)) } answers { firstArg() }
-        every { jwtTokenProvider.createAccessToken(userId, any<UserRoleEnum>(), any(), false) } returns "new-access"
+        every { jwtTokenProvider.createAccessToken(userId, any<String>(), any(), false) } returns "new-access"
         every { jwtTokenProvider.createRefreshToken(userId, any(), any()) } returns "new-refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
@@ -236,7 +236,7 @@ class AuthServiceTest {
         every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
         every { passwordEncoder.encode("newpass1") } returns "encoded_new"
         every { employeeRepository.save(capture(empSlot)) } answers { firstArg() }
-        every { jwtTokenProvider.createAccessToken(userId, any<UserRoleEnum>(), any(), false) } returns "new-access"
+        every { jwtTokenProvider.createAccessToken(userId, any<String>(), any(), false) } returns "new-access"
         every { jwtTokenProvider.createRefreshToken(userId, any(), any()) } returns "new-refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
@@ -316,7 +316,7 @@ class AuthServiceTest {
 
     private fun principal(userId: Long, passwordChangeRequired: Boolean) = UserPrincipal(
         userId = userId,
-        role = UserRoleEnum.SALES_MANAGER,
+        role = null,
         agreementFlag = true,
         passwordChangeRequired = passwordChangeRequired
     )
@@ -349,7 +349,7 @@ class AuthServiceTest {
             every { jwtTokenProvider.isRefreshTokenStored(tokenId) } returns true
             every { jwtTokenProvider.getUserIdFromToken(refreshToken) } returns userId
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { jwtTokenProvider.createAccessToken(userId, any<UserRoleEnum>(), false, any()) } returns newAccessToken
+            every { jwtTokenProvider.createAccessToken(userId, any<String>(), false, any()) } returns newAccessToken
             every { jwtTokenProvider.createRefreshToken(userId, familyId, any()) } returns newRefreshToken
             every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns expiresIn
 
@@ -562,7 +562,7 @@ class AuthServiceTest {
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
             every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(activeTerms)
             every { agreementHistoryRepository.save(capture(historySlot)) } answers { firstArg() }
-            every { jwtTokenProvider.createAccessToken(userId, any<UserRoleEnum>(), true, any()) } returns "new-token"
+            every { jwtTokenProvider.createAccessToken(userId, any<String>(), true, any()) } returns "new-token"
             every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
             // When
@@ -595,7 +595,7 @@ class AuthServiceTest {
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
             every { agreementWordRepository.findByNameAndIsDeletedFalse("AGR-CUSTOM") } returns Optional.of(namedTerms)
             every { agreementHistoryRepository.save(capture(historySlot)) } answers { firstArg() }
-            every { jwtTokenProvider.createAccessToken(userId, any<UserRoleEnum>(), true, any()) } returns "new-token"
+            every { jwtTokenProvider.createAccessToken(userId, any<String>(), true, any()) } returns "new-token"
             every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
             // When
@@ -675,7 +675,7 @@ class AuthServiceTest {
                 every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
                 every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(activeTerms)
                 every { agreementHistoryRepository.save(capture(historySlot)) } answers { firstArg() }
-                every { jwtTokenProvider.createAccessToken(userId, any<UserRoleEnum>(), true, any()) } returns "token"
+                every { jwtTokenProvider.createAccessToken(userId, any<String>(), true, any()) } returns "token"
                 every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
                 val expectedKstToday = LocalDate.now(TimeZones.SEOUL_ZONE)
@@ -698,7 +698,7 @@ class AuthServiceTest {
                 every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
                 every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(activeTerms)
                 every { agreementHistoryRepository.save(capture(historySlot)) } answers { firstArg() }
-                every { jwtTokenProvider.createAccessToken(userId, any<UserRoleEnum>(), true, any()) } returns "token"
+                every { jwtTokenProvider.createAccessToken(userId, any<String>(), true, any()) } returns "token"
                 every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
 
                 // When
@@ -721,7 +721,7 @@ class AuthServiceTest {
                 every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
                 every { agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse() } returns Optional.of(activeTerms)
                 every { agreementHistoryRepository.save(any<AgreementHistory>()) } answers { firstArg() }
-                every { jwtTokenProvider.createAccessToken(userId, any<UserRoleEnum>(), true, any()) } returns "token"
+                every { jwtTokenProvider.createAccessToken(userId, any<String>(), true, any()) } returns "token"
                 every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
                 every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
@@ -784,7 +784,7 @@ class AuthServiceTest {
         every { uuidCheckProperties.enabled } returns true
         every { uuidCheckProperties.isExcluded("12345678") } returns false
         every { employeeRepository.save(capture(empSlot)) } answers { firstArg() }
-        every { jwtTokenProvider.createAccessToken(1L, any<UserRoleEnum>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createAccessToken(1L, any<String>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
         every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
@@ -808,7 +808,7 @@ class AuthServiceTest {
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
         every { uuidCheckProperties.enabled } returns true
         every { uuidCheckProperties.isExcluded("12345678") } returns false
-        every { jwtTokenProvider.createAccessToken(1L, any<UserRoleEnum>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createAccessToken(1L, any<String>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
         every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
@@ -847,7 +847,7 @@ class AuthServiceTest {
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
         every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
-        every { jwtTokenProvider.createAccessToken(1L, any<UserRoleEnum>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createAccessToken(1L, any<String>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
         every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
@@ -869,7 +869,7 @@ class AuthServiceTest {
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
         every { uuidCheckProperties.enabled } returns false
-        every { jwtTokenProvider.createAccessToken(1L, any<UserRoleEnum>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createAccessToken(1L, any<String>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
         every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
@@ -892,7 +892,7 @@ class AuthServiceTest {
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
         every { uuidCheckProperties.enabled } returns true
         every { uuidCheckProperties.isExcluded("20010585") } returns true
-        every { jwtTokenProvider.createAccessToken(1L, any<UserRoleEnum>(), false, any()) } returns "token"
+        every { jwtTokenProvider.createAccessToken(1L, any<String>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
         every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
@@ -914,13 +914,13 @@ class AuthServiceTest {
         @DisplayName("WEB 로그인 성공 - 허용 권한(영업부장)으로 로그인 시 정상 반환")
         fun webLogin_allowedAuthority_success() {
             // Given
-            val employee = createTestEmployee(id = 1L, role = UserRoleEnum.SALES_MANAGER)
+            val employee = createTestEmployee(id = 1L, role = null)
             val request = LoginRequest("12345678", "password123")
 
             every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
             every { passwordEncoder.matches("password123", "encoded_password") } returns true
             every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
-            every { jwtTokenProvider.createAccessToken(1L, any<UserRoleEnum>(), false, any()) } returns "token"
+            every { jwtTokenProvider.createAccessToken(1L, any<String>(), false, any()) } returns "token"
             every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
             every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
             every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
@@ -944,7 +944,7 @@ class AuthServiceTest {
             every { uuidCheckProperties.enabled } returns true
             every { uuidCheckProperties.isExcluded("12345678") } returns false
             every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
-            every { jwtTokenProvider.createAccessToken(1L, any<UserRoleEnum>(), false, any()) } returns "token"
+            every { jwtTokenProvider.createAccessToken(1L, any<String>(), false, any()) } returns "token"
             every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
             every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
             every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
@@ -960,7 +960,7 @@ class AuthServiceTest {
         @DisplayName("WEB 미허용 권한 - appAuthority가 허용 목록에 없으면 WebLoginNotAllowedException")
         fun webLogin_notAllowedAuthority_throws() {
             // Given
-            val employee = createTestEmployee(id = 1L, role = UserRoleEnum.WOMAN)
+            val employee = createTestEmployee(id = 1L, role = AppAuthority.WOMAN)
             val request = LoginRequest("12345678", "password123")
 
             every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
@@ -1059,7 +1059,7 @@ class AuthServiceTest {
         password: String = "encoded_password",
         name: String = "홍길동",
         orgName: String = "서울지점",
-        role: UserRoleEnum? = UserRoleEnum.SALES_MANAGER,
+        role: String? = null,
         appLoginActive: Boolean? = true,
         passwordChangeRequired: Boolean = true,
         agreementFlag: Boolean? = null,

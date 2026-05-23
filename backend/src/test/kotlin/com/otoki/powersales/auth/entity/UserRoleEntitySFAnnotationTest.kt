@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
  * SF describe 실측 16 필드 중 7 필드만 보존. SF UserRole 은 CreatedDate / CreatedById 자체가 부재 —
  * BaseEntity 미상속 (LastModifiedDate / LastModifiedById 만 audit 컬럼).
  *
- * 클래스명 `UserRoleEntity` — 동일 패키지의 [UserRoleEnum] enum 과 충돌 회피.
+ * 클래스명 `UserRoleEntity` — SF 원본 UserRole row 의 read-only audit lookup (조직 계층 트리).
  */
 @DisplayName("UserRoleEntity SF 어노테이션 검증 (Spec #780)")
 class UserRoleEntitySFAnnotationTest {

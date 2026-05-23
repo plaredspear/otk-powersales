@@ -6,7 +6,7 @@ import com.otoki.powersales.admin.dto.AdminEmployeeRegisterResponse
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
 import com.otoki.powersales.admin.service.AdminEmployeeRegisterService
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import org.junit.jupiter.api.BeforeEach
@@ -37,7 +37,7 @@ class AdminEmployeeRegisterControllerTest : AdminControllerTestSupport() {
 
     @BeforeEach
     fun setUpSystemAdminPrincipal() {
-        authenticateAsAdmin(role = UserRoleEnum.SYSTEM_ADMIN)
+        authenticateAsAdmin(role = null)
     }
 
     private fun validRequest() = AdminEmployeeRegisterRequest(
@@ -55,7 +55,7 @@ class AdminEmployeeRegisterControllerTest : AdminControllerTestSupport() {
         employeeId = 12345L,
         employeeCode = "ADMIN-001",
         name = "홍길동",
-        role = UserRoleEnum.SYSTEM_ADMIN,
+        role = null,
         origin = EmployeeOrigin.MANUAL,
         appLoginActive = false,
         passwordChangeRequired = true,

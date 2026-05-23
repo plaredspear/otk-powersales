@@ -4,7 +4,7 @@ import com.otoki.powersales.agreement.dto.request.AdminAgreementWordCreateReques
 import com.otoki.powersales.agreement.dto.response.AdminAgreementWordActiveResponse
 import com.otoki.powersales.agreement.dto.response.AdminAgreementWordCreateResponse
 import com.otoki.powersales.agreement.service.AdminAgreementWordService
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -39,7 +39,7 @@ class AdminAgreementWordControllerTest : AdminControllerTestSupport() {
 
     @BeforeEach
     fun setUpSystemAdminPrincipal() {
-        authenticateAsAdmin(role = UserRoleEnum.SYSTEM_ADMIN)
+        authenticateAsAdmin(role = null)
     }
 
     @Nested

@@ -4,7 +4,7 @@ import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory2
 import com.otoki.powersales.common.enums.WorkingType
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.account.entity.Account
@@ -116,7 +116,7 @@ class HomeServiceTest {
             val member2EmpNum = "00000003"
             val orgName = "부산1지점"
 
-            val leader = createEmployee(id = userId, employeeCode = leaderEmpNum, orgName = orgName, role = UserRoleEnum.LEADER)
+            val leader = createEmployee(id = userId, employeeCode = leaderEmpNum, orgName = orgName, role = AppAuthority.LEADER)
             val member1 = createEmployee(id = member1Id, employeeCode = member1EmpNum, orgName = orgName, name = "김영희")
             val member2 = createEmployee(id = member2Id, employeeCode = member2EmpNum, orgName = orgName, name = "박미나")
             val teamEmployees = listOf(leader, member1, member2)
@@ -155,7 +155,7 @@ class HomeServiceTest {
         fun user_safetyCheckNotCompleted() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, role = UserRoleEnum.WOMAN)
+            val employee = createEmployee(id = userId, role = AppAuthority.WOMAN)
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()) } returns emptyList()
@@ -175,7 +175,7 @@ class HomeServiceTest {
         fun user_safetyCheckCompleted() {
             // Given
             val userId = 1L
-            val employee = createEmployee(id = userId, role = UserRoleEnum.WOMAN)
+            val employee = createEmployee(id = userId, role = AppAuthority.WOMAN)
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()) } returns emptyList()
@@ -195,7 +195,7 @@ class HomeServiceTest {
         fun leader_safetyCheckAlwaysFalse() {
             // Given
             val userId = 1L
-            val leader = createEmployee(id = userId, orgName = "부산1지점", role = UserRoleEnum.LEADER)
+            val leader = createEmployee(id = userId, orgName = "부산1지점", role = AppAuthority.LEADER)
 
             every { employeeRepository.findById(userId) } returns Optional.of(leader)
             every { employeeRepository.findByOrgName("부산1지점") } returns listOf(leader)
@@ -534,7 +534,7 @@ class HomeServiceTest {
         name: String = "최금주",
         orgName: String? = "부산1지점",
         sfid: String? = null,
-        role: UserRoleEnum? = null
+        role: String? = null
     ): Employee {
         return Employee(
             id = id,

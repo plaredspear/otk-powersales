@@ -1,9 +1,9 @@
 package com.otoki.powersales.employee.dto.request
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.enums.CrmWorkType
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -24,7 +24,12 @@ data class AdminEmployeeUpdateRequest(
 
     val status: String? = null,
 
-    val role: UserRoleEnum? = null,
+    /** SF DKRetail__AppAuthority__c picklist 4종 raw value. */
+    @field:Pattern(
+        regexp = "^(여사원|조장|지점장|AccountViewAll)$",
+        message = "AppAuthority 는 '여사원' / '조장' / '지점장' / 'AccountViewAll' 중 하나여야 합니다"
+    )
+    val role: String? = null,
 
     @field:Size(max = 100, message = "조직명은 100자 이하여야 합니다")
     val orgName: String? = null,

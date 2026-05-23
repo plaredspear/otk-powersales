@@ -57,7 +57,6 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
           orgName: presetItem.branchName,
           costCenterCode: presetItem.branchCode,
           role: null,
-          roleLabel: null,
           startDate: null,
           endDate: null,
           appLoginActive: null,

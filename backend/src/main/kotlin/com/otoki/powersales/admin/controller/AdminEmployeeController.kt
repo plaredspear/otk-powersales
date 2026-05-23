@@ -6,7 +6,6 @@ import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.dto.request.AdminEmployeeManualRegisterRequest
 import com.otoki.powersales.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.employee.dto.response.EmployeeDetailResponse
@@ -49,7 +48,7 @@ class AdminEmployeeController(
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) costCenterCode: String?,
         @RequestParam(required = false) keyword: String?,
-        @RequestParam(required = false) role: UserRoleEnum?,
+        @RequestParam(required = false) role: String?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {

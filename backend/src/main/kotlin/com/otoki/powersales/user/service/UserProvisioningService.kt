@@ -1,6 +1,5 @@
 package com.otoki.powersales.user.service
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.auth.repository.ProfileRepository
 import com.otoki.powersales.user.entity.User
@@ -89,9 +88,10 @@ class UserProvisioningService(
         workEmail: String?,
         email: String?,
         birthDate: String?,
-        role: UserRoleEnum?,
+        role: String?,
         appLoginActive: Boolean?,
         costCenterCode: String? = null,
+        isSalesSupport: Boolean = false,
         encodedPassword: String? = null,
         passwordChangeRequired: Boolean = true,
     ) {
@@ -104,6 +104,7 @@ class UserProvisioningService(
             role = role,
             appLoginActive = appLoginActive,
             costCenterCode = costCenterCode,
+            isSalesSupport = isSalesSupport,
             overrideEncodedPassword = encodedPassword,
             passwordChangeRequired = passwordChangeRequired,
         )
@@ -120,9 +121,10 @@ class UserProvisioningService(
         workEmail: String?,
         email: String?,
         birthDate: String?,
-        role: UserRoleEnum?,
+        role: String?,
         appLoginActive: Boolean?,
         costCenterCode: String? = null,
+        isSalesSupport: Boolean = false,
         overrideEncodedPassword: String? = null,
         passwordChangeRequired: Boolean = true,
     ) {
@@ -152,7 +154,7 @@ class UserProvisioningService(
             passwordChangeRequired = passwordChangeRequired,
             isActive = appLoginActive ?: true,
             profileId = profileIdFor(role),
-            isSalesSupport = role == UserRoleEnum.SALES_SUPPORT,
+            isSalesSupport = isSalesSupport,
             costCenterCode = costCenterCode,
             isDeleted = false,
         )
@@ -161,14 +163,14 @@ class UserProvisioningService(
     }
 
     /**
-     * UserRoleEnum → Profile.id 산출.
+     * SF AppAuthority picklist value → Profile.id 산출.
      *
      * [SystemAdminProfilePolicy.profileNameForRole] 의 분기를 Profile.name → id 로 변환.
      * Profile entity 부재 시 null — ProfileBootstrapRunner 가 부팅 시점 보장하지만 동시성 시점에는 fallback null 허용.
      * 운영 환경에서는 발령(Appointment) 후처리 시 [EmployeeProfileResolver.resolveProfileId] 가
      * Org__c + jikchak 기반으로 재산출하여 정정한다.
      */
-    private fun profileIdFor(role: UserRoleEnum?): Long? {
+    private fun profileIdFor(role: String?): Long? {
         val name = SystemAdminProfilePolicy.profileNameForRole(role)
         return profileRepository.findByName(name)?.id
     }

@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.controller
 
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.dto.response.HomeResponse
 import com.otoki.powersales.common.service.HomeService
@@ -89,7 +89,7 @@ class HomeControllerTest : MobileControllerTestSupport() {
         @Test
         @DisplayName("조장 홈 조회 성공 - role=LEADER, 안전점검 불필요, 팀원 다수 일정 + null serialization")
         fun getHomeData_leader_success() {
-            authenticateAs(userId = 2L, role = UserRoleEnum.LEADER)
+            authenticateAs(userId = 2L, role = AppAuthority.LEADER)
 
             val commuteTime1 = java.time.LocalDateTime.of(2026, 2, 25, 8, 15, 0)
             val mockResponse = HomeResponse(

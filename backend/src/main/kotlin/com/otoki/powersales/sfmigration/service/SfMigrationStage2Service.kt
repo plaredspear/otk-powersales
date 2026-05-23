@@ -15,12 +15,14 @@ import org.springframework.transaction.annotation.Transactional
  * 운영 서버에서 실행되어 RDS 와의 latency 를 단축한다.
  *
  * 구현 substep:
- * - 2-B picklist : 한글 picklist → enum 변환 (Employee.role 만)
+ * - 2-B picklist : User.cost_center_code derived 캐시 동기화만 (Employee.role enum 변환은 spec #807 폐기)
  * - 2-C password : BCrypt password hash (sfid IS NOT NULL AND password NULL 인 user)
  *
  * 2-A FK resolve 는 별도 클래스 (SfMigrationStage2FkService) 로 분리.
  * 2-D permission 은 spec #801 SF 권한 모델 전면 적용으로 폐기 — user_permission 테이블 자체 폐기.
  * 2-B user.profile_type substep 은 spec #806 의 ProfileType destructive 폐기로 제거.
+ * 2-B employee.role substep 은 spec #807 의 UserRoleEnum destructive 폐기로 제거 —
+ * SF AppAuthority picklist value (한글) 가 곧 저장값이라 변환 substep 자체가 불필요.
  */
 @Service
 class SfMigrationStage2Service(
@@ -29,40 +31,17 @@ class SfMigrationStage2Service(
 ) {
 
     /**
-     * Stage 2-B — 한글 picklist 값을 enum 값으로 일괄 UPDATE.
-     *
-     * 2개 컬럼 (Employee.role / User.cost_center_code derived 캐시) 을
-     * 순차 호출. admin UI 의 "일괄 실행" 진입점. 매칭 실패 row 는 fallback 또는 NULL 처리.
-     *
-     * Employee.professional_promotion_team 은 SF picklist 한글 값과 backend Converter 인식
-     * 형식 (displayName 한글) 이 identity 라 변환 substep 불필요 — Stage 1 raw 적재로 충분.
+     * Stage 2-B picklist — User.cost_center_code derived 캐시 동기화만.
      */
     @Transactional
     fun runPicklistMapping(): SfMigrationStage2Response {
         val results = mutableListOf<SubstepResult>()
-        results += runPicklistEmployeeRole().results
         results += runUserCostCenterCodeSync().results
 
         return SfMigrationStage2Response(
             substep = "picklist",
             results = results,
             totalRowsAffected = results.sumOf { it.rowsAffected },
-        )
-    }
-
-    /** Stage 2-B (employee.role) — 한글 AppAuthority → UserRole enum.name */
-    @Transactional
-    fun runPicklistEmployeeRole(): SfMigrationStage2Response {
-        val rows = applyMapping(
-            tableName = "employee",
-            columnName = "role",
-            mapping = APP_AUTHORITY_TO_USER_ROLE,
-            fallbackValue = USER_ROLE_FALLBACK,
-        )
-        return singleResultResponse(
-            substep = "picklist.employee_role",
-            label = "Employee.role",
-            rows = rows,
         )
     }
 
@@ -138,48 +117,5 @@ class SfMigrationStage2Service(
             results = listOf(SubstepResult(label = "User.password (BCrypt)", rowsAffected = totalUpdated)),
             totalRowsAffected = totalUpdated,
         )
-    }
-
-    /**
-     * 한 테이블의 한 컬럼에 매핑 표 (raw → enum) 적용. fallback 이 있으면 매칭 실패 row 는 fallback 값으로,
-     * 없으면 NULL 로 비운다.
-     *
-     * 테이블/컬럼명은 SQL identifier 바인딩 불가라 직접 보간 — 호출자는 화이트리스트로 제한된 값만 전달해야 한다.
-     * 본 서비스는 매핑 표마다 호출 위치를 고정하므로 SQL injection 위험 없음.
-     */
-    private fun applyMapping(
-        tableName: String,
-        columnName: String,
-        mapping: Map<String, String>,
-        fallbackValue: String?,
-    ): Int {
-        val quotedTable = if (tableName == "user") "\"user\"" else tableName
-        var totalUpdated = 0
-
-        for ((rawValue, enumValue) in mapping) {
-            val sql = "UPDATE powersales.$quotedTable SET $columnName = :enumValue WHERE $columnName = :rawValue"
-            totalUpdated += em.createNativeQuery(sql)
-                .setParameter("enumValue", enumValue)
-                .setParameter("rawValue", rawValue)
-                .executeUpdate()
-        }
-
-        val enumList = mapping.values.toSet()
-        if (enumList.isEmpty()) return totalUpdated
-
-        val placeholders = enumList.mapIndexed { i, _ -> ":v$i" }.joinToString(", ")
-        val fallbackSql = if (fallbackValue != null) {
-            "UPDATE powersales.$quotedTable SET $columnName = :fallback " +
-                "WHERE $columnName IS NOT NULL AND $columnName NOT IN ($placeholders)"
-        } else {
-            "UPDATE powersales.$quotedTable SET $columnName = NULL " +
-                "WHERE $columnName IS NOT NULL AND $columnName NOT IN ($placeholders)"
-        }
-        val query = em.createNativeQuery(fallbackSql)
-        if (fallbackValue != null) query.setParameter("fallback", fallbackValue)
-        enumList.forEachIndexed { i, v -> query.setParameter("v$i", v) }
-        totalUpdated += query.executeUpdate()
-
-        return totalUpdated
     }
 }

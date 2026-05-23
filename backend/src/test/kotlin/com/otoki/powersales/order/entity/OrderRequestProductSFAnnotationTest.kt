@@ -127,7 +127,7 @@ class OrderRequestProductSFAnnotationTest {
                 id = 1L,
                 employeeCode = "E001",
                 name = "tester",
-                role = com.otoki.powersales.auth.entity.UserRoleEnum.WOMAN,
+                role = com.otoki.powersales.auth.entity.AppAuthority.WOMAN,
             )
             val orderRequest = OrderRequest(
                 id = 10L,

@@ -2,7 +2,7 @@ import { Modal, Form, Input, Select, DatePicker, Switch, notification, Alert } f
 import dayjs, { Dayjs } from 'dayjs';
 import type { EmployeeDetail, EmployeeUpdateRequest } from '@/api/employee';
 import { useUpdateEmployee } from '@/hooks/employee/useEmployee';
-import { ROLE_OPTIONS_FOR_FILTER, type UserRole } from '@/constants/userRole';
+import { APP_AUTHORITY_OPTIONS, type AppAuthority } from '@/constants/userRole';
 import { PPT_TEAM_TYPES, type PPTTeamType } from '@/constants/pptTeamType';
 
 interface EmployeeEditModalProps {
@@ -13,7 +13,7 @@ interface EmployeeEditModalProps {
 
 interface FormValues {
   status?: string;
-  role?: UserRole;
+  role?: AppAuthority;
   orgName?: string;
   costCenterCode?: string;
   workArea?: string;
@@ -43,7 +43,7 @@ const STATUS_OPTIONS = [
 
 const PPT_OPTIONS = PPT_TEAM_TYPES.map((v) => ({ value: v, label: v }));
 
-const ROLE_SELECT_OPTIONS = ROLE_OPTIONS_FOR_FILTER.map((opt) => ({
+const ROLE_SELECT_OPTIONS = APP_AUTHORITY_OPTIONS.map((opt) => ({
   value: opt.value,
   label: opt.label,
 }));

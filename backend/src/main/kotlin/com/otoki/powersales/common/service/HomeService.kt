@@ -3,7 +3,7 @@ package com.otoki.powersales.common.service
 import com.otoki.powersales.common.dto.response.HomeResponse
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.notice.repository.NoticeRepository
 import com.otoki.powersales.account.repository.AccountRepository
@@ -106,7 +106,7 @@ class HomeService(
         )
 
         // 안전점검 필요 여부 (조장은 항상 false)
-        val safetyCheckRequired = if (employee.role == UserRoleEnum.WOMAN) {
+        val safetyCheckRequired = if (employee.role == AppAuthority.WOMAN) {
             val todayStatus = safetyCheckService.getTodayStatus(userId)
             !todayStatus.completed
         } else {
@@ -151,7 +151,7 @@ class HomeService(
      */
     private fun fetchSchedulesByRole(employee: Employee, today: LocalDate): Pair<List<TeamMemberSchedule>, Map<Long, Employee>> {
         return when (employee.role) {
-            UserRoleEnum.LEADER -> {
+            AppAuthority.LEADER -> {
                 val teamEmployees = employeeRepository.findByOrgName(employee.orgName ?: "")
                 val employeeIds = teamEmployees.map { it.id }
                 val teamMemberSchedules = if (teamEmployees.isNotEmpty()) {

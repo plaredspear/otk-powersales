@@ -98,7 +98,7 @@ export default function EmployeePage() {
     { title: '지점코드', dataIndex: 'costCenterCode', width: 100, align: 'center', render: (val: string | null) => val ?? '-' },
     {
       title: '권한',
-      dataIndex: 'roleLabel',
+      dataIndex: "role",
       width: 100,
       align: 'center',
       render: (val: string | null) => val ?? '-',

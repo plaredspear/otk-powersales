@@ -3,7 +3,7 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardDetailResponse
 import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardListItem
@@ -37,7 +37,7 @@ class AdminMonthlySalesDashboardControllerTest : AdminControllerTestSupport() {
 
     @BeforeEach
     fun setUpSystemAdminAndArgResolver() {
-        authenticateAsAdmin(role = UserRoleEnum.SYSTEM_ADMIN)
+        authenticateAsAdmin(role = null)
         every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
             val parameter = firstArg<MethodParameter>()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)

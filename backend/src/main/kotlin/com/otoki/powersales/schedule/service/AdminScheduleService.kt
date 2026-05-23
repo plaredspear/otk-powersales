@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
@@ -56,6 +56,7 @@ class AdminScheduleService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val lastMonthRevenueLookup: LastMonthRevenueLookup,
     private val userRepository: UserRepository,
+    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository,
     private val redisTemplate: RedisTemplate<String, String>,
     private val objectMapper: ObjectMapper,
 ) {
@@ -65,6 +66,26 @@ class AdminScheduleService(
         private const val REDIS_TTL_MINUTES = 30L
         private const val MAX_FILE_SIZE = 5 * 1024 * 1024L // 5MB
         private const val MAX_ROWS = 500
+
+        /** SF 영업지원실 판별 기준 — Org.OrgCodeLevel3 (AppointmentTriggerHanlder.cls:328-331). */
+        private const val SALES_SUPPORT_LEVEL3 = "3475"
+
+        /** SF 시스템 관리자 Profile.Name (ProfileBootstrapRunner SoT). */
+        private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
+    }
+
+    /**
+     * SF ADMIN_GRADE 동등 — Profile.Name == "시스템 관리자" OR User.isSalesSupport.
+     *
+     * SF 원본 분기 (`AdminScheduleService` 의 ADMIN_GRADE = SYSTEM_ADMIN + SALES_SUPPORT) 정합.
+     * Employee 인자만으로 판단 — 매칭 User 의 profileId + isSalesSupport 캐시 컬럼 조회.
+     */
+    private fun isAdminGrade(employeeCode: String?): Boolean {
+        if (employeeCode == null) return false
+        val user = userRepository.findByEmployeeCode(employeeCode) ?: return false
+        if (user.isSalesSupport == true) return true
+        val profile = user.profileId?.let { profileRepository.findById(it).orElse(null) }
+        return profile?.name == SYSTEM_ADMIN_PROFILE_NAME
     }
 
     fun generateTemplate(userId: Long): TemplateResult {
@@ -80,18 +101,19 @@ class AdminScheduleService(
         val org = organizationRepository.findFirstByCostCenterCascade(costCenterCode)
             ?: throw OrganizationNotFoundException()
 
-        val employees = if (employee.role == UserRoleEnum.SALES_SUPPORT) {
+        // SF 정합: 영업지원실 판별 = Org.OrgCodeLevel3 == "3475" (SF AppointmentTriggerHanlder.cls:328-331)
+        val employees = if (org.orgCodeLevel3 == SALES_SUPPORT_LEVEL3) {
             val costCenterLevel3 = org.costCenterLevel3
                 ?: throw OrganizationNotFoundException()
             val costCenterCodes = organizationRepository.findByCostCenterLevel3(costCenterLevel3)
                 .mapNotNull { it.costCenterLevel5 }
                 .distinct()
             employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
-                costCenterCodes, UserRoleEnum.WOMAN, "재직"
+                costCenterCodes, AppAuthority.WOMAN, "재직"
             )
         } else {
             employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
-                costCenterCode, UserRoleEnum.WOMAN, "재직"
+                costCenterCode, AppAuthority.WOMAN, "재직"
             )
         }.sortedWith(compareBy({ it.orgName }, { it.employeeCode }))
 
@@ -219,7 +241,7 @@ class AdminScheduleService(
         // 여사원(FullName__c) → CostCenterCode → 조장 Employee → Employee.employeeCode == User.employeeCode → User.
         val costCenterCodes = cacheData.validRows.mapNotNull { it.costCenterCode }.distinct()
         val leadersByCostCenter = if (costCenterCodes.isNotEmpty()) {
-            employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes, UserRoleEnum.LEADER)
+            employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes, AppAuthority.LEADER)
                 .groupBy { it.costCenterCode }
         } else {
             emptyMap()
@@ -399,7 +421,7 @@ class AdminScheduleService(
         val costCenterCode = validatedRow.costCenterCode
         val ownerUser = if (!costCenterCode.isNullOrBlank()) {
             val leaders = employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
-                listOf(costCenterCode), UserRoleEnum.LEADER
+                listOf(costCenterCode), AppAuthority.LEADER
             )
             leaders.firstOrNull()
                 ?.employeeCode
@@ -466,7 +488,7 @@ class AdminScheduleService(
         requireScheduleScope(scope, schedule)
 
         // UC-05 차단 룰: 확정 후 ADMIN_GRADE 외 사용자가 종료일 외 필드 변경 시도하면 차단.
-        if (schedule.confirmed == true && user.role !in UserRoleEnum.ADMIN_GRADE) {
+        if (schedule.confirmed == true && !isAdminGrade(user.employeeCode)) {
             val originalEmployeeCode = schedule.employee?.employeeCode
             val originalAccountCode = schedule.account?.externalKey
             val originalType3 = schedule.typeOfWork3?.displayName
@@ -526,7 +548,7 @@ class AdminScheduleService(
         val costCenterCode = validatedRow.costCenterCode
         val ownerUser = if (!costCenterCode.isNullOrBlank()) {
             employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
-                listOf(costCenterCode), UserRoleEnum.LEADER
+                listOf(costCenterCode), AppAuthority.LEADER
             ).firstOrNull()
                 ?.employeeCode
                 ?.let { code -> userRepository.findByEmployeeCodeIn(listOf(code)).firstOrNull() }
@@ -572,11 +594,11 @@ class AdminScheduleService(
         val user = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
-        if (user.role == UserRoleEnum.BRANCH_MANAGER) {
+        if (user.role == AppAuthority.BRANCH_MANAGER) {
             throw ScheduleDeleteForbiddenException()
         }
 
-        val isAdmin = user.role in UserRoleEnum.ADMIN_GRADE
+        val isAdmin = isAdminGrade(user.employeeCode)
         val schedules = scheduleRepository.findAllById(ids).associateBy { it.id }
 
         var deletedCount = 0
@@ -647,12 +669,12 @@ class AdminScheduleService(
 
         val role = employee.role
 
-        if (role in UserRoleEnum.ADMIN_GRADE) {
+        if (isAdminGrade(employee.employeeCode)) {
             schedule.isDeleted = true
             return
         }
 
-        if (role == UserRoleEnum.BRANCH_MANAGER) {
+        if (role == AppAuthority.BRANCH_MANAGER) {
             throw ScheduleDeleteForbiddenException()
         }
 
