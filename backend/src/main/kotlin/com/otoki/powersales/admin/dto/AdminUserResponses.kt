@@ -15,13 +15,15 @@ data class AdminUserListItem(
     val email: String?,
     val profileType: String,
     val profileTypeLabel: String,
+    /** Spec #805 — Profile.name SoT. spec #806 destructive 시 profileType/profileTypeLabel 제거 + 본 필드 유지. */
+    val profileName: String? = null,
     val branch: String?,
     val department: String?,
     val isActive: Boolean,
     val lastLoginAt: LocalDateTime?
 ) {
     companion object {
-        fun from(user: User): AdminUserListItem = AdminUserListItem(
+        fun from(user: User, profileName: String? = null): AdminUserListItem = AdminUserListItem(
             id = user.id,
             username = user.username,
             employeeCode = user.employeeCode,
@@ -29,6 +31,7 @@ data class AdminUserListItem(
             email = user.email,
             profileType = user.profileType.name,
             profileTypeLabel = user.profileType.toKoreanLabel(),
+            profileName = profileName,
             branch = user.branch,
             department = user.department,
             isActive = user.isActive,
@@ -70,6 +73,8 @@ data class AdminUserDetailResponse(
     val sfid: String?,
     val profileType: String,
     val profileTypeLabel: String,
+    /** Spec #805 — Profile.name SoT. spec #806 destructive 시 profileType/profileTypeLabel 제거 + 본 필드 유지. */
+    val profileName: String? = null,
     val isSalesSupport: Boolean,
     val isActive: Boolean,
     val passwordChangeRequired: Boolean,
@@ -78,7 +83,7 @@ data class AdminUserDetailResponse(
     val lastModifiedAt: LocalDateTime?
 ) {
     companion object {
-        fun from(user: User): AdminUserDetailResponse = AdminUserDetailResponse(
+        fun from(user: User, profileName: String? = null): AdminUserDetailResponse = AdminUserDetailResponse(
             id = user.id,
             username = user.username,
             employeeCode = user.employeeCode,
@@ -97,6 +102,7 @@ data class AdminUserDetailResponse(
             sfid = user.sfid,
             profileType = user.profileType.name,
             profileTypeLabel = user.profileType.toKoreanLabel(),
+            profileName = profileName,
             isSalesSupport = user.isSalesSupport ?: false,
             isActive = user.isActive,
             passwordChangeRequired = user.passwordChangeRequired ?: true,

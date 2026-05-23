@@ -1,8 +1,10 @@
 package com.otoki.powersales.user.service
 
+import com.otoki.powersales.auth.repository.ProfileRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.user.entity.ProfileType
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 /**
@@ -20,7 +22,10 @@ import org.springframework.stereotype.Service
 @Service
 class EmployeeProfileResolver(
     private val organizationRepository: OrganizationRepository,
+    private val profileRepository: ProfileRepository,
 ) {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * 사원의 ProfileType 산출.
@@ -51,6 +56,24 @@ class EmployeeProfileResolver(
             jikchak.contains("부장") -> ProfileType.SALES_MANAGER
             else -> ProfileType.SALES_REP
         }
+    }
+
+    /**
+     * Spec #805 — 사원의 Profile.id 산출 (ProfileType 분기 → Profile.name → id lookup).
+     *
+     * [resolve] 와 동일 분기를 거쳐 결과를 ProfileType → Profile.name (= enum value) 으로 변환 후 lookup.
+     * Profile entity 부재 시 null 반환 — 호출자가 silently skip 또는 ProfileBootstrapRunner sync 의존.
+     *
+     * SystemAdmin 케이스는 본 분기 밖 — 운영자 수동 set 또는 UserProvisioningService.profileIdFor(SYSTEM_ADMIN) 사용.
+     */
+    fun resolveProfileId(employee: Employee): Long? {
+        val profileType = resolve(employee)
+        val profile = profileRepository.findByName(profileType.value)
+        if (profile == null) {
+            log.warn("[EmployeeProfileResolver] Profile.name='{}' lookup 실패 — ProfileBootstrapRunner sync 의존", profileType.value)
+            return null
+        }
+        return profile.id
     }
 
     companion object {

@@ -41,6 +41,7 @@ class WebAuthenticationServiceTest {
     private val employeeRepository: EmployeeRepository = mockk()
     private val sfPermissionResolver: SfPermissionResolver = mockk()
     private val passwordPolicyValidator: PasswordPolicyValidator = PasswordPolicyValidator()
+    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk()
 
     private val service = WebAuthenticationService(
         userRepository,
@@ -51,11 +52,13 @@ class WebAuthenticationServiceTest {
         passwordPolicyValidator,
         employeeRepository,
         sfPermissionResolver,
+        profileRepository,
     )
 
     @org.junit.jupiter.api.BeforeEach
     fun stubSfPermissionResolver() {
         every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
+        every { profileRepository.findById(any()) } returns Optional.empty()
     }
 
     @Nested

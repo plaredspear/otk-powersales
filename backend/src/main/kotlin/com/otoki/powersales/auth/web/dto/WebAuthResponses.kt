@@ -29,6 +29,8 @@ data class WebUserSummary(
     val name: String?,
     val employeeCode: String?,
     val profileType: ProfileType,
+    /** Spec #805 — Profile.name SoT. spec #806 destructive 시 profileType 제거 + 본 필드 유지. */
+    val profileName: String? = null,
     val isSalesSupport: Boolean,
     val role: UserRoleEnum?,
     val roleLabel: String?,

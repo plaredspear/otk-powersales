@@ -177,6 +177,8 @@ class AppointmentUserProfileUpdater(
     internal fun updateUserProfileCache(employee: Employee) {
         val user = userRepository.findByEmployeeCode(employee.employeeCode) ?: return
         user.profileType = employeeProfileResolver.resolve(employee)
+        // Spec #805 — profileId 동시 갱신. spec #806 의 destructive 폐기 시 profileType 라인 제거 + 본 라인 유지.
+        user.profileId = employeeProfileResolver.resolveProfileId(employee) ?: user.profileId
         user.isSalesSupport = userRoleResolver.isSalesSupport(employee)
         user.costCenterCode = employee.costCenterCode
     }

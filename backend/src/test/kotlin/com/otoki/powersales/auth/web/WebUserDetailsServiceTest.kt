@@ -22,11 +22,13 @@ class WebUserDetailsServiceTest {
     private val userRepository: UserRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
     private val sfPermissionResolver: SfPermissionResolver = mockk()
+    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk()
 
     private val service = WebUserDetailsService(
         userRepository,
         employeeRepository,
         sfPermissionResolver,
+        profileRepository,
     )
 
     @BeforeEach
@@ -34,6 +36,7 @@ class WebUserDetailsServiceTest {
         // 본 테스트는 인증/권한 매핑만 검증 — Employee snapshot 부재 케이스만 사용.
         every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
         every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
+        every { profileRepository.findById(any()) } returns Optional.empty()
     }
 
     @Nested

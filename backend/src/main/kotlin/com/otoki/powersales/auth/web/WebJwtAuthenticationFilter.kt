@@ -39,6 +39,8 @@ class WebJwtAuthenticationFilter(
                     val employeeId = webJwtService.getEmployeeIdFromToken(token)
                     val costCenterCode = webJwtService.getCostCenterCodeFromToken(token)
                     val profileType = ProfileType.fromValue(webJwtService.getProfileTypeFromToken(token))
+                    // Spec #805 — profile_name 신규 claim. 부재 시 ProfileType.value fallback (기존 토큰 graceful read).
+                    val profileName: String? = webJwtService.getProfileNameFromToken(token) ?: profileType?.value
                     val isSalesSupport = webJwtService.getIsSalesSupportFromToken(token)
                     val passwordChangeRequired = webJwtService.getPasswordChangeRequiredFromToken(token)
                     val role: UserRoleEnum? = webJwtService.getRoleFromToken(token)?.let {
@@ -49,7 +51,8 @@ class WebJwtAuthenticationFilter(
                     if (profileType == null) {
                         request.setAttribute("jwt.invalidRole", true)
                     } else {
-                        val authorities = WebUserDetailsService.resolveAuthorities(profileType, isSalesSupport)
+                        // Spec #805 — Profile.name 기반 ROLE 산출 (Profile SoT 전환). spec #806 destructive 까지 profileType 보존.
+                        val authorities = WebUserDetailsService.resolveAuthoritiesByProfileName(profileName, isSalesSupport)
                         val principal = WebUserPrincipal(
                             userId = userId,
                             usernameValue = username,
@@ -58,6 +61,8 @@ class WebJwtAuthenticationFilter(
                             role = role,
                             costCenterCode = costCenterCode,
                             profileType = profileType,
+                            profileName = profileName,
+                            profileId = null,
                             isSalesSupport = isSalesSupport,
                             passwordChangeRequired = passwordChangeRequired,
                             permissions = permissions,

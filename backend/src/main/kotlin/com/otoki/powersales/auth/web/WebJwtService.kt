@@ -50,6 +50,8 @@ class WebJwtService(
             .claim("employee_id", principal.employeeId)
             .claim("employee_code", principal.employeeCode)
             .claim("cost_center_code", principal.costCenterCode)
+            // Spec #805 — profile_name 신규 claim. profile_type 은 spec #806 destructive 까지 보존 (graceful read).
+            .claim("profile_name", principal.profileName)
             .claim("profile_type", principal.profileType.name)
             .claim("is_sales_support", principal.isSalesSupport)
             .claim("password_change_required", principal.passwordChangeRequired)
@@ -137,9 +139,13 @@ class WebJwtService(
     fun getEmployeeIdFromToken(token: String): Long? =
         parseClaims(token).get("employee_id", java.lang.Long::class.java)?.toLong()
 
-    /** profile_type claim 추출. */
-    fun getProfileTypeFromToken(token: String): String =
+    /** profile_type claim 추출. spec #806 destructive 시 제거 — 그 전까지 graceful read 용도. */
+    fun getProfileTypeFromToken(token: String): String? =
         parseClaims(token).get("profile_type", String::class.java)
+
+    /** Spec #805 — profile_name claim 추출. Profile.name SoT. */
+    fun getProfileNameFromToken(token: String): String? =
+        parseClaims(token).get("profile_name", String::class.java)
 
     /** is_sales_support claim 추출. */
     fun getIsSalesSupportFromToken(token: String): Boolean =

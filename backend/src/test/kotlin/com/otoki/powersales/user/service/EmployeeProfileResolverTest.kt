@@ -14,9 +14,11 @@ import org.junit.jupiter.api.Test
 class EmployeeProfileResolverTest {
 
     private val organizationRepository: OrganizationRepository = mockk()
+    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk(relaxed = true)
 
     private val resolver = EmployeeProfileResolver(
         organizationRepository,
+        profileRepository,
     )
 
     @Test

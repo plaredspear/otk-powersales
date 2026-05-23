@@ -60,6 +60,7 @@ class WebAuthenticationService(
     private val passwordPolicyValidator: PasswordPolicyValidator,
     private val employeeRepository: EmployeeRepository,
     private val sfPermissionResolver: SfPermissionResolver,
+    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository,
 ) {
 
     /**
@@ -209,12 +210,14 @@ class WebAuthenticationService(
      */
     private fun summaryFor(user: User, employee: Employee?, permissions: Set<String>): WebUserSummary {
         val role: UserRoleEnum? = employee?.role
+        val profileName: String? = user.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
         return WebUserSummary(
             userId = user.id,
             username = user.username,
             name = user.name,
             employeeCode = user.employeeCode,
             profileType = user.profileType,
+            profileName = profileName,
             isSalesSupport = user.isSalesSupport ?: false,
             role = role,
             roleLabel = role?.toKorean(),
@@ -224,19 +227,24 @@ class WebAuthenticationService(
         )
     }
 
-    private fun principalFor(user: User, employee: Employee?, permissions: Set<String>): WebUserPrincipal = WebUserPrincipal(
-        userId = user.id,
-        usernameValue = user.username,
-        employeeCode = user.employeeCode,
-        employeeId = employee?.id,
-        role = employee?.role,
-        costCenterCode = user.costCenterCode,
-        profileType = user.profileType,
-        isSalesSupport = user.isSalesSupport ?: false,
-        passwordChangeRequired = user.passwordChangeRequired ?: true,
-        permissions = permissions,
-        encodedPassword = user.password,
-        grantedAuthorities = WebUserDetailsService.resolveAuthorities(user.profileType, user.isSalesSupport ?: false),
-        active = user.isActive
-    )
+    private fun principalFor(user: User, employee: Employee?, permissions: Set<String>): WebUserPrincipal {
+        val profileName: String? = user.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
+        return WebUserPrincipal(
+            userId = user.id,
+            usernameValue = user.username,
+            employeeCode = user.employeeCode,
+            employeeId = employee?.id,
+            role = employee?.role,
+            costCenterCode = user.costCenterCode,
+            profileType = user.profileType,
+            profileName = profileName,
+            profileId = user.profileId,
+            isSalesSupport = user.isSalesSupport ?: false,
+            passwordChangeRequired = user.passwordChangeRequired ?: true,
+            permissions = permissions,
+            encodedPassword = user.password,
+            grantedAuthorities = WebUserDetailsService.resolveAuthoritiesByProfileName(profileName, user.isSalesSupport ?: false),
+            active = user.isActive
+        )
+    }
 }

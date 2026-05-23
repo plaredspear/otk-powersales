@@ -20,10 +20,12 @@ class UserProvisioningServiceTest {
 
     private val userRepository: UserRepository = mockk()
     private val passwordEncoder: PasswordEncoder = mockk()
+    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk(relaxed = true)
 
     private val service = UserProvisioningService(
         userRepository,
         passwordEncoder,
+        profileRepository,
     )
 
     private val savedUsers = mutableListOf<User>()

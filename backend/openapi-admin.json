@@ -1723,6 +1723,9 @@
           "phone" : {
             "type" : [ "string", "null" ]
           },
+          "profileName" : {
+            "type" : [ "string", "null" ]
+          },
           "profileType" : {
             "type" : "string"
           },
@@ -1770,6 +1773,9 @@
             "type" : [ "string", "null" ]
           },
           "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "profileName" : {
             "type" : [ "string", "null" ]
           },
           "profileType" : {
@@ -11021,6 +11027,9 @@
               "type" : "string"
             },
             "type" : "array"
+          },
+          "profileName" : {
+            "type" : [ "string", "null" ]
           },
           "profileType" : {
             "enum" : [ "MARKETING", "STAFF", "TEAM_LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_DIRECTOR", "DIVISION_HEAD", "SALES_REP", "SALES_REP_LEADER", "FACTORY_STAFF", "OLS", "SYSTEM_ADMIN" ],

@@ -1,6 +1,7 @@
 package com.otoki.powersales.auth.web
 
 import com.otoki.powersales.auth.permission.SfPermissionResolver
+import com.otoki.powersales.auth.repository.ProfileRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
@@ -34,6 +35,7 @@ class WebUserDetailsService(
     private val userRepository: UserRepository,
     private val employeeRepository: EmployeeRepository,
     private val sfPermissionResolver: SfPermissionResolver,
+    private val profileRepository: ProfileRepository,
 ) : UserDetailsService {
 
     /**
@@ -59,6 +61,8 @@ class WebUserDetailsService(
 
     private fun toPrincipal(user: User, employee: com.otoki.powersales.employee.entity.Employee?): WebUserPrincipal {
         val permissions: Set<String> = sfPermissionResolver.resolveForUser(user)
+        // Spec #805 — Profile.name 으로 ROLE 산출 (Profile 입력 SoT 전환). profile entity 부재 시 fallback ROLE_STAFF.
+        val profileName: String? = user.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
         return WebUserPrincipal(
             userId = user.id,
             usernameValue = user.username,
@@ -67,11 +71,13 @@ class WebUserDetailsService(
             role = employee?.role,
             costCenterCode = user.costCenterCode,
             profileType = user.profileType,
+            profileName = profileName,
+            profileId = user.profileId,
             isSalesSupport = user.isSalesSupport ?: false,
             passwordChangeRequired = user.passwordChangeRequired ?: true,
             permissions = permissions,
             encodedPassword = user.password,
-            grantedAuthorities = resolveAuthorities(user.profileType, user.isSalesSupport ?: false),
+            grantedAuthorities = resolveAuthoritiesByProfileName(profileName, user.isSalesSupport ?: false),
             active = user.isActive
         )
     }
@@ -80,10 +86,25 @@ class WebUserDetailsService(
         /**
          * Spec #760 §2.3 — ProfileType + is_sales_support 기반 GrantedAuthority 산출.
          *
-         * 1차 매핑만 정의. 세부 화면/API 권한 분기는 후속 spec.
+         * Spec #805 에서 [resolveAuthoritiesByProfileName] 으로 대체. 본 시그니처는 spec #806 destructive 시점 제거.
          */
+        @Deprecated("Spec #805 이후 resolveAuthoritiesByProfileName 사용. spec #806 에서 제거.")
         fun resolveAuthorities(profileType: ProfileType, isSalesSupport: Boolean): List<GrantedAuthority> {
             val role = profileType.toRoleAuthority()
+            return buildList {
+                add(SimpleGrantedAuthority(role))
+                if (isSalesSupport) add(SimpleGrantedAuthority("ROLE_SALES_SUPPORT"))
+            }
+        }
+
+        /**
+         * Spec #805 — Profile.name 기반 GrantedAuthority 산출 (신규 SoT).
+         *
+         * Profile.name 은 ProfileType.value 와 1:1 정합 ("시스템 관리자" / "5.영업사원" 등).
+         * 미등록 name 은 ROLE_STAFF fallback (ProfileBootstrapRunner 가 12종 보장 후 fallback 발생 안 함).
+         */
+        fun resolveAuthoritiesByProfileName(profileName: String?, isSalesSupport: Boolean): List<GrantedAuthority> {
+            val role = profileNameToRoleAuthority(profileName)
             return buildList {
                 add(SimpleGrantedAuthority(role))
                 if (isSalesSupport) add(SimpleGrantedAuthority("ROLE_SALES_SUPPORT"))
@@ -100,6 +121,19 @@ class WebUserDetailsService(
             ProfileType.SALES_REP -> "ROLE_SALES_REP"
             ProfileType.FACTORY_STAFF -> "ROLE_FACTORY"
             ProfileType.OLS -> "ROLE_OLS"
+        }
+
+        private fun profileNameToRoleAuthority(profileName: String?): String = when (profileName) {
+            "시스템 관리자" -> "ROLE_ADMIN"
+            "8.마케팅" -> "ROLE_MARKETING"
+            "9. Staff" -> "ROLE_STAFF"
+            "2.사업부장", "1.본부장" -> "ROLE_DIRECTOR"
+            "4.지점장", "3.영업부장" -> "ROLE_MANAGER"
+            "6.조장", "7.영업사원 + 조장" -> "ROLE_LEADER"
+            "5.영업사원" -> "ROLE_SALES_REP"
+            "공장관계자" -> "ROLE_FACTORY"
+            "OLS" -> "ROLE_OLS"
+            else -> "ROLE_STAFF"
         }
     }
 }

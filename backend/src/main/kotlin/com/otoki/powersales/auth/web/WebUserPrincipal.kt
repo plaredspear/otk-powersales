@@ -32,6 +32,9 @@ data class WebUserPrincipal(
     val role: UserRoleEnum?,
     val costCenterCode: String?,
     val profileType: ProfileType,
+    /** Spec #805 — Profile.name SoT. spec #806 destructive 시 profileType 제거 + 본 필드 유지. */
+    val profileName: String? = null,
+    val profileId: Long? = null,
     val isSalesSupport: Boolean,
     val passwordChangeRequired: Boolean,
     val permissions: Set<String>,

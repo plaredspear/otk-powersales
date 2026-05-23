@@ -1,6 +1,8 @@
 package com.otoki.powersales.user.service
 
 import com.otoki.powersales.auth.entity.UserRoleEnum
+import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
+import com.otoki.powersales.auth.repository.ProfileRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
@@ -42,6 +44,7 @@ import org.springframework.transaction.event.TransactionalEventListener
 class UserProvisioningService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val profileRepository: ProfileRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -150,6 +153,8 @@ class UserProvisioningService(
             passwordChangeRequired = passwordChangeRequired,
             isActive = appLoginActive ?: true,
             profileType = profileTypeFor(role),
+            // Spec #805 — profileId 동시 set. spec #806 destructive 시 profileType 라인 제거 + 본 라인 유지.
+            profileId = profileIdFor(role),
             isSalesSupport = role == UserRoleEnum.SALES_SUPPORT,
             costCenterCode = costCenterCode,
             isDeleted = false,
@@ -173,6 +178,17 @@ class UserProvisioningService(
         UserRoleEnum.HEADQUARTERS_MANAGER -> ProfileType.DIVISION_HEAD
         UserRoleEnum.SALES_SUPPORT -> ProfileType.STAFF
         UserRoleEnum.WOMAN, UserRoleEnum.ACCOUNT_VIEW_ALL, UserRoleEnum.UNKNOWN, null -> ProfileType.SALES_REP
+    }
+
+    /**
+     * Spec #805 — UserRoleEnum → Profile.id 산출.
+     *
+     * [SystemAdminProfilePolicy.profileNameForRole] 의 분기를 Profile.name → id 로 변환.
+     * Profile entity 부재 시 null — ProfileBootstrapRunner 가 부팅 시점 보장하지만 동시성 시점에는 fallback null 허용.
+     */
+    private fun profileIdFor(role: UserRoleEnum?): Long? {
+        val name = SystemAdminProfilePolicy.profileNameForRole(role)
+        return profileRepository.findByName(name)?.id
     }
 
     companion object {
