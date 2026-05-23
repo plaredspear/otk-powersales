@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.permission
 
 import com.otoki.powersales.admin.permission.dto.AssignedPermissionSetUserSummary
 import com.otoki.powersales.admin.permission.dto.AssignedUserSummary
+import com.otoki.powersales.admin.permission.dto.CustomPermissionRow
 import com.otoki.powersales.admin.permission.dto.EntityProfilePermission
 import com.otoki.powersales.admin.permission.dto.PaginatedPermissionSetUserList
 import com.otoki.powersales.admin.permission.dto.EntityProfileRow
@@ -147,6 +148,19 @@ class AdminPermissionInspectionService(
             }
             .sortedBy { it.entity ?: it.sfApiName }
 
+        // spec #808 — custom resource (가상 자원) 권한 비트
+        val customPermissions = parsePermissionsJson(flags?.customPermissions, "custom_permissions")
+            .map { (resourceName, perms) ->
+                CustomPermissionRow(
+                    resource = resourceName,
+                    canRead = perms["allowRead"] == true,
+                    canCreate = perms["allowCreate"] == true,
+                    canEdit = perms["allowEdit"] == true,
+                    canDelete = perms["allowDelete"] == true,
+                )
+            }
+            .sortedBy { it.resource }
+
         val paginatedUsers = flags?.let {
             val usersPage = userRepository.findUsersByPermissionSetFlagsId(
                 permissionSetFlagsId = it.id,
@@ -193,6 +207,7 @@ class AdminPermissionInspectionService(
                 )
             },
             objectPermissions = objectPermissions,
+            customPermissions = customPermissions,
             assignedUsers = paginatedUsers,
         )
     }
@@ -233,14 +248,17 @@ class AdminPermissionInspectionService(
         return PermissionMatrix(profiles = matrixProfiles, rows = rows)
     }
 
-    private fun parseObjectPermissions(json: String?): Map<String, Map<String, Boolean>> {
+    private fun parseObjectPermissions(json: String?): Map<String, Map<String, Boolean>> =
+        parsePermissionsJson(json, "object_permissions")
+
+    private fun parsePermissionsJson(json: String?, label: String): Map<String, Map<String, Boolean>> {
         if (json.isNullOrBlank()) return emptyMap()
         return try {
             @Suppress("UNCHECKED_CAST")
             val raw = objectMapper.readValue(json, Map::class.java) as Map<String, Map<String, Boolean>>
             raw
         } catch (e: Exception) {
-            log.warn("[AdminPermissionInspectionService] object_permissions JSON 파싱 실패: {}", e.message)
+            log.warn("[AdminPermissionInspectionService] {} JSON 파싱 실패: {}", label, e.message)
             emptyMap()
         }
     }

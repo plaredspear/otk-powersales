@@ -5985,6 +5985,26 @@
         },
         "type" : "object"
       },
+      "CustomPermissionRow" : {
+        "properties" : {
+          "canCreate" : {
+            "type" : "boolean"
+          },
+          "canDelete" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "canRead" : {
+            "type" : "boolean"
+          },
+          "resource" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "DailySummaryDto" : {
         "properties" : {
           "annualLeave" : {
@@ -8141,6 +8161,12 @@
         "properties" : {
           "assignedUsers" : {
             "$ref" : "#/components/schemas/PaginatedPermissionSetUserList"
+          },
+          "customPermissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CustomPermissionRow"
+            },
+            "type" : "array"
           },
           "description" : {
             "type" : [ "string", "null" ]

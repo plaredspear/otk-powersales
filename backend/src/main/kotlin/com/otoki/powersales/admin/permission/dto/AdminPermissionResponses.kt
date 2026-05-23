@@ -64,6 +64,18 @@ data class ObjectPermissionRow(
     val canDelete: Boolean,
 )
 
+/**
+ * spec #808 — `@PermissionResource` 명시 등록된 가상 자원의 CRUD 권한 비트.
+ * SF customPermissions 메타에 대응.
+ */
+data class CustomPermissionRow(
+    val resource: String,
+    val canRead: Boolean,
+    val canCreate: Boolean,
+    val canEdit: Boolean,
+    val canDelete: Boolean,
+)
+
 data class PermissionSetDetail(
     val permissionSetId: Long,
     val name: String,
@@ -72,6 +84,7 @@ data class PermissionSetDetail(
     val sfid: String?,
     val flags: PermissionSetFlagsSummary?,
     val objectPermissions: List<ObjectPermissionRow>,
+    val customPermissions: List<CustomPermissionRow>,
     val assignedUsers: PaginatedPermissionSetUserList,
 )
 

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service
 import tools.jackson.databind.ObjectMapper
 
 /**
- * SF 권한 모델 기반 user permission set 산출 (spec #801).
+ * SF 권한 모델 기반 user permission set 산출 (spec #801 + spec #808).
  *
  * 로그인 시점에 호출되어 user 의 SF Profile + PermissionSetAssignment 일람으로부터 평탄화된
  * permission key set 을 산출. JWT claim 으로 운반되어 WebAdminContextFilter 의 가드 검사에 사용.
@@ -19,20 +19,22 @@ import tools.jackson.databind.ObjectMapper
  * ## permission key 형식
  *
  * - entity × operation: `"<entity-table-name>:<R|C|E|D>"` (예: `"employee:R"`, `"account:E"`)
+ * - custom resource × operation: 동일 형식 (예: `"dashboard:R"`) — JPA entity 가 없는 가상 자원
  * - system permission: `"SYSTEM:<SfSystemPermission>"` (예: `"SYSTEM:VIEW_ALL_DATA"`)
  *
  * ## 산출 로직
  *
  * 1. user.profileId → ProfileFlags 조회 → system permission 비트 5종 평가
- * 2. user.id → PermissionSetAssignment 일람 → 각 PermissionSetFlags 조회 → object_permissions JSON 파싱
- * 3. PermissionSetFlags 의 view_all_data / modify_all_data 비트 (PS 측)도 system permission 으로 평가
- * 4. object_permissions JSON 의 (SF API name → CRUD bit) 를 EntitySfNameRegistry 로 (entity → CRUD) 변환
- * 5. 모든 권한 key 합집합 반환
+ * 2. user.id → PermissionSetAssignment 일람 → 각 PermissionSetFlags 조회:
+ *    - `object_permissions` JSON 파싱 (SF API name → entity table name 변환)
+ *    - `custom_permissions` JSON 파싱 (spec #808 — 가상 자원, 변환 불요)
+ *    - `view_all_data` / `modify_all_data` 비트도 system permission 으로 평가
+ * 3. 모든 권한 key 합집합 반환
  *
- * ## VIEW_ALL_DATA / MODIFY_ALL_DATA 전파
+ * ## VIEW_ALL_DATA / MODIFY_ALL_DATA 전파 (spec #808 일반화)
  *
- * - VIEW_ALL_DATA 비트 TRUE → 모든 entity 의 READ 키 자동 포함
- * - MODIFY_ALL_DATA 비트 TRUE → 모든 entity 의 모든 CRUD 키 자동 포함
+ * - VIEW_ALL_DATA 비트 TRUE → **모든 자원 (entity + custom resource)** 의 READ 키 자동 포함
+ * - MODIFY_ALL_DATA 비트 TRUE → **모든 자원** 의 모든 CRUD 키 자동 포함
  *
  * 본 펼침 정책으로 권한 가드 시점에는 단순 `permissions.contains(key)` 만 확인.
  */
@@ -84,6 +86,14 @@ class SfPermissionResolver(
         if (flags.permissionsViewAllData) result.add(systemKey(SfSystemPermission.VIEW_ALL_DATA))
         if (flags.permissionsModifyAllData) result.add(systemKey(SfSystemPermission.MODIFY_ALL_DATA))
 
+        applyObjectPermissionsJson(flags, result)
+        applyCustomPermissionsJson(flags, result)
+    }
+
+    /**
+     * `object_permissions` JSON — SF API name 키 → entity table name 으로 변환 후 권한 key 산출.
+     */
+    private fun applyObjectPermissionsJson(flags: PermissionSetFlags, result: MutableSet<String>) {
         val json = flags.objectPermissions?.takeIf { it.isNotBlank() } ?: return
         val parsed = try {
             objectMapper.readValue(json, Map::class.java) as? Map<*, *> ?: return
@@ -96,29 +106,55 @@ class SfPermissionResolver(
             val sfApiNameStr = sfApiName as? String ?: continue
             val entityTableName = entitySfNameRegistry.toEntityTableName(sfApiNameStr) ?: continue
             val permsMap = perms as? Map<*, *> ?: continue
-            if (permsMap["allowRead"] == true) result.add(entityKey(entityTableName, SfPermissionOperation.READ))
-            if (permsMap["allowCreate"] == true) result.add(entityKey(entityTableName, SfPermissionOperation.CREATE))
-            if (permsMap["allowEdit"] == true) result.add(entityKey(entityTableName, SfPermissionOperation.EDIT))
-            if (permsMap["allowDelete"] == true) result.add(entityKey(entityTableName, SfPermissionOperation.DELETE))
+            addCrudKeys(entityTableName, permsMap, result)
         }
     }
 
     /**
-     * VIEW_ALL_DATA → 모든 entity READ 펼침. MODIFY_ALL_DATA → 모든 entity CRUD 펼침.
+     * `custom_permissions` JSON — 자원 이름 키 (JPA entity 없는 가상 자원) 그대로 권한 key 산출. (spec #808)
+     */
+    private fun applyCustomPermissionsJson(flags: PermissionSetFlags, result: MutableSet<String>) {
+        val json = flags.customPermissions?.takeIf { it.isNotBlank() } ?: return
+        val parsed = try {
+            objectMapper.readValue(json, Map::class.java) as? Map<*, *> ?: return
+        } catch (e: Exception) {
+            log.warn("[SfPermissionResolver] PermissionSetFlags id={} custom_permissions JSON 파싱 실패: {}", flags.id, e.message)
+            return
+        }
+
+        for ((resourceName, perms) in parsed) {
+            val resourceNameStr = resourceName as? String ?: continue
+            val permsMap = perms as? Map<*, *> ?: continue
+            addCrudKeys(resourceNameStr, permsMap, result)
+        }
+    }
+
+    private fun addCrudKeys(resourceName: String, permsMap: Map<*, *>, result: MutableSet<String>) {
+        if (permsMap["allowRead"] == true) result.add(entityKey(resourceName, SfPermissionOperation.READ))
+        if (permsMap["allowCreate"] == true) result.add(entityKey(resourceName, SfPermissionOperation.CREATE))
+        if (permsMap["allowEdit"] == true) result.add(entityKey(resourceName, SfPermissionOperation.EDIT))
+        if (permsMap["allowDelete"] == true) result.add(entityKey(resourceName, SfPermissionOperation.DELETE))
+    }
+
+    /**
+     * VIEW_ALL_DATA → 모든 자원 READ 펼침. MODIFY_ALL_DATA → 모든 자원 CRUD 펼침. (spec #808 일반화)
+     *
+     * 펼침 대상은 [EntitySfNameRegistry.allResources] — `@SFObject` 부착 여부 무관 모든 JPA entity
+     * + `@PermissionResource` 명시 등록 가상 자원 합집합.
      */
     private fun expandAllDataBits(result: MutableSet<String>) {
         val hasViewAll = result.contains(systemKey(SfSystemPermission.VIEW_ALL_DATA))
         val hasModifyAll = result.contains(systemKey(SfSystemPermission.MODIFY_ALL_DATA))
         if (!hasViewAll && !hasModifyAll) return
 
-        for ((entityTableName, _) in entitySfNameRegistry.snapshot()) {
+        for (resourceName in entitySfNameRegistry.allResources()) {
             if (hasViewAll || hasModifyAll) {
-                result.add(entityKey(entityTableName, SfPermissionOperation.READ))
+                result.add(entityKey(resourceName, SfPermissionOperation.READ))
             }
             if (hasModifyAll) {
-                result.add(entityKey(entityTableName, SfPermissionOperation.CREATE))
-                result.add(entityKey(entityTableName, SfPermissionOperation.EDIT))
-                result.add(entityKey(entityTableName, SfPermissionOperation.DELETE))
+                result.add(entityKey(resourceName, SfPermissionOperation.CREATE))
+                result.add(entityKey(resourceName, SfPermissionOperation.EDIT))
+                result.add(entityKey(resourceName, SfPermissionOperation.DELETE))
             }
         }
     }
