@@ -1,6 +1,5 @@
 package com.otoki.powersales.sfmigration.service
 
-import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.auth.converter.UserRoleConverter
 import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.user.entity.ProfileType
@@ -44,19 +43,6 @@ class SfMappingTablesTest {
         @DisplayName("fallback 값 UNKNOWN 이 UserRole enum 에 존재한다")
         fun fallbackExists() {
             assertThat(UserRoleEnum.entries.map { it.name }).contains(USER_ROLE_FALLBACK)
-        }
-    }
-
-    @Nested
-    @DisplayName("PERMISSION_SET_TO_PERMISSIONS")
-    inner class PermissionSetMapping {
-
-        @Test
-        @DisplayName("모든 매핑 결과값이 AdminPermission enum 에 존재한다")
-        fun allValuesExistInAdminPermissionEnum() {
-            val permissionNames = AdminPermission.entries.map { it.name }.toSet()
-            val invalid = PERMISSION_SET_TO_PERMISSIONS.values.flatten().filterNot { it in permissionNames }
-            assertThat(invalid).isEmpty()
         }
     }
 

@@ -21,28 +21,6 @@ internal val APP_AUTHORITY_TO_USER_ROLE: Map<String, String> = mapOf(
 )
 internal const val USER_ROLE_FALLBACK = "UNKNOWN"
 
-internal val PERMISSION_SET_TO_PERMISSIONS: Map<String, List<String>> = mapOf(
-    "Employee_View_All" to listOf("EMPLOYEE_READ"),
-    "Activity_View_All" to listOf("SCHEDULE_READ"),
-    "SalesProgressViewAll" to listOf("ACCOUNT_READ"),
-    "View_All" to listOf("AGREEMENT_READ"),
-    "View_All_Edit_All" to listOf("SAFETY_CHECK_READ"),
-    "View_ALL_EVENT" to listOf("SCHEDULE_READ"),
-    "View_All_TeamMemberSchedule" to listOf("SCHEDULE_READ"),
-    "Acc_Permission" to listOf("ACCOUNT_READ"),
-    "Object_View_All" to listOf("ACCOUNT_READ", "EMPLOYEE_READ"),
-    "SalesDiary_View_All" to listOf("SCHEDULE_READ"),
-    "Promotion_Master_View_All" to listOf("PROMOTION_READ"),
-    "Claim_View_All" to listOf("ACCOUNT_READ"),
-    "notification_View_All" to listOf("DASHBOARD_READ"),
-    "CVSCLAIMDELETE" to listOf("ACCOUNT_DELETE"),
-    "Uploadfile_Create_Delete_Permission" to listOf("PROMOTION_WRITE"),
-    "SalesAssistant" to listOf("DASHBOARD_READ", "SCHEDULE_READ"),
-    "SalesSupport" to listOf("DASHBOARD_READ", "EMPLOYEE_READ", "ACCOUNT_READ", "SCHEDULE_READ"),
-    "notice" to listOf("DASHBOARD_READ"),
-    "ProfessionalPromotionTeam" to listOf("PROMOTION_READ", "PROMOTION_WRITE"),
-)
-
 /**
  * user.profile_type picklist 정정.
  *

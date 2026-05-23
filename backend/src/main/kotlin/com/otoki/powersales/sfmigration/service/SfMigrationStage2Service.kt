@@ -15,11 +15,11 @@ import org.springframework.transaction.annotation.Transactional
  * 운영 서버에서 실행되어 RDS 와의 latency 를 단축한다.
  *
  * 구현 substep:
- * - 2-B picklist : 한글 picklist → enum 변환 (Employee.role / PPT / User.profile_type)
+ * - 2-B picklist : 한글 picklist → enum 변환 (Employee.role / User.profile_type)
  * - 2-C password : BCrypt password hash (sfid IS NOT NULL AND password NULL 인 user)
- * - 2-D permission : sf_permission_set_assignment_raw → user_permission 매핑
  *
  * 2-A FK resolve 는 별도 클래스 (SfMigrationStage2FkService) 로 분리.
+ * 2-D permission 은 spec #801 SF 권한 모델 전면 적용으로 폐기 — user_permission 테이블 자체 폐기.
  */
 @Service
 class SfMigrationStage2Service(
@@ -153,47 +153,6 @@ class SfMigrationStage2Service(
             substep = "password",
             results = listOf(SubstepResult(label = "User.password (BCrypt)", rowsAffected = totalUpdated)),
             totalRowsAffected = totalUpdated,
-        )
-    }
-
-    /**
-     * Stage 2-D — Permission mapping.
-     *
-     * `sf_permission_set_assignment_raw` staging 테이블 → `user_permission` 적용.
-     * PERMISSION_SET_TO_PERMISSIONS 매핑 표에 정의된 PermissionSet 만 처리하고,
-     * 그 외 (INTENTIONALLY_SKIPPED_PERMISSION_SETS 포함 unmapped) 는 묵시적 skip.
-     */
-    @Transactional
-    fun runPermissionMapping(): SfMigrationStage2Response {
-        val results = mutableListOf<SubstepResult>()
-        var totalInserted = 0
-
-        for ((permSetName, adminPermissions) in PERMISSION_SET_TO_PERMISSIONS) {
-            for (adminPermission in adminPermissions) {
-                val sql = """
-                    INSERT INTO powersales.user_permission (user_id, permission, created_at)
-                    SELECT DISTINCT u.user_id, :perm, NOW()
-                    FROM powersales.sf_permission_set_assignment_raw psa
-                    JOIN powersales."user" u ON u.employee_code = psa.assignee_employee_code
-                    WHERE psa.permission_set_name = :setName
-                    ON CONFLICT DO NOTHING
-                """.trimIndent()
-                val n = em.createNativeQuery(sql)
-                    .setParameter("perm", adminPermission)
-                    .setParameter("setName", permSetName)
-                    .executeUpdate()
-                totalInserted += n
-                results += SubstepResult(
-                    label = "$permSetName -> $adminPermission",
-                    rowsAffected = n,
-                )
-            }
-        }
-
-        return SfMigrationStage2Response(
-            substep = "permission",
-            results = results,
-            totalRowsAffected = totalInserted,
         )
     }
 

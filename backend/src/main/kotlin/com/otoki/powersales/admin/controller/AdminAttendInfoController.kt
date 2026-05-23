@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.request.AdminAttendInfoCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminAttendInfoSearchRequest
@@ -33,7 +33,7 @@ class AdminAttendInfoController(
 ) {
 
     @GetMapping
-    @RequiresPermission(AdminPermission.ATTEND_INFO_READ)
+    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
     fun list(
         @ModelAttribute filter: AdminAttendInfoSearchRequest,
         @RequestParam(name = "page", defaultValue = "0") page: Int,
@@ -46,13 +46,13 @@ class AdminAttendInfoController(
     }
 
     @GetMapping("/{id}")
-    @RequiresPermission(AdminPermission.ATTEND_INFO_READ)
+    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
     fun get(@PathVariable id: Long): ResponseEntity<ApiResponse<AdminAttendInfoDetailResponse>> {
         return ResponseEntity.ok(ApiResponse.success(service.get(id)))
     }
 
     @PostMapping
-    @RequiresPermission(AdminPermission.ATTEND_INFO_WRITE)
+    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.EDIT)
     fun create(
         @Valid @RequestBody request: AdminAttendInfoCreateRequest,
     ): ResponseEntity<ApiResponse<AdminAttendInfoDetailResponse>> {
@@ -61,7 +61,7 @@ class AdminAttendInfoController(
     }
 
     @PutMapping("/{id}")
-    @RequiresPermission(AdminPermission.ATTEND_INFO_WRITE)
+    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.EDIT)
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody request: AdminAttendInfoUpdateRequest,
@@ -70,7 +70,7 @@ class AdminAttendInfoController(
     }
 
     @DeleteMapping("/{id}")
-    @RequiresPermission(AdminPermission.ATTEND_INFO_DELETE)
+    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.DELETE)
     fun delete(@PathVariable id: Long): ResponseEntity<ApiResponse<AdminAttendInfoDeleteResponse>> {
         return ResponseEntity.ok(ApiResponse.success(service.delete(id)))
     }

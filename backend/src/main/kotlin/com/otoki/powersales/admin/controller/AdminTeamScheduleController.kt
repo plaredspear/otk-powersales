@@ -1,11 +1,11 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleMassDeleteRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.service.AdminTeamScheduleService
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.common.dto.ApiResponse
@@ -24,7 +24,7 @@ class AdminTeamScheduleController(
     private val adminTeamScheduleService: AdminTeamScheduleService,
 ) {
 
-    @RequiresPermission(AdminPermission.SCHEDULE_READ)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/members")
     fun getMembers(
         @AuthenticationPrincipal principal: WebUserPrincipal
@@ -33,7 +33,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_READ)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/accounts")
     fun getAccounts(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -43,7 +43,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_READ)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/branches")
     fun getBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal
@@ -52,7 +52,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_READ)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/professional-promotion-teams")
     fun getProfessionalPromotionTeams(
         @AuthenticationPrincipal principal: WebUserPrincipal
@@ -61,7 +61,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_READ)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping
     fun getSchedules(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -80,7 +80,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PostMapping
     fun createSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -91,7 +91,7 @@ class AdminTeamScheduleController(
             .body(ApiResponse.success(result, "일정이 등록되었습니다"))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PutMapping("/{id}")
     fun updateSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -102,7 +102,7 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "일정이 수정되었습니다"))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @DeleteMapping("/{id}")
     fun deleteSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -118,7 +118,7 @@ class AdminTeamScheduleController(
      * legacy `MassDeleteTmScheduleController.doMassDelete` (VF `@RemoteAction` + 100건 + 진열 + CommuteLogId=null) 동등 endpoint.
      * Q5 옵션 1 — 전체 rollback (legacy `delete deleteList;` `allOrNone=true` 동등) — 1건이라도 가드 fail 시 첫 실패 row 의 도메인 예외 throw.
      */
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PostMapping("/mass-delete")
     fun massDelete(
         @AuthenticationPrincipal principal: WebUserPrincipal,

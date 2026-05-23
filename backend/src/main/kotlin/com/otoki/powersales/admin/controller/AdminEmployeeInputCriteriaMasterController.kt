@@ -1,8 +1,8 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.request.EmployeeInputCriteriaMasterBulkConfirmRequest
 import com.otoki.powersales.schedule.dto.request.EmployeeInputCriteriaMasterCreateRequest
@@ -29,7 +29,7 @@ class AdminEmployeeInputCriteriaMasterController(
 ) {
 
     @GetMapping("/account-categories")
-    @RequiresPermission(AdminPermission.EMPLOYEE_INPUT_CRITERIA_READ)
+    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.READ)
     fun listAccountCategories(): ResponseEntity<ApiResponse<List<AccountCategoryOptionResponse>>> {
         val categories = accountCategoryMasterRepository.findAll()
             .filter { it.isDeleted != true }
@@ -39,7 +39,7 @@ class AdminEmployeeInputCriteriaMasterController(
     }
 
     @GetMapping
-    @RequiresPermission(AdminPermission.EMPLOYEE_INPUT_CRITERIA_READ)
+    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.READ)
     fun list(
         @RequestParam(name = "status", required = false, defaultValue = "ALL") status: ValidStatusFilter,
     ): ResponseEntity<ApiResponse<List<EmployeeInputCriteriaMasterResponse>>> {
@@ -47,13 +47,13 @@ class AdminEmployeeInputCriteriaMasterController(
     }
 
     @GetMapping("/{id}")
-    @RequiresPermission(AdminPermission.EMPLOYEE_INPUT_CRITERIA_READ)
+    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.READ)
     fun get(@PathVariable id: Long): ResponseEntity<ApiResponse<EmployeeInputCriteriaMasterResponse>> {
         return ResponseEntity.ok(ApiResponse.success(service.get(id)))
     }
 
     @PostMapping
-    @RequiresPermission(AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE)
+    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
     fun create(
         @Valid @RequestBody request: EmployeeInputCriteriaMasterCreateRequest,
     ): ResponseEntity<ApiResponse<EmployeeInputCriteriaMasterResponse>> {
@@ -62,7 +62,7 @@ class AdminEmployeeInputCriteriaMasterController(
     }
 
     @PutMapping("/{id}")
-    @RequiresPermission(AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE)
+    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody request: EmployeeInputCriteriaMasterUpdateRequest,
@@ -71,13 +71,13 @@ class AdminEmployeeInputCriteriaMasterController(
     }
 
     @PostMapping("/{id}/confirm")
-    @RequiresPermission(AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE)
+    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
     fun confirm(@PathVariable id: Long): ResponseEntity<ApiResponse<EmployeeInputCriteriaMasterResponse>> {
         return ResponseEntity.ok(ApiResponse.success(service.confirm(id)))
     }
 
     @PostMapping("/bulk-confirm")
-    @RequiresPermission(AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE)
+    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
     fun bulkConfirm(
         @Valid @RequestBody request: EmployeeInputCriteriaMasterBulkConfirmRequest,
     ): ResponseEntity<ApiResponse<List<EmployeeInputCriteriaMasterResponse>>> {
@@ -85,7 +85,7 @@ class AdminEmployeeInputCriteriaMasterController(
     }
 
     @DeleteMapping("/{id}")
-    @RequiresPermission(AdminPermission.EMPLOYEE_INPUT_CRITERIA_WRITE)
+    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
     fun delete(@PathVariable id: Long): ResponseEntity<ApiResponse<Any?>> {
         service.delete(id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?))

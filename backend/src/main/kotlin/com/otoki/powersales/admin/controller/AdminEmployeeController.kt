@@ -1,9 +1,10 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.employee.dto.request.AdminEmployeeManualRegisterRequest
 import com.otoki.powersales.employee.dto.request.AdminEmployeeUpdateRequest
@@ -39,7 +40,7 @@ class AdminEmployeeController(
 ) {
 
     @GetMapping
-    @RequiresPermission(AdminPermission.EMPLOYEE_READ)
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)
     fun getEmployees(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
@@ -68,7 +69,7 @@ class AdminEmployeeController(
      * 레거시 SF 표준 레코드 상세 페이지 동등.
      */
     @GetMapping("/{employeeId}")
-    @RequiresPermission(AdminPermission.EMPLOYEE_READ)
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)
     fun getEmployee(
         @PathVariable employeeId: Long
     ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
@@ -82,7 +83,7 @@ class AdminEmployeeController(
      * ADMIN-prefix SYSTEM_ADMIN 등록은 `AdminEmployeeRegisterController` 의 `POST /` 사용.
      */
     @PostMapping("/manual")
-    @RequiresPermission(AdminPermission.EMPLOYEE_WRITE)
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.EDIT)
     fun manualRegister(
         @Valid @RequestBody request: AdminEmployeeManualRegisterRequest
     ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
@@ -96,7 +97,7 @@ class AdminEmployeeController(
      * 사원 정보 수정 (UC-07). origin=SAP 사원은 차단.
      */
     @PatchMapping("/{employeeId}")
-    @RequiresPermission(AdminPermission.EMPLOYEE_WRITE)
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.EDIT)
     fun updateEmployee(
         @PathVariable employeeId: Long,
         @Valid @RequestBody request: AdminEmployeeUpdateRequest
@@ -106,7 +107,7 @@ class AdminEmployeeController(
     }
 
     @PostMapping("/{employeeId}/reset-device")
-    @RequiresPermission(AdminPermission.EMPLOYEE_RESET_CREDENTIALS)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MANAGE_USERS)
     fun resetDevice(
         @PathVariable employeeId: Long
     ): ResponseEntity<ApiResponse<ResetDeviceResponse>> {
@@ -115,7 +116,7 @@ class AdminEmployeeController(
     }
 
     @PostMapping("/{employeeId}/reset-password")
-    @RequiresPermission(AdminPermission.EMPLOYEE_RESET_CREDENTIALS)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MANAGE_USERS)
     fun resetPassword(
         @PathVariable employeeId: Long
     ): ResponseEntity<ApiResponse<ResetPasswordResponse>> {

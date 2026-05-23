@@ -1,8 +1,8 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.admin.exception.InvalidDateFormatException
@@ -24,7 +24,7 @@ class AdminSafetyCheckController(
 ) {
 
     @GetMapping("/status")
-    @RequiresPermission(AdminPermission.SAFETY_CHECK_READ)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     fun getStatus(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) date: String?

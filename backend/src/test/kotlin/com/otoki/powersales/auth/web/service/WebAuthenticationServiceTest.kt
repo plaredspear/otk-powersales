@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.web.service
 
-import com.otoki.powersales.admin.service.AdminPermissionResolver
+import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.auth.exception.CurrentPasswordRequiredException
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
@@ -39,7 +39,7 @@ class WebAuthenticationServiceTest {
     private val webRefreshTokenStore: WebRefreshTokenStore = mockk(relaxUnitFun = true)
     private val passwordEncoder: PasswordEncoder = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
-    private val adminPermissionResolver: AdminPermissionResolver = mockk()
+    private val sfPermissionResolver: SfPermissionResolver = mockk()
     private val passwordPolicyValidator: PasswordPolicyValidator = PasswordPolicyValidator()
 
     private val service = WebAuthenticationService(
@@ -50,8 +50,13 @@ class WebAuthenticationServiceTest {
         passwordEncoder,
         passwordPolicyValidator,
         employeeRepository,
-        adminPermissionResolver,
+        sfPermissionResolver,
     )
+
+    @org.junit.jupiter.api.BeforeEach
+    fun stubSfPermissionResolver() {
+        every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
+    }
 
     @Nested
     @DisplayName("login - Web 로그인")
@@ -64,6 +69,7 @@ class WebAuthenticationServiceTest {
             every { userRepository.findByUsername("u@otokims.co.kr") } returns user
             every { passwordEncoder.matches("password123", user.password) } returns true
             every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
+            every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
             every { webJwtService.createAccessToken(any(), any(), any()) } returns "access-token"
             every { webJwtService.createRefreshToken(any(), any(), any(), any()) } returns "refresh-token"
             every { webJwtService.getAccessTokenExpirationSeconds() } returns 3600

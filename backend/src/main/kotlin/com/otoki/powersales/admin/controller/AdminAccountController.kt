@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.account.dto.request.AdminAccountCreateRequest
 import com.otoki.powersales.account.dto.request.AdminAccountUpdateRequest
 import com.otoki.powersales.account.dto.response.AccountListResponse
@@ -10,9 +12,7 @@ import com.otoki.powersales.account.service.AccountDeleteService
 import com.otoki.powersales.account.service.AccountUpdateService
 import com.otoki.powersales.account.service.AdminAccountService
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
@@ -44,7 +44,7 @@ class AdminAccountController(
 ) {
 
     @GetMapping
-    @RequiresPermission(AdminPermission.ACCOUNT_READ)
+    @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.READ)
     fun getAccounts(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
@@ -68,7 +68,7 @@ class AdminAccountController(
     }
 
     @PostMapping
-    @RequiresPermission(AdminPermission.ACCOUNT_WRITE)
+    @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.EDIT)
     fun createAccount(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminAccountCreateRequest
@@ -79,7 +79,7 @@ class AdminAccountController(
     }
 
     @PutMapping("/{id}")
-    @RequiresPermission(AdminPermission.ACCOUNT_WRITE)
+    @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.EDIT)
     fun updateAccount(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int,
@@ -90,7 +90,7 @@ class AdminAccountController(
     }
 
     @DeleteMapping("/{id}")
-    @RequiresPermission(AdminPermission.ACCOUNT_DELETE)
+    @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.DELETE)
     fun deleteAccount(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int

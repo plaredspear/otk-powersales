@@ -1,7 +1,9 @@
 package com.otoki.powersales.auth.service
 
 import com.otoki.powersales.common.config.UuidCheckProperties
-import com.otoki.powersales.admin.security.AdminPermission
+import com.otoki.powersales.auth.permission.SfPermissionResolver
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.auth.dto.request.ChangePasswordRequest
 import com.otoki.powersales.common.dto.request.GpsConsentRequest
 import com.otoki.powersales.auth.dto.request.LoginRequest
@@ -46,7 +48,8 @@ class AuthServiceTest {
     private val passwordEncoder: PasswordEncoder = mockk()
     private val jwtTokenProvider: JwtTokenProvider = mockk(relaxUnitFun = true)
     private val uuidCheckProperties: UuidCheckProperties = mockk()
-    private val adminPermissionResolver: com.otoki.powersales.admin.service.AdminPermissionResolver = mockk()
+    private val sfPermissionResolver: SfPermissionResolver = mockk()
+    private val userRepository: UserRepository = mockk()
     private val passwordPolicyValidator: PasswordPolicyValidator = PasswordPolicyValidator()
 
     private val authService = AuthService(
@@ -57,7 +60,8 @@ class AuthServiceTest {
         passwordEncoder,
         jwtTokenProvider,
         uuidCheckProperties,
-        adminPermissionResolver,
+        sfPermissionResolver,
+        userRepository,
         passwordPolicyValidator,
     )
 
@@ -85,7 +89,7 @@ class AuthServiceTest {
 
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
         every { passwordEncoder.matches(rawPassword, encodedPassword) } returns true
-        every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
+        every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
         every { jwtTokenProvider.createAccessToken(employee.id, any<UserRoleEnum>(), false, any()) } returns accessToken
         every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns refreshToken
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns expiresIn
@@ -120,7 +124,7 @@ class AuthServiceTest {
 
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
-        every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
+        every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
         every { jwtTokenProvider.createAccessToken(employee.id, any<UserRoleEnum>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
@@ -144,7 +148,7 @@ class AuthServiceTest {
 
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
-        every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
+        every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
         every { loginHistoryRepository.save(any<LoginHistory>()) } throws RuntimeException("DB error")
         every { jwtTokenProvider.createAccessToken(employee.id, any<UserRoleEnum>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns "refresh"
@@ -842,7 +846,7 @@ class AuthServiceTest {
 
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
-        every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
+        every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
         every { jwtTokenProvider.createAccessToken(1L, any<UserRoleEnum>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
@@ -915,7 +919,7 @@ class AuthServiceTest {
 
             every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
             every { passwordEncoder.matches("password123", "encoded_password") } returns true
-            every { adminPermissionResolver.resolve(employee) } returns AdminPermission.entries.toSet()
+            every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
             every { jwtTokenProvider.createAccessToken(1L, any<UserRoleEnum>(), false, any()) } returns "token"
             every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
             every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
@@ -961,7 +965,7 @@ class AuthServiceTest {
 
             every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
             every { passwordEncoder.matches("password123", "encoded_password") } returns true
-            every { adminPermissionResolver.resolve(employee) } returns emptySet()
+            every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
 
             // When & Then
             assertThatThrownBy { authService.login(request) }
@@ -977,7 +981,7 @@ class AuthServiceTest {
 
             every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
             every { passwordEncoder.matches("password123", "encoded_password") } returns true
-            every { adminPermissionResolver.resolve(employee) } returns emptySet()
+            every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
 
             // When & Then
             assertThatThrownBy { authService.login(request) }

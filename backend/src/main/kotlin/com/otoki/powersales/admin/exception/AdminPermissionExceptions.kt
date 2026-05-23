@@ -3,38 +3,14 @@ package com.otoki.powersales.admin.exception
 import com.otoki.powersales.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 
+/**
+ * Admin 권한 거부 예외. 시스템 권한 비트 부재 시 service layer 에서 throw.
+ *
+ * Endpoint 가드 (`@RequiresSfPermission` + WebAdminContextFilter) 는 PERMISSION_DENIED 응답을 별도
+ * 처리하므로 본 예외는 service 내부 SYSTEM_ADMIN role 강제 검사 등 보조적 검증에 사용된다.
+ */
 class AdminForbiddenException : BusinessException(
     errorCode = "FORBIDDEN",
     message = "시스템관리자만 접근할 수 있습니다",
     httpStatus = HttpStatus.FORBIDDEN
-)
-
-class InvalidPermissionException(permission: String) : BusinessException(
-    errorCode = "INVALID_PERMISSION",
-    message = "유효하지 않은 권한입니다: $permission",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
-class DuplicatePermissionException(permission: String) : BusinessException(
-    errorCode = "DUPLICATE_PERMISSION",
-    message = "중복된 권한이 포함되어 있습니다: $permission",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
-class CannotModifyOwnPermissionException : BusinessException(
-    errorCode = "CANNOT_MODIFY_OWN_PERMISSION",
-    message = "자기 자신의 권한은 수정할 수 없습니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
-class CannotModifyOwnAuthorityException : BusinessException(
-    errorCode = "CANNOT_MODIFY_OWN_AUTHORITY",
-    message = "자기 자신의 역할은 변경할 수 없습니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
-class InvalidAuthorityException(authority: String) : BusinessException(
-    errorCode = "INVALID_AUTHORITY",
-    message = "유효하지 않은 역할입니다: $authority",
-    httpStatus = HttpStatus.BAD_REQUEST
 )

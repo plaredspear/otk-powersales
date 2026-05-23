@@ -6,7 +6,7 @@ import com.otoki.powersales.common.dto.request.GpsConsentRequest
 import com.otoki.powersales.auth.dto.request.LoginRequest
 import com.otoki.powersales.auth.dto.request.RefreshTokenRequest
 import com.otoki.powersales.auth.dto.request.VerifyPasswordRequest
-import com.otoki.powersales.admin.service.AdminPermissionResolver
+import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.dto.response.*
 import com.otoki.powersales.auth.policy.PasswordPolicyValidator
@@ -21,6 +21,7 @@ import com.otoki.powersales.common.repository.LoginHistoryRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.common.util.TimeZones
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -42,7 +43,8 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider,
     private val uuidCheckProperties: UuidCheckProperties,
-    private val adminPermissionResolver: AdminPermissionResolver,
+    private val sfPermissionResolver: SfPermissionResolver,
+    private val userRepository: UserRepository,
     private val passwordPolicyValidator: PasswordPolicyValidator
 ) {
 
@@ -142,8 +144,10 @@ class AuthService(
      */
     private fun validateLoginAuthority(employee: Employee, deviceId: String?) {
         if (deviceId.isNullOrBlank()) {
-            // WEB 로그인 — 레거시 호환 분기 (신규 Web 로그인은 WebAuthenticationService 사용)
-            if (adminPermissionResolver.resolve(employee).isEmpty()) {
+            // WEB 로그인 — 레거시 호환 분기 (신규 Web 로그인은 WebAuthenticationService 사용).
+            // spec #801 — SF 권한 모델 적용: user 의 SF 권한 set 이 비어있으면 web login 차단.
+            val user = userRepository.findByEmployeeCode(employee.employeeCode)
+            if (user == null || sfPermissionResolver.resolveForUser(user).isEmpty()) {
                 throw WebLoginNotAllowedException()
             }
         } else {

@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
@@ -15,9 +17,7 @@ import com.otoki.powersales.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.exception.ScheduleFileRequiredException
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.service.AdminScheduleService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -38,7 +38,7 @@ class AdminScheduleController(
     private val adminScheduleService: AdminScheduleService,
 ) {
 
-    @RequiresPermission(AdminPermission.SCHEDULE_READ)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/list")
     fun listSchedules(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -69,7 +69,7 @@ class AdminScheduleController(
         return Sort.by(direction, sortBy)
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PatchMapping("/confirm")
     fun batchConfirm(
         @Valid @RequestBody request: ScheduleBatchConfirmRequest
@@ -78,7 +78,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정되었습니다"))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PatchMapping("/unconfirm")
     fun batchUnconfirm(
         @Valid @RequestBody request: ScheduleBatchConfirmRequest
@@ -87,7 +87,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정 해제되었습니다"))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PutMapping("/{id}")
     fun updateSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -99,7 +99,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 수정되었습니다"))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_READ)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @PostMapping("/export")
     fun exportSchedules(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -120,7 +120,7 @@ class AdminScheduleController(
             .body(result.bytes)
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PostMapping("/batch-delete")
     fun batchDelete(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -136,7 +136,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, message))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @DeleteMapping("/{id}")
     fun deleteSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -147,7 +147,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "스케줄이 삭제되었습니다"))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_READ)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/template")
     fun downloadTemplate(
         @AuthenticationPrincipal principal: WebUserPrincipal
@@ -166,7 +166,7 @@ class AdminScheduleController(
             .body(result.bytes)
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PostMapping
     fun createSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -177,7 +177,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 등록되었습니다"))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PostMapping("/upload")
     fun uploadExcel(
         @RequestParam("file", required = false) file: MultipartFile?
@@ -189,7 +189,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "검증 완료"))
     }
 
-    @RequiresPermission(AdminPermission.SCHEDULE_WRITE)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PostMapping("/upload/confirm")
     fun confirmUpload(
         @Valid @RequestBody request: ScheduleConfirmRequest

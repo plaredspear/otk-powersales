@@ -1,9 +1,9 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.response.SalesComparisonDetailResponse
 import com.otoki.powersales.schedule.dto.response.SalesComparisonMiddleResponse
@@ -27,7 +27,7 @@ class AdminSalesComparisonController(
 ) {
 
     /** 거래처유형 picklist — `AccountCategoryMaster.useSearch=true` 항목 목록. */
-    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/categories")
     fun getSearchCategories(): ResponseEntity<ApiResponse<List<SearchAccountCategoryItem>>> {
         val response = adminSalesComparisonService.getSearchCategories()
@@ -35,7 +35,7 @@ class AdminSalesComparisonController(
     }
 
     /** 집계 모드 — 배치적합성 × 거래처카테고리 거래처 수 집계표. */
-    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/summary")
     fun getSummary(
         @CurrentDataScope scope: DataScope,
@@ -48,7 +48,7 @@ class AdminSalesComparisonController(
     }
 
     /** 중간집계 모드 — 거래처별 행 + 적합성별 소계 + 총계. */
-    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/middle")
     fun getMiddle(
         @CurrentDataScope scope: DataScope,
@@ -62,7 +62,7 @@ class AdminSalesComparisonController(
     }
 
     /** 상세 모드 — 사원별 행 + 총계. */
-    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/detail")
     fun getDetail(
         @CurrentDataScope scope: DataScope,
@@ -83,7 +83,7 @@ class AdminSalesComparisonController(
     }
 
     /** 집계표 엑셀 다운로드. */
-    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/summary/export")
     fun exportSummary(
         @CurrentDataScope scope: DataScope,
@@ -95,7 +95,7 @@ class AdminSalesComparisonController(
     )
 
     /** 중간집계 엑셀 다운로드. */
-    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/middle/export")
     fun exportMiddle(
         @CurrentDataScope scope: DataScope,
@@ -108,7 +108,7 @@ class AdminSalesComparisonController(
     )
 
     /** 상세 엑셀 다운로드. */
-    @RequiresPermission(AdminPermission.SALES_COMPARISON_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/detail/export")
     fun exportDetail(
         @CurrentDataScope scope: DataScope,

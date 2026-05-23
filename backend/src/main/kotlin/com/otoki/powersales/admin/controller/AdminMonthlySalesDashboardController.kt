@@ -1,9 +1,9 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.sales.dto.request.MonthlySalesDashboardListRequest
 import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardDetailResponse
@@ -30,7 +30,7 @@ class AdminMonthlySalesDashboardController(
 ) {
 
     /** 상단 KPI + 최근 6개월 월별 추이. */
-    @RequiresPermission(AdminPermission.MONTHLY_SALES_DASHBOARD_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/summary")
     fun getSummary(
         @CurrentDataScope scope: DataScope,
@@ -45,7 +45,7 @@ class AdminMonthlySalesDashboardController(
     }
 
     /** 거래처별 명세 — 페이징 + 정렬 + 필터. */
-    @RequiresPermission(AdminPermission.MONTHLY_SALES_DASHBOARD_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/list")
     fun getList(
         @CurrentDataScope scope: DataScope,
@@ -70,7 +70,7 @@ class AdminMonthlySalesDashboardController(
     }
 
     /** 거래처별 명세 엑셀 다운로드. 페이징 미적용 (권한 범위 전체 export). */
-    @RequiresPermission(AdminPermission.MONTHLY_SALES_DASHBOARD_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/list/export")
     fun exportList(
         @CurrentDataScope scope: DataScope,
@@ -94,7 +94,7 @@ class AdminMonthlySalesDashboardController(
     }
 
     /** 단건 거래처 상세 — 모바일 동등 6 영역. */
-    @RequiresPermission(AdminPermission.MONTHLY_SALES_DASHBOARD_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/detail/{customerId}")
     fun getDetail(
         @CurrentDataScope scope: DataScope,

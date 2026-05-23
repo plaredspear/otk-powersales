@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.agreement.dto.request.AdminAgreementWordCreateRequest
 import com.otoki.powersales.agreement.dto.response.AdminAgreementWordActiveResponse
 import com.otoki.powersales.agreement.dto.response.AdminAgreementWordCreateResponse
@@ -27,7 +27,7 @@ class AdminAgreementWordController(
 ) {
 
     @PostMapping
-    @RequiresPermission(AdminPermission.AGREEMENT_WRITE)
+    @RequiresSfPermission(entity = "agreement_word", operation = SfPermissionOperation.EDIT)
     fun createAgreementWord(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminAgreementWordCreateRequest
@@ -38,7 +38,7 @@ class AdminAgreementWordController(
     }
 
     @GetMapping("/active")
-    @RequiresPermission(AdminPermission.AGREEMENT_READ)
+    @RequiresSfPermission(entity = "agreement_word", operation = SfPermissionOperation.READ)
     fun getActiveAgreementWord(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<AdminAgreementWordActiveResponse?>> {

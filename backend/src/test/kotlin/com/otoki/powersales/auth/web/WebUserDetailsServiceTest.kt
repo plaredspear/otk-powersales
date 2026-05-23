@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.web
 
-import com.otoki.powersales.admin.service.AdminPermissionResolver
+import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
@@ -21,18 +21,19 @@ class WebUserDetailsServiceTest {
 
     private val userRepository: UserRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
-    private val adminPermissionResolver: AdminPermissionResolver = mockk()
+    private val sfPermissionResolver: SfPermissionResolver = mockk()
 
     private val service = WebUserDetailsService(
         userRepository,
         employeeRepository,
-        adminPermissionResolver,
+        sfPermissionResolver,
     )
 
     @BeforeEach
     fun stubEmployeeLookup() {
         // 본 테스트는 인증/권한 매핑만 검증 — Employee snapshot 부재 케이스만 사용.
         every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
+        every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
     }
 
     @Nested

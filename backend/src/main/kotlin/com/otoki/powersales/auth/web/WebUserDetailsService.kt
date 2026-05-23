@@ -1,7 +1,6 @@
 package com.otoki.powersales.auth.web
 
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.service.AdminPermissionResolver
+import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
@@ -34,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional
 class WebUserDetailsService(
     private val userRepository: UserRepository,
     private val employeeRepository: EmployeeRepository,
-    private val adminPermissionResolver: AdminPermissionResolver,
+    private val sfPermissionResolver: SfPermissionResolver,
 ) : UserDetailsService {
 
     /**
@@ -59,7 +58,7 @@ class WebUserDetailsService(
     }
 
     private fun toPrincipal(user: User, employee: com.otoki.powersales.employee.entity.Employee?): WebUserPrincipal {
-        val permissions: Set<AdminPermission> = employee?.let { adminPermissionResolver.resolve(it) } ?: emptySet()
+        val permissions: Set<String> = sfPermissionResolver.resolveForUser(user)
         return WebUserPrincipal(
             userId = user.id,
             usernameValue = user.username,

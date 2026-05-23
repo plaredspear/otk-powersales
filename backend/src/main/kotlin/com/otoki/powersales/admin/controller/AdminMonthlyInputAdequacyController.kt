@@ -1,9 +1,9 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.response.MonthlyInputAdequacyResponse
 import com.otoki.powersales.schedule.service.AdminMonthlyInputAdequacyService
@@ -24,7 +24,7 @@ class AdminMonthlyInputAdequacyController(
 ) {
 
     /** 1~12월 적합성 매트릭스 조회. */
-    @RequiresPermission(AdminPermission.MONTHLY_INPUT_ADEQUACY_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping
     fun getMatrix(
         @CurrentDataScope scope: DataScope,
@@ -37,7 +37,7 @@ class AdminMonthlyInputAdequacyController(
     }
 
     /** 매트릭스 엑셀 다운로드. */
-    @RequiresPermission(AdminPermission.MONTHLY_INPUT_ADEQUACY_READ)
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/export")
     fun exportMatrix(
         @CurrentDataScope scope: DataScope,

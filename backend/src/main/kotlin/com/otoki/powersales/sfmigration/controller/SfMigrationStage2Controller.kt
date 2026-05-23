@@ -1,7 +1,8 @@
 package com.otoki.powersales.sfmigration.controller
 
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.auth.permission.SfSystemPermission
 import com.otoki.powersales.auth.sharing.service.UserRoleHierarchyTraversal
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.sfmigration.dto.SfFkResolveProgressResponse
@@ -45,7 +46,7 @@ class SfMigrationStage2Controller(
     }
 
     @PostMapping("/api/v1/admin/sf-migration/stage2/fk")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun runFkResolve(): ResponseEntity<ApiResponse<SfFkResolveProgressResponse>> {
         if (fkProgress.status == SfFkResolveProgress.Status.RUNNING) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -62,7 +63,7 @@ class SfMigrationStage2Controller(
     }
 
     @GetMapping("/api/v1/admin/sf-migration/stage2/fk/progress")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun getFkProgress(): ResponseEntity<ApiResponse<SfFkResolveProgressResponse>> {
         return ResponseEntity.ok(ApiResponse.success(fkProgress.toResponse()))
     }
@@ -76,14 +77,14 @@ class SfMigrationStage2Controller(
      * 운영 cut-over 시점에 fk substep 직후 1회 호출.
      */
     @PostMapping("/api/v1/admin/sf-migration/stage2/fk-natural-key")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun runNaturalKeyFkResolve(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = naturalKeyFkService.runNaturalKeyFkResolve()
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @PostMapping("/api/v1/admin/sf-migration/stage2/picklist")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun runPicklistMapping(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = service.runPicklistMapping()
         return ResponseEntity.ok(ApiResponse.success(response))
@@ -94,7 +95,7 @@ class SfMigrationStage2Controller(
      * - `employee_role` / `user_profile_type` / `user_cost_center_code`
      */
     @PostMapping("/api/v1/admin/sf-migration/stage2/picklist/{column}")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun runPicklistColumn(
         @PathVariable column: String,
     ): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
@@ -116,16 +117,9 @@ class SfMigrationStage2Controller(
     }
 
     @PostMapping("/api/v1/admin/sf-migration/stage2/password")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun runPasswordHash(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = service.runPasswordHash()
-        return ResponseEntity.ok(ApiResponse.success(response))
-    }
-
-    @PostMapping("/api/v1/admin/sf-migration/stage2/permission")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
-    fun runPermissionMapping(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
-        val response = service.runPermissionMapping()
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -141,7 +135,7 @@ class SfMigrationStage2Controller(
      * 본 endpoint 는 그 자동화 메커니즘과 별개로 batch 1회 / incident 복구 용도.
      */
     @PostMapping("/api/v1/admin/sf-migration/stage2/user-role-hierarchy")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun runUserRoleHierarchyRecalc(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         log.info("[user-role-hierarchy] recompute all triggered by admin endpoint")
         val before = System.currentTimeMillis()

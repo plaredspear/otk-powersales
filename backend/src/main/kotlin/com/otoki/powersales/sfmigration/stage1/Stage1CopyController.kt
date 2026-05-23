@@ -1,7 +1,8 @@
 package com.otoki.powersales.sfmigration.stage1
 
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.auth.permission.SfSystemPermission
 import com.otoki.powersales.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -46,7 +47,7 @@ class Stage1CopyController(
     }
 
     @PostMapping("/api/v1/admin/sf-migration/stage1/copy-from-s3")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun copyFromS3(
         @Valid @RequestBody req: Stage1CopyRequest,
     ): ResponseEntity<ApiResponse<Stage1CopyProgressResponse>> {
@@ -66,7 +67,7 @@ class Stage1CopyController(
     }
 
     @PostMapping("/api/v1/admin/sf-migration/stage1/copy-all-from-s3")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun copyAllFromS3(
         @Valid @RequestBody req: Stage1CopyAllRequest,
     ): ResponseEntity<ApiResponse<Stage1CopyProgressResponse>> {
@@ -86,13 +87,13 @@ class Stage1CopyController(
     }
 
     @GetMapping("/api/v1/admin/sf-migration/stage1/copy-from-s3/progress")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun getProgress(): ResponseEntity<ApiResponse<Stage1CopyProgressResponse>> {
         return ResponseEntity.ok(ApiResponse.success(progress.toResponse()))
     }
 
     @GetMapping("/api/v1/admin/sf-migration/stage1/targets")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun listTargets(): ResponseEntity<ApiResponse<List<String>>> {
         return ResponseEntity.ok(ApiResponse.success(Stage1Targets.list()))
     }

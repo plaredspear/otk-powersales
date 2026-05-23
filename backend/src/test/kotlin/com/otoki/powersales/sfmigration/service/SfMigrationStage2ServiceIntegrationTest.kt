@@ -195,30 +195,8 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(objOf("SELECT password FROM powersales.\"user\" WHERE employee_code = 'E103'")).isNull()
     }
 
-    @Test
-    @Transactional
-    @DisplayName("Stage 2-D permission — sf_permission_set_assignment_raw JOIN user → user_permission INSERT")
-    fun runPermissionMapping() {
-        em.createNativeQuery("INSERT INTO powersales.\"user\" (user_id, employee_code) VALUES (10, 'E200')").executeUpdate()
-        em.createNativeQuery("INSERT INTO powersales.\"user\" (user_id, employee_code) VALUES (11, 'E201')").executeUpdate()
-        em.createNativeQuery("INSERT INTO powersales.sf_permission_set_assignment_raw VALUES ('E200', 'Employee_View_All')").executeUpdate()
-        em.createNativeQuery("INSERT INTO powersales.sf_permission_set_assignment_raw VALUES ('E200', 'SalesSupport')").executeUpdate()
-        em.createNativeQuery("INSERT INTO powersales.sf_permission_set_assignment_raw VALUES ('E201', 'Object_View_All')").executeUpdate()
-        em.createNativeQuery("INSERT INTO powersales.sf_permission_set_assignment_raw VALUES ('E201', 'MFA')").executeUpdate()
-
-        val response = service.runPermissionMapping()
-
-        assertThat(response.substep).isEqualTo("permission")
-        assertThat(response.totalRowsAffected).isGreaterThan(0)
-
-        val e200Perms = longOf("SELECT COUNT(*) FROM powersales.user_permission WHERE user_id = 10")
-        val e201Perms = longOf("SELECT COUNT(*) FROM powersales.user_permission WHERE user_id = 11")
-        // Employee_View_All=EMPLOYEE_READ + SalesSupport=DASHBOARD_READ/EMPLOYEE_READ(중복 ON CONFLICT)/ACCOUNT_READ/SCHEDULE_READ
-        // → unique 4 (EMPLOYEE_READ, DASHBOARD_READ, ACCOUNT_READ, SCHEDULE_READ)
-        assertThat(e200Perms).isEqualTo(4L)
-        // Object_View_All=ACCOUNT_READ + EMPLOYEE_READ, MFA=skip
-        assertThat(e201Perms).isEqualTo(2L)
-    }
+    // Stage 2-D permission substep 은 spec #801 SF 권한 모델 전면 적용으로 폐기됨.
+    // user_permission 테이블 자체가 DROP (V186) 되어 본 테스트도 의미 상실.
 
     private fun strOf(sql: String): String? = objOf(sql)?.toString()
     private fun longOf(sql: String): Long = (objOf(sql) as Number).toLong()

@@ -1,12 +1,12 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.promotion.dto.request.PPTMasterBulkValidateRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterConfirmByIdsRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.promotion.dto.response.*
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -28,7 +28,7 @@ class AdminPPTMasterController(
 ) {
 
     @GetMapping("/api/v1/admin/ppt-masters")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getMasters(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(defaultValue = "0") page: Int,
@@ -47,7 +47,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/{id}")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getMaster(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
@@ -57,7 +57,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun createMaster(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterCreateRequest
@@ -67,7 +67,7 @@ class AdminPPTMasterController(
     }
 
     @PutMapping("/api/v1/admin/ppt-masters/{id}")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun updateMaster(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long,
@@ -78,7 +78,7 @@ class AdminPPTMasterController(
     }
 
     @DeleteMapping("/api/v1/admin/ppt-masters/{id}")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun deleteMaster(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
@@ -88,7 +88,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/export")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun exportMasters(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) employeeName: String?,
@@ -108,7 +108,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/excel-template")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun downloadExcelTemplate(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ByteArray> {
@@ -121,7 +121,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters/bulk")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun validateBulk(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterBulkValidateRequest
@@ -131,7 +131,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters/bulk/confirm")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun confirmBulk(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterBulkValidateRequest
@@ -141,7 +141,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters/confirm-by-ids")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun confirmByIds(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterConfirmByIdsRequest
@@ -151,7 +151,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/{masterId}/history")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getHistory(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable masterId: Long,
@@ -163,7 +163,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-histories")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getAllHistory(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(defaultValue = "0") page: Int,

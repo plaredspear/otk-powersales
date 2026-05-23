@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationCreateRequest
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationUpdateRequest
@@ -7,8 +9,6 @@ import com.otoki.powersales.productexpiration.dto.response.AdminProductExpiratio
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationListResponse
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationResponse
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.productexpiration.service.AdminProductExpirationService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -26,7 +26,7 @@ class AdminProductExpirationController(
 ) {
 
     @GetMapping("/api/v1/admin/product-expiration")
-    @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_READ)
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
     fun getList(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) fromDate: LocalDate?,
@@ -46,7 +46,7 @@ class AdminProductExpirationController(
     }
 
     @GetMapping("/api/v1/admin/product-expiration/{id}")
-    @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_READ)
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
     fun getDetail(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int
@@ -56,7 +56,7 @@ class AdminProductExpirationController(
     }
 
     @PostMapping("/api/v1/admin/product-expiration")
-    @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_WRITE)
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.EDIT)
     fun create(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminProductExpirationCreateRequest
@@ -66,7 +66,7 @@ class AdminProductExpirationController(
     }
 
     @PutMapping("/api/v1/admin/product-expiration/{id}")
-    @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_WRITE)
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.EDIT)
     fun update(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int,
@@ -77,7 +77,7 @@ class AdminProductExpirationController(
     }
 
     @DeleteMapping("/api/v1/admin/product-expiration/{id}")
-    @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_WRITE)
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.EDIT)
     fun delete(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int
@@ -87,7 +87,7 @@ class AdminProductExpirationController(
     }
 
     @PostMapping("/api/v1/admin/product-expiration/batch-delete")
-    @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_WRITE)
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.EDIT)
     fun batchDelete(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminProductExpirationBatchDeleteRequest
@@ -97,7 +97,7 @@ class AdminProductExpirationController(
     }
 
     @GetMapping("/api/v1/admin/product-expiration/summary")
-    @RequiresPermission(AdminPermission.PRODUCT_EXPIRATION_READ)
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
     fun getSummary(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<AdminProductExpirationSummaryResponse>> {

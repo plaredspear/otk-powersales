@@ -58,10 +58,12 @@ class WebSecurityConfig(
     fun webAdminContextFilter(
         adminDataScopeService: AdminDataScopeService,
         requestMappingHandlerMapping: RequestMappingHandlerMapping,
+        sfPermissionEvaluator: com.otoki.powersales.auth.permission.SfPermissionEvaluator,
         objectMapper: ObjectMapper,
     ): WebAdminContextFilter = WebAdminContextFilter(
         adminDataScopeService = adminDataScopeService,
         requestMappingHandlerMapping = requestMappingHandlerMapping,
+        sfPermissionEvaluator = sfPermissionEvaluator,
         objectMapper = objectMapper,
     )
 

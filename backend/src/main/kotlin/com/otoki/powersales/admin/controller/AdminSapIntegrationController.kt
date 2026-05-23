@@ -1,5 +1,8 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.request.AdminSapInboundAuditQuery
 import com.otoki.powersales.admin.dto.request.AdminSapOutboundLogQuery
 import com.otoki.powersales.admin.dto.response.SapInboundAuditDetail
@@ -9,8 +12,6 @@ import com.otoki.powersales.admin.dto.response.SapOutboundCatalogItemDto
 import com.otoki.powersales.admin.dto.response.SapOutboundLogDetail
 import com.otoki.powersales.admin.dto.response.SapOutboundLogListResponse
 import com.otoki.powersales.admin.dto.response.SapOutboxPendingListResponse
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.admin.service.AdminSapIntegrationService
 import com.otoki.powersales.common.dto.ApiResponse
 import org.springframework.format.annotation.DateTimeFormat
@@ -40,13 +41,13 @@ class AdminSapIntegrationController(
 ) {
 
     @GetMapping("/api/v1/admin/sap-integration/inbound/catalog")
-    @RequiresPermission(AdminPermission.SAP_INTEGRATION_READ)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getInboundCatalog(): ResponseEntity<ApiResponse<List<SapInboundCatalogItemDto>>> {
         return ResponseEntity.ok(ApiResponse.success(adminSapIntegrationService.inboundCatalog()))
     }
 
     @GetMapping("/api/v1/admin/sap-integration/inbound/audits")
-    @RequiresPermission(AdminPermission.SAP_INTEGRATION_READ)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun searchInboundAudits(
         @RequestParam(required = false) clientId: String?,
         @RequestParam(required = false) eventType: String?,
@@ -71,7 +72,7 @@ class AdminSapIntegrationController(
     }
 
     @GetMapping("/api/v1/admin/sap-integration/inbound/audits/{id}")
-    @RequiresPermission(AdminPermission.SAP_INTEGRATION_READ)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getInboundAuditDetail(
         @PathVariable id: Long,
     ): ResponseEntity<ApiResponse<SapInboundAuditDetail>> {
@@ -79,13 +80,13 @@ class AdminSapIntegrationController(
     }
 
     @GetMapping("/api/v1/admin/sap-integration/outbound/catalog")
-    @RequiresPermission(AdminPermission.SAP_INTEGRATION_READ)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getOutboundCatalog(): ResponseEntity<ApiResponse<List<SapOutboundCatalogItemDto>>> {
         return ResponseEntity.ok(ApiResponse.success(adminSapIntegrationService.outboundCatalog()))
     }
 
     @GetMapping("/api/v1/admin/sap-integration/outbound/logs")
-    @RequiresPermission(AdminPermission.SAP_INTEGRATION_READ)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun searchOutboundLogs(
         @RequestParam(required = false) interfaceId: String?,
         @RequestParam(required = false) resultCode: String?,
@@ -108,7 +109,7 @@ class AdminSapIntegrationController(
     }
 
     @GetMapping("/api/v1/admin/sap-integration/outbound/logs/{id}")
-    @RequiresPermission(AdminPermission.SAP_INTEGRATION_READ)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getOutboundLogDetail(
         @PathVariable id: Long,
     ): ResponseEntity<ApiResponse<SapOutboundLogDetail>> {
@@ -116,7 +117,7 @@ class AdminSapIntegrationController(
     }
 
     @GetMapping("/api/v1/admin/sap-integration/outbound/outbox-pending")
-    @RequiresPermission(AdminPermission.SAP_INTEGRATION_READ)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getOutboxPending(
         @RequestParam(defaultValue = "1") page: Int,
         @RequestParam(defaultValue = "20") size: Int,

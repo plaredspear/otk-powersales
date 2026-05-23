@@ -1,12 +1,12 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkDeleteRequest
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateRequest
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkDeleteResponse
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkUpdateResponse
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleListResponse
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.schedule.service.AdminPromotionScheduleService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -34,7 +34,7 @@ class AdminPromotionScheduleController(
 ) {
 
     @GetMapping("/{promotionId}/schedules")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getSchedules(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long,
@@ -48,7 +48,7 @@ class AdminPromotionScheduleController(
     }
 
     @PutMapping("/{promotionId}/schedules/bulk")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun bulkUpdate(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long,
@@ -59,7 +59,7 @@ class AdminPromotionScheduleController(
     }
 
     @DeleteMapping("/{promotionId}/schedules/bulk")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun bulkDelete(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long,

@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.sharing.service
 
-import com.otoki.powersales.admin.security.AdminPermission
+// import removed (spec #801)
 import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.sharing.annotation.FlsField
 import com.otoki.powersales.auth.sharing.annotation.FlsFiltered
@@ -190,7 +190,7 @@ class FlsResponseBodyAdviceTest {
         profileType = ProfileType.STAFF,
         isSalesSupport = false,
         passwordChangeRequired = false,
-        permissions = emptySet<AdminPermission>(),
+        permissions = emptySet<String>(),
         encodedPassword = "",
         grantedAuthorities = emptyList(),
         active = true,

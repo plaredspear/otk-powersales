@@ -1,7 +1,8 @@
 package com.otoki.powersales.auth.sharing.controller
 
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.auth.permission.SfSystemPermission
 import com.otoki.powersales.auth.sharing.service.SharingRecalcService
 import com.otoki.powersales.common.dto.ApiResponse
 import org.springframework.http.ResponseEntity
@@ -26,7 +27,7 @@ class SharingRecalcAdminController(
 ) {
 
     @PostMapping("/api/v1/admin/sharing/recalc/all")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun recalcAll(
         @AuthenticationPrincipal principal: UserDetails?,
     ): ResponseEntity<ApiResponse<SharingRecalcService.RecalcResult>> {
@@ -36,7 +37,7 @@ class SharingRecalcAdminController(
     }
 
     @PostMapping("/api/v1/admin/sharing/recalc/sobject/{sObjectName}")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun recalcSObject(
         @PathVariable sObjectName: String,
         @AuthenticationPrincipal principal: UserDetails?,
@@ -47,7 +48,7 @@ class SharingRecalcAdminController(
     }
 
     @GetMapping("/api/v1/admin/sharing/recalc/status")
-    @RequiresPermission(AdminPermission.SF_MIGRATION_RUN)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun getStatus(): ResponseEntity<ApiResponse<SharingRecalcService.RecalcStatus>> {
         val status = service.getStatus()
         return ResponseEntity.ok(ApiResponse.success(status))

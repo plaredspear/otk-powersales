@@ -1,8 +1,6 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.response.DashboardResponse
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.admin.service.AdminDashboardService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.admin.exception.InvalidYearMonthException
@@ -22,7 +20,6 @@ class AdminDashboardController(
 ) {
 
     @GetMapping
-    @RequiresPermission(AdminPermission.DASHBOARD_READ)
     fun getDashboard(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) yearMonth: String?,

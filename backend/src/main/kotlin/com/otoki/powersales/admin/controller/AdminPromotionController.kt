@@ -1,13 +1,13 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.PromotionDetailResponse
 import com.otoki.powersales.promotion.dto.response.PromotionFormMetaResponse
 import com.otoki.powersales.promotion.dto.response.PromotionListResponse
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.security.AdminPermission
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.promotion.service.AdminPromotionService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -29,14 +29,14 @@ class AdminPromotionController(
 ) {
 
     @GetMapping("/form-meta")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getPromotionFormMeta(): ResponseEntity<ApiResponse<PromotionFormMetaResponse>> {
         val response = adminPromotionService.getPromotionFormMeta()
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @GetMapping
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getPromotions(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
@@ -60,7 +60,7 @@ class AdminPromotionController(
     }
 
     @GetMapping("/{id}")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getPromotion(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
@@ -71,7 +71,7 @@ class AdminPromotionController(
     }
 
     @PostMapping
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun createPromotion(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PromotionCreateRequest
@@ -81,7 +81,7 @@ class AdminPromotionController(
     }
 
     @PutMapping("/{id}")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun updatePromotion(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
@@ -93,7 +93,7 @@ class AdminPromotionController(
     }
 
     @DeleteMapping("/{id}")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun deletePromotion(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
@@ -106,7 +106,7 @@ class AdminPromotionController(
     // UC-11: 행사마스터 복제 (폼 방식)
     // 레거시 PromotionCloneComponent Quick Action 동등.
     @PostMapping("/{id}/clone")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun clonePromotion(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
@@ -120,7 +120,7 @@ class AdminPromotionController(
     // UC-12: 행사마스터 자식 포함 복제 (1클릭)
     // 레거시 ClonePromotionWithChildsController Quick Action 동등. body 없음.
     @PostMapping("/{id}/clone-with-children")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun cloneWithChildren(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,

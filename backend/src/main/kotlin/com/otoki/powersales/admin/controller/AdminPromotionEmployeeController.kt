@@ -1,13 +1,13 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.response.BatchUpdatePromotionEmployeeResponse
 import com.otoki.powersales.promotion.dto.response.PromotionConfirmResponse
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeListResponse
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.promotion.service.AdminPromotionConfirmService
 import com.otoki.powersales.promotion.service.AdminPromotionEmployeeService
 import com.otoki.powersales.common.dto.ApiResponse
@@ -25,7 +25,7 @@ class AdminPromotionEmployeeController(
 ) {
 
     @GetMapping("/api/v1/admin/promotions/{promotionId}/employees")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getEmployees(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long
@@ -35,7 +35,7 @@ class AdminPromotionEmployeeController(
     }
 
     @GetMapping("/api/v1/admin/promotion-employees/{id}")
-    @RequiresPermission(AdminPermission.PROMOTION_READ)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getEmployee(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
@@ -45,7 +45,7 @@ class AdminPromotionEmployeeController(
     }
 
     @PostMapping("/api/v1/admin/promotions/{promotionId}/employees")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun createEmployee(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long,
@@ -56,7 +56,7 @@ class AdminPromotionEmployeeController(
     }
 
     @PutMapping("/api/v1/admin/promotions/{promotionId}/employees/batch")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun batchUpdateEmployees(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long,
@@ -67,7 +67,7 @@ class AdminPromotionEmployeeController(
     }
 
     @PutMapping("/api/v1/admin/promotion-employees/{id}")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun updateEmployee(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long,
@@ -78,7 +78,7 @@ class AdminPromotionEmployeeController(
     }
 
     @DeleteMapping("/api/v1/admin/promotion-employees/{id}")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun deleteEmployee(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
@@ -88,7 +88,7 @@ class AdminPromotionEmployeeController(
     }
 
     @PostMapping("/api/v1/admin/promotions/{promotionId}/confirm")
-    @RequiresPermission(AdminPermission.PROMOTION_WRITE)
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
     fun confirmPromotion(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable promotionId: Long

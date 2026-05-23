@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.request.AdminAttendanceLogSearchRequest
 import com.otoki.powersales.schedule.dto.response.AdminAttendanceLogDetailResponse
@@ -24,7 +24,7 @@ class AdminAttendanceLogController(
 ) {
 
     @GetMapping
-    @RequiresPermission(AdminPermission.ATTENDANCE_LOG_READ)
+    @RequiresSfPermission(entity = "attendance_log", operation = SfPermissionOperation.READ)
     fun list(
         @ModelAttribute filter: AdminAttendanceLogSearchRequest,
         @RequestParam(name = "page", defaultValue = "0") page: Int,
@@ -37,7 +37,7 @@ class AdminAttendanceLogController(
     }
 
     @GetMapping("/{id}")
-    @RequiresPermission(AdminPermission.ATTENDANCE_LOG_READ)
+    @RequiresSfPermission(entity = "attendance_log", operation = SfPermissionOperation.READ)
     fun get(@PathVariable id: Long): ResponseEntity<ApiResponse<AdminAttendanceLogDetailResponse>> {
         return ResponseEntity.ok(ApiResponse.success(service.get(id)))
     }

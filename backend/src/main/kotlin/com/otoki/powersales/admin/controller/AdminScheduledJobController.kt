@@ -1,11 +1,12 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.admin.service.AdminScheduledJobService
 import com.otoki.powersales.common.dto.ApiResponse
 import org.springframework.format.annotation.DateTimeFormat
@@ -31,7 +32,7 @@ class AdminScheduledJobController(
 ) {
 
     @GetMapping("/api/v1/admin/scheduled-jobs/runs")
-    @RequiresPermission(AdminPermission.SCHEDULED_JOB_READ)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun searchRuns(
         @RequestParam(required = false) jobName: String?,
         @RequestParam(required = false) status: String?,
@@ -54,13 +55,13 @@ class AdminScheduledJobController(
     }
 
     @GetMapping("/api/v1/admin/scheduled-jobs/catalog")
-    @RequiresPermission(AdminPermission.SCHEDULED_JOB_READ)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getCatalog(): ResponseEntity<ApiResponse<List<RegisteredScheduledJobDto>>> {
         return ResponseEntity.ok(ApiResponse.success(adminScheduledJobService.catalog()))
     }
 
     @GetMapping("/api/v1/admin/scheduled-jobs/summary")
-    @RequiresPermission(AdminPermission.SCHEDULED_JOB_READ)
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getSummary(
         @RequestParam(defaultValue = "24") windowHours: Long,
     ): ResponseEntity<ApiResponse<ScheduledJobSummaryResponse>> {

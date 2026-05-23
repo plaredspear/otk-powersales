@@ -1,11 +1,11 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.AdminUserDetailResponse
 import com.otoki.powersales.admin.dto.AdminUserListResponse
 import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
 import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
-import com.otoki.powersales.admin.security.AdminPermission
-import com.otoki.powersales.admin.security.RequiresPermission
 import com.otoki.powersales.admin.service.AdminUserService
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.dto.ApiResponse
@@ -35,7 +35,7 @@ class AdminUserController(
 ) {
 
     @GetMapping
-    @RequiresPermission(AdminPermission.USER_READ)
+    @RequiresSfPermission(entity = "user", operation = SfPermissionOperation.READ)
     fun getUsers(
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) isActive: Boolean?,
@@ -47,7 +47,7 @@ class AdminUserController(
     }
 
     @GetMapping("/{userId}")
-    @RequiresPermission(AdminPermission.USER_READ)
+    @RequiresSfPermission(entity = "user", operation = SfPermissionOperation.READ)
     fun getUser(
         @PathVariable userId: Long
     ): ResponseEntity<ApiResponse<AdminUserDetailResponse>> {
@@ -56,7 +56,7 @@ class AdminUserController(
     }
 
     @PostMapping("/{userId}/reset-password")
-    @RequiresPermission(AdminPermission.USER_WRITE)
+    @RequiresSfPermission(entity = "user", operation = SfPermissionOperation.EDIT)
     fun resetPassword(
         @PathVariable userId: Long
     ): ResponseEntity<ApiResponse<AdminUserPasswordResetResponse>> {
@@ -65,7 +65,7 @@ class AdminUserController(
     }
 
     @PutMapping("/{userId}/active")
-    @RequiresPermission(AdminPermission.USER_WRITE)
+    @RequiresSfPermission(entity = "user", operation = SfPermissionOperation.EDIT)
     fun updateActiveStatus(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable userId: Long,
