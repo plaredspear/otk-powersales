@@ -1,7 +1,6 @@
 package com.otoki.powersales.auth.web.dto
 
 import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.user.entity.ProfileType
 
 /**
  * Web 로그인 응답 (Spec #760 §5.1).
@@ -28,8 +27,6 @@ data class WebUserSummary(
     val username: String,
     val name: String?,
     val employeeCode: String?,
-    val profileType: ProfileType,
-    /** Spec #805 — Profile.name SoT. spec #806 destructive 시 profileType 제거 + 본 필드 유지. */
     val profileName: String? = null,
     val isSalesSupport: Boolean,
     val role: UserRoleEnum?,

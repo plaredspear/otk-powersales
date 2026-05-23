@@ -1,7 +1,6 @@
 package com.otoki.powersales.auth.web
 
 import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.user.entity.ProfileType
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -17,7 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter
  * audience claim 이 `"web"` 아니면 인증 미설정 → 후속 401 처리.
  *
  * 토큰만으로 principal 복원 — DB 재조회 없음 (성능 + DB 의존 회피).
- * 권한(authorities) 은 token claim 의 profile_type + is_sales_support 로 재계산.
+ * 권한(authorities) 은 token claim 의 profile_name + is_sales_support 로 재계산.
  */
 class WebJwtAuthenticationFilter(
     private val webJwtService: WebJwtService,
@@ -38,9 +37,7 @@ class WebJwtAuthenticationFilter(
                     val employeeCode = webJwtService.getEmployeeCodeFromToken(token)
                     val employeeId = webJwtService.getEmployeeIdFromToken(token)
                     val costCenterCode = webJwtService.getCostCenterCodeFromToken(token)
-                    val profileType = ProfileType.fromValue(webJwtService.getProfileTypeFromToken(token))
-                    // Spec #805 — profile_name 신규 claim. 부재 시 ProfileType.value fallback (기존 토큰 graceful read).
-                    val profileName: String? = webJwtService.getProfileNameFromToken(token) ?: profileType?.value
+                    val profileName: String? = webJwtService.getProfileNameFromToken(token)
                     val isSalesSupport = webJwtService.getIsSalesSupportFromToken(token)
                     val passwordChangeRequired = webJwtService.getPasswordChangeRequiredFromToken(token)
                     val role: UserRoleEnum? = webJwtService.getRoleFromToken(token)?.let {
@@ -48,32 +45,26 @@ class WebJwtAuthenticationFilter(
                     }
                     val permissions: Set<String> = webJwtService.getPermissionsFromToken(token).toSet()
 
-                    if (profileType == null) {
-                        request.setAttribute("jwt.invalidRole", true)
-                    } else {
-                        // Spec #805 — Profile.name 기반 ROLE 산출 (Profile SoT 전환). spec #806 destructive 까지 profileType 보존.
-                        val authorities = WebUserDetailsService.resolveAuthoritiesByProfileName(profileName, isSalesSupport)
-                        val principal = WebUserPrincipal(
-                            userId = userId,
-                            usernameValue = username,
-                            employeeCode = employeeCode,
-                            employeeId = employeeId,
-                            role = role,
-                            costCenterCode = costCenterCode,
-                            profileType = profileType,
-                            profileName = profileName,
-                            profileId = null,
-                            isSalesSupport = isSalesSupport,
-                            passwordChangeRequired = passwordChangeRequired,
-                            permissions = permissions,
-                            encodedPassword = "",
-                            grantedAuthorities = authorities,
-                            active = true
-                        )
-                        val authentication = UsernamePasswordAuthenticationToken(principal, null, authorities)
-                        authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
-                        SecurityContextHolder.getContext().authentication = authentication
-                    }
+                    val authorities = WebUserDetailsService.resolveAuthoritiesByProfileName(profileName, isSalesSupport)
+                    val principal = WebUserPrincipal(
+                        userId = userId,
+                        usernameValue = username,
+                        employeeCode = employeeCode,
+                        employeeId = employeeId,
+                        role = role,
+                        costCenterCode = costCenterCode,
+                        profileName = profileName,
+                        profileId = null,
+                        isSalesSupport = isSalesSupport,
+                        passwordChangeRequired = passwordChangeRequired,
+                        permissions = permissions,
+                        encodedPassword = "",
+                        grantedAuthorities = authorities,
+                        active = true
+                    )
+                    val authentication = UsernamePasswordAuthenticationToken(principal, null, authorities)
+                    authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
+                    SecurityContextHolder.getContext().authentication = authentication
                 } catch (_: Exception) {
                     request.setAttribute("jwt.invalidRole", true)
                 }

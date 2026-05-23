@@ -14,11 +14,11 @@ import jakarta.persistence.Table
  * SF Profile SObject 매핑 entity (Spec #780).
  *
  * SF 운영 Profile (573 필드) 중 운영 audit 의미가 있는 핵심 메타 8 필드만 보존.
- * Permissions* boolean 521+개는 미보존 — 신규 시스템은 AdminPermission enum 으로 권한 매트릭스 축약
+ * Permissions* boolean 521+개는 [com.otoki.powersales.auth.sharing.entity.ProfileFlags] 의 5 비트로 압축
  * (legacy-deviation.md 정책).
  *
- * 본 entity 는 read-only audit 용도. backend 권한 판정의 SoT 는 [com.otoki.powersales.user.entity.ProfileType]
- * enum 이며, [User.profileId] FK 는 SF 원본 Profile.Name lookup 의 trace 표시용.
+ * 본 entity 는 SF 권한 모델 (spec #801) 의 Profile FK SoT — User.profileId → Profile.id 로 연결되어
+ * SfPermissionResolver 가 ProfileFlags / PermissionSetFlags 와 함께 권한 산출.
  */
 @Entity
 @Table(name = "profile")

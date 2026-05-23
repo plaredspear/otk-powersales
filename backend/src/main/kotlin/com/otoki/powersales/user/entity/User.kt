@@ -3,9 +3,7 @@ package com.otoki.powersales.user.entity
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.user.entity.converter.ProfileTypeConverter
 import jakarta.persistence.Column
-import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -28,7 +26,7 @@ import java.time.LocalDateTime
  *
  * 후속 spec:
  * - #758: 12개+ R-2 entity 의 audit FK 를 Employee → User 로 일괄 전환
- * - #759: EmployeeProfileResolver + ProfileType enum + is_sales_support 산출
+ * - #759: EmployeeProfileResolver + is_sales_support 산출
  * - #760: Spring Security UserDetailsService (Web 전용)
  */
 @Entity
@@ -130,15 +128,11 @@ class User(
 
     // -- Spec #759: EmployeeProfileResolver 산출 캐시 컬럼 --
 
-    @Convert(converter = ProfileTypeConverter::class)
-    @Column(name = "profile_type", nullable = false, length = 40)
-    var profileType: ProfileType = ProfileType.STAFF,
-
     @Column(name = "is_sales_support")
     var isSalesSupport: Boolean? = false,
 
     /**
-     * Employee.cost_center_code derived 캐시 (Spec #759 패턴 — profile_type / is_sales_support 와 동일).
+     * Employee.cost_center_code derived 캐시 (Spec #759 패턴 — is_sales_support 와 동일).
      *
      * 인증/권한 hot path 에서 Employee lookup 없이 데이터 스코프 (조장 → 같은 부서 여사원 등) 판정용.
      * SoT 는 Employee.cost_center_code. 쓰기 site (SAP 발령 / 사원 마스터 upsert / 운영자 사원 수정 / 유예 발령 배치)

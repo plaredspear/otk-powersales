@@ -6,7 +6,6 @@ import com.otoki.powersales.auth.sharing.annotation.FlsField
 import com.otoki.powersales.auth.sharing.annotation.FlsFiltered
 import com.otoki.powersales.auth.sharing.dto.PermissionSetSnapshot
 import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every
@@ -187,7 +186,7 @@ class FlsResponseBodyAdviceTest {
         employeeId = null,
         role = UserRoleEnum.SYSTEM_ADMIN,
         costCenterCode = null,
-        profileType = ProfileType.STAFF,
+        profileName = "9. Staff",
         isSalesSupport = false,
         passwordChangeRequired = false,
         permissions = emptySet<String>(),

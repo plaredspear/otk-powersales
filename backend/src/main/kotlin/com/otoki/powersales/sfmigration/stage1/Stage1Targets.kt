@@ -131,7 +131,6 @@ object Stage1Targets {
             FieldMapping("CreatedDate", "created_at", nullable = false),
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
-            FieldMapping("Profile.Name", "profile_type", nullPlaceholder = "STAFF"),
         ),
         extraStaticColumns = mapOf(
             // user.password NOT NULL — Stage 1 placeholder, backend admin API stage2/password 가 BCrypt 로 덮어씀.

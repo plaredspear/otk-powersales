@@ -1,7 +1,8 @@
 package com.otoki.powersales.user.service
 
+import com.otoki.powersales.auth.entity.Profile
 import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.user.entity.ProfileType
+import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
 import com.otoki.powersales.user.repository.UserRepository
@@ -20,7 +21,7 @@ class UserProvisioningServiceTest {
 
     private val userRepository: UserRepository = mockk()
     private val passwordEncoder: PasswordEncoder = mockk()
-    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk(relaxed = true)
+    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk()
 
     private val service = UserProvisioningService(
         userRepository,
@@ -39,6 +40,11 @@ class UserProvisioningServiceTest {
             val arg = firstArg<User>()
             savedUsers.add(arg)
             arg
+        }
+        // 12종 Profile name → id stub
+        every { profileRepository.findByName(any()) } answers {
+            val name = firstArg<String>()
+            Profile(id = PROFILE_NAME_TO_ID[name] ?: 0L, name = name)
         }
     }
 
@@ -70,7 +76,7 @@ class UserProvisioningServiceTest {
             assertThat(saved.name).isEqualTo("홍길동")
             assertThat(saved.passwordChangeRequired).isTrue()
             assertThat(saved.password).isEqualTo("1001230315:encoded")
-            assertThat(saved.profileType).isEqualTo(ProfileType.SALES_REP)
+            assertThat(saved.profileId).isEqualTo(PROFILE_NAME_TO_ID["5.영업사원"])
             assertThat(saved.isSalesSupport).isFalse()
         }
 
@@ -217,28 +223,28 @@ class UserProvisioningServiceTest {
             val saved = savedUsers[0]
             assertThat(saved.password).isEqualTo("pre_encoded")
             assertThat(saved.passwordChangeRequired).isFalse()
-            assertThat(saved.profileType).isEqualTo(ProfileType.STAFF)
+            assertThat(saved.profileId).isEqualTo(PROFILE_NAME_TO_ID["9. Staff"])
             assertThat(saved.isSalesSupport).isTrue()
         }
     }
 
     @Nested
-    @DisplayName("ProfileType 매핑")
-    inner class ProfileTypeMapping {
+    @DisplayName("UserRoleEnum → Profile.id 매핑")
+    inner class ProfileIdMapping {
 
         @Test
-        @DisplayName("P1 UserRole → ProfileType 9개 매핑 검증")
-        fun profileTypeMapping_allRoles() {
-            val cases = mapOf(
-                UserRoleEnum.SYSTEM_ADMIN to ProfileType.SYSTEM_ADMIN,
-                UserRoleEnum.LEADER to ProfileType.TEAM_LEADER,
-                UserRoleEnum.BRANCH_MANAGER to ProfileType.BRANCH_MANAGER,
-                UserRoleEnum.SALES_MANAGER to ProfileType.SALES_MANAGER,
-                UserRoleEnum.BUSINESS_MANAGER to ProfileType.BUSINESS_DIRECTOR,
-                UserRoleEnum.HEADQUARTERS_MANAGER to ProfileType.DIVISION_HEAD,
-                UserRoleEnum.SALES_SUPPORT to ProfileType.STAFF,
-                UserRoleEnum.WOMAN to ProfileType.SALES_REP,
-                UserRoleEnum.UNKNOWN to ProfileType.SALES_REP,
+        @DisplayName("P1 UserRole → Profile.name → id 9개 매핑 검증")
+        fun profileIdMapping_allRoles() {
+            val cases = listOf(
+                UserRoleEnum.SYSTEM_ADMIN to "시스템 관리자",
+                UserRoleEnum.LEADER to "6.조장",
+                UserRoleEnum.BRANCH_MANAGER to "4.지점장",
+                UserRoleEnum.SALES_MANAGER to "3.영업부장",
+                UserRoleEnum.BUSINESS_MANAGER to "2.사업부장",
+                UserRoleEnum.HEADQUARTERS_MANAGER to "1.본부장",
+                UserRoleEnum.SALES_SUPPORT to "9. Staff",
+                UserRoleEnum.WOMAN to "5.영업사원",
+                UserRoleEnum.UNKNOWN to "5.영업사원",
             )
 
             cases.forEach { (role, _) ->
@@ -254,10 +260,36 @@ class UserProvisioningServiceTest {
             }
 
             verify(exactly = cases.size) { userRepository.save(any<User>()) }
-            val byProfile = savedUsers.associate { it.employeeCode to it.profileType }
-            cases.forEach { (role, expected) ->
-                assertThat(byProfile["P_$role"]).isEqualTo(expected)
+            val byProfile = savedUsers.associate { it.employeeCode to it.profileId }
+            cases.forEach { (role, expectedName) ->
+                assertThat(byProfile["P_$role"]).isEqualTo(PROFILE_NAME_TO_ID[expectedName])
             }
         }
+
+        @Test
+        @DisplayName("[Sanity] SystemAdminProfilePolicy 매핑 정합 — UserRole → Profile.name")
+        fun policyMapping() {
+            assertThat(SystemAdminProfilePolicy.profileNameForRole(UserRoleEnum.SYSTEM_ADMIN))
+                .isEqualTo("시스템 관리자")
+            assertThat(SystemAdminProfilePolicy.profileNameForRole(UserRoleEnum.WOMAN))
+                .isEqualTo("5.영업사원")
+        }
+    }
+
+    companion object {
+        private val PROFILE_NAME_TO_ID: Map<String, Long> = mapOf(
+            "시스템 관리자" to 1L,
+            "8.마케팅" to 2L,
+            "9. Staff" to 3L,
+            "6.조장" to 4L,
+            "4.지점장" to 5L,
+            "3.영업부장" to 6L,
+            "2.사업부장" to 7L,
+            "1.본부장" to 8L,
+            "5.영업사원" to 9L,
+            "7.영업사원 + 조장" to 10L,
+            "공장관계자" to 11L,
+            "OLS" to 12L,
+        )
     }
 }

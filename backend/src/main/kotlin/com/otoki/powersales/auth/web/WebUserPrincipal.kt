@@ -1,7 +1,6 @@
 package com.otoki.powersales.auth.web
 
 import com.otoki.powersales.auth.entity.UserRoleEnum
-import com.otoki.powersales.user.entity.ProfileType
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
@@ -14,7 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails
  * - `userId`: `User.id` (DB PK)
  * - `usernameValue`: `User.username` (인증 ID, SF Username = Email)
  * - `encodedPassword`: BCrypt 해시
- * - `profileType` / `isSalesSupport`: 권한 산출 입력 (§2.3 매핑 정책)
+ * - `profileName` / `profileId` / `isSalesSupport`: 권한 산출 입력 (Profile 기반 ROLE 매핑)
  * - `passwordChangeRequired`: 임시 비밀번호 상태 — frontend 강제 변경 화면 분기 입력
  * - `costCenterCode`: 로그인 시점 Employee.costCenterCode snapshot — admin service 가 Employee 엔티티
  *                    재조회 없이 데이터 스코프(지점/조직) 분기를 수행하기 위한 캐시.
@@ -31,8 +30,6 @@ data class WebUserPrincipal(
     val employeeId: Long?,
     val role: UserRoleEnum?,
     val costCenterCode: String?,
-    val profileType: ProfileType,
-    /** Spec #805 — Profile.name SoT. spec #806 destructive 시 profileType 제거 + 본 필드 유지. */
     val profileName: String? = null,
     val profileId: Long? = null,
     val isSalesSupport: Boolean,

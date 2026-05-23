@@ -1726,12 +1726,6 @@
           "profileName" : {
             "type" : [ "string", "null" ]
           },
-          "profileType" : {
-            "type" : "string"
-          },
-          "profileTypeLabel" : {
-            "type" : "string"
-          },
           "salesSupport" : {
             "type" : "boolean"
           },
@@ -1777,12 +1771,6 @@
           },
           "profileName" : {
             "type" : [ "string", "null" ]
-          },
-          "profileType" : {
-            "type" : "string"
-          },
-          "profileTypeLabel" : {
-            "type" : "string"
           },
           "username" : {
             "type" : "string"
@@ -11030,10 +11018,6 @@
           },
           "profileName" : {
             "type" : [ "string", "null" ]
-          },
-          "profileType" : {
-            "enum" : [ "MARKETING", "STAFF", "TEAM_LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_DIRECTOR", "DIVISION_HEAD", "SALES_REP", "SALES_REP_LEADER", "FACTORY_STAFF", "OLS", "SYSTEM_ADMIN" ],
-            "type" : "string"
           },
           "role" : {
             "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ],

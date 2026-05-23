@@ -1,6 +1,5 @@
 package com.otoki.powersales.admin.dto
 
-import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import java.time.LocalDateTime
 
@@ -13,9 +12,6 @@ data class AdminUserListItem(
     val employeeCode: String?,
     val name: String?,
     val email: String?,
-    val profileType: String,
-    val profileTypeLabel: String,
-    /** Spec #805 — Profile.name SoT. spec #806 destructive 시 profileType/profileTypeLabel 제거 + 본 필드 유지. */
     val profileName: String? = null,
     val branch: String?,
     val department: String?,
@@ -29,8 +25,6 @@ data class AdminUserListItem(
             employeeCode = user.employeeCode,
             name = user.name,
             email = user.email,
-            profileType = user.profileType.name,
-            profileTypeLabel = user.profileType.toKoreanLabel(),
             profileName = profileName,
             branch = user.branch,
             department = user.department,
@@ -71,9 +65,6 @@ data class AdminUserDetailResponse(
     val phone: String?,
     val hrCode: String?,
     val sfid: String?,
-    val profileType: String,
-    val profileTypeLabel: String,
-    /** Spec #805 — Profile.name SoT. spec #806 destructive 시 profileType/profileTypeLabel 제거 + 본 필드 유지. */
     val profileName: String? = null,
     val isSalesSupport: Boolean,
     val isActive: Boolean,
@@ -100,8 +91,6 @@ data class AdminUserDetailResponse(
             phone = user.phone,
             hrCode = user.hrCode,
             sfid = user.sfid,
-            profileType = user.profileType.name,
-            profileTypeLabel = user.profileType.toKoreanLabel(),
             profileName = profileName,
             isSalesSupport = user.isSalesSupport ?: false,
             isActive = user.isActive,
@@ -133,22 +122,4 @@ data class AdminUserPasswordResetResponse(
                 resetAt = resetAt
             )
     }
-}
-
-/**
- * ProfileType 한글 라벨. 화면 표시용. SF Profile.Name 의 한글(첫 항목 또는 정합 라벨) 기준.
- */
-private fun ProfileType.toKoreanLabel(): String = when (this) {
-    ProfileType.MARKETING -> "마케팅"
-    ProfileType.STAFF -> "Staff"
-    ProfileType.TEAM_LEADER -> "조장"
-    ProfileType.BRANCH_MANAGER -> "지점장"
-    ProfileType.SALES_MANAGER -> "영업부장"
-    ProfileType.BUSINESS_DIRECTOR -> "사업부장"
-    ProfileType.DIVISION_HEAD -> "본부장"
-    ProfileType.SALES_REP -> "영업사원"
-    ProfileType.SALES_REP_LEADER -> "영업사원+조장"
-    ProfileType.FACTORY_STAFF -> "공장관계자"
-    ProfileType.OLS -> "OLS"
-    ProfileType.SYSTEM_ADMIN -> "시스템관리자"
 }

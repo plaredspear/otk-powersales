@@ -59,7 +59,7 @@ class AdminEmployeeUpdateService(
     /**
      * Employee 의 derived 캐시 컬럼을 매칭 User 행에 반영. 매칭 user 부재 시 silent skip.
      *
-     * 현 시점 캐시 대상: `cost_center_code`. profile_type / is_sales_support 는 SAP 발령
+     * 현 시점 캐시 대상: `cost_center_code`. profile_id / is_sales_support 는 SAP 발령
      * 후처리(AppointmentUserProfileUpdater) 에서 별도 갱신하므로 본 경로에서 동기화하지 않는다.
      */
     private fun syncUserCache(employee: Employee) {

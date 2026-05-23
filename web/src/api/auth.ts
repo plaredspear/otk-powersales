@@ -18,7 +18,7 @@ export interface AdminUserInfo {
   username: string;
   name: string | null;
   employeeCode: string;
-  profileType: string;
+  profileName: string | null;
   isSalesSupport: boolean;
   role: UserRole | null;
   roleLabel: string | null;

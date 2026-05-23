@@ -72,7 +72,7 @@ export default function AddUserToPermissionSetModal({
     { title: '사번', dataIndex: 'employeeCode', key: 'employeeCode', width: 140 },
     { title: '이름', dataIndex: 'name', key: 'name' },
     { title: 'Username', dataIndex: 'username', key: 'username' },
-    { title: 'Profile', dataIndex: 'profileTypeLabel', key: 'profileTypeLabel' },
+    { title: 'Profile', dataIndex: 'profileName', key: 'profileName', render: (val: string | null) => val ?? '-' },
     {
       title: '활성',
       dataIndex: 'isActive',

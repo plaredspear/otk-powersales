@@ -10,7 +10,6 @@ import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
 import com.otoki.powersales.admin.service.AdminUserService
 import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.common.test.AdminControllerTestSupport
-import com.otoki.powersales.user.entity.ProfileType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -44,7 +43,7 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
         authenticateAsAdmin(
             role = UserRoleEnum.SYSTEM_ADMIN,
             employeeCode = "ADMIN-OPS01",
-            profileType = ProfileType.SYSTEM_ADMIN,
+            profileName = "시스템 관리자",
         )
     }
 
@@ -63,8 +62,7 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
                         employeeCode = "10000001",
                         name = "김영업",
                         email = "kim@otokims.co.kr",
-                        profileType = "SALES_REP",
-                        profileTypeLabel = "영업사원",
+                        profileName = "5.영업사원",
                         branch = "서울1지점",
                         department = "영업1부",
                         isActive = true,
@@ -130,8 +128,7 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
                 phone = null,
                 hrCode = "HR001",
                 sfid = "0058A000001abcdQAA",
-                profileType = "SALES_REP",
-                profileTypeLabel = "영업사원",
+                profileName = "5.영업사원",
                 isSalesSupport = false,
                 isActive = true,
                 passwordChangeRequired = false,

@@ -34,7 +34,7 @@ export default function UserListPage() {
     { title: 'username', dataIndex: 'username', width: 220 },
     { title: '사번', dataIndex: 'employeeCode', width: 120 },
     { title: '이름', dataIndex: 'name', width: 120, render: (val: string | null) => val ?? '-' },
-    { title: 'Profile', dataIndex: 'profileTypeLabel', width: 120, align: 'center' },
+    { title: 'Profile', dataIndex: 'profileName', width: 120, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '지점', dataIndex: 'branch', width: 140, render: (val: string | null) => val ?? '-' },
     { title: '부서', dataIndex: 'department', width: 140, render: (val: string | null) => val ?? '-' },
     {

@@ -168,16 +168,14 @@ class AppointmentUserProfileUpdater(
     }
 
     /**
-     * Spec #759 — 발령 후처리로 변경된 Employee 의 최신 상태를 기준으로 User cache 갱신.
+     * 발령 후처리로 변경된 Employee 의 최신 상태를 기준으로 User cache 갱신.
      *
      * SF `AppointmentTriggerHanlder.cls:233-365` `updateUser(@future)` 동등 — Profile/UserRole 산출 후
-     * 매칭 User 행(`User.employeeCode == Employee.employeeCode`) 의 `profileType` / `isSalesSupport` 갱신.
+     * 매칭 User 행(`User.employeeCode == Employee.employeeCode`) 의 `profileId` / `isSalesSupport` 갱신.
      * 매칭 User 행 부재 시 silently skip (마이그레이션 이전 단계 / 신규 미동기화 사원 케이스).
      */
     internal fun updateUserProfileCache(employee: Employee) {
         val user = userRepository.findByEmployeeCode(employee.employeeCode) ?: return
-        user.profileType = employeeProfileResolver.resolve(employee)
-        // Spec #805 — profileId 동시 갱신. spec #806 의 destructive 폐기 시 profileType 라인 제거 + 본 라인 유지.
         user.profileId = employeeProfileResolver.resolveProfileId(employee) ?: user.profileId
         user.isSalesSupport = userRoleResolver.isSalesSupport(employee)
         user.costCenterCode = employee.costCenterCode

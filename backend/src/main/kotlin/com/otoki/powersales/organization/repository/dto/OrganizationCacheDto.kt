@@ -16,7 +16,7 @@ import com.otoki.powersales.organization.entity.Organization
  *
  * ## 포함 필드
  *
- * - `orgCodeLevel3` — [com.otoki.powersales.user.service.EmployeeProfileResolver] 의 ProfileType 분기
+ * - `orgCodeLevel3` — [com.otoki.powersales.user.service.EmployeeProfileResolver] 의 Profile.name 분기
  * - `orgNameLevel4` / `orgNameLevel3` — [com.otoki.powersales.user.service.UserRoleResolver] 의 영업지원/영업본부 매칭
  * - `costCenterLevel3` — [com.otoki.powersales.schedule.service.AdminScheduleService] 의 영업지원실 다중 지점 expand
  *

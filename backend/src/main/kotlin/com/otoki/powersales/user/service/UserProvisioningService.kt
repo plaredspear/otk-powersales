@@ -3,7 +3,6 @@ package com.otoki.powersales.user.service
 import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.auth.repository.ProfileRepository
-import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
 import com.otoki.powersales.user.repository.UserRepository
@@ -29,9 +28,9 @@ import org.springframework.transaction.event.TransactionalEventListener
  * 2. 이미 같은 username 의 User 존재 시 멱등 skip
  * 3. 임시 비밀번호: `{employeeCode}{birthDate MMdd}`, birthDate 부재 시 `0000`
  * 4. `passwordChangeRequired = true` (Web 최초 로그인 시 강제 변경)
- * 5. `profileType`: 시점에 알 수 있는 `UserRole` 시드값 기준 매핑.
+ * 5. `profileId`: 시점에 알 수 있는 `UserRole` 시드값 기준 매핑.
  *    운영 경로는 발령 후처리에서 [com.otoki.powersales.sap.inbound.service.AppointmentUserProfileUpdater]
- *    가 `EmployeeProfileResolver` 로 재산출하여 정정한다 (SF 분기 동등).
+ *    가 `EmployeeProfileResolver.resolveProfileId` 로 재산출하여 정정한다 (SF 분기 동등).
  *
  * ## 호출 경로
  * - SAP 인바운드: [com.otoki.powersales.employee.service.EmployeeUpsertService] 가
@@ -152,8 +151,6 @@ class UserProvisioningService(
             password = encoded,
             passwordChangeRequired = passwordChangeRequired,
             isActive = appLoginActive ?: true,
-            profileType = profileTypeFor(role),
-            // Spec #805 — profileId 동시 set. spec #806 destructive 시 profileType 라인 제거 + 본 라인 유지.
             profileId = profileIdFor(role),
             isSalesSupport = role == UserRoleEnum.SALES_SUPPORT,
             costCenterCode = costCenterCode,
@@ -164,27 +161,12 @@ class UserProvisioningService(
     }
 
     /**
-     * Employee 시점에 알 수 있는 [UserRoleEnum] → [ProfileType] 1차 매핑.
-     *
-     * 운영 환경에서는 발령(Appointment) 후처리 시 `EmployeeProfileResolver` 가
-     * Org__c + jikchak 기반으로 재산출하여 정정한다.
-     */
-    private fun profileTypeFor(role: UserRoleEnum?): ProfileType = when (role) {
-        UserRoleEnum.SYSTEM_ADMIN -> ProfileType.SYSTEM_ADMIN
-        UserRoleEnum.LEADER -> ProfileType.TEAM_LEADER
-        UserRoleEnum.BRANCH_MANAGER -> ProfileType.BRANCH_MANAGER
-        UserRoleEnum.SALES_MANAGER -> ProfileType.SALES_MANAGER
-        UserRoleEnum.BUSINESS_MANAGER -> ProfileType.BUSINESS_DIRECTOR
-        UserRoleEnum.HEADQUARTERS_MANAGER -> ProfileType.DIVISION_HEAD
-        UserRoleEnum.SALES_SUPPORT -> ProfileType.STAFF
-        UserRoleEnum.WOMAN, UserRoleEnum.ACCOUNT_VIEW_ALL, UserRoleEnum.UNKNOWN, null -> ProfileType.SALES_REP
-    }
-
-    /**
-     * Spec #805 — UserRoleEnum → Profile.id 산출.
+     * UserRoleEnum → Profile.id 산출.
      *
      * [SystemAdminProfilePolicy.profileNameForRole] 의 분기를 Profile.name → id 로 변환.
      * Profile entity 부재 시 null — ProfileBootstrapRunner 가 부팅 시점 보장하지만 동시성 시점에는 fallback null 허용.
+     * 운영 환경에서는 발령(Appointment) 후처리 시 [EmployeeProfileResolver.resolveProfileId] 가
+     * Org__c + jikchak 기반으로 재산출하여 정정한다.
      */
     private fun profileIdFor(role: UserRoleEnum?): Long? {
         val name = SystemAdminProfilePolicy.profileNameForRole(role)

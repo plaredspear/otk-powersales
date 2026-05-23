@@ -11,7 +11,6 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.auth.entity.UserRoleEnum
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -43,7 +42,7 @@ class AccountUpdateServiceTest {
         employeeId = userId,
         role = role,
         costCenterCode = null,
-        profileType = ProfileType.STAFF,
+        profileName = "9. Staff",
         isSalesSupport = false,
         passwordChangeRequired = false,
         permissions = emptySet(),

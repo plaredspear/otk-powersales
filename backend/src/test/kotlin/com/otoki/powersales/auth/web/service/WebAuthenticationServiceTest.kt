@@ -16,7 +16,6 @@ import com.otoki.powersales.auth.web.dto.WebChangePasswordRequest
 import com.otoki.powersales.auth.web.dto.WebLoginRequest
 import com.otoki.powersales.auth.web.dto.WebRefreshTokenRequest
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every
@@ -85,7 +84,7 @@ class WebAuthenticationServiceTest {
             assertThat(response.expiresIn).isEqualTo(3600)
             assertThat(response.passwordChangeRequired).isFalse()
             assertThat(response.user.username).isEqualTo("u@otokims.co.kr")
-            assertThat(response.user.profileType).isEqualTo(ProfileType.STAFF)
+            assertThat(response.user.profileName).isNull()
             assertThat(user.lastLoginAt).isNotNull
             verify { webRefreshTokenStore.store(any(), 1L, any(), any()) }
         }
@@ -282,7 +281,6 @@ class WebAuthenticationServiceTest {
         id: Long = 1L,
         username: String = "u@otokims.co.kr",
         employeeCode: String = "S001",
-        profileType: ProfileType = ProfileType.STAFF,
         isSalesSupport: Boolean = false,
         isActive: Boolean = true,
         passwordChangeRequired: Boolean = false
@@ -291,7 +289,6 @@ class WebAuthenticationServiceTest {
         username = username,
         isActive = isActive,
         employeeCode = employeeCode,
-        profileType = profileType,
         isSalesSupport = isSalesSupport,
         password = "\$2a\$10\$encodedHash",
         passwordChangeRequired = passwordChangeRequired
@@ -305,7 +302,6 @@ class WebAuthenticationServiceTest {
             employeeId = null,
             role = null,
             costCenterCode = null,
-            profileType = user.profileType,
             isSalesSupport = user.isSalesSupport ?: false,
             passwordChangeRequired = passwordChangeRequired,
             permissions = emptySet(),

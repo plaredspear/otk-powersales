@@ -7,7 +7,6 @@ import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.user.entity.ProfileType
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -22,7 +21,7 @@ import org.springframework.test.web.servlet.MockMvc
  * - 필터 5종 `@MockkBean` (`JwtAuthenticationFilter` / `GpsConsentFilter` /
  *   `JwtTokenProvider` / `SapInboundAuditService`)
  * - `@BeforeEach` 에서 `WebUserPrincipal` (userId=100L, role=BRANCH_MANAGER,
- *   employeeCode=S001, employeeId=1L, profileType=STAFF, permissions/granted=empty)
+ *   employeeCode=S001, employeeId=1L, profileName=9. Staff, permissions/granted=empty)
  *   SecurityContext stub
  *
  * 권한 변형이 필요한 테스트는 `authenticateAsAdmin(role, ...)` 를 호출해 override.
@@ -56,7 +55,7 @@ abstract class AdminControllerTestSupport {
         employeeCode: String = "S001",
         employeeId: Long = 1L,
         costCenterCode: String? = null,
-        profileType: ProfileType = ProfileType.STAFF,
+        profileName: String? = "9. Staff",
         isSalesSupport: Boolean = false,
         permissions: Set<String> = emptySet(),
     ) {
@@ -67,7 +66,7 @@ abstract class AdminControllerTestSupport {
             employeeId = employeeId,
             role = role,
             costCenterCode = costCenterCode,
-            profileType = profileType,
+            profileName = profileName,
             isSalesSupport = isSalesSupport,
             passwordChangeRequired = false,
             permissions = permissions,

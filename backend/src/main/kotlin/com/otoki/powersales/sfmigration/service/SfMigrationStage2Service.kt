@@ -15,11 +15,12 @@ import org.springframework.transaction.annotation.Transactional
  * 운영 서버에서 실행되어 RDS 와의 latency 를 단축한다.
  *
  * 구현 substep:
- * - 2-B picklist : 한글 picklist → enum 변환 (Employee.role / User.profile_type)
+ * - 2-B picklist : 한글 picklist → enum 변환 (Employee.role 만)
  * - 2-C password : BCrypt password hash (sfid IS NOT NULL AND password NULL 인 user)
  *
  * 2-A FK resolve 는 별도 클래스 (SfMigrationStage2FkService) 로 분리.
  * 2-D permission 은 spec #801 SF 권한 모델 전면 적용으로 폐기 — user_permission 테이블 자체 폐기.
+ * 2-B user.profile_type substep 은 spec #806 의 ProfileType destructive 폐기로 제거.
  */
 @Service
 class SfMigrationStage2Service(
@@ -30,7 +31,7 @@ class SfMigrationStage2Service(
     /**
      * Stage 2-B — 한글 picklist 값을 enum 값으로 일괄 UPDATE.
      *
-     * 3개 컬럼 (Employee.role / User.profile_type / User.cost_center_code derived 캐시) 을
+     * 2개 컬럼 (Employee.role / User.cost_center_code derived 캐시) 을
      * 순차 호출. admin UI 의 "일괄 실행" 진입점. 매칭 실패 row 는 fallback 또는 NULL 처리.
      *
      * Employee.professional_promotion_team 은 SF picklist 한글 값과 backend Converter 인식
@@ -40,7 +41,6 @@ class SfMigrationStage2Service(
     fun runPicklistMapping(): SfMigrationStage2Response {
         val results = mutableListOf<SubstepResult>()
         results += runPicklistEmployeeRole().results
-        results += runPicklistUserProfileType().results
         results += runUserCostCenterCodeSync().results
 
         return SfMigrationStage2Response(
@@ -62,22 +62,6 @@ class SfMigrationStage2Service(
         return singleResultResponse(
             substep = "picklist.employee_role",
             label = "Employee.role",
-            rows = rows,
-        )
-    }
-
-    /** Stage 2-B (user.profile_type) — 한글 Profile.Name → ProfileType enum.name */
-    @Transactional
-    fun runPicklistUserProfileType(): SfMigrationStage2Response {
-        val rows = applyMapping(
-            tableName = "user",
-            columnName = "profile_type",
-            mapping = PROFILE_NAME_TO_PROFILE_TYPE,
-            fallbackValue = PROFILE_TYPE_FALLBACK,
-        )
-        return singleResultResponse(
-            substep = "picklist.user_profile_type",
-            label = "User.profile_type",
             rows = rows,
         )
     }

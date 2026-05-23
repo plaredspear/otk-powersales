@@ -16,7 +16,7 @@ import javax.crypto.SecretKey
  * Mobile 의 [JwtTokenProvider] 와 동일한 secret 을 공유하되 token claim 구성만 분리:
  * - subject = `User.username` (Mobile: `Employee.id` 문자열)
  * - audience = `"web"` (Mobile: `"mobile"`) — cross-platform 토큰 사용 차단
- * - 추가 claim: `user_id`, `profile_type`, `is_sales_support`, `password_change_required`
+ * - 추가 claim: `user_id`, `profile_name`, `is_sales_support`, `password_change_required`
  *
  * Refresh Rotation 의 Redis 메타데이터는 Mobile 과 공용 키 공간을 회피하기 위해 별도 prefix(`web_refresh:`)
  * 사용 — 본 spec 범위는 Web 토큰 발급/파싱까지이며, 실 Redis 저장은 [WebRefreshTokenStore] 가 담당한다.
@@ -32,7 +32,7 @@ class WebJwtService(
     /**
      * Web Access Token 발급.
      *
-     * subject = `User.username`, audience = "web". 권한 산출 정보(`profileType`, `isSalesSupport`,
+     * subject = `User.username`, audience = "web". 권한 산출 정보(`profileName`, `isSalesSupport`,
      * `role`, `permissions`) 는 필터에서 토큰만으로 principal 복원 가능하도록 claim 으로 함께 포함.
      *
      * `role` 은 Employee 미존재(예: ADMIN-* 부트스트랩 직후) 시 null 일 수 있어 nullable 로 직렬화.
@@ -50,9 +50,7 @@ class WebJwtService(
             .claim("employee_id", principal.employeeId)
             .claim("employee_code", principal.employeeCode)
             .claim("cost_center_code", principal.costCenterCode)
-            // Spec #805 — profile_name 신규 claim. profile_type 은 spec #806 destructive 까지 보존 (graceful read).
             .claim("profile_name", principal.profileName)
-            .claim("profile_type", principal.profileType.name)
             .claim("is_sales_support", principal.isSalesSupport)
             .claim("password_change_required", principal.passwordChangeRequired)
             .claim("role", role?.name)
@@ -139,11 +137,7 @@ class WebJwtService(
     fun getEmployeeIdFromToken(token: String): Long? =
         parseClaims(token).get("employee_id", java.lang.Long::class.java)?.toLong()
 
-    /** profile_type claim 추출. spec #806 destructive 시 제거 — 그 전까지 graceful read 용도. */
-    fun getProfileTypeFromToken(token: String): String? =
-        parseClaims(token).get("profile_type", String::class.java)
-
-    /** Spec #805 — profile_name claim 추출. Profile.name SoT. */
+    /** profile_name claim 추출. Profile.name SoT. */
     fun getProfileNameFromToken(token: String): String? =
         parseClaims(token).get("profile_name", String::class.java)
 

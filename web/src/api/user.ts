@@ -14,8 +14,7 @@ export interface UserSummary {
   employeeCode: string;
   name: string | null;
   email: string | null;
-  profileType: string;
-  profileTypeLabel: string;
+  profileName: string | null;
   branch: string | null;
   department: string | null;
   isActive: boolean;
@@ -47,8 +46,7 @@ export interface UserDetail {
   phone: string | null;
   hrCode: string | null;
   sfid: string | null;
-  profileType: string;
-  profileTypeLabel: string;
+  profileName: string | null;
   isSalesSupport: boolean;
   isActive: boolean;
   passwordChangeRequired: boolean;

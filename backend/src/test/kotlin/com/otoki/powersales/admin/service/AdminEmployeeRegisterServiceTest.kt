@@ -11,7 +11,6 @@ import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.user.entity.ProfileType
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -41,7 +40,7 @@ class AdminEmployeeRegisterServiceTest {
         employeeId = employeeId,
         role = role,
         costCenterCode = null,
-        profileType = ProfileType.STAFF,
+        profileName = "9. Staff",
         isSalesSupport = false,
         passwordChangeRequired = false,
         permissions = emptySet(),

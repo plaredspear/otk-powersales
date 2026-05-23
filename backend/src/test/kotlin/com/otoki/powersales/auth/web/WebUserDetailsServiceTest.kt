@@ -1,8 +1,8 @@
 package com.otoki.powersales.auth.web
 
+import com.otoki.powersales.auth.entity.Profile
 import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every
@@ -33,7 +33,6 @@ class WebUserDetailsServiceTest {
 
     @BeforeEach
     fun stubEmployeeLookup() {
-        // 본 테스트는 인증/권한 매핑만 검증 — Employee snapshot 부재 케이스만 사용.
         every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
         every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
         every { profileRepository.findById(any()) } returns Optional.empty()
@@ -44,9 +43,10 @@ class WebUserDetailsServiceTest {
     inner class LoadUserByUsername {
 
         @Test
-        @DisplayName("성공 - 활성 사용자 + STAFF profile → ROLE_STAFF 부여")
+        @DisplayName("성공 - 활성 사용자 + Staff profile → ROLE_STAFF 부여")
         fun success_staff() {
-            val user = createUser(profileType = ProfileType.STAFF, isSalesSupport = false)
+            val user = createUser(profileId = 1L, isSalesSupport = false)
+            stubProfile(1L, "9. Staff")
             every { userRepository.findByUsername("u@otokims.co.kr") } returns user
 
             val principal = service.loadUserByUsername("u@otokims.co.kr")
@@ -58,9 +58,10 @@ class WebUserDetailsServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - SYSTEM_ADMIN + is_sales_support=true → ROLE_ADMIN + ROLE_SALES_SUPPORT")
+        @DisplayName("성공 - 시스템 관리자 + is_sales_support=true → ROLE_ADMIN + ROLE_SALES_SUPPORT")
         fun success_admin_with_sales_support() {
-            val user = createUser(profileType = ProfileType.SYSTEM_ADMIN, isSalesSupport = true)
+            val user = createUser(profileId = 2L, isSalesSupport = true)
+            stubProfile(2L, "시스템 관리자")
             every { userRepository.findByUsername("admin@otokims.co.kr") } returns user
 
             val principal = service.loadUserByUsername("admin@otokims.co.kr")
@@ -70,9 +71,10 @@ class WebUserDetailsServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - BRANCH_MANAGER → ROLE_MANAGER 매핑 (§2.3 매핑 표)")
+        @DisplayName("성공 - 4.지점장 → ROLE_MANAGER 매핑")
         fun success_branch_manager_maps_to_manager() {
-            val user = createUser(profileType = ProfileType.BRANCH_MANAGER, isSalesSupport = false)
+            val user = createUser(profileId = 3L, isSalesSupport = false)
+            stubProfile(3L, "4.지점장")
             every { userRepository.findByUsername("bm@otokims.co.kr") } returns user
 
             val principal = service.loadUserByUsername("bm@otokims.co.kr")
@@ -83,7 +85,8 @@ class WebUserDetailsServiceTest {
         @Test
         @DisplayName("비활성 사용자 - is_active=false → isEnabled=false")
         fun inactive_user() {
-            val user = createUser(profileType = ProfileType.STAFF, isSalesSupport = false, isActive = false)
+            val user = createUser(profileId = 1L, isSalesSupport = false, isActive = false)
+            stubProfile(1L, "9. Staff")
             every { userRepository.findByUsername("inactive@otokims.co.kr") } returns user
 
             val principal = service.loadUserByUsername("inactive@otokims.co.kr")
@@ -102,73 +105,83 @@ class WebUserDetailsServiceTest {
     }
 
     @Nested
-    @DisplayName("resolveAuthorities - ProfileType → GrantedAuthority 매핑 (§2.3 표)")
-    inner class ResolveAuthorities {
+    @DisplayName("resolveAuthoritiesByProfileName - Profile.name → GrantedAuthority 매핑")
+    inner class ResolveAuthoritiesByProfileName {
 
         @Test
-        @DisplayName("BUSINESS_DIRECTOR / DIVISION_HEAD 둘 다 ROLE_DIRECTOR")
+        @DisplayName("2.사업부장 / 1.본부장 둘 다 ROLE_DIRECTOR")
         fun director_mapping() {
-            val a1 = WebUserDetailsService.resolveAuthorities(ProfileType.BUSINESS_DIRECTOR, false)
-            val a2 = WebUserDetailsService.resolveAuthorities(ProfileType.DIVISION_HEAD, false)
+            val a1 = WebUserDetailsService.resolveAuthoritiesByProfileName("2.사업부장", false)
+            val a2 = WebUserDetailsService.resolveAuthoritiesByProfileName("1.본부장", false)
             assertThat(a1.map { it.authority }).containsExactly("ROLE_DIRECTOR")
             assertThat(a2.map { it.authority }).containsExactly("ROLE_DIRECTOR")
         }
 
         @Test
-        @DisplayName("SALES_MANAGER 도 ROLE_MANAGER 매핑")
-        fun sales_manager_mapping() {
-            val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.SALES_MANAGER, false)
-            assertThat(authorities.map { it.authority }).containsExactly("ROLE_MANAGER")
+        @DisplayName("3.영업부장 / 4.지점장 도 ROLE_MANAGER 매핑")
+        fun manager_mapping() {
+            val a1 = WebUserDetailsService.resolveAuthoritiesByProfileName("3.영업부장", false)
+            val a2 = WebUserDetailsService.resolveAuthoritiesByProfileName("4.지점장", false)
+            assertThat(a1.map { it.authority }).containsExactly("ROLE_MANAGER")
+            assertThat(a2.map { it.authority }).containsExactly("ROLE_MANAGER")
         }
 
         @Test
-        @DisplayName("TEAM_LEADER → ROLE_LEADER")
-        fun team_leader_mapping() {
-            val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.TEAM_LEADER, false)
-            assertThat(authorities.map { it.authority }).containsExactly("ROLE_LEADER")
+        @DisplayName("6.조장 / 7.영업사원 + 조장 → ROLE_LEADER")
+        fun leader_mapping() {
+            val a1 = WebUserDetailsService.resolveAuthoritiesByProfileName("6.조장", false)
+            val a2 = WebUserDetailsService.resolveAuthoritiesByProfileName("7.영업사원 + 조장", false)
+            assertThat(a1.map { it.authority }).containsExactly("ROLE_LEADER")
+            assertThat(a2.map { it.authority }).containsExactly("ROLE_LEADER")
         }
 
         @Test
-        @DisplayName("SALES_REP → ROLE_SALES_REP")
+        @DisplayName("5.영업사원 → ROLE_SALES_REP")
         fun sales_rep_mapping() {
-            val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.SALES_REP, false)
+            val authorities = WebUserDetailsService.resolveAuthoritiesByProfileName("5.영업사원", false)
             assertThat(authorities.map { it.authority }).containsExactly("ROLE_SALES_REP")
         }
 
         @Test
-        @DisplayName("MARKETING → ROLE_MARKETING")
+        @DisplayName("8.마케팅 → ROLE_MARKETING")
         fun marketing_mapping() {
-            val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.MARKETING, false)
+            val authorities = WebUserDetailsService.resolveAuthoritiesByProfileName("8.마케팅", false)
             assertThat(authorities.map { it.authority }).containsExactly("ROLE_MARKETING")
         }
 
         @Test
-        @DisplayName("SALES_REP_LEADER → ROLE_LEADER (TEAM_LEADER 동급)")
-        fun sales_rep_leader_mapping() {
-            val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.SALES_REP_LEADER, false)
-            assertThat(authorities.map { it.authority }).containsExactly("ROLE_LEADER")
-        }
-
-        @Test
-        @DisplayName("FACTORY_STAFF → ROLE_FACTORY")
+        @DisplayName("공장관계자 → ROLE_FACTORY")
         fun factory_staff_mapping() {
-            val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.FACTORY_STAFF, false)
+            val authorities = WebUserDetailsService.resolveAuthoritiesByProfileName("공장관계자", false)
             assertThat(authorities.map { it.authority }).containsExactly("ROLE_FACTORY")
         }
 
         @Test
         @DisplayName("OLS → ROLE_OLS")
         fun ols_mapping() {
-            val authorities = WebUserDetailsService.resolveAuthorities(ProfileType.OLS, false)
+            val authorities = WebUserDetailsService.resolveAuthoritiesByProfileName("OLS", false)
             assertThat(authorities.map { it.authority }).containsExactly("ROLE_OLS")
         }
+
+        @Test
+        @DisplayName("미등록 profileName / null → ROLE_STAFF fallback")
+        fun unknown_fallback() {
+            val a1 = WebUserDetailsService.resolveAuthoritiesByProfileName(null, false)
+            val a2 = WebUserDetailsService.resolveAuthoritiesByProfileName("unknown-profile", false)
+            assertThat(a1.map { it.authority }).containsExactly("ROLE_STAFF")
+            assertThat(a2.map { it.authority }).containsExactly("ROLE_STAFF")
+        }
+    }
+
+    private fun stubProfile(id: Long, name: String) {
+        every { profileRepository.findById(id) } returns Optional.of(Profile(id = id, name = name))
     }
 
     private fun createUser(
         id: Long = 1L,
         username: String = "u@otokims.co.kr",
         employeeCode: String = "S001",
-        profileType: ProfileType,
+        profileId: Long?,
         isSalesSupport: Boolean,
         isActive: Boolean = true,
         password: String = "\$2a\$10\$encodedHash"
@@ -177,7 +190,7 @@ class WebUserDetailsServiceTest {
         username = username,
         isActive = isActive,
         employeeCode = employeeCode,
-        profileType = profileType,
+        profileId = profileId,
         isSalesSupport = isSalesSupport,
         password = password,
         passwordChangeRequired = false

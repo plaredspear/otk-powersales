@@ -88,10 +88,9 @@ class ProfileBootstrapRunner(
 }
 
 /**
- * Spec #805 — 12종 Profile 의 SoT + UserRoleEnum → Profile.name 매핑.
+ * 12종 Profile 의 SoT + UserRoleEnum → Profile.name 매핑.
  *
- * ProfileType enum value 와 1:1 정합 (현재 enum 의 value 가 SoT 로 승격).
- * Q1 옵션 1 채택: SystemAdminProfilePolicy 와 매핑 동거.
+ * Profile.name (한글) 이 권한 모델 입력 SoT — ROLE_ 산출 / EmployeeProfileResolver / UserProvisioningService 가 본 매핑을 공유.
  */
 object SystemAdminProfilePolicy {
 
@@ -115,8 +114,6 @@ object SystemAdminProfilePolicy {
 
     /**
      * UserRoleEnum → Profile.name 매핑 — Provisioning / Seed 시점 profileId 결정.
-     *
-     * 기존 [com.otoki.powersales.user.service.UserProvisioningService.profileTypeFor] 의 분기 정합.
      */
     fun profileNameForRole(role: UserRoleEnum?): String = when (role) {
         UserRoleEnum.SYSTEM_ADMIN -> SYSTEM_ADMIN_PROFILE_NAME

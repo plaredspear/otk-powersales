@@ -79,7 +79,7 @@ class AdminTeamScheduleServiceTest {
             employeeId = employee.id,
             role = employee.role,
             costCenterCode = employee.costCenterCode,
-            profileType = com.otoki.powersales.user.entity.ProfileType.STAFF,
+            profileName = "9. Staff",
             isSalesSupport = false,
             passwordChangeRequired = false,
             permissions = emptySet(),

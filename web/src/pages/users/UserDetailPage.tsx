@@ -131,7 +131,7 @@ export default function UserDetailPage() {
 
       <div style={{ marginBottom: 16 }}>
         {user.isActive ? <Tag color="blue">활성</Tag> : <Tag>비활성</Tag>}
-        <Tag color="purple" style={{ marginLeft: 8 }}>{user.profileTypeLabel}</Tag>
+        <Tag color="purple" style={{ marginLeft: 8 }}>{user.profileName ?? '-'}</Tag>
         {user.isSalesSupport && <Tag color="gold">영업지원</Tag>}
         {user.passwordChangeRequired && (
           <Tag color="orange" style={{ marginLeft: 8 }}>비밀번호 변경 필요</Tag>
@@ -143,7 +143,7 @@ export default function UserDetailPage() {
         <Descriptions.Item label="사번">{user.employeeCode}</Descriptions.Item>
         <Descriptions.Item label="이름">{user.name ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="email">{user.email ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="Profile">{user.profileTypeLabel}</Descriptions.Item>
+        <Descriptions.Item label="Profile">{user.profileName ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="alias">{user.alias ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="직책">{user.title ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="부서">{user.department ?? '-'}</Descriptions.Item>

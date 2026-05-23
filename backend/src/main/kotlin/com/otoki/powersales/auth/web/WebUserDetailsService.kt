@@ -3,7 +3,6 @@ package com.otoki.powersales.auth.web
 import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.auth.repository.ProfileRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.user.entity.ProfileType
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.security.core.GrantedAuthority
@@ -28,7 +27,8 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 신규 차이
  * - 인증 entity: SF 플랫폼 User → backend `user` 테이블 (BCrypt + DB self-managed). 참조: legacy-deviation.md §"인증·세션"
- * - 권한 산출: SF Profile + UserRole 직접 참조 → `ProfileType` + `is_sales_support` 캐시 컬럼 기반 (Spec #759). §2.3 매핑 표 적용
+ * - 권한 산출: SF Profile + UserRole 직접 참조 → `Profile.id` FK + `is_sales_support` 캐시 컬럼 기반.
+ *   Profile.name → ROLE_ 매핑은 [resolveAuthoritiesByProfileName] 참조.
  */
 @Service
 class WebUserDetailsService(
@@ -45,7 +45,7 @@ class WebUserDetailsService(
      * - User 부재 → `UsernameNotFoundException` (Spring Security 가 자동 변환 → 인증 실패)
      * - `is_active == false` → principal 반환 시 `isEnabled = false` 로 표시 (DaoAuthenticationProvider 가 자동 차단)
      *
-     * 권한: `ProfileType` → `ROLE_*` 매핑 + `is_sales_support == true` → `ROLE_SALES_SUPPORT` 추가.
+     * 권한: `Profile.name` → `ROLE_*` 매핑 + `is_sales_support == true` → `ROLE_SALES_SUPPORT` 추가.
      *
      * Employee snapshot (`employeeId`, `role`, `costCenterCode`) 는 admin context 분기에 사용 — Employee 미존재
      * (예: ADMIN-* 부트스트랩) 시 null fallback.
@@ -61,7 +61,6 @@ class WebUserDetailsService(
 
     private fun toPrincipal(user: User, employee: com.otoki.powersales.employee.entity.Employee?): WebUserPrincipal {
         val permissions: Set<String> = sfPermissionResolver.resolveForUser(user)
-        // Spec #805 — Profile.name 으로 ROLE 산출 (Profile 입력 SoT 전환). profile entity 부재 시 fallback ROLE_STAFF.
         val profileName: String? = user.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
         return WebUserPrincipal(
             userId = user.id,
@@ -70,7 +69,6 @@ class WebUserDetailsService(
             employeeId = employee?.id,
             role = employee?.role,
             costCenterCode = user.costCenterCode,
-            profileType = user.profileType,
             profileName = profileName,
             profileId = user.profileId,
             isSalesSupport = user.isSalesSupport ?: false,
@@ -84,23 +82,9 @@ class WebUserDetailsService(
 
     companion object {
         /**
-         * Spec #760 §2.3 — ProfileType + is_sales_support 기반 GrantedAuthority 산출.
+         * Profile.name 기반 GrantedAuthority 산출.
          *
-         * Spec #805 에서 [resolveAuthoritiesByProfileName] 으로 대체. 본 시그니처는 spec #806 destructive 시점 제거.
-         */
-        @Deprecated("Spec #805 이후 resolveAuthoritiesByProfileName 사용. spec #806 에서 제거.")
-        fun resolveAuthorities(profileType: ProfileType, isSalesSupport: Boolean): List<GrantedAuthority> {
-            val role = profileType.toRoleAuthority()
-            return buildList {
-                add(SimpleGrantedAuthority(role))
-                if (isSalesSupport) add(SimpleGrantedAuthority("ROLE_SALES_SUPPORT"))
-            }
-        }
-
-        /**
-         * Spec #805 — Profile.name 기반 GrantedAuthority 산출 (신규 SoT).
-         *
-         * Profile.name 은 ProfileType.value 와 1:1 정합 ("시스템 관리자" / "5.영업사원" 등).
+         * Profile.name 은 ProfileBootstrapRunner SoT 와 1:1 정합 ("시스템 관리자" / "5.영업사원" 등).
          * 미등록 name 은 ROLE_STAFF fallback (ProfileBootstrapRunner 가 12종 보장 후 fallback 발생 안 함).
          */
         fun resolveAuthoritiesByProfileName(profileName: String?, isSalesSupport: Boolean): List<GrantedAuthority> {
@@ -109,18 +93,6 @@ class WebUserDetailsService(
                 add(SimpleGrantedAuthority(role))
                 if (isSalesSupport) add(SimpleGrantedAuthority("ROLE_SALES_SUPPORT"))
             }
-        }
-
-        private fun ProfileType.toRoleAuthority(): String = when (this) {
-            ProfileType.SYSTEM_ADMIN -> "ROLE_ADMIN"
-            ProfileType.MARKETING -> "ROLE_MARKETING"
-            ProfileType.STAFF -> "ROLE_STAFF"
-            ProfileType.BUSINESS_DIRECTOR, ProfileType.DIVISION_HEAD -> "ROLE_DIRECTOR"
-            ProfileType.BRANCH_MANAGER, ProfileType.SALES_MANAGER -> "ROLE_MANAGER"
-            ProfileType.TEAM_LEADER, ProfileType.SALES_REP_LEADER -> "ROLE_LEADER"
-            ProfileType.SALES_REP -> "ROLE_SALES_REP"
-            ProfileType.FACTORY_STAFF -> "ROLE_FACTORY"
-            ProfileType.OLS -> "ROLE_OLS"
         }
 
         private fun profileNameToRoleAuthority(profileName: String?): String = when (profileName) {
