@@ -206,3 +206,47 @@ export async function manualRegisterEmployee(
   }
   return res.data.data;
 }
+
+export interface EmployeePermissionProfileSummary {
+  profileName: string;
+  viewAllData: boolean;
+  modifyAllData: boolean;
+  viewAllUsers: boolean;
+  manageUsers: boolean;
+  apiEnabled: boolean;
+}
+
+export interface AssignedPermissionSet {
+  permissionSetName: string;
+  permissionSetSfid: string;
+  viewAllData: boolean;
+  modifyAllData: boolean;
+}
+
+export interface EntityPermissionRow {
+  entity: string;
+  canRead: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+export interface EmployeePermissionInspection {
+  employeeCode: string;
+  userId: number;
+  username: string;
+  profile: EmployeePermissionProfileSummary | null;
+  permissionSets: AssignedPermissionSet[];
+  entityMatrix: EntityPermissionRow[];
+  systemPermissions: string[];
+}
+
+export async function fetchEmployeePermissions(employeeId: number): Promise<EmployeePermissionInspection> {
+  const res = await client.get<ApiResponse<EmployeePermissionInspection>>(
+    `/api/v1/admin/employees/${employeeId}/permissions`,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '사원 권한 조회에 실패했습니다');
+  }
+  return res.data.data;
+}

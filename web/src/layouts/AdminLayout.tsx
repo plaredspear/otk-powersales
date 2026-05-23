@@ -23,7 +23,7 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { forbidden, setForbidden } = useForbiddenStore();
-  const { hasPermission } = usePermission();
+  const { hasEntityPermission, hasSystemPermission } = usePermission();
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     return localStorage.getItem(SIDER_COLLAPSED_KEY) === 'true';
@@ -35,13 +35,21 @@ export default function AdminLayout() {
   };
 
   const filteredMenuRoute = useMemo(() => {
+    const itemAllowed = (item: MenuItem): boolean => {
+      const requiresEntity = !!(item.entity && item.operation);
+      const requiresSystem = !!item.systemPermission;
+      if (!requiresEntity && !requiresSystem) return true;
+      if (requiresEntity && hasEntityPermission(item.entity!, item.operation!)) return true;
+      if (requiresSystem && hasSystemPermission(item.systemPermission!)) return true;
+      return false;
+    };
     const filterItems = (items: MenuItem[]): MenuItem[] =>
       items
-        .filter((item) => !item.requiredPermission || hasPermission(item.requiredPermission))
+        .filter(itemAllowed)
         .map((item) => (item.children ? { ...item, children: filterItems(item.children) } : item))
         .filter((item) => !item.children || item.children.length > 0);
     return { ...menuRoute, children: filterItems(menuRoute.children) };
-  }, [hasPermission]);
+  }, [hasEntityPermission, hasSystemPermission]);
 
   useEffect(() => {
     setForbidden(false);

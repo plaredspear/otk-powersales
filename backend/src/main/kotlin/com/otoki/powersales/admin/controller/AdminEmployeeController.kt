@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionInspectionService
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.DataScope
@@ -37,6 +38,7 @@ class AdminEmployeeController(
     private val adminEmployeeCredentialService: AdminEmployeeCredentialService,
     private val adminEmployeeUpdateService: AdminEmployeeUpdateService,
     private val adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService,
+    private val sfPermissionInspectionService: SfPermissionInspectionService,
 ) {
 
     @GetMapping
@@ -123,4 +125,31 @@ class AdminEmployeeController(
         val response = adminEmployeeCredentialService.resetPassword(employeeId)
         return ResponseEntity.ok(ApiResponse.success(response, "비밀번호가 초기화되었습니다"))
     }
+
+    /**
+     * Spec #802 — 직원의 SF 권한 read-only 조회.
+     *
+     * SF org 가 부여 SoT 이므로 edit endpoint 없음. 운영 진단 용도.
+     * 조회 권한: employee READ.
+     */
+    @GetMapping("/{employeeId}/permissions")
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)
+    fun getEmployeePermissions(
+        @PathVariable employeeId: Long
+    ): ResponseEntity<ApiResponse<SfPermissionInspectionService.EmployeePermissionInspection>> {
+        val inspection = sfPermissionInspectionService.inspectByEmployeeId(employeeId)
+            ?: return ResponseEntity.ok(ApiResponse.success(emptyInspection(employeeId)))
+        return ResponseEntity.ok(ApiResponse.success(inspection))
+    }
+
+    private fun emptyInspection(employeeId: Long): SfPermissionInspectionService.EmployeePermissionInspection =
+        SfPermissionInspectionService.EmployeePermissionInspection(
+            employeeCode = "",
+            userId = employeeId,
+            username = "",
+            profile = null,
+            permissionSets = emptyList(),
+            entityMatrix = emptyList(),
+            systemPermissions = emptyList(),
+        )
 }

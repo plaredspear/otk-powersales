@@ -3313,6 +3313,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseEmployeePermissionInspection" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/EmployeePermissionInspection"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseGpsConsentRecordResponse" : {
         "properties" : {
           "data" : {
@@ -6550,6 +6579,23 @@
         },
         "type" : "object"
       },
+      "AssignedPermissionSet" : {
+        "properties" : {
+          "modifyAllData" : {
+            "type" : "boolean"
+          },
+          "permissionSetName" : {
+            "type" : "string"
+          },
+          "permissionSetSfid" : {
+            "type" : "string"
+          },
+          "viewAllData" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "AttachmentInfo" : {
         "properties" : {
           "fileKey" : {
@@ -8695,6 +8741,66 @@
             "type" : "string"
           },
           "WorkPhone" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EmployeePermissionInspection" : {
+        "properties" : {
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "entityMatrix" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EntityPermissionRow"
+            },
+            "type" : "array"
+          },
+          "permissionSets" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AssignedPermissionSet"
+            },
+            "type" : "array"
+          },
+          "profile" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ProfileSummary"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "systemPermissions" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "userId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EntityPermissionRow" : {
+        "properties" : {
+          "canCreate" : {
+            "type" : "boolean"
+          },
+          "canDelete" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "canRead" : {
+            "type" : "boolean"
+          },
+          "entity" : {
             "type" : "string"
           }
         },
@@ -11952,6 +12058,29 @@
           },
           "modifyAllData" : {
             "type" : "boolean"
+          },
+          "viewAllData" : {
+            "type" : "boolean"
+          },
+          "viewAllUsers" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "ProfileSummary" : {
+        "properties" : {
+          "apiEnabled" : {
+            "type" : "boolean"
+          },
+          "manageUsers" : {
+            "type" : "boolean"
+          },
+          "modifyAllData" : {
+            "type" : "boolean"
+          },
+          "profileName" : {
+            "type" : "string"
           },
           "viewAllData" : {
             "type" : "boolean"
@@ -16750,6 +16879,33 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/employees/{employeeId}/permissions" : {
+      "get" : {
+        "operationId" : "getEmployeePermissions",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeePermissionInspection"
                 }
               }
             },

@@ -130,8 +130,8 @@ export default function PromotionDetailPage() {
   const cloneWithChildrenMutation = useCloneWithChildren();
   const { data: formMeta } = usePromotionFormMeta();
   const { setDynamicTitle } = useContext(BreadcrumbContext);
-  const { hasPermission } = usePermission();
-  const canWrite = hasPermission('PROMOTION_WRITE');
+  const { hasEntityPermission } = usePermission();
+  const canWrite = hasEntityPermission('promotion', 'EDIT');
 
   // --- 행사 인라인 편집 상태 ---
   const [promotionEditing, setPromotionEditing] = useState(false);

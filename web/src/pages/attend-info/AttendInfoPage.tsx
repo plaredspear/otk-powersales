@@ -23,9 +23,9 @@ export default function AttendInfoPage() {
   const [detailId, setDetailId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AttendInfoListItem | null>(null);
 
-  const { hasPermission } = usePermission();
-  const canWrite = hasPermission('ATTEND_INFO_WRITE');
-  const canDelete = hasPermission('ATTEND_INFO_DELETE');
+  const { hasEntityPermission } = usePermission();
+  const canWrite = hasEntityPermission('attend_info', 'EDIT');
+  const canDelete = hasEntityPermission('attend_info', 'DELETE');
 
   const { data, isLoading } = useAttendInfoList(filters);
   const deleteMutation = useDeleteAttendInfo();

@@ -15,8 +15,8 @@ type FilterTab = 'member' | 'account';
 const DATE_FMT = 'YYYY-MM-DD';
 
 export default function SchedulePage() {
-  const { hasPermission } = usePermission();
-  const canWrite = hasPermission('SCHEDULE_WRITE');
+  const { hasEntityPermission } = usePermission();
+  const canWrite = hasEntityPermission('team_member_schedule', 'EDIT');
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [viewType, setViewType] = useState<CalendarView>('dayGridMonth');
   const [listRange, setListRange] = useState<[Dayjs, Dayjs]>(() => [

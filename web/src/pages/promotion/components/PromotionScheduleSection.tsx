@@ -49,8 +49,8 @@ export default function PromotionScheduleSection({
   promotionStartDate,
   promotionEndDate,
 }: Props) {
-  const { hasPermission } = usePermission();
-  const canWrite = hasPermission('PROMOTION_WRITE');
+  const { hasEntityPermission } = usePermission();
+  const canWrite = hasEntityPermission('promotion', 'EDIT');
 
   const [startDate, setStartDate] = useState<string | undefined>(undefined);
   const [endDate, setEndDate] = useState<string | undefined>(undefined);

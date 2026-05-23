@@ -42,10 +42,10 @@ export default function AccountPage() {
   const [page, setPage] = useState(0);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const { hasPermission } = usePermission();
-  const canCreateAccount = hasPermission('ACCOUNT_WRITE');
-  const canUpdateAccount = hasPermission('ACCOUNT_WRITE');
-  const canDeleteAccount = hasPermission('ACCOUNT_DELETE');
+  const { hasEntityPermission } = usePermission();
+  const canCreateAccount = hasEntityPermission('account', 'EDIT');
+  const canUpdateAccount = hasEntityPermission('account', 'EDIT');
+  const canDeleteAccount = hasEntityPermission('account', 'DELETE');
   const showActionsColumn = canUpdateAccount || canDeleteAccount;
 
   const { data, isLoading, isError, error, refetch } = useAccounts({

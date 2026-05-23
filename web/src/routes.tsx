@@ -48,9 +48,7 @@ const CategorySchedulePage = lazy(() => import('@/pages/schedules/CategorySchedu
 const MonthlyInputAdequacyPage = lazy(() => import('@/pages/MonthlyInputAdequacyPage'));
 const PPTMasterPage = lazy(() => import('@/pages/promotion/PPTMasterPage'));
 const PPTHistoryPage = lazy(() => import('@/pages/promotion/PPTHistoryPage'));
-const PermissionMatrixPage = lazy(() => import('@/pages/settings/PermissionMatrixPage'));
 const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
-const EmployeePermissionPage = lazy(() => import('@/pages/settings/EmployeePermissionPage'));
 const AdminAccountRegisterPage = lazy(() => import('@/pages/settings/AdminAccountRegisterPage'));
 const NaverGeocodeTestPage = lazy(() => import('@/pages/admin/NaverGeocodeTestPage'));
 const ScheduledJobsPage = lazy(() => import('@/pages/admin/scheduled-jobs/ScheduledJobsPage'));
@@ -95,7 +93,7 @@ export const router = createBrowserRouter(
           children: [
             { path: '/', element: <LazyWrapper><DashboardPage /></LazyWrapper> },
             {
-              element: <PermissionRoute requiredPermission="MONTHLY_SALES_DASHBOARD_READ" />,
+              element: <PermissionRoute entity="monthly_sales_history" operation="READ" />,
               children: [
                 { path: '/sales/monthly', element: <LazyWrapper><MonthlySalesDashboardPage /></LazyWrapper> },
               ],
@@ -105,13 +103,13 @@ export const router = createBrowserRouter(
             { path: '/schedule', element: <LazyWrapper><SchedulePage /></LazyWrapper> },
             { path: '/deployment', element: <LazyWrapper><DeploymentPage /></LazyWrapper> },
             {
-              element: <PermissionRoute requiredPermission="ATTENDANCE_LOG_READ" />,
+              element: <PermissionRoute entity="attendance_log" operation="READ" />,
               children: [
                 { path: '/attendance', element: <LazyWrapper><AttendancePage /></LazyWrapper> },
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="ATTEND_INFO_READ" />,
+              element: <PermissionRoute entity="attend_info" operation="READ" />,
               children: [
                 { path: '/attend-info', element: <LazyWrapper><AttendInfoPage /></LazyWrapper> },
               ],
@@ -136,8 +134,6 @@ export const router = createBrowserRouter(
             { path: '/settings/organizations', element: <LazyWrapper><OrganizationPage /></LazyWrapper> },
             { path: '/settings/holiday-masters', element: <LazyWrapper><HolidayMasterListPage /></LazyWrapper> },
             { path: '/settings/employee-input-criteria-masters', element: <LazyWrapper><EmployeeInputCriteriaMasterListPage /></LazyWrapper> },
-            { path: '/settings/permissions', element: <LazyWrapper><PermissionMatrixPage /></LazyWrapper> },
-            { path: '/settings/permissions/employees', element: <LazyWrapper><EmployeePermissionPage /></LazyWrapper> },
             {
               element: <RoleRoute allowedRoles={['SYSTEM_ADMIN']} />,
               children: [
@@ -147,7 +143,7 @@ export const router = createBrowserRouter(
             { path: '/work-type-headcount', element: <LazyWrapper><CategorySchedulePage /></LazyWrapper> },
             { path: '/monthly-integration', element: <LazyWrapper><MonthlyIntegrationSchedulePage /></LazyWrapper> },
             {
-              element: <PermissionRoute requiredPermission="MONTHLY_INPUT_ADEQUACY_READ" />,
+              element: <PermissionRoute entity="team_member_schedule" operation="READ" />,
               children: [
                 { path: '/monthly-input-adequacy', element: <LazyWrapper><MonthlyInputAdequacyPage /></LazyWrapper> },
               ],
@@ -155,14 +151,14 @@ export const router = createBrowserRouter(
             { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
             { path: '/promotion/ppt-master-history', element: <LazyWrapper><PPTHistoryPage /></LazyWrapper> },
             {
-              element: <PermissionRoute requiredPermission="PRODUCT_EXPIRATION_READ" />,
+              element: <PermissionRoute entity="product" operation="READ" />,
               children: [
                 { path: '/product-expiration', element: <LazyWrapper><ProductExpirationPage /></LazyWrapper> },
               ],
             },
             // Permission-guarded routes
             {
-              element: <PermissionRoute requiredPermission="PROMOTION_READ" />,
+              element: <PermissionRoute entity="promotion" operation="READ" />,
               children: [
                 { path: '/promotions', element: <LazyWrapper><PromotionListPage /></LazyWrapper> },
                 { path: '/promotions/:id', element: <LazyWrapper><PromotionDetailPage /></LazyWrapper> },
@@ -171,13 +167,13 @@ export const router = createBrowserRouter(
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="PROMOTION_WRITE" />,
+              element: <PermissionRoute entity="promotion" operation="EDIT" />,
               children: [
                 { path: '/display-schedules', element: <LazyWrapper><DisplaySchedulePage /></LazyWrapper> },
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="EMPLOYEE_READ" />,
+              element: <PermissionRoute entity="employee" operation="READ" />,
               children: [
                 { path: '/employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
                 { path: '/employee/:employeeId', element: <LazyWrapper><EmployeeDetailPage /></LazyWrapper> },
@@ -185,51 +181,51 @@ export const router = createBrowserRouter(
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="SAFETY_CHECK_READ" />,
+              element: <PermissionRoute entity="team_member_schedule" operation="READ" />,
               children: [
                 { path: '/safety-check', element: <LazyWrapper><SafetyCheckPage /></LazyWrapper> },
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="ACCOUNT_READ" />,
+              element: <PermissionRoute entity="account" operation="READ" />,
               children: [
                 { path: '/account', element: <LazyWrapper><AccountPage /></LazyWrapper> },
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="NAVER_GEOCODE_TEST" />,
+              element: <PermissionRoute systemPermission="MODIFY_ALL_DATA" />,
               children: [
                 { path: '/admin/tools/naver-geocode', element: <LazyWrapper><NaverGeocodeTestPage /></LazyWrapper> },
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="SCHEDULED_JOB_READ" />,
+              element: <PermissionRoute systemPermission="VIEW_ALL_DATA" />,
               children: [
                 { path: '/admin/tools/scheduled-jobs', element: <LazyWrapper><ScheduledJobsPage /></LazyWrapper> },
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="SAP_INTEGRATION_READ" />,
+              element: <PermissionRoute systemPermission="VIEW_ALL_DATA" />,
               children: [
                 { path: '/admin/tools/sap-inbound', element: <LazyWrapper><SapInboundPage /></LazyWrapper> },
                 { path: '/admin/tools/sap-outbound', element: <LazyWrapper><SapOutboundPage /></LazyWrapper> },
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="SF_MIGRATION_RUN" />,
+              element: <PermissionRoute systemPermission="MODIFY_ALL_DATA" />,
               children: [
                 { path: '/admin/tools/sf-migration', element: <LazyWrapper><SfMigrationPage /></LazyWrapper> },
                 { path: '/admin/tools/sf-migration-stage1', element: <LazyWrapper><SfMigrationStage1Page /></LazyWrapper> },
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="AGREEMENT_READ" />,
+              element: <PermissionRoute entity="agreement_word" operation="READ" />,
               children: [
                 { path: '/admin/agreement-words', element: <LazyWrapper><AgreementWordsPage /></LazyWrapper> },
               ],
             },
             {
-              element: <PermissionRoute requiredPermission="USER_READ" />,
+              element: <PermissionRoute entity="user" operation="READ" />,
               children: [
                 { path: '/users', element: <LazyWrapper><UserListPage /></LazyWrapper> },
                 { path: '/users/:id', element: <LazyWrapper><UserDetailPage /></LazyWrapper> },

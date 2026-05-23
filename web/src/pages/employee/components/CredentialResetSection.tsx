@@ -11,25 +11,23 @@ interface CredentialResetSectionProps {
   employee: Employee;
 }
 
-const RESET_PERMISSION = 'EMPLOYEE_RESET_CREDENTIALS';
-
 const DEVICE_TOOLTIP =
   '단말 바인딩(deviceUuid)이 해제됩니다. 사원이 다음에 어떤 단말로 로그인하더라도 새 단말로 자동 등록됩니다.';
 const PASSWORD_TOOLTIP =
   "임시 비밀번호 '1234' 로 초기화됩니다. 사원은 다음 로그인 시 비밀번호 변경을 요구받습니다.";
 
 /**
- * 사원 자격 정보 (단말 / 비밀번호) 운영자 리셋 영역 (Spec #582 P2-W).
+ * 사원 자격 정보 (단말 / 비밀번호) 운영자 리셋 영역.
  *
- * - SYSTEM_ADMIN 권한(`EMPLOYEE_RESET_CREDENTIALS`) 미보유 시 영역 자체를 렌더링하지 않음.
+ * - SF 시스템 권한 MANAGE_USERS 미보유 시 영역 자체를 렌더링하지 않음.
  * - 대상 사원 `appLoginActive=false` 일 경우 안내 문구 + 버튼 비활성화.
  */
 export default function CredentialResetSection({ employee }: CredentialResetSectionProps) {
-  const { hasPermission } = usePermission();
+  const { hasSystemPermission } = usePermission();
   const [deviceModalOpen, setDeviceModalOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
-  if (!hasPermission(RESET_PERMISSION)) return null;
+  if (!hasSystemPermission('MANAGE_USERS')) return null;
 
   const inactive = employee.appLoginActive !== true;
 

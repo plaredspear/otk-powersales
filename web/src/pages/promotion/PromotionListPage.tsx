@@ -45,8 +45,8 @@ function formatDateRange(start: string, end: string): string {
 
 export default function PromotionListPage() {
   const navigate = useNavigate();
-  const { hasPermission } = usePermission();
-  const canWrite = hasPermission('PROMOTION_WRITE');
+  const { hasEntityPermission } = usePermission();
+  const canWrite = hasEntityPermission('promotion', 'EDIT');
   const [promotionType, setPromotionType] = useState<string | undefined>();
   const [category, setCategory] = useState<string | undefined>();
   const [startDate, setStartDate] = useState<string | undefined>();

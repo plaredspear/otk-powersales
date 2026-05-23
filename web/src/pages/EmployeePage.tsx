@@ -24,8 +24,6 @@ const STATUS_OPTIONS = [
 
 const PAGE_SIZE = 20;
 
-const RESET_PERMISSION = 'EMPLOYEE_RESET_CREDENTIALS';
-const WRITE_PERMISSION = 'EMPLOYEE_WRITE';
 
 const DEVICE_TOOLTIP =
   '단말 바인딩(deviceUuid)이 해제됩니다. 사원이 다음에 어떤 단말로 로그인하더라도 새 단말로 자동 등록됩니다.';
@@ -42,9 +40,9 @@ export default function EmployeePage() {
   const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
-  const { hasPermission } = usePermission();
-  const canResetCredentials = hasPermission(RESET_PERMISSION);
-  const canWrite = hasPermission(WRITE_PERMISSION);
+  const { hasEntityPermission, hasSystemPermission } = usePermission();
+  const canResetCredentials = hasSystemPermission('MANAGE_USERS');
+  const canWrite = hasEntityPermission('employee', 'EDIT');
 
   const { data, isLoading, isError, error, refetch } = useWomanEmployees({
     status,

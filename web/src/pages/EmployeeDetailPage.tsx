@@ -17,6 +17,7 @@ import { roleLabel } from '@/constants/userRole';
 import EmployeeEditModal from '@/pages/employee/components/EmployeeEditModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
+import SfPermissionSection from '@/pages/employee/components/SfPermissionSection';
 
 function toEmployeeListItem(detail: EmployeeDetail): Employee {
   return {
@@ -53,16 +54,13 @@ const ORIGIN_TAG: Record<string, { color: string; label: string }> = {
   MANUAL: { color: 'gold', label: '수동 등록' },
 };
 
-const EDIT_PERMISSION = 'EMPLOYEE_WRITE';
-const RESET_PERMISSION = 'EMPLOYEE_RESET_CREDENTIALS';
-
 export default function EmployeeDetailPage() {
   const { employeeId: rawId } = useParams<{ employeeId: string }>();
   const employeeId = rawId ? Number(rawId) : undefined;
   const navigate = useNavigate();
-  const { hasPermission } = usePermission();
-  const canEdit = hasPermission(EDIT_PERMISSION);
-  const canReset = hasPermission(RESET_PERMISSION);
+  const { hasEntityPermission, hasSystemPermission } = usePermission();
+  const canEdit = hasEntityPermission('employee', 'EDIT');
+  const canReset = hasSystemPermission('MANAGE_USERS');
 
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -223,7 +221,7 @@ export default function EmployeeDetailPage() {
         </Descriptions>
       </Card>
 
-      <Card title="근무 정보">
+      <Card title="근무 정보" style={{ marginBottom: 12 }}>
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="CRM 근무형태">{employee.crmWorkType ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="CRM 근무 시작일">
@@ -233,6 +231,8 @@ export default function EmployeeDetailPage() {
           <Descriptions.Item label="사용 연차">{employee.usedAnnualLeave ?? '-'}</Descriptions.Item>
         </Descriptions>
       </Card>
+
+      {employeeId && <SfPermissionSection employeeId={employeeId} />}
 
       {editOpen && (
         <EmployeeEditModal

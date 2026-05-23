@@ -15,8 +15,8 @@ import ActiveAgreementWordCard from './components/ActiveAgreementWordCard';
  */
 export default function AgreementWordsPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const { hasPermission } = usePermission();
-  const canWrite = hasPermission('AGREEMENT_WRITE');
+  const { hasEntityPermission } = usePermission();
+  const canWrite = hasEntityPermission('agreement_word', 'EDIT');
   const { data, isLoading } = useActiveAgreementWord();
 
   return (
