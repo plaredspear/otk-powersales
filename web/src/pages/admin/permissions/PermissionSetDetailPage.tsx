@@ -3,16 +3,25 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Alert, Button, Card, Descriptions, Input, Space, Spin, Table, Tag, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { usePermissionSet } from '@/hooks/admin/useAdminPermission';
-import type { AssignedUserSummary, ObjectPermissionRow } from '@/api/admin/permission';
+import { usePermission } from '@/hooks/usePermission';
+import { useAuthStore } from '@/stores/authStore';
+import type { AssignedPermissionSetUserSummary, ObjectPermissionRow } from '@/api/admin/permission';
+import AddUserToPermissionSetModal from './components/AddUserToPermissionSetModal';
+import RevokeAssignmentConfirmModal from './components/RevokeAssignmentConfirmModal';
 
 const { Title } = Typography;
 
 const PAGE_SIZE = 20;
 
+interface RevokeTarget {
+  assignmentId: number;
+  userLabel: string;
+  isSelf: boolean;
+}
+
 /**
- * Spec #803 — PermissionSet 상세 페이지.
- *
- * 메타 + 시스템 권한 비트 + entity×CRUD 매트릭스 + 부여 사용자 일람.
+ * Spec #803 — PermissionSet 상세 페이지 (조회).
+ * Spec #804 — MANAGE_USERS 보유 시 사용자 부여/회수 액션 추가.
  */
 export default function PermissionSetDetailPage() {
   const { permissionSetId: rawId } = useParams<{ permissionSetId: string }>();
@@ -20,6 +29,12 @@ export default function PermissionSetDetailPage() {
   const navigate = useNavigate();
   const [userPage, setUserPage] = useState(0);
   const [userKeyword, setUserKeyword] = useState<string | undefined>(undefined);
+  const [addUserModalOpen, setAddUserModalOpen] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState<RevokeTarget | null>(null);
+
+  const { hasSystemPermission } = usePermission();
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const canManage = hasSystemPermission('MANAGE_USERS');
 
   const { data, isLoading, isError, error } = usePermissionSet(permissionSetId, {
     userPage,
@@ -71,11 +86,39 @@ export default function PermissionSetDetailPage() {
     { title: 'DELETE', dataIndex: 'canDelete', key: 'canDelete', render: renderDeleteBit, width: 80 },
   ];
 
-  const userColumns: ColumnsType<AssignedUserSummary> = [
+  const userColumns: ColumnsType<AssignedPermissionSetUserSummary> = [
     { title: '사번', dataIndex: 'employeeCode', key: 'employeeCode', width: 160 },
     { title: '이름', dataIndex: 'employeeName', key: 'employeeName' },
     { title: 'Username', dataIndex: 'username', key: 'username' },
   ];
+
+  if (canManage) {
+    userColumns.push({
+      title: '액션',
+      key: 'action',
+      width: 100,
+      render: (_, row) => {
+        const isSelfMU = row.userId === currentUserId && (data.flags?.modifyAllData ?? false);
+        return (
+          <Button
+            danger
+            size="small"
+            disabled={isSelfMU}
+            title={isSelfMU ? '자기 자신의 MODIFY_ALL_DATA 부여는 회수할 수 없습니다' : undefined}
+            onClick={() =>
+              setRevokeTarget({
+                assignmentId: row.assignmentId,
+                userLabel: row.employeeName ?? row.username,
+                isSelf: isSelfMU,
+              })
+            }
+          >
+            회수
+          </Button>
+        );
+      },
+    });
+  }
 
   return (
     <div style={{ padding: 16 }}>
@@ -114,7 +157,16 @@ export default function PermissionSetDetailPage() {
         />
       </Card>
 
-      <Card title={`부여된 사용자 (${data.assignedUsers.totalElements})`}>
+      <Card
+        title={`부여된 사용자 (${data.assignedUsers.totalElements})`}
+        extra={
+          canManage && data.flags?.permissionSetFlagsId ? (
+            <Button type="primary" size="small" onClick={() => setAddUserModalOpen(true)}>
+              사용자 추가
+            </Button>
+          ) : null
+        }
+      >
         <Space style={{ marginBottom: 12 }}>
           <Input.Search
             placeholder="사번/이름 검색"
@@ -126,9 +178,9 @@ export default function PermissionSetDetailPage() {
             style={{ width: 240 }}
           />
         </Space>
-        <Table<AssignedUserSummary>
+        <Table<AssignedPermissionSetUserSummary>
           dataSource={data.assignedUsers.content}
-          rowKey="userId"
+          rowKey="assignmentId"
           columns={userColumns}
           size="small"
           pagination={{
@@ -139,6 +191,25 @@ export default function PermissionSetDetailPage() {
           }}
         />
       </Card>
+
+      {data.flags?.permissionSetFlagsId && (
+        <AddUserToPermissionSetModal
+          open={addUserModalOpen}
+          permissionSetFlagsId={data.flags.permissionSetFlagsId}
+          permissionSetLabel={data.label ?? data.name}
+          onClose={() => setAddUserModalOpen(false)}
+        />
+      )}
+
+      {revokeTarget && (
+        <RevokeAssignmentConfirmModal
+          open={!!revokeTarget}
+          assignmentId={revokeTarget.assignmentId}
+          permissionSetLabel={data.label ?? data.name}
+          userLabel={revokeTarget.userLabel}
+          onClose={() => setRevokeTarget(null)}
+        />
+      )}
     </div>
   );
 }

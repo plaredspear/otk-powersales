@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.permission
 
 import com.otoki.powersales.admin.permission.dto.AssignedUserSummary
 import com.otoki.powersales.admin.permission.dto.EntityProfilePermission
+import com.otoki.powersales.admin.permission.dto.PaginatedPermissionSetUserList
 import com.otoki.powersales.admin.permission.dto.EntityProfileRow
 import com.otoki.powersales.admin.permission.dto.ObjectPermissionRow
 import com.otoki.powersales.admin.permission.dto.PaginatedUserList
@@ -136,7 +137,7 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
             objectPermissions = listOf(
                 ObjectPermissionRow(sfApiName = "Account", entity = "account", canRead = true, canCreate = true, canEdit = true, canDelete = false),
             ),
-            assignedUsers = PaginatedUserList(0, 0, 0, 20, emptyList()),
+            assignedUsers = PaginatedPermissionSetUserList(0, 0, 0, 20, emptyList()),
         )
 
         mockMvc.perform(get("/api/v1/admin/permissions/permission-sets/10"))

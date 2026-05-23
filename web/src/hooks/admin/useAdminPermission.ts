@@ -1,10 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  createAssignment,
+  createAssignmentBatch,
   fetchPermissionMatrix,
   fetchPermissionSet,
   fetchPermissionSets,
   fetchProfile,
   fetchProfiles,
+  revokeAssignment,
   type FetchProfileParams,
 } from '@/api/admin/permission';
 
@@ -47,5 +50,40 @@ export function usePermissionMatrix() {
     queryKey: [...KEY_BASE, 'matrix'],
     queryFn: fetchPermissionMatrix,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Spec #804 — 부여/회수 mutation. 성공 시 관련 query invalidate.
+ */
+function useInvalidatePermissions() {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: KEY_BASE });
+    queryClient.invalidateQueries({ queryKey: ['employee'] }); // EmployeeDetailPage 의 SF 권한 section
+  };
+}
+
+export function useCreateAssignment() {
+  const invalidate = useInvalidatePermissions();
+  return useMutation({
+    mutationFn: createAssignment,
+    onSuccess: () => invalidate(),
+  });
+}
+
+export function useRevokeAssignment() {
+  const invalidate = useInvalidatePermissions();
+  return useMutation({
+    mutationFn: revokeAssignment,
+    onSuccess: () => invalidate(),
+  });
+}
+
+export function useCreateAssignmentBatch() {
+  const invalidate = useInvalidatePermissions();
+  return useMutation({
+    mutationFn: createAssignmentBatch,
+    onSuccess: () => invalidate(),
   });
 }

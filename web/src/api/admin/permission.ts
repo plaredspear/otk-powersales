@@ -78,6 +78,22 @@ export interface ObjectPermissionRow {
   canDelete: boolean;
 }
 
+export interface AssignedPermissionSetUserSummary {
+  assignmentId: number;
+  userId: number;
+  username: string;
+  employeeCode: string | null;
+  employeeName: string | null;
+}
+
+export interface PaginatedPermissionSetUserList {
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  content: AssignedPermissionSetUserSummary[];
+}
+
 export interface PermissionSetDetail {
   permissionSetId: number;
   name: string;
@@ -86,7 +102,7 @@ export interface PermissionSetDetail {
   sfid: string | null;
   flags: PermissionSetFlagsSummary | null;
   objectPermissions: ObjectPermissionRow[];
-  assignedUsers: PaginatedUserList;
+  assignedUsers: PaginatedPermissionSetUserList;
 }
 
 export interface PermissionMatrixProfile {
@@ -163,6 +179,64 @@ export async function fetchPermissionMatrix(): Promise<PermissionMatrix> {
   const res = await client.get<ApiResponse<PermissionMatrix>>('/api/v1/admin/permissions/matrix');
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '권한 매트릭스 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * Spec #804 — Assignment 부여/회수.
+ */
+
+export interface AssignmentCreateRequest {
+  userId: number;
+  permissionSetFlagsId: number;
+}
+
+export interface AssignmentResponse {
+  assignmentId: number;
+  userId: number;
+  permissionSetFlagsId: number;
+  isActive: boolean;
+  assignedAt: string | null;
+  createdById: number | null;
+}
+
+export interface AssignmentBatchRequest {
+  userId?: number;
+  permissionSetFlagsId?: number;
+  userIds?: number[];
+  permissionSetFlagsIds?: number[];
+}
+
+export interface AssignmentBatchItem {
+  userId: number;
+  permissionSetFlagsId: number;
+  assignmentId?: number;
+  reason?: string;
+}
+
+export interface AssignmentBatchResult {
+  succeeded: AssignmentBatchItem[];
+  skipped: AssignmentBatchItem[];
+  failed: AssignmentBatchItem[];
+}
+
+export async function createAssignment(req: AssignmentCreateRequest): Promise<AssignmentResponse> {
+  const res = await client.post<ApiResponse<AssignmentResponse>>('/api/v1/admin/permissions/assignments', req);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '부여에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function revokeAssignment(assignmentId: number): Promise<void> {
+  await client.delete(`/api/v1/admin/permissions/assignments/${assignmentId}`);
+}
+
+export async function createAssignmentBatch(req: AssignmentBatchRequest): Promise<AssignmentBatchResult> {
+  const res = await client.post<ApiResponse<AssignmentBatchResult>>('/api/v1/admin/permissions/assignments/batch', req);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '일괄 부여에 실패했습니다');
   }
   return res.data.data;
 }

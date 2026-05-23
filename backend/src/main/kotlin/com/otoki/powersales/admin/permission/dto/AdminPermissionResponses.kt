@@ -72,7 +72,23 @@ data class PermissionSetDetail(
     val sfid: String?,
     val flags: PermissionSetFlagsSummary?,
     val objectPermissions: List<ObjectPermissionRow>,
-    val assignedUsers: PaginatedUserList,
+    val assignedUsers: PaginatedPermissionSetUserList,
+)
+
+data class AssignedPermissionSetUserSummary(
+    val assignmentId: Long,
+    val userId: Long,
+    val username: String,
+    val employeeCode: String?,
+    val employeeName: String?,
+)
+
+data class PaginatedPermissionSetUserList(
+    val totalElements: Long,
+    val totalPages: Int,
+    val number: Int,
+    val size: Int,
+    val content: List<AssignedPermissionSetUserSummary>,
 )
 
 data class AssignedUserSummary(

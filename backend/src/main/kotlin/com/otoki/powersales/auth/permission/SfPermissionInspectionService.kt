@@ -41,6 +41,8 @@ class SfPermissionInspectionService(
                 val flagsId = assignment.permissionSetFlagsId ?: return@mapNotNull null
                 permissionSetFlagsRepository.findById(flagsId).orElse(null)?.let { flags ->
                     AssignedPermissionSet(
+                        assignmentId = assignment.id,
+                        permissionSetFlagsId = flagsId,
                         permissionSetName = flags.permissionSetName,
                         permissionSetSfid = flags.permissionSetSfid,
                         viewAllData = flags.permissionsViewAllData,
@@ -114,6 +116,8 @@ class SfPermissionInspectionService(
     )
 
     data class AssignedPermissionSet(
+        val assignmentId: Long,
+        val permissionSetFlagsId: Long,
         val permissionSetName: String,
         val permissionSetSfid: String,
         val viewAllData: Boolean,

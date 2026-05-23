@@ -217,6 +217,8 @@ export interface EmployeePermissionProfileSummary {
 }
 
 export interface AssignedPermissionSet {
+  assignmentId: number;
+  permissionSetFlagsId: number;
   permissionSetName: string;
   permissionSetSfid: string;
   viewAllData: boolean;

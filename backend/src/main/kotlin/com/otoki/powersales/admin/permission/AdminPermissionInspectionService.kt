@@ -1,7 +1,9 @@
 package com.otoki.powersales.admin.permission
 
+import com.otoki.powersales.admin.permission.dto.AssignedPermissionSetUserSummary
 import com.otoki.powersales.admin.permission.dto.AssignedUserSummary
 import com.otoki.powersales.admin.permission.dto.EntityProfilePermission
+import com.otoki.powersales.admin.permission.dto.PaginatedPermissionSetUserList
 import com.otoki.powersales.admin.permission.dto.EntityProfileRow
 import com.otoki.powersales.admin.permission.dto.ObjectPermissionRow
 import com.otoki.powersales.admin.permission.dto.PaginatedUserList
@@ -145,15 +147,37 @@ class AdminPermissionInspectionService(
             }
             .sortedBy { it.entity ?: it.sfApiName }
 
-        val usersPage = flags?.let {
-            userRepository.findUsersByPermissionSetFlagsId(
+        val paginatedUsers = flags?.let {
+            val usersPage = userRepository.findUsersByPermissionSetFlagsId(
                 permissionSetFlagsId = it.id,
                 keyword = userKeyword,
                 pageable = PageRequest.of(userPage, userSize),
             )
-        }
 
-        val paginatedUsers = usersPage?.toPaginatedUserList() ?: emptyPaginatedUserList(userPage, userSize)
+            // 한 user 가 동일 permissionSetFlags 에 active row 1개 (V187 partial unique) 라
+            // assignmentId lookup 은 in-clause 단일 조회로 처리 — N+1 회피.
+            val assignmentByUserId = permissionSetAssignmentRepository
+                .findAllByPermissionSetFlagsIdAndIsActiveTrue(it.id)
+                .associateBy { a -> a.assigneeUserId }
+
+            PaginatedPermissionSetUserList(
+                totalElements = usersPage.totalElements,
+                totalPages = usersPage.totalPages,
+                number = usersPage.number,
+                size = usersPage.size,
+                content = usersPage.content.map { user ->
+                    AssignedPermissionSetUserSummary(
+                        assignmentId = assignmentByUserId[user.id]?.id ?: 0L,
+                        userId = user.id,
+                        username = user.username,
+                        employeeCode = user.employeeCode,
+                        employeeName = user.name,
+                    )
+                },
+            )
+        } ?: PaginatedPermissionSetUserList(
+            totalElements = 0, totalPages = 0, number = userPage, size = userSize, content = emptyList(),
+        )
 
         return PermissionSetDetail(
             permissionSetId = ps.id,
@@ -236,7 +260,4 @@ class AdminPermissionInspectionService(
                 )
             },
         )
-
-    private fun emptyPaginatedUserList(page: Int, size: Int): PaginatedUserList =
-        PaginatedUserList(totalElements = 0, totalPages = 0, number = page, size = size, content = emptyList())
 }

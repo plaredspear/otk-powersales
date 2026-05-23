@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.sharing.entity
 
+import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFObject
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -17,6 +18,9 @@ import java.time.LocalDateTime
  *
  * 적재 출처: extract-csv.sh `PSA_SOQL` — `SELECT Id, AssigneeId, PermissionSetId, IsActive, CreatedDate
  *   FROM PermissionSetAssignment WHERE Assignee.IsActive = TRUE AND PermissionSet.IsCustom = TRUE`.
+ *
+ * Spec #804 에서 BaseEntity 상속 전환 + createdById/updatedById audit FK 추가.
+ * partial UNIQUE 인덱스 (V187) — 동일 (assignee_user_id, permission_set_flags_id) active row 1개 invariant.
  */
 @Entity
 @SFObject("PermissionSetAssignment")
@@ -49,4 +53,13 @@ class PermissionSetAssignment(
 
     @Column(name = "assigned_at")
     var assignedAt: LocalDateTime? = null,
-)
+
+    /** Spec #804 — web admin 부여 시 부여자 User FK. cut-over Stage1 적재분은 null. */
+    @Column(name = "created_by_id")
+    var createdById: Long? = null,
+
+    /** Spec #804 — web admin 회수/재부여 시 작업자 User FK. */
+    @Column(name = "updated_by_id")
+    var updatedById: Long? = null,
+
+) : BaseEntity()
