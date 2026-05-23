@@ -137,6 +137,7 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
             objectPermissions = listOf(
                 ObjectPermissionRow(sfApiName = "Account", entity = "account", canRead = true, canCreate = true, canEdit = true, canDelete = false),
             ),
+            customPermissions = emptyList(),
             assignedUsers = PaginatedPermissionSetUserList(0, 0, 0, 20, emptyList()),
         )
 

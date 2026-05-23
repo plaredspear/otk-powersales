@@ -46,6 +46,12 @@ class PermissionSetFlags(
     @Column(name = "object_permissions")
     var objectPermissions: String? = null,
 
+    // spec #808 — JPA entity 가 없는 가상 자원 (@PermissionResource) 의 CRUD 비트. SF customPermissions 정합.
+    // 예: { "dashboard": { "allowRead": true } }
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "custom_permissions")
+    var customPermissions: String? = null,
+
     // spec #796 — permission_set 정규 테이블 FK (Stage2 fk resolve 후 채움)
     @Column(name = "permission_set_id")
     var permissionSetId: Long? = null,
