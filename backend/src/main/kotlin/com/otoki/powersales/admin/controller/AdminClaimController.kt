@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.claim.dto.response.AdminClaimDetailResponse
 import com.otoki.powersales.claim.dto.response.AdminClaimListResponse
 import com.otoki.powersales.claim.service.AdminClaimService
@@ -16,6 +18,7 @@ class AdminClaimController(
 ) {
 
     @GetMapping
+    @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.READ)
     fun getClaims(
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
@@ -30,6 +33,7 @@ class AdminClaimController(
     }
 
     @GetMapping("/{claimId}")
+    @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.READ)
     fun getClaimDetail(
         @PathVariable claimId: Long
     ): ResponseEntity<ApiResponse<AdminClaimDetailResponse>> {

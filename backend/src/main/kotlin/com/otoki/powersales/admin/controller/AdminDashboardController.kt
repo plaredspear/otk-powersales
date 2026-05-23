@@ -2,6 +2,9 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.response.DashboardResponse
 import com.otoki.powersales.admin.service.AdminDashboardService
+import com.otoki.powersales.auth.permission.PermissionResource
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.admin.exception.InvalidYearMonthException
 
@@ -15,11 +18,13 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/admin/dashboard")
+@PermissionResource("dashboard")
 class AdminDashboardController(
     private val adminDashboardService: AdminDashboardService
 ) {
 
     @GetMapping
+    @RequiresSfPermission(entity = "dashboard", operation = SfPermissionOperation.READ)
     fun getDashboard(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) yearMonth: String?,

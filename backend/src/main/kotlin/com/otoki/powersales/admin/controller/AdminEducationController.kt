@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.education.dto.response.AdminEducationListResponse
@@ -20,6 +22,7 @@ class AdminEducationController(
 ) {
 
     @GetMapping("/posts")
+    @RequiresSfPermission(entity = "education_post", operation = SfPermissionOperation.READ)
     fun getPosts(
         @RequestParam(required = false) category: String?,
         @RequestParam(required = false) search: String?,
@@ -31,6 +34,7 @@ class AdminEducationController(
     }
 
     @GetMapping("/posts/{postId}")
+    @RequiresSfPermission(entity = "education_post", operation = SfPermissionOperation.READ)
     fun getPostDetail(
         @PathVariable postId: String
     ): ResponseEntity<ApiResponse<EducationPostDetailResponse>> {
@@ -39,6 +43,7 @@ class AdminEducationController(
     }
 
     @PostMapping("/posts")
+    @RequiresSfPermission(entity = "education_post", operation = SfPermissionOperation.CREATE)
     fun createPost(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam title: String,
@@ -51,6 +56,7 @@ class AdminEducationController(
     }
 
     @PutMapping("/posts/{postId}")
+    @RequiresSfPermission(entity = "education_post", operation = SfPermissionOperation.EDIT)
     fun updatePost(
         @PathVariable postId: String,
         @RequestParam title: String,
@@ -64,6 +70,7 @@ class AdminEducationController(
     }
 
     @DeleteMapping("/posts/{postId}")
+    @RequiresSfPermission(entity = "education_post", operation = SfPermissionOperation.DELETE)
     fun deletePost(
         @PathVariable postId: String
     ): ResponseEntity<ApiResponse<Any?>> {
@@ -72,6 +79,7 @@ class AdminEducationController(
     }
 
     @GetMapping("/categories")
+    @RequiresSfPermission(entity = "education_post", operation = SfPermissionOperation.READ)
     fun getCategories(): ResponseEntity<ApiResponse<List<EducationCategoryResponse>>> {
         val response = educationService.getCategories()
         return ResponseEntity.ok(ApiResponse.success(response))

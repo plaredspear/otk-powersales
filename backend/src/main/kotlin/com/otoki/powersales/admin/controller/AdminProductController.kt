@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.product.dto.request.InventorySearchRequest
 import com.otoki.powersales.product.dto.request.ProductExportRequest
@@ -39,6 +41,7 @@ class AdminProductController(
 ) {
 
     @GetMapping
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
     fun getProducts(
         @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
         @RequestParam(required = false) category1: String?,
@@ -61,12 +64,14 @@ class AdminProductController(
     }
 
     @GetMapping("/categories")
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
     fun getCategories(): ResponseEntity<ApiResponse<List<CategoryTree>>> {
         val response = adminProductService.getCategories()
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @GetMapping("/{productCode}")
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
     fun getProductDetail(
         @PathVariable productCode: String
     ): ResponseEntity<ApiResponse<ProductDetail>> {
@@ -75,6 +80,7 @@ class AdminProductController(
     }
 
     @PostMapping("/inventory-search")
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
     fun searchInventory(
         @Valid @RequestBody request: InventorySearchRequest
     ): ResponseEntity<ApiResponse<InventorySearchResponse>> {
@@ -83,6 +89,7 @@ class AdminProductController(
     }
 
     @PostMapping("/export-excel")
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
     fun exportSelectedProductsExcel(
         @Valid @RequestBody request: ProductExportRequest
     ): ResponseEntity<ByteArrayResource> {

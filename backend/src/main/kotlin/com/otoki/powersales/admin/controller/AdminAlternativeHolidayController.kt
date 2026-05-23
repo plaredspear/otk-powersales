@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayApproveRequest
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayCreateRequest
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayRejectRequest
@@ -25,6 +27,7 @@ class AdminAlternativeHolidayController(
 ) {
 
     @GetMapping
+    @RequiresSfPermission(entity = "alternative_holiday", operation = SfPermissionOperation.READ)
     fun getAlternativeHolidays(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
@@ -39,6 +42,7 @@ class AdminAlternativeHolidayController(
     }
 
     @PostMapping
+    @RequiresSfPermission(entity = "alternative_holiday", operation = SfPermissionOperation.CREATE)
     fun createAlternativeHoliday(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AlternativeHolidayCreateRequest
@@ -50,6 +54,7 @@ class AdminAlternativeHolidayController(
     }
 
     @PostMapping("/{id}/approve")
+    @RequiresSfPermission(entity = "alternative_holiday", operation = SfPermissionOperation.EDIT)
     fun approveAlternativeHoliday(
         @PathVariable id: Long,
         @RequestBody request: AlternativeHolidayApproveRequest
@@ -59,6 +64,7 @@ class AdminAlternativeHolidayController(
     }
 
     @PostMapping("/{id}/reject")
+    @RequiresSfPermission(entity = "alternative_holiday", operation = SfPermissionOperation.EDIT)
     fun rejectAlternativeHoliday(
         @PathVariable id: Long,
         @Valid @RequestBody request: AlternativeHolidayRejectRequest
