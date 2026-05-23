@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.sharing.entity
 
+import com.otoki.powersales.common.salesforce.SFShareAux
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
@@ -14,11 +15,13 @@ import java.time.LocalDateTime
  * 본 UserRole 의 모든 하위 자손 user_role_id set 을 jsonb 박제. evaluator hot path 에서
  * 매 평가 시 트리 traverse 회피 — 정적 lookup 1회.
  *
+ * SF sObject mirror 아님 — SF sharing 구현 (UserRole hierarchy 평가) 을 보조하는 신규 시스템 자체 cache.
  * 갱신은 P2-B 의 UserRoleHierarchyTraversal Service 가 담당.
  *
  * jsonb 컬럼은 application layer 에서 Jackson 으로 List<Long> ↔ JSON 직렬화 (의존성 추가 회피).
  */
 @Entity
+@SFShareAux
 @Table(name = "user_role_hierarchy_snapshot")
 class UserRoleHierarchySnapshot(
 

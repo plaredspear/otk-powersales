@@ -1,6 +1,7 @@
 package com.otoki.powersales.auth.sharing.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.salesforce.SFShareAux
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -12,9 +13,10 @@ import java.time.OffsetDateTime
 /**
  * sharing recalc endpoint 호출 audit (spec #792).
  *
- * SF mirror 아님 — 신규 시스템 자체 운영 audit. `Stage1Targets.ALL` 미등록.
+ * SF mirror 아님 — SF sharing 구현을 보조하는 신규 시스템 자체 운영 audit. `Stage1Targets.ALL` 미등록.
  */
 @Entity
+@SFShareAux
 @Table(name = "sharing_recalc_log")
 class SharingRecalcLog(
 
