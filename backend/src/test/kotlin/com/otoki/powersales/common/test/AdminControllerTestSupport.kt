@@ -58,6 +58,7 @@ abstract class AdminControllerTestSupport {
         costCenterCode: String? = null,
         profileType: ProfileType = ProfileType.STAFF,
         isSalesSupport: Boolean = false,
+        permissions: Set<String> = emptySet(),
     ) {
         val principal = WebUserPrincipal(
             userId = userId,
@@ -69,7 +70,7 @@ abstract class AdminControllerTestSupport {
             profileType = profileType,
             isSalesSupport = isSalesSupport,
             passwordChangeRequired = false,
-            permissions = emptySet(),
+            permissions = permissions,
             encodedPassword = "",
             grantedAuthorities = emptyList(),
             active = true,

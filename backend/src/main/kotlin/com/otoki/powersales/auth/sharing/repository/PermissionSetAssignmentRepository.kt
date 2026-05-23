@@ -5,4 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface PermissionSetAssignmentRepository : JpaRepository<PermissionSetAssignment, Long> {
     fun findAllByAssigneeUserIdAndIsActiveTrue(assigneeUserId: Long): List<PermissionSetAssignment>
+
+    fun countByPermissionSetFlagsIdAndIsActiveTrue(permissionSetFlagsId: Long): Long
+
+    fun findAllByPermissionSetFlagsIdAndIsActiveTrue(permissionSetFlagsId: Long): List<PermissionSetAssignment>
 }

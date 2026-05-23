@@ -3937,11 +3937,67 @@
         },
         "type" : "object"
       },
+      "ApiResponseListPermissionSetSummary" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionSetSummary"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListProductExpirationItemResponse" : {
         "properties" : {
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/ProductExpirationItemResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListProfileSummary" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProfileSummary"
             },
             "type" : [ "array", "null" ]
           },
@@ -5171,6 +5227,64 @@
         },
         "type" : "object"
       },
+      "ApiResponsePermissionMatrix" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PermissionMatrix"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePermissionSetDetail" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PermissionSetDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseProductDetail" : {
         "properties" : {
           "data" : {
@@ -5263,6 +5377,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/ProductListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseProfileDetail" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ProfileDetail"
             }, {
               "type" : "null"
             } ]
@@ -6592,6 +6735,24 @@
           },
           "viewAllData" : {
             "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "AssignedUserSummary" : {
+        "properties" : {
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "userId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "username" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -8806,6 +8967,41 @@
         },
         "type" : "object"
       },
+      "EntityProfilePermission" : {
+        "properties" : {
+          "canCreate" : {
+            "type" : "boolean"
+          },
+          "canDelete" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "canRead" : {
+            "type" : "boolean"
+          },
+          "profileId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "EntityProfileRow" : {
+        "properties" : {
+          "byProfile" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EntityProfilePermission"
+            },
+            "type" : "array"
+          },
+          "entity" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "EquipmentAnswer" : {
         "properties" : {
           "answer" : {
@@ -10434,6 +10630,29 @@
         "required" : [ "category", "content", "title" ],
         "type" : "object"
       },
+      "ObjectPermissionRow" : {
+        "properties" : {
+          "canCreate" : {
+            "type" : "boolean"
+          },
+          "canDelete" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "canRead" : {
+            "type" : "boolean"
+          },
+          "entity" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfApiName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "OrderCancelRequest" : {
         "properties" : {
           "orderProductIds" : {
@@ -11511,6 +11730,114 @@
         },
         "type" : "object"
       },
+      "PaginatedUserList" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AssignedUserSummary"
+            },
+            "type" : "array"
+          },
+          "number" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PermissionMatrix" : {
+        "properties" : {
+          "profiles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionMatrixProfile"
+            },
+            "type" : "array"
+          },
+          "rows" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EntityProfileRow"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "PermissionMatrixProfile" : {
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "profileId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PermissionSetDetail" : {
+        "properties" : {
+          "assignedUsers" : {
+            "$ref" : "#/components/schemas/PaginatedUserList"
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "flags" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PermissionSetFlagsSummary"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "label" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "objectPermissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ObjectPermissionRow"
+            },
+            "type" : "array"
+          },
+          "permissionSetId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sfid" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "PermissionSetFlagsSummary" : {
+        "properties" : {
+          "modifyAllData" : {
+            "type" : "boolean"
+          },
+          "permissionSetFlagsId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "viewAllData" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "PermissionSetSnapshot" : {
         "properties" : {
           "modifyAllDataSystem" : {
@@ -11538,6 +11865,42 @@
               "type" : "boolean"
             },
             "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
+      "PermissionSetSummary" : {
+        "properties" : {
+          "assignedUserCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "label" : {
+            "type" : [ "string", "null" ]
+          },
+          "modifyAllData" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "objectPermissionCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "permissionSetFlagsId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "permissionSetId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "viewAllData" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -12048,7 +12411,54 @@
         },
         "type" : "object"
       },
+      "ProfileDetail" : {
+        "properties" : {
+          "assignedUsers" : {
+            "$ref" : "#/components/schemas/PaginatedUserList"
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "flags" : {
+            "$ref" : "#/components/schemas/ProfileFlagsSummary"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "profileId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "userType" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "ProfileFlagsSnapshot" : {
+        "properties" : {
+          "apiEnabled" : {
+            "type" : "boolean"
+          },
+          "manageUsers" : {
+            "type" : "boolean"
+          },
+          "modifyAllData" : {
+            "type" : "boolean"
+          },
+          "viewAllData" : {
+            "type" : "boolean"
+          },
+          "viewAllUsers" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "ProfileFlagsSummary" : {
         "properties" : {
           "apiEnabled" : {
             "type" : "boolean"
@@ -12073,14 +12483,28 @@
           "apiEnabled" : {
             "type" : "boolean"
           },
+          "assignedUserCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
           "manageUsers" : {
             "type" : "boolean"
           },
           "modifyAllData" : {
             "type" : "boolean"
           },
-          "profileName" : {
+          "name" : {
             "type" : "string"
+          },
+          "profileId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "userType" : {
+            "type" : [ "string", "null" ]
           },
           "viewAllData" : {
             "type" : "boolean"
@@ -17410,6 +17834,164 @@
           }
         },
         "tags" : [ "admin-organization-controller" ]
+      }
+    },
+    "/api/v1/admin/permissions/matrix" : {
+      "get" : {
+        "operationId" : "getMatrix_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePermissionMatrix"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-permission-controller" ]
+      }
+    },
+    "/api/v1/admin/permissions/permission-sets" : {
+      "get" : {
+        "operationId" : "listPermissionSets",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPermissionSetSummary"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-permission-controller" ]
+      }
+    },
+    "/api/v1/admin/permissions/permission-sets/{permissionSetId}" : {
+      "get" : {
+        "operationId" : "getPermissionSet",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "permissionSetId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "userPage",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "userSize",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "userKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePermissionSetDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-permission-controller" ]
+      }
+    },
+    "/api/v1/admin/permissions/profiles" : {
+      "get" : {
+        "operationId" : "listProfiles",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListProfileSummary"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-permission-controller" ]
+      }
+    },
+    "/api/v1/admin/permissions/profiles/{profileId}" : {
+      "get" : {
+        "operationId" : "getProfile",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "profileId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "userPage",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "userSize",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "userKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProfileDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-permission-controller" ]
       }
     },
     "/api/v1/admin/ppt-histories" : {

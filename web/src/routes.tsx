@@ -59,6 +59,11 @@ const SfMigrationStage1Page = lazy(() => import('@/pages/admin/tools/sf-migratio
 const AgreementWordsPage = lazy(() => import('@/pages/admin/agreement-words/AgreementWordsPage'));
 const UserListPage = lazy(() => import('@/pages/users/UserListPage'));
 const UserDetailPage = lazy(() => import('@/pages/users/UserDetailPage'));
+const ProfileListPage = lazy(() => import('@/pages/admin/permissions/ProfileListPage'));
+const ProfileDetailPage = lazy(() => import('@/pages/admin/permissions/ProfileDetailPage'));
+const PermissionSetListPage = lazy(() => import('@/pages/admin/permissions/PermissionSetListPage'));
+const PermissionSetDetailPage = lazy(() => import('@/pages/admin/permissions/PermissionSetDetailPage'));
+const PermissionMatrixPage = lazy(() => import('@/pages/admin/permissions/PermissionMatrixPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -229,6 +234,26 @@ export const router = createBrowserRouter(
               children: [
                 { path: '/users', element: <LazyWrapper><UserListPage /></LazyWrapper> },
                 { path: '/users/:id', element: <LazyWrapper><UserDetailPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute entity="profile" operation="READ" />,
+              children: [
+                { path: '/admin/permissions/profiles', element: <LazyWrapper><ProfileListPage /></LazyWrapper> },
+                { path: '/admin/permissions/profiles/:profileId', element: <LazyWrapper><ProfileDetailPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute entity="permission_set" operation="READ" />,
+              children: [
+                { path: '/admin/permissions/permission-sets', element: <LazyWrapper><PermissionSetListPage /></LazyWrapper> },
+                { path: '/admin/permissions/permission-sets/:permissionSetId', element: <LazyWrapper><PermissionSetDetailPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute systemPermission="VIEW_ALL_DATA" />,
+              children: [
+                { path: '/admin/permissions/matrix', element: <LazyWrapper><PermissionMatrixPage /></LazyWrapper> },
               ],
             },
             { path: '*', element: <Navigate to="/" replace /> },

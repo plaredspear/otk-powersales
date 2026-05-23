@@ -121,6 +121,9 @@ class CacheConfig {
         const val CACHE_RECORD_TYPE_VISIBILITY = "record-type-visibility:v1"
         const val CACHE_FIELD_PERMISSION = "field-permission:v1"
 
+        /** Spec #803 — entity × Profile 매트릭스 계산 결과 (5분 TTL). */
+        const val CACHE_PERMISSION_MATRIX = "permission-matrix:v1"
+
         /** spec #792 — sharing recalc 가 일괄 evict 하는 cache name 일람 */
         val SHARING_RELATED_CACHE_NAMES: List<String> = listOf(
             CACHE_HIERARCHY_SUBORDINATES,
@@ -135,6 +138,7 @@ class CacheConfig {
 
         private val ORGANIZATION_TTL: Duration = Duration.ofHours(24)
         private val SHARING_POLICY_TTL: Duration = Duration.ofHours(1)
+        private val PERMISSION_MATRIX_TTL: Duration = Duration.ofMinutes(5)
     }
 
     /**
@@ -179,6 +183,7 @@ class CacheConfig {
     @Profile("!test & !local")
     fun perCacheTtlCustomizer(defaultConfig: RedisCacheConfiguration): RedisCacheManagerBuilderCustomizer {
         val sharingPolicyConfig = defaultConfig.entryTtl(SHARING_POLICY_TTL)
+        val permissionMatrixConfig = defaultConfig.entryTtl(PERMISSION_MATRIX_TTL)
         val perCacheConfig = mapOf(
             CACHE_ORGANIZATION_CASCADE to defaultConfig,
             CACHE_TEAM_SCHEDULE_BRANCHES to defaultConfig,
@@ -191,6 +196,8 @@ class CacheConfig {
             CACHE_SOBJECT_SETTING to sharingPolicyConfig,
             CACHE_RECORD_TYPE_VISIBILITY to sharingPolicyConfig,
             CACHE_FIELD_PERMISSION to sharingPolicyConfig,
+            // spec #803 — 권한 매트릭스
+            CACHE_PERMISSION_MATRIX to permissionMatrixConfig,
         )
         return RedisCacheManagerBuilderCustomizer { builder ->
             builder.withInitialCacheConfigurations(perCacheConfig)
