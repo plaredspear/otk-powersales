@@ -11526,6 +11526,14 @@
             },
             "type" : "object"
           },
+          "permissionSetIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          },
           "viewAllDataSystem" : {
             "type" : "boolean"
           },
@@ -20915,6 +20923,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseSfFkResolveProgressResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sf-migration-stage-2-controller" ]
+      }
+    },
+    "/api/v1/admin/sf-migration/stage2/fk-natural-key" : {
+      "post" : {
+        "operationId" : "runNaturalKeyFkResolve",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
                 }
               }
             },
