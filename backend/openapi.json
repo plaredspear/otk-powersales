@@ -3110,6 +3110,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseDryRunResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DryRunResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseEducationMutationResponse" : {
         "properties" : {
           "data" : {
@@ -3260,35 +3289,6 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/EmployeeListResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ApiResponseEmployeePermissionDetailResponse" : {
-        "properties" : {
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/EmployeePermissionDetailResponse"
             }, {
               "type" : "null"
             } ]
@@ -5142,35 +5142,6 @@
         },
         "type" : "object"
       },
-      "ApiResponsePermissionMatrixResponse" : {
-        "properties" : {
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/PermissionMatrixResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "ApiResponseProductDetail" : {
         "properties" : {
           "data" : {
@@ -5611,35 +5582,6 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/ResetPasswordResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ApiResponseRolePermissionsUpdateResponse" : {
-        "properties" : {
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/RolePermissionsUpdateResponse"
             }, {
               "type" : "null"
             } ]
@@ -6420,35 +6362,6 @@
       },
       "ApiResponseUnit" : {
         "properties" : {
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ApiResponseUpdateAuthorityResponse" : {
-        "properties" : {
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/UpdateAuthorityResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
           "error" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/ErrorDetail"
@@ -7343,6 +7256,20 @@
         },
         "type" : "object"
       },
+      "CheckResult" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "check" : {
+            "$ref" : "#/components/schemas/DryRunCheck"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "ChunkResult" : {
         "properties" : {
           "count" : {
@@ -7909,26 +7836,6 @@
         },
         "type" : "object"
       },
-      "CurrentUserPermission" : {
-        "properties" : {
-          "canManagePermissions" : {
-            "type" : "boolean"
-          },
-          "permissions" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "role" : {
-            "type" : "string"
-          },
-          "roleLabel" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "DailySalesHistoryRequest" : {
         "properties" : {
           "reqItemList" : {
@@ -8148,6 +8055,65 @@
           },
           "workType3" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DryRunCheck" : {
+        "properties" : {
+          "entity" : {
+            "type" : [ "string", "null" ]
+          },
+          "operation" : {
+            "enum" : [ "READ", "CREATE", "EDIT", "DELETE", "SYSTEM" ],
+            "type" : "string"
+          },
+          "systemPermission" : {
+            "enum" : [ "VIEW_ALL_DATA", "MODIFY_ALL_DATA", "VIEW_ALL_USERS", "MANAGE_USERS", "API_ENABLED" ],
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "DryRunCheckRequest" : {
+        "properties" : {
+          "entity" : {
+            "type" : [ "string", "null" ]
+          },
+          "operation" : {
+            "enum" : [ "READ", "CREATE", "EDIT", "DELETE", "SYSTEM" ],
+            "type" : "string"
+          },
+          "systemPermission" : {
+            "enum" : [ "VIEW_ALL_DATA", "MODIFY_ALL_DATA", "VIEW_ALL_USERS", "MANAGE_USERS", "API_ENABLED" ],
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "DryRunResult" : {
+        "properties" : {
+          "allowedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "blockedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "checkCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "rows" : {
+            "items" : {
+              "$ref" : "#/components/schemas/UserDryRunRow"
+            },
+            "type" : "array"
+          },
+          "userCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -8730,45 +8696,6 @@
           },
           "WorkPhone" : {
             "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "EmployeePermissionDetailResponse" : {
-        "properties" : {
-          "effectivePermissions" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "employeeCode" : {
-            "type" : "string"
-          },
-          "employeeId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "role" : {
-            "type" : [ "string", "null" ]
-          },
-          "roleLabel" : {
-            "type" : [ "string", "null" ]
-          },
-          "rolePermissions" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "userPermissions" : {
-            "items" : {
-              "$ref" : "#/components/schemas/UserPermissionDetailResponse"
-            },
-            "type" : "array"
           }
         },
         "type" : "object"
@@ -11478,43 +11405,6 @@
         },
         "type" : "object"
       },
-      "PermissionDetail" : {
-        "properties" : {
-          "code" : {
-            "type" : "string"
-          },
-          "description" : {
-            "type" : "string"
-          },
-          "menus" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          }
-        },
-        "type" : "object"
-      },
-      "PermissionMatrixResponse" : {
-        "properties" : {
-          "currentUser" : {
-            "$ref" : "#/components/schemas/CurrentUserPermission"
-          },
-          "permissions" : {
-            "items" : {
-              "$ref" : "#/components/schemas/PermissionDetail"
-            },
-            "type" : "array"
-          },
-          "roles" : {
-            "items" : {
-              "$ref" : "#/components/schemas/RolePermissions"
-            },
-            "type" : "array"
-          }
-        },
-        "type" : "object"
-      },
       "PermissionSetSnapshot" : {
         "properties" : {
           "modifyAllDataSystem" : {
@@ -12864,40 +12754,6 @@
           },
           "roadAddress" : {
             "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
-      "RolePermissions" : {
-        "properties" : {
-          "permissions" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "role" : {
-            "type" : "string"
-          },
-          "roleLabel" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "RolePermissionsUpdateResponse" : {
-        "properties" : {
-          "permissions" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "role" : {
-            "type" : "string"
-          },
-          "roleLabel" : {
-            "type" : "string"
           }
         },
         "type" : "object"
@@ -14396,6 +14252,30 @@
         },
         "type" : "object"
       },
+      "SfPermissionDryRunRequest" : {
+        "properties" : {
+          "checks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DryRunCheckRequest"
+            },
+            "type" : "array"
+          },
+          "employeeCodes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "userIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "SfResultWrapperSfSalesHistoryDetail" : {
         "properties" : {
           "RESULT_CODE" : {
@@ -15110,61 +14990,6 @@
         },
         "type" : "object"
       },
-      "UpdateAuthorityRequest" : {
-        "properties" : {
-          "role" : {
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "role" ],
-        "type" : "object"
-      },
-      "UpdateAuthorityResponse" : {
-        "properties" : {
-          "effectivePermissions" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "employeeCode" : {
-            "type" : "string"
-          },
-          "employeeId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "newRole" : {
-            "type" : "string"
-          },
-          "newRoleLabel" : {
-            "type" : "string"
-          },
-          "previousRole" : {
-            "type" : [ "string", "null" ]
-          },
-          "previousRoleLabel" : {
-            "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
-      "UpdateRolePermissionsRequest" : {
-        "properties" : {
-          "permissions" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          }
-        },
-        "required" : [ "permissions" ],
-        "type" : "object"
-      },
       "UpdateUserActiveStatusRequest" : {
         "properties" : {
           "active" : {
@@ -15173,16 +14998,29 @@
         },
         "type" : "object"
       },
-      "UpdateUserPermissionsRequest" : {
+      "UserDryRunRow" : {
         "properties" : {
-          "permissions" : {
+          "checks" : {
             "items" : {
-              "type" : "string"
+              "$ref" : "#/components/schemas/CheckResult"
             },
             "type" : "array"
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "permissionsCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "userId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "username" : {
+            "type" : "string"
           }
         },
-        "required" : [ "permissions" ],
         "type" : "object"
       },
       "UserInfo" : {
@@ -15205,14 +15043,6 @@
           },
           "roleLabel" : {
             "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
-      "UserPermissionDetailResponse" : {
-        "properties" : {
-          "permission" : {
-            "type" : "string"
           }
         },
         "type" : "object"
@@ -16929,105 +16759,6 @@
         "tags" : [ "admin-employee-controller" ]
       }
     },
-    "/api/v1/admin/employees/{employeeId}/authority" : {
-      "put" : {
-        "operationId" : "updateAuthority",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "employeeId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UpdateAuthorityRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseUpdateAuthorityResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-employee-permission-controller" ]
-      }
-    },
-    "/api/v1/admin/employees/{employeeId}/permissions" : {
-      "get" : {
-        "operationId" : "getEmployeePermissions",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "employeeId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseEmployeePermissionDetailResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-employee-permission-controller" ]
-      },
-      "put" : {
-        "operationId" : "updateUserPermissions",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "employeeId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UpdateUserPermissionsRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseEmployeePermissionDetailResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-employee-permission-controller" ]
-      }
-    },
     "/api/v1/admin/employees/{employeeId}/reset-device" : {
       "post" : {
         "operationId" : "resetDevice_1",
@@ -17523,61 +17254,6 @@
           }
         },
         "tags" : [ "admin-organization-controller" ]
-      }
-    },
-    "/api/v1/admin/permissions/matrix" : {
-      "get" : {
-        "operationId" : "getMatrix_1",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePermissionMatrixResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-permission-matrix-controller" ]
-      }
-    },
-    "/api/v1/admin/permissions/roles/{role}" : {
-      "put" : {
-        "operationId" : "updateRolePermissions",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "role",
-          "required" : true,
-          "schema" : {
-            "enum" : [ "WOMAN", "LEADER", "BRANCH_MANAGER", "SALES_MANAGER", "BUSINESS_MANAGER", "HEADQUARTERS_MANAGER", "SALES_SUPPORT", "SYSTEM_ADMIN", "ACCOUNT_VIEW_ALL", "UNKNOWN" ],
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UpdateRolePermissionsRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseRolePermissionsUpdateResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-permission-matrix-controller" ]
       }
     },
     "/api/v1/admin/ppt-histories" : {
@@ -20986,24 +20662,6 @@
         "tags" : [ "sf-migration-stage-2-controller" ]
       }
     },
-    "/api/v1/admin/sf-migration/stage2/permission" : {
-      "post" : {
-        "operationId" : "runPermissionMapping",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "sf-migration-stage-2-controller" ]
-      }
-    },
     "/api/v1/admin/sf-migration/stage2/picklist" : {
       "post" : {
         "operationId" : "runPicklistMapping",
@@ -21064,6 +20722,34 @@
           }
         },
         "tags" : [ "sf-migration-stage-2-controller" ]
+      }
+    },
+    "/api/v1/admin/sf-permission/dry-run" : {
+      "post" : {
+        "operationId" : "runDryRun",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SfPermissionDryRunRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDryRunResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sf-permission-dry-run-controller" ]
       }
     },
     "/api/v1/admin/sharing/recalc/all" : {
