@@ -1256,6 +1256,24 @@ object Stage1Targets {
         ),
     )
 
+    // ─────────────────────────────────────────────────────────
+    // spec #796 — PermissionSet 정규 entity (SOQL 출처)
+    // SOQL: SELECT Id, Name, Label FROM PermissionSet WHERE IsCustom = TRUE
+    // permission_set_flags / permission_set_record_type / permission_set_field_permission 의 자연 키 lookup ref.
+    // ─────────────────────────────────────────────────────────
+
+    private val PERMISSION_SET = EntityMetadata(
+        targetName = "PermissionSet",
+        sObjectName = "PermissionSet", // SOQL 출처 — extract-csv.sh PS_SOQL
+        tableName = "permission_set",
+        csvFileName = "permission_sets.csv",
+        fields = listOf(
+            FieldMapping("Id", "sfid", nullable = false),
+            FieldMapping("Name", "name", nullable = false),
+            FieldMapping("Label", "label"),
+        ),
+    )
+
     private val GROUP_MEMBER = EntityMetadata(
         targetName = "GroupMember",
         sObjectName = "GroupMember", // SOQL 출처 — extract-csv.sh
@@ -1440,6 +1458,8 @@ object Stage1Targets {
         SHARING_RULE_TARGET,
         USER_ROLE_HIERARCHY_SNAPSHOT,
         PROFILE_FLAGS,
+        // spec #796 — PermissionSet 정규 entity (PermissionSetFlags / Record Type / FLS 자연 키 ref)
+        PERMISSION_SET,
         PERMISSION_SET_FLAGS,
         GROUP_MEMBER,
         // spec #798 — PermissionSetAssignment SOQL 적재
@@ -1502,6 +1522,8 @@ object Stage1Targets {
         // spec #790 — SF Sharing 메타 (UserRole / Profile / Group 적재 후)
         "UserRoleHierarchySnapshot",
         "ProfileFlags",
+        // spec #796 — PermissionSet 정규 entity (PermissionSetFlags / Record Type / FLS 자연 키 ref)
+        "PermissionSet",
         "PermissionSetFlags",
         "SharingRule",
         "SharingRuleCondition",

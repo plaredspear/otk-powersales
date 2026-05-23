@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.sharing.entity
 
+import com.otoki.powersales.common.salesforce.SFObject
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -13,8 +14,12 @@ import java.time.LocalDateTime
  *
  * 기존 `sf_permission_set_assignment_raw` (#764) 는 cut-over 1회성 staging — 본 entity 는
  * 운영 시점 PermissionSetEvaluator 가 매번 read 하는 정규 entity.
+ *
+ * 적재 출처: extract-csv.sh `PSA_SOQL` — `SELECT Id, AssigneeId, PermissionSetId, IsActive, CreatedDate
+ *   FROM PermissionSetAssignment WHERE Assignee.IsActive = TRUE AND PermissionSet.IsCustom = TRUE`.
  */
 @Entity
+@SFObject("PermissionSetAssignment")
 @Table(name = "permission_set_assignment")
 class PermissionSetAssignment(
 

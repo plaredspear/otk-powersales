@@ -291,6 +291,42 @@ class Stage1TargetsTest {
     }
 
     @Nested
+    @DisplayName("spec #796 — PermissionSet 정규 entity 등록")
+    inner class PermissionSetRegistration {
+
+        @Test
+        @DisplayName("PermissionSet — SOQL 출처 + 3 fields (Id / Name / Label)")
+        fun permissionSet() {
+            val meta = Stage1Targets.get("PermissionSet")
+            assertThat(meta).withFailMessage("PermissionSet 미등록").isNotNull
+            assertThat(meta!!.sObjectName).isEqualTo("PermissionSet")
+            assertThat(meta.tableName).isEqualTo("permission_set")
+            assertThat(meta.csvFileName).isEqualTo("permission_sets.csv")
+            val headers = meta.fields.map { it.sfFieldName }
+            assertThat(headers).containsExactly("Id", "Name", "Label")
+        }
+
+        @Test
+        @DisplayName("PermissionSet — Id → sfid, Name → name, Label → label")
+        fun fieldColumnMapping() {
+            val meta = Stage1Targets.get("PermissionSet")!!
+            assertThat(meta.fields.find { it.sfFieldName == "Id" }!!.dbColumnName).isEqualTo("sfid")
+            assertThat(meta.fields.find { it.sfFieldName == "Name" }!!.dbColumnName).isEqualTo("name")
+            assertThat(meta.fields.find { it.sfFieldName == "Label" }!!.dbColumnName).isEqualTo("label")
+        }
+
+        @Test
+        @DisplayName("DEPENDENCY_ORDER — PermissionSet 는 PermissionSetFlags 보다 선행 (자연 키 ref side)")
+        fun dependencyOrderBeforeFlags() {
+            val order = Stage1Targets.DEPENDENCY_ORDER
+            val permissionSetIdx = order.indexOf("PermissionSet")
+            val flagsIdx = order.indexOf("PermissionSetFlags")
+            assertThat(permissionSetIdx).isGreaterThanOrEqualTo(0)
+            assertThat(flagsIdx).isGreaterThan(permissionSetIdx)
+        }
+    }
+
+    @Nested
     @DisplayName("spec #798 — PermissionSetAssignment 등록")
     inner class PermissionSetAssignmentRegistration {
 

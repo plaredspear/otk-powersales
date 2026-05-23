@@ -1,6 +1,7 @@
 package com.otoki.powersales.auth.sharing.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.salesforce.SFObject
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -16,9 +17,12 @@ import jakarta.persistence.Table
  *
  * - `permission_set_record_type.permission_set_id` / `permission_set_field_permission.permission_set_id`
  *   가 본 entity 의 PK 를 참조.
- * - XML 출처: `permissionsets/<Name>.permissionset-meta.xml`.
+ * - 적재 출처: extract-csv.sh `PS_SOQL` — `SELECT Id, Name, Label FROM PermissionSet WHERE IsCustom = TRUE`.
+ *   XML 출처 (`permissionsets/<Name>.permissionset-meta.xml`) 는 PermissionSetFlags / PermissionSetRecordType /
+ *   PermissionSetFieldPermission 가 분담.
  */
 @Entity
+@SFObject("PermissionSet")
 @Table(name = "permission_set")
 class PermissionSet(
 

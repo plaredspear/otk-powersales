@@ -46,9 +46,9 @@ scripts/sf-data-migration/
 
 > employee ↔ organization 관계는 신규 시스템(과 SF 레거시 모두)에서 FK 가 아닌 `cost_center_code` 기반 application-level join 으로 처리되므로 ETL 에 FK 업데이트 단계가 존재하지 않습니다.
 
-### 지원 target 일람 (53종)
+### 지원 target 일람 (54종)
 
-backend 의 `@SFObject` 어노테이션이 붙은 모든 entity + Permission staging table + spec #790 의 SF Sharing 메타 7 entity + spec #791 의 SF OWD 메타 2 entity (SObjectSetting / SObjectRelation) + spec #794 의 SF Record Type 메타 3 entity (RecordType / ProfileRecordType / PermissionSetRecordType) + spec #795 의 FLS 메타 2 entity (ProfileFieldPermission / PermissionSetFieldPermission).
+backend 의 `@SFObject` 어노테이션이 붙은 모든 entity + Permission staging table + spec #790 의 SF Sharing 메타 7 entity + spec #791 의 SF OWD 메타 2 entity (SObjectSetting / SObjectRelation) + spec #794 의 SF Record Type 메타 3 entity (RecordType / ProfileRecordType / PermissionSetRecordType) + spec #795 의 FLS 메타 2 entity (ProfileFieldPermission / PermissionSetFieldPermission) + spec #796 의 PermissionSet 정규 entity 1종.
 전체 권위 출처는 `common.kts` 의 `TARGET_SPECS` 정의 (SOQL 출처) + `backend/.../sfmigration/stage1/Stage1Targets.kt` 의 `ALL` 맵 (전체 — XML 메타 출처 포함).
 
 **Stage 2 변환 substep 보유 target** (그 외 target 은 Stage 1 raw 적재만):
@@ -64,6 +64,7 @@ backend 의 `@SFObject` 어노테이션이 붙은 모든 entity + Permission sta
 | `SharingRuleTarget` | (XML 메타) | (위 동일) — spec #790 |
 | `UserRoleHierarchySnapshot` | (XML 메타) | `POST /stage2/user-role-hierarchy` (신규 — depth/all_subordinate_ids/ancestor_path 재계산) — spec #790 |
 | `ProfileFlags` | (XML 메타) | `POST /stage2/fk` (profile FK) — spec #790 |
+| `PermissionSet` | `PermissionSet` | Stage 1 raw 적재 (Id/Name/Label) — spec #796. `permission_set_flags.permission_set_id` 자연 키 lookup ref. |
 | `PermissionSetFlags` | (XML 메타) | `POST /stage2/fk` (permission_set FK) — spec #790 |
 | `GroupMember` | `GroupMember` | `POST /stage2/fk` (group / user_or_group polymorphic FK) — spec #790 |
 | `SObjectSetting` | (XML 메타) | `POST /stage1/copy-from-s3` — XML 3 출처 정규화 (`<sharingModel>` + Sharing.settings) — spec #791 |
