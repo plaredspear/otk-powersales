@@ -3,6 +3,8 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.AdminEmployeeRegisterRequest
 import com.otoki.powersales.admin.dto.AdminEmployeeRegisterResponse
 import com.otoki.powersales.admin.service.AdminEmployeeRegisterService
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.dto.ApiResponse
 import jakarta.validation.Valid
@@ -27,6 +29,7 @@ class AdminEmployeeRegisterController(
 ) {
 
     @PostMapping
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.CREATE)
     fun register(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: AdminEmployeeRegisterRequest

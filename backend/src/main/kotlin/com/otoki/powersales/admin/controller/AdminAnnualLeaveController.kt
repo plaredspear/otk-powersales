@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.leave.dto.response.EmployeeAnnualLeaveDto
 import com.otoki.powersales.leave.service.AdminAnnualLeaveService
 import com.otoki.powersales.admin.exception.InvalidYearMonthException
@@ -17,6 +19,7 @@ class AdminAnnualLeaveController(
 ) {
 
     @GetMapping("/summary")
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)
     fun getSummary(
         @RequestParam yearMonth: String,
         @RequestParam(required = false) orgCode: String?

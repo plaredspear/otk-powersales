@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.leave.dto.request.HolidayMasterCreateRequest
 import com.otoki.powersales.leave.dto.request.HolidayMasterUpdateRequest
 import com.otoki.powersales.leave.dto.response.HolidayMasterResponse
@@ -17,6 +19,7 @@ class AdminHolidayMasterController(
 ) {
 
     @GetMapping
+    @RequiresSfPermission(entity = "holiday_master", operation = SfPermissionOperation.READ)
     fun getHolidayMasters(
         @RequestParam year: Int
     ): ResponseEntity<ApiResponse<List<HolidayMasterResponse>>> {
@@ -25,6 +28,7 @@ class AdminHolidayMasterController(
     }
 
     @PostMapping
+    @RequiresSfPermission(entity = "holiday_master", operation = SfPermissionOperation.CREATE)
     fun createHolidayMaster(
         @Valid @RequestBody request: HolidayMasterCreateRequest
     ): ResponseEntity<ApiResponse<HolidayMasterResponse>> {
@@ -33,6 +37,7 @@ class AdminHolidayMasterController(
     }
 
     @PutMapping("/{id}")
+    @RequiresSfPermission(entity = "holiday_master", operation = SfPermissionOperation.EDIT)
     fun updateHolidayMaster(
         @PathVariable id: Long,
         @Valid @RequestBody request: HolidayMasterUpdateRequest
@@ -42,6 +47,7 @@ class AdminHolidayMasterController(
     }
 
     @DeleteMapping("/{id}")
+    @RequiresSfPermission(entity = "holiday_master", operation = SfPermissionOperation.DELETE)
     fun deleteHolidayMaster(
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {

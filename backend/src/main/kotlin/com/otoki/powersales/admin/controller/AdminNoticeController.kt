@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.RequiresSfPermission
+import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.notice.dto.request.NoticeCreateRequest
 import com.otoki.powersales.notice.dto.request.NoticeUpdateRequest
@@ -25,6 +27,7 @@ class AdminNoticeController(
 ) {
 
     @GetMapping
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.READ)
     fun getPosts(
         @RequestParam(required = false) category: String?,
         @RequestParam(required = false) search: String?,
@@ -36,12 +39,14 @@ class AdminNoticeController(
     }
 
     @GetMapping("/form-meta")
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.READ)
     fun getNoticeFormMeta(): ResponseEntity<ApiResponse<NoticeFormMetaResponse>> {
         val response = noticeService.getNoticeFormMeta()
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @GetMapping("/{noticeId}")
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.READ)
     fun getNoticeDetail(
         @PathVariable noticeId: Long
     ): ResponseEntity<ApiResponse<NoticePostDetailResponse>> {
@@ -51,6 +56,7 @@ class AdminNoticeController(
     }
 
     @PostMapping
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.CREATE)
     fun createNotice(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: NoticeCreateRequest
@@ -60,6 +66,7 @@ class AdminNoticeController(
     }
 
     @PutMapping("/{noticeId}")
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.EDIT)
     fun updateNotice(
         @PathVariable noticeId: Long,
         @Valid @RequestBody request: NoticeUpdateRequest
@@ -69,6 +76,7 @@ class AdminNoticeController(
     }
 
     @DeleteMapping("/{noticeId}")
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.DELETE)
     fun deleteNotice(
         @PathVariable noticeId: Long
     ): ResponseEntity<ApiResponse<Any?>> {
@@ -77,6 +85,7 @@ class AdminNoticeController(
     }
 
     @PostMapping("/{noticeId}/images", consumes = ["multipart/form-data"])
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.EDIT)
     fun uploadNoticeImage(
         @PathVariable noticeId: Long,
         @RequestParam("image") image: MultipartFile
@@ -86,6 +95,7 @@ class AdminNoticeController(
     }
 
     @DeleteMapping("/{noticeId}/images/{imageId}")
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.EDIT)
     fun deleteNoticeImage(
         @PathVariable noticeId: Long,
         @PathVariable imageId: Long
