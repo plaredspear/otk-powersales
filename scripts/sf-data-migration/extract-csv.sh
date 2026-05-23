@@ -266,11 +266,14 @@ EOF
 
 PSA_SOQL=$(cat <<'EOF'
 SELECT
+    Id,
     AssigneeId,
     Assignee.DKRetail__EmployeeNumber__c,
     PermissionSetId,
     PermissionSet.Name,
-    PermissionSet.Label
+    PermissionSet.Label,
+    IsActive,
+    CreatedDate
 FROM PermissionSetAssignment
 WHERE Assignee.IsActive = TRUE
   AND PermissionSet.IsCustom = TRUE

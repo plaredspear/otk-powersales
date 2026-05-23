@@ -1269,6 +1269,25 @@ object Stage1Targets {
     )
 
     // ─────────────────────────────────────────────────────────
+    // spec #798 — PermissionSetAssignment 정규 적재 (SOQL 출처)
+    // SOQL: SELECT Id, AssigneeId, PermissionSetId, IsActive, CreatedDate FROM PermissionSetAssignment WHERE IsActive = TRUE
+    // ─────────────────────────────────────────────────────────
+
+    private val PERMISSION_SET_ASSIGNMENT = EntityMetadata(
+        targetName = "PermissionSetAssignment",
+        sObjectName = "PermissionSetAssignment", // SOQL 출처 — extract-csv.sh
+        tableName = "permission_set_assignment",
+        csvFileName = "permission_set_assignments.csv",
+        fields = listOf(
+            FieldMapping("Id", "sfid", nullable = false),
+            FieldMapping("AssigneeId", "assignee_user_sfid", nullable = false),
+            FieldMapping("PermissionSetId", "permission_set_sfid", nullable = false),
+            FieldMapping("IsActive", "is_active", nullable = false, nullPlaceholder = "true"),
+            FieldMapping("CreatedDate", "assigned_at"),
+        ),
+    )
+
+    // ─────────────────────────────────────────────────────────
     // spec #791 — SF OWD + master-detail relationship 메타
     // (XML 메타 출처 — Custom SObject <sharingModel> / Standard Sharing.settings <sharingSettings>+<sharingHierarchy>)
     // ─────────────────────────────────────────────────────────
@@ -1423,6 +1442,8 @@ object Stage1Targets {
         PROFILE_FLAGS,
         PERMISSION_SET_FLAGS,
         GROUP_MEMBER,
+        // spec #798 — PermissionSetAssignment SOQL 적재
+        PERMISSION_SET_ASSIGNMENT,
         // spec #791 — SF OWD + master-detail relationship
         SOBJECT_SETTING,
         SOBJECT_RELATION,
@@ -1486,6 +1507,8 @@ object Stage1Targets {
         "SharingRuleCondition",
         "SharingRuleTarget",
         "GroupMember",
+        // spec #798 — PermissionSetAssignment (User + PermissionSetFlags 적재 후 sfid lookup)
+        "PermissionSetAssignment",
         // spec #791 — SF OWD + master-detail relationship (의존 없음 — 독립 메타)
         "SObjectSetting",
         "SObjectRelation",

@@ -184,11 +184,12 @@ class SfFkResolveTablesTest {
         }
 
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 8 entry — #790 sharing 4 + #794 record type 2 + #795 FLS 2")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 9 entry — #790 sharing 4 + #794 record type 2 + #795 FLS 2 + #798 PSA 1")
         fun naturalKeyMappingsCount() {
             // sharing_rule_condition + sharing_rule_target + user_role_hierarchy_snapshot + profile_flags +
-            // profile_record_type + permission_set_record_type + profile_field_permission + permission_set_field_permission = 8
-            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(8)
+            // profile_record_type + permission_set_record_type + profile_field_permission + permission_set_field_permission +
+            // permission_set_assignment = 9
+            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(9)
         }
 
         @Test
@@ -279,6 +280,38 @@ class SfFkResolveTablesTest {
             assertThat(spec.idColumn).isEqualTo("record_type_id")
             assertThat(spec.refTable).isEqualTo("record_type")
             assertThat(spec.refIdColumn).isEqualTo("record_type_id")
+        }
+    }
+
+    @Nested
+    @DisplayName("PermissionSetAssignment FK (Spec #798)")
+    inner class PermissionSetAssignmentFk {
+
+        @Test
+        @DisplayName("assignee_user_sfid → assignee_user_id, ref user.user_id (FK_PREFIX_MAPPING)")
+        fun assigneeUserFk() {
+            val spec = deriveFkResolveSpec("assignee_user_sfid")!!
+            assertThat(spec.idColumn).isEqualTo("assignee_user_id")
+            assertThat(spec.refTable).isEqualTo("user")
+            assertThat(spec.refIdColumn).isEqualTo("user_id")
+        }
+
+        @Test
+        @DisplayName("permission_set_assignment.permission_set_sfid → permission_set_flags_id (NATURAL_KEY_FK_MAPPINGS)")
+        fun permissionSetSfidNaturalKey() {
+            val spec = NATURAL_KEY_FK_MAPPINGS.find {
+                it.sourceTable == "permission_set_assignment" && it.sourceColumn == "permission_set_sfid"
+            }
+            assertThat(spec).isNotNull
+            assertThat(spec!!.refTable).isEqualTo("permission_set_flags")
+            assertThat(spec.refColumn).isEqualTo("permission_set_sfid")
+            assertThat(spec.targetIdColumn).isEqualTo("permission_set_flags_id")
+        }
+
+        @Test
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 9 entry — spec #790 4 + #794 2 + #795 2 + #798 1")
+        fun naturalKeyMappingsCountAfterPSA() {
+            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(9)
         }
     }
 }

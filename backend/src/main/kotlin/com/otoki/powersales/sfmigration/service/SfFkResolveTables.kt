@@ -134,6 +134,17 @@ internal val NATURAL_KEY_FK_MAPPINGS: List<NaturalKeyFkSpec> = listOf(
         refColumn = "name",
         targetIdColumn = "permission_set_id",
     ),
+    // ──────────────────────────────────────────────────────────────────────
+    // spec #798 — PermissionSetAssignment FK 해소
+    // permission_set_sfid → permission_set_flags.permission_set_sfid → permission_set_flags_id
+    // ──────────────────────────────────────────────────────────────────────
+    NaturalKeyFkSpec(
+        sourceTable = "permission_set_assignment",
+        sourceColumn = "permission_set_sfid",
+        refTable = "permission_set_flags",
+        refColumn = "permission_set_sfid",
+        targetIdColumn = "permission_set_flags_id",
+    ),
 )
 
 /**
@@ -182,6 +193,8 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
     "parent_user_role" to ("user_role" to "user_role_id"),
     // Spec #796 — RecordType FK 활성화. SObject row 의 RecordTypeId(sfid) → record_type.record_type_id 변환.
     "record_type" to ("record_type" to "record_type_id"),
+    // Spec #798 — PermissionSetAssignment.AssigneeId → user.user_id 해소 (assignee_user_sfid → assignee_user_id).
+    "assignee_user" to ("user" to "user_id"),
 )
 
 /**

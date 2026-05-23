@@ -32,8 +32,12 @@ class PermissionSetAssignment(
     @Column(name = "assignee_user_id")
     var assigneeUserId: Long? = null,
 
-    @Column(name = "permission_set_flags_id", nullable = false)
-    var permissionSetFlagsId: Long,
+    // spec #798 — Stage1 적재 시점 sfid 박제용. Stage2 fk substep 이 permission_set_flags 로 lookup
+    @Column(name = "permission_set_sfid", length = 18)
+    var permissionSetSfid: String? = null,
+
+    @Column(name = "permission_set_flags_id")
+    var permissionSetFlagsId: Long? = null,
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true,

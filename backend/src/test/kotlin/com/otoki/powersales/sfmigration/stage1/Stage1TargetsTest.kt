@@ -289,4 +289,40 @@ class Stage1TargetsTest {
             assertThat(order).contains("ProfileFieldPermission", "PermissionSetFieldPermission")
         }
     }
+
+    @Nested
+    @DisplayName("spec #798 — PermissionSetAssignment 등록")
+    inner class PermissionSetAssignmentRegistration {
+
+        @Test
+        @DisplayName("PermissionSetAssignment — SOQL 출처 + 5 fields")
+        fun permissionSetAssignment() {
+            val meta = Stage1Targets.get("PermissionSetAssignment")
+            assertThat(meta).withFailMessage("PermissionSetAssignment 미등록").isNotNull
+            assertThat(meta!!.sObjectName).isEqualTo("PermissionSetAssignment")
+            assertThat(meta.tableName).isEqualTo("permission_set_assignment")
+            assertThat(meta.csvFileName).isEqualTo("permission_set_assignments.csv")
+            val headers = meta.fields.map { it.sfFieldName }
+            assertThat(headers).containsExactly("Id", "AssigneeId", "PermissionSetId", "IsActive", "CreatedDate")
+        }
+
+        @Test
+        @DisplayName("PermissionSetAssignment — Id → sfid, AssigneeId → assignee_user_sfid, PermissionSetId → permission_set_sfid")
+        fun fieldColumnMapping() {
+            val meta = Stage1Targets.get("PermissionSetAssignment")!!
+            assertThat(meta.fields.find { it.sfFieldName == "Id" }!!.dbColumnName).isEqualTo("sfid")
+            assertThat(meta.fields.find { it.sfFieldName == "AssigneeId" }!!.dbColumnName).isEqualTo("assignee_user_sfid")
+            assertThat(meta.fields.find { it.sfFieldName == "PermissionSetId" }!!.dbColumnName).isEqualTo("permission_set_sfid")
+        }
+
+        @Test
+        @DisplayName("DEPENDENCY_ORDER — PermissionSetAssignment 는 User / PermissionSetFlags 뒤")
+        fun dependencyOrderAfterUserAndFlags() {
+            val order = Stage1Targets.DEPENDENCY_ORDER
+            val psaIdx = order.indexOf("PermissionSetAssignment")
+            assertThat(psaIdx).isGreaterThanOrEqualTo(0)
+            assertThat(psaIdx).isGreaterThan(order.indexOf("User"))
+            assertThat(psaIdx).isGreaterThan(order.indexOf("PermissionSetFlags"))
+        }
+    }
 }
