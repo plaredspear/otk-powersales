@@ -2,11 +2,14 @@ package com.otoki.powersales.common.test
 
 import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.auth.sharing.service.FlsService
+import com.otoki.powersales.auth.sharing.service.PermissionSetEvaluator
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import com.otoki.powersales.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -41,6 +44,17 @@ abstract class MobileControllerTestSupport {
 
     @MockkBean
     protected lateinit var gpsConsentFilter: GpsConsentFilter
+
+    // FlsResponseBodyAdvice (@RestControllerAdvice) 가 global 로 로드되므로 의존성 3종 mock 필요.
+    // @FlsFiltered 미부착 endpoint 는 advice 의 supports() 가 false 반환 → 동작 무영향.
+    @MockkBean
+    protected lateinit var flsService: FlsService
+
+    @MockkBean
+    protected lateinit var permissionSetEvaluator: PermissionSetEvaluator
+
+    @MockkBean
+    protected lateinit var userRepository: UserRepository
 
     @BeforeEach
     fun setUpMobileSecurityContext() {

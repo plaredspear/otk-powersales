@@ -67,7 +67,7 @@ class AdminEmployeeRegisterControllerTest : AdminControllerTestSupport() {
     inner class RegisterAdmin {
 
         @Test
-        @DisplayName("성공 - 201 Created, role=SYSTEM_ADMIN, origin=MANUAL")
+        @DisplayName("성공 - 201 Created, role=null (시스템 관리자 — AppAuthority 부재), origin=MANUAL")
         fun success() {
             every { adminEmployeeRegisterService.register(any(), any()) } returns stubResponse()
 
@@ -77,7 +77,7 @@ class AdminEmployeeRegisterControllerTest : AdminControllerTestSupport() {
                     .content(objectMapper.writeValueAsString(validRequest()))
             )
                 .andExpect(status().isCreated)
-                .andExpect(jsonPath("$.data.role").value("SYSTEM_ADMIN"))
+                .andExpect(jsonPath("$.data.role").doesNotExist())
                 .andExpect(jsonPath("$.data.origin").value("MANUAL"))
                 .andExpect(jsonPath("$.data.passwordChangeRequired").value(true))
         }

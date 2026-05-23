@@ -3,6 +3,9 @@ package com.otoki.powersales.sap.inbound.controller
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.auth.sharing.service.FlsService
+import com.otoki.powersales.auth.sharing.service.PermissionSetEvaluator
+import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.sap.inbound.dto.account.AccountMasterDetail
 import com.otoki.powersales.sap.inbound.dto.account.FailureItem
@@ -58,6 +61,16 @@ class SapAccountMasterControllerTest {
 
     @MockkBean
     private lateinit var gpsConsentFilter: GpsConsentFilter
+
+    @MockkBean
+    private lateinit var flsService: FlsService
+
+    @MockkBean
+    private lateinit var permissionSetEvaluator: PermissionSetEvaluator
+
+    @MockkBean
+    private lateinit var userRepository: UserRepository
+
 
     @BeforeEach
     fun setUp() {
