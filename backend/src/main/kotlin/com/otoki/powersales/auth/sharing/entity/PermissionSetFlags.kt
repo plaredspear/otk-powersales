@@ -1,5 +1,7 @@
 package com.otoki.powersales.auth.sharing.entity
 
+import com.otoki.powersales.common.salesforce.SFMeta
+import com.otoki.powersales.common.salesforce.SFMetaSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -14,8 +16,11 @@ import org.hibernate.type.SqlTypes
  *
  * objectPermissions 는 SObject 단위 권한 — `{ "Account": { "viewAllRecords": true, ... }, ... }` jsonb 박제.
  * application layer 에서 Jackson 으로 Map<String, Map<String, Boolean>> ↔ JSON 직렬화.
+ *
+ * XML 출처: `permissionsets/<Name>.permissionset-meta.xml` 의 `<objectPermissions>` + system 권한 비트.
  */
 @Entity
+@SFMeta(SFMetaSource.PERMISSION_SET_XML, "objectPermissions")
 @Table(name = "permission_set_flags")
 class PermissionSetFlags(
 

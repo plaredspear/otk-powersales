@@ -1,6 +1,8 @@
 package com.otoki.powersales.auth.sharing.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.salesforce.SFMeta
+import com.otoki.powersales.common.salesforce.SFMetaSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -17,6 +19,8 @@ import jakarta.persistence.Table
  * 조건 (sharing_rule_condition) + 대상 (sharing_rule_target) 은 별도 테이블.
  */
 @Entity
+@SFMeta(SFMetaSource.SHARING_RULES_XML, "sharingCriteriaRules")
+@SFMeta(SFMetaSource.SHARING_RULES_XML, "sharingOwnerRules")
 @Table(name = "sharing_rule")
 class SharingRule(
 

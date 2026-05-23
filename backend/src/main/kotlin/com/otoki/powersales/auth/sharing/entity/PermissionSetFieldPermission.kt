@@ -1,6 +1,8 @@
 package com.otoki.powersales.auth.sharing.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.salesforce.SFMeta
+import com.otoki.powersales.common.salesforce.SFMetaSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -14,6 +16,7 @@ import jakarta.persistence.Table
  * 운영 26 PermissionSet. XML 출처: `permissionsets/<Name>.permissionset-meta.xml` 의 `<fieldPermissions>` element.
  */
 @Entity
+@SFMeta(SFMetaSource.PERMISSION_SET_XML, "fieldPermissions")
 @Table(name = "permission_set_field_permission")
 class PermissionSetFieldPermission(
 

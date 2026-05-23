@@ -1,6 +1,8 @@
 package com.otoki.powersales.auth.sharing.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.salesforce.SFMeta
+import com.otoki.powersales.common.salesforce.SFMetaSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -20,6 +22,9 @@ import jakarta.persistence.Table
  * EntityMetadata.sObjectName 은 null (XML 메타 출처 — #790 Q1 옵션 1 정합).
  */
 @Entity
+@SFMeta(SFMetaSource.OBJECT_META_XML, "sharingModel")
+@SFMeta(SFMetaSource.SETTINGS_XML, "sharingSettings")
+@SFMeta(SFMetaSource.SETTINGS_XML, "sharingHierarchy")
 @Table(name = "sobject_setting")
 class SObjectSetting(
 

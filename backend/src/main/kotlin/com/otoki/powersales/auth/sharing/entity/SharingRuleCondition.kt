@@ -1,5 +1,7 @@
 package com.otoki.powersales.auth.sharing.entity
 
+import com.otoki.powersales.common.salesforce.SFMeta
+import com.otoki.powersales.common.salesforce.SFMetaSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -14,6 +16,7 @@ import jakarta.persistence.Table
  * 본문 1건 = 본 entity 1건. rule 안의 condition 적용 순서는 `conditionOrder` 로 박제.
  */
 @Entity
+@SFMeta(SFMetaSource.SHARING_RULES_XML, "criteriaItems")
 @Table(name = "sharing_rule_condition")
 class SharingRuleCondition(
 

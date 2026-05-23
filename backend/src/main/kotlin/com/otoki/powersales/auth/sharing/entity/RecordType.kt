@@ -1,6 +1,8 @@
 package com.otoki.powersales.auth.sharing.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.salesforce.SFMeta
+import com.otoki.powersales.common.salesforce.SFMetaSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -16,6 +18,7 @@ import jakarta.persistence.UniqueConstraint
  * Master RT 는 적재하지 않음 (Q4 옵션 1) — `record_type_id IS NULL` 이 곧 Master 의미.
  */
 @Entity
+@SFMeta(SFMetaSource.RECORD_TYPE_XML)
 @Table(
     name = "record_type",
     uniqueConstraints = [UniqueConstraint(name = "record_type_natural_key_unique", columnNames = ["sobject_name", "developer_name"])],

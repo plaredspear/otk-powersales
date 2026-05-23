@@ -1,5 +1,7 @@
 package com.otoki.powersales.auth.sharing.entity
 
+import com.otoki.powersales.common.salesforce.SFMeta
+import com.otoki.powersales.common.salesforce.SFMetaSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -16,6 +18,7 @@ import jakarta.persistence.Table
  * Stage 2 fk substep 으로 prefix 분기 후 target_id 채움.
  */
 @Entity
+@SFMeta(SFMetaSource.SHARING_RULES_XML, "sharedTo")
 @Table(name = "sharing_rule_target")
 class SharingRuleTarget(
 

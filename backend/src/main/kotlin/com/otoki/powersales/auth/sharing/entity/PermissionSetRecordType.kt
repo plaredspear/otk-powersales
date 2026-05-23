@@ -1,6 +1,8 @@
 package com.otoki.powersales.auth.sharing.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.salesforce.SFMeta
+import com.otoki.powersales.common.salesforce.SFMetaSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -15,6 +17,7 @@ import jakarta.persistence.Table
  * 의 `<recordTypeVisibilities>` element.
  */
 @Entity
+@SFMeta(SFMetaSource.PERMISSION_SET_XML, "recordTypeVisibilities")
 @Table(name = "permission_set_record_type")
 class PermissionSetRecordType(
 
