@@ -16140,6 +16140,14 @@
     "/api/v1/admin/schedule/upload" : {
       "post" : {
         "operationId" : "uploadExcel",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
