@@ -105,7 +105,12 @@ export default function AdminLayout() {
         contentStyle={{ margin: 0, padding: 0 }}
       >
         <div className="admin-header">
-          <Space align="center">
+          <Space align="center" size={4}>
+            {user?.orgName && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {user.orgName}
+              </Text>
+            )}
             <Text>{user?.name}</Text>
             <Button type="text" size="small" onClick={handleLogout}>
               로그아웃
