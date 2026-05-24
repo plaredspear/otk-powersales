@@ -90,7 +90,7 @@ class PushMessage(
 
     // V199 — SF PushMessage__c.OwnerId.referenceTo = [Group, User] polymorphic. owner_id (Employee FK) →
     // owner_user_id (User FK) + owner_group_id (Group FK) + XOR CHECK.
-    // 주의: createdBy/lastModifiedBy 는 본 PR 범위 외 — Employee FK 유지.
+    // V200 — SF CreatedById/LastModifiedById.referenceTo = [User]. audit FK Employee → User 전환.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id")
     var ownerUser: User? = null,
@@ -101,10 +101,10 @@ class PushMessage(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null
+    var lastModifiedBy: User? = null
 
 ) : BaseEntity()

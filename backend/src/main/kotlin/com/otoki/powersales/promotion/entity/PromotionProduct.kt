@@ -31,11 +31,10 @@ class PromotionProduct(
     @Column(name = "name", length = 80)
     var name: String? = null,
 
-    // SF: DKRetail__PromotionId__c (Master-Detail → DKRetail__Promotion__c)
-    // 신규: promotion_id (FK + UNIQUE — 행사 1건당 PromotionProduct 1건).
-    // Stage1 적재 시점에는 NULL (promotion_sfid 만 채워짐), Stage2-A FK resolve 가 채움 (V195).
-    // service create 경로는 항상 non-null promotionId 전달이라 운영 invariant 유지.
-    @Column(name = "promotion_id", unique = true)
+    // SF: DKRetail__PromotionId__c (Master-Detail → DKRetail__Promotion__c, relationshipOrder=0, unique=False).
+    // 신규: promotion_id (FK). Stage1 적재 시점에는 NULL (promotion_sfid 만 채워짐), Stage2-A FK resolve 가 채움 (V195).
+    // V200 — UNIQUE 제거 (SF Master-Detail child 다수 허용 정합). 운영 분포상 한 Promotion 에 다수 child 존재.
+    @Column(name = "promotion_id")
     var promotionId: Long? = null,
 
     @SFField("DKRetail__PromotionId__c")
