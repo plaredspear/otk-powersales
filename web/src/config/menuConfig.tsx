@@ -121,8 +121,8 @@ export const menuRoute: MenuRoute = {
       icon: <SettingOutlined />,
       children: [
         { path: '/users', name: '사용자 관리', entity: 'user', operation: 'READ' },
-        { path: '/admin/permissions/profiles', name: 'Profile 관리', entity: 'profile', operation: 'READ' },
-        { path: '/admin/permissions/permission-sets', name: 'PermissionSet 관리', entity: 'permission_set', operation: 'READ' },
+        { path: '/admin/permissions/profiles', name: '프로파일 관리', entity: 'profile', operation: 'READ' },
+        { path: '/admin/permissions/permission-sets', name: '권한 세트 관리', entity: 'permission_set', operation: 'READ' },
         { path: '/admin/permissions/matrix', name: '권한 매트릭스', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/permissions/guide', name: '권한 사용 가이드' },
       ],
