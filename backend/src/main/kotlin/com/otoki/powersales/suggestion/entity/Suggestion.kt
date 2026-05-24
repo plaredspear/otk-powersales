@@ -58,7 +58,7 @@ class Suggestion(
 
     @Convert(converter = SuggestionCategoryConverter::class)
     @SFField("Category__c")
-    @Column(name = "category", nullable = false, length = 50)
+    @Column(name = "category", nullable = false, length = 255)
     var category: SuggestionCategory,
 
     @SFField("Category1__c")
@@ -90,7 +90,7 @@ class Suggestion(
     val productSfid: String? = null,
 
     @SFField("ProductCode__c")
-    @Column(name = "product_code", length = 20)
+    @Column(name = "product_code", length = 1300)
     var productCode: String? = null,
 
     @SFField("OrgCostCenterCode__c")
@@ -98,7 +98,7 @@ class Suggestion(
     var orgCostCenterCode: String? = null,
 
     @SFField("CarNumber__c")
-    @Column(name = "car_number", length = 20)
+    @Column(name = "car_number", length = 255)
     var carNumber: String? = null,
 
     @SFField("ClaimDate__c")
@@ -106,15 +106,15 @@ class Suggestion(
     var claimDate: LocalDate? = null,
 
     @SFField("ClaimType__c")
-    @Column(name = "claim_type", length = 200)
+    @Column(name = "claim_type", length = 255)
     var claimType: String? = null,
 
     @SFField("ClaimTypeMeasures__c")
-    @Column(name = "claim_type_measures", length = 200)
+    @Column(name = "claim_type_measures", length = 255)
     var claimTypeMeasures: String? = null,
 
     @SFField("LogisticsResponsibility__c")
-    @Column(name = "logistics_responsibility", length = 20)
+    @Column(name = "logistics_responsibility", length = 255)
     var logisticsResponsibility: String? = null,
 
     @SFField("WERK1_TEXT2__c")
