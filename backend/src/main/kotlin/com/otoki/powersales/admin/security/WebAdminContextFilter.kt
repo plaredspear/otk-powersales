@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.security
 
 import com.otoki.powersales.admin.service.AdminDataScopeService
+import com.otoki.powersales.auth.permission.AdminPermissionCache
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionEvaluator
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -24,8 +25,11 @@ import tools.jackson.databind.ObjectMapper
  *     ([AdminContextAttributes.PERMISSIONS]) 로 노출 + controller handler 의 `@RequiresSfPermission`
  *     어노테이션과 매칭 검사
  *
- * Permission 은 JWT claim 으로 운반되어 로그인 시점 1회 산출 — 매 요청 DB 조회 없음. SF org 의
- * PermissionSet 부여 변경 후 즉시 반영이 필요한 경우 사용자 재로그인 안내 (token TTL = max stale window).
+ * Permission 은 [AdminPermissionCache] 가 lazy lookup (5분 TTL). spec #808 expandAllDataBits 이후
+ * permission set 이 365+ key 로 커지면서 JWT claim 운반 시 토큰 byte 가 8KB 초과 → nginx
+ * `large_client_header_buffers` 한도 (4 8k) 초과로 `400 Request Header Or Cookie Too Large`
+ * 발생한 사례를 해소. cache TTL 동안 permission 변경 반영이 지연될 수 있고, 즉시 반영이 필요하면
+ * AdminPermissionCache.invalidate(userId) 명시 호출.
  *
  * Principal 의 `employeeId` snapshot 이 비어있는 사용자 (ADMIN-* 부트스트랩 등) 는 permission 빈 셋.
  * `@RequiresSfPermission` 부착 endpoint 접근 시 403, 미부착 endpoint 는 통과.
@@ -34,6 +38,7 @@ class WebAdminContextFilter(
     private val adminDataScopeService: AdminDataScopeService,
     private val requestMappingHandlerMapping: RequestMappingHandlerMapping,
     private val sfPermissionEvaluator: SfPermissionEvaluator,
+    private val adminPermissionCache: AdminPermissionCache,
     private val objectMapper: ObjectMapper,
 ) : OncePerRequestFilter() {
 
@@ -48,8 +53,9 @@ class WebAdminContextFilter(
         if (principal != null) {
             val permissions: Set<String> = if (principal.employeeId != null) {
                 request.setAttribute(AdminContextAttributes.DATA_SCOPE, adminDataScopeService.resolve(principal))
-                request.setAttribute(AdminContextAttributes.PERMISSIONS, principal.permissions)
-                principal.permissions
+                val resolved = adminPermissionCache.get(principal.userId)
+                request.setAttribute(AdminContextAttributes.PERMISSIONS, resolved)
+                resolved
             } else {
                 emptySet()
             }

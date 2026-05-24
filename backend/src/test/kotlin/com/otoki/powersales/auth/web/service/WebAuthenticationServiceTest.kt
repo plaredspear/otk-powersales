@@ -72,7 +72,7 @@ class WebAuthenticationServiceTest {
             every { passwordEncoder.matches("password123", user.password) } returns true
             every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
             every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
-            every { webJwtService.createAccessToken(any(), any(), any()) } returns "access-token"
+            every { webJwtService.createAccessToken(any(), any()) } returns "access-token"
             every { webJwtService.createRefreshToken(any(), any(), any(), any()) } returns "refresh-token"
             every { webJwtService.getAccessTokenExpirationSeconds() } returns 3600
             every { webJwtService.getRefreshExpirationMillis() } returns 7 * 24 * 60 * 60 * 1000L
@@ -126,7 +126,7 @@ class WebAuthenticationServiceTest {
             every { userRepository.findByUsername("u@otokims.co.kr") } returns user
             every { passwordEncoder.matches("1234", user.password) } returns true
             every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
-            every { webJwtService.createAccessToken(any(), any(), any()) } returns "a"
+            every { webJwtService.createAccessToken(any(), any()) } returns "a"
             every { webJwtService.createRefreshToken(any(), any(), any(), any()) } returns "r"
             every { webJwtService.getAccessTokenExpirationSeconds() } returns 3600
             every { webJwtService.getRefreshExpirationMillis() } returns 60_000L
@@ -153,7 +153,7 @@ class WebAuthenticationServiceTest {
             every { webRefreshTokenStore.exists("tok-1") } returns true
             every { userRepository.findById(1L) } returns Optional.of(user)
             every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
-            every { webJwtService.createAccessToken(any(), any(), any()) } returns "new-access"
+            every { webJwtService.createAccessToken(any(), any()) } returns "new-access"
             every { webJwtService.createRefreshToken(any(), any(), "fam-1", any()) } returns "new-refresh"
             every { webJwtService.getAccessTokenExpirationSeconds() } returns 3600
             every { webJwtService.getRefreshExpirationMillis() } returns 60_000L
