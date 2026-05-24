@@ -29,8 +29,11 @@ class PermissionSetFlags(
     @Column(name = "permission_set_flags_id")
     val id: Long = 0,
 
-    @Column(name = "permission_set_sfid", nullable = false, length = 18, unique = true)
-    var permissionSetSfid: String,
+    // V197 — Stage1 적재 시점 NULL 허용 (XML 메타 출처라 sfid 부재). Stage2 fk-natural-key substep 의
+    // resolvePermissionSetFlagsSfid() 가 permission_set.sfid 로 채움. UNIQUE 는 partial UNIQUE INDEX
+    // (WHERE permission_set_sfid IS NOT NULL) 로 V197 에서 전환됨 — entity unique 표현 불가하므로 제거.
+    @Column(name = "permission_set_sfid", length = 18)
+    var permissionSetSfid: String? = null,
 
     @Column(name = "permission_set_name", nullable = false, length = 80)
     var permissionSetName: String,
