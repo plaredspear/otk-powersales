@@ -2,8 +2,8 @@ import './AdminLayout.css';
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ProLayout from '@ant-design/pro-layout';
-import { Button, Space, Typography } from 'antd';
-import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { Dropdown, Space, Typography, type MenuProps } from 'antd';
+import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useForbiddenStore } from '@/stores/forbiddenStore';
 import { menuRoute, type MenuItem } from '@/config/menuConfig';
@@ -105,17 +105,34 @@ export default function AdminLayout() {
         contentStyle={{ margin: 0, padding: 0 }}
       >
         <div className="admin-header">
-          <Space align="center" size={4}>
-            {user?.orgName && (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {user.orgName}
-              </Text>
-            )}
-            <Text>{user?.name}</Text>
-            <Button type="text" size="small" onClick={handleLogout}>
-              로그아웃
-            </Button>
-          </Space>
+          <Dropdown
+            menu={{
+              items: [
+                {
+                  key: 'logout',
+                  icon: <LogoutOutlined />,
+                  label: '로그아웃',
+                  onClick: handleLogout,
+                },
+              ] satisfies MenuProps['items'],
+            }}
+            trigger={['click']}
+          >
+            <a
+              onClick={(e) => e.preventDefault()}
+              style={{ color: 'inherit', cursor: 'pointer' }}
+            >
+              <Space align="center" size={4}>
+                {user?.orgName && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {user.orgName}
+                  </Text>
+                )}
+                <Text>{user?.name}</Text>
+                <DownOutlined style={{ fontSize: 10 }} />
+              </Space>
+            </a>
+          </Dropdown>
         </div>
         <AppBreadcrumb />
         <div style={{ padding: 24 }}>
