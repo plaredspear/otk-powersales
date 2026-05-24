@@ -31,6 +31,22 @@ interface DisplayWorkScheduleRepositoryCustom {
 
     fun findByEmployeeIdInAndNotDeleted(employeeIds: List<Long>): List<DisplayWorkSchedule>
 
+    /**
+     * SF `UplExcelBtnSchduleMasterController.checkResult` (L205) 정합 —
+     * `DisplayWorkScheduleMaster__c WHERE CostCenterCode__c IN :newOrgValues AND EmployeeNumber__c IN :empCodes
+     *  AND (StartDate <= :latestEndDate AND (EndDate >= :earliestStartDate OR EndDate IS NULL))`.
+     *
+     * BranchCodeExpander 확장 결과로 조장 지점 필터 + 사번 필터 + 입력 엑셀 행들의 최대 기간 겹침 검증.
+     * `costCenterCode` 컬럼은 [DisplayWorkSchedule.costCenterCode] 직접 사용 (SF formula `CostCenterCode__c = FullName__r.CostCenterCode__c` 의 신규 직접 컬럼 매핑).
+     * `employeeCode` 매칭은 `employee.employeeCode` 조인 (SF formula `EmployeeNumber__c = FullName__r.DKRetail__EmpCode__c` 와 정합).
+     */
+    fun findByCostCenterCodeInAndEmployeeCodeInOverlappingPeriod(
+        costCenterCodes: Collection<String>,
+        employeeCodes: Collection<String>,
+        earliestStartDate: LocalDate,
+        latestEndDate: LocalDate
+    ): List<DisplayWorkSchedule>
+
     fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Int>
 
     /**

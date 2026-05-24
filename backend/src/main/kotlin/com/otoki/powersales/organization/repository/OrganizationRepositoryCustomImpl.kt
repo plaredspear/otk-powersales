@@ -251,4 +251,21 @@ class OrganizationRepositoryCustomImpl(
             .fetch()
             .filterNotNull()
     }
+
+    override fun findAllLeafBranchCodes(): List<String> {
+        val notDeleted = organization.isDeleted.isNull.or(organization.isDeleted.isFalse)
+        val level5 = queryFactory
+            .select(organization.costCenterLevel5).distinct()
+            .from(organization)
+            .where(notDeleted, organization.costCenterLevel5.isNotNull)
+            .fetch()
+            .filterNotNull()
+        val level4Only = queryFactory
+            .select(organization.costCenterLevel4).distinct()
+            .from(organization)
+            .where(notDeleted, organization.costCenterLevel5.isNull, organization.costCenterLevel4.isNotNull)
+            .fetch()
+            .filterNotNull()
+        return (level5 + level4Only).distinct()
+    }
 }

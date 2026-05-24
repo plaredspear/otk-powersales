@@ -44,4 +44,14 @@ interface EmployeeRepositoryCustom {
      * 반환값: 영향받은 row 수 (운영 로그용).
      */
     fun resetAgreementFlagForActiveConsents(): Long
+
+    /**
+     * SF `UplExcelBtnSchduleMasterController.checkResult` (L181) 정합 —
+     * `Employee WHERE CostCenterCode__c IN :newOrgValues AND DKRetail__EmpCode__c IN :empCodes`.
+     * BranchCodeExpander 확장 결과로 조장 지점 (이력 합집합) 필터 + 사번 필터 동시 적용.
+     */
+    fun findByCostCenterCodeInAndEmployeeCodeIn(
+        costCenterCodes: Collection<String>,
+        employeeCodes: Collection<String>
+    ): List<Employee>
 }

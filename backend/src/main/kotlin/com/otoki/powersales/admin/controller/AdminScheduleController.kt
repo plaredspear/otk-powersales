@@ -180,12 +180,13 @@ class AdminScheduleController(
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
     @PostMapping("/upload")
     fun uploadExcel(
+        @CurrentDataScope scope: DataScope,
         @RequestParam("file", required = false) file: MultipartFile?
     ): ResponseEntity<ApiResponse<ScheduleUploadResultDto>> {
         if (file == null) {
             throw ScheduleFileRequiredException()
         }
-        val result = adminScheduleService.uploadAndValidate(file)
+        val result = adminScheduleService.uploadAndValidate(scope, file)
         return ResponseEntity.ok(ApiResponse.success(result, "검증 완료"))
     }
 

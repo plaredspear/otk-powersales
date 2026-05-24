@@ -65,4 +65,14 @@ interface AccountRepositoryCustom {
      * UPDATE 흐름에서 자기 자신은 중복 검증에서 제외 (`Trigger.oldMap` 비교 동등 효과).
      */
     fun existsActiveByNameAndIdNot(name: String, id: Int): Boolean
+
+    /**
+     * SF `UplExcelBtnSchduleMasterController.checkResult` (L174) 정합 —
+     * `Account WHERE BranchCode__c IN :newOrgValues AND ExternalKey__c IN :accCodes`.
+     * BranchCodeExpander 확장 결과로 조장 지점 (이력 합집합) 필터 + 외부키 필터 동시 적용.
+     */
+    fun findByBranchCodeInAndExternalKeyIn(
+        branchCodes: Collection<String>,
+        externalKeys: Collection<String>
+    ): List<Account>
 }

@@ -99,6 +99,27 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findByCostCenterCodeInAndEmployeeCodeInOverlappingPeriod(
+        costCenterCodes: Collection<String>,
+        employeeCodes: Collection<String>,
+        earliestStartDate: LocalDate,
+        latestEndDate: LocalDate
+    ): List<DisplayWorkSchedule> {
+        if (costCenterCodes.isEmpty() || employeeCodes.isEmpty()) return emptyList()
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.employee).fetchJoin()
+            .where(
+                isNotDeleted(),
+                displayWorkSchedule.costCenterCode.`in`(costCenterCodes),
+                displayWorkSchedule.employee.employeeCode.`in`(employeeCodes),
+                displayWorkSchedule.startDate.loe(latestEndDate),
+                displayWorkSchedule.endDate.goe(earliestStartDate)
+                    .or(displayWorkSchedule.endDate.isNull)
+            )
+            .fetch()
+    }
+
     override fun findScheduleList(
         employeeCode: String?,
         accountIds: List<Int>?,

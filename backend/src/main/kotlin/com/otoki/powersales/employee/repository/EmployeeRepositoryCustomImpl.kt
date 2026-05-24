@@ -140,4 +140,18 @@ class EmployeeRepositoryCustomImpl(
             .where(employee.agreementFlag.isTrue)
             .execute()
     }
+
+    override fun findByCostCenterCodeInAndEmployeeCodeIn(
+        costCenterCodes: Collection<String>,
+        employeeCodes: Collection<String>
+    ): List<Employee> {
+        if (costCenterCodes.isEmpty() || employeeCodes.isEmpty()) return emptyList()
+        return queryFactory
+            .selectFrom(employee)
+            .where(
+                employee.costCenterCode.`in`(costCenterCodes),
+                employee.employeeCode.`in`(employeeCodes)
+            )
+            .fetch()
+    }
 }

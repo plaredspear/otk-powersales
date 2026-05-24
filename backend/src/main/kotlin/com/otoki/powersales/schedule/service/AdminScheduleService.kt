@@ -16,6 +16,7 @@ import com.otoki.powersales.schedule.exception.*
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.BusinessException
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
@@ -59,6 +60,7 @@ class AdminScheduleService(
     private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository,
     private val redisTemplate: RedisTemplate<String, String>,
     private val objectMapper: ObjectMapper,
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     companion object {
@@ -144,7 +146,7 @@ class AdminScheduleService(
         return TemplateResult(bytes, filename)
     }
 
-    fun uploadAndValidate(file: MultipartFile): ScheduleUploadResultDto {
+    fun uploadAndValidate(scope: DataScope, file: MultipartFile): ScheduleUploadResultDto {
         // 파일 검증
         validateFile(file)
 
@@ -158,28 +160,36 @@ class AdminScheduleService(
             throw ScheduleRowLimitExceededException()
         }
 
+        // SF UplExcelBtnSchduleMasterController 정합 — 조장 지점 (BranchMapping 이력 합집합) 필터
+        val expandedBranchCodes = expandUserBranchCodes(scope)
+
         // 사원번호/거래처코드 일괄 조회
         val employeeCodes = parseResult.rows.mapNotNull { it.employeeCode }.distinct()
         val accountCodes = parseResult.rows.mapNotNull { it.accountCode }.distinct()
 
-        val usersByEmployeeCode = if (employeeCodes.isNotEmpty()) {
-            employeeRepository.findByEmployeeCodeIn(employeeCodes).associateBy { it.employeeCode }
+        // SF checkResult L181 정합 — CostCenterCode IN :newOrgValues AND EmpCode IN :empCodes
+        val usersByEmployeeCode = if (employeeCodes.isNotEmpty() && expandedBranchCodes.isNotEmpty()) {
+            employeeRepository.findByCostCenterCodeInAndEmployeeCodeIn(expandedBranchCodes, employeeCodes)
+                .associateBy { it.employeeCode }
         } else {
             emptyMap()
         }
 
-        val accountsByExternalKey = if (accountCodes.isNotEmpty()) {
-            accountRepository.findByExternalKeyIn(accountCodes)
+        // SF checkResult L174 정합 — BranchCode IN :newOrgValues AND ExternalKey IN :accCodes
+        val accountsByExternalKey = if (accountCodes.isNotEmpty() && expandedBranchCodes.isNotEmpty()) {
+            accountRepository.findByBranchCodeInAndExternalKeyIn(expandedBranchCodes, accountCodes)
                 .filter { it.externalKey != null }
                 .associateBy { it.externalKey!! }
         } else {
             emptyMap()
         }
 
-        // 기존 스케줄 조회 (중복 검증용)
-        val userIds = usersByEmployeeCode.values.map { it.id }
-        val existingSchedules = if (userIds.isNotEmpty()) {
-            scheduleRepository.findByEmployeeIdInAndNotDeleted(userIds)
+        // SF checkResult L205 정합 — CostCenterCode IN :newOrgValues AND EmpNumber IN :empCodes AND 기간 겹침
+        val existingSchedules = if (employeeCodes.isNotEmpty() && expandedBranchCodes.isNotEmpty()) {
+            val (earliestStart, latestEnd) = computeExcelDateRange(parseResult.rows)
+            scheduleRepository.findByCostCenterCodeInAndEmployeeCodeInOverlappingPeriod(
+                expandedBranchCodes, employeeCodes, earliestStart, latestEnd
+            )
         } else {
             emptyList()
         }
@@ -717,6 +727,43 @@ class AdminScheduleService(
         if (!scope.validateAccess(costCenterCode)) {
             throw ScheduleForbiddenException()
         }
+    }
+
+    /**
+     * SF `UplExcelBtnSchduleMasterController` 의
+     * `CurrentUserBranchNameList.getBranchNames().keySet() → getIncludedBranchCode2(...)` 정합.
+     *
+     * `scope.isAllBranches` (영업지원실/시스템 관리자) 인 경우 SF `CurrentUserBranchNameList.getOrgList()` L35 분기와 동등 — 전사 leaf branch_codes 합집합.
+     * 그 외에는 scope.branchCodes 를 base 로 사용.
+     * 모든 케이스에서 BranchMapping 이력 합집합 (`BranchCodeExpander.expand`) 적용.
+     */
+    private fun expandUserBranchCodes(scope: DataScope): List<String> {
+        val baseBranchCodes: Collection<String> = if (scope.isAllBranches) {
+            organizationRepository.findAllLeafBranchCodes()
+        } else {
+            scope.branchCodes
+        }
+        if (baseBranchCodes.isEmpty()) return emptyList()
+        return branchCodeExpander.expand(baseBranchCodes).toList()
+    }
+
+    /**
+     * SF `UplExcelBtnSchduleMasterController.checkResult` L124-165 정합 — 엑셀 행들의 가장 이른 시작일 / 가장 늦은 종료일 산출.
+     * 종료일 미지정이면 today + 5년 (SF L73-75 fallback 정합).
+     */
+    private fun computeExcelDateRange(rows: List<ScheduleExcelParser.ParsedRow>): Pair<LocalDate, LocalDate> {
+        val today = LocalDate.now()
+        var earliestStart = today.plusYears(100)
+        var latestEnd = today.minusYears(100)
+        val latestEndSentinel = latestEnd
+        for (row in rows) {
+            row.startDate?.let { if (it.isBefore(earliestStart)) earliestStart = it }
+            row.endDate?.let { if (it.isAfter(latestEnd)) latestEnd = it }
+        }
+        if (latestEnd == latestEndSentinel) {
+            latestEnd = today.plusYears(5)
+        }
+        return earliestStart to latestEnd
     }
 
     private fun validateScheduleIds(ids: List<Long>, schedules: List<DisplayWorkSchedule>) {

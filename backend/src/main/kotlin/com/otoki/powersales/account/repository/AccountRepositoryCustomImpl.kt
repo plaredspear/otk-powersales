@@ -97,6 +97,20 @@ class AccountRepositoryCustomImpl(
         return found != null
     }
 
+    override fun findByBranchCodeInAndExternalKeyIn(
+        branchCodes: Collection<String>,
+        externalKeys: Collection<String>
+    ): List<Account> {
+        if (branchCodes.isEmpty() || externalKeys.isEmpty()) return emptyList()
+        return queryFactory
+            .selectFrom(account)
+            .where(
+                account.branchCode.`in`(branchCodes),
+                account.externalKey.`in`(externalKeys)
+            )
+            .fetch()
+    }
+
     private fun notDeleted() = account.isDeleted.isNull.or(account.isDeleted.eq(false))
 
     companion object {

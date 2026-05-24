@@ -629,7 +629,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                     RowPreview(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상온", "상시", "2026-04-01", null)
                 )
             )
-            every { adminScheduleService.uploadAndValidate(any()) } returns uploadResult
+            every { adminScheduleService.uploadAndValidate(any(), any()) } returns uploadResult
 
             val file = MockMultipartFile(
                 "file", "test.xlsx",
@@ -655,7 +655,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 잘못된 확장자")
         fun upload_invalidFileType() {
-            every { adminScheduleService.uploadAndValidate(any()) } throws ScheduleInvalidFileTypeException()
+            every { adminScheduleService.uploadAndValidate(any(), any()) } throws ScheduleInvalidFileTypeException()
 
             val file = MockMultipartFile(
                 "file", "test.csv", "text/csv", ByteArray(100)
@@ -669,7 +669,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 빈 파일")
         fun upload_emptyFile() {
-            every { adminScheduleService.uploadAndValidate(any()) } throws ScheduleEmptyFileException()
+            every { adminScheduleService.uploadAndValidate(any(), any()) } throws ScheduleEmptyFileException()
 
             val file = MockMultipartFile(
                 "file", "test.xlsx",
@@ -685,7 +685,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 행 초과")
         fun upload_rowLimitExceeded() {
-            every { adminScheduleService.uploadAndValidate(any()) } throws ScheduleRowLimitExceededException()
+            every { adminScheduleService.uploadAndValidate(any(), any()) } throws ScheduleRowLimitExceededException()
 
             val file = MockMultipartFile(
                 "file", "test.xlsx",

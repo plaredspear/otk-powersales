@@ -14,6 +14,14 @@ interface OrganizationRepositoryCustom {
 
     fun expandCostCenterCodes(costCenterCodes: List<String>): List<String>
 
+    /**
+     * 전사 leaf level branch_codes 일괄 조회 (영업지원실 권한자용).
+     *
+     * SF `CurrentUserBranchNameList.getOrgList()` L35 정합 — `Org__c WHERE OrgNameLevel3__c='Retail사업부' AND OrgCodeLevel5__c IS NOT NULL OR OrgNameLevel3__c='제1사업부' OR 영업지원1팀/2팀` 분기의
+     * 신규 단순화 매핑 — 전사 leaf cost_center_code (level5, 없으면 level4) distinct 합집합 (`is_deleted` 제외).
+     */
+    fun findAllLeafBranchCodes(): List<String>
+
     fun findFirstByAnyOrgCodeLevel(orgCode: String): Organization?
 
     /**

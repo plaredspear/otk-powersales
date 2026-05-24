@@ -12,6 +12,8 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.schedule.service.internal.LastMonthRevenueLookup
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -78,6 +80,8 @@ class AdminScheduleServiceTest {
         .findAndAddModules()
         .build()
 
+    private val branchCodeExpander: BranchCodeExpander = mockk(relaxUnitFun = true)
+
     private val adminScheduleService = AdminScheduleService(
         employeeRepository,
         accountRepository,
@@ -93,7 +97,11 @@ class AdminScheduleServiceTest {
         profileRepository,
         redisTemplate,
         objectMapper,
+        branchCodeExpander,
     )
+
+    /** SF UplExcelBtnSchduleMasterController 정합 — 기본 scope (`["CC001"]`) + BranchCodeExpander pass-through. */
+    private val defaultScope = DataScope(branchCodes = listOf("CC001"), isAllBranches = false)
 
     @org.junit.jupiter.api.BeforeEach
     fun setUpDefaults() {
@@ -102,6 +110,9 @@ class AdminScheduleServiceTest {
         every { lastMonthRevenueLookup.forAccount(any(), any()) } returns null
         // relaxUnitFun mockk 도 User? 의 generic 추론 실패 → 명시적 stub.
         every { userRepository.findByEmployeeCode(any()) } returns null
+        // BranchCodeExpander default — pass-through (BranchMapping seed 없는 환경)
+        every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }
+        every { organizationRepository.findAllLeafBranchCodes() } returns emptyList()
     }
 
     @Nested
@@ -382,10 +393,14 @@ class AdminScheduleServiceTest {
             val account = createAccount(externalKey = "ACC001", sfid = "ACC_SFID_001", name = "이마트 강남점")
 
             every { excelParser.parse(any()) } returns parseResult
-            every { employeeRepository.findByEmployeeCodeIn(listOf("20030001")) } returns listOf(employee)
-            every { accountRepository.findByExternalKeyIn(listOf("ACC001")) } returns listOf(account)
-            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
-            every { uploadValidator.validate(eq(parsedRows), any(), any(), any()) } returns 
+            every { employeeRepository.findByCostCenterCodeInAndEmployeeCodeIn(listOf("CC001"), listOf("20030001")) } returns listOf(employee)
+            every { accountRepository.findByBranchCodeInAndExternalKeyIn(listOf("CC001"), listOf("ACC001")) } returns listOf(account)
+            every {
+                scheduleRepository.findByCostCenterCodeInAndEmployeeCodeInOverlappingPeriod(
+                    listOf("CC001"), listOf("20030001"), any(), any()
+                )
+            } returns emptyList()
+            every { uploadValidator.validate(eq(parsedRows), any(), any(), any()) } returns
                 ScheduleUploadValidator.ValidationResult(
                     errors = emptyList(),
                     previews = listOf(
@@ -395,11 +410,11 @@ class AdminScheduleServiceTest {
                         ScheduleUploadValidator.ValidatedRow(1L, "20030001", 1, "고정", "상온", "상시", LocalDate.of(2026, 4, 1), null)
                     )
                 )
-            
+
             every { redisTemplate.opsForValue() } returns valueOperations
 
             // When
-            val result = adminScheduleService.uploadAndValidate(file)
+            val result = adminScheduleService.uploadAndValidate(defaultScope, file)
 
             // Then
             assertThat(result.totalRows).isEqualTo(1)
@@ -416,7 +431,7 @@ class AdminScheduleServiceTest {
             val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(100))
             every { excelParser.parse(any()) } returns ScheduleExcelParser.ParseResult(emptyList(), 0)
 
-            assertThatThrownBy { adminScheduleService.uploadAndValidate(file) }
+            assertThatThrownBy { adminScheduleService.uploadAndValidate(defaultScope, file) }
                 .isInstanceOf(ScheduleEmptyFileException::class.java)
         }
 
@@ -427,7 +442,7 @@ class AdminScheduleServiceTest {
             val rows = (1..501).map { ScheduleExcelParser.ParsedRow(it + 3, "emp$it", "name$it", "acc$it", null, "고정", "상온", "상시", "2026-04-01", null) }
             every { excelParser.parse(any()) } returns ScheduleExcelParser.ParseResult(rows, 501)
 
-            assertThatThrownBy { adminScheduleService.uploadAndValidate(file) }
+            assertThatThrownBy { adminScheduleService.uploadAndValidate(defaultScope, file) }
                 .isInstanceOf(ScheduleRowLimitExceededException::class.java)
         }
 
@@ -436,7 +451,7 @@ class AdminScheduleServiceTest {
         fun uploadAndValidate_invalidFileType() {
             val file = MockMultipartFile("file", "test.csv", "text/csv", ByteArray(100))
 
-            assertThatThrownBy { adminScheduleService.uploadAndValidate(file) }
+            assertThatThrownBy { adminScheduleService.uploadAndValidate(defaultScope, file) }
                 .isInstanceOf(ScheduleInvalidFileTypeException::class.java)
         }
 
@@ -445,7 +460,7 @@ class AdminScheduleServiceTest {
         fun uploadAndValidate_fileTooLarge() {
             val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(6 * 1024 * 1024))
 
-            assertThatThrownBy { adminScheduleService.uploadAndValidate(file) }
+            assertThatThrownBy { adminScheduleService.uploadAndValidate(defaultScope, file) }
                 .isInstanceOf(ScheduleFileTooLargeException::class.java)
         }
 
@@ -454,8 +469,165 @@ class AdminScheduleServiceTest {
         fun uploadAndValidate_emptyUpload() {
             val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(0))
 
-            assertThatThrownBy { adminScheduleService.uploadAndValidate(file) }
+            assertThatThrownBy { adminScheduleService.uploadAndValidate(defaultScope, file) }
                 .isInstanceOf(ScheduleFileRequiredException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("uploadAndValidate - BranchCodeExpander 합성 (SF UplExcelBtnSchduleMasterController 정합)")
+    inner class UploadBranchCodeExpansionTests {
+
+        private fun excelRows(): List<ScheduleExcelParser.ParsedRow> = listOf(
+            ScheduleExcelParser.ParsedRow(
+                4, "20030001", "홍길동", "ACC001", "이마트", "고정", "상온", "상시",
+                "2026-05-01", "2026-05-31", LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31)
+            )
+        )
+
+        @Test
+        @DisplayName("BranchMapping 이력 합집합 — 조장 지점 = 5849, BranchMapping seed (BC=5849, IBC=5479,5849) → IN 절에 5479 포함")
+        fun branchMappingHistoryUnion() {
+            val scope = DataScope(branchCodes = listOf("5849"), isAllBranches = false)
+            every { excelParser.parse(any()) } returns ScheduleExcelParser.ParseResult(excelRows(), 1)
+            every { branchCodeExpander.expand(listOf("5849")) } returns setOf("5849", "5479")
+            every { employeeRepository.findByCostCenterCodeInAndEmployeeCodeIn(any(), listOf("20030001")) } returns emptyList()
+            every { accountRepository.findByBranchCodeInAndExternalKeyIn(any(), listOf("ACC001")) } returns emptyList()
+            every {
+                scheduleRepository.findByCostCenterCodeInAndEmployeeCodeInOverlappingPeriod(
+                    any(), listOf("20030001"), any(), any()
+                )
+            } returns emptyList()
+            every { uploadValidator.validate(any(), any(), any(), any()) } returns
+                ScheduleUploadValidator.ValidationResult(emptyList(), emptyList(), emptyList())
+            every { redisTemplate.opsForValue() } returns valueOperations
+
+            val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(100))
+            adminScheduleService.uploadAndValidate(scope, file)
+
+            verify {
+                employeeRepository.findByCostCenterCodeInAndEmployeeCodeIn(
+                    match { it.toSet() == setOf("5849", "5479") },
+                    listOf("20030001")
+                )
+            }
+            verify {
+                accountRepository.findByBranchCodeInAndExternalKeyIn(
+                    match { it.toSet() == setOf("5849", "5479") },
+                    listOf("ACC001")
+                )
+            }
+            verify {
+                scheduleRepository.findByCostCenterCodeInAndEmployeeCodeInOverlappingPeriod(
+                    match { it.toSet() == setOf("5849", "5479") },
+                    listOf("20030001"),
+                    any(),
+                    any()
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("다른 지점 사원 — 조장 지점 5849 lookup 시 5750 소속 사원은 lookup miss (V1 에러 유도)")
+        fun differentBranchEmployeeLookupMiss() {
+            val scope = DataScope(branchCodes = listOf("5849"), isAllBranches = false)
+            every { excelParser.parse(any()) } returns ScheduleExcelParser.ParseResult(excelRows(), 1)
+            // BranchCodeExpander seed 없음 — pass-through ["5849"]
+            every { branchCodeExpander.expand(listOf("5849")) } returns setOf("5849")
+            // 5750 소속 사원이 DB 에 있어도 5849 IN 절로는 조회 안됨 → 빈 리스트
+            every { employeeRepository.findByCostCenterCodeInAndEmployeeCodeIn(listOf("5849"), listOf("20030001")) } returns emptyList()
+            every { accountRepository.findByBranchCodeInAndExternalKeyIn(listOf("5849"), listOf("ACC001")) } returns emptyList()
+            every {
+                scheduleRepository.findByCostCenterCodeInAndEmployeeCodeInOverlappingPeriod(
+                    listOf("5849"), listOf("20030001"), any(), any()
+                )
+            } returns emptyList()
+            every { uploadValidator.validate(any(), any(), any(), any()) } returns
+                ScheduleUploadValidator.ValidationResult(emptyList(), emptyList(), emptyList())
+            every { redisTemplate.opsForValue() } returns valueOperations
+
+            val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(100))
+            adminScheduleService.uploadAndValidate(scope, file)
+
+            // validator 가 받는 usersByEmployeeCode 가 빈 map → V1 에러 유도 책임은 validator 측 (본 테스트는 lookup 차단 확인)
+            verify {
+                uploadValidator.validate(
+                    any(),
+                    match<Map<String, Employee>> { it.isEmpty() },
+                    any(),
+                    any()
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("영업지원실 (scope.isAllBranches) — 전사 leaf branch_codes 합집합 적용")
+        fun allBranchesScopeUsesGlobalLeafCodes() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            every { excelParser.parse(any()) } returns ScheduleExcelParser.ParseResult(excelRows(), 1)
+            every { organizationRepository.findAllLeafBranchCodes() } returns listOf("5849", "5750", "3475")
+            every { branchCodeExpander.expand(listOf("5849", "5750", "3475")) } returns setOf("5849", "5750", "3475", "5479")
+            every { employeeRepository.findByCostCenterCodeInAndEmployeeCodeIn(any(), any()) } returns emptyList()
+            every { accountRepository.findByBranchCodeInAndExternalKeyIn(any(), any()) } returns emptyList()
+            every {
+                scheduleRepository.findByCostCenterCodeInAndEmployeeCodeInOverlappingPeriod(
+                    any(), any(), any(), any()
+                )
+            } returns emptyList()
+            every { uploadValidator.validate(any(), any(), any(), any()) } returns
+                ScheduleUploadValidator.ValidationResult(emptyList(), emptyList(), emptyList())
+            every { redisTemplate.opsForValue() } returns valueOperations
+
+            val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(100))
+            adminScheduleService.uploadAndValidate(scope, file)
+
+            verify { organizationRepository.findAllLeafBranchCodes() }
+            verify { branchCodeExpander.expand(listOf("5849", "5750", "3475")) }
+            verify {
+                employeeRepository.findByCostCenterCodeInAndEmployeeCodeIn(
+                    match { it.toSet() == setOf("5849", "5750", "3475", "5479") },
+                    any()
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("기간 겹침 — earliestStart=4/1, latestEnd=5/31 가 repository 에 전달됨")
+        fun periodOverlapPassedToRepository() {
+            val rows = listOf(
+                ScheduleExcelParser.ParsedRow(
+                    4, "20030001", "홍길동", "ACC001", "이마트", "고정", "상온", "상시",
+                    "2026-04-01", "2026-05-15", LocalDate.of(2026, 4, 1), LocalDate.of(2026, 5, 15)
+                ),
+                ScheduleExcelParser.ParsedRow(
+                    5, "20030002", "김철수", "ACC002", "롯데", "격고", "상온", "상시",
+                    "2026-04-15", "2026-05-31", LocalDate.of(2026, 4, 15), LocalDate.of(2026, 5, 31)
+                )
+            )
+            val scope = DataScope(branchCodes = listOf("CC001"), isAllBranches = false)
+            every { excelParser.parse(any()) } returns ScheduleExcelParser.ParseResult(rows, 2)
+            every { employeeRepository.findByCostCenterCodeInAndEmployeeCodeIn(any(), any()) } returns emptyList()
+            every { accountRepository.findByBranchCodeInAndExternalKeyIn(any(), any()) } returns emptyList()
+            every {
+                scheduleRepository.findByCostCenterCodeInAndEmployeeCodeInOverlappingPeriod(
+                    any(), any(), any(), any()
+                )
+            } returns emptyList()
+            every { uploadValidator.validate(any(), any(), any(), any()) } returns
+                ScheduleUploadValidator.ValidationResult(emptyList(), emptyList(), emptyList())
+            every { redisTemplate.opsForValue() } returns valueOperations
+
+            val file = MockMultipartFile("file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ByteArray(100))
+            adminScheduleService.uploadAndValidate(scope, file)
+
+            verify {
+                scheduleRepository.findByCostCenterCodeInAndEmployeeCodeInOverlappingPeriod(
+                    any(),
+                    any(),
+                    LocalDate.of(2026, 4, 1),    // earliest start
+                    LocalDate.of(2026, 5, 31)    // latest end
+                )
+            }
         }
     }
 
