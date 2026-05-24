@@ -3,6 +3,7 @@ package com.otoki.powersales.common.entity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -84,12 +85,14 @@ class PushMessageReceiver(
     @JoinColumn(name = "push_message_id", insertable = false, updatable = false, foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT))
     var pushMessage: PushMessage? = null,
 
+    // V201 — SF PushMessageReceiver__c.CreatedById/LastModifiedById.referenceTo = [User].
+    // audit FK Employee → User 정합 (V200 다른 entity 일괄 정합과 동일 패턴).
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null
+    var lastModifiedBy: User? = null
 
 ) : AuditedEntity()
