@@ -84,7 +84,7 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
     inner class RunNaturalKeyFkResolve {
 
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 9 entry + sharing_rule_target 2 분기 모두에 대해 UPDATE 11회 + COUNT 19회")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 9 entry + sharing_rule_target 2 분기 + permission_set_flags.sfid 1건 모두에 대해 UPDATE 12회 + COUNT 20회")
         fun allMappingsExecuted() {
             val updateQuery = mockk<Query>()
             every { updateQuery.executeUpdate() } returns 10
@@ -98,16 +98,16 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
             val response = service.runNaturalKeyFkResolve()
 
             assertThat(response.substep).isEqualTo("fk-natural-key")
-            // 9 NaturalKey + 2 sharing_rule_target (ROLE*/GROUP) = 11 SubstepResult
-            assertThat(response.results).hasSize(NATURAL_KEY_FK_MAPPINGS.size + 2)
-            assertThat(response.totalRowsAffected).isEqualTo((NATURAL_KEY_FK_MAPPINGS.size + 2) * 10)
+            // 9 NaturalKey + 2 sharing_rule_target (ROLE*/GROUP) + 1 permission_set_flags.sfid = 12 SubstepResult
+            assertThat(response.results).hasSize(NATURAL_KEY_FK_MAPPINGS.size + 3)
+            assertThat(response.totalRowsAffected).isEqualTo((NATURAL_KEY_FK_MAPPINGS.size + 3) * 10)
 
-            // UPDATE: 9 (NaturalKey) + 2 (sharing_rule_target ROLE*/GROUP) = 11회
-            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size + 2) {
+            // UPDATE: 9 (NaturalKey) + 2 (sharing_rule_target ROLE*/GROUP) + 1 (permission_set_flags.sfid) = 12회
+            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size + 3) {
                 em.createNativeQuery(match<String> { it.trimStart().startsWith("UPDATE") })
             }
-            // SELECT COUNT: 9 NaturalKey × 2 (전/후) + 1 (sharing_rule_target unmatched 측정) = 19회
-            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 1) {
+            // SELECT COUNT: 9 NaturalKey × 2 (전/후) + 1 (sharing_rule_target unmatched) + 1 (permission_set_flags.sfid unmatched) = 20회
+            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 2) {
                 em.createNativeQuery(match<String> { it.trimStart().startsWith("SELECT") })
             }
         }
