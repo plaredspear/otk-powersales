@@ -5381,7 +5381,7 @@
             "type" : "string"
           },
           "permissionSetSfid" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "viewAllData" : {
             "type" : "boolean"
