@@ -706,6 +706,78 @@ const combinationCases: CombinationRow[] = [
   },
 ];
 
+interface SfMappingRow {
+  ours: string;
+  sfFeature: string;
+  sfPath?: string;
+  note?: string;
+}
+
+interface SalesforceMappingProps {
+  title?: string;
+  intro?: React.ReactNode;
+  rows: SfMappingRow[];
+  extra?: React.ReactNode;
+}
+
+/**
+ * 각 섹션 하단에 일관된 형태로 "Salesforce 대응" 정보 표시.
+ * SF 사용자가 익숙한 SF 용어 → 본 시스템 용어로 즉시 매핑할 수 있도록.
+ */
+function SalesforceMapping({ title = 'Salesforce 대응', intro, rows, extra }: SalesforceMappingProps) {
+  return (
+    <div
+      style={{
+        marginTop: 16,
+        padding: 16,
+        background: '#f6f8ff',
+        border: '1px solid #d6e4ff',
+        borderRadius: 8,
+      }}
+    >
+      <Space style={{ marginBottom: 8 }}>
+        <Tag color="geekblue" style={{ fontWeight: 600 }}>
+          ☁ {title}
+        </Tag>
+      </Space>
+      {intro && <Paragraph style={{ marginBottom: 12 }}>{intro}</Paragraph>}
+      <Table
+        size="small"
+        pagination={false}
+        rowKey={(_r, i) => String(i)}
+        dataSource={rows}
+        columns={[
+          {
+            title: '본 시스템',
+            dataIndex: 'ours',
+            key: 'ours',
+            width: 260,
+            render: (v: string) => <Text strong>{v}</Text>,
+          },
+          {
+            title: 'Salesforce 기능',
+            dataIndex: 'sfFeature',
+            key: 'sfFeature',
+            width: 260,
+            render: (v: string) => <Tag color="blue">{v}</Tag>,
+          },
+          {
+            title: 'SF Setup 경로 / 비고',
+            key: 'sfPathNote',
+            render: (_v: unknown, row: SfMappingRow) => (
+              <Space direction="vertical" size={0}>
+                {row.sfPath && <Text code>{row.sfPath}</Text>}
+                {row.note && <Text type="secondary">{row.note}</Text>}
+              </Space>
+            ),
+          },
+        ]}
+      />
+      {extra && <div style={{ marginTop: 12 }}>{extra}</div>}
+    </div>
+  );
+}
+
 function PermissionSimulator() {
   const [scenarioKey, setScenarioKey] = useState<string>(SIM_SCENARIOS[2].key); // 홍영업 기본
   const [entity, setEntity] = useState<string>('account');
@@ -862,6 +934,17 @@ export default function PermissionGuidePage() {
         본 시스템의 권한 모델은 <Text strong>Salesforce</Text> 의 프로파일 (Profile) + 권한 세트 (Permission Set) 구조를 그대로 사용합니다.
         본 가이드는 개념 → 실무 시나리오 → 자주 묻는 질문 순서로 설명합니다.
       </Paragraph>
+      <Alert
+        type="info"
+        showIcon
+        message="SF 사용 경험이 있는 분께"
+        description={
+          <>
+            각 섹션 하단에 <Tag color="geekblue">☁ Salesforce 대응</Tag> 패널을 추가했습니다. 본 시스템의 용어/기능을 SF Setup 의 어떤 화면/메타와 매핑되는지 1:1 로 확인할 수 있습니다.
+          </>
+        }
+        style={{ marginBottom: 16 }}
+      />
 
       <div
         style={{
@@ -943,6 +1026,40 @@ export default function PermissionGuidePage() {
             { title: '실효 권한', dataIndex: 'effect', key: 'effect' },
           ]}
         />
+
+        <SalesforceMapping
+          intro={
+            <>
+              본 시스템의 권한 모델은 Salesforce 의 <Text strong>Profile + Permission Set</Text> 모델을 그대로 채택한 것이라 SF 사용자에게는 친숙합니다.
+              가산 (OR 합집합) 시맨틱도 SF 와 동일합니다.
+            </>
+          }
+          rows={[
+            {
+              ours: '프로파일',
+              sfFeature: 'Profile',
+              sfPath: '설정 → 사용자 → 프로파일',
+              note: '사용자 1명에 정확히 1개. UserLicense + UserType 결정 + baseline 권한.',
+            },
+            {
+              ours: '권한 세트',
+              sfFeature: 'Permission Set',
+              sfPath: '설정 → 사용자 → 권한 세트',
+              note: '사용자에 가산 부여 (1 user : N permission sets). PermissionSetAssignment 로 매핑.',
+            },
+            {
+              ours: '실효 권한 = 프로파일 ∪ 권한 세트 (OR)',
+              sfFeature: 'SF 표준 평가 시맨틱',
+              note: 'SF 도 동일하게 어느 한쪽이라도 부여되면 통과 (deny 비트 없음).',
+            },
+            {
+              ours: '본 시스템에 없음',
+              sfFeature: 'Permission Set Group (PSG)',
+              sfPath: '설정 → 사용자 → 권한 세트 그룹',
+              note: '운영 PSG 12개 모두 force__ 네임스페이스 (SF 표준 패키지) — 본 프로젝트 운영 권한 모델 외부.',
+            },
+          ]}
+        />
       </Card>
 
       <Card id="bits" title="2. 시스템 권한 비트 5종" style={{ marginBottom: 16 }}>
@@ -981,6 +1098,30 @@ export default function PermissionGuidePage() {
           message='"모든 데이터 수정" 은 가장 강력한 권한'
           description="모든 데이터 수정 비트를 가진 사용자는 소유자 / 공유 규칙 / 객체 권한을 모두 우회합니다. 시스템 관리자 + 운영팀에만 부여하세요. 본인이 본인의 모든 데이터 수정 부여를 회수하는 것은 시스템이 차단합니다 (자기 자신 잠금 방지)."
           style={{ marginTop: 12 }}
+        />
+
+        <SalesforceMapping
+          intro={
+            <>
+              본 5개 비트는 Salesforce <Text strong>userPermissions</Text> (SF 의 시스템 권한 카탈로그 ~80여 개) 중 운영에 필수인 5개를 채택한 것입니다.
+              SF 의 다른 userPermissions (ViewSetup, ManageRoles 등) 는 본 시스템 범위 밖.
+            </>
+          }
+          rows={[
+            { ours: '모든 데이터 조회', sfFeature: 'View All Data', sfPath: 'Profile/PermissionSet → 시스템 권한', note: 'SF 와 동일. Owner / Sharing Rules 우회 (조회만).' },
+            { ours: '모든 데이터 수정', sfFeature: 'Modify All Data', sfPath: 'Profile/PermissionSet → 시스템 권한', note: 'SF 와 동일. Owner / Sharing / Object Permissions 전면 우회.' },
+            { ours: '모든 사용자 조회', sfFeature: 'View All Users', sfPath: 'Profile/PermissionSet → 시스템 권한', note: 'SF 와 동일. User 객체에 대한 ViewAll 권한.' },
+            { ours: '사용자 관리', sfFeature: 'Manage Users', sfPath: 'Profile/PermissionSet → 시스템 권한', note: 'SF 와 동일. User 생성/비활성화, 권한 부여/회수.' },
+            { ours: 'API 사용', sfFeature: 'API Enabled', sfPath: 'Profile/PermissionSet → 시스템 권한', note: 'SF 와 동일. REST/SOAP API 호출 가능.' },
+          ]}
+          extra={
+            <Alert
+              type="info"
+              showIcon
+              message="SF 와의 차이"
+              description="SF 의 userPermissions 는 약 80개 이상이며, 본 시스템은 5개로 한정. CustomPermission 도입은 향후 로드맵 (선행 인프라 작업 진행 중)."
+            />
+          }
         />
       </Card>
 
@@ -1023,6 +1164,22 @@ export default function PermissionGuidePage() {
           description="모든 데이터 수정 비트를 가진 프로파일 또는 권한 세트는 모든 엔티티의 모든 작업을 자동 통과합니다. 따라서 시스템 관리자 프로파일의 엔티티 권한 컬럼은 비어있어도 정상 동작합니다."
           style={{ marginTop: 12 }}
         />
+
+        <SalesforceMapping
+          intro={
+            <>
+              SF 의 <Text strong>objectPermissions</Text> 와 동일한 모델입니다. SF 의 6개 비트 (Read/Create/Edit/Delete/ViewAll/ModifyAll) 중 객체 단위 우회 비트인 ViewAllRecords / ModifyAllRecords 는 본 시스템이 시스템 단위 (모든 데이터 조회/수정) 로 통합 운영합니다.
+            </>
+          }
+          rows={[
+            { ours: '엔티티 × 작업 매트릭스', sfFeature: 'objectPermissions', sfPath: 'Profile/PermissionSet → 객체 설정', note: 'Object 단위 CRUD 비트. SF Setup 의 "View Permissions" 페이지가 본 시스템의 권한 매트릭스 화면에 해당.' },
+            { ours: '조회 / 생성 / 수정 / 삭제', sfFeature: 'Read / Create / Edit / Delete', note: 'SF 와 정확히 동일.' },
+            { ours: '본 시스템에 없음 (시스템 단위로 통합)', sfFeature: 'ViewAllRecords / ModifyAllRecords', sfPath: 'Profile → Object → View All / Modify All', note: 'SF 는 객체별 우회 비트를 따로 둠. 본 시스템은 "모든 데이터 조회/수정" 시스템 비트로 통합.' },
+            { ours: '엔티티 카탈로그', sfFeature: 'sObject', note: '본 시스템은 JPA @Table(name) 의 snake_case 단수형이 SF API Name 에 1:1 대응 (예: account ↔ Account__c / employee ↔ Employee__c).' },
+            { ours: '본 시스템에 없음', sfFeature: 'Field-Level Security (FLS)', sfPath: 'Profile/PermissionSet → 필드 수준 보안', note: 'SF 는 필드 단위 권한도 매트릭스 운영. 본 시스템은 향후 검토.' },
+            { ours: '본 시스템에 없음', sfFeature: 'Sharing Rules', sfPath: '설정 → 공유 규칙', note: '레코드 단위 공유. 본 시스템은 Owner / 모든 데이터 조회 비트 2가지로 단순화.' },
+          ]}
+        />
       </Card>
 
       <Card id="inventory-profile" title="4. 프로파일 인벤토리 (오뚜기 운영 실측 — 사용자 지정 프로파일 18개)" style={{ marginBottom: 16 }}>
@@ -1060,6 +1217,21 @@ export default function PermissionGuidePage() {
           }
           style={{ marginTop: 12 }}
         />
+
+        <SalesforceMapping
+          intro={
+            <>
+              본 인벤토리는 오뚜기 SF org 의 <Text strong>IsCustom = TRUE</Text> Profile 을 그대로 가져온 것입니다.
+              SF Setup → 사용자 → 프로파일 메뉴와 1:1 대응되며, 표준 Profile (Standard User, System Administrator 등) 은 본 시스템에 채택되지 않음.
+            </>
+          }
+          rows={[
+            { ours: '프로파일 1~12 + CEO/시스템 관리자/공장관계자/품질보증실', sfFeature: 'Profile (IsCustom=TRUE)', sfPath: '설정 → 사용자 → 프로파일', note: '본 시스템 18개는 모두 SF org 에 존재하는 사용자 지정 프로파일.' },
+            { ours: '5.영업사원 / 5.영업사원(IP 대역 설정)', sfFeature: 'Profile + Login IP Ranges', sfPath: '프로파일 → 로그인 IP 범위', note: 'SF 의 동일 직급 프로파일을 IP 보안 정책 따라 분리 운영 (SF Best Practice).' },
+            { ours: '7.영업사원 + 조장 별도 프로파일', sfFeature: 'Profile 1인 1개 제약 우회', note: 'SF 도 Profile 은 1 user : 1 profile. 겸직은 (1) 별도 Profile 신설 (현 운영) 또는 (2) Permission Set 가산 두 가지가 표준 패턴.' },
+            { ours: '본 시스템에 없음', sfFeature: 'License-bound Profile', sfPath: 'UserLicense → Profile', note: 'SF 는 Profile 이 UserLicense + UserType 에 묶임. 본 시스템은 License 개념 없음.' },
+          ]}
+        />
       </Card>
 
       <Card id="inventory-ps" title="5. 권한 세트 인벤토리 (오뚜기 운영 실측 — 사용자 지정 권한 세트 49개 중 핵심 18개)" style={{ marginBottom: 16 }}>
@@ -1085,6 +1257,22 @@ export default function PermissionGuidePage() {
         <Paragraph style={{ marginTop: 12 }} type="secondary">
           * Salesforce 표준 패키지 (force__ 네임스페이스) 인 <Text code>권한 세트 그룹</Text> 12개 (Sales, Field Service 등) 는 본 프로젝트 운영 권한 모델 외부이므로 본 표에서 제외했습니다.
         </Paragraph>
+
+        <SalesforceMapping
+          intro={
+            <>
+              본 인벤토리 49개 (핵심 18개 표기) 는 오뚜기 SF org 의 <Text strong>IsCustom = TRUE</Text> Permission Set 와 1:1 대응됩니다.
+              API Name (예: <Text code>Acc_Permission</Text>) 은 SF API Name 그대로이며, 외부 시스템 (Heroku, SAP, BI) 의 권한 매핑 키로 사용됩니다.
+            </>
+          }
+          rows={[
+            { ours: 'XXX 전체 조회 패턴 다수', sfFeature: 'Object 단위 ViewAll Permission Set', note: 'SF 운영에서 "직급 카드(Profile) 는 owner-bound, 가산(Permission Set) 으로 ViewAll" 이 흔한 패턴.' },
+            { ours: 'rehabilitation (한시 부여)', sfFeature: 'Time-bound Permission Set Assignment', sfPath: 'SetupAuditTrail + manual revoke', note: 'SF Enterprise+ 는 PermissionSet 부여에 만료일 지원. 본 시스템은 수동 회수로 운영.' },
+            { ours: '본 시스템에 없음', sfFeature: 'Permission Set Group + Muting', sfPath: '설정 → 사용자 → 권한 세트 그룹', note: 'SF 는 권한 세트 묶음 + 일부 제외(Muting) 모델 제공. 본 시스템은 PSG 채택 안 함.' },
+            { ours: 'API Name (예: Acc_Permission)', sfFeature: 'PermissionSet.Name (API Name)', note: 'SF API Name 을 외부 시스템 매핑 키로 그대로 사용. 변경 시 API contract 파괴 — 변경 금지.' },
+            { ours: '한글 라벨 (예: 거래처 전체 조회)', sfFeature: 'PermissionSet.Label', note: 'SF Setup UI 표시명. 본 시스템 UI 도 동일 라벨 사용.' },
+          ]}
+        />
       </Card>
 
       <Card id="combinations" title="6. 프로파일 × 권한 세트 조합 케이스 (실제 사용 패턴 10종)" style={{ marginBottom: 16 }}>
@@ -1123,6 +1311,21 @@ export default function PermissionGuidePage() {
             { title: '선택 이유', dataIndex: 'why', key: 'why' },
           ]}
         />
+
+        <SalesforceMapping
+          intro={
+            <>
+              "1 user : 1 Profile + N Permission Sets" 가산 모델 자체는 SF 와 동일. 본 조합 케이스는 오뚜기 운영의 실제 사용 패턴이며, SF Best Practice 의 "Profile 은 최소화, Permission Set 으로 차이 부여" 원칙을 따릅니다.
+            </>
+          }
+          rows={[
+            { ours: '신입 영업사원 (단독)', sfFeature: 'Profile-only User', note: 'SF 도 baseline Profile 만으로 충분한 경우 PermissionSet 미부여.' },
+            { ours: '특판 영업 (1개 가산)', sfFeature: 'Profile + 1 PermissionSet', note: 'SF 최빈 패턴. PermissionSetAssignment row 1개 추가.' },
+            { ours: '행사 기획 (다중 가산)', sfFeature: 'Profile + N PermissionSets', note: '직무 특화 PS 여러 개 합산. SF 에서 PermissionSetGroup 으로 묶는 게 권장이지만 본 시스템은 개별 부여.' },
+            { ours: '인사 복직 처리 (한시 가산)', sfFeature: 'Time-limited Assignment', note: 'SF Enterprise+ 는 만료일 자동 회수. 본 시스템은 수동 회수 운영.' },
+            { ours: '마케팅 인턴 (가산 금지 정책)', sfFeature: 'Governance Policy', note: 'SF 자체에는 "이 Profile 은 PS 가산 금지" 라는 강제 기능 없음. 감사/운영 정책으로 통제.' },
+          ]}
+        />
       </Card>
 
       <Card
@@ -1135,6 +1338,19 @@ export default function PermissionGuidePage() {
         style={{ marginBottom: 16 }}
       >
         <PermissionSimulator />
+
+        <SalesforceMapping
+          intro={
+            <>
+              SF Setup 에는 본 시뮬레이터에 정확히 대응되는 단일 화면이 없습니다. 가장 유사한 것은 <Text strong>"Permission Set Group Comparison"</Text> (PSG 비교 도구) 이며, 실효 권한 확인에는 보통 SF Workbench / Schema Builder / 개발자 콘솔의 SOQL <Text code>SELECT ... FROM UserRecordAccess</Text> 같은 별도 도구가 필요합니다.
+            </>
+          }
+          rows={[
+            { ours: '권한 시뮬레이터 (실시간 평가)', sfFeature: 'Permission Set Group Comparison + UserRecordAccess SOQL', sfPath: '설정 → 사용자 → 권한 세트 그룹 → 비교', note: 'SF 는 PSG 단위 비교만 가능. 본 시뮬레이터는 "프로파일 + N개 PS" 전체 가산 합집합을 보여주므로 SF 보다 직관적.' },
+            { ours: '평가 근거 테이블 (출처별 추적)', sfFeature: '~ Salesforce Optimizer 의 Permission Analysis', note: 'SF Optimizer 는 "이 사용자가 왜 이 권한을 가지나" 를 출처별로 보여줌. 본 시뮬레이터의 평가 근거와 동일한 콘셉트.' },
+            { ours: '본 시뮬레이터는 표본 평가', sfFeature: 'Real User 평가 (Setup UI)', note: '본 시뮬레이터는 SF 레거시 추정 모델 기반. 실제 운영 사용자별 평가는 사원 현황 → 해당 사원 → 권한 섹션 (백엔드 SfPermissionResolver 호출).' },
+          ]}
+        />
       </Card>
 
       <Card id="workflow" title="8. 실무 워크플로우" style={{ marginBottom: 16 }}>
@@ -1175,6 +1391,23 @@ export default function PermissionGuidePage() {
           description="프로파일은 기본 권한이므로 변경 시 해당 사용자의 모든 엔티티 권한이 한 번에 바뀝니다. 가능하면 권한 세트 가산/회수로 해결하고, 프로파일 변경은 직무 자체가 바뀐 경우에만 사용하세요."
           style={{ marginTop: 12 }}
         />
+
+        <SalesforceMapping
+          intro={
+            <>
+              본 시스템의 부여/회수는 SF 의 PermissionSetAssignment CRUD 와 직접 대응합니다. SF Setup 에서 익숙한 워크플로우라면 본 시스템도 동일하게 동작합니다.
+            </>
+          }
+          rows={[
+            { ours: '권한 세트 부여', sfFeature: 'PermissionSetAssignment INSERT', sfPath: '설정 → 사용자 → 사용자 상세 → 권한 세트 할당', note: 'SF UI 의 "Edit Assignments" → 추가와 동일.' },
+            { ours: '권한 세트 회수 (soft delete: is_active=false)', sfFeature: 'PermissionSetAssignment DELETE', sfPath: 'SF 는 hard delete', note: 'SF 는 row 자체 삭제. 본 시스템은 회수 이력 보존을 위해 soft delete + 감사 로그.' },
+            { ours: '권한 변경 → 다음 로그인 시점 반영', sfFeature: 'SF 는 즉시 반영 (다음 요청)', note: 'SF 는 session 갱신 시 즉시. 본 시스템은 JWT 클레임에 박혀있어 재로그인 필요.' },
+            { ours: 'self-revoke 가드 (본인 모든 데이터 수정 회수 차단)', sfFeature: 'SF 표준에는 없는 안전장치', note: 'SF 는 본인이 본인 권한 회수 가능 (사고 위험). 본 시스템은 명시적으로 차단.' },
+            { ours: 'last-admin 가드 (사용자 관리 보유자 0명 방지)', sfFeature: 'SF 표준에는 없는 안전장치', note: '운영자 영구 잠금 사태 방지 — 본 시스템 자체 추가.' },
+            { ours: '프로파일 변경 = 한 번에 baseline 교체', sfFeature: 'User.ProfileId UPDATE', sfPath: '설정 → 사용자 → 프로파일 선택', note: 'SF 와 동일. 영향 범위가 커서 신중 권장.' },
+            { ours: '권한 메타 (PS/Profile 자체) 수정/삭제 불가', sfFeature: 'SF Setup 에서는 가능 (관리자 한정)', note: '본 시스템은 SF 마스터를 SoT 로 두고 정의 수정은 DB 마이그레이션 PR 로 통제. 자세한 우려는 별도 안내 참조.' },
+          ]}
+        />
       </Card>
 
       <Card id="scenarios" title="9. 시나리오별 빠른 참조" style={{ marginBottom: 16 }}>
@@ -1192,6 +1425,21 @@ export default function PermissionGuidePage() {
               key: 'how',
               render: (v: string) => <Tag icon={<CheckCircleOutlined />} color="green">{v}</Tag>,
             },
+          ]}
+        />
+
+        <SalesforceMapping
+          intro={
+            <>
+              본 시나리오의 각 단계 메뉴 경로는 SF Setup 의 다음 화면들에 대응됩니다.
+            </>
+          }
+          rows={[
+            { ours: '사용자 관리 → 신규 등록', sfFeature: 'New User', sfPath: '설정 → 사용자 → 새 사용자' },
+            { ours: '사원 현황 → 해당 사원 → 권한 섹션', sfFeature: 'User Detail → Permission Set Assignments', sfPath: '설정 → 사용자 → 사용자 상세 → 권한 세트 할당' },
+            { ours: '권한 매트릭스', sfFeature: 'Object Manager → View Permissions', sfPath: '설정 → 객체 관리자 → 객체 → 권한 보기', note: 'SF 는 객체별 별도 화면. 본 시스템은 전 객체 한 화면.' },
+            { ours: '권한 세트 관리 → 상세', sfFeature: 'PermissionSet Detail', sfPath: '설정 → 사용자 → 권한 세트 → 권한 세트 선택' },
+            { ours: '실효 엔티티 매트릭스 진단 (403 트러블슈팅)', sfFeature: 'User → "Permissions" 탭 + UserRecordAccess SOQL', note: 'SF 도 동일 진단 흐름. 본 시스템은 한 화면에서 합집합 표시.' },
           ]}
         />
       </Card>
@@ -1262,6 +1510,25 @@ export default function PermissionGuidePage() {
                 </Paragraph>
               ),
             },
+          ]}
+        />
+
+        <SalesforceMapping
+          title="SF 사용자가 자주 묻는 차이점"
+          intro={
+            <>
+              SF 사용 경험이 있는 분이 본 시스템을 처음 쓸 때 가장 헷갈리는 부분을 정리했습니다.
+            </>
+          }
+          rows={[
+            { ours: '권한 변경이 다음 로그인부터 반영', sfFeature: 'SF 는 즉시 반영', note: 'SF 는 session 갱신 시. 본 시스템은 JWT 클레임에 박혀있어 재로그인 필요. 즉시 반영 필요 시 사용자에게 로그아웃 요청.' },
+            { ours: '권한 매트릭스 5분 캐시', sfFeature: 'SF 는 실시간', note: 'SF Setup 의 View Permissions 는 캐시 없음. 본 시스템은 운영 부하 절감 목적.' },
+            { ours: 'PermissionSetGroup 미사용', sfFeature: 'SF 권장 패턴', note: '본 시스템은 PSG 채택 안 함 — PS 를 개별 부여. 운영 PSG 12개는 force__ 네임스페이스 (외부).' },
+            { ours: 'CustomPermission 미지원', sfFeature: 'SF 표준', note: 'SF 는 객체와 무관한 가상 자원 (Apex Page Access 등) 을 CustomPermission 으로 표현. 본 시스템은 향후 로드맵.' },
+            { ours: 'Field-Level Security (FLS) 미지원', sfFeature: 'SF 표준', note: '본 시스템은 엔티티 단위 CRUD 만 운영.' },
+            { ours: 'Sharing Rules / Role Hierarchy 미지원', sfFeature: 'SF 표준', note: '본 시스템은 Owner + 모든 데이터 조회 비트 2가지로 단순화. 조직 계층 공유는 도메인별 별도 처리.' },
+            { ours: 'Profile/PermissionSet 정의 자체 수정/삭제 불가', sfFeature: 'SF Setup 에서 가능', note: 'SF 운영자는 자유 편집. 본 시스템은 SoT 통제를 위해 DB 마이그레이션 PR 채널로만 변경.' },
+            { ours: 'self-revoke / last-admin 가드 자동', sfFeature: 'SF 표준에는 없음', note: 'SF 는 본인이 본인 권한 회수 가능 (사고 위험). 본 시스템 자체 추가 안전장치.' },
           ]}
         />
       </Card>
