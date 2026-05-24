@@ -1,5 +1,28 @@
-import { Alert, Anchor, Card, Collapse, Divider, Steps, Table, Tag, Typography } from 'antd';
-import { BookOutlined, BulbOutlined, CheckCircleOutlined, ExclamationCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { useMemo, useState } from 'react';
+import {
+  Alert,
+  Anchor,
+  Card,
+  Collapse,
+  Descriptions,
+  Divider,
+  Result,
+  Select,
+  Space,
+  Steps,
+  Table,
+  Tag,
+  Typography,
+} from 'antd';
+import {
+  BookOutlined,
+  BulbOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  ExclamationCircleOutlined,
+  ExperimentOutlined,
+  QuestionCircleOutlined,
+} from '@ant-design/icons';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -7,6 +30,448 @@ interface ScenarioRow {
   who: string;
   goal: string;
   how: string;
+}
+
+// ───────── 시뮬레이터용 권한 모델 ─────────
+type Op = 'READ' | 'CREATE' | 'EDIT' | 'DELETE';
+
+interface SystemBits {
+  viewAllData?: boolean;
+  modifyAllData?: boolean;
+  viewAllUsers?: boolean;
+  manageUsers?: boolean;
+  apiEnabled?: boolean;
+}
+
+/** 엔티티 → 작업 sparse 매트릭스. 미정의는 false 로 간주. */
+type EntityMatrix = Partial<Record<string, Partial<Record<Op, boolean>>>>;
+
+interface PermissionDef {
+  key: string;
+  label: string;
+  bits: SystemBits;
+  matrix: EntityMatrix;
+}
+
+interface SimScenario {
+  key: string;
+  label: string;
+  profileKey: string;
+  permissionSetKeys: string[];
+  description: string;
+}
+
+const ENTITIES = [
+  { value: 'account', label: '거래처 (account)' },
+  { value: 'employee', label: '사원 (employee)' },
+  { value: 'promotion', label: '행사 (promotion)' },
+  { value: 'team_member_schedule', label: '여사원일정 (team_member_schedule)' },
+  { value: 'claim', label: '클레임 (claim)' },
+  { value: 'monthly_sales_history', label: '월매출 (monthly_sales_history)' },
+  { value: 'attendance_log', label: '근무 등록 (attendance_log)' },
+  { value: 'notice_post', label: '공지사항 (notice_post)' },
+  { value: 'product', label: '제품 (product)' },
+  { value: 'upload_file', label: '업로드 파일 (upload_file)' },
+  { value: 'user', label: '사용자 (user)' },
+];
+
+const OPERATIONS: Array<{ value: Op; label: string }> = [
+  { value: 'READ', label: '조회' },
+  { value: 'CREATE', label: '생성' },
+  { value: 'EDIT', label: '수정' },
+  { value: 'DELETE', label: '삭제' },
+];
+
+/**
+ * 프로파일 권한 정의 (시뮬레이션용 — SF 레거시 추정).
+ * 운영 실측과 100% 일치는 아니며, 학습/시뮬레이션 목적의 대표 모델.
+ */
+const PROFILE_DEFS: PermissionDef[] = [
+  {
+    key: 'admin',
+    label: '시스템 관리자',
+    bits: { modifyAllData: true, viewAllData: true, viewAllUsers: true, manageUsers: true, apiEnabled: true },
+    matrix: {},
+  },
+  {
+    key: 'ceo',
+    label: 'CEO',
+    bits: { viewAllData: true, viewAllUsers: true, apiEnabled: true },
+    matrix: {},
+  },
+  {
+    key: 'p1_director',
+    label: '1.본부장',
+    bits: { viewAllData: true, viewAllUsers: true, apiEnabled: true },
+    matrix: {
+      account: { READ: true, EDIT: true },
+      employee: { READ: true },
+      promotion: { READ: true, EDIT: true },
+      monthly_sales_history: { READ: true },
+    },
+  },
+  {
+    key: 'p2_div',
+    label: '2.사업부장',
+    bits: { viewAllUsers: true, apiEnabled: true },
+    matrix: {
+      account: { READ: true, EDIT: true },
+      employee: { READ: true },
+      promotion: { READ: true, EDIT: true },
+      monthly_sales_history: { READ: true },
+      claim: { READ: true },
+    },
+  },
+  {
+    key: 'p4_branch',
+    label: '4.지점장',
+    bits: { apiEnabled: true },
+    matrix: {
+      account: { READ: true, EDIT: true },
+      employee: { READ: true },
+      team_member_schedule: { READ: true, EDIT: true },
+      monthly_sales_history: { READ: true },
+    },
+  },
+  {
+    key: 'p5_sales',
+    label: '5.영업사원',
+    bits: { apiEnabled: true },
+    matrix: {
+      account: { READ: true, EDIT: true },
+      monthly_sales_history: { READ: true },
+      attendance_log: { READ: true, CREATE: true, EDIT: true },
+      claim: { READ: true, CREATE: true },
+    },
+  },
+  {
+    key: 'p5_sales_ip',
+    label: '5.영업사원(로그인 IP 대역 설정)',
+    bits: { apiEnabled: true },
+    matrix: {
+      account: { READ: true, EDIT: true },
+      monthly_sales_history: { READ: true },
+      attendance_log: { READ: true, CREATE: true, EDIT: true },
+      claim: { READ: true, CREATE: true },
+    },
+  },
+  {
+    key: 'p6_leader',
+    label: '6.조장',
+    bits: { apiEnabled: true },
+    matrix: {
+      team_member_schedule: { READ: true, EDIT: true },
+      employee: { READ: true },
+      attendance_log: { READ: true },
+    },
+  },
+  {
+    key: 'p7_sales_leader',
+    label: '7.영업사원 + 조장',
+    bits: { apiEnabled: true },
+    matrix: {
+      account: { READ: true, EDIT: true },
+      monthly_sales_history: { READ: true },
+      attendance_log: { READ: true, CREATE: true, EDIT: true },
+      claim: { READ: true, CREATE: true },
+      team_member_schedule: { READ: true, EDIT: true },
+      employee: { READ: true },
+    },
+  },
+  {
+    key: 'p9_staff',
+    label: '9.Staff',
+    bits: { apiEnabled: true },
+    matrix: {
+      notice_post: { READ: true },
+      product: { READ: true },
+    },
+  },
+  {
+    key: 'p11_marketing_intern',
+    label: '11.마케팅(인턴)',
+    bits: { apiEnabled: true },
+    matrix: {
+      promotion: { READ: true },
+      product: { READ: true },
+    },
+  },
+  {
+    key: 'p12_marketing_lead',
+    label: '12.마케팅(팀장 이상)',
+    bits: { apiEnabled: true },
+    matrix: {
+      promotion: { READ: true, CREATE: true, EDIT: true, DELETE: true },
+      product: { READ: true, EDIT: true },
+      notice_post: { READ: true, CREATE: true, EDIT: true },
+    },
+  },
+  {
+    key: 'p_quality',
+    label: '품질보증실',
+    bits: { apiEnabled: true },
+    matrix: {
+      claim: { READ: true, EDIT: true },
+      product: { READ: true },
+    },
+  },
+];
+
+/**
+ * 권한 세트 정의 (시뮬레이션용 — SF 레거시 운영 IsCustom=TRUE 핵심 PS).
+ */
+const PS_DEFS: PermissionDef[] = [
+  {
+    key: 'acc_view_all',
+    label: '거래처 전체 조회 (Acc_Permission)',
+    bits: {},
+    matrix: { account: { READ: true } },
+  },
+  {
+    key: 'employee_view_all',
+    label: '사원 전체 조회 (Employee_View_All)',
+    bits: { viewAllUsers: true },
+    matrix: { employee: { READ: true } },
+  },
+  {
+    key: 'claim_view_all',
+    label: '클레임 전체 조회 (Claim_View_All)',
+    bits: {},
+    matrix: { claim: { READ: true } },
+  },
+  {
+    key: 'promotion_view_all',
+    label: '행사마스터 전체 조회 (Promotion_Master_View_All)',
+    bits: {},
+    matrix: { promotion: { READ: true } },
+  },
+  {
+    key: 'tms_view_all',
+    label: '여사원일정 전체 조회 (View_All_TeamMemberSchedule)',
+    bits: {},
+    matrix: { team_member_schedule: { READ: true } },
+  },
+  {
+    key: 'sales_diary_view_all',
+    label: '영업일지 전체 조회 (SalesDiary_View_All)',
+    bits: {},
+    matrix: { monthly_sales_history: { READ: true } },
+  },
+  {
+    key: 'ppt_edit',
+    label: '전문행사조 수정 (ProfessionalPromotionTeam)',
+    bits: {},
+    matrix: { promotion: { READ: true, EDIT: true } },
+  },
+  {
+    key: 'view_all_edit_all',
+    label: '현장점검 전체 조회/수정 (View_All_Edit_All)',
+    bits: {},
+    matrix: { attendance_log: { READ: true, EDIT: true } },
+  },
+  {
+    key: 'upload_file_create_delete',
+    label: '업로드 파일 생성/삭제 (Uploadfile_Create_Delete_Permission)',
+    bits: {},
+    matrix: { upload_file: { READ: true, CREATE: true, DELETE: true } },
+  },
+  {
+    key: 'notice',
+    label: '공지사항/교육 수정 (notice)',
+    bits: {},
+    matrix: { notice_post: { READ: true, CREATE: true, EDIT: true } },
+  },
+  {
+    key: 'rehabilitation',
+    label: '여사원 복직 권한 (rehabilitation)',
+    bits: {},
+    matrix: { employee: { READ: true, EDIT: true } },
+  },
+  {
+    key: 'sales_assistant',
+    label: '영업지원실 (SalesAssistant)',
+    bits: {},
+    matrix: {
+      account: { READ: true },
+      monthly_sales_history: { READ: true },
+      attendance_log: { READ: true },
+    },
+  },
+  {
+    key: 'sales_support',
+    label: '9.Staff 지원 (SalesSupport)',
+    bits: {},
+    matrix: {
+      employee: { READ: true },
+      team_member_schedule: { READ: true },
+    },
+  },
+];
+
+/**
+ * 사전 정의 시나리오 — 셀렉트박스에서 한 번에 사용자 프로필을 고르도록.
+ * 6번 섹션 "조합 케이스" 와 1:1 대응.
+ */
+const SIM_SCENARIOS: SimScenario[] = [
+  {
+    key: 'sc_admin',
+    label: '서운영 (운영팀, 시스템 관리자)',
+    profileKey: 'admin',
+    permissionSetKeys: [],
+    description: '시스템 관리자 — 모든 데이터 수정 비트로 전 권한 자동 통과',
+  },
+  {
+    key: 'sc_ceo',
+    label: '강분석 (경영진, CEO + 가산 2)',
+    profileKey: 'ceo',
+    permissionSetKeys: ['sales_diary_view_all'],
+    description: '모든 데이터 조회 + 영업일지 분석',
+  },
+  {
+    key: 'sc_sales_new',
+    label: '홍영업 (신입 영업사원, 단독)',
+    profileKey: 'p5_sales',
+    permissionSetKeys: [],
+    description: '본인 소유 거래처/매출만 — 기본 권한 단독',
+  },
+  {
+    key: 'sc_sales_special',
+    label: '김특판 (특판 영업, +거래처 전체 조회)',
+    profileKey: 'p5_sales',
+    permissionSetKeys: ['acc_view_all'],
+    description: '기본 권한 + 거래처 전체 조회 권한 세트 1개 가산',
+  },
+  {
+    key: 'sc_sales_leader',
+    label: '박조장 (영업+조장, +여사원일정 전체 조회)',
+    profileKey: 'p7_sales_leader',
+    permissionSetKeys: ['tms_view_all'],
+    description: '조 간 일정 조정 필요',
+  },
+  {
+    key: 'sc_event_planner',
+    label: '정행사 (행사 기획, 다중 가산)',
+    profileKey: 'p5_sales',
+    permissionSetKeys: ['ppt_edit', 'promotion_view_all'],
+    description: '직무 특화 다중 가산',
+  },
+  {
+    key: 'sc_quality',
+    label: '최품질 (품질보증실, +클레임 전체 조회)',
+    profileKey: 'p_quality',
+    permissionSetKeys: ['claim_view_all'],
+    description: '품질 분석 시 담당 외 클레임도 필요',
+  },
+  {
+    key: 'sc_support',
+    label: '이지원 (영업지원실, 9.Staff + 2개 가산)',
+    profileKey: 'p9_staff',
+    permissionSetKeys: ['sales_assistant', 'sales_support'],
+    description: '9.Staff 자체가 최소 권한 → 가산 필수',
+  },
+  {
+    key: 'sc_rehab',
+    label: '윤복직 (인사 복직 처리, 한시 가산)',
+    profileKey: 'p5_sales',
+    permissionSetKeys: ['rehabilitation'],
+    description: '복직 처리 한시 권한 — 완료 후 회수',
+  },
+  {
+    key: 'sc_intern',
+    label: '한인턴 (마케팅 인턴, 단독)',
+    profileKey: 'p11_marketing_intern',
+    permissionSetKeys: [],
+    description: '제한된 조회만 — 가산 금지 (감사 정책)',
+  },
+  {
+    key: 'sc_director',
+    label: '도본부 (1.본부장, 단독)',
+    profileKey: 'p1_director',
+    permissionSetKeys: [],
+    description: '모든 데이터 조회 비트로 전사 read 가능',
+  },
+  {
+    key: 'sc_marketing_lead',
+    label: '오마케 (12.마케팅 팀장, 단독)',
+    profileKey: 'p12_marketing_lead',
+    permissionSetKeys: [],
+    description: '마케팅 전체 CRUD + 공지/제품 수정',
+  },
+];
+
+interface EvaluationReason {
+  source: string;
+  reason: string;
+}
+
+interface EvaluationResult {
+  allowed: boolean;
+  reasons: EvaluationReason[];
+}
+
+function evaluate(
+  profileKey: string,
+  permissionSetKeys: string[],
+  entity: string,
+  op: Op,
+): EvaluationResult {
+  const reasons: EvaluationReason[] = [];
+  let allowed = false;
+
+  const profile = PROFILE_DEFS.find((p) => p.key === profileKey);
+  const sets = permissionSetKeys
+    .map((k) => PS_DEFS.find((p) => p.key === k))
+    .filter((x): x is PermissionDef => !!x);
+
+  // 1) 프로파일 시스템 비트 우회
+  if (profile?.bits.modifyAllData) {
+    allowed = true;
+    reasons.push({ source: `프로파일: ${profile.label}`, reason: '모든 데이터 수정 비트 — 전 작업 자동 통과' });
+  }
+  if (op === 'READ' && profile?.bits.viewAllData) {
+    allowed = true;
+    reasons.push({ source: `프로파일: ${profile.label}`, reason: '모든 데이터 조회 비트 — 모든 엔티티 조회 통과' });
+  }
+  // user 엔티티 특수: VIEW_ALL_USERS 도 조회 통과
+  if (op === 'READ' && entity === 'user' && profile?.bits.viewAllUsers) {
+    allowed = true;
+    reasons.push({ source: `프로파일: ${profile.label}`, reason: '모든 사용자 조회 비트 — user 엔티티 조회 통과' });
+  }
+
+  // 2) 프로파일 엔티티 매트릭스
+  if (profile?.matrix[entity]?.[op]) {
+    allowed = true;
+    reasons.push({ source: `프로파일: ${profile.label}`, reason: `엔티티 권한 매트릭스에 ${entity}.${op} 정의됨` });
+  }
+
+  // 3) 권한 세트 가산
+  for (const ps of sets) {
+    if (ps.bits.modifyAllData) {
+      allowed = true;
+      reasons.push({ source: `권한 세트: ${ps.label}`, reason: '모든 데이터 수정 비트 — 전 작업 자동 통과' });
+    }
+    if (op === 'READ' && ps.bits.viewAllData) {
+      allowed = true;
+      reasons.push({ source: `권한 세트: ${ps.label}`, reason: '모든 데이터 조회 비트 — 모든 엔티티 조회 통과' });
+    }
+    if (op === 'READ' && entity === 'user' && ps.bits.viewAllUsers) {
+      allowed = true;
+      reasons.push({ source: `권한 세트: ${ps.label}`, reason: '모든 사용자 조회 비트 — user 엔티티 조회 통과' });
+    }
+    if (ps.matrix[entity]?.[op]) {
+      allowed = true;
+      reasons.push({ source: `권한 세트: ${ps.label}`, reason: `엔티티 권한 매트릭스에 ${entity}.${op} 정의됨` });
+    }
+  }
+
+  if (!allowed) {
+    reasons.push({
+      source: '평가 결과',
+      reason: '프로파일/권한 세트 어디에도 매칭되는 권한 없음 → 차단',
+    });
+  }
+
+  return { allowed, reasons };
 }
 
 interface BitRowKr {
@@ -241,6 +706,152 @@ const combinationCases: CombinationRow[] = [
   },
 ];
 
+function PermissionSimulator() {
+  const [scenarioKey, setScenarioKey] = useState<string>(SIM_SCENARIOS[2].key); // 홍영업 기본
+  const [entity, setEntity] = useState<string>('account');
+  const [op, setOp] = useState<Op>('READ');
+
+  const scenario = SIM_SCENARIOS.find((s) => s.key === scenarioKey)!;
+  const profile = PROFILE_DEFS.find((p) => p.key === scenario.profileKey)!;
+  const sets = scenario.permissionSetKeys
+    .map((k) => PS_DEFS.find((p) => p.key === k))
+    .filter((x): x is PermissionDef => !!x);
+
+  const result = useMemo(
+    () => evaluate(scenario.profileKey, scenario.permissionSetKeys, entity, op),
+    [scenario, entity, op],
+  );
+
+  const entityLabel = ENTITIES.find((e) => e.value === entity)?.label ?? entity;
+  const opLabel = OPERATIONS.find((o) => o.value === op)?.label ?? op;
+
+  return (
+    <>
+      <Alert
+        type="info"
+        showIcon
+        message="시뮬레이션 동작 방식"
+        description={
+          <>
+            사용자 시나리오 + 엔티티 + 작업을 선택하면 <Text strong>실효 권한 계산 공식</Text> 에 따라 클라이언트 사이드로 즉시 평가합니다.
+            실제 운영 데이터가 아니며 SF 레거시 추정 모델 기반의 학습/시뮬레이션용입니다.
+          </>
+        }
+        style={{ marginBottom: 16 }}
+      />
+
+      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+        <Space wrap size={12}>
+          <div>
+            <Text strong>사용자 시나리오</Text>
+            <br />
+            <Select
+              style={{ width: 420, marginTop: 4 }}
+              value={scenarioKey}
+              onChange={setScenarioKey}
+              options={SIM_SCENARIOS.map((s) => ({ value: s.key, label: s.label }))}
+            />
+          </div>
+          <div>
+            <Text strong>엔티티</Text>
+            <br />
+            <Select
+              style={{ width: 280, marginTop: 4 }}
+              value={entity}
+              onChange={setEntity}
+              options={ENTITIES.map((e) => ({ value: e.value, label: e.label }))}
+            />
+          </div>
+          <div>
+            <Text strong>작업</Text>
+            <br />
+            <Select
+              style={{ width: 140, marginTop: 4 }}
+              value={op}
+              onChange={(v: Op) => setOp(v)}
+              options={OPERATIONS.map((o) => ({ value: o.value, label: o.label }))}
+            />
+          </div>
+        </Space>
+
+        <Descriptions
+          column={1}
+          size="small"
+          bordered
+          items={[
+            {
+              key: 'profile',
+              label: '프로파일',
+              children: <Tag color="blue">{profile.label}</Tag>,
+            },
+            {
+              key: 'sets',
+              label: '권한 세트',
+              children:
+                sets.length === 0 ? (
+                  <Text type="secondary">없음</Text>
+                ) : (
+                  sets.map((s) => (
+                    <Tag key={s.key} color="orange" style={{ marginBottom: 4 }}>
+                      {s.label}
+                    </Tag>
+                  ))
+                ),
+            },
+            {
+              key: 'desc',
+              label: '시나리오 설명',
+              children: <Text type="secondary">{scenario.description}</Text>,
+            },
+          ]}
+        />
+
+        <Result
+          status={result.allowed ? 'success' : 'error'}
+          icon={result.allowed ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+          title={
+            result.allowed ? (
+              <>
+                <Tag color="green" style={{ fontSize: 16, padding: '4px 12px' }}>
+                  허용
+                </Tag>{' '}
+                — {entityLabel} 에 대한 {opLabel} 작업 가능
+              </>
+            ) : (
+              <>
+                <Tag color="red" style={{ fontSize: 16, padding: '4px 12px' }}>
+                  차단
+                </Tag>{' '}
+                — {entityLabel} 에 대한 {opLabel} 작업 불가
+              </>
+            )
+          }
+          subTitle={
+            result.allowed
+              ? '아래 매칭 근거 중 하나라도 통과하면 허용입니다 (OR 합집합).'
+              : '아래 평가 단계에서 매칭되는 권한이 없습니다.'
+          }
+        />
+
+        <div>
+          <Text strong>평가 근거 ({result.reasons.length}건)</Text>
+          <Table
+            size="small"
+            pagination={false}
+            rowKey={(_r, i) => String(i)}
+            style={{ marginTop: 8 }}
+            dataSource={result.reasons}
+            columns={[
+              { title: '출처', dataIndex: 'source', key: 'source', width: 320 },
+              { title: '판정 이유', dataIndex: 'reason', key: 'reason' },
+            ]}
+          />
+        </div>
+      </Space>
+    </>
+  );
+}
+
 export default function PermissionGuidePage() {
   return (
     <div style={{ padding: 16, paddingRight: 340, maxWidth: 1540 }}>
@@ -278,9 +889,10 @@ export default function PermissionGuidePage() {
             { key: 'inventory-profile', href: '#inventory-profile', title: '4. 프로파일 인벤토리 (운영 실측)' },
             { key: 'inventory-ps', href: '#inventory-ps', title: '5. 권한 세트 인벤토리 (운영 실측)' },
             { key: 'combinations', href: '#combinations', title: '6. 프로파일 × 권한 세트 조합 케이스' },
-            { key: 'workflow', href: '#workflow', title: '7. 실무 워크플로우' },
-            { key: 'scenarios', href: '#scenarios', title: '8. 시나리오별 빠른 참조' },
-            { key: 'faq', href: '#faq', title: '9. 자주 묻는 질문' },
+            { key: 'simulator', href: '#simulator', title: '7. 권한 시뮬레이터 (실시간 평가)' },
+            { key: 'workflow', href: '#workflow', title: '8. 실무 워크플로우' },
+            { key: 'scenarios', href: '#scenarios', title: '9. 시나리오별 빠른 참조' },
+            { key: 'faq', href: '#faq', title: '10. 자주 묻는 질문' },
           ]}
         />
       </div>
@@ -513,8 +1125,20 @@ export default function PermissionGuidePage() {
         />
       </Card>
 
-      <Card id="workflow" title="7. 실무 워크플로우" style={{ marginBottom: 16 }}>
-        <Title level={5}>7-1. 신규 사용자에게 권한 부여</Title>
+      <Card
+        id="simulator"
+        title={
+          <>
+            <ExperimentOutlined /> 7. 권한 시뮬레이터 (실시간 평가)
+          </>
+        }
+        style={{ marginBottom: 16 }}
+      >
+        <PermissionSimulator />
+      </Card>
+
+      <Card id="workflow" title="8. 실무 워크플로우" style={{ marginBottom: 16 }}>
+        <Title level={5}>8-1. 신규 사용자에게 권한 부여</Title>
         <Steps
           direction="vertical"
           size="small"
@@ -529,7 +1153,7 @@ export default function PermissionGuidePage() {
 
         <Divider />
 
-        <Title level={5}>7-2. 권한 회수</Title>
+        <Title level={5}>8-2. 권한 회수</Title>
         <Steps
           direction="vertical"
           size="small"
@@ -543,7 +1167,7 @@ export default function PermissionGuidePage() {
 
         <Divider />
 
-        <Title level={5}>7-3. 프로파일 자체 변경</Title>
+        <Title level={5}>8-3. 프로파일 자체 변경</Title>
         <Alert
           type="warning"
           showIcon
@@ -553,7 +1177,7 @@ export default function PermissionGuidePage() {
         />
       </Card>
 
-      <Card id="scenarios" title="8. 시나리오별 빠른 참조" style={{ marginBottom: 16 }}>
+      <Card id="scenarios" title="9. 시나리오별 빠른 참조" style={{ marginBottom: 16 }}>
         <Table
           size="small"
           pagination={false}
@@ -572,7 +1196,7 @@ export default function PermissionGuidePage() {
         />
       </Card>
 
-      <Card id="faq" title="9. FAQ" style={{ marginBottom: 16 }}>
+      <Card id="faq" title="10. 자주 묻는 질문" style={{ marginBottom: 16 }}>
         <Collapse
           defaultActiveKey={['q1']}
           items={[
