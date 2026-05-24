@@ -131,7 +131,6 @@ export default function PermissionSetDetailPage() {
       <Card title="메타" style={{ marginBottom: 12 }}>
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="ID">{data.permissionSetId}</Descriptions.Item>
-          <Descriptions.Item label="SFID">{data.sfid ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="Name">{data.name}</Descriptions.Item>
           <Descriptions.Item label="Label">{data.label ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="Description" span={2}>

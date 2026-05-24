@@ -152,7 +152,6 @@ export default function UserDetailPage() {
         <Descriptions.Item label="휴대폰">{user.mobilePhone ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="전화">{user.phone ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="HR 코드">{user.hrCode ?? '-'}</Descriptions.Item>
-        <Descriptions.Item label="SF ID">{user.sfid ?? '-'}</Descriptions.Item>
         <Descriptions.Item label="마지막 로그인">
           {user.lastLoginAt ? user.lastLoginAt.substring(0, 19).replace('T', ' ') : '-'}
         </Descriptions.Item>

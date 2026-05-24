@@ -30,14 +30,8 @@ export interface AttendanceLogListItem {
 }
 
 export interface AttendanceLogDetail extends AttendanceLogListItem {
-  sfid: string | null;
-  employeeSfid: string | null;
-  accountSfid: string | null;
-  ownerSfid: string | null;
   ownerUserName: string | null;
-  createdBySfid: string | null;
   createdByName: string | null;
-  lastModifiedBySfid: string | null;
   lastModifiedByName: string | null;
   isDeleted: boolean | null;
   updatedAt: string;

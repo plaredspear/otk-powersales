@@ -74,7 +74,6 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
             name = "System Administrator",
             userType = "Standard",
             description = null,
-            sfid = "00e3z00000G1abc",
             flags = ProfileFlagsSummary(
                 viewAllData = true, modifyAllData = true, viewAllUsers = true, manageUsers = true, apiEnabled = true,
             ),
@@ -132,7 +131,6 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
             name = "AccountManagement",
             label = "거래처 관리",
             description = null,
-            sfid = "0PS3z00000A1abc",
             flags = PermissionSetFlagsSummary(permissionSetFlagsId = 11, viewAllData = false, modifyAllData = false),
             objectPermissions = listOf(
                 ObjectPermissionRow(sfApiName = "Account", entity = "account", canRead = true, canCreate = true, canEdit = true, canDelete = false),

@@ -61,7 +61,6 @@ export default function SfPermissionSection({ employeeId }: Props) {
 
   const permissionSetColumns: ColumnsType<AssignedPermissionSet> = [
     { title: 'Name', dataIndex: 'permissionSetName', key: 'name' },
-    { title: 'SFID', dataIndex: 'permissionSetSfid', key: 'sfid', width: 200 },
     {
       title: 'View All Data',
       dataIndex: 'viewAllData',

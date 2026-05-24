@@ -45,7 +45,6 @@ export interface UserDetail {
   mobilePhone: string | null;
   phone: string | null;
   hrCode: string | null;
-  sfid: string | null;
   profileName: string | null;
   isSalesSupport: boolean;
   isActive: boolean;

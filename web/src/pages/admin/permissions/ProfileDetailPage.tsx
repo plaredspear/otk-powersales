@@ -67,7 +67,6 @@ export default function ProfileDetailPage() {
       <Card title="메타" style={{ marginBottom: 12 }}>
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="Profile ID">{data.profileId}</Descriptions.Item>
-          <Descriptions.Item label="SFID">{data.sfid ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="Name">{data.name}</Descriptions.Item>
           <Descriptions.Item label="User Type">{data.userType ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="Description" span={2}>

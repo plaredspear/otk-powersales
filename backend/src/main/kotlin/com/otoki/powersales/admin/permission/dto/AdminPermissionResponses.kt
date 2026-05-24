@@ -32,7 +32,6 @@ data class ProfileDetail(
     val name: String,
     val userType: String?,
     val description: String?,
-    val sfid: String?,
     val flags: ProfileFlagsSummary,
     val assignedUsers: PaginatedUserList,
 )
@@ -81,7 +80,6 @@ data class PermissionSetDetail(
     val name: String,
     val label: String?,
     val description: String?,
-    val sfid: String?,
     val flags: PermissionSetFlagsSummary?,
     val objectPermissions: List<ObjectPermissionRow>,
     val customPermissions: List<CustomPermissionRow>,

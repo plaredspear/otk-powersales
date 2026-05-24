@@ -64,7 +64,6 @@ data class AdminUserDetailResponse(
     val mobilePhone: String?,
     val phone: String?,
     val hrCode: String?,
-    val sfid: String?,
     val profileName: String? = null,
     val isSalesSupport: Boolean,
     val isActive: Boolean,
@@ -90,7 +89,7 @@ data class AdminUserDetailResponse(
             mobilePhone = user.mobilePhone,
             phone = user.phone,
             hrCode = user.hrCode,
-            sfid = user.sfid,
+            // sfid 는 SF 데이터 마이그레이션 보조 필드 — API 응답에 노출 금지 (정책).
             profileName = profileName,
             isSalesSupport = user.isSalesSupport ?: false,
             isActive = user.isActive,

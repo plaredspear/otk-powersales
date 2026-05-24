@@ -46,7 +46,6 @@ export interface ProfileDetail {
   name: string;
   userType: string | null;
   description: string | null;
-  sfid: string | null;
   flags: ProfileFlagsSummary;
   assignedUsers: PaginatedUserList;
 }
@@ -99,7 +98,6 @@ export interface PermissionSetDetail {
   name: string;
   label: string | null;
   description: string | null;
-  sfid: string | null;
   flags: PermissionSetFlagsSummary | null;
   objectPermissions: ObjectPermissionRow[];
   assignedUsers: PaginatedPermissionSetUserList;
