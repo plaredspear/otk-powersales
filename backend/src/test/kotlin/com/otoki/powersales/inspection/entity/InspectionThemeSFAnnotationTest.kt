@@ -135,12 +135,22 @@ class InspectionThemeSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("owner FK (@ManyToOne + @JoinColumn(\"owner_id\") → Employee)")
-        fun ownerFk() {
-            val field = InspectionTheme::class.java.getDeclaredField("owner")
-            assertThat(field.type).isEqualTo(com.otoki.powersales.employee.entity.Employee::class.java)
+        @DisplayName("ownerUser FK (@ManyToOne + @JoinColumn(\"owner_user_id\") → User) — V199 SF polymorphic 정합")
+        fun ownerUserFk() {
+            val field = InspectionTheme::class.java.getDeclaredField("ownerUser")
+            assertThat(field.type).isEqualTo(com.otoki.powersales.user.entity.User::class.java)
             assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
-            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("owner_id")
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("owner_user_id")
+            assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
+        }
+
+        @Test
+        @DisplayName("ownerGroup FK (@ManyToOne + @JoinColumn(\"owner_group_id\") → Group) — V199 SF polymorphic 정합")
+        fun ownerGroupFk() {
+            val field = InspectionTheme::class.java.getDeclaredField("ownerGroup")
+            assertThat(field.type).isEqualTo(com.otoki.powersales.employee.entity.Group::class.java)
+            assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
+            assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("owner_group_id")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
         }
 

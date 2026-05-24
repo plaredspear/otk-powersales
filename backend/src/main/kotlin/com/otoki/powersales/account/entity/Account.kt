@@ -313,9 +313,11 @@ class Account(
 
     // -- Relations --
 
+    // V199 — SF Account.OwnerId.referenceTo = [User] 단일 (Group 미포함, Account 는 Standard SObject 의 enableQueues=false).
+    // owner_id → owner_user_id rename. polymorphic owner XOR 패턴 불요.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: User? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")

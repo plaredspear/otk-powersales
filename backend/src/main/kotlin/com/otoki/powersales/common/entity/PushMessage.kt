@@ -7,6 +7,8 @@ import com.otoki.powersales.common.enums.PushMessageBranchCode
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -86,9 +88,16 @@ class PushMessage(
     @JoinColumn(name = "employee_id")
     var employee: Employee? = null,
 
+    // V199 — SF PushMessage__c.OwnerId.referenceTo = [Group, User] polymorphic. owner_id (Employee FK) →
+    // owner_user_id (User FK) + owner_group_id (Group FK) + XOR CHECK.
+    // 주의: createdBy/lastModifiedBy 는 본 PR 범위 외 — Employee FK 유지.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")

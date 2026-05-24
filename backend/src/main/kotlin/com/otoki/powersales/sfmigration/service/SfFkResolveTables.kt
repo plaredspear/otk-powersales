@@ -27,6 +27,13 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
     "professional_promotion_team_history",
     "professional_promotion_team_master",
     "suggestion",
+    // V199 — 7개 entity 의 owner_user_id + owner_group_id polymorphic 추가
+    "holiday_master",
+    "inspection_theme",
+    "new_product",
+    "product_barcode",
+    "push_message",
+    "upload_file",
 )
 
 /**

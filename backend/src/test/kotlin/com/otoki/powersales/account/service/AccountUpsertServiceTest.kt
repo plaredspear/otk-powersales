@@ -552,7 +552,7 @@ class AccountUpsertServiceTest {
             User(username = username, employeeCode = employeeCode, password = "encoded")
 
         @Test
-        @DisplayName("O1 정상 owner 매핑 - account.owner = 매칭 User (employee_code 매칭)")
+        @DisplayName("O1 정상 owner 매핑 -  account.ownerUser = 매칭 User (employee_code 매칭)")
         fun upsert_ownerMapped() {
             val employee = Employee(employeeCode = "12345", name = "홍길동")
             val matchedUser = user("12345")
@@ -566,7 +566,7 @@ class AccountUpsertServiceTest {
 
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
-            assertThat(savedSlot.captured.single().owner).isSameAs(matchedUser)
+            assertThat(savedSlot.captured.single().ownerUser).isSameAs(matchedUser)
         }
 
         @Test
@@ -586,7 +586,7 @@ class AccountUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("O3 employeeCode blank/null - account.owner = null 통과")
+        @DisplayName("O3 employeeCode blank/null -  account.ownerUser = null 통과")
         fun upsert_employeeCodeBlank_ownerNull() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
             every { organizationRepository.findAll() } returns emptyList()
@@ -596,11 +596,11 @@ class AccountUpsertServiceTest {
 
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
-            assertThat(savedSlot.captured.single().owner).isNull()
+            assertThat(savedSlot.captured.single().ownerUser).isNull()
         }
 
         @Test
-        @DisplayName("O4 Employee 존재 but User 미존재 - account.owner = null (Employee invariant 미적재 케이스)")
+        @DisplayName("O4 Employee 존재 but User 미존재 -  account.ownerUser = null (Employee invariant 미적재 케이스)")
         fun upsert_userMissing_ownerNull() {
             val employee = Employee(employeeCode = "12345", name = "홍길동")
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
@@ -612,7 +612,7 @@ class AccountUpsertServiceTest {
             val result = service.upsert(listOf(command(employeeCode = "12345")))
 
             assertThat(result.successCount).isEqualTo(1)
-            assertThat(savedSlot.captured.single().owner).isNull()
+            assertThat(savedSlot.captured.single().ownerUser).isNull()
         }
 
         @Test
@@ -639,8 +639,8 @@ class AccountUpsertServiceTest {
             assertThat(result.failures.single().identifier).isEqualTo("B")
             val saved = savedSlot.captured
             assertThat(saved).hasSize(2)
-            assertThat(saved.first { it.externalKey == "A" }.owner).isSameAs(matchedUser)
-            assertThat(saved.first { it.externalKey == "C" }.owner).isNull()
+            assertThat(saved.first { it.externalKey == "A" }.ownerUser).isSameAs(matchedUser)
+            assertThat(saved.first { it.externalKey == "C" }.ownerUser).isNull()
         }
     }
 }

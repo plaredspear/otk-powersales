@@ -60,7 +60,7 @@ class AccountUpsertMapper {
         applyOrganizationAndCostCenter(account, command, matchedOrg)
         // Spec #758: Owner FK = User (referenceTo == User 정합).
         // owner_sfid 는 HC sync buffer 컬럼 (application 미적재).
-        account.owner = matchedUser
+        account.ownerUser = matchedUser
     }
 
     private fun applyTypeAndStatus(account: Account, command: AccountUpsertCommand) {
