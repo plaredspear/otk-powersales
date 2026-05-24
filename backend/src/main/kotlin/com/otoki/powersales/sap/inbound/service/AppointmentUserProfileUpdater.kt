@@ -1,6 +1,7 @@
 package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.auth.permission.AdminPermissionCache
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -22,7 +23,8 @@ class AppointmentUserProfileUpdater(
     private val systemCodeMasterRepository: SystemCodeMasterRepository,
     private val userRepository: UserRepository,
     private val employeeProfileResolver: EmployeeProfileResolver,
-    private val userRoleResolver: UserRoleResolver
+    private val userRoleResolver: UserRoleResolver,
+    private val adminPermissionCache: AdminPermissionCache,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -179,5 +181,7 @@ class AppointmentUserProfileUpdater(
         user.profileId = employeeProfileResolver.resolveProfileId(employee) ?: user.profileId
         user.isSalesSupport = userRoleResolver.isSalesSupport(employee)
         user.costCenterCode = employee.costCenterCode
+        // profileId / isSalesSupport 가 권한 산출 입력이라 변경 즉시 cache invalidate.
+        adminPermissionCache.invalidate(user.id)
     }
 }
