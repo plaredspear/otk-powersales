@@ -16,6 +16,11 @@ import org.springframework.web.filter.OncePerRequestFilter
  *
  * 토큰만으로 principal 복원 — DB 재조회 없음 (성능 + DB 의존 회피).
  * 권한(authorities) 은 token claim 의 profile_name + is_sales_support 로 재계산.
+ *
+ * principal.permissions 는 본 필터에서 빈 set 으로 박는다. SF 권한 가드 평가는
+ * [com.otoki.powersales.admin.security.WebAdminContextFilter] 가 AdminPermissionCache 로
+ * lazy lookup (JWT claim 비대화 회피 — spec #808 expandAllDataBits 일반화 이후 token byte 가
+ * 8KB 초과해 nginx large_client_header_buffers 한도를 초과한 사례 해소).
  */
 class WebJwtAuthenticationFilter(
     private val webJwtService: WebJwtService,
@@ -40,7 +45,6 @@ class WebJwtAuthenticationFilter(
                     val isSalesSupport = webJwtService.getIsSalesSupportFromToken(token)
                     val passwordChangeRequired = webJwtService.getPasswordChangeRequiredFromToken(token)
                     val role: String? = webJwtService.getRoleFromToken(token)
-                    val permissions: Set<String> = webJwtService.getPermissionsFromToken(token).toSet()
 
                     val authorities = WebUserDetailsService.resolveAuthoritiesByProfileName(profileName, isSalesSupport)
                     val principal = WebUserPrincipal(
@@ -54,7 +58,7 @@ class WebJwtAuthenticationFilter(
                         profileId = null,
                         isSalesSupport = isSalesSupport,
                         passwordChangeRequired = passwordChangeRequired,
-                        permissions = permissions,
+                        permissions = emptySet(),
                         encodedPassword = "",
                         grantedAuthorities = authorities,
                         active = true

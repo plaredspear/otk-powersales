@@ -95,7 +95,7 @@ class WebAuthenticationService(
         val familyId = UUID.randomUUID().toString()
         val tokenId = UUID.randomUUID().toString()
 
-        val accessToken = webJwtService.createAccessToken(principal, summary.role, summary.permissions)
+        val accessToken = webJwtService.createAccessToken(principal, summary.role)
         val refreshToken = webJwtService.createRefreshToken(
             username = user.username,
             userId = user.id,
@@ -151,7 +151,7 @@ class WebAuthenticationService(
         val summary = summaryFor(user, employee, permissions)
 
         val newTokenId = UUID.randomUUID().toString()
-        val newAccessToken = webJwtService.createAccessToken(principal, summary.role, summary.permissions)
+        val newAccessToken = webJwtService.createAccessToken(principal, summary.role)
         val newRefreshToken = webJwtService.createRefreshToken(
             username = user.username,
             userId = user.id,
