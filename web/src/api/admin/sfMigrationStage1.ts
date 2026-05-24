@@ -51,11 +51,15 @@ export interface Stage1CopyRequest {
   targetName: string;
   s3Bucket: string;
   s3Key: string;
+  /** sample 적재 상한 (CSV row 기준). 미지정 시 전체 적재. */
+  maxRows?: number;
 }
 
 export interface Stage1CopyAllRequest {
   s3Bucket: string;
   s3KeyPrefix: string;
+  /** entity 별 sample 적재 상한 (CSV row 기준). 미지정 시 전체 적재. */
+  maxRows?: number;
 }
 
 export class Stage1AlreadyRunningError extends Error {

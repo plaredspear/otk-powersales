@@ -50,6 +50,13 @@ const ENTITY_STATUS_TAG: Record<Stage1EntityStatus, { color: string; label: stri
 };
 
 type RunMode = 'single' | 'batch';
+type SampleMode = 'all' | 'sample100k';
+
+const SAMPLE_ROW_LIMIT = 100_000;
+
+function sampleModeToMaxRows(mode: SampleMode): number | undefined {
+  return mode === 'sample100k' ? SAMPLE_ROW_LIMIT : undefined;
+}
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return '-';
@@ -83,6 +90,7 @@ export default function SfMigrationStage1Page() {
   const [singleForm] = Form.useForm<{ targetName: string; s3Bucket: string; s3Key: string }>();
   const [batchForm] = Form.useForm<{ s3Bucket: string; s3KeyPrefix: string }>();
   const [runMode, setRunMode] = useState<RunMode>('single');
+  const [sampleMode, setSampleMode] = useState<SampleMode>('all');
 
   const progress = progressQuery.data;
   const isRunning = progress?.status === 'RUNNING';
@@ -112,28 +120,34 @@ export default function SfMigrationStage1Page() {
     s3Key: string;
   }) => {
     resetSubmitState();
-    startSingleMutation.mutate(values, {
-      onError: (err) => {
-        if (err instanceof Stage1AlreadyRunningError) {
-          setAlreadyRunning(true);
-          return;
-        }
-        setSubmitError(err.message);
+    startSingleMutation.mutate(
+      { ...values, maxRows: sampleModeToMaxRows(sampleMode) },
+      {
+        onError: (err) => {
+          if (err instanceof Stage1AlreadyRunningError) {
+            setAlreadyRunning(true);
+            return;
+          }
+          setSubmitError(err.message);
+        },
       },
-    });
+    );
   };
 
   const onSubmitBatch = (values: { s3Bucket: string; s3KeyPrefix: string }) => {
     resetSubmitState();
-    startBatchMutation.mutate(values, {
-      onError: (err) => {
-        if (err instanceof Stage1AlreadyRunningError) {
-          setAlreadyRunning(true);
-          return;
-        }
-        setSubmitError(err.message);
+    startBatchMutation.mutate(
+      { ...values, maxRows: sampleModeToMaxRows(sampleMode) },
+      {
+        onError: (err) => {
+          if (err instanceof Stage1AlreadyRunningError) {
+            setAlreadyRunning(true);
+            return;
+          }
+          setSubmitError(err.message);
+        },
       },
-    });
+    );
   };
 
   const entityColumns: ColumnsType<Stage1EntityResult> = [
@@ -231,6 +245,30 @@ export default function SfMigrationStage1Page() {
           <Radio.Button value="single">개별 실행 (target 1개)</Radio.Button>
           <Radio.Button value="batch">일괄 실행 (전체 entity)</Radio.Button>
         </Radio.Group>
+
+        <div style={{ marginBottom: 16 }}>
+          <Text style={{ marginRight: 12 }}>적재 범위:</Text>
+          <Radio.Group
+            value={sampleMode}
+            onChange={(e) => {
+              setSampleMode(e.target.value as SampleMode);
+              resetSubmitState();
+            }}
+            optionType="button"
+            buttonStyle="solid"
+            disabled={isRunning || startMutationPending}
+          >
+            <Radio.Button value="all">전체</Radio.Button>
+            <Radio.Button value="sample100k">
+              Sample {SAMPLE_ROW_LIMIT.toLocaleString()} rows
+            </Radio.Button>
+          </Radio.Group>
+          {sampleMode === 'sample100k' && (
+            <Text type="secondary" style={{ marginLeft: 12 }}>
+              CSV 의 앞 {SAMPLE_ROW_LIMIT.toLocaleString()} row 만 적재 (filterOut 포함). 실제 적재 row 는 그 이하일 수 있음.
+            </Text>
+          )}
+        </div>
 
         {runMode === 'single' ? (
           <Form
