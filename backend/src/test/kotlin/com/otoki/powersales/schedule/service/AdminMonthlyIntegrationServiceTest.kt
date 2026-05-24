@@ -11,6 +11,7 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
@@ -40,6 +41,7 @@ class AdminMonthlyIntegrationServiceTest {
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository = mockk(relaxUnitFun = true)
     private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository = mockk(relaxUnitFun = true)
     private val holidayMasterRepository: HolidayMasterRepository = mockk(relaxUnitFun = true)
+    private val branchCodeExpander: BranchCodeExpander = mockk(relaxUnitFun = true)
 
     private val service = AdminMonthlyIntegrationService(
         organizationRepository,
@@ -50,10 +52,12 @@ class AdminMonthlyIntegrationServiceTest {
         monthlySalesHistoryRepository,
         monthlyIntegrationScheduleRepository,
         holidayMasterRepository,
+        branchCodeExpander,
     )
 
     private fun setupCommonMocks() {
         every { organizationRepository.expandCostCenterCodes(any()) } returns listOf("CC001")
+        every { branchCodeExpander.expand(any()) } answers { (firstArg<Collection<String>>()).toSet() }
         every { employeeRepository.findByCostCenterCodeInAndStatus(any(), any()) } returns listOf(createEmployee(id = 1L, costCenterCode = "CC001"))
         every { displayWorkScheduleRepository.findByEmployeeIdsAndAccountIds(any(), any()) } returns emptyList()
         every { accountRepository.findByIdIn(any()) } returns emptyList()
@@ -453,6 +457,91 @@ class AdminMonthlyIntegrationServiceTest {
 
             // Then
             assertThat(result).isEqualTo(22)
+        }
+    }
+
+    @Nested
+    @DisplayName("buildIntegrationItems - BranchCodeExpander 합성 (SF Util.getIncludedBranchCode 동등)")
+    inner class BranchCodeExpansionTests {
+
+        @Test
+        @DisplayName("이력 코드 합집합 — BranchMapping seed 가 있는 코드 입력 시 IN 절이 이력 코드까지 확장")
+        fun expandsWithBranchMappingHistory() {
+            // Given: 입력 ["5849"] → 조직 계층 펼침 ["5849"] → BranchMapping (BC=5849, IBC="5479,5849") 합집합 ["5849","5479"]
+            every { organizationRepository.expandCostCenterCodes(listOf("5849")) } returns listOf("5849")
+            every { branchCodeExpander.expand(listOf("5849")) } returns setOf("5849", "5479")
+            every { employeeRepository.findByCostCenterCodeInAndStatus(any(), any()) } returns emptyList()
+            every { organizationRepository.searchForAdmin(any(), any(), any()) } returns emptyList()
+
+            // When
+            service.getMonthlyIntegration(2026, 5, listOf("5849"))
+
+            // Then: BranchCodeExpander 결과 (["5849","5479"]) 로 employee 조회
+            verify {
+                employeeRepository.findByCostCenterCodeInAndStatus(
+                    match { it.toSet() == setOf("5849", "5479") },
+                    "재직"
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("합성 순서 — 조직 계층 펼침 (level3→level5) 후 BranchMapping 이력 합집합")
+        fun composesOrgHierarchyThenBranchMapping() {
+            // Given: 상위 코드 ["L3-CODE"] → 조직 펼침 ["5849","5750"] → BranchMapping (BC=5849 IBC="5479,5849") 합집합 ["5849","5750","5479"]
+            every { organizationRepository.expandCostCenterCodes(listOf("L3-CODE")) } returns listOf("5849", "5750")
+            every { branchCodeExpander.expand(listOf("5849", "5750")) } returns setOf("5849", "5750", "5479")
+            every { employeeRepository.findByCostCenterCodeInAndStatus(any(), any()) } returns emptyList()
+            every { organizationRepository.searchForAdmin(any(), any(), any()) } returns emptyList()
+
+            // When
+            service.getMonthlyIntegration(2026, 5, listOf("L3-CODE"))
+
+            // Then: 조직 펼침 결과를 BranchCodeExpander 에 전달 + 최종 결과로 employee 조회
+            verify { organizationRepository.expandCostCenterCodes(listOf("L3-CODE")) }
+            verify { branchCodeExpander.expand(listOf("5849", "5750")) }
+            verify {
+                employeeRepository.findByCostCenterCodeInAndStatus(
+                    match { it.toSet() == setOf("5849", "5750", "5479") },
+                    "재직"
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("BranchMapping seed 미존재 — pass-through (회귀 없음)")
+        fun passThroughWhenNoBranchMappingSeed() {
+            // Given: 입력 ["9999"] → 조직 펼침 ["9999"] → BranchMapping seed 없음 → ["9999"] (자기 자신만)
+            every { organizationRepository.expandCostCenterCodes(listOf("9999")) } returns listOf("9999")
+            every { branchCodeExpander.expand(listOf("9999")) } returns setOf("9999")
+            every { employeeRepository.findByCostCenterCodeInAndStatus(any(), any()) } returns emptyList()
+            every { organizationRepository.searchForAdmin(any(), any(), any()) } returns emptyList()
+
+            // When
+            service.getMonthlyIntegration(2026, 5, listOf("9999"))
+
+            // Then
+            verify {
+                employeeRepository.findByCostCenterCodeInAndStatus(
+                    match { it.toSet() == setOf("9999") },
+                    "재직"
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("확장 결과가 빈 집합 — 빈 결과 반환 (조기 종료)")
+        fun returnsEmptyWhenExpandedCodesEmpty() {
+            // Given: 조직 펼침은 비어있지 않으나 BranchCodeExpander 가 빈 집합 반환 (이론적 케이스)
+            every { organizationRepository.expandCostCenterCodes(any()) } returns emptyList()
+            every { branchCodeExpander.expand(emptyList()) } returns emptySet()
+
+            // When
+            val result = service.getMonthlyIntegration(2026, 5, listOf("CC001"))
+
+            // Then: 조기 종료로 빈 결과
+            assertThat(result.items).isEmpty()
+            verify(exactly = 0) { employeeRepository.findByCostCenterCodeInAndStatus(any(), any()) }
         }
     }
 

@@ -10,6 +10,7 @@ import com.otoki.powersales.leave.repository.HolidayMasterRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
@@ -42,7 +43,8 @@ class AdminMonthlyIntegrationService(
     private val accountRepository: AccountRepository,
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
     private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
-    private val holidayMasterRepository: HolidayMasterRepository
+    private val holidayMasterRepository: HolidayMasterRepository,
+    private val branchCodeExpander: BranchCodeExpander
 ) {
 
     fun getMonthlyIntegration(
@@ -336,8 +338,9 @@ class AdminMonthlyIntegrationService(
         month: Int,
         costCenterCodes: List<String>
     ): List<MonthlyIntegrationScheduleItem> {
-        // 1. Cost center expansion
-        val expandedCodes = organizationRepository.expandCostCenterCodes(costCenterCodes)
+        // 1. Cost center expansion — 조직 계층 펼침 + BranchMapping 이력 합집합 (SF Util.getIncludedBranchCode 동등)
+        val orgExpanded = organizationRepository.expandCostCenterCodes(costCenterCodes)
+        val expandedCodes = branchCodeExpander.expand(orgExpanded).toList()
         if (expandedCodes.isEmpty()) return emptyList()
 
         // 2. Find employees with these cost center codes
