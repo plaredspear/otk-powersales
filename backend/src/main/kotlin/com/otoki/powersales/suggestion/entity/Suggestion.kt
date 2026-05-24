@@ -5,8 +5,11 @@ import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.suggestion.entity.converter.SuggestionActionStatusConverter
 import com.otoki.powersales.suggestion.entity.converter.SuggestionCategoryConverter
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import org.hibernate.annotations.NotFound
 import org.hibernate.annotations.NotFoundAction
@@ -138,6 +141,20 @@ class Suggestion(
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 
+    // -- Audit / Owner sfid sync buffer (V192) — Stage1 적재 채움, Stage2-A FK resolve 가 id 컬럼으로 변환 --
+
+    @SFField("OwnerId")
+    @Column(name = "owner_sfid", length = 18)
+    var ownerSfid: String? = null,
+
+    @SFField("CreatedById")
+    @Column(name = "created_by_sfid", length = 18)
+    var createdBySfid: String? = null,
+
+    @SFField("LastModifiedById")
+    @Column(name = "last_modified_by_sfid", length = 18)
+    var lastModifiedBySfid: String? = null,
+
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -149,5 +166,30 @@ class Suggestion(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id")
     @NotFound(action = NotFoundAction.IGNORE)
-    val employee: Employee? = null
+    val employee: Employee? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    @NotFound(action = NotFoundAction.IGNORE)
+    var product: Product? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_user_id")
+    @NotFound(action = NotFoundAction.IGNORE)
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    @NotFound(action = NotFoundAction.IGNORE)
+    var ownerGroup: Group? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    @NotFound(action = NotFoundAction.IGNORE)
+    var createdBy: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    @NotFound(action = NotFoundAction.IGNORE)
+    var lastModifiedBy: User? = null,
 ) : BaseEntity()

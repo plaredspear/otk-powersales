@@ -4,6 +4,7 @@ import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 
 /**
@@ -56,9 +57,7 @@ class PromotionProduct(
     @Column(name = "promotion_id_ext", length = 100)
     var promotionIdExt: String? = null,
 
-    @SFField("OwnerId")
-    @Column(name = "owner_sfid", length = 18)
-    var ownerSfid: String? = null,
+    // V193 — SF describe 상 OwnerId 필드 부재 (Master-Detail child, V154 PromotionEmployee 동일 패턴). owner_sfid 제거.
 
     @SFField("CreatedById")
     @Column(name = "created_by_sfid", length = 18)
@@ -81,6 +80,14 @@ class PromotionProduct(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", insertable = false, updatable = false)
     var product: Product? = null
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: User? = null
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: User? = null
 
     fun updateProduct(productId: Long?) {
         this.productId = productId
