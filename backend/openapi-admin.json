@@ -3270,6 +3270,62 @@
         },
         "type" : "object"
       },
+      "ApiResponseListFemaleEmployeeScheduleEventDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeeScheduleEventDto"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListFemaleEmployeeScheduleSummaryDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeeScheduleSummaryDto"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListHolidayMasterResponse" : {
         "properties" : {
           "data" : {
@@ -6738,6 +6794,85 @@
           },
           "message" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeScheduleEventDto" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "clockIn" : {
+            "type" : "boolean"
+          },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "recordId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "start" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory2" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingType" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeScheduleSummaryDto" : {
+        "properties" : {
+          "actual" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "actualPromo" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "day" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "expected" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "expectedPromo" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "holiday" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "month" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "subHoliday" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "year" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -12636,6 +12771,98 @@
           }
         },
         "tags" : [ "admin-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employee-schedule/events" : {
+      "get" : {
+        "operationId" : "fetchAll",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "accountIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "teamMemberIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListFemaleEmployeeScheduleEventDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "female-employee-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employee-schedule/summary" : {
+      "get" : {
+        "operationId" : "summary",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListFemaleEmployeeScheduleSummaryDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "female-employee-schedule-controller" ]
       }
     },
     "/api/v1/admin/holiday-masters" : {
