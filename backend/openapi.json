@@ -6523,6 +6523,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseTeamMemberCategorySearchResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TeamMemberCategorySearchResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseTeamMemberScheduleSearchResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TeamMemberScheduleSearchResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseTeamScheduleCreateResultDto" : {
         "properties" : {
           "data" : {
@@ -15605,6 +15663,73 @@
         },
         "type" : "object"
       },
+      "TeamMemberCategoryResultItem" : {
+        "properties" : {
+          "branchName" : {
+            "type" : "string"
+          },
+          "currentEventTotal" : {
+            "type" : [ "number", "null" ]
+          },
+          "currentExhibitionTotal" : {
+            "type" : [ "number", "null" ]
+          },
+          "currentMonthTotal" : {
+            "type" : [ "number", "null" ]
+          },
+          "eventIncrease" : {
+            "type" : [ "number", "null" ]
+          },
+          "exhibitionIncrease" : {
+            "type" : [ "number", "null" ]
+          },
+          "fix" : {
+            "type" : [ "number", "null" ]
+          },
+          "lastEventTotal" : {
+            "type" : [ "number", "null" ]
+          },
+          "lastExhibitionTotal" : {
+            "type" : [ "number", "null" ]
+          },
+          "lastMonthTotal" : {
+            "type" : [ "number", "null" ]
+          },
+          "refrigerationAndFreezing" : {
+            "type" : [ "number", "null" ]
+          },
+          "roomTemperature" : {
+            "type" : [ "number", "null" ]
+          },
+          "rotate" : {
+            "type" : [ "number", "null" ]
+          },
+          "store" : {
+            "type" : [ "number", "null" ]
+          },
+          "totalIncrease" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "TeamMemberCategorySearchResult" : {
+        "properties" : {
+          "result" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TeamMemberCategoryResultItem"
+            },
+            "type" : "array"
+          },
+          "resultCode" : {
+            "type" : "string"
+          },
+          "resultMsg" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "TeamMemberDto" : {
         "properties" : {
           "employeeCode" : {
@@ -15654,6 +15779,82 @@
             "type" : "string"
           },
           "workType" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "TeamMemberScheduleResultItem" : {
+        "properties" : {
+          "accountBranchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "actualAmount" : {
+            "type" : "number"
+          },
+          "convertedHeadcount" : {
+            "type" : "number"
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "equivalentNumberOfWorkingDays" : {
+            "type" : "number"
+          },
+          "month" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "numberOfInputs" : {
+            "type" : [ "number", "null" ]
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory4" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory5" : {
+            "type" : [ "string", "null" ]
+          },
+          "year" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "TeamMemberScheduleSearchResult" : {
+        "properties" : {
+          "result" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TeamMemberScheduleResultItem"
+            },
+            "type" : "array"
+          },
+          "resultCode" : {
+            "type" : "string"
+          },
+          "resultMsg" : {
             "type" : [ "string", "null" ]
           }
         },
@@ -22046,6 +22247,92 @@
           }
         },
         "tags" : [ "sharing-recalc-admin-controller" ]
+      }
+    },
+    "/api/v1/admin/team-member-search/category" : {
+      "get" : {
+        "operationId" : "searchCategory",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "orgValues",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseTeamMemberCategorySearchResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "team-member-search-controller" ]
+      }
+    },
+    "/api/v1/admin/team-member-search/schedule" : {
+      "get" : {
+        "operationId" : "searchSchedule",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "orgValues",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseTeamMemberScheduleSearchResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "team-member-search-controller" ]
       }
     },
     "/api/v1/admin/team-schedule" : {
