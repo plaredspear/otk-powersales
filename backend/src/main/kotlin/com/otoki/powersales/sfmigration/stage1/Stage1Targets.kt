@@ -1349,6 +1349,9 @@ object Stage1Targets {
     // SOQL: SELECT Id, AssigneeId, PermissionSetId, IsActive, CreatedDate FROM PermissionSetAssignment WHERE IsActive = TRUE
     // ─────────────────────────────────────────────────────────
 
+    // PSA 는 SF 표준 필드만 8개 — CreatedDate / LastModifiedDate / *ById 모두 미보유 (prod describe
+    // 2026-05-24 확인). assigned_at 은 SystemModstamp ("최종 시스템 modify" 시각) 로 근사 — PSA 는
+    // 신규 row 가 일반적으로 update 거의 없어 사실상 created_at 과 동등.
     private val PERMISSION_SET_ASSIGNMENT = EntityMetadata(
         targetName = "PermissionSetAssignment",
         sObjectName = "PermissionSetAssignment", // SOQL 출처 — extract-csv.sh
@@ -1359,7 +1362,7 @@ object Stage1Targets {
             FieldMapping("AssigneeId", "assignee_user_sfid", nullable = false),
             FieldMapping("PermissionSetId", "permission_set_sfid", nullable = false),
             FieldMapping("IsActive", "is_active", nullable = false, nullPlaceholder = "true"),
-            FieldMapping("CreatedDate", "assigned_at"),
+            FieldMapping("SystemModstamp", "assigned_at"),
         ),
     )
 
