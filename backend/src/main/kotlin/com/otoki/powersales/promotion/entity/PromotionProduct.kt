@@ -6,6 +6,7 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
+import java.math.BigDecimal
 
 /**
  * 행사상품 (DKRetail__PromotionProduct__c — DKRetail 관리형 패키지 SObject "상세 POS품목").
@@ -47,10 +48,11 @@ class PromotionProduct(
     @Column(name = "product_sfid", length = 18)
     var productSfid: String? = null,
 
-    // SF: DKRetail__Price__c (Number(18,0))
+    // SF: DKRetail__Price__c (double 18/0 — SF describe 가 0 scale 이라 정수 의미이나 SF export 는
+    // trailing `.0` 으로 직렬화. DB 도 NUMERIC(18,0) (V194), entity 도 BigDecimal 로 정렬.
     @SFField("DKRetail__Price__c")
-    @Column(name = "price")
-    var price: Long? = null,
+    @Column(name = "price", precision = 18, scale = 0)
+    var price: BigDecimal? = null,
 
     // SF: PromotionIdExt__c (Text(100), externalId) — 레거시 upsert 외부 키
     @SFField("PromotionIdExt__c")
