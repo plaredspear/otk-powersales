@@ -6789,9 +6789,6 @@
           "permissionSetName" : {
             "type" : "string"
           },
-          "permissionSetSfid" : {
-            "type" : [ "string", "null" ]
-          },
           "viewAllData" : {
             "type" : "boolean"
           }
