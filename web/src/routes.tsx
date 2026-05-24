@@ -64,6 +64,7 @@ const ProfileDetailPage = lazy(() => import('@/pages/admin/permissions/ProfileDe
 const PermissionSetListPage = lazy(() => import('@/pages/admin/permissions/PermissionSetListPage'));
 const PermissionSetDetailPage = lazy(() => import('@/pages/admin/permissions/PermissionSetDetailPage'));
 const PermissionMatrixPage = lazy(() => import('@/pages/admin/permissions/PermissionMatrixPage'));
+const PermissionGuidePage = lazy(() => import('@/pages/admin/permissions/PermissionGuidePage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -256,6 +257,7 @@ export const router = createBrowserRouter(
                 { path: '/admin/permissions/matrix', element: <LazyWrapper><PermissionMatrixPage /></LazyWrapper> },
               ],
             },
+            { path: '/admin/permissions/guide', element: <LazyWrapper><PermissionGuidePage /></LazyWrapper> },
             { path: '*', element: <Navigate to="/" replace /> },
           ],
         },
