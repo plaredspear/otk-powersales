@@ -49,7 +49,7 @@ class AdminPermissionAssignmentService(
     @CacheEvict(value = [CacheConfig.CACHE_PERMISSION_MATRIX], allEntries = true)
     @Transactional
     fun assign(userId: Long, permissionSetFlagsId: Long, principalUserId: Long): AssignmentResponse {
-        val user = userRepository.findById(userId).orElseThrow { AssignmentUserNotFoundException(userId) }
+        userRepository.findById(userId).orElseThrow { AssignmentUserNotFoundException(userId) }
         val flags = permissionSetFlagsRepository.findById(permissionSetFlagsId)
             .orElseThrow { PermissionSetFlagsNotFoundException(permissionSetFlagsId) }
 
@@ -63,13 +63,14 @@ class AdminPermissionAssignmentService(
             existing.updatedById = principalUserId
             assignmentRepository.save(existing)
         } else {
-            val sfid = user.sfid ?: throw AssignmentUserNotFoundException(userId)
+            // sfid 는 SF 데이터 마이그레이션 보조 필드 (Stage1 적재분만 박힘) — runtime 부여분은 null.
+            // 신규 시스템에서는 id FK (assigneeUserId / permissionSetFlagsId) 만 운영 invariant.
             assignmentRepository.save(
                 PermissionSetAssignment(
                     sfid = null,
-                    assigneeUserSfid = sfid,
+                    assigneeUserSfid = null,
                     assigneeUserId = userId,
-                    permissionSetSfid = flags.permissionSetSfid,
+                    permissionSetSfid = null,
                     permissionSetFlagsId = permissionSetFlagsId,
                     isActive = true,
                     assignedAt = LocalDateTime.now(),
