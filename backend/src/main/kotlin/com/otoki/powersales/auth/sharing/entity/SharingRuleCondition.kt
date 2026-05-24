@@ -41,6 +41,6 @@ class SharingRuleCondition(
     @Column(name = "condition_order", nullable = false)
     var conditionOrder: Int,
 
-    @Column(name = "logic_connector", length = 10)
+    @Column(name = "logic_connector", length = 255)
     var logicConnector: String? = null,
 )
