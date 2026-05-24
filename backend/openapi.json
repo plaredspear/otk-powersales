@@ -347,11 +347,6 @@
             "enum" : [ "Public", "Private", "Subsidiary", "Other" ],
             "type" : [ "string", "null" ]
           },
-          "parentSfid" : {
-            "maxLength" : 18,
-            "minLength" : 0,
-            "type" : [ "string", "null" ]
-          },
           "phone" : {
             "maxLength" : 40,
             "minLength" : 0,
@@ -505,9 +500,6 @@
           },
           "ownership" : {
             "enum" : [ "Public", "Private", "Subsidiary", "Other" ],
-            "type" : [ "string", "null" ]
-          },
-          "parentSfid" : {
             "type" : [ "string", "null" ]
           },
           "phone" : {
@@ -828,9 +820,6 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
-          "accountSfid" : {
-            "type" : [ "string", "null" ]
-          },
           "attendanceDate" : {
             "format" : "date-time",
             "type" : [ "string", "null" ]
@@ -844,9 +833,6 @@
             "type" : "string"
           },
           "createdByName" : {
-            "type" : [ "string", "null" ]
-          },
-          "createdBySfid" : {
             "type" : [ "string", "null" ]
           },
           "deleted" : {
@@ -865,9 +851,6 @@
           "employeeName" : {
             "type" : [ "string", "null" ]
           },
-          "employeeSfid" : {
-            "type" : [ "string", "null" ]
-          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
@@ -875,13 +858,7 @@
           "lastModifiedByName" : {
             "type" : [ "string", "null" ]
           },
-          "lastModifiedBySfid" : {
-            "type" : [ "string", "null" ]
-          },
           "name" : {
-            "type" : [ "string", "null" ]
-          },
-          "ownerSfid" : {
             "type" : [ "string", "null" ]
           },
           "ownerUserName" : {
@@ -895,9 +872,6 @@
             "type" : [ "string", "null" ]
           },
           "secondWorkTypeName" : {
-            "type" : [ "string", "null" ]
-          },
-          "sfid" : {
             "type" : [ "string", "null" ]
           },
           "updatedAt" : {
@@ -1786,9 +1760,6 @@
           },
           "salesSupport" : {
             "type" : "boolean"
-          },
-          "sfid" : {
-            "type" : [ "string", "null" ]
           },
           "title" : {
             "type" : [ "string", "null" ]
@@ -12053,9 +12024,6 @@
           "permissionSetId" : {
             "format" : "int64",
             "type" : "integer"
-          },
-          "sfid" : {
-            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -12665,9 +12633,6 @@
           "profileId" : {
             "format" : "int64",
             "type" : "integer"
-          },
-          "sfid" : {
-            "type" : [ "string", "null" ]
           },
           "userType" : {
             "type" : [ "string", "null" ]
