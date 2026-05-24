@@ -2,9 +2,45 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  height: 48px;
+  height: 56px;
   padding: 0 16px;
   background: #fff;
+}
+
+.admin-header-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.admin-header-user:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.admin-header-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.admin-header-user-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.admin-header-user-org {
+  font-size: 11px;
+}
+
+.admin-header-user-caret {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.45);
 }
 
 .admin-sider-collapse-footer {

@@ -2,7 +2,7 @@ import './AdminLayout.css';
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ProLayout from '@ant-design/pro-layout';
-import { Dropdown, Space, Typography, type MenuProps } from 'antd';
+import { Dropdown, Typography, type MenuProps } from 'antd';
 import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useForbiddenStore } from '@/stores/forbiddenStore';
@@ -120,17 +120,17 @@ export default function AdminLayout() {
           >
             <a
               onClick={(e) => e.preventDefault()}
-              style={{ color: 'inherit', cursor: 'pointer' }}
+              className="admin-header-user"
             >
-              <Space align="center" size={4}>
+              <div className="admin-header-user-info">
+                <Text className="admin-header-user-name">{user?.name}</Text>
                 {user?.orgName && (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
+                  <Text type="secondary" className="admin-header-user-org">
                     {user.orgName}
                   </Text>
                 )}
-                <Text>{user?.name}</Text>
-                <DownOutlined style={{ fontSize: 10 }} />
-              </Space>
+              </div>
+              <DownOutlined className="admin-header-user-caret" />
             </a>
           </Dropdown>
         </div>
