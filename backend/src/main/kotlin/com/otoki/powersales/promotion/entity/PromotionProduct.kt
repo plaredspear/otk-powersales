@@ -32,9 +32,11 @@ class PromotionProduct(
     var name: String? = null,
 
     // SF: DKRetail__PromotionId__c (Master-Detail → DKRetail__Promotion__c)
-    // 신규: promotion_id (FK + UNIQUE — 행사 1건당 PromotionProduct 1건)
-    @Column(name = "promotion_id", nullable = false, unique = true)
-    val promotionId: Long,
+    // 신규: promotion_id (FK + UNIQUE — 행사 1건당 PromotionProduct 1건).
+    // Stage1 적재 시점에는 NULL (promotion_sfid 만 채워짐), Stage2-A FK resolve 가 채움 (V195).
+    // service create 경로는 항상 non-null promotionId 전달이라 운영 invariant 유지.
+    @Column(name = "promotion_id", unique = true)
+    var promotionId: Long? = null,
 
     @SFField("DKRetail__PromotionId__c")
     @Column(name = "promotion_sfid", length = 18)
