@@ -3,7 +3,6 @@ package com.otoki.powersales.leave.entity
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.leave.entity.converter.HolidayTypeConverter
 import com.otoki.powersales.user.entity.User
@@ -58,7 +57,7 @@ class HolidayMaster(
 
     // V199 — SF OwnerId.referenceTo = [Group, User] polymorphic. owner_id (Employee FK) →
     // owner_user_id (User FK) + owner_group_id (Group FK) + XOR CHECK.
-    // 주의: createdBy/lastModifiedBy 는 본 PR 범위 외 (audit FK 는 별도 정합 PR 필요) — Employee FK 유지.
+    // V200 — SF CreatedById/LastModifiedById.referenceTo = [User]. audit FK Employee → User 전환.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id")
     var ownerUser: User? = null,
@@ -69,11 +68,11 @@ class HolidayMaster(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
-    var createdBy: Employee? = null,
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
-    var lastModifiedBy: Employee? = null
+    var lastModifiedBy: User? = null
 
 ) : BaseEntity() {
     fun update(holidayDate: LocalDate, name: String, type: HolidayType) {
