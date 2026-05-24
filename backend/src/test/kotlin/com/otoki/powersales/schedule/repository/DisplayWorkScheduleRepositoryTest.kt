@@ -529,8 +529,11 @@ class DisplayWorkScheduleRepositoryTest {
         fun updates_lastMonthRevenue_without_touching_updatedAt() {
             val activeEmp = persistEmployee("LMR_UPD001", status = "재직")
             val persisted = testEntityManager.persistAndFlush(createSapDws(employee = activeEmp))
-            val originalUpdatedAt = persisted.updatedAt
             val originalId = persisted.id
+            testEntityManager.clear()
+
+            // baseline 은 메모리 LocalDateTime (nanosecond) 이 아니라 DB reload 값 (정밀도 일치) 으로 확보
+            val baselineUpdatedAt = displayWorkScheduleRepository.findById(originalId).orElseThrow().updatedAt
             testEntityManager.clear()
 
             // updated_at 차이 검증을 위한 시간 여유 — 짧은 sleep
@@ -545,7 +548,7 @@ class DisplayWorkScheduleRepositoryTest {
             assertThat(affected).isEqualTo(1L)
             assertThat(reloaded.lastMonthRevenue).isEqualByComparingTo(java.math.BigDecimal("12345"))
             // updated_at 은 native UPDATE 의 영향을 받지 않음 — JPA Auditing 미개입
-            assertThat(reloaded.updatedAt).isEqualTo(originalUpdatedAt)
+            assertThat(reloaded.updatedAt).isEqualTo(baselineUpdatedAt)
         }
 
         @Test
