@@ -35,8 +35,10 @@ class PermissionSetAssignment(
     @Column(name = "sfid", length = 18, unique = true)
     var sfid: String? = null,
 
-    @Column(name = "assignee_user_sfid", nullable = false, length = 18)
-    var assigneeUserSfid: String,
+    // V202 — sfid 는 SF 데이터 마이그레이션 보조 필드이며 service 로직 활용 금지 정책에 따라 nullable.
+    // Stage1 적재분은 SF AssigneeId 박힘. web admin runtime 부여분은 NULL.
+    @Column(name = "assignee_user_sfid", length = 18)
+    var assigneeUserSfid: String? = null,
 
     @Column(name = "assignee_user_id")
     var assigneeUserId: Long? = null,

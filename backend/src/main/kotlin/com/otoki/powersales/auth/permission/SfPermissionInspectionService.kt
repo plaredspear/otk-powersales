@@ -44,7 +44,6 @@ class SfPermissionInspectionService(
                         assignmentId = assignment.id,
                         permissionSetFlagsId = flagsId,
                         permissionSetName = flags.permissionSetName,
-                        permissionSetSfid = flags.permissionSetSfid,
                         viewAllData = flags.permissionsViewAllData,
                         modifyAllData = flags.permissionsModifyAllData,
                     )
@@ -119,9 +118,6 @@ class SfPermissionInspectionService(
         val assignmentId: Long,
         val permissionSetFlagsId: Long,
         val permissionSetName: String,
-        // V197 — PSF 의 permission_set_sfid 가 Stage1 적재 시점 NULL 허용. Stage2 fk substep 직후
-        // 정상 값으로 채워지나 운영 중간 상태 표현 위해 nullable.
-        val permissionSetSfid: String?,
         val viewAllData: Boolean,
         val modifyAllData: Boolean,
     )

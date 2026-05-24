@@ -104,7 +104,7 @@ class AdminPermissionInspectionService(
     @Transactional(readOnly = true)
     fun listPermissionSets(): List<PermissionSetSummary> {
         return permissionSetRepository.findAll().map { ps ->
-            val flags = ps.sfid?.let { permissionSetFlagsRepository.findByPermissionSetSfid(it) }
+            val flags = permissionSetFlagsRepository.findByPermissionSetId(ps.id)
             val objectPermissionCount = parseObjectPermissions(flags?.objectPermissions).size
             val flagsId = flags?.id
             val assignedUserCount = flagsId?.let {
@@ -133,7 +133,7 @@ class AdminPermissionInspectionService(
         userKeyword: String?,
     ): PermissionSetDetail? {
         val ps = permissionSetRepository.findById(permissionSetId).orElse(null) ?: return null
-        val flags = ps.sfid?.let { permissionSetFlagsRepository.findByPermissionSetSfid(it) }
+        val flags = permissionSetFlagsRepository.findByPermissionSetId(ps.id)
 
         val objectPermissions = parseObjectPermissions(flags?.objectPermissions)
             .map { (sfApiName, perms) ->
