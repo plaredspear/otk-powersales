@@ -54,7 +54,7 @@ set -euo pipefail
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PushMessage,PushMessageReceiver,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
 SKIP_GROUP_MEMBERS=0
 SKIP_VERIFY=0
 # spec #790 Q4 채택 — XML 메타 (extract-sharing-meta.sh) 자동 포함, --skip-sharing-meta 로 제외 가능
@@ -387,6 +387,7 @@ SELECT
     CarNumber__c, ClaimDate__c, ClaimType__c, ClaimTypeMeasures__c,
     LogisticsResponsibility__c, WERK1_TEXT2__c, WERK3_TEXT2__c,
     ActionStatus__c, DuplicateProposalNum__c,
+    OwnerId, CreatedById, LastModifiedById,
     IsDeleted, CreatedDate, LastModifiedDate
 FROM DKRetail__Proposal__c
 WHERE IsDeleted = FALSE
@@ -666,6 +667,18 @@ SELECT
     DKRetail__WorkType2__c, CreatedDate, LastModifiedDate,
     CreatedById, LastModifiedById, IsDeleted
 FROM DKRetail__PromotionEmployee__c
+WHERE IsDeleted = FALSE
+EOF
+)
+
+PROMOTION_PRODUCT_SOQL=$(cat <<'EOF'
+SELECT
+    Id, Name,
+    DKRetail__PromotionId__c, DKRetail__ProductId__c,
+    DKRetail__Price__c, PromotionIdExt__c,
+    CreatedById, LastModifiedById,
+    IsDeleted, CreatedDate, LastModifiedDate
+FROM DKRetail__PromotionProduct__c
 WHERE IsDeleted = FALSE
 EOF
 )
@@ -1128,6 +1141,10 @@ fi
 
 if contains_target "PromotionEmployee"; then
     run_query "PromotionEmployee (DKRetail__PromotionEmployee__c)" "$PROMOTION_EMPLOYEE_SOQL" "$OUT_DIR/promotion_employees.csv"
+fi
+
+if contains_target "PromotionProduct"; then
+    run_query "PromotionProduct (DKRetail__PromotionProduct__c)" "$PROMOTION_PRODUCT_SOQL" "$OUT_DIR/promotion_products.csv"
 fi
 
 if contains_target "PushMessage"; then

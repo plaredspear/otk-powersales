@@ -26,6 +26,7 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
     "promotion",
     "professional_promotion_team_history",
     "professional_promotion_team_master",
+    "suggestion",
 )
 
 /**

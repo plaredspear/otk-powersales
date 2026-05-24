@@ -973,6 +973,27 @@ object Stage1Targets {
         ),
     )
 
+    // PromotionProduct 는 master-detail child 라 SF 에 OwnerId 컬럼이 없음 (V193, V154 PromotionEmployee 동일 패턴) → owner_sfid 제거.
+    private val PROMOTION_PRODUCT = EntityMetadata(
+        targetName = "PromotionProduct",
+        sObjectName = "DKRetail__PromotionProduct__c",
+        tableName = "promotion_product",
+        csvFileName = "promotion_products.csv",
+        fields = listOf(
+            FieldMapping("Id", "sfid", nullable = false),
+            FieldMapping("Name", "name"),
+            FieldMapping("DKRetail__PromotionId__c", "promotion_sfid"),
+            FieldMapping("DKRetail__ProductId__c", "product_sfid"),
+            FieldMapping("DKRetail__Price__c", "price"),
+            FieldMapping("PromotionIdExt__c", "promotion_id_ext"),
+            FieldMapping("CreatedById", "created_by_sfid"),
+            FieldMapping("CreatedDate", "created_at", nullable = false),
+            FieldMapping("LastModifiedDate", "updated_at", nullable = false),
+            FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+            FieldMapping("IsDeleted", "is_deleted", nullable = false),
+        ),
+    )
+
     // PromotionEmployee 는 master-detail child 라 SF 에 OwnerId 컬럼이 없음 → owner_sfid NULL 적재.
     private val PROMOTION_EMPLOYEE = EntityMetadata(
         targetName = "PromotionEmployee",
@@ -1127,6 +1148,44 @@ object Stage1Targets {
             FieldMapping("OwnerId", "owner_sfid"),
             FieldMapping("CreatedById", "created_by_sfid"),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+        ),
+    )
+
+    private val SUGGESTION = EntityMetadata(
+        targetName = "Suggestion",
+        sObjectName = "DKRetail__Proposal__c",
+        tableName = "suggestion",
+        csvFileName = "suggestions.csv",
+        fields = listOf(
+            FieldMapping("Id", "sfid", nullable = false),
+            FieldMapping("Name", "proposal_number", nullable = false),
+            FieldMapping("DKRetail__Title__c", "title", nullable = false),
+            FieldMapping("DKRetail__Description__c", "content", nullable = false),
+            FieldMapping("Category__c", "category", nullable = false),
+            FieldMapping("Category1__c", "category1"),
+            FieldMapping("Category2__c", "category2"),
+            FieldMapping("Category3__c", "category3"),
+            FieldMapping("AccountId__c", "account_sfid"),
+            FieldMapping("DKRetail__SAPAccountCode__c", "sap_account_code"),
+            FieldMapping("DKRetail__EmployeeId__c", "employee_sfid"),
+            FieldMapping("DKRetail__ProductId__c", "product_sfid"),
+            FieldMapping("ProductCode__c", "product_code"),
+            FieldMapping("OrgCostCenterCode__c", "org_cost_center_code"),
+            FieldMapping("CarNumber__c", "car_number"),
+            FieldMapping("ClaimDate__c", "claim_date"),
+            FieldMapping("ClaimType__c", "claim_type"),
+            FieldMapping("ClaimTypeMeasures__c", "claim_type_measures"),
+            FieldMapping("LogisticsResponsibility__c", "logistics_responsibility"),
+            FieldMapping("WERK1_TEXT2__c", "reception_logistics_center"),
+            FieldMapping("WERK3_TEXT2__c", "responsible_logistics_center"),
+            FieldMapping("ActionStatus__c", "action_status"),
+            FieldMapping("DuplicateProposalNum__c", "duplicate_proposal_num"),
+            FieldMapping("IsDeleted", "is_deleted", nullable = false),
+            FieldMapping("OwnerId", "owner_sfid"),
+            FieldMapping("CreatedById", "created_by_sfid"),
+            FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+            FieldMapping("CreatedDate", "created_at", nullable = false),
+            FieldMapping("LastModifiedDate", "updated_at", nullable = false),
         ),
     )
 
@@ -1445,8 +1504,10 @@ object Stage1Targets {
         PROFESSIONAL_PROMOTION_TEAM_HISTORY,
         PROFESSIONAL_PROMOTION_TEAM_MASTER,
         PROMOTION_EMPLOYEE,
+        PROMOTION_PRODUCT,
         PUSH_MESSAGE,
         PUSH_MESSAGE_RECEIVER,
+        SUGGESTION,
         TEAM_MEMBER_SCHEDULE,
         UPLOAD_FILE,
         USER_ROLE,
@@ -1512,8 +1573,10 @@ object Stage1Targets {
         "ProfessionalPromotionTeamHistory",
         "ProfessionalPromotionTeamMaster",
         "PromotionEmployee",
+        "PromotionProduct",
         "PushMessage",
         "PushMessageReceiver",
+        "Suggestion",
         "TeamMemberSchedule",
         "UploadFile",
         "UserRole",
