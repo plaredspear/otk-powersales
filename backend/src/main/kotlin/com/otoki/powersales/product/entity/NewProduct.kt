@@ -1,10 +1,13 @@
 package com.otoki.powersales.product.entity
 
+import com.otoki.powersales.auth.sharing.entity.RecordType
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.product.entity.converter.InitiatorConverter
+import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.product.entity.converter.ManagementTypeConverter
 import com.otoki.powersales.product.entity.converter.NewProductStatusConverter
 import com.otoki.powersales.product.enums.Initiator
@@ -132,9 +135,16 @@ class NewProduct(
 
     // -- Relations --
 
+    // V199 — SF NewProduct__c.OwnerId.referenceTo = [Group, User] polymorphic. owner_id (Employee FK) →
+    // owner_user_id (User FK) + owner_group_id (Group FK) + XOR CHECK.
+    // 주의: createdBy/lastModifiedBy 는 본 PR 범위 외 (audit FK 는 별도 정합 PR 필요) — Employee FK 유지.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
@@ -147,5 +157,11 @@ class NewProduct(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_code_id")
     var productCode: Product? = null,
+
+    // V199 — RecordTypeId.referenceTo = [RecordType] → record_type.record_type_id FK.
+    // Stage2 fk substep 이 record_type_sfid → record_type.record_type_id 자동 채움.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "record_type_id")
+    var recordType: RecordType? = null,
 
     ) : BaseEntity()

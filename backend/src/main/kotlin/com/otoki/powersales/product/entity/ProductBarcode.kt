@@ -4,6 +4,8 @@ import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 
 /**
@@ -80,9 +82,16 @@ class ProductBarcode(
     @JoinColumn(name = "product_id", insertable = false, updatable = false)
     val product: Product? = null,
 
+    // V199 — SF ProductBarcode__c.OwnerId.referenceTo = [Group, User] polymorphic. owner_id (Employee FK) →
+    // owner_user_id (User FK) + owner_group_id (Group FK) + XOR CHECK.
+    // 주의: createdBy/lastModifiedBy 는 본 PR 범위 외 — Employee FK 유지.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    var owner: Employee? = null,
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
