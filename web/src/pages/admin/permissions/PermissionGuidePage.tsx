@@ -243,7 +243,7 @@ const combinationCases: CombinationRow[] = [
 
 export default function PermissionGuidePage() {
   return (
-    <div style={{ padding: 16, maxWidth: 1200 }}>
+    <div style={{ padding: 16, paddingRight: 340, maxWidth: 1540 }}>
       <Title level={3}>
         <BookOutlined /> 권한 시스템 사용 가이드
       </Title>
@@ -252,22 +252,38 @@ export default function PermissionGuidePage() {
         본 가이드는 개념 → 실무 시나리오 → 자주 묻는 질문 순서로 설명합니다.
       </Paragraph>
 
-      <Anchor
-        affix
-        targetOffset={80}
-        items={[
-          { key: 'concept', href: '#concept', title: '1. 개념 — 프로파일 vs 권한 세트' },
-          { key: 'bits', href: '#bits', title: '2. 시스템 권한 비트 5종' },
-          { key: 'matrix', href: '#matrix', title: '3. 엔티티 × 조회/생성/수정/삭제 매트릭스' },
-          { key: 'inventory-profile', href: '#inventory-profile', title: '4. 프로파일 인벤토리 (운영 실측)' },
-          { key: 'inventory-ps', href: '#inventory-ps', title: '5. 권한 세트 인벤토리 (운영 실측)' },
-          { key: 'combinations', href: '#combinations', title: '6. 프로파일 × 권한 세트 조합 케이스' },
-          { key: 'workflow', href: '#workflow', title: '7. 실무 워크플로우' },
-          { key: 'scenarios', href: '#scenarios', title: '8. 시나리오별 빠른 참조' },
-          { key: 'faq', href: '#faq', title: '9. 자주 묻는 질문' },
-        ]}
-        style={{ position: 'fixed', right: 24, top: 100, width: 280 }}
-      />
+      <div
+        style={{
+          position: 'fixed',
+          right: 24,
+          top: 100,
+          width: 280,
+          maxHeight: 'calc(100vh - 140px)',
+          overflowY: 'auto',
+          background: '#fff',
+          border: '1px solid #f0f0f0',
+          borderRadius: 8,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+          padding: '12px 16px',
+          zIndex: 100,
+        }}
+      >
+        <Anchor
+          affix={false}
+          targetOffset={80}
+          items={[
+            { key: 'concept', href: '#concept', title: '1. 개념 — 프로파일 vs 권한 세트' },
+            { key: 'bits', href: '#bits', title: '2. 시스템 권한 비트 5종' },
+            { key: 'matrix', href: '#matrix', title: '3. 엔티티 × 조회/생성/수정/삭제 매트릭스' },
+            { key: 'inventory-profile', href: '#inventory-profile', title: '4. 프로파일 인벤토리 (운영 실측)' },
+            { key: 'inventory-ps', href: '#inventory-ps', title: '5. 권한 세트 인벤토리 (운영 실측)' },
+            { key: 'combinations', href: '#combinations', title: '6. 프로파일 × 권한 세트 조합 케이스' },
+            { key: 'workflow', href: '#workflow', title: '7. 실무 워크플로우' },
+            { key: 'scenarios', href: '#scenarios', title: '8. 시나리오별 빠른 참조' },
+            { key: 'faq', href: '#faq', title: '9. 자주 묻는 질문' },
+          ]}
+        />
+      </div>
 
       <Divider />
 
