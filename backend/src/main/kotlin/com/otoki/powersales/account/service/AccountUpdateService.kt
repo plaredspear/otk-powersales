@@ -140,7 +140,6 @@ class AccountUpdateService(
         request.site?.let { account.site = it }
         request.accountSource?.let { account.accountSource = it }
         request.mapCoordinate?.let { account.mapCoordinate = it }
-        request.parentSfid?.let { account.parentSfid = it }
         request.rating?.let { account.rating = it }
         request.ownership?.let { account.ownership = it }
         request.accountStatusName?.let { account.accountStatusName = it }

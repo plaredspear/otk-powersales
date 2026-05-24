@@ -89,7 +89,7 @@ class AdminPermissionInspectionService(
             name = profile.name,
             userType = profile.userType,
             description = profile.description,
-            sfid = profile.sfid,
+            // sfid 는 SF 데이터 마이그레이션 보조 필드 — API 응답에 노출 금지 (정책).
             flags = ProfileFlagsSummary(
                 viewAllData = flags?.permissionsViewAllData ?: false,
                 modifyAllData = flags?.permissionsModifyAllData ?: false,
@@ -198,7 +198,7 @@ class AdminPermissionInspectionService(
             name = ps.name,
             label = ps.label,
             description = ps.description,
-            sfid = ps.sfid,
+            // sfid 는 SF 데이터 마이그레이션 보조 필드 — API 응답에 노출 금지 (정책).
             flags = flags?.let {
                 PermissionSetFlagsSummary(
                     permissionSetFlagsId = it.id,

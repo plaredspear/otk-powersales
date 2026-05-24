@@ -87,9 +87,6 @@ data class AdminAccountUpdateRequest(
     @field:Size(max = 40, message = "지도 좌표는 40자 이하여야 합니다.")
     val mapCoordinate: String? = null,
 
-    @field:Size(max = 18, message = "상위 거래처 sfid 는 18자 이하여야 합니다.")
-    val parentSfid: String? = null,
-
     val rating: Rating? = null,
 
     val ownership: Ownership? = null,

@@ -113,7 +113,6 @@ export interface AdminAccountUpdateRequest {
   site?: string;
   accountSource?: string;
   mapCoordinate?: string;
-  parentSfid?: string;
   rating?: string;
   ownership?: string;
   accountStatusName?: string;
@@ -170,7 +169,6 @@ export interface AdminAccountUpdateResponseData {
   site: string | null;
   accountSource: string | null;
   mapCoordinate: string | null;
-  parentSfid: string | null;
   rating: string | null;
   ownership: string | null;
   freezerInstalled: boolean | null;

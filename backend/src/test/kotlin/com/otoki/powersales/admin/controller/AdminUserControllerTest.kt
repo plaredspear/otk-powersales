@@ -127,7 +127,6 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
                 mobilePhone = "010-1234-5678",
                 phone = null,
                 hrCode = "HR001",
-                sfid = "0058A000001abcdQAA",
                 profileName = "5.영업사원",
                 isSalesSupport = false,
                 isActive = true,

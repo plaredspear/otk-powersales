@@ -93,7 +93,6 @@ const baseResponse: AdminAccountUpdateResponseData = {
   site: null,
   accountSource: null,
   mapCoordinate: null,
-  parentSfid: null,
   rating: null,
   ownership: null,
   freezerInstalled: null,

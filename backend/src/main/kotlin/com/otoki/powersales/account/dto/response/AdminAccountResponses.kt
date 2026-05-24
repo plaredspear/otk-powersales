@@ -113,7 +113,6 @@ data class AdminAccountUpdateResponse(
     val site: String?,
     val accountSource: AccountSource?,
     val mapCoordinate: String?,
-    val parentSfid: String?,
     val rating: Rating?,
     val ownership: Ownership?,
     val freezerInstalled: Boolean?,
@@ -161,7 +160,7 @@ data class AdminAccountUpdateResponse(
             site = account.site,
             accountSource = account.accountSource,
             mapCoordinate = account.mapCoordinate,
-            parentSfid = account.parentSfid,
+            // sfid 는 SF 데이터 마이그레이션 보조 필드 — API 응답에 노출 금지 (정책).
             rating = account.rating,
             ownership = account.ownership,
             freezerInstalled = account.freezerInstalled,

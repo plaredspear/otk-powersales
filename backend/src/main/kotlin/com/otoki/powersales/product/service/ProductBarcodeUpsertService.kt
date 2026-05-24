@@ -149,7 +149,7 @@ class ProductBarcodeUpsertService(
         entity.barcode = barcode
         entity.sortOrder = command.productSequence
         entity.productName = command.productName
-        entity.productSfid = matchedProduct.sfid
+        // sfid 는 SF 데이터 마이그레이션 보조 필드 — runtime 에서 박지 않음 (정책).
         entity.productId = matchedProduct.id
     }
 }

@@ -66,7 +66,6 @@ export default function AttendanceLogDetailModal({
               {data.employeeJobCode && <Tag color="geekblue">{data.employeeJobCode}</Tag>}
             </Space>
           </Descriptions.Item>
-          <Descriptions.Item label="사원 SFID">{data.employeeSfid ?? '-'}</Descriptions.Item>
 
           <Descriptions.Item label="거래처">
             <Space>
@@ -74,7 +73,6 @@ export default function AttendanceLogDetailModal({
               {data.accountCode && <span style={{ color: '#888' }}>({data.accountCode})</span>}
             </Space>
           </Descriptions.Item>
-          <Descriptions.Item label="거래처 SFID">{data.accountSfid ?? '-'}</Descriptions.Item>
 
           <Descriptions.Item label="출근일시">
             {formatDateTime(data.attendanceDate)}
@@ -108,7 +106,6 @@ export default function AttendanceLogDetailModal({
               '-'
             )}
           </Descriptions.Item>
-          <Descriptions.Item label="SFID">{data.sfid ?? '-'}</Descriptions.Item>
         </Descriptions>
       )}
     </Modal>

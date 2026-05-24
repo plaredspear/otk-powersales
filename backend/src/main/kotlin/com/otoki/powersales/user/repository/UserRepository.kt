@@ -11,8 +11,6 @@ interface UserRepository : JpaRepository<User, Long>, UserRepositoryCustom {
 
     fun findByEmployeeCodeIn(employeeCodes: Collection<String>): List<User>
 
-    fun findBySfid(sfid: String): User?
-
     /** Spec #803 — Profile 상세의 부여 사용자 수 + 일람용. */
     fun countByProfileId(profileId: Long): Long
 

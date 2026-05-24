@@ -86,8 +86,8 @@ class AdminEmployeeInputCriteriaMasterService(
             excludeId = entity.id,
         )
 
+        // sfid 는 SF 데이터 마이그레이션 보조 필드 — runtime 에서 박지 않음 (정책).
         entity.category = category
-        entity.categorySfid = category.sfid
         entity.typeOfWork1 = request.typeOfWork1
         entity.startDate = normalizedStart
         entity.endDate = normalizedEnd

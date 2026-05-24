@@ -70,7 +70,7 @@ class AdminAttendanceLogServiceTest {
         val detail = service.get(5L)
 
         assertThat(detail.id).isEqualTo(5L)
-        assertThat(detail.sfid).isEqualTo("001000000000005")
+        // sfid 는 SF 데이터 마이그레이션 보조 필드 — API 응답 DTO 에서 제거됨 (정책).
         assertThat(detail.attendanceType).isEqualTo(AttendanceType.DISPLAY)
     }
 

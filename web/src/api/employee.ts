@@ -218,7 +218,6 @@ export interface AssignedPermissionSet {
   assignmentId: number;
   permissionSetFlagsId: number;
   permissionSetName: string;
-  permissionSetSfid: string;
   viewAllData: boolean;
   modifyAllData: boolean;
 }

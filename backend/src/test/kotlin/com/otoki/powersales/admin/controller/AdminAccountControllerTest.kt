@@ -244,7 +244,6 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
                 site = null,
                 accountSource = null,
                 mapCoordinate = null,
-                parentSfid = null,
                 rating = null,
                 ownership = null,
                 freezerInstalled = null,
