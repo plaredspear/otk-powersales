@@ -53,7 +53,7 @@ class Stage1S3CopyService(
      * @param s3Key      CSV 의 S3 key (예: "sf-migration/input/erp_order_products.csv")
      * @return Stage1CopyResult — inserted / totalRows / filteredOut / elapsedMs
      */
-    fun copyFromS3(targetName: String, s3Bucket: String, s3Key: String): Stage1CopyResult {
+    fun copyFromS3(targetName: String, s3Bucket: String, s3Key: String, maxRows: Int? = null): Stage1CopyResult {
         val meta = Stage1Targets.get(targetName)
             ?: run {
                 val msg = "Unknown target: $targetName (allowed: ${Stage1Targets.list().joinToString(", ")})"
@@ -67,7 +67,7 @@ class Stage1S3CopyService(
             progress.begin(targetName, s3Bucket, s3Key)
         }
         try {
-            val result = executeEntity(meta, s3Bucket, s3Key)
+            val result = executeEntity(meta, s3Bucket, s3Key, maxRows)
             progress.setInserted(result.inserted.toLong())
             progress.finishOk()
             return result
@@ -91,13 +91,13 @@ class Stage1S3CopyService(
      * @param s3KeyPrefix CSV 들의 공통 prefix (예: "sf-migration/input")
      * @return Stage1BatchSummary — 처리된 entity 수 / 성공 / 실패 / 누적 inserted
      */
-    fun copyAllFromS3(s3Bucket: String, s3KeyPrefix: String): Stage1BatchSummary {
+    fun copyAllFromS3(s3Bucket: String, s3KeyPrefix: String, maxRows: Int? = null): Stage1BatchSummary {
         val targets = Stage1Targets.list()
         val prefix = s3KeyPrefix.removeSuffix("/")
 
         log.info(
-            "[stage1-copy-all] begin s3=s3://{}/{} targets={}",
-            s3Bucket, prefix, targets.size,
+            "[stage1-copy-all] begin s3=s3://{}/{} targets={} maxRows={}",
+            s3Bucket, prefix, targets.size, maxRows ?: "unlimited",
         )
 
         // controller 가 이미 beginBatch() 한 RUNNING 상태로 진입한 경우가 일반 경로.
@@ -118,7 +118,7 @@ class Stage1S3CopyService(
             val filteredBefore = progress.filteredOut
 
             try {
-                val result = executeEntity(meta, s3Bucket, s3Key)
+                val result = executeEntity(meta, s3Bucket, s3Key, maxRows)
                 val processedDelta = progress.processedRows - processedBefore
                 val filteredDelta = progress.filteredOut - filteredBefore
                 progress.addInserted(result.inserted.toLong())
@@ -185,8 +185,12 @@ class Stage1S3CopyService(
         meta: EntityMetadata,
         s3Bucket: String,
         s3Key: String,
+        maxRows: Int? = null,
     ): Stage1CopyResult {
-        log.info("[stage1-copy] begin target={} s3=s3://{}/{}", meta.targetName, s3Bucket, s3Key)
+        log.info(
+            "[stage1-copy] begin target={} s3=s3://{}/{} maxRows={}",
+            meta.targetName, s3Bucket, s3Key, maxRows ?: "unlimited",
+        )
         val startedAt = System.currentTimeMillis()
         val allColumns = meta.fields.map { it.dbColumnName } + meta.extraStaticColumns.keys.toList()
         val columnsList = allColumns.joinToString(", ")
@@ -249,6 +253,7 @@ class Stage1S3CopyService(
                                     ?: error("CSV header missing: s3://$s3Bucket/$s3Key")
                                 val headerIndex = header.withIndex().associate { (i, h) -> h.trim() to i }
                                 while (true) {
+                                    if (maxRows != null && totalRows >= maxRows) break
                                     val arr = csv.readNext() ?: break
                                     if (arr.all { it.isBlank() }) continue
                                     totalRows++

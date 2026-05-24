@@ -58,7 +58,7 @@ class Stage1CopyController(
         progress.begin(req.targetName, req.s3Bucket, req.s3Key)
         executor.submit {
             try {
-                service.copyFromS3(req.targetName, req.s3Bucket, req.s3Key)
+                service.copyFromS3(req.targetName, req.s3Bucket, req.s3Key, req.maxRows)
             } catch (e: Exception) {
                 log.error("[stage1-copy] async run failed", e)
             }
@@ -78,7 +78,7 @@ class Stage1CopyController(
         progress.beginBatch(req.s3Bucket, Stage1Targets.list())
         executor.submit {
             try {
-                service.copyAllFromS3(req.s3Bucket, req.s3KeyPrefix)
+                service.copyAllFromS3(req.s3Bucket, req.s3KeyPrefix, req.maxRows)
             } catch (e: Exception) {
                 log.error("[stage1-copy-all] async run failed", e)
             }
