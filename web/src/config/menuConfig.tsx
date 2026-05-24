@@ -9,6 +9,7 @@ import {
   NotificationOutlined,
   SettingOutlined,
   ToolOutlined,
+  MobileOutlined,
 } from '@ant-design/icons';
 import type { SfEntityOperation, SfSystemPermission } from '@/hooks/usePermission';
 
@@ -109,11 +110,17 @@ export const menuRoute: MenuRoute = {
       ],
     },
     {
+      name: '모바일앱',
+      icon: <MobileOutlined />,
+      children: [
+        { path: '/admin/agreement-words', name: '동의 약관 등록', entity: 'agreement_word', operation: 'READ' },
+      ],
+    },
+    {
       name: '시스템',
       icon: <SettingOutlined />,
       children: [
         { path: '/users', name: '사용자 관리', entity: 'user', operation: 'READ' },
-        { path: '/admin/agreement-words', name: '동의 약관 등록', entity: 'agreement_word', operation: 'READ' },
         { path: '/admin/permissions/profiles', name: 'Profile 관리', entity: 'profile', operation: 'READ' },
         { path: '/admin/permissions/permission-sets', name: 'PermissionSet 관리', entity: 'permission_set', operation: 'READ' },
         { path: '/admin/permissions/matrix', name: '권한 매트릭스', systemPermission: 'VIEW_ALL_DATA' },
