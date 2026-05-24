@@ -72,6 +72,12 @@ class SfMigrationStage2NaturalKeyFkService(
         // 단일 NaturalKeyFkSpec 으로 표현 불가 (target_type 별 ref table 분기) — 전용 method 처리.
         totalUpdated += resolveSharingRuleTarget(results)
 
+        // permission_set_flags.permission_set_sfid 채움 — source/ref 컬럼명이 비대칭
+        // (source = permission_set_sfid, ref = sfid) 라 단일 NaturalKeyFkSpec 으로 표현 불가.
+        // permission_set 의 PSA fk substep (permission_set_assignment.permission_set_sfid → permission_set_flags_id)
+        // 직전에 실행되어야 하므로 본 메서드가 NATURAL_KEY_FK_MAPPINGS 일괄 적용 직후 호출.
+        totalUpdated += resolvePermissionSetFlagsSfid(results)
+
         log.info("[fk-natural-key] done — total {} rows updated", totalUpdated)
 
         return SfMigrationStage2Response(
@@ -143,6 +149,45 @@ class SfMigrationStage2NaturalKeyFkService(
         }
 
         return totalUpdated
+    }
+
+    /**
+     * permission_set_flags.permission_set_sfid 채움 — XML 메타 출처라 Stage1 시점 NULL.
+     *
+     * permission_set_flags.permission_set_name → permission_set.name lookup 후
+     * permission_set.sfid 를 permission_set_flags.permission_set_sfid 에 채움.
+     *
+     * 후속 PSA fk substep (permission_set_assignment.permission_set_sfid → permission_set_flags_id)
+     * 이 본 메서드 결과에 의존.
+     */
+    private fun resolvePermissionSetFlagsSfid(results: MutableList<SubstepResult>): Int {
+        val sql = """
+            UPDATE powersales.permission_set_flags s
+            SET permission_set_sfid = r.sfid
+            FROM powersales.permission_set r
+            WHERE r.name = s.permission_set_name
+              AND s.permission_set_sfid IS NULL
+        """.trimIndent()
+        val updated = em.createNativeQuery(sql).executeUpdate()
+        results += SubstepResult(
+            label = "permission_set_flags.permission_set_name → permission_set.sfid",
+            rowsAffected = updated,
+        )
+        log.info("[fk-natural-key] permission_set_flags.permission_set_sfid : updated={}", updated)
+
+        val unmatchedSql = """
+            SELECT COUNT(*) FROM powersales.permission_set_flags
+            WHERE permission_set_sfid IS NULL AND permission_set_name IS NOT NULL
+        """.trimIndent()
+        val unmatched = (em.createNativeQuery(unmatchedSql).singleResult as Number).toLong()
+        if (unmatched > 0) {
+            log.warn(
+                "[fk-natural-key] permission_set_flags : {} row 매칭 실패 (permission_set_name 매칭 안 됨)",
+                unmatched,
+            )
+        }
+
+        return updated
     }
 
     /**

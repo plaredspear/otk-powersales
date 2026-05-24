@@ -339,7 +339,8 @@ class Stage1TargetsTest {
             assertThat(meta.tableName).isEqualTo("permission_set_assignment")
             assertThat(meta.csvFileName).isEqualTo("permission_set_assignments.csv")
             val headers = meta.fields.map { it.sfFieldName }
-            assertThat(headers).containsExactly("Id", "AssigneeId", "PermissionSetId", "IsActive", "CreatedDate")
+            // SystemModstamp — PSA 는 SF 표준 CreatedDate 미보유 (prod describe 2026-05-24)
+            assertThat(headers).containsExactly("Id", "AssigneeId", "PermissionSetId", "IsActive", "SystemModstamp")
         }
 
         @Test

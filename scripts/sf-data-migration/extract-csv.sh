@@ -273,12 +273,14 @@ SELECT
     PermissionSet.Name,
     PermissionSet.Label,
     IsActive,
-    CreatedDate
+    SystemModstamp
 FROM PermissionSetAssignment
 WHERE Assignee.IsActive = TRUE
   AND PermissionSet.IsCustom = TRUE
 EOF
 )
+# Note: PermissionSetAssignment 는 SF 표준 필드만 8개 (CreatedDate / LastModifiedDate 미보유 —
+# 2026-05-24 prod describe 확인). SystemModstamp 가 단일 timestamp 로 grant/revoke 시점 근사.
 
 GM_SOQL=$(cat <<'EOF'
 SELECT
