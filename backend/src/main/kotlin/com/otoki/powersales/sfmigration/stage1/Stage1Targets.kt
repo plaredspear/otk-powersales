@@ -1243,6 +1243,10 @@ object Stage1Targets {
             FieldMapping("accessLevel", "access_level", nullable = false, nullPlaceholder = "Read"),
             FieldMapping("includeOwnedByAll", "include_owned_by_all", nullable = false, nullPlaceholder = "false"),
         ),
+        // V206 — 단일 unique (developer_name) 에서 복합 unique (s_object_name, developer_name) 전환.
+        // 직전 적재본은 단일 unique 충돌로 같은 developer_name 의 2번째 이후 sObject row 가 drop 된
+        // 상태이므로 preClear 로 전량 재적재해야 정합 회복 (운영 dev: CSV 335 → DB 293, 42 row 누락).
+        preClear = true,
     )
 
     private val SHARING_RULE_CONDITION = EntityMetadata(

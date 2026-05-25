@@ -88,12 +88,13 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
         //   - resolveSharingRuleSubtableFk: condition + target = 2
         //   - resolveSharingRuleTarget: ROLE* + GROUP = 2
         //   - resolveRecordTypeVisibilityFk: permission_set_record_type + profile_record_type = 2
+        //   - resolveGroupMemberUserOrGroupFk: User + Group = 2
         //   - resolvePermissionSetFlagsSfid: 1
-        // = NATURAL_KEY_FK_MAPPINGS.size + 7
-        private val expectedExtraSubsteps = 7
+        // = NATURAL_KEY_FK_MAPPINGS.size + 9
+        private val expectedExtraSubsteps = 9
 
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 8 entry + sharing_rule subtable 2 + sharing_rule_target 2 + record_type_visibility 2 + permission_set_flags.sfid 1")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 8 entry + sharing_rule subtable 2 + sharing_rule_target 2 + record_type_visibility 2 + group_member polymorphic 2 + permission_set_flags.sfid 1")
         fun allMappingsExecuted() {
             val updateQuery = mockk<Query>()
             every { updateQuery.executeUpdate() } returns 10
@@ -119,8 +120,9 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
             //   - resolveSharingRuleSubtableFk unmatched WARN: 2 (condition/target)
             //   - resolveSharingRuleTarget unmatched WARN: 1 (전체)
             //   - resolveRecordTypeVisibilityFk unmatched WARN: 2 (psrt/prt)
+            //   - resolveGroupMemberUserOrGroupFk unmatched WARN: 1
             //   - resolvePermissionSetFlagsSfid unmatched WARN: 1
-            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 6) {
+            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 7) {
                 em.createNativeQuery(match<String> { it.trimStart().startsWith("SELECT") })
             }
         }
@@ -149,6 +151,8 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
                 "sharing_rule_target.target_developer_name (target_type=GROUP) → group.group_id",
                 "permission_set_record_type.(sobject_name, record_type_developer_name) → record_type.record_type_id",
                 "profile_record_type.(sobject_name, record_type_developer_name) → record_type.record_type_id",
+                "group_member.user_or_group_sfid (prefix=005) → user.user_id (type=User)",
+                "group_member.user_or_group_sfid (prefix=00G) → group.group_id (type=Group)",
                 "permission_set_flags.permission_set_name → permission_set.sfid",
             )
         }

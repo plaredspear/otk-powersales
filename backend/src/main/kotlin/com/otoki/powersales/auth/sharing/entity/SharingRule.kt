@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 
 /**
  * SF SharingRule meta 본문 1행 (spec #782 P1-B).
@@ -21,7 +22,17 @@ import jakarta.persistence.Table
 @Entity
 @SFMeta(SFMetaSource.SHARING_RULES_XML, "sharingCriteriaRules")
 @SFMeta(SFMetaSource.SHARING_RULES_XML, "sharingOwnerRules")
-@Table(name = "sharing_rule")
+@Table(
+    name = "sharing_rule",
+    uniqueConstraints = [
+        // SF SharingRule 의 자연 키는 (sObjectName, developerName) 복합 — V206 으로 단일 unique 에서 전환.
+        // 동일 fullName 이 여러 sObject 의 sharingRules-meta.xml 에 동시 정의되는 케이스 (예: X5452) 대응.
+        UniqueConstraint(
+            name = "idx_sharing_rule_s_object_developer_name_unique",
+            columnNames = ["s_object_name", "developer_name"],
+        ),
+    ],
+)
 class SharingRule(
 
     @Id
@@ -29,7 +40,7 @@ class SharingRule(
     @Column(name = "sharing_rule_id")
     val id: Long = 0,
 
-    @Column(name = "developer_name", nullable = false, length = 80, unique = true)
+    @Column(name = "developer_name", nullable = false, length = 80)
     var developerName: String,
 
     @Column(name = "s_object_name", nullable = false, length = 80)

@@ -462,6 +462,7 @@ class Stage1TargetsTest {
          * 후속) 원인 분석으로 도출.
          */
         private val PRE_CLEAR_REQUIRED = setOf(
+            "SharingRule",
             "SharingRuleCondition",
             "SharingRuleTarget",
             "PermissionSetFlags",

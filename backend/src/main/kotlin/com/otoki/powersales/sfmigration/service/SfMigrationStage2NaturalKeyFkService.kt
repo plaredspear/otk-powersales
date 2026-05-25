@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional
  *
  * `NATURAL_KEY_FK_MAPPINGS` 의 8 entry 일괄 SQL UPDATE 적용 + 복합 자연키 / polymorphic 전용
  * method (sharing_rule_subtable / sharing_rule_target / permission_set_flags.sfid /
- * record_type_visibility) — sfid prefix path 와 분리.
+ * record_type_visibility / group_member.user_or_group) — sfid prefix path 와 분리.
  *
  * ## 결정 사항 정합 (spec #800 Q1~Q5 옵션 1)
  * - Q1: Service 분리 — `SfMigrationStage2FkService` 와 책임 분리
@@ -93,6 +93,12 @@ class SfMigrationStage2NaturalKeyFkService(
         // record_type 의 unique key 는 (sobject_name, developer_name) 라 단일 컬럼 매칭 시
         // developer_name 충돌 (예: "common_RecordType" 가 여러 sObject 에 동시 정의).
         totalUpdated += resolveRecordTypeVisibilityFk(results)
+
+        // group_member 의 polymorphic user_or_group_id 채움 — sfid prefix 분기
+        // (005 = User, 00G = Group). POLYMORPHIC_USER_OR_GROUP_TABLES 화이트리스트 정의는
+        // SfFkResolveTables.kt 에 있으나 실제 resolve 로직이 backend 에 부재했음 (운영
+        // dev: 349행 100% NULL 사고).
+        totalUpdated += resolveGroupMemberUserOrGroupFk(results)
 
         log.info("[fk-natural-key] done — total {} rows updated", totalUpdated)
 
@@ -309,6 +315,74 @@ class SfMigrationStage2NaturalKeyFkService(
                     label, unmatched,
                 )
             }
+        }
+
+        return totalUpdated
+    }
+
+    /**
+     * group_member 의 polymorphic user_or_group_id + user_or_group_type 채움.
+     *
+     * Stage1 적재 시 user_or_group_sfid (SF GroupMember.UserOrGroupId) 만 박혀 있고
+     * 두 _id 컬럼 + _type 컬럼은 NULL. sfid prefix 로 분기:
+     *   - `005` (User) → user.user_id + user_or_group_type = 'User'
+     *   - `00G` (Group) → "group".group_id + user_or_group_type = 'Group'
+     *
+     * SF describe `GroupMember.UserOrGroupId.referenceTo = [Group, User]` 정합.
+     *
+     * 본 method 가 없으면 Sharing 권한 평가 path 에서 Group 멤버 가시성 누락
+     * (운영 dev: 349행 100% NULL — POLYMORPHIC_USER_OR_GROUP_TABLES 화이트리스트만 정의된
+     * 채 실제 resolve 부재).
+     */
+    private fun resolveGroupMemberUserOrGroupFk(results: MutableList<SubstepResult>): Int {
+        var totalUpdated = 0
+
+        // User (sfid prefix 005)
+        val userSql = """
+            UPDATE powersales.group_member s
+            SET user_or_group_id = u.user_id,
+                user_or_group_type = 'User'
+            FROM powersales."user" u
+            WHERE u.sfid = s.user_or_group_sfid
+              AND s.user_or_group_sfid LIKE '005%'
+              AND s.user_or_group_id IS NULL
+        """.trimIndent()
+        val userUpdated = em.createNativeQuery(userSql).executeUpdate()
+        results += SubstepResult(
+            label = "group_member.user_or_group_sfid (prefix=005) → user.user_id (type=User)",
+            rowsAffected = userUpdated,
+        )
+        totalUpdated += userUpdated
+        log.info("[fk-natural-key] group_member.user_or_group_id (User) : updated={}", userUpdated)
+
+        // Group (sfid prefix 00G)
+        val groupSql = """
+            UPDATE powersales.group_member s
+            SET user_or_group_id = g.group_id,
+                user_or_group_type = 'Group'
+            FROM powersales."group" g
+            WHERE g.sfid = s.user_or_group_sfid
+              AND s.user_or_group_sfid LIKE '00G%'
+              AND s.user_or_group_id IS NULL
+        """.trimIndent()
+        val groupUpdated = em.createNativeQuery(groupSql).executeUpdate()
+        results += SubstepResult(
+            label = "group_member.user_or_group_sfid (prefix=00G) → group.group_id (type=Group)",
+            rowsAffected = groupUpdated,
+        )
+        totalUpdated += groupUpdated
+        log.info("[fk-natural-key] group_member.user_or_group_id (Group) : updated={}", groupUpdated)
+
+        val unmatchedSql = """
+            SELECT COUNT(*) FROM powersales.group_member
+            WHERE user_or_group_id IS NULL AND user_or_group_sfid IS NOT NULL
+        """.trimIndent()
+        val unmatched = (em.createNativeQuery(unmatchedSql).singleResult as Number).toLong()
+        if (unmatched > 0) {
+            log.warn(
+                "[fk-natural-key] group_member : {} row 매칭 실패 — user_or_group_sfid prefix 가 005/00G 외 또는 ref entity 부재",
+                unmatched,
+            )
         }
 
         return totalUpdated
