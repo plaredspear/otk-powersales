@@ -45,10 +45,12 @@ class UserRoleHierarchyTraversal(
     @Cacheable(value = ["hierarchySubordinates"], key = "#userRoleId")
     fun getAllSubordinateUserRoleIds(userRoleId: Long): Set<Long> {
         val snapshot = snapshotRepository.findById(userRoleId).orElse(null)
-        if (snapshot != null) {
-            return parseLongList(snapshot.allSubordinateIds).toSet()
+        // snapshot 자체는 있어도 allSubordinateIds 가 NULL 일 수 있음 (Stage1 적재 직후 / Stage3
+        // recomputeAll 미실행 상태). 그 경우 fresh 계산 fallback.
+        val cached = snapshot?.allSubordinateIds
+        if (cached != null) {
+            return parseLongList(cached).toSet()
         }
-        // snapshot 부재 — recomputeSubtree 가 lazy 생성. 단 본 메서드는 read-only 분기라 fresh 계산만.
         return computeAllSubordinateIds(userRoleId)
     }
 

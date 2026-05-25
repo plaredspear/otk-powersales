@@ -30,12 +30,15 @@ class UserRoleHierarchySnapshot(
     val userRoleId: Long,
 
     // PG = jsonb (V175), H2 = JSON-as-text. Hibernate 6+ dialect 자동 매핑 (SapOutbox.payload / ScheduledJobRun.metadata 와 동일 패턴).
+    // V181 이 NOT NULL 해제 — Stage1 적재 시점에 NULL 정상 (Stage3 recomputeAll 후 채움).
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "all_subordinate_ids", nullable = false)
-    var allSubordinateIds: String,
+    @Column(name = "all_subordinate_ids")
+    var allSubordinateIds: String? = null,
 
-    @Column(name = "depth", nullable = false)
-    var depth: Int,
+    // V181 이 NOT NULL 해제 — Stage1 시점 NULL 정상. primitive Int 이면 Hibernate setter
+    // 에서 NPE 유발 (운영 사고: /api/v1/admin/accounts 500 + recomputeAll 자기 자신 fix 실패).
+    @Column(name = "depth")
+    var depth: Int? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "ancestor_path")
