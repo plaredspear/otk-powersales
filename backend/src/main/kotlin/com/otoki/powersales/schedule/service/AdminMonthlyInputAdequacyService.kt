@@ -110,7 +110,7 @@ class AdminMonthlyInputAdequacyService(
         return ExcelResult(bytes, filename)
     }
 
-    /** (사원, 거래처) 키로 1~12월 적합성을 모은 매트릭스 행 빌드. */
+    /** (사원, 거래처, 근무형태3) 키로 1~12월 적합성을 모은 매트릭스 행 빌드. */
     private fun buildMatrixRows(
         year: Int,
         effectiveCodes: List<String>,
@@ -118,12 +118,12 @@ class AdminMonthlyInputAdequacyService(
     ): List<MonthlyInputAdequacyItem> {
         data class RowKey(
             val employeeCode: String,
-            val accountCode: String
+            val accountCode: String,
+            val workingCategory3: String?
         )
 
         data class RowAcc(
             var branchName: String = "",
-            var workingCategory3: String? = null,
             var employeeName: String = "",
             var title: String? = null,
             var accountCategory: String = "",
@@ -148,12 +148,12 @@ class AdminMonthlyInputAdequacyService(
 
                     val key = RowKey(
                         employeeCode = empItem.employeeCode,
-                        accountCode = suit.accountCode
+                        accountCode = suit.accountCode,
+                        workingCategory3 = empItem.workingCategory3
                     )
                     val acc = rowMap.getOrPut(key) {
                         RowAcc(
                             branchName = empItem.branchName,
-                            workingCategory3 = empItem.workingCategory3,
                             employeeName = empItem.employeeName,
                             title = empItem.title,
                             accountCategory = suit.accountCategory,
@@ -180,7 +180,7 @@ class AdminMonthlyInputAdequacyService(
             .map { (key, acc) ->
                 MonthlyInputAdequacyItem(
                     branchName = acc.branchName,
-                    workingCategory3 = acc.workingCategory3,
+                    workingCategory3 = key.workingCategory3,
                     employeeName = acc.employeeName,
                     employeeCode = key.employeeCode,
                     title = acc.title,
@@ -195,7 +195,8 @@ class AdminMonthlyInputAdequacyService(
                 compareBy(
                     { it.branchName },
                     { it.employeeCode },
-                    { it.accountName }
+                    { it.accountName },
+                    { it.workingCategory3 ?: "" }
                 )
             )
     }

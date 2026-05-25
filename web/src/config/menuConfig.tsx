@@ -38,7 +38,7 @@ export const menuRoute: MenuRoute = {
         { path: '/schedule', name: '여사원 일정관리', entity: 'team_member_schedule', operation: 'READ' },
         { path: '/monthly-integration', name: '월별여사원 통합일정', entity: 'team_member_schedule', operation: 'READ' },
         { path: '/work-type-headcount', name: '근무형태별 여사원인원현황', entity: 'team_member_schedule', operation: 'READ' },
-        { path: '/monthly-input-adequacy', name: '월별 진열사원 투입적합성', entity: 'team_member_schedule', operation: 'READ' },
+        { path: '/monthly-input-adequacy', name: '월별 진열사원 투입적합성', entity: 'monthly_sales_history', operation: 'READ' },
       ],
     },
     {

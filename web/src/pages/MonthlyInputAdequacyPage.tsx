@@ -150,7 +150,7 @@ export default function MonthlyInputAdequacyPage() {
         </div>
       ) : (
         <Table
-          rowKey={(r) => `${r.employeeCode}-${r.accountCode}`}
+          rowKey={(r) => `${r.employeeCode}-${r.accountCode}-${r.workingCategory3 ?? ''}`}
           size="small"
           columns={columns}
           dataSource={matrixQuery.data?.items ?? []}
