@@ -31,9 +31,6 @@ import java.time.Duration
 class NaverGeocodeClient(
     @Value("\${app.naver.geocode.client-id:}") private val clientId: String,
     @Value("\${app.naver.geocode.client-secret:}") private val clientSecret: String,
-    @Value("\${app.naver.geocode.endpoint:https://maps.apigw.ntruss.com/map-geocode/v2/geocode}") private val endpoint: String,
-    @Value("\${app.naver.geocode.connect-timeout-ms:3000}") private val connectTimeoutMs: Int,
-    @Value("\${app.naver.geocode.read-timeout-ms:5000}") private val readTimeoutMs: Int,
     restClientBuilder: RestClient.Builder = RestClient.builder()
 ) {
 
@@ -41,8 +38,8 @@ class NaverGeocodeClient(
 
     private val restClient: RestClient = run {
         val factory = SimpleClientHttpRequestFactory().apply {
-            setConnectTimeout(Duration.ofMillis(connectTimeoutMs.toLong()))
-            setReadTimeout(Duration.ofMillis(readTimeoutMs.toLong()))
+            setConnectTimeout(Duration.ofMillis(CONNECT_TIMEOUT_MS))
+            setReadTimeout(Duration.ofMillis(READ_TIMEOUT_MS))
         }
         restClientBuilder
             .requestFactory(factory)
@@ -57,7 +54,7 @@ class NaverGeocodeClient(
      */
     fun geocode(address: String): NaverGeocodeResponse? {
         val encoded = URLEncoder.encode(address, StandardCharsets.UTF_8)
-        val uri = "$endpoint?query=$encoded"
+        val uri = "$ENDPOINT?query=$encoded"
         return try {
             restClient.get()
                 .uri(uri)
@@ -69,5 +66,11 @@ class NaverGeocodeClient(
             log.warn("Naver Geocode API 호출 실패 — address={} cause={}", address, ex.message)
             null
         }
+    }
+
+    companion object {
+        private const val ENDPOINT = "https://maps.apigw.ntruss.com/map-geocode/v2/geocode"
+        private const val CONNECT_TIMEOUT_MS = 3000L
+        private const val READ_TIMEOUT_MS = 5000L
     }
 }

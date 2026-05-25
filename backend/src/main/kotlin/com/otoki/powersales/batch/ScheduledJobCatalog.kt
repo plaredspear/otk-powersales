@@ -41,8 +41,8 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = AccountNaverGeocodeBatch.JOB_NAME,
-            cron = "\${app.account.naver-geocode.cron:0 0 2 * * *}",
-            description = "거래처 주소 Naver geocode 변환 (기본 매일 02시)",
+            cron = AccountNaverGeocodeBatch.CRON,
+            description = "거래처 주소 Naver geocode 변환 (매일 02시)",
         ),
         Entry(
             jobName = PPTMasterExpireBatch.JOB_NAME,
