@@ -7615,15 +7615,8 @@
           "input" : {
             "type" : "string"
           },
-          "matchedCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "results" : {
-            "items" : {
-              "$ref" : "#/components/schemas/Result"
-            },
-            "type" : "array"
+          "rawResponse" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -9653,23 +9646,6 @@
           },
           "temporaryPasswordIssued" : {
             "type" : "boolean"
-          }
-        },
-        "type" : "object"
-      },
-      "Result" : {
-        "properties" : {
-          "jibunAddress" : {
-            "type" : [ "string", "null" ]
-          },
-          "latitude" : {
-            "type" : [ "string", "null" ]
-          },
-          "longitude" : {
-            "type" : [ "string", "null" ]
-          },
-          "roadAddress" : {
-            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
