@@ -16,9 +16,9 @@ import org.springframework.stereotype.Service
  *
  * ## 신규 도입 동작
  * 1. 입력: 주소 문자열 1건 (도로명/지번, 1~200자)
- * 2. `NaverGeocodeClient.geocode(address)` 호출 → 응답을 `NaverGeocodeTestResponse` 로 가공
+ * 2. `NaverGeocodeClient.geocodeRaw(address)` 호출 → Naver API 응답 본문을 raw JSON 문자열 그대로 반환
  * 3. client 가 null 반환 시 (5xx / timeout / 네트워크 오류) → `NaverApiException` throw → GlobalExceptionHandler 가 502 + `NAVER_GEOCODE_API_FAILED` 응답 매핑
- * 4. INFO 로그: `NAVER_GEOCODE_TEST user={} address={} matched={}` — 운영자 식별 + 입력 + 결과 카운트 (CloudWatch 검색 가능)
+ * 4. INFO 로그: `NAVER_GEOCODE_TEST user={} address={} responseLength={}` — 운영자 식별 + 입력 + 응답 길이 (CloudWatch 검색 가능)
  *
  * ## 신규 차이 — 동등 (생략, 레거시 미존재)
  *
@@ -33,14 +33,17 @@ class AdminNaverGeocodeService(
     private val log = LoggerFactory.getLogger(AdminNaverGeocodeService::class.java)
 
     fun test(userId: Long, request: NaverGeocodeTestRequest): NaverGeocodeTestResponse {
-        val response = naverGeocodeClient.geocode(request.address)
+        val rawResponse = naverGeocodeClient.geocodeRaw(request.address)
             ?: throw NaverApiException()
 
         log.info(
-            "NAVER_GEOCODE_TEST user={} address={} matched={}",
-            userId, request.address, response.addresses.size
+            "NAVER_GEOCODE_TEST user={} address={} responseLength={}",
+            userId, request.address, rawResponse.length
         )
 
-        return NaverGeocodeTestResponse.from(request.address, response)
+        return NaverGeocodeTestResponse(
+            input = request.address,
+            rawResponse = rawResponse
+        )
     }
 }

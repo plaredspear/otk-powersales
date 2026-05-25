@@ -4,21 +4,14 @@ import type { ApiResponse } from '../types';
 /**
  * Naver Geocode 변환 테스트 API (Spec #638 P2-W).
  *
- * 백엔드 `POST /api/v1/admin/naver-geocode/test` 호출 — Naver Cloud Map Geocode API 단건 변환 결과 반환.
+ * 백엔드 `POST /api/v1/admin/naver-geocode/test` 호출 — Naver Cloud Map Geocode API 응답 본문을
+ * 가공 없이 raw JSON 문자열로 그대로 반환한다.
  * 권한 `NAVER_GEOCODE_TEST` (SYSTEM_ADMIN role 자동 seed) 필요.
  */
 
-export interface NaverGeocodeTestResult {
-  roadAddress: string | null;
-  jibunAddress: string | null;
-  longitude: string | null;
-  latitude: string | null;
-}
-
 export interface NaverGeocodeTestResponse {
   input: string;
-  matchedCount: number;
-  results: NaverGeocodeTestResult[];
+  rawResponse: string;
 }
 
 export interface NaverGeocodeTestRequest {

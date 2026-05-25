@@ -1,34 +1,12 @@
 package com.otoki.powersales.admin.dto.response
 
-import com.otoki.powersales.common.naver.NaverGeocodeResponse
-
+/**
+ * Naver Geocode 변환 테스트 응답 (#638).
+ *
+ * Naver Cloud Map Geocode API 응답 본문을 가공 없이 raw JSON 문자열 그대로 노출 — 운영자가 API 원본 응답을
+ * 직접 확인할 수 있도록 함.
+ */
 data class NaverGeocodeTestResponse(
     val input: String,
-    val matchedCount: Int,
-    val results: List<Result>
-) {
-    data class Result(
-        val roadAddress: String?,
-        val jibunAddress: String?,
-        val longitude: String?,
-        val latitude: String?
-    )
-
-    companion object {
-        fun from(input: String, response: NaverGeocodeResponse): NaverGeocodeTestResponse {
-            val results = response.addresses.map { address ->
-                Result(
-                    roadAddress = address.roadAddress,
-                    jibunAddress = address.jibunAddress,
-                    longitude = address.x,
-                    latitude = address.y
-                )
-            }
-            return NaverGeocodeTestResponse(
-                input = input,
-                matchedCount = results.size,
-                results = results
-            )
-        }
-    }
-}
+    val rawResponse: String
+)

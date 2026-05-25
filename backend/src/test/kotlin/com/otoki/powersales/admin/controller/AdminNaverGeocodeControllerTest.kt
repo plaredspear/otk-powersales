@@ -33,20 +33,13 @@ class AdminNaverGeocodeControllerTest : AdminControllerTestSupport() {
     inner class TestGeocode {
 
         @Test
-        @DisplayName("H1 성공 - 정상 주소 변환 -> 200 + 응답 매핑")
+        @DisplayName("H1 성공 - 정상 주소 변환 -> 200 + raw JSON 응답 그대로")
         fun test_success() {
             val request = NaverGeocodeTestRequest(address = "서울특별시 강남구 테헤란로 123")
+            val rawJson = """{"status":"OK","meta":{"totalCount":1,"page":1,"count":1},"addresses":[{"roadAddress":"서울특별시 강남구 테헤란로 123","jibunAddress":"서울특별시 강남구 역삼동 123-45","x":"127.0584","y":"37.5074"}],"errorMessage":""}"""
             val response = NaverGeocodeTestResponse(
                 input = request.address,
-                matchedCount = 1,
-                results = listOf(
-                    NaverGeocodeTestResponse.Result(
-                        roadAddress = "서울특별시 강남구 테헤란로 123",
-                        jibunAddress = "서울특별시 강남구 역삼동 123-45",
-                        longitude = "127.0584",
-                        latitude = "37.5074"
-                    )
-                )
+                rawResponse = rawJson
             )
             every { adminNaverGeocodeService.test(eq(1L), any()) } returns response
 
@@ -58,10 +51,7 @@ class AdminNaverGeocodeControllerTest : AdminControllerTestSupport() {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.input").value(request.address))
-                .andExpect(jsonPath("$.data.matchedCount").value(1))
-                .andExpect(jsonPath("$.data.results[0].roadAddress").value("서울특별시 강남구 테헤란로 123"))
-                .andExpect(jsonPath("$.data.results[0].longitude").value("127.0584"))
-                .andExpect(jsonPath("$.data.results[0].latitude").value("37.5074"))
+                .andExpect(jsonPath("$.data.rawResponse").value(rawJson))
         }
 
         @Test
@@ -110,13 +100,13 @@ class AdminNaverGeocodeControllerTest : AdminControllerTestSupport() {
         }
 
         @Test
-        @DisplayName("H2 매칭 0건 - 응답 빈 배열 -> 200 + matchedCount=0")
+        @DisplayName("H2 매칭 0건 - 응답 빈 배열도 raw JSON 그대로 -> 200")
         fun test_zeroMatch() {
             val request = NaverGeocodeTestRequest(address = "잘못된 주소")
+            val rawJson = """{"status":"OK","meta":{"totalCount":0,"page":1,"count":0},"addresses":[],"errorMessage":""}"""
             val response = NaverGeocodeTestResponse(
                 input = request.address,
-                matchedCount = 0,
-                results = emptyList()
+                rawResponse = rawJson
             )
             every { adminNaverGeocodeService.test(eq(1L), any()) } returns response
 
@@ -127,8 +117,7 @@ class AdminNaverGeocodeControllerTest : AdminControllerTestSupport() {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.matchedCount").value(0))
-                .andExpect(jsonPath("$.data.results").isEmpty)
+                .andExpect(jsonPath("$.data.rawResponse").value(rawJson))
         }
     }
 }

@@ -2,21 +2,15 @@ import { useState } from 'react';
 import {
   Button,
   Card,
-  Empty,
   Form,
   Input,
   Space,
-  Table,
   Typography,
   notification,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { AxiosError } from 'axios';
 import { useNaverGeocodeTest } from '@/hooks/admin/useNaverGeocodeTest';
-import type {
-  NaverGeocodeTestResponse,
-  NaverGeocodeTestResult,
-} from '@/api/admin/naverGeocode';
+import type { NaverGeocodeTestResponse } from '@/api/admin/naverGeocode';
 import { isApiErrorBody } from '@/api/types';
 
 const { Title } = Typography;
@@ -27,40 +21,13 @@ interface FormValues {
 
 const ADDRESS_MAX_LENGTH = 200;
 
-interface IndexedResult extends NaverGeocodeTestResult {
-  _key: number;
+function prettyPrintJson(raw: string): string {
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    return raw;
+  }
 }
-
-const COLUMNS: ColumnsType<IndexedResult> = [
-  {
-    title: '도로명 주소',
-    dataIndex: 'roadAddress',
-    key: 'roadAddress',
-    width: 240,
-    render: (value: string | null) => value || '-',
-  },
-  {
-    title: '지번 주소',
-    dataIndex: 'jibunAddress',
-    key: 'jibunAddress',
-    width: 240,
-    render: (value: string | null) => value || '-',
-  },
-  {
-    title: '위도 (latitude)',
-    dataIndex: 'latitude',
-    key: 'latitude',
-    width: 120,
-    render: (value: string | null) => value || '-',
-  },
-  {
-    title: '경도 (longitude)',
-    dataIndex: 'longitude',
-    key: 'longitude',
-    width: 120,
-    render: (value: string | null) => value || '-',
-  },
-];
 
 export default function NaverGeocodeTestPage() {
   const [form] = Form.useForm<FormValues>();
@@ -125,25 +92,28 @@ export default function NaverGeocodeTestPage() {
       </Card>
 
       {result && (
-        <Card title="변환 결과">
+        <Card title="Naver API 응답 (raw)">
           <Space direction="vertical" size="small" style={{ width: '100%' }}>
             <Typography.Text>
               <strong>입력 주소:</strong> {result.input}
             </Typography.Text>
-            <Typography.Text>
-              <strong>매칭 건수:</strong> {result.matchedCount}건
-            </Typography.Text>
-            {result.matchedCount === 0 ? (
-              <Empty description="변환 결과 없음. 주소를 다시 확인해주세요." />
-            ) : (
-              <Table<IndexedResult>
-                rowKey="_key"
-                columns={COLUMNS}
-                dataSource={result.results.map((r, idx) => ({ ...r, _key: idx }))}
-                pagination={false}
-                size="small"
-              />
-            )}
+            <pre
+              data-testid="naver-geocode-raw-response"
+              style={{
+                background: '#f5f5f5',
+                padding: 12,
+                borderRadius: 4,
+                margin: 0,
+                maxHeight: 480,
+                overflow: 'auto',
+                fontFamily: 'Menlo, Consolas, monospace',
+                fontSize: 12,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+              }}
+            >
+              {prettyPrintJson(result.rawResponse)}
+            </pre>
           </Space>
         </Card>
       )}

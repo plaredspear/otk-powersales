@@ -40,18 +40,23 @@ describe('NaverGeocodeTestPage (Spec #638 P2-W)', () => {
     expect(button).toBeDisabled();
   });
 
-  it('H1 - 정상 주소 변환 시 결과 Table 표시', async () => {
-    mutateAsyncMock.mockResolvedValue({
-      input: '서울특별시 강남구 테헤란로 123',
-      matchedCount: 1,
-      results: [
+  it('H1 - 정상 주소 변환 시 raw JSON 응답을 그대로 출력', async () => {
+    const rawJson = JSON.stringify({
+      status: 'OK',
+      meta: { totalCount: 1, page: 1, count: 1 },
+      addresses: [
         {
           roadAddress: '서울특별시 강남구 테헤란로 123',
           jibunAddress: '서울특별시 강남구 역삼동 123-45',
-          longitude: '127.0584',
-          latitude: '37.5074',
+          x: '127.0584',
+          y: '37.5074',
         },
       ],
+      errorMessage: '',
+    });
+    mutateAsyncMock.mockResolvedValue({
+      input: '서울특별시 강남구 테헤란로 123',
+      rawResponse: rawJson,
     });
 
     renderPage();
@@ -66,16 +71,22 @@ describe('NaverGeocodeTestPage (Spec #638 P2-W)', () => {
         address: '서울특별시 강남구 테헤란로 123',
       });
     });
-    expect(await screen.findByText(/매칭 건수:/)).toBeInTheDocument();
-    expect(screen.getByText('127.0584')).toBeInTheDocument();
-    expect(screen.getByText('37.5074')).toBeInTheDocument();
+    const pre = await screen.findByTestId('naver-geocode-raw-response');
+    expect(pre).toHaveTextContent('"status": "OK"');
+    expect(pre).toHaveTextContent('"x": "127.0584"');
+    expect(pre).toHaveTextContent('"y": "37.5074"');
   });
 
-  it('H2 - 매칭 0건 시 "변환 결과 없음" 메시지 표시', async () => {
+  it('H2 - 매칭 0건 응답도 raw JSON 그대로 출력', async () => {
+    const rawJson = JSON.stringify({
+      status: 'OK',
+      meta: { totalCount: 0, page: 1, count: 0 },
+      addresses: [],
+      errorMessage: '',
+    });
     mutateAsyncMock.mockResolvedValue({
       input: '잘못된 주소',
-      matchedCount: 0,
-      results: [],
+      rawResponse: rawJson,
     });
 
     renderPage();
@@ -85,9 +96,9 @@ describe('NaverGeocodeTestPage (Spec #638 P2-W)', () => {
     const button = screen.getByRole('button', { name: '변환' });
     await user.click(button);
 
-    expect(
-      await screen.findByText('변환 결과 없음. 주소를 다시 확인해주세요.'),
-    ).toBeInTheDocument();
+    const pre = await screen.findByTestId('naver-geocode-raw-response');
+    expect(pre).toHaveTextContent('"totalCount": 0');
+    expect(pre).toHaveTextContent('"addresses": []');
   });
 
   it('E2 - address 201자 입력 시 변환 버튼 disabled + 검증 메시지', async () => {

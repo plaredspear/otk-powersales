@@ -68,6 +68,29 @@ class NaverGeocodeClient(
         }
     }
 
+    /**
+     * 주소 문자열을 Naver Geocode API 로 변환하여 원본 JSON 응답 본문을 그대로 반환한다.
+     *
+     * admin 변환 테스트 도구가 Naver 응답을 가공 없이 노출하기 위해 사용 (#638).
+     *
+     * @return 응답 본문 raw JSON 문자열. 호출 실패 시 `null`.
+     */
+    fun geocodeRaw(address: String): String? {
+        val encoded = URLEncoder.encode(address, StandardCharsets.UTF_8)
+        val uri = "$ENDPOINT?query=$encoded"
+        return try {
+            restClient.get()
+                .uri(uri)
+                .header("X-NCP-APIGW-API-KEY-ID", clientId)
+                .header("X-NCP-APIGW-API-KEY", clientSecret)
+                .retrieve()
+                .body<String>()
+        } catch (ex: Exception) {
+            log.warn("Naver Geocode API 호출 실패 — address={} cause={}", address, ex.message)
+            null
+        }
+    }
+
     companion object {
         private const val ENDPOINT = "https://maps.apigw.ntruss.com/map-geocode/v2/geocode"
         private const val CONNECT_TIMEOUT_MS = 3000L

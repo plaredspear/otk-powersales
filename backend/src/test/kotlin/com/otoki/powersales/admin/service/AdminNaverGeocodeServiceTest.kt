@@ -3,7 +3,6 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.admin.dto.request.NaverGeocodeTestRequest
 import com.otoki.powersales.common.naver.NaverApiException
 import com.otoki.powersales.common.naver.NaverGeocodeClient
-import com.otoki.powersales.common.naver.NaverGeocodeResponse
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -23,45 +22,31 @@ class AdminNaverGeocodeServiceTest {
     inner class TestGeocode {
 
         @Test
-        @DisplayName("H1 성공 - 정상 주소 1건 매칭 -> 응답 매핑")
+        @DisplayName("H1 성공 - 정상 주소 1건 매칭 -> rawResponse 그대로 전달")
         fun test_happyPath() {
             val address = "서울특별시 강남구 테헤란로 123"
             val request = NaverGeocodeTestRequest(address = address)
-            val response = NaverGeocodeResponse(
-                addresses = listOf(
-                    NaverGeocodeResponse.Address(
-                        x = "127.0584",
-                        y = "37.5074",
-                        roadAddress = "서울특별시 강남구 테헤란로 123",
-                        jibunAddress = "서울특별시 강남구 역삼동 123-45"
-                    )
-                )
-            )
-            every { naverGeocodeClient.geocode(address) } returns response
+            val rawJson = """{"status":"OK","meta":{"totalCount":1,"page":1,"count":1},"addresses":[{"roadAddress":"서울특별시 강남구 테헤란로 123","jibunAddress":"서울특별시 강남구 역삼동 123-45","x":"127.0584","y":"37.5074"}],"errorMessage":""}"""
+            every { naverGeocodeClient.geocodeRaw(address) } returns rawJson
 
             val result = service.test(userId = 1L, request = request)
 
             assertThat(result.input).isEqualTo(address)
-            assertThat(result.matchedCount).isEqualTo(1)
-            assertThat(result.results).hasSize(1)
-            assertThat(result.results[0].roadAddress).isEqualTo("서울특별시 강남구 테헤란로 123")
-            assertThat(result.results[0].jibunAddress).isEqualTo("서울특별시 강남구 역삼동 123-45")
-            assertThat(result.results[0].longitude).isEqualTo("127.0584")
-            assertThat(result.results[0].latitude).isEqualTo("37.5074")
+            assertThat(result.rawResponse).isEqualTo(rawJson)
         }
 
         @Test
-        @DisplayName("H2 매칭 0건 - 빈 addresses -> matchedCount=0 + 빈 results")
+        @DisplayName("H2 매칭 0건 - addresses 빈 배열 raw JSON 도 그대로 전달")
         fun test_zeroMatch() {
             val address = "잘못된 주소"
             val request = NaverGeocodeTestRequest(address = address)
-            every { naverGeocodeClient.geocode(address) } returns NaverGeocodeResponse(addresses = emptyList())
+            val rawJson = """{"status":"OK","meta":{"totalCount":0,"page":1,"count":0},"addresses":[],"errorMessage":""}"""
+            every { naverGeocodeClient.geocodeRaw(address) } returns rawJson
 
             val result = service.test(userId = 1L, request = request)
 
             assertThat(result.input).isEqualTo(address)
-            assertThat(result.matchedCount).isEqualTo(0)
-            assertThat(result.results).isEmpty()
+            assertThat(result.rawResponse).isEqualTo(rawJson)
         }
 
         @Test
@@ -69,7 +54,7 @@ class AdminNaverGeocodeServiceTest {
         fun test_naverApiFailure() {
             val address = "서울특별시 강남구 테헤란로 123"
             val request = NaverGeocodeTestRequest(address = address)
-            every { naverGeocodeClient.geocode(address) } returns null
+            every { naverGeocodeClient.geocodeRaw(address) } returns null
 
             assertThatThrownBy { service.test(userId = 1L, request = request) }
                 .isInstanceOf(NaverApiException::class.java)
@@ -81,7 +66,7 @@ class AdminNaverGeocodeServiceTest {
         fun test_naverApiTimeout() {
             val address = "서울특별시 강남구 테헤란로 123"
             val request = NaverGeocodeTestRequest(address = address)
-            every { naverGeocodeClient.geocode(address) } returns null
+            every { naverGeocodeClient.geocodeRaw(address) } returns null
 
             assertThatThrownBy { service.test(userId = 1L, request = request) }
                 .isInstanceOf(NaverApiException::class.java)
