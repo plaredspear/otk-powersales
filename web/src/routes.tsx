@@ -65,6 +65,7 @@ const PermissionSetListPage = lazy(() => import('@/pages/admin/permissions/Permi
 const PermissionSetDetailPage = lazy(() => import('@/pages/admin/permissions/PermissionSetDetailPage'));
 const PermissionMatrixPage = lazy(() => import('@/pages/admin/permissions/PermissionMatrixPage'));
 const PermissionGuidePage = lazy(() => import('@/pages/admin/permissions/PermissionGuidePage'));
+const UserRoleTreePage = lazy(() => import('@/pages/admin/user-roles/UserRoleTreePage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -255,6 +256,12 @@ export const router = createBrowserRouter(
               element: <PermissionRoute systemPermission="VIEW_ALL_DATA" />,
               children: [
                 { path: '/admin/permissions/matrix', element: <LazyWrapper><PermissionMatrixPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute entity="user_role" operation="READ" />,
+              children: [
+                { path: '/admin/user-roles', element: <LazyWrapper><UserRoleTreePage /></LazyWrapper> },
               ],
             },
             { path: '/admin/permissions/guide', element: <LazyWrapper><PermissionGuidePage /></LazyWrapper> },

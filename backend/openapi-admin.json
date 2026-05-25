@@ -3662,6 +3662,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseListUserRoleNode" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/UserRoleNode"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseMonthlyInputAdequacyResponse" : {
         "properties" : {
           "data" : {
@@ -11229,6 +11257,37 @@
         },
         "type" : "object"
       },
+      "UserRoleNode" : {
+        "properties" : {
+          "children" : {
+            "items" : {
+              "$ref" : "#/components/schemas/UserRoleNode"
+            },
+            "type" : "array"
+          },
+          "developerName" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "parentName" : {
+            "type" : [ "string", "null" ]
+          },
+          "parentUserRoleId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "rollupDescription" : {
+            "type" : [ "string", "null" ]
+          },
+          "userRoleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "WebChangePasswordRequest" : {
         "properties" : {
           "currentPassword" : {
@@ -17645,6 +17704,24 @@
           }
         },
         "tags" : [ "admin-team-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/user-roles/tree" : {
+      "get" : {
+        "operationId" : "getTree",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListUserRoleNode"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-user-role-controller" ]
       }
     },
     "/api/v1/admin/users" : {
