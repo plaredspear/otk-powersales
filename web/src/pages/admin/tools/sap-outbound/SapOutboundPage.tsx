@@ -26,6 +26,7 @@ import type {
   SapOutboxPendingRow,
 } from '@/api/admin/sapIntegration';
 import SapOutboundLogDetailModal from './SapOutboundLogDetailModal';
+import SapOutboundTestTab from './SapOutboundTestTab';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -419,6 +420,11 @@ export default function SapOutboundPage() {
                 pagination={false}
               />
             ),
+          },
+          {
+            key: 'test',
+            label: '테스트',
+            children: <SapOutboundTestTab />,
           },
         ]}
       />
