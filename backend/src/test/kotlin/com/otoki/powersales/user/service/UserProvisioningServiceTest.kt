@@ -283,7 +283,7 @@ class UserProvisioningServiceTest {
     companion object {
         private val PROFILE_NAME_TO_ID: Map<String, Long> = mapOf(
             "시스템 관리자" to 1L,
-            "8.마케팅" to 2L,
+            "8. 마케팅" to 2L,
             "9. Staff" to 3L,
             "6.조장" to 4L,
             "4.지점장" to 5L,

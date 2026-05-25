@@ -179,7 +179,7 @@ class EmployeeProfileResolverTest {
     }
 
     @Test
-    @DisplayName("[Edge] Profile entity 부재 → null 반환 (ProfileBootstrapRunner 보장 깨진 케이스)")
+    @DisplayName("[Edge] Profile entity 부재 → null 반환 (Stage1 적재 / LocalDataInitializer 시드 누락 케이스)")
     fun profileMissing() {
         stubOrg(costCenterCode = "5066", orgCodeLevel3 = "5066")
         every { profileRepository.findByName("8.마케팅") } returns null

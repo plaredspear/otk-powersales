@@ -84,8 +84,8 @@ class WebUserDetailsService(
         /**
          * Profile.name 기반 GrantedAuthority 산출.
          *
-         * Profile.name 은 ProfileBootstrapRunner SoT 와 1:1 정합 ("시스템 관리자" / "5.영업사원" 등).
-         * 미등록 name 은 ROLE_STAFF fallback (ProfileBootstrapRunner 가 12종 보장 후 fallback 발생 안 함).
+         * Profile.name 은 [com.otoki.powersales.auth.permission.SystemAdminProfilePolicy.REQUIRED_PROFILE_NAMES] 12종과 정합 ("시스템 관리자" / "5.영업사원" 등).
+         * 미등록 name 은 ROLE_STAFF fallback. dev/prod 는 SF Stage1 Profile 적재가 12종 보장, local 은 LocalDataInitializer.seedProfiles 가 보장.
          */
         fun resolveAuthoritiesByProfileName(profileName: String?, isSalesSupport: Boolean): List<GrantedAuthority> {
             val role = profileNameToRoleAuthority(profileName)

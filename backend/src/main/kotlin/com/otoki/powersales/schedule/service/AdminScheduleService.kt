@@ -72,7 +72,7 @@ class AdminScheduleService(
         /** SF 영업지원실 판별 기준 — Org.OrgCodeLevel3 (AppointmentTriggerHanlder.cls:328-331). */
         private const val SALES_SUPPORT_LEVEL3 = "3475"
 
-        /** SF 시스템 관리자 Profile.Name (ProfileBootstrapRunner SoT). */
+        /** SF 시스템 관리자 Profile.Name ([SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME] 와 동일 값). */
         private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
     }
 

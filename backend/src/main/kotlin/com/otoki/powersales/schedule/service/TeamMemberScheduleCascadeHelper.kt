@@ -92,7 +92,7 @@ class TeamMemberScheduleCascadeHelper(
         principal.isSalesSupport || principal.profileName == SYSTEM_ADMIN_PROFILE_NAME
 
     companion object {
-        /** SF 시스템 관리자 Profile.Name (ProfileBootstrapRunner SoT). */
+        /** SF 시스템 관리자 Profile.Name ([SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME] 와 동일 값). */
         private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
     }
 }

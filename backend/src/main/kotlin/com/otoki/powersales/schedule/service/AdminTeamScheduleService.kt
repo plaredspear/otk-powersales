@@ -385,7 +385,7 @@ class AdminTeamScheduleService(
         principal.isSalesSupport || principal.profileName == SYSTEM_ADMIN_PROFILE_NAME
 
     companion object {
-        /** SF 시스템 관리자 Profile.Name (ProfileBootstrapRunner SoT). */
+        /** SF 시스템 관리자 Profile.Name ([SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME] 와 동일 값). */
         private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
 
         /** SF "전 지점 가시" Profile.Name 집합 — 영업본부 / 사업부장 등. SF AppointmentTriggerHanlder.cls:344-365 정합. */
