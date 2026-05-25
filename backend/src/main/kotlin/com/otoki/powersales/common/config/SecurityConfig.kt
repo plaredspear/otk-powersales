@@ -19,6 +19,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher
+import org.springframework.security.web.util.matcher.AndRequestMatcher
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher
+import org.springframework.security.web.util.matcher.OrRequestMatcher
 
 /**
  * Spring Security 설정
@@ -39,8 +43,26 @@ class SecurityConfig(
     @Bean
     @Order(2)
     fun apiSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        // securityMatcher 좌합 회피: admin/sap/sf 전용 chain 과 path 충돌이 발생하지 않도록 명시 제외.
+        // 과거 SecurityFilterChain 빈 @Order 가 인식되지 못해 글로벌 chain 이 먼저 매칭되는 회귀가 있었기에,
+        // ordering 의존을 줄이고 matcher 자체로 disjoint 를 보장.
+        val mvcMatcher = PathPatternRequestMatcher.withDefaults()
+        val apiBaseMatcher = OrRequestMatcher(
+            mvcMatcher.matcher("/api/**"),
+            mvcMatcher.matcher("/h2-console/**"),
+            mvcMatcher.matcher("/swagger-ui/**"),
+            mvcMatcher.matcher("/swagger-ui.html"),
+            mvcMatcher.matcher("/v3/api-docs/**"),
+        )
+        val excludeAdminSapSf = NegatedRequestMatcher(
+            OrRequestMatcher(
+                mvcMatcher.matcher("/api/v1/admin/**"),
+                mvcMatcher.matcher("/api/v1/sap/**"),
+                mvcMatcher.matcher("/api/v1/sf/**"),
+            )
+        )
         http
-            .securityMatcher("/api/**", "/h2-console/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
+            .securityMatcher(AndRequestMatcher(apiBaseMatcher, excludeAdminSapSf))
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
