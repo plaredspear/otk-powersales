@@ -189,13 +189,25 @@ class SfFkResolveTablesTest {
         }
 
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 7 entry — #790 sharing 2 (subtable 2개 제외) + #794 record type 2 + #795 FLS 2 + #798 PSA 1")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 8 entry — #790 sharing 2 (subtable 2개 제외) + #794 record type 2 + #795 FLS 2 + #798 PSA 1 + permission_set_flags 1")
         fun naturalKeyMappingsCount() {
             // user_role_hierarchy_snapshot + profile_flags +
             // profile_record_type + permission_set_record_type + profile_field_permission + permission_set_field_permission +
-            // permission_set_assignment = 7
+            // permission_set_assignment + permission_set_flags = 8
             // (sharing_rule_condition + sharing_rule_target 은 (s_object_name, developer_name) 복합 키라 전용 method 처리)
-            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(7)
+            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(8)
+        }
+
+        @Test
+        @DisplayName("permission_set_flags.permission_set_name → permission_set.permission_set_id — 본 매핑 부재 시 PermissionSetDetailPage 사용자 추가 버튼 미렌더링 사고 회피")
+        fun permissionSetFlagsByName() {
+            val spec = NATURAL_KEY_FK_MAPPINGS.find {
+                it.sourceTable == "permission_set_flags" && it.sourceColumn == "permission_set_name"
+            }
+            assertThat(spec).isNotNull
+            assertThat(spec!!.refTable).isEqualTo("permission_set")
+            assertThat(spec.refColumn).isEqualTo("name")
+            assertThat(spec.targetIdColumn).isEqualTo("permission_set_id")
         }
 
         @Test
@@ -315,9 +327,9 @@ class SfFkResolveTablesTest {
         }
 
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 7 entry — spec #790 2 (subtable 2개 제외) + #794 2 + #795 2 + #798 1")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 8 entry — spec #790 2 (subtable 2개 제외) + #794 2 + #795 2 + #798 1 + permission_set_flags 1")
         fun naturalKeyMappingsCountAfterPSA() {
-            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(7)
+            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(8)
         }
     }
 }

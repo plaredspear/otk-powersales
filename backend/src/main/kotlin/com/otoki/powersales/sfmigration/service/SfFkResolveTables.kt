@@ -130,6 +130,17 @@ internal val NATURAL_KEY_FK_MAPPINGS: List<NaturalKeyFkSpec> = listOf(
         refColumn = "name",
         targetIdColumn = "permission_set_id",
     ),
+    // permission_set_flags.permission_set_name → permission_set.permission_set_id
+    // 본 매핑이 없으면 PermissionSetDetailPage 의 flags / objectPermissions / assignedUsers
+    // 가 모두 빈 응답으로 떨어지고 "사용자 추가" 버튼도 렌더링되지 않는다 (frontend 가드
+    // `data.flags?.permissionSetFlagsId` 가 undefined 가 되기 때문).
+    NaturalKeyFkSpec(
+        sourceTable = "permission_set_flags",
+        sourceColumn = "permission_set_name",
+        refTable = "permission_set",
+        refColumn = "name",
+        targetIdColumn = "permission_set_id",
+    ),
     // ──────────────────────────────────────────────────────────────────────
     // spec #798 — PermissionSetAssignment FK 해소
     // permission_set_sfid → permission_set_flags.permission_set_sfid → permission_set_flags_id
