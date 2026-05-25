@@ -68,9 +68,15 @@ class UserRoleHierarchyTraversal(
      * 본 UserRole + 그 자손 모든 snapshot row 재계산.
      *
      * UserRole.parent_user_role_id 변경 시 호출 (Hierarchy 의 부분 트리 변경).
+     *
+     * `sharing-rules-for-user:v1` 도 함께 evict — ancestorPath 변경이 sharing_rule_target 의
+     * `ROLE_AND_SUBORDINATES` 매칭 결과를 바꿈.
      */
     @Transactional
-    @CacheEvict(value = ["hierarchySubordinates", "hierarchyAncestorPath"], allEntries = true)
+    @CacheEvict(
+        value = ["hierarchySubordinates", "hierarchyAncestorPath", "sharing-rules-for-user:v1"],
+        allEntries = true,
+    )
     fun recomputeSubtree(userRoleId: Long) {
         val descendants = computeAllSubordinateIds(userRoleId)
         descendants.forEach { id ->
@@ -81,9 +87,14 @@ class UserRoleHierarchyTraversal(
 
     /**
      * 전체 snapshot 재계산 batch (운영 트리거 또는 cut-over 1회).
+     *
+     * `sharing-rules-for-user:v1` 도 함께 evict — recomputeSubtree 와 동일 사유.
      */
     @Transactional
-    @CacheEvict(value = ["hierarchySubordinates", "hierarchyAncestorPath"], allEntries = true)
+    @CacheEvict(
+        value = ["hierarchySubordinates", "hierarchyAncestorPath", "sharing-rules-for-user:v1"],
+        allEntries = true,
+    )
     fun recomputeAll() {
         val allUserRoleIds = userRoleRepository.findAll().mapNotNull { it.id.takeIf { rid -> rid > 0 } }
         log.info("[hierarchy] recomputeAll — {} UserRole rows", allUserRoleIds.size)

@@ -111,6 +111,18 @@ class CacheConfig {
         const val CACHE_PERMISSION_SET_FLAGS = "permissionSetFlags"
 
         /**
+         * SharingPolicyQueryRepository.findRulesForUser 결과 (User 별 매칭 sharing_rule subset).
+         *
+         * 1h TTL — 다른 sharing 캐시와 동일 정합. 매 admin 요청마다 `sharing_rule + sharing_rule_target`
+         * JOIN + `sharing_rule_condition` IN-list 2 query 가 모두 캐시 hit 으로 1회 절약.
+         *
+         * 본 캐시는 입력으로 `ancestorPath` + `groupMemberships` 를 받지만 둘 다 다른 cache 의 산출물
+         * (1h TTL 동일). 두 산출물이 변경되는 시점에 [SharingRecalcService.recalcAll] 일괄 evict 가
+         * 본 캐시도 함께 무효화 — 일관성 유지.
+         */
+        const val CACHE_SHARING_RULES_FOR_USER = "sharing-rules-for-user:v1"
+
+        /**
          * spec #791 — SF OWD + master-detail relationship cache.
          * spec #794 — Record Type 권한 cache.
          * spec #795 — FLS field permission cache.
@@ -134,6 +146,7 @@ class CacheConfig {
             CACHE_SOBJECT_SETTING,
             CACHE_RECORD_TYPE_VISIBILITY,
             CACHE_FIELD_PERMISSION,
+            CACHE_SHARING_RULES_FOR_USER,
         )
 
         private val ORGANIZATION_TTL: Duration = Duration.ofHours(24)
@@ -192,6 +205,7 @@ class CacheConfig {
             CACHE_MEMBER_GROUP_IDS to sharingPolicyConfig,
             CACHE_PROFILE_FLAGS to sharingPolicyConfig,
             CACHE_PERMISSION_SET_FLAGS to sharingPolicyConfig,
+            CACHE_SHARING_RULES_FOR_USER to sharingPolicyConfig,
             // spec #791 / #794 / #795 — sharing 관련 cache
             CACHE_SOBJECT_SETTING to sharingPolicyConfig,
             CACHE_RECORD_TYPE_VISIBILITY to sharingPolicyConfig,
