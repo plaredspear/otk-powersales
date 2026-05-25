@@ -4,6 +4,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.io.File
 
 /**
  * Stage1Targets — 신규 SF Sharing 메타 7 entity 등록 검증 (spec #790).
@@ -360,6 +361,88 @@ class Stage1TargetsTest {
             assertThat(psaIdx).isGreaterThanOrEqualTo(0)
             assertThat(psaIdx).isGreaterThan(order.indexOf("User"))
             assertThat(psaIdx).isGreaterThan(order.indexOf("PermissionSetFlags"))
+        }
+    }
+
+    @Nested
+    @DisplayName("csvFileName drift 가드 — scripts/extract-* ↔ Stage1Targets 양방향 정합")
+    inner class CsvFileNameDriftGuard {
+
+        /**
+         * scripts/extract-csv.sh 의 `$OUT_DIR/<file>.csv` + scripts/extract-sharing-meta.main.kts 의
+         * `"<file>.csv"` 모두 grep 으로 수집. backend Stage1Targets 의 csvFileName 과 양방향
+         * 정합 확인. 한쪽만 변경하면 dev/prod 적재 흐름이 끊어지므로 CI 에서 drift 차단.
+         *
+         * 본 테스트는 scripts/ 디렉토리가 backend cwd 의 부모에 있다는 worktree 구조를 전제.
+         * Gradle 실행 cwd 가 backend/ 이므로 ../scripts/sf-data-migration/ 로 접근.
+         */
+        private val scriptsDir = File(System.getProperty("user.dir"))
+            .parentFile
+            .resolve("scripts/sf-data-migration")
+
+        private val extractCsvSh = scriptsDir.resolve("extract-csv.sh")
+        private val extractSharingMetaKts = scriptsDir.resolve("extract-sharing-meta.main.kts")
+
+        /**
+         * extract-csv.sh + extract-sharing-meta.main.kts 가 출력하는 모든 CSV 파일명 수집.
+         *
+         * - extract-csv.sh: `$OUT_DIR/<file>.csv` 패턴
+         * - extract-sharing-meta.main.kts: `"<file>.csv"` 리터럴
+         *
+         * 두 스크립트 모두 hardcode 방식 — backend Stage1Targets 와 별도 SoT 가 없다.
+         */
+        private fun collectExtractedCsvNames(): Set<String> {
+            check(extractCsvSh.isFile) { "extract-csv.sh 미존재: ${extractCsvSh.absolutePath}" }
+            check(extractSharingMetaKts.isFile) {
+                "extract-sharing-meta.main.kts 미존재: ${extractSharingMetaKts.absolutePath}"
+            }
+            val result = mutableSetOf<String>()
+            val outDirPattern = Regex("""\${'$'}OUT_DIR/([a-z][a-z_]*\.csv)""")
+            val litPattern = Regex(""""([a-z][a-z-]*\.csv)"""")
+            extractCsvSh.useLines { lines ->
+                lines.forEach { line ->
+                    outDirPattern.findAll(line).forEach { result += it.groupValues[1] }
+                }
+            }
+            extractSharingMetaKts.useLines { lines ->
+                lines.forEach { line ->
+                    litPattern.findAll(line).forEach { result += it.groupValues[1] }
+                }
+            }
+            return result
+        }
+
+        private fun collectRegisteredCsvNames(): Set<String> =
+            Stage1Targets.DEPENDENCY_ORDER.mapNotNull { Stage1Targets.get(it)?.csvFileName }.toSet()
+
+        @Test
+        @DisplayName("Stage1Targets.csvFileName 은 모두 scripts 의 extract 산출물 파일명에 등장")
+        fun allTargetsHaveExtractedCsv() {
+            val extracted = collectExtractedCsvNames()
+            val registered = collectRegisteredCsvNames()
+
+            val orphanTargets = registered - extracted
+            assertThat(orphanTargets)
+                .withFailMessage(
+                    "Stage1Targets 에 등록되었지만 scripts/extract-* 가 생성하지 않는 CSV: %s",
+                    orphanTargets,
+                )
+                .isEmpty()
+        }
+
+        @Test
+        @DisplayName("scripts 의 extract 산출물 파일명은 모두 Stage1Targets.csvFileName 에 등록")
+        fun allExtractedCsvHaveTargets() {
+            val extracted = collectExtractedCsvNames()
+            val registered = collectRegisteredCsvNames()
+
+            val orphanExtracted = extracted - registered
+            assertThat(orphanExtracted)
+                .withFailMessage(
+                    "scripts/extract-* 는 생성하지만 Stage1Targets 에 미등록 CSV: %s",
+                    orphanExtracted,
+                )
+                .isEmpty()
         }
     }
 
