@@ -50,6 +50,7 @@ class AdminPromotionScheduleServiceTest {
     private val teamMemberScheduleCascadeHelper: com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper =
         mockk(relaxUnitFun = true)
     private val principal: com.otoki.powersales.auth.web.WebUserPrincipal = mockk(relaxed = true)
+    private val promotionSchedulesUpsertHelper: com.otoki.powersales.promotion.service.PromotionSchedulesUpsertHelper = mockk(relaxUnitFun = true)
 
     private lateinit var service: AdminPromotionScheduleService
 
@@ -69,7 +70,8 @@ class AdminPromotionScheduleServiceTest {
             teamMemberScheduleRepository = teamMemberScheduleRepository,
             accountRepository = accountRepository,
             teamScheduleValidator = teamScheduleValidator,
-            teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper
+            teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
+            promotionSchedulesUpsertHelper = promotionSchedulesUpsertHelper
         )
 
         // Spec #693 Q3 — promoCloseByTm 가드 기본 false (테스트 별 override)

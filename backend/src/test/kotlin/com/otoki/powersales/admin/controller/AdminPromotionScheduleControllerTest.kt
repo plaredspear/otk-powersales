@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.promotion.dto.response.PromotionConfirmResponse
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkDeleteResponse
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkUpdateResponse
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleItem
@@ -21,6 +22,7 @@ import org.springframework.http.MediaType
 import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -198,6 +200,29 @@ class AdminPromotionScheduleControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_FOUND_PARTIAL"))
                 .andExpect(jsonPath("$.error.details.missingIds[0]").value(1003))
                 .andExpect(jsonPath("$.error.details.missingIds[1]").value(1005))
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/admin/promotions/{id}/schedules/regenerate - 일정 재생성 (Spec #694)")
+    inner class Regenerate {
+
+        @Test
+        @DisplayName("성공 - 멱등 upsert 응답 200")
+        fun regenerate_success() {
+            every { adminPromotionScheduleService.regenerateSchedules(eq(promotionId)) } returns PromotionConfirmResponse(
+                promotionId = promotionId,
+                totalEmployees = 3,
+                upsertedTeamMemberSchedules = 3
+            )
+
+            mockMvc.perform(post("/api/v1/admin/promotions/$promotionId/schedules/regenerate"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("일정이 재생성되었습니다"))
+                .andExpect(jsonPath("$.data.promotionId").value(100))
+                .andExpect(jsonPath("$.data.totalEmployees").value(3))
+                .andExpect(jsonPath("$.data.upsertedSchedules").value(3))
         }
     }
 }

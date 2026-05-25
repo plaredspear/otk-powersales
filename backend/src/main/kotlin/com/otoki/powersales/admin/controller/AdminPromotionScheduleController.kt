@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.promotion.dto.response.PromotionConfirmResponse
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkDeleteRequest
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkUpdateRequest
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleBulkDeleteResponse
@@ -17,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -67,5 +69,15 @@ class AdminPromotionScheduleController(
     ): ResponseEntity<ApiResponse<PromotionScheduleBulkDeleteResponse>> {
         val response = adminPromotionScheduleService.bulkDelete(principal, promotionId, request)
         return ResponseEntity.ok(ApiResponse.success(response, "일정이 삭제되었습니다"))
+    }
+
+    @PostMapping("/{promotionId}/schedules/regenerate")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
+    fun regenerate(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @PathVariable promotionId: Long
+    ): ResponseEntity<ApiResponse<PromotionConfirmResponse>> {
+        val response = adminPromotionScheduleService.regenerateSchedules(promotionId)
+        return ResponseEntity.ok(ApiResponse.success(response, "일정이 재생성되었습니다"))
     }
 }

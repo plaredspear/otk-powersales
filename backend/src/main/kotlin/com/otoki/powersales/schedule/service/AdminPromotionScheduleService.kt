@@ -13,10 +13,12 @@ import com.otoki.powersales.schedule.dto.response.PromotionScheduleItem
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleListResponse
 import com.otoki.powersales.schedule.dto.response.PromotionScheduleMember
 import com.otoki.powersales.schedule.dto.response.SchedulePeriod
+import com.otoki.powersales.promotion.dto.response.PromotionConfirmResponse
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
+import com.otoki.powersales.promotion.service.PromotionSchedulesUpsertHelper
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.exception.PromotionScheduleBulkDeleteInvalidSizeException
 import com.otoki.powersales.schedule.exception.PromotionScheduleBulkDuplicateException
@@ -47,8 +49,14 @@ class AdminPromotionScheduleService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val accountRepository: AccountRepository,
     private val teamScheduleValidator: TeamScheduleValidator,
-    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper
+    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper,
+    private val promotionSchedulesUpsertHelper: PromotionSchedulesUpsertHelper
 ) {
+
+    fun regenerateSchedules(promotionId: Long): PromotionConfirmResponse {
+        return promotionSchedulesUpsertHelper.upsert(promotionId)
+    }
+
 
     companion object {
         private val VALID_WORKING_CATEGORY1 = setOf("행사", "진열")

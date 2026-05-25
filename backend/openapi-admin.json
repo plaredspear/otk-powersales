@@ -15472,6 +15472,33 @@
         "tags" : [ "admin-promotion-schedule-controller" ]
       }
     },
+    "/api/v1/admin/promotions/{promotionId}/schedules/regenerate" : {
+      "post" : {
+        "operationId" : "regenerate",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "promotionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePromotionConfirmResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-promotion-schedule-controller" ]
+      }
+    },
     "/api/v1/admin/safety-check/status" : {
       "get" : {
         "operationId" : "getStatus_1",
