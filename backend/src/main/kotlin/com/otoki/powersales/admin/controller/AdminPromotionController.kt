@@ -88,7 +88,7 @@ class AdminPromotionController(
         @PathVariable id: Long,
         @Valid @RequestBody request: PromotionCreateRequest
     ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
-        val response = adminPromotionService.updatePromotion(scope, id, principal.requireEmployeeId(), request)
+        val response = adminPromotionService.updatePromotion(scope, principal, id, principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -99,7 +99,7 @@ class AdminPromotionController(
         @CurrentDataScope scope: DataScope,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminPromotionService.deletePromotion(scope, id)
+        adminPromotionService.deletePromotion(scope, principal, id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?))
     }
 

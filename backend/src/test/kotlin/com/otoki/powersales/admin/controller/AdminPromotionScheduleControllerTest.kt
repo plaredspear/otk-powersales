@@ -168,7 +168,7 @@ class AdminPromotionScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 3건 삭제")
         fun bulkDelete_success() {
-            every { adminPromotionScheduleService.bulkDelete(eq(promotionId), any()) } returns PromotionScheduleBulkDeleteResponse(deletedCount = 3)
+            every { adminPromotionScheduleService.bulkDelete(any(), eq(promotionId), any()) } returns PromotionScheduleBulkDeleteResponse(deletedCount = 3)
 
             val body = """{"scheduleIds": [1001, 1002, 1003]}"""
 
@@ -185,7 +185,7 @@ class AdminPromotionScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 부분 미존재 -> 404 missing_ids 포함")
         fun bulkDelete_partialNotFound() {
-            every { adminPromotionScheduleService.bulkDelete(eq(promotionId), any()) } throws PromotionScheduleNotFoundPartialException(listOf(1003L, 1005L))
+            every { adminPromotionScheduleService.bulkDelete(any(), eq(promotionId), any()) } throws PromotionScheduleNotFoundPartialException(listOf(1003L, 1005L))
 
             val body = """{"scheduleIds": [1001, 1003, 1005]}"""
 

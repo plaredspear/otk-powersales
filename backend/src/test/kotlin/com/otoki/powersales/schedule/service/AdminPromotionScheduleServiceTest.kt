@@ -47,6 +47,9 @@ class AdminPromotionScheduleServiceTest {
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
     private val accountRepository: AccountRepository = mockk(relaxUnitFun = true)
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk(relaxUnitFun = true)
+    private val teamMemberScheduleCascadeHelper: com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper =
+        mockk(relaxUnitFun = true)
+    private val principal: com.otoki.powersales.auth.web.WebUserPrincipal = mockk(relaxed = true)
 
     private lateinit var service: AdminPromotionScheduleService
 
@@ -65,8 +68,12 @@ class AdminPromotionScheduleServiceTest {
             promotionEmployeeRepository = promotionEmployeeRepository,
             teamMemberScheduleRepository = teamMemberScheduleRepository,
             accountRepository = accountRepository,
-            teamScheduleValidator = teamScheduleValidator
+            teamScheduleValidator = teamScheduleValidator,
+            teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper
         )
+
+        // Spec #693 Q3 — promoCloseByTm 가드 기본 false (테스트 별 override)
+        every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(any()) } returns false
     }
 
     // ========== getSchedules ==========
@@ -404,10 +411,10 @@ class AdminPromotionScheduleServiceTest {
             every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
             every { teamMemberScheduleRepository.findAllById(listOf(1001L, 1002L, 1003L)) } returns schedules
 
-            val result = service.bulkDelete(promotionId, PromotionScheduleBulkDeleteRequest(listOf(1001L, 1002L, 1003L)))
+            val result = service.bulkDelete(principal, promotionId, PromotionScheduleBulkDeleteRequest(listOf(1001L, 1002L, 1003L)))
 
             assertThat(result.deletedCount).isEqualTo(3)
-            verify { teamMemberScheduleRepository.deleteAll(schedules) }
+            verify { teamMemberScheduleCascadeHelper.cascadeDeleteSchedules(principal, schedules) }
         }
 
         @Test
@@ -423,7 +430,7 @@ class AdminPromotionScheduleServiceTest {
             every { teamMemberScheduleRepository.findAllById(listOf(1001L, 9999L)) } returns listOf(schedule1)
 
             assertThatThrownBy {
-                service.bulkDelete(promotionId, PromotionScheduleBulkDeleteRequest(listOf(1001L, 9999L)))
+                service.bulkDelete(principal, promotionId, PromotionScheduleBulkDeleteRequest(listOf(1001L, 9999L)))
             }.isInstanceOf(PromotionScheduleNotFoundPartialException::class.java)
                 .satisfies({ ex ->
                     val partial = ex as PromotionScheduleNotFoundPartialException
@@ -448,7 +455,7 @@ class AdminPromotionScheduleServiceTest {
             every { teamMemberScheduleRepository.findAllById(listOf(1001L)) } returns listOf(schedule)
 
             assertThatThrownBy {
-                service.bulkDelete(promotionId, PromotionScheduleBulkDeleteRequest(listOf(1001L)))
+                service.bulkDelete(principal, promotionId, PromotionScheduleBulkDeleteRequest(listOf(1001L)))
             }.isInstanceOf(PromotionScheduleNotInPromotionException::class.java)
             verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any<List<TeamMemberSchedule>>()) }
         }
@@ -461,7 +468,7 @@ class AdminPromotionScheduleServiceTest {
             val ids = (1L..501L).toList()
 
             assertThatThrownBy {
-                service.bulkDelete(promotionId, PromotionScheduleBulkDeleteRequest(ids))
+                service.bulkDelete(principal, promotionId, PromotionScheduleBulkDeleteRequest(ids))
             }.isInstanceOf(PromotionScheduleBulkDeleteInvalidSizeException::class.java)
         }
     }

@@ -39,6 +39,9 @@ class AdminPromotionEmployeeServiceTest {
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
     private val policyEvaluator: com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator =
         mockk(relaxed = true)
+    private val teamMemberScheduleCascadeHelper: com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper =
+        mockk(relaxUnitFun = true)
+    private val principal: com.otoki.powersales.auth.web.WebUserPrincipal = mockk(relaxed = true)
 
     private val service: AdminPromotionEmployeeService = AdminPromotionEmployeeService(
         promotionEmployeeRepository = promotionEmployeeRepository,
@@ -46,6 +49,7 @@ class AdminPromotionEmployeeServiceTest {
         employeeRepository = employeeRepository,
         teamMemberScheduleRepository = teamMemberScheduleRepository,
         policyEvaluator = policyEvaluator,
+        teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
     )
 
     // 원본 mockito 테스트가 @MockitoSettings(LENIENT) 였으므로 strict MockK 환경에서
@@ -525,7 +529,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            val result = service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 20)))
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 20)))
             assertThat(result.scheduleDate).isEqualTo(LocalDate.of(2026, 3, 20))
         }
 
@@ -541,7 +545,7 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             // work_type1만 변경 (비핵심필드)
-            val result = service.updateEmployee(1L, 1L, createRequest(workType1 = "행사"))
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(workType1 = "행사"))
             assertThat(result).isNotNull()
         }
 
@@ -553,7 +557,7 @@ class AdminPromotionEmployeeServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
             every { employeeRepository.findById(999L) } returns Optional.empty()
 
-            assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(employeeId = 999L)) }
+            assertThatThrownBy { service.updateEmployee(principal, 1L, 1L, createRequest(employeeId = 999L)) }
                 .isInstanceOf(ClosedEmployeeModificationException::class.java)
         }
 
@@ -565,7 +569,7 @@ class AdminPromotionEmployeeServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
 
 
-            assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 4, 1))) }
+            assertThatThrownBy { service.updateEmployee(principal, 1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 4, 1))) }
                 .isInstanceOf(ClosedEmployeeModificationException::class.java)
         }
 
@@ -580,7 +584,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            val result = service.updateEmployee(1L, 1L, createRequest(employeeId = 999L))
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(employeeId = 999L))
             assertThat(result).isNotNull()
         }
 
@@ -595,7 +599,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            val result = service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 18)))
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 18)))
             assertThat(result).isNotNull()
         }
 
@@ -610,9 +614,9 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            service.updateEmployee(1L, 1L, createRequest(employeeId = 999L))
+            service.updateEmployee(principal, 1L, 1L, createRequest(employeeId = 999L))
 
-            verify { teamMemberScheduleRepository.deleteAllByIdIn(listOf(100L)) }
+            verify { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(100L)) }
             assertThat(pe.teamMemberScheduleId).isNull()
         }
 
@@ -628,11 +632,11 @@ class AdminPromotionEmployeeServiceTest {
             stubRollup()
 
             // employeeId 변경 -> 스케줄 삭제 진행 (team 검증 제거됨)
-            service.updateEmployee(1L, 1L, createRequest(
+            service.updateEmployee(principal, 1L, 1L, createRequest(
                 employeeId = 999L
             ))
 
-            verify(atLeast = 1) { teamMemberScheduleRepository.deleteAllByIdIn(any()) }
+            verify(atLeast = 1) { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, any()) }
         }
 
         @Test
@@ -643,7 +647,7 @@ class AdminPromotionEmployeeServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
 
 
-            assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 5))) }
+            assertThatThrownBy { service.updateEmployee(principal, 1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 5))) }
                 .isInstanceOf(ScheduleDateOutOfRangeException::class.java)
         }
 
@@ -658,7 +662,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            val result = service.updateEmployee(1L, 1L, createRequest(workType3 = null))
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(workType3 = null))
             assertThat(result.workType3).isNull()
         }
 
@@ -673,7 +677,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            val result = service.updateEmployee(1L, 1L, createRequest(workType3 = ""))
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(workType3 = ""))
             assertThat(result.workType3).isNull()
         }
 
@@ -687,7 +691,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            val result = service.updateEmployee(1L, 1L, createRequest(employeeId = null))
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(employeeId = null))
             assertThat(result.employeeCode).isNull()
         }
 
@@ -698,7 +702,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
 
 
-            assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(workType3 = "잘못된값")) }
+            assertThatThrownBy { service.updateEmployee(principal, 1L, 1L, createRequest(workType3 = "잘못된값")) }
                 .isInstanceOf(InvalidWorkType3Exception::class.java)
         }
 
@@ -713,7 +717,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            val result = service.updateEmployee(1L, 1L, createRequest(workStatus = null))
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(workStatus = null))
             assertThat(result.workStatus).isEqualTo("연차")
         }
 
@@ -728,7 +732,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            val result = service.updateEmployee(1L, 1L, createRequest(workType1 = null))
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(workType1 = null))
             assertThat(result.workType1).isEqualTo("행사")
         }
 
@@ -740,7 +744,7 @@ class AdminPromotionEmployeeServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
 
 
-            assertThatThrownBy { service.updateEmployee(1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 25))) }
+            assertThatThrownBy { service.updateEmployee(principal, 1L, 1L, createRequest(scheduleDate = LocalDate.of(2026, 3, 25))) }
                 .isInstanceOf(ScheduleDateOutOfRangeException::class.java)
         }
 
@@ -755,7 +759,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            val result = service.updateEmployee(1L, 1L, createRequest(
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(
                 basePrice = BigDecimal.valueOf(3000L), dailyTargetCount = BigDecimal.valueOf(20L), targetAmount = 99999
             ))
             assertThat(result.targetAmount).isEqualTo(60000)
@@ -772,7 +776,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup()
 
-            val result = service.updateEmployee(1L, 1L, createRequest(
+            val result = service.updateEmployee(principal, 1L, 1L, createRequest(
                 primaryProductAmount = BigDecimal.valueOf(20000L), otherSalesAmount = BigDecimal.valueOf(10000L), actualAmount = 99999
             ))
             assertThat(result.actualAmount).isEqualTo(30000)
@@ -807,7 +811,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
             stubRollup(targetSum = 150000, actualSum = 110000)
 
-            service.updateEmployee(1L, 1L, createRequest(targetAmount = 50000, actualAmount = 30000))
+            service.updateEmployee(principal, 1L, 1L, createRequest(targetAmount = 50000, actualAmount = 30000))
         }
 
         @Test
@@ -819,7 +823,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionRepository.findById(10L) } returns Optional.of(promotion)
             stubRollup(targetSum = 0, actualSum = 0)
 
-            service.deleteEmployee(1L)
+            service.deleteEmployee(principal, 1L)
         }
     }
 
@@ -835,7 +839,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
             stubRollup()
 
-            service.deleteEmployee(1L)
+            service.deleteEmployee(principal, 1L)
             verify { promotionEmployeeRepository.delete(pe) }
         }
 
@@ -847,9 +851,9 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
             stubRollup()
 
-            service.deleteEmployee(1L)
+            service.deleteEmployee(principal, 1L)
 
-            verify { teamMemberScheduleRepository.deleteAllByIdIn(listOf(100L)) }
+            verify { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(100L)) }
             verify { promotionEmployeeRepository.delete(pe) }
         }
 
@@ -859,7 +863,7 @@ class AdminPromotionEmployeeServiceTest {
             val pe = createPe(teamMemberScheduleId = 100L, promoCloseByTm = true)
             every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
 
-            assertThatThrownBy { service.deleteEmployee(1L) }
+            assertThatThrownBy { service.deleteEmployee(principal, 1L) }
                 .isInstanceOf(ClosedEmployeeDeleteException::class.java)
         }
 
@@ -873,9 +877,9 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
             stubRollup()
 
-            service.deleteEmployee(1L)
+            service.deleteEmployee(principal, 1L)
 
-            verify { teamMemberScheduleRepository.deleteAllByIdIn(listOf(100L)) }
+            verify { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(100L)) }
             verify { promotionEmployeeRepository.delete(pe) }
         }
     }
@@ -905,7 +909,7 @@ class AdminPromotionEmployeeServiceTest {
                 createBatchItem(id = 2L, scheduleDate = LocalDate.of(2026, 3, 19))
             ))
 
-            val result = service.batchUpdateEmployees(10L, 1L, request)
+            val result = service.batchUpdateEmployees(principal, 10L, 1L, request)
             assertThat(result.updatedCount).isEqualTo(2)
         }
 
@@ -915,7 +919,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
 
             assertThatThrownBy {
-                service.batchUpdateEmployees(10L, 1L, BatchUpdatePromotionEmployeeRequest(emptyList()))
+                service.batchUpdateEmployees(principal, 10L, 1L, BatchUpdatePromotionEmployeeRequest(emptyList()))
             }.isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
@@ -930,7 +934,7 @@ class AdminPromotionEmployeeServiceTest {
             ))
 
             assertThatThrownBy {
-                service.batchUpdateEmployees(10L, 1L, request)
+                service.batchUpdateEmployees(principal, 10L, 1L, request)
             }.isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
@@ -945,7 +949,7 @@ class AdminPromotionEmployeeServiceTest {
             val request = BatchUpdatePromotionEmployeeRequest(listOf(createBatchItem(id = 999L)))
 
             assertThatThrownBy {
-                service.batchUpdateEmployees(10L, 1L, request)
+                service.batchUpdateEmployees(principal, 10L, 1L, request)
             }.isInstanceOf(BatchValidationException::class.java)
         }
 
@@ -966,7 +970,7 @@ class AdminPromotionEmployeeServiceTest {
             ))
 
             val ex = org.junit.jupiter.api.assertThrows<BatchValidationException> {
-                service.batchUpdateEmployees(10L, 1L, request)
+                service.batchUpdateEmployees(principal, 10L, 1L, request)
             }
             assertThat(ex.errors).hasSize(2)
             assertThat(ex.errors[0].errorCode).isEqualTo("SCHEDULE_DATE_OUT_OF_RANGE")
@@ -991,7 +995,7 @@ class AdminPromotionEmployeeServiceTest {
                 createBatchItem(id = 1L, workStatus = null, workType1 = null)
             ))
 
-            val result = service.batchUpdateEmployees(10L, 1L, request)
+            val result = service.batchUpdateEmployees(principal, 10L, 1L, request)
             assertThat(result.updatedCount).isEqualTo(1)
             assertThat(pe.workStatus?.displayName).isEqualTo("연차")
             assertThat(pe.workType1?.displayName).isEqualTo("행사")
@@ -1011,7 +1015,7 @@ class AdminPromotionEmployeeServiceTest {
             ))
 
             val ex = org.junit.jupiter.api.assertThrows<BatchValidationException> {
-                service.batchUpdateEmployees(10L, 1L, request)
+                service.batchUpdateEmployees(principal, 10L, 1L, request)
             }
             assertThat(ex.errors[0].errorCode).isEqualTo("INVALID_WORK_STATUS")
         }
@@ -1030,7 +1034,7 @@ class AdminPromotionEmployeeServiceTest {
             ))
 
             val ex = org.junit.jupiter.api.assertThrows<BatchValidationException> {
-                service.batchUpdateEmployees(10L, 1L, request)
+                service.batchUpdateEmployees(principal, 10L, 1L, request)
             }
             assertThat(ex.errors[0].errorCode).isEqualTo("SCHEDULE_DATE_OUT_OF_RANGE")
             assertThat(ex.errors[0].itemIndex).isEqualTo(0)
@@ -1051,7 +1055,7 @@ class AdminPromotionEmployeeServiceTest {
             ))
 
             val ex = org.junit.jupiter.api.assertThrows<BatchValidationException> {
-                service.batchUpdateEmployees(10L, 1L, request)
+                service.batchUpdateEmployees(principal, 10L, 1L, request)
             }
             assertThat(ex.errors[0].errorCode).isEqualTo("CLOSED_EMPLOYEE_MODIFICATION")
         }
@@ -1073,7 +1077,7 @@ class AdminPromotionEmployeeServiceTest {
                 createBatchItem(id = 1L, employeeId = 999L)
             ))
 
-            val result = service.batchUpdateEmployees(10L, 1L, request)
+            val result = service.batchUpdateEmployees(principal, 10L, 1L, request)
             assertThat(result.updatedCount).isEqualTo(1)
         }
 
@@ -1094,9 +1098,9 @@ class AdminPromotionEmployeeServiceTest {
                 createBatchItem(id = 1L, employeeId = 888L)
             ))
 
-            service.batchUpdateEmployees(10L, 1L, request)
+            service.batchUpdateEmployees(principal, 10L, 1L, request)
 
-            verify { teamMemberScheduleRepository.deleteAllByIdIn(listOf(100L)) }
+            verify { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(100L)) }
             assertThat(pe.teamMemberScheduleId).isNull()
         }
 
@@ -1118,7 +1122,7 @@ class AdminPromotionEmployeeServiceTest {
                 createBatchItem(id = 1L, workType3 = null)
             ))
 
-            val result = service.batchUpdateEmployees(10L, 1L, request)
+            val result = service.batchUpdateEmployees(principal, 10L, 1L, request)
             assertThat(result.updatedCount).isEqualTo(1)
             assertThat(pe.workType3).isNull()
         }
@@ -1141,7 +1145,7 @@ class AdminPromotionEmployeeServiceTest {
                 createBatchItem(id = 1L, workType3 = "")
             ))
 
-            val result = service.batchUpdateEmployees(10L, 1L, request)
+            val result = service.batchUpdateEmployees(principal, 10L, 1L, request)
             assertThat(result.updatedCount).isEqualTo(1)
             assertThat(pe.workType3).isNull()
         }
@@ -1164,7 +1168,7 @@ class AdminPromotionEmployeeServiceTest {
                 createBatchItem(id = 1L, workType1 = null)
             ))
 
-            service.batchUpdateEmployees(10L, 1L, request)
+            service.batchUpdateEmployees(principal, 10L, 1L, request)
             assertThat(pe.workType1?.displayName).isEqualTo("행사")
         }
 
@@ -1186,7 +1190,7 @@ class AdminPromotionEmployeeServiceTest {
                 createBatchItem(id = 1L, workStatus = null)
             ))
 
-            service.batchUpdateEmployees(10L, 1L, request)
+            service.batchUpdateEmployees(principal, 10L, 1L, request)
             assertThat(pe.workStatus?.displayName).isEqualTo("근무")
         }
 
@@ -1205,7 +1209,7 @@ class AdminPromotionEmployeeServiceTest {
                 createBatchItem(id = 1L, employeeId = null)
             ))
 
-            val result = service.batchUpdateEmployees(10L, 1L, request)
+            val result = service.batchUpdateEmployees(principal, 10L, 1L, request)
             assertThat(result.updatedCount).isEqualTo(1)
             assertThat(pe.employeeId).isNull()
         }
@@ -1224,7 +1228,7 @@ class AdminPromotionEmployeeServiceTest {
             ))
 
             val ex = org.junit.jupiter.api.assertThrows<BatchValidationException> {
-                service.batchUpdateEmployees(10L, 1L, request)
+                service.batchUpdateEmployees(principal, 10L, 1L, request)
             }
             assertThat(ex.errors[0].errorCode).isEqualTo("INVALID_WORK_TYPE3")
         }
@@ -1251,7 +1255,7 @@ class AdminPromotionEmployeeServiceTest {
                 )
             ))
 
-            service.batchUpdateEmployees(10L, 1L, request)
+            service.batchUpdateEmployees(principal, 10L, 1L, request)
             assertThat(pe.targetAmount).isEqualTo(50000)
             assertThat(pe.actualAmount).isEqualTo(35000)
         }
@@ -1275,7 +1279,7 @@ class AdminPromotionEmployeeServiceTest {
                 createBatchItem(id = 1L, targetAmount = 200000, actualAmount = 150000)
             ))
 
-            service.batchUpdateEmployees(10L, 1L, request)
+            service.batchUpdateEmployees(principal, 10L, 1L, request)
         }
     }
 

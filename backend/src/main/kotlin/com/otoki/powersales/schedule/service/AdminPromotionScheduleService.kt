@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.schedule.dto.request.PromotionScheduleBulkDeleteRequest
@@ -45,7 +46,8 @@ class AdminPromotionScheduleService(
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val accountRepository: AccountRepository,
-    private val teamScheduleValidator: TeamScheduleValidator
+    private val teamScheduleValidator: TeamScheduleValidator,
+    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper
 ) {
 
     companion object {
@@ -204,6 +206,7 @@ class AdminPromotionScheduleService(
 
     @Transactional
     fun bulkDelete(
+        principal: WebUserPrincipal,
         promotionId: Long,
         request: PromotionScheduleBulkDeleteRequest
     ): PromotionScheduleBulkDeleteResponse {
@@ -212,6 +215,11 @@ class AdminPromotionScheduleService(
         val ids = request.scheduleIds.distinct()
         if (ids.isEmpty() || ids.size > BULK_MAX_SIZE) {
             throw PromotionScheduleBulkDeleteInvalidSizeException()
+        }
+
+        // Spec #693 Q3 — promoCloseByTm 가드 (단건/cascade 경로와 일관). admin/BRANCH_MANAGER 무관.
+        if (promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(promotionId)) {
+            throw com.otoki.powersales.promotion.exception.ClosedPromotionScheduleBulkDeleteException()
         }
 
         val schedules = teamMemberScheduleRepository.findAllById(ids)
@@ -229,7 +237,8 @@ class AdminPromotionScheduleService(
             }
         }
 
-        teamMemberScheduleRepository.deleteAll(schedules)
+        // Spec #693 — cascade helper 로 validateDisplayMasterLink 가드 + MFEIS batch refresh 일관 적용
+        teamMemberScheduleCascadeHelper.cascadeDeleteSchedules(principal, schedules)
 
         return PromotionScheduleBulkDeleteResponse(deletedCount = schedules.size)
     }

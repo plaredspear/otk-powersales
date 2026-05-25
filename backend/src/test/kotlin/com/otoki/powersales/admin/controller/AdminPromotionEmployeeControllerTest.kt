@@ -170,7 +170,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 200 반환")
         fun updateEmployee_success() {
             val response = createDetailResponse()
-            every { adminPromotionEmployeeService.updateEmployee(eq(1L), eq(1L), any()) } returns response
+            every { adminPromotionEmployeeService.updateEmployee(any(), eq(1L), eq(1L), any()) } returns response
 
             mockMvc.perform(
                 put("/api/v1/admin/promotion-employees/1")
@@ -185,7 +185,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - ID 미존재")
         fun updateEmployee_notFound() {
-            every { adminPromotionEmployeeService.updateEmployee(eq(999L), eq(1L), any()) } throws PromotionEmployeeNotFoundException()
+            every { adminPromotionEmployeeService.updateEmployee(any(), eq(999L), eq(1L), any()) } throws PromotionEmployeeNotFoundException()
 
             mockMvc.perform(
                 put("/api/v1/admin/promotion-employees/999")
@@ -203,7 +203,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 200 반환")
         fun deleteEmployee_success() {
-            every { adminPromotionEmployeeService.deleteEmployee(1L) } just Runs
+            every { adminPromotionEmployeeService.deleteEmployee(any(), 1L) } just Runs
 
             mockMvc.perform(delete("/api/v1/admin/promotion-employees/1"))
                 .andExpect(status().isOk)
@@ -214,7 +214,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - ID 미존재")
         fun deleteEmployee_notFound() {
-            every { adminPromotionEmployeeService.deleteEmployee(999L) } throws PromotionEmployeeNotFoundException()
+            every { adminPromotionEmployeeService.deleteEmployee(any(), 999L) } throws PromotionEmployeeNotFoundException()
 
             mockMvc.perform(delete("/api/v1/admin/promotion-employees/999"))
                 .andExpect(status().isNotFound)

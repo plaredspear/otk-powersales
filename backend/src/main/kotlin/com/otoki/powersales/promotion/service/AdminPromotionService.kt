@@ -18,7 +18,9 @@ import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -33,7 +35,8 @@ class AdminPromotionService(
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val employeeRepository: EmployeeRepository,
-    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper
 ) {
 
     fun getPromotionFormMeta(): PromotionFormMetaResponse {
@@ -159,7 +162,7 @@ class AdminPromotionService(
     }
 
     @Transactional
-    fun updatePromotion(scope: DataScope, id: Long, userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
+    fun updatePromotion(scope: DataScope, principal: WebUserPrincipal, id: Long, userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
         if (id <= 0) throw PromotionInvalidParameterException()
 
         val promotion = findActivePromotion(id)
@@ -196,7 +199,7 @@ class AdminPromotionService(
 
         // 1-3: 거래처 변경 시 스케줄 초기화
         if (promotion.account!!.id != request.accountId) {
-            resetSchedulesForPromotion(id)
+            resetSchedulesForPromotion(principal, id)
         }
 
         val account = accountRepository.findById(request.accountId)
@@ -237,7 +240,7 @@ class AdminPromotionService(
     }
 
     @Transactional
-    fun deletePromotion(scope: DataScope, id: Long) {
+    fun deletePromotion(scope: DataScope, principal: WebUserPrincipal, id: Long) {
         if (id <= 0) throw PromotionInvalidParameterException()
 
         val promotion = findActivePromotion(id)
@@ -249,11 +252,10 @@ class AdminPromotionService(
         }
 
         // 1-4-A: 연쇄 삭제 — 스케줄 + 조원
+        // Spec #693 — cascade helper 로 validateDisplayMasterLink 가드 + MFEIS batch refresh 일관 적용
         val employees = promotionEmployeeRepository.findByPromotionId(id)
         val scheduleIds = employees.mapNotNull { it.teamMemberScheduleId }
-        if (scheduleIds.isNotEmpty()) {
-            teamMemberScheduleRepository.deleteAllByIdIn(scheduleIds)
-        }
+        teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, scheduleIds)
         promotionEmployeeRepository.deleteByPromotionId(id)
 
         promotion.softDelete()
@@ -388,12 +390,11 @@ class AdminPromotionService(
         }
     }
 
-    private fun resetSchedulesForPromotion(promotionId: Long) {
+    // Spec #693 — cascade helper 적용. PE.scheduleId NULL 동기화는 본 함수가 유지 (legacy orphan FK 자연 해소).
+    private fun resetSchedulesForPromotion(principal: WebUserPrincipal, promotionId: Long) {
         val employees = promotionEmployeeRepository.findByPromotionId(promotionId)
         val scheduleIds = employees.mapNotNull { it.teamMemberScheduleId }
-        if (scheduleIds.isNotEmpty()) {
-            teamMemberScheduleRepository.deleteAllByIdIn(scheduleIds)
-        }
+        teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, scheduleIds)
         employees.forEach { pe ->
             if (pe.teamMemberScheduleId != null) {
                 pe.teamMemberScheduleId = null

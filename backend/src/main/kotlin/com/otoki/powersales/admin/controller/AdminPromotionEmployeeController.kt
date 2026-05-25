@@ -62,7 +62,7 @@ class AdminPromotionEmployeeController(
         @PathVariable promotionId: Long,
         @Valid @RequestBody request: BatchUpdatePromotionEmployeeRequest
     ): ResponseEntity<ApiResponse<BatchUpdatePromotionEmployeeResponse>> {
-        val response = adminPromotionEmployeeService.batchUpdateEmployees(promotionId, principal.requireEmployeeId(), request)
+        val response = adminPromotionEmployeeService.batchUpdateEmployees(principal, promotionId, principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -73,7 +73,7 @@ class AdminPromotionEmployeeController(
         @PathVariable id: Long,
         @Valid @RequestBody request: PromotionEmployeeRequest
     ): ResponseEntity<ApiResponse<PromotionEmployeeDetailResponse>> {
-        val response = adminPromotionEmployeeService.updateEmployee(id, principal.requireEmployeeId(), request)
+        val response = adminPromotionEmployeeService.updateEmployee(principal, id, principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -83,7 +83,7 @@ class AdminPromotionEmployeeController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminPromotionEmployeeService.deleteEmployee(id)
+        adminPromotionEmployeeService.deleteEmployee(principal, id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?))
     }
 

@@ -30,6 +30,8 @@ class AdminPromotionEmployeeSharingPolicyTest {
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
     private val policyEvaluator: SharingRulePolicyEvaluator = mockk()
+    private val teamMemberScheduleCascadeHelper: com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper =
+        mockk(relaxUnitFun = true)
 
     private val service = AdminPromotionEmployeeService(
         promotionEmployeeRepository = promotionEmployeeRepository,
@@ -37,6 +39,7 @@ class AdminPromotionEmployeeSharingPolicyTest {
         employeeRepository = employeeRepository,
         teamMemberScheduleRepository = teamMemberScheduleRepository,
         policyEvaluator = policyEvaluator,
+        teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
     )
 
     @Test

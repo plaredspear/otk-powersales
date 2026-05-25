@@ -21,7 +21,9 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import io.mockk.every
@@ -49,6 +51,7 @@ class AdminPromotionServiceTest {
     private val productRepository: ProductRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
+    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper = mockk(relaxUnitFun = true)
 
     private val adminPromotionService: AdminPromotionService = AdminPromotionService(
         promotionRepository = promotionRepository,
@@ -58,9 +61,11 @@ class AdminPromotionServiceTest {
         productRepository = productRepository,
         employeeRepository = employeeRepository,
         teamMemberScheduleRepository = teamMemberScheduleRepository,
+        teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
     )
 
     private val userId = 1L
+    private val principal: WebUserPrincipal = mockk(relaxed = true)
 
     // 원본 mockito 테스트는 일부 케이스에서 promotionProductRepository.save /
     // findByPromotionId 를 stubbing 없이 호출했고 mockito silent default 로 통과했다.
@@ -435,7 +440,7 @@ class AdminPromotionServiceTest {
             every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             val request = createRequest()
-            adminPromotionService.updatePromotion(scope, 1L, userId, request)
+            adminPromotionService.updatePromotion(scope, principal, 1L, userId, request)
         }
 
         @Test
@@ -455,7 +460,7 @@ class AdminPromotionServiceTest {
             every { promotionEmployeeRepository.findByPromotionId(1L) } returns emptyList()
 
             val request = createRequest(accountId = 200)
-            adminPromotionService.updatePromotion(scope, 1L, userId, request)
+            adminPromotionService.updatePromotion(scope, principal, 1L, userId, request)
         }
 
         @Test
@@ -473,7 +478,7 @@ class AdminPromotionServiceTest {
             every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             val request = createRequest(primaryProductId = 300L)
-            adminPromotionService.updatePromotion(scope, 1L, userId, request)
+            adminPromotionService.updatePromotion(scope, principal, 1L, userId, request)
         }
 
         @Test
@@ -494,7 +499,7 @@ class AdminPromotionServiceTest {
             every { promotionProductRepository.save(capture(savedPromotionProduct)) } answers { firstArg<PromotionProduct>() }
 
             val request = createRequest(primaryProductId = 300L)
-            val result = adminPromotionService.updatePromotion(scope, 1L, userId, request)
+            val result = adminPromotionService.updatePromotion(scope, principal, 1L, userId, request)
 
             assertThat(result.primaryProductId).isEqualTo(300L)
 
@@ -528,7 +533,7 @@ class AdminPromotionServiceTest {
             every { promotionProductRepository.save(capture(savedPromotionProduct)) } answers { firstArg<PromotionProduct>() }
 
             val request = createRequest(primaryProductId = 300L)
-            adminPromotionService.updatePromotion(scope, 1L, userId, request)
+            adminPromotionService.updatePromotion(scope, principal, 1L, userId, request)
 
             // 기존 entity 의 productId 가 300 으로 갱신되었는지 + 동일 entity 가 save 되었는지 검증
             verify { promotionProductRepository.save(any()) }
@@ -548,7 +553,7 @@ class AdminPromotionServiceTest {
             every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             val request = createRequest(primaryProductId = 200L)
-            adminPromotionService.updatePromotion(scope, 1L, userId, request)
+            adminPromotionService.updatePromotion(scope, principal, 1L, userId, request)
 
             verify(exactly = 0) { promotionProductRepository.save(any<PromotionProduct>()) }
             verify(exactly = 0) { promotionProductRepository.findByPromotionId(any()) }
@@ -565,7 +570,7 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(otherProduct = "라면's")
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, principal, 1L, userId, request) }
                 .isInstanceOf(InvalidOtherProductException::class.java)
         }
 
@@ -575,7 +580,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion(isDeleted = true)
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, createRequest()) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, principal, 1L, userId, createRequest()) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
@@ -590,7 +595,7 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(promotionType = "없는유형")
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, principal, 1L, userId, request) }
                 .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
@@ -607,7 +612,7 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(accountId = 200)
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, principal, 1L, userId, request) }
                 .isInstanceOf(ClosedPromotionModificationException::class.java)
         }
 
@@ -624,7 +629,7 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, principal, 1L, userId, request) }
                 .isInstanceOf(ClosedPromotionModificationException::class.java)
         }
 
@@ -653,7 +658,7 @@ class AdminPromotionServiceTest {
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
 
             val request = createRequest(accountId = 200)
-            val result = adminPromotionService.updatePromotion(scope, 1L, userId, request)
+            val result = adminPromotionService.updatePromotion(scope, principal, 1L, userId, request)
 
             assertThat(result).isNotNull()
         }
@@ -675,7 +680,7 @@ class AdminPromotionServiceTest {
             every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
-            val result = adminPromotionService.updatePromotion(scope, 1L, userId, request)
+            val result = adminPromotionService.updatePromotion(scope, principal, 1L, userId, request)
 
             assertThat(result).isNotNull()
         }
@@ -693,7 +698,7 @@ class AdminPromotionServiceTest {
 
             val request = createRequest(startDate = LocalDate.of(2026, 3, 5))
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, principal, 1L, userId, request) }
                 .isInstanceOf(ClosedPromotionModificationException::class.java)
         }
 
@@ -712,7 +717,7 @@ class AdminPromotionServiceTest {
             // startDate를 3/13으로 → minDate(3/12) 이후이므로 충돌
             val request = createRequest(startDate = LocalDate.of(2026, 3, 13))
 
-            assertThatThrownBy { adminPromotionService.updatePromotion(scope, 1L, userId, request) }
+            assertThatThrownBy { adminPromotionService.updatePromotion(scope, principal, 1L, userId, request) }
                 .isInstanceOf(DateRangeConflictException::class.java)
         }
 
@@ -739,9 +744,9 @@ class AdminPromotionServiceTest {
             every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
 
-            adminPromotionService.updatePromotion(scope, 1L, userId, createRequest(accountId = 200))
+            adminPromotionService.updatePromotion(scope, principal, 1L, userId, createRequest(accountId = 200))
 
-            verify { teamMemberScheduleRepository.deleteAllByIdIn(listOf(100L)) }
+            verify { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(100L)) }
             assertThat(pe.teamMemberScheduleId).isNull()
         }
     }
@@ -770,10 +775,10 @@ class AdminPromotionServiceTest {
             every { promotionEmployeeRepository.findByPromotionId(1L) } returns listOf(pe)
             every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
 
-            adminPromotionService.deletePromotion(scope, 1L)
+            adminPromotionService.deletePromotion(scope, principal, 1L)
 
             assertThat(promotion.isDeleted).isTrue()
-            verify { teamMemberScheduleRepository.deleteAllByIdIn(listOf(100L)) }
+            verify { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(100L)) }
             verify { promotionEmployeeRepository.deleteByPromotionId(1L) }
             verify { promotionRepository.save(promotion) }
         }
@@ -788,7 +793,7 @@ class AdminPromotionServiceTest {
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
             every { promotionEmployeeRepository.existsByPromotionIdAndPromoCloseByTmTrue(1L) } returns true
 
-            assertThatThrownBy { adminPromotionService.deletePromotion(scope, 1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(scope, principal, 1L) }
                 .isInstanceOf(ClosedPromotionDeleteException::class.java)
         }
 
@@ -798,14 +803,14 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion(isDeleted = true)
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
-            assertThatThrownBy { adminPromotionService.deletePromotion(scope, 1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(scope, principal, 1L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
 
         @Test
         @DisplayName("음수 ID -> PromotionInvalidParameterException")
         fun deletePromotion_negativeId() {
-            assertThatThrownBy { adminPromotionService.deletePromotion(scope, -1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(scope, principal, -1L) }
                 .isInstanceOf(PromotionInvalidParameterException::class.java)
         }
 
@@ -818,7 +823,7 @@ class AdminPromotionServiceTest {
             val promotion = createPromotion(costCenterCode = "1101")
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
 
-            assertThatThrownBy { adminPromotionService.deletePromotion(scope, 1L) }
+            assertThatThrownBy { adminPromotionService.deletePromotion(scope, principal, 1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
         }
     }

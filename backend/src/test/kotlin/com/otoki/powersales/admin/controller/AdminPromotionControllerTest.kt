@@ -266,7 +266,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 행사마스터 수정")
         fun updatePromotion_success() {
             val response = createDetailResponse()
-            every { adminPromotionService.updatePromotion(any(), eq(1L), eq(1L), any()) } returns response
+            every { adminPromotionService.updatePromotion(any(), any(), eq(1L), eq(1L), any()) } returns response
 
             mockMvc.perform(
                 put("/api/v1/admin/promotions/1")
@@ -296,7 +296,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 미존재 행사마스터 수정")
         fun updatePromotion_notFound() {
-            every { adminPromotionService.updatePromotion(any(), eq(999L), eq(1L), any()) } throws PromotionNotFoundException()
+            every { adminPromotionService.updatePromotion(any(), any(), eq(999L), eq(1L), any()) } throws PromotionNotFoundException()
 
             mockMvc.perform(
                 put("/api/v1/admin/promotions/999")
@@ -315,7 +315,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - soft delete")
         fun deletePromotion_success() {
-            every { adminPromotionService.deletePromotion(any(), eq(1L)) } just Runs
+            every { adminPromotionService.deletePromotion(any(), any(), eq(1L)) } just Runs
 
             mockMvc.perform(delete("/api/v1/admin/promotions/1"))
                 .andExpect(status().isOk)
@@ -325,7 +325,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 미존재 행사마스터 삭제")
         fun deletePromotion_notFound() {
-            every { adminPromotionService.deletePromotion(any(), eq(999L)) } throws PromotionNotFoundException()
+            every { adminPromotionService.deletePromotion(any(), any(), eq(999L)) } throws PromotionNotFoundException()
 
             mockMvc.perform(delete("/api/v1/admin/promotions/999"))
                 .andExpect(status().isNotFound)
@@ -335,7 +335,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 권한 외 삭제")
         fun deletePromotion_forbidden() {
-            every { adminPromotionService.deletePromotion(any(), eq(1L)) } throws PromotionForbiddenException()
+            every { adminPromotionService.deletePromotion(any(), any(), eq(1L)) } throws PromotionForbiddenException()
 
             mockMvc.perform(delete("/api/v1/admin/promotions/1"))
                 .andExpect(status().isForbidden)

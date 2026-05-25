@@ -65,7 +65,7 @@ class AdminPromotionScheduleController(
         @PathVariable promotionId: Long,
         @Valid @RequestBody request: PromotionScheduleBulkDeleteRequest
     ): ResponseEntity<ApiResponse<PromotionScheduleBulkDeleteResponse>> {
-        val response = adminPromotionScheduleService.bulkDelete(promotionId, request)
+        val response = adminPromotionScheduleService.bulkDelete(principal, promotionId, request)
         return ResponseEntity.ok(ApiResponse.success(response, "일정이 삭제되었습니다"))
     }
 }

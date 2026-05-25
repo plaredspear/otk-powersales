@@ -19,8 +19,10 @@ import com.otoki.powersales.promotion.repository.PromotionRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -33,6 +35,7 @@ class AdminPromotionEmployeeService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val policyEvaluator: SharingRulePolicyEvaluator,
+    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper,
 ) {
 
     /**
@@ -133,7 +136,7 @@ class AdminPromotionEmployeeService(
     }
 
     @Transactional
-    fun updateEmployee(id: Long, userId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
+    fun updateEmployee(principal: WebUserPrincipal, id: Long, userId: Long, request: PromotionEmployeeRequest): PromotionEmployeeDetailResponse {
         val pe = findPromotionEmployeeById(id)
 
         // employeeId로 사원 해소
@@ -163,7 +166,7 @@ class AdminPromotionEmployeeService(
 
         // 1-5: 핵심필드 변경 시 스케줄 삭제
         removeScheduleOnCriticalFieldChange(
-            pe, resolved?.id, request.scheduleDate, normalizedWorkType3
+            principal, pe, resolved?.id, request.scheduleDate, normalizedWorkType3
         )
 
         pe.update(
@@ -191,6 +194,7 @@ class AdminPromotionEmployeeService(
 
     @Transactional
     fun batchUpdateEmployees(
+        principal: WebUserPrincipal,
         promotionId: Long,
         userId: Long,
         request: BatchUpdatePromotionEmployeeRequest
@@ -245,7 +249,7 @@ class AdminPromotionEmployeeService(
             val resolved = resolveEmployee(item.employeeId)
 
             removeScheduleOnCriticalFieldChange(
-                pe, resolved?.id, item.scheduleDate, normalizedWorkType3
+                principal, pe, resolved?.id, item.scheduleDate, normalizedWorkType3
             )
 
             pe.update(
@@ -282,7 +286,7 @@ class AdminPromotionEmployeeService(
     }
 
     @Transactional
-    fun deleteEmployee(id: Long) {
+    fun deleteEmployee(principal: WebUserPrincipal, id: Long) {
         val pe = findPromotionEmployeeById(id)
         val promotionId = pe.promotionId
 
@@ -293,8 +297,10 @@ class AdminPromotionEmployeeService(
         }
 
         // 1-4-B: 연쇄 삭제 — 스케줄 삭제
-        if (pe.teamMemberScheduleId != null) {
-            teamMemberScheduleRepository.deleteAllByIdIn(listOf(pe.teamMemberScheduleId!!))
+        // Spec #693 — cascade helper 로 validateDisplayMasterLink 가드 + MFEIS refresh 일관 적용
+        val scheduleId = pe.teamMemberScheduleId
+        if (scheduleId != null) {
+            teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(scheduleId))
         }
 
         promotionEmployeeRepository.delete(pe)
@@ -470,20 +476,22 @@ class AdminPromotionEmployeeService(
         if (criticalChanged && !isAdmin) throw ClosedEmployeeModificationException()
     }
 
+    // Spec #693 — cascade helper 적용. PE.scheduleId NULL 동기화는 본 함수가 유지.
     private fun removeScheduleOnCriticalFieldChange(
+        principal: WebUserPrincipal,
         pe: PromotionEmployee,
         newEmployeeId: Long?,
         scheduleDate: java.time.LocalDate?,
         workType3: String?
     ) {
-        if (pe.teamMemberScheduleId == null) return
+        val scheduleId = pe.teamMemberScheduleId ?: return
 
         val criticalChanged = pe.employeeId != newEmployeeId ||
             pe.scheduleDate != scheduleDate ||
             pe.workType3?.displayName != workType3
 
         if (criticalChanged) {
-            teamMemberScheduleRepository.deleteAllByIdIn(listOf(pe.teamMemberScheduleId!!))
+            teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(scheduleId))
             pe.teamMemberScheduleId = null
         }
     }
