@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getFkResolveProgress,
+  runNaturalKeyFkResolve,
   runPicklistColumn,
   startFkResolve,
   type FkResolveProgress,
+  type NaturalKeyFkResponse,
   type PicklistColumn,
   type PicklistResponse,
 } from '@/api/admin/sfMigration';
@@ -36,5 +38,11 @@ export function useStartFkResolve() {
 export function useRunPicklistColumn() {
   return useMutation<PicklistResponse, Error, PicklistColumn>({
     mutationFn: runPicklistColumn,
+  });
+}
+
+export function useRunNaturalKeyFkResolve() {
+  return useMutation<NaturalKeyFkResponse>({
+    mutationFn: runNaturalKeyFkResolve,
   });
 }

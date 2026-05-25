@@ -16,6 +16,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
   useFkResolveProgress,
+  useRunNaturalKeyFkResolve,
   useRunPicklistColumn,
   useStartFkResolve,
 } from '@/hooks/admin/useSfMigration';
@@ -23,6 +24,7 @@ import type {
   FkResolveProgress,
   FkResolveStatus,
   FkResolveTableResult,
+  NaturalKeyFkSubstepResult,
   PicklistSubstepResult,
 } from '@/api/admin/sfMigration';
 
@@ -67,6 +69,7 @@ export default function SfMigrationPage() {
   const progressQuery = useFkResolveProgress();
   const startMutation = useStartFkResolve();
   const runPicklistColumnMutation = useRunPicklistColumn();
+  const runNaturalKeyFkMutation = useRunNaturalKeyFkResolve();
 
   const progress = progressQuery.data;
   const isRunning = progress?.status === 'RUNNING';
@@ -75,6 +78,10 @@ export default function SfMigrationPage() {
   const picklistResult = runPicklistColumnMutation.data;
   const picklistError = runPicklistColumnMutation.error as Error | null;
   const picklistPending = runPicklistColumnMutation.isPending;
+
+  const naturalKeyResult = runNaturalKeyFkMutation.data;
+  const naturalKeyError = runNaturalKeyFkMutation.error as Error | null;
+  const naturalKeyPending = runNaturalKeyFkMutation.isPending;
 
   const tableColumns: ColumnsType<FkResolveTableResult> = useMemo(
     () => [
@@ -226,6 +233,75 @@ export default function SfMigrationPage() {
           </Card>
         </>
       )}
+
+      <Card title="Natural Key FK 해소" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          sfid prefix 가 아닌 자연 키 (developer_name / name / 외부 sfid 컬럼) 기반으로
+          FK id 컬럼을 채운다. <Text code>permission_set_flags</Text> /{' '}
+          <Text code>permission_set_assignment</Text> / <Text code>profile_flags</Text> /{' '}
+          <Text code>sharing_rule_target</Text> 등의 권한 평탄화에 필요한 FK 가 여기서
+          연결된다. <Text strong>위 FK Resolve 가 완료된 후</Text> 1회 실행. 동기 실행 —
+          보통 수 초 내 완료.
+        </Paragraph>
+
+        <Space>
+          <Button
+            type="primary"
+            loading={naturalKeyPending}
+            disabled={naturalKeyPending}
+            onClick={() => {
+              runNaturalKeyFkMutation.mutate();
+            }}
+          >
+            실행
+          </Button>
+        </Space>
+
+        {naturalKeyError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="Natural Key FK 해소 실패"
+            description={naturalKeyError.message}
+            closable
+            onClose={() => {
+              runNaturalKeyFkMutation.reset();
+            }}
+          />
+        )}
+
+        {naturalKeyResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{naturalKeyResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="누적 적용 row">
+                {naturalKeyResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            <Table<NaturalKeyFkSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '대상', dataIndex: 'label', key: 'label' },
+                {
+                  title: '적용 row',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={naturalKeyResult.results}
+            />
+          </div>
+        )}
+      </Card>
 
       <Card title="Stage 2-B — Derived 캐시 동기화" style={{ marginTop: 24 }}>
         <Paragraph type="secondary">

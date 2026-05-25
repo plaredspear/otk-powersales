@@ -50,6 +50,37 @@ export async function getFkResolveProgress(): Promise<FkResolveProgress> {
 }
 
 /**
+ * Stage 2-A Natural Key FK Resolve substep — sfid prefix 가 아닌 자연 키
+ * (developer_name / name / 외부 sfid 컬럼) 기반 FK id 채움.
+ *
+ * `fk` substep 직후 1회 호출 — `permission_set_flags` / `permission_set_assignment` /
+ * `profile_flags` / `sharing_rule_target` 등의 FK 컬럼을 채워 `SfPermissionResolver` 가
+ * 권한 비트를 평탄화할 수 있게 한다.
+ *
+ * 동기 실행 — `NATURAL_KEY_FK_MAPPINGS` 9 entry + 전용 분기 2건 일괄 UPDATE.
+ */
+export interface NaturalKeyFkSubstepResult {
+  label: string;
+  rowsAffected: number;
+}
+
+export interface NaturalKeyFkResponse {
+  substep: string;
+  results: NaturalKeyFkSubstepResult[];
+  totalRowsAffected: number;
+}
+
+export async function runNaturalKeyFkResolve(): Promise<NaturalKeyFkResponse> {
+  const res = await client.post<ApiResponse<NaturalKeyFkResponse>>(
+    '/api/v1/admin/sf-migration/stage2/fk-natural-key',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'Natural Key FK Resolve 실행에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
  * Stage 2-B (derived 캐시 동기화) substep — User.cost_center_code 동기화 1건만 운영.
  *
  * Employee.role / Employee.professional_promotion_team / User.profile_type 변환은 폐기됨
