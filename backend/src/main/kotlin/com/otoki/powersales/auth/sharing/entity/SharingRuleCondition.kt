@@ -28,6 +28,9 @@ class SharingRuleCondition(
     @Column(name = "sharing_rule_id", nullable = false)
     var sharingRuleId: Long,
 
+    @Column(name = "sharing_rule_s_object_name", nullable = false, length = 80)
+    var sharingRuleSObjectName: String,
+
     @Column(name = "field", nullable = false, length = 80)
     var field: String,
 

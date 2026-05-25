@@ -155,15 +155,14 @@ class SfFkResolveTablesTest {
     inner class NaturalKeyFk {
 
         @Test
-        @DisplayName("sharing_rule_condition.sharing_rule_developer_name → sharing_rule.developer_name → sharing_rule_id")
-        fun sharingRuleConditionByDeveloperName() {
-            val spec = NATURAL_KEY_FK_MAPPINGS.find {
-                it.sourceTable == "sharing_rule_condition" && it.sourceColumn == "sharing_rule_developer_name"
-            }
-            assertThat(spec).isNotNull
-            assertThat(spec!!.refTable).isEqualTo("sharing_rule")
-            assertThat(spec.refColumn).isEqualTo("developer_name")
-            assertThat(spec.targetIdColumn).isEqualTo("sharing_rule_id")
+        @DisplayName("sharing_rule_condition / sharing_rule_target — NATURAL_KEY_FK_MAPPINGS 에서 제외 (복합 자연 키 전용 method 처리)")
+        fun sharingRuleSubtableExcluded() {
+            // (s_object_name, developer_name) 복합 키 필요 — 단일 NaturalKeyFkSpec 표현 불가.
+            // SfMigrationStage2NaturalKeyFkService.resolveSharingRuleSubtableFk() 전용 method 처리.
+            val conditionSpec = NATURAL_KEY_FK_MAPPINGS.find { it.sourceTable == "sharing_rule_condition" }
+            val targetSpec = NATURAL_KEY_FK_MAPPINGS.find { it.sourceTable == "sharing_rule_target" }
+            assertThat(conditionSpec).isNull()
+            assertThat(targetSpec).isNull()
         }
 
         @Test
@@ -190,12 +189,13 @@ class SfFkResolveTablesTest {
         }
 
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 9 entry — #790 sharing 4 + #794 record type 2 + #795 FLS 2 + #798 PSA 1")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 7 entry — #790 sharing 2 (subtable 2개 제외) + #794 record type 2 + #795 FLS 2 + #798 PSA 1")
         fun naturalKeyMappingsCount() {
-            // sharing_rule_condition + sharing_rule_target + user_role_hierarchy_snapshot + profile_flags +
+            // user_role_hierarchy_snapshot + profile_flags +
             // profile_record_type + permission_set_record_type + profile_field_permission + permission_set_field_permission +
-            // permission_set_assignment = 9
-            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(9)
+            // permission_set_assignment = 7
+            // (sharing_rule_condition + sharing_rule_target 은 (s_object_name, developer_name) 복합 키라 전용 method 처리)
+            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(7)
         }
 
         @Test
@@ -315,9 +315,9 @@ class SfFkResolveTablesTest {
         }
 
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 9 entry — spec #790 4 + #794 2 + #795 2 + #798 1")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 7 entry — spec #790 2 (subtable 2개 제외) + #794 2 + #795 2 + #798 1")
         fun naturalKeyMappingsCountAfterPSA() {
-            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(9)
+            assertThat(NATURAL_KEY_FK_MAPPINGS).hasSize(7)
         }
     }
 }

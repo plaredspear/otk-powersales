@@ -30,6 +30,9 @@ class SharingRuleTarget(
     @Column(name = "sharing_rule_id", nullable = false)
     var sharingRuleId: Long,
 
+    @Column(name = "sharing_rule_s_object_name", nullable = false, length = 80)
+    var sharingRuleSObjectName: String,
+
     @Column(name = "target_type", nullable = false, length = 30)
     var targetType: String,
 

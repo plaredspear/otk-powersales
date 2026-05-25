@@ -110,8 +110,8 @@ CSVWriter(PrintWriter(sharingRuleCsv)).use { ruleW ->
         CSVWriter(PrintWriter(sharingRuleTargetCsv)).use { tgtW ->
 
             ruleW.writeNext(arrayOf("developerName", "sObjectName", "ruleType", "label", "accessLevel", "includeOwnedByAll"))
-            condW.writeNext(arrayOf("parentDeveloperName", "field", "operator", "value", "conditionOrder", "logicConnector"))
-            tgtW.writeNext(arrayOf("parentDeveloperName", "targetType", "targetDeveloperName"))
+            condW.writeNext(arrayOf("sObjectName", "parentDeveloperName", "field", "operator", "value", "conditionOrder", "logicConnector"))
+            tgtW.writeNext(arrayOf("sObjectName", "parentDeveloperName", "targetType", "targetDeveloperName"))
 
             if (sharingRulesDir.isDirectory) {
                 sharingRulesDir.listFiles { f -> f.name.endsWith(".sharingRules-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
@@ -136,7 +136,7 @@ CSVWriter(PrintWriter(sharingRuleCsv)).use { ruleW ->
                                 val operation = item.childText("operation") ?: return@forEachIndexed
                                 val value = item.childText("value")
                                 condW.writeNext(arrayOf(
-                                    fullName, field, operation, value ?: "",
+                                    sObjectName, fullName, field, operation, value ?: "",
                                     (order + 1).toString(), elem.childText("booleanFilter"),
                                 ))
                                 sharingRuleConditionCount++
@@ -154,7 +154,7 @@ CSVWriter(PrintWriter(sharingRuleCsv)).use { ruleW ->
                                 "allInternalUsers" -> "ALL_INTERNAL_USERS" to ""
                                 else -> return@let
                             }
-                            tgtW.writeNext(arrayOf(fullName, targetType, targetDevName))
+                            tgtW.writeNext(arrayOf(sObjectName, fullName, targetType, targetDevName))
                             sharingRuleTargetCount++
                         }
                     }

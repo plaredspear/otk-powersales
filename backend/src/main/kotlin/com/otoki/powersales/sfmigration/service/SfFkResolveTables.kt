@@ -73,22 +73,10 @@ internal data class NaturalKeyFkSpec(
 )
 
 internal val NATURAL_KEY_FK_MAPPINGS: List<NaturalKeyFkSpec> = listOf(
-    // sharing_rule_condition.sharing_rule_developer_name → sharing_rule.sharing_rule_id
-    NaturalKeyFkSpec(
-        sourceTable = "sharing_rule_condition",
-        sourceColumn = "sharing_rule_developer_name",
-        refTable = "sharing_rule",
-        refColumn = "developer_name",
-        targetIdColumn = "sharing_rule_id",
-    ),
-    // sharing_rule_target.sharing_rule_developer_name → sharing_rule.sharing_rule_id
-    NaturalKeyFkSpec(
-        sourceTable = "sharing_rule_target",
-        sourceColumn = "sharing_rule_developer_name",
-        refTable = "sharing_rule",
-        refColumn = "developer_name",
-        targetIdColumn = "sharing_rule_id",
-    ),
+    // sharing_rule_condition / sharing_rule_target 의 sharing_rule_id resolve 는
+    // (s_object_name, developer_name) 복합 자연 키 필요 — 단일 NaturalKeyFkSpec 표현 불가.
+    // SfMigrationStage2NaturalKeyFkService.resolveSharingRuleSubtableFk() 전용 method 처리.
+    //
     // user_role_hierarchy_snapshot.developer_name → user_role.user_role_id
     NaturalKeyFkSpec(
         sourceTable = "user_role_hierarchy_snapshot",

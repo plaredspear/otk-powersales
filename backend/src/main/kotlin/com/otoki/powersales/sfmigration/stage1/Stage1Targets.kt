@@ -1251,6 +1251,7 @@ object Stage1Targets {
         tableName = "sharing_rule_condition",
         csvFileName = "sharing-rule-condition.csv",
         fields = listOf(
+            FieldMapping("sObjectName", "sharing_rule_s_object_name", nullable = false),
             FieldMapping("parentDeveloperName", "sharing_rule_developer_name", nullable = false),
             FieldMapping("field", "field", nullable = false),
             FieldMapping("operator", "operator", nullable = false),
@@ -1266,6 +1267,7 @@ object Stage1Targets {
         tableName = "sharing_rule_target",
         csvFileName = "sharing-rule-target.csv",
         fields = listOf(
+            FieldMapping("sObjectName", "sharing_rule_s_object_name", nullable = false),
             FieldMapping("parentDeveloperName", "sharing_rule_developer_name", nullable = false),
             FieldMapping("targetType", "target_type", nullable = false),
             FieldMapping("targetDeveloperName", "target_developer_name"),

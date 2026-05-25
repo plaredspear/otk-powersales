@@ -68,6 +68,13 @@ class SfMigrationStage2NaturalKeyFkService(
             }
         }
 
+        // sharing_rule_condition / sharing_rule_target 의 sharing_rule_id resolve —
+        // (s_object_name, developer_name) 복합 자연 키 필요 (단일 NaturalKeyFkSpec 으로 표현 불가).
+        // SF retrieve 의 같은 developerName SharingRule 이 여러 sObject 의 sharingRules-meta.xml
+        // 에 정의될 수 있으므로 developer_name 단일 키 매칭 시 unique constraint
+        // idx_sharing_rule_condition_rule_order_unique 위반.
+        totalUpdated += resolveSharingRuleSubtableFk(results)
+
         // sharing_rule_target — polymorphic target_id resolve.
         // 단일 NaturalKeyFkSpec 으로 표현 불가 (target_type 별 ref table 분기) — 전용 method 처리.
         totalUpdated += resolveSharingRuleTarget(results)
@@ -85,6 +92,81 @@ class SfMigrationStage2NaturalKeyFkService(
             results = results,
             totalRowsAffected = totalUpdated,
         )
+    }
+
+    /**
+     * sharing_rule_condition / sharing_rule_target 의 sharing_rule_id 채움 —
+     * (s_object_name, developer_name) 복합 자연 키로 sharing_rule lookup.
+     *
+     * 한 retrieve 산출물 안에서 같은 developerName 의 SharingRule 이 여러 sObject 의
+     * sharingRules-meta.xml 에 동시 정의될 수 있다 (예: X5452 가 Account /
+     * DisplayWorkScheduleMaster__c / MonthlyFemaleEmployeeIntegrationSchedule__c
+     * 3개 sObject 의 sharingRules 에 정의 → sharing_rule 3 row 생성).
+     *
+     * 단일 컬럼 (developer_name) 매칭 시 첫 번째 sharing_rule.sharing_rule_id 가 모든
+     * 동명 condition row 에 채워져 (sharing_rule_id, condition_order) unique index
+     * 위반 발생. 두 컬럼 (s_object_name, developer_name) 복합 키 매칭으로 해소.
+     */
+    private fun resolveSharingRuleSubtableFk(results: MutableList<SubstepResult>): Int {
+        var totalUpdated = 0
+
+        val conditionSql = """
+            UPDATE powersales.sharing_rule_condition s
+            SET sharing_rule_id = r.sharing_rule_id
+            FROM powersales.sharing_rule r
+            WHERE r.s_object_name = s.sharing_rule_s_object_name
+              AND r.developer_name = s.sharing_rule_developer_name
+              AND s.sharing_rule_id IS NULL
+        """.trimIndent()
+        val conditionUpdated = em.createNativeQuery(conditionSql).executeUpdate()
+        results += SubstepResult(
+            label = "sharing_rule_condition.(s_object_name, developer_name) → sharing_rule.sharing_rule_id",
+            rowsAffected = conditionUpdated,
+        )
+        totalUpdated += conditionUpdated
+        log.info("[fk-natural-key] sharing_rule_condition.sharing_rule_id : updated={}", conditionUpdated)
+
+        val targetSql = """
+            UPDATE powersales.sharing_rule_target s
+            SET sharing_rule_id = r.sharing_rule_id
+            FROM powersales.sharing_rule r
+            WHERE r.s_object_name = s.sharing_rule_s_object_name
+              AND r.developer_name = s.sharing_rule_developer_name
+              AND s.sharing_rule_id IS NULL
+        """.trimIndent()
+        val targetUpdated = em.createNativeQuery(targetSql).executeUpdate()
+        results += SubstepResult(
+            label = "sharing_rule_target.(s_object_name, developer_name) → sharing_rule.sharing_rule_id",
+            rowsAffected = targetUpdated,
+        )
+        totalUpdated += targetUpdated
+        log.info("[fk-natural-key] sharing_rule_target.sharing_rule_id : updated={}", targetUpdated)
+
+        val unmatchedConditionSql = """
+            SELECT COUNT(*) FROM powersales.sharing_rule_condition
+            WHERE sharing_rule_id IS NULL AND sharing_rule_developer_name IS NOT NULL
+        """.trimIndent()
+        val unmatchedCondition = (em.createNativeQuery(unmatchedConditionSql).singleResult as Number).toLong()
+        if (unmatchedCondition > 0) {
+            log.warn(
+                "[fk-natural-key] sharing_rule_condition : {} row 매칭 실패 — (s_object_name, developer_name) 매칭 안 됨",
+                unmatchedCondition,
+            )
+        }
+
+        val unmatchedTargetSql = """
+            SELECT COUNT(*) FROM powersales.sharing_rule_target
+            WHERE sharing_rule_id IS NULL AND sharing_rule_developer_name IS NOT NULL
+        """.trimIndent()
+        val unmatchedTarget = (em.createNativeQuery(unmatchedTargetSql).singleResult as Number).toLong()
+        if (unmatchedTarget > 0) {
+            log.warn(
+                "[fk-natural-key] sharing_rule_target : {} row 매칭 실패 — (s_object_name, developer_name) 매칭 안 됨",
+                unmatchedTarget,
+            )
+        }
+
+        return totalUpdated
     }
 
     /**

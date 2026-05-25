@@ -124,6 +124,7 @@ class SharingRuleRepositoryTest {
             sharingRuleConditionRepository.saveAndFlush(
                 SharingRuleCondition(
                     sharingRuleId = rule.id,
+                    sharingRuleSObjectName = "Account",
                     field = "AccountGroup__c",
                     operator = "includes",
                     value = "1000,1010,3000",
@@ -134,6 +135,7 @@ class SharingRuleRepositoryTest {
             sharingRuleConditionRepository.saveAndFlush(
                 SharingRuleCondition(
                     sharingRuleId = rule.id,
+                    sharingRuleSObjectName = "Account",
                     field = "BranchCode__c",
                     operator = "equals",
                     value = "GHA01",
@@ -145,6 +147,7 @@ class SharingRuleRepositoryTest {
             sharingRuleTargetRepository.saveAndFlush(
                 SharingRuleTarget(
                     sharingRuleId = rule.id,
+                    sharingRuleSObjectName = "Account",
                     targetType = "ROLE_AND_SUBORDINATES_INTERNAL",
                     targetSfid = null,
                 ),

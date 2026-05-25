@@ -27,22 +27,22 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
     inner class BuildUpdateSql {
 
         @Test
-        @DisplayName("sharing_rule_condition.sharing_rule_developer_name → sharing_rule.sharing_rule_id")
-        fun sharingRuleCondition() {
+        @DisplayName("profile_flags.profile_name → profile.profile_id")
+        fun profileFlags() {
             val spec = NaturalKeyFkSpec(
-                sourceTable = "sharing_rule_condition",
-                sourceColumn = "sharing_rule_developer_name",
-                refTable = "sharing_rule",
-                refColumn = "developer_name",
-                targetIdColumn = "sharing_rule_id",
+                sourceTable = "profile_flags",
+                sourceColumn = "profile_name",
+                refTable = "profile",
+                refColumn = "name",
+                targetIdColumn = "profile_id",
             )
             val sql = service.buildUpdateSql(spec)
-            assertThat(sql).contains("UPDATE powersales.sharing_rule_condition s")
-            assertThat(sql).contains("SET sharing_rule_id = r.sharing_rule_id")
-            assertThat(sql).contains("FROM powersales.sharing_rule r")
-            assertThat(sql).contains("WHERE r.developer_name = s.sharing_rule_developer_name")
+            assertThat(sql).contains("UPDATE powersales.profile_flags s")
+            assertThat(sql).contains("SET profile_id = r.profile_id")
+            assertThat(sql).contains("FROM powersales.profile r")
+            assertThat(sql).contains("WHERE r.name = s.profile_name")
             // Q5 — 멱등성 단언
-            assertThat(sql).contains("AND s.sharing_rule_id IS NULL")
+            assertThat(sql).contains("AND s.profile_id IS NULL")
         }
 
         @Test
@@ -84,7 +84,7 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
     inner class RunNaturalKeyFkResolve {
 
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 9 entry + sharing_rule_target 2 분기 + permission_set_flags.sfid 1건 모두에 대해 UPDATE 12회 + COUNT 20회")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 7 entry + sharing_rule subtable 2 분기 + sharing_rule_target 2 분기 + permission_set_flags.sfid 1건")
         fun allMappingsExecuted() {
             val updateQuery = mockk<Query>()
             every { updateQuery.executeUpdate() } returns 10
@@ -98,16 +98,16 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
             val response = service.runNaturalKeyFkResolve()
 
             assertThat(response.substep).isEqualTo("fk-natural-key")
-            // 9 NaturalKey + 2 sharing_rule_target (ROLE*/GROUP) + 1 permission_set_flags.sfid = 12 SubstepResult
-            assertThat(response.results).hasSize(NATURAL_KEY_FK_MAPPINGS.size + 3)
-            assertThat(response.totalRowsAffected).isEqualTo((NATURAL_KEY_FK_MAPPINGS.size + 3) * 10)
+            // 7 NaturalKey + 2 sharing_rule subtable fk (condition/target) + 2 sharing_rule_target target_type 분기 (ROLE*/GROUP) + 1 permission_set_flags.sfid = 12 SubstepResult
+            assertThat(response.results).hasSize(NATURAL_KEY_FK_MAPPINGS.size + 5)
+            assertThat(response.totalRowsAffected).isEqualTo((NATURAL_KEY_FK_MAPPINGS.size + 5) * 10)
 
-            // UPDATE: 9 (NaturalKey) + 2 (sharing_rule_target ROLE*/GROUP) + 1 (permission_set_flags.sfid) = 12회
-            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size + 3) {
+            // UPDATE: 7 (NaturalKey) + 2 (subtable fk) + 2 (target ROLE*/GROUP) + 1 (psf sfid) = 12회
+            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size + 5) {
                 em.createNativeQuery(match<String> { it.trimStart().startsWith("UPDATE") })
             }
-            // SELECT COUNT: 9 NaturalKey × 2 (전/후) + 1 (sharing_rule_target unmatched) + 1 (permission_set_flags.sfid unmatched) = 20회
-            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 2) {
+            // SELECT COUNT: 7 NaturalKey × 2 (전/후) + 2 (subtable fk unmatched) + 1 (target unmatched) + 1 (psf unmatched) = 18회
+            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 4) {
                 em.createNativeQuery(match<String> { it.trimStart().startsWith("SELECT") })
             }
         }
@@ -127,7 +127,8 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
 
             val labels = response.results.map { it.label }
             assertThat(labels).contains(
-                "sharing_rule_condition.sharing_rule_developer_name → sharing_rule.sharing_rule_id",
+                "sharing_rule_condition.(s_object_name, developer_name) → sharing_rule.sharing_rule_id",
+                "sharing_rule_target.(s_object_name, developer_name) → sharing_rule.sharing_rule_id",
                 "profile_flags.profile_name → profile.profile_id",
                 "permission_set_assignment.permission_set_sfid → permission_set_flags.permission_set_flags_id",
                 "sharing_rule_target.target_developer_name (target_type=ROLE*) → user_role.user_role_id",
