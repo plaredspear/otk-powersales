@@ -362,4 +362,50 @@ class Stage1TargetsTest {
             assertThat(psaIdx).isGreaterThan(order.indexOf("PermissionSetFlags"))
         }
     }
+
+    @Nested
+    @DisplayName("preClear 멱등성 — DB 자연 키 NULL entity 만 true")
+    inner class PreClear {
+
+        /**
+         * Stage1 시점 DB 자연 키 (UNIQUE 제약 컬럼) 가 NULL 이라 INSERT ... ON CONFLICT
+         * DO NOTHING 의 충돌 매칭이 일어나지 않는 entity 목록. 재실행 시 row 누적되므로
+         * preClear = true 강제. dev 운영 중 PSF/PSF_flags/PSRT 의 재실행 누적 사건 (#800
+         * 후속) 원인 분석으로 도출.
+         */
+        private val PRE_CLEAR_REQUIRED = setOf(
+            "SharingRuleCondition",
+            "SharingRuleTarget",
+            "PermissionSetFlags",
+            "ProfileRecordType",
+            "PermissionSetRecordType",
+            "ProfileFieldPermission",
+            "PermissionSetFieldPermission",
+        )
+
+        @Test
+        @DisplayName("7 entity 모두 preClear = true")
+        fun preClearRequiredEntitiesAllTrue() {
+            PRE_CLEAR_REQUIRED.forEach { targetName ->
+                val meta = Stage1Targets.get(targetName)
+                    ?: error("$targetName 가 Stage1Targets 에 미등록")
+                assertThat(meta.preClear)
+                    .withFailMessage("$targetName 은 preClear = true 필요")
+                    .isTrue
+            }
+        }
+
+        @Test
+        @DisplayName("sfid UNIQUE 가 NOT NULL 로 채워지는 entity 는 preClear = false (멱등성 ON CONFLICT 보장)")
+        fun sfidPopulatedEntitiesPreClearFalse() {
+            listOf("User", "Account", "Product", "Employee", "PermissionSet", "GroupMember", "PermissionSetAssignment")
+                .forEach { targetName ->
+                    val meta = Stage1Targets.get(targetName)
+                        ?: error("$targetName 가 Stage1Targets 에 미등록")
+                    assertThat(meta.preClear)
+                        .withFailMessage("$targetName 은 sfid 자연 키 보유 — preClear = false 필요")
+                        .isFalse
+                }
+        }
+    }
 }

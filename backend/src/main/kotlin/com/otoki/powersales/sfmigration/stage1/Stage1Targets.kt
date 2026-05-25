@@ -1259,6 +1259,8 @@ object Stage1Targets {
             FieldMapping("conditionOrder", "condition_order", nullable = false),
             FieldMapping("logicConnector", "logic_connector"),
         ),
+        // UNIQUE (sharing_rule_id, condition_order) — Stage1 시점 sharing_rule_id NULL → ON CONFLICT 미발동
+        preClear = true,
     )
 
     private val SHARING_RULE_TARGET = EntityMetadata(
@@ -1272,6 +1274,9 @@ object Stage1Targets {
             FieldMapping("targetType", "target_type", nullable = false),
             FieldMapping("targetDeveloperName", "target_developer_name"),
         ),
+        // partial UNIQUE (sharing_rule_id, target_type, target_sfid) WHERE target_sfid IS NOT NULL —
+        // Stage1 시점 sharing_rule_id NULL → 매칭 안 됨
+        preClear = true,
     )
 
     private val USER_ROLE_HIERARCHY_SNAPSHOT = EntityMetadata(
@@ -1314,6 +1319,9 @@ object Stage1Targets {
             FieldMapping("permissionsModifyAllData", "permissions_modify_all_data", nullable = false, nullPlaceholder = "false"),
             FieldMapping("objectPermissionsJson", "object_permissions"),
         ),
+        // partial UNIQUE on sfid WHERE sfid IS NOT NULL — Stage1 시점 sfid NULL (Stage2 fk substep 후 채움).
+        // permission_set_name 자체에 UNIQUE 없음 → preClear 필요.
+        preClear = true,
     )
 
     // ─────────────────────────────────────────────────────────
@@ -1429,6 +1437,8 @@ object Stage1Targets {
             FieldMapping("visible", "visible", nullable = false, nullPlaceholder = "false"),
             FieldMapping("isDefault", "is_default", nullable = false, nullPlaceholder = "false"),
         ),
+        // partial UNIQUE (profile_id, record_type_id) WHERE 둘 다 NOT NULL — Stage1 시점 둘 다 NULL
+        preClear = true,
     )
 
     private val PERMISSION_SET_RECORD_TYPE = EntityMetadata(
@@ -1443,6 +1453,8 @@ object Stage1Targets {
             FieldMapping("visible", "visible", nullable = false, nullPlaceholder = "false"),
             FieldMapping("isDefault", "is_default", nullable = false, nullPlaceholder = "false"),
         ),
+        // partial UNIQUE (permission_set_id, record_type_id) WHERE 둘 다 NOT NULL — Stage1 시점 둘 다 NULL
+        preClear = true,
     )
 
     // ─────────────────────────────────────────────────────────
@@ -1461,6 +1473,8 @@ object Stage1Targets {
             FieldMapping("readable", "readable", nullable = false, nullPlaceholder = "false"),
             FieldMapping("editable", "editable", nullable = false, nullPlaceholder = "false"),
         ),
+        // partial UNIQUE (profile_id, sobject_name, field_name) WHERE profile_id IS NOT NULL — Stage1 시점 profile_id NULL
+        preClear = true,
     )
 
     private val PERMISSION_SET_FIELD_PERMISSION = EntityMetadata(
@@ -1475,6 +1489,8 @@ object Stage1Targets {
             FieldMapping("readable", "readable", nullable = false, nullPlaceholder = "false"),
             FieldMapping("editable", "editable", nullable = false, nullPlaceholder = "false"),
         ),
+        // partial UNIQUE (permission_set_id, sobject_name, field_name) WHERE permission_set_id IS NOT NULL — Stage1 시점 permission_set_id NULL
+        preClear = true,
     )
 
     private val ALL: Map<String, EntityMetadata> = listOf(

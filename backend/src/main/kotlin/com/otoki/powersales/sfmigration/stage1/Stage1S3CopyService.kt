@@ -204,6 +204,20 @@ class Stage1S3CopyService(
         dataSource.connection.use { conn ->
             conn.autoCommit = false
             try {
+                // preClear: DB 자연 키 (UNIQUE) 가 Stage1 시점에 NULL 이라
+                // INSERT ... ON CONFLICT DO NOTHING 의 충돌 매칭이 발동하지 않는 entity
+                // (sharing_rule_condition, permission_set_field_permission 등 7종) 는
+                // 재실행 시 row 가 누적된다. 적재 시작 전 target 을 비워 멱등성 강제.
+                // CASCADE — child FK 가 본 테이블 PK 를 참조하는 경우 (예: permission_set_flags ←
+                // permission_set_assignment) 같이 비워진다. DEPENDENCY_ORDER 상 parent 가
+                // child 보다 먼저 적재되므로 통상 child 는 비어 있어 무해. PSF/PSA 처럼 부모만
+                // 단독 재적재하는 경우 child 도 함께 재적재 의무 (운영 절차).
+                if (meta.preClear) {
+                    conn.createStatement().use { st ->
+                        st.executeUpdate("TRUNCATE TABLE $fullyQualified RESTART IDENTITY CASCADE")
+                    }
+                    log.info("[stage1-copy] preClear: TRUNCATE {} (RESTART IDENTITY CASCADE)", fullyQualified)
+                }
                 conn.createStatement().use { st ->
                     st.executeUpdate("DROP TABLE IF EXISTS $stagingTable")
                     st.executeUpdate(

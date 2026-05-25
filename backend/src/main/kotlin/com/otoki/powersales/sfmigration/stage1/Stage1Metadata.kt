@@ -39,4 +39,23 @@ data class EntityMetadata(
      * 예: user.password (NOT NULL) → "" placeholder.
      */
     val extraStaticColumns: Map<String, String?> = emptyMap(),
+    /**
+     * Stage 1 재실행 시 기존 row 를 모두 비우고 새로 적재할지 여부.
+     *
+     * true 가 필요한 entity 의 공통 패턴: **DB 자연 키 (UNIQUE 제약) 컬럼이 Stage1
+     * 적재 시점에 NULL** 이라 INSERT ... ON CONFLICT DO NOTHING 의 충돌 매칭이
+     * 일어나지 않아 재실행 시 row 가 누적된다 (PG 의 NULL distinct 정책).
+     *
+     * 예:
+     * - sharing_rule_condition: UNIQUE (sharing_rule_id, condition_order) — Stage1 시점 sharing_rule_id NULL
+     * - permission_set_field_permission: partial UNIQUE WHERE permission_set_id IS NOT NULL — Stage1 시점 permission_set_id NULL
+     * - permission_set_flags: sfid UNIQUE — Stage1 시점 sfid NULL (Stage2 fk substep 후 채움)
+     *
+     * sfid 등 자연 키 UNIQUE 가 Stage1 시점에 NOT NULL 로 채워지는 entity 는
+     * ON CONFLICT 가 멱등성 보장 → preClear = false 기본값 유지.
+     *
+     * 실행: 적재 service 가 본 entity 의 target table 을 TRUNCATE ... RESTART
+     * IDENTITY CASCADE 로 비운 후 staging → INSERT 진행 (같은 트랜잭션 내).
+     */
+    val preClear: Boolean = false,
 )
