@@ -80,11 +80,20 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
     }
 
     @Nested
-    @DisplayName("runNaturalKeyFkResolve — 9 매핑 일괄 적용")
+    @DisplayName("runNaturalKeyFkResolve — 전체 substep 일괄 적용")
     inner class RunNaturalKeyFkResolve {
 
+        // SubstepResult 총 개수:
+        //   - NATURAL_KEY_FK_MAPPINGS 8 entry × 1 UPDATE
+        //   - resolveSharingRuleSubtableFk: condition + target = 2
+        //   - resolveSharingRuleTarget: ROLE* + GROUP = 2
+        //   - resolveRecordTypeVisibilityFk: permission_set_record_type + profile_record_type = 2
+        //   - resolvePermissionSetFlagsSfid: 1
+        // = NATURAL_KEY_FK_MAPPINGS.size + 7
+        private val expectedExtraSubsteps = 7
+
         @Test
-        @DisplayName("NATURAL_KEY_FK_MAPPINGS 7 entry + sharing_rule subtable 2 분기 + sharing_rule_target 2 분기 + permission_set_flags.sfid 1건")
+        @DisplayName("NATURAL_KEY_FK_MAPPINGS 8 entry + sharing_rule subtable 2 + sharing_rule_target 2 + record_type_visibility 2 + permission_set_flags.sfid 1")
         fun allMappingsExecuted() {
             val updateQuery = mockk<Query>()
             every { updateQuery.executeUpdate() } returns 10
@@ -98,22 +107,26 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
             val response = service.runNaturalKeyFkResolve()
 
             assertThat(response.substep).isEqualTo("fk-natural-key")
-            // 7 NaturalKey + 2 sharing_rule subtable fk (condition/target) + 2 sharing_rule_target target_type 분기 (ROLE*/GROUP) + 1 permission_set_flags.sfid = 12 SubstepResult
-            assertThat(response.results).hasSize(NATURAL_KEY_FK_MAPPINGS.size + 5)
-            assertThat(response.totalRowsAffected).isEqualTo((NATURAL_KEY_FK_MAPPINGS.size + 5) * 10)
+            assertThat(response.results).hasSize(NATURAL_KEY_FK_MAPPINGS.size + expectedExtraSubsteps)
+            assertThat(response.totalRowsAffected).isEqualTo((NATURAL_KEY_FK_MAPPINGS.size + expectedExtraSubsteps) * 10)
 
-            // UPDATE: 7 (NaturalKey) + 2 (subtable fk) + 2 (target ROLE*/GROUP) + 1 (psf sfid) = 12회
-            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size + 5) {
+            // UPDATE 호출 횟수 = SubstepResult 총 개수
+            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size + expectedExtraSubsteps) {
                 em.createNativeQuery(match<String> { it.trimStart().startsWith("UPDATE") })
             }
-            // SELECT COUNT: 7 NaturalKey × 2 (전/후) + 2 (subtable fk unmatched) + 1 (target unmatched) + 1 (psf unmatched) = 18회
-            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 4) {
+            // SELECT COUNT 호출 횟수:
+            //   - NATURAL_KEY_FK_MAPPINGS 8 × 2 (전/후 unmatched 측정)
+            //   - resolveSharingRuleSubtableFk unmatched WARN: 2 (condition/target)
+            //   - resolveSharingRuleTarget unmatched WARN: 1 (전체)
+            //   - resolveRecordTypeVisibilityFk unmatched WARN: 2 (psrt/prt)
+            //   - resolvePermissionSetFlagsSfid unmatched WARN: 1
+            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 6) {
                 em.createNativeQuery(match<String> { it.trimStart().startsWith("SELECT") })
             }
         }
 
         @Test
-        @DisplayName("결과 SubstepResult.label 은 'sourceTable.sourceColumn → refTable.targetIdColumn' 패턴 + sharing_rule_target 전용 분기 label")
+        @DisplayName("결과 SubstepResult.label — 핵심 substep label 검증 (RecordType / sharing_rule subtable / sharing_rule_target / psf.sfid)")
         fun substepResultLabelFormat() {
             val updateQuery = mockk<Query>()
             every { updateQuery.executeUpdate() } returns 0
@@ -131,8 +144,12 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
                 "sharing_rule_target.(s_object_name, developer_name) → sharing_rule.sharing_rule_id",
                 "profile_flags.profile_name → profile.profile_id",
                 "permission_set_assignment.permission_set_sfid → permission_set_flags.permission_set_flags_id",
+                "permission_set_flags.permission_set_name → permission_set.permission_set_id",
                 "sharing_rule_target.target_developer_name (target_type=ROLE*) → user_role.user_role_id",
                 "sharing_rule_target.target_developer_name (target_type=GROUP) → group.group_id",
+                "permission_set_record_type.(sobject_name, record_type_developer_name) → record_type.record_type_id",
+                "profile_record_type.(sobject_name, record_type_developer_name) → record_type.record_type_id",
+                "permission_set_flags.permission_set_name → permission_set.sfid",
             )
         }
 
@@ -151,6 +168,32 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
 
             assertThat(response.totalRowsAffected).isEqualTo(0)
             assertThat(response.results).allMatch { it.rowsAffected == 0 }
+        }
+
+        @Test
+        @DisplayName("호출 순서 회귀 — resolvePermissionSetFlagsSfid 는 NATURAL_KEY_FK_MAPPINGS loop *이전* 실행. 직전 버전은 loop 직후라 PSA.permission_set_flags_id 가 JOIN 실패로 NULL 잔존 (운영 dev 997행 사고)")
+        fun resolvePermissionSetFlagsSfidRunsBeforePsaMapping() {
+            val orderedLabels = mutableListOf<String>()
+            val updateQuery = mockk<Query>()
+            every { updateQuery.executeUpdate() } returns 0
+            val countQuery = mockk<Query>()
+            every { countQuery.singleResult } returns 0L
+
+            every { em.createNativeQuery(match<String> { it.trimStart().startsWith("UPDATE") }) } returns updateQuery
+            every { em.createNativeQuery(match<String> { it.trimStart().startsWith("SELECT") }) } returns countQuery
+
+            val response = service.runNaturalKeyFkResolve()
+            orderedLabels.addAll(response.results.map { it.label })
+
+            val psfSfidIdx = orderedLabels.indexOf(
+                "permission_set_flags.permission_set_name → permission_set.sfid",
+            )
+            val psaMappingIdx = orderedLabels.indexOf(
+                "permission_set_assignment.permission_set_sfid → permission_set_flags.permission_set_flags_id",
+            )
+            assertThat(psfSfidIdx).isGreaterThanOrEqualTo(0)
+            assertThat(psaMappingIdx).isGreaterThanOrEqualTo(0)
+            assertThat(psfSfidIdx).isLessThan(psaMappingIdx)
         }
     }
 }

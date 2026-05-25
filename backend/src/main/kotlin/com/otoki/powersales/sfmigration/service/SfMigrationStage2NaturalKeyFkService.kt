@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional
 /**
  * Stage 2-B Natural Key FK Resolve — sfid 가 아닌 자연 키 (developer_name / name / sfid 컬럼) 기반 FK id 채움.
  *
- * `NATURAL_KEY_FK_MAPPINGS` 의 9 entry 일괄 SQL UPDATE 적용 — sfid prefix path 와 분리.
+ * `NATURAL_KEY_FK_MAPPINGS` 의 8 entry 일괄 SQL UPDATE 적용 + 복합 자연키 / polymorphic 전용
+ * method (sharing_rule_subtable / sharing_rule_target / permission_set_flags.sfid /
+ * record_type_visibility) — sfid prefix path 와 분리.
  *
  * ## 결정 사항 정합 (spec #800 Q1~Q5 옵션 1)
  * - Q1: Service 분리 — `SfMigrationStage2FkService` 와 책임 분리
@@ -40,6 +42,13 @@ class SfMigrationStage2NaturalKeyFkService(
         var totalUpdated = 0
 
         log.info("[fk-natural-key] start — {} mappings", NATURAL_KEY_FK_MAPPINGS.size)
+
+        // permission_set_flags.permission_set_sfid 채움을 NATURAL_KEY_FK_MAPPINGS loop 이전에 호출.
+        // 본 메서드가 채우는 permission_set_flags.permission_set_sfid 가
+        // PSA → permission_set_flags lookup (NATURAL_KEY_FK_MAPPINGS table #8) 의 ref 컬럼.
+        // 직전 코드는 loop *직후* 호출하여 PSA 의 permission_set_flags_id 가 JOIN 실패로 NULL 잔존
+        // (운영 dev: 997행 모두 NULL → web admin "부여된 사용자 (0)" 사고).
+        totalUpdated += resolvePermissionSetFlagsSfid(results)
 
         for (spec in NATURAL_KEY_FK_MAPPINGS) {
             val quotedSource = quoteIdentifier(spec.sourceTable)
@@ -79,11 +88,11 @@ class SfMigrationStage2NaturalKeyFkService(
         // 단일 NaturalKeyFkSpec 으로 표현 불가 (target_type 별 ref table 분기) — 전용 method 처리.
         totalUpdated += resolveSharingRuleTarget(results)
 
-        // permission_set_flags.permission_set_sfid 채움 — source/ref 컬럼명이 비대칭
-        // (source = permission_set_sfid, ref = sfid) 라 단일 NaturalKeyFkSpec 으로 표현 불가.
-        // permission_set 의 PSA fk substep (permission_set_assignment.permission_set_sfid → permission_set_flags_id)
-        // 직전에 실행되어야 하므로 본 메서드가 NATURAL_KEY_FK_MAPPINGS 일괄 적용 직후 호출.
-        totalUpdated += resolvePermissionSetFlagsSfid(results)
+        // permission_set_record_type / profile_record_type 의 record_type_id 채움 —
+        // (sobject_name, record_type_developer_name) 복합 자연 키로 record_type lookup.
+        // record_type 의 unique key 는 (sobject_name, developer_name) 라 단일 컬럼 매칭 시
+        // developer_name 충돌 (예: "common_RecordType" 가 여러 sObject 에 동시 정의).
+        totalUpdated += resolveRecordTypeVisibilityFk(results)
 
         log.info("[fk-natural-key] done — total {} rows updated", totalUpdated)
 
@@ -234,13 +243,86 @@ class SfMigrationStage2NaturalKeyFkService(
     }
 
     /**
+     * permission_set_record_type / profile_record_type 의 record_type_id 채움.
+     *
+     * Stage1 적재 시점에는 두 entity 모두 (sobject_name, record_type_developer_name) 만 박혀 있고
+     * record_type_id (FK to record_type.record_type_id) 는 NULL.
+     *
+     * record_type 의 자연 unique key 는 (sobject_name, developer_name) — 단일 컬럼 매칭 시
+     * 같은 developer_name 이 여러 sObject 에 동시 정의될 수 있어 (예: "common_RecordType" 가
+     * Competitors__c / NewProduct__c / Others_Marketing__c / ProductVaule__c 4개 sObject 에서 사용)
+     * 잘못된 record_type_id 가 박힐 위험. 두 컬럼 복합 매칭으로 해소.
+     *
+     * 본 method 가 없으면 PermissionSetDetailPage 의 recordTypeVisibilities 렌더링 누락
+     * (운영 dev: permission_set_record_type 63행 모두 record_type_id NULL).
+     */
+    private fun resolveRecordTypeVisibilityFk(results: MutableList<SubstepResult>): Int {
+        var totalUpdated = 0
+
+        val psSql = """
+            UPDATE powersales.permission_set_record_type s
+            SET record_type_id = r.record_type_id
+            FROM powersales.record_type r
+            WHERE r.sobject_name = s.sobject_name
+              AND r.developer_name = s.record_type_developer_name
+              AND s.record_type_id IS NULL
+        """.trimIndent()
+        val psUpdated = em.createNativeQuery(psSql).executeUpdate()
+        results += SubstepResult(
+            label = "permission_set_record_type.(sobject_name, record_type_developer_name) → record_type.record_type_id",
+            rowsAffected = psUpdated,
+        )
+        totalUpdated += psUpdated
+        log.info("[fk-natural-key] permission_set_record_type.record_type_id : updated={}", psUpdated)
+
+        val pfSql = """
+            UPDATE powersales.profile_record_type s
+            SET record_type_id = r.record_type_id
+            FROM powersales.record_type r
+            WHERE r.sobject_name = s.sobject_name
+              AND r.developer_name = s.record_type_developer_name
+              AND s.record_type_id IS NULL
+        """.trimIndent()
+        val pfUpdated = em.createNativeQuery(pfSql).executeUpdate()
+        results += SubstepResult(
+            label = "profile_record_type.(sobject_name, record_type_developer_name) → record_type.record_type_id",
+            rowsAffected = pfUpdated,
+        )
+        totalUpdated += pfUpdated
+        log.info("[fk-natural-key] profile_record_type.record_type_id : updated={}", pfUpdated)
+
+        // 매칭 부재 row WARN
+        for ((table, label) in listOf(
+            "permission_set_record_type" to "permission_set_record_type",
+            "profile_record_type" to "profile_record_type",
+        )) {
+            val unmatchedSql = """
+                SELECT COUNT(*) FROM powersales.$table
+                WHERE record_type_id IS NULL
+                  AND record_type_developer_name IS NOT NULL
+                  AND sobject_name IS NOT NULL
+            """.trimIndent()
+            val unmatched = (em.createNativeQuery(unmatchedSql).singleResult as Number).toLong()
+            if (unmatched > 0) {
+                log.warn(
+                    "[fk-natural-key] {} : {} row 매칭 실패 — (sobject_name, record_type_developer_name) 가 record_type 에 없음",
+                    label, unmatched,
+                )
+            }
+        }
+
+        return totalUpdated
+    }
+
+    /**
      * permission_set_flags.permission_set_sfid 채움 — XML 메타 출처라 Stage1 시점 NULL.
      *
      * permission_set_flags.permission_set_name → permission_set.name lookup 후
      * permission_set.sfid 를 permission_set_flags.permission_set_sfid 에 채움.
      *
-     * 후속 PSA fk substep (permission_set_assignment.permission_set_sfid → permission_set_flags_id)
-     * 이 본 메서드 결과에 의존.
+     * 후속 PSA fk substep (permission_set_assignment.permission_set_sfid → permission_set_flags_id,
+     * NATURAL_KEY_FK_MAPPINGS table #8) 이 본 메서드 결과에 의존하므로 NATURAL_KEY_FK_MAPPINGS
+     * loop *이전* 에 호출되어야 한다 (runNaturalKeyFkResolve 첫 substep).
      */
     private fun resolvePermissionSetFlagsSfid(results: MutableList<SubstepResult>): Int {
         val sql = """
