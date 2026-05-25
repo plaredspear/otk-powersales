@@ -303,6 +303,8 @@ class Stage1S3CopyService(
                 val inserted = conn.createStatement().use { st -> st.executeUpdate(insSql) }
                 conn.createStatement().use { st -> st.executeUpdate("DROP TABLE IF EXISTS $stagingTable") }
 
+                applyPostCopyHook(conn, meta)
+
                 conn.commit()
                 val elapsed = System.currentTimeMillis() - startedAt
                 log.info(
@@ -326,6 +328,28 @@ class Stage1S3CopyService(
 
     private fun quoteIdent(name: String): String =
         if (name == "user") "\"user\"" else name
+
+    /**
+     * entity 별 적재 후 후처리. 현재는 Profile 만 — SF Admin Profile (SOQL Name='System Administrator' 또는 'Admin')
+     * row 의 name 을 운영 alias '시스템 관리자' 로 rename 하여 [com.otoki.powersales.auth.permission.SystemAdminProfilePolicy]
+     * 의 한글 SoT 와 정합. profile.sfid UNIQUE 제약 보존 + sfid 있는 row 만 대상 (LocalDataInitializer 보조 row 보호).
+     *
+     * 멱등: 이미 '시스템 관리자' 로 rename 된 row 는 WHERE 절에서 자동 제외.
+     */
+    private fun applyPostCopyHook(conn: java.sql.Connection, meta: EntityMetadata) {
+        if (meta.targetName != "Profile") return
+        val updated = conn.createStatement().use { st ->
+            st.executeUpdate(
+                "UPDATE ${meta.schemaName}.profile " +
+                    "SET name = '시스템 관리자' " +
+                    "WHERE sfid IS NOT NULL " +
+                    "  AND name IN ('System Administrator', 'Admin')"
+            )
+        }
+        if (updated > 0) {
+            log.info("[stage1-copy] Profile post-hook — SF Admin → '시스템 관리자' rename rows={}", updated)
+        }
+    }
 }
 
 data class Stage1CopyResult(

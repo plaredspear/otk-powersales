@@ -33,6 +33,8 @@ class LocalDataInitializerTest {
 
     private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk(relaxed = true)
 
+    private val profileFlagsRepository: com.otoki.powersales.auth.sharing.repository.ProfileFlagsRepository = mockk(relaxed = true)
+
     private val passwordEncoder: PasswordEncoder = mockk(relaxed = true)
 
     private val agreementWordRepository: AgreementWordRepository = mockk()
@@ -48,6 +50,7 @@ class LocalDataInitializerTest {
         userRepository,
         userProvisioningService,
         profileRepository,
+        profileFlagsRepository,
         passwordEncoder,
         agreementWordRepository,
         transactionTemplate,

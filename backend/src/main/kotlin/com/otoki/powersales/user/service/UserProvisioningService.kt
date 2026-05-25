@@ -166,7 +166,7 @@ class UserProvisioningService(
      * SF AppAuthority picklist value → Profile.id 산출.
      *
      * [SystemAdminProfilePolicy.profileNameForRole] 의 분기를 Profile.name → id 로 변환.
-     * Profile entity 부재 시 null — ProfileBootstrapRunner 가 부팅 시점 보장하지만 동시성 시점에는 fallback null 허용.
+     * Profile entity 부재 시 null — SF Stage1 Profile 적재 (dev/prod) 또는 LocalDataInitializer (local) 가 보장하지만 동시성 시점에는 fallback null 허용.
      * 운영 환경에서는 발령(Appointment) 후처리 시 [EmployeeProfileResolver.resolveProfileId] 가
      * Org__c + jikchak 기반으로 재산출하여 정정한다.
      */

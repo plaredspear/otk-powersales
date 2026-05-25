@@ -58,13 +58,13 @@ class EmployeeProfileResolver(
     /**
      * 사원의 Profile.id 산출 — Profile.name → id lookup.
      *
-     * Profile entity 부재 시 null 반환 — 호출자가 silently skip 또는 ProfileBootstrapRunner sync 의존.
+     * Profile entity 부재 시 null 반환 — 호출자가 silently skip. dev/prod 는 SF Stage1 Profile 적재가, local 은 LocalDataInitializer 가 12종 보장.
      */
     fun resolveProfileId(employee: Employee): Long? {
         val name = resolveProfileName(employee)
         val profile = profileRepository.findByName(name)
         if (profile == null) {
-            log.warn("[EmployeeProfileResolver] Profile.name='{}' lookup 실패 — ProfileBootstrapRunner sync 의존", name)
+            log.warn("[EmployeeProfileResolver] Profile.name='{}' lookup 실패 — SF Stage1 적재 또는 LocalDataInitializer 시드 누락 의심", name)
             return null
         }
         return profile.id
