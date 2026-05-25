@@ -1,6 +1,7 @@
 package com.otoki.powersales.sfmigration.stage1
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -375,6 +376,9 @@ class Stage1TargetsTest {
          *
          * 본 테스트는 scripts/ 디렉토리가 backend cwd 의 부모에 있다는 worktree 구조를 전제.
          * Gradle 실행 cwd 가 backend/ 이므로 ../scripts/sf-data-migration/ 로 접근.
+         *
+         * Docker 빌드 컨텍스트는 backend/ 만 COPY 하므로 scripts/ 가 없다.
+         * 이 경우 Assumptions 로 skip — 로컬 worktree 에서는 drift guard 동작, Docker 에서는 skip.
          */
         private val scriptsDir = File(System.getProperty("user.dir"))
             .parentFile
@@ -392,10 +396,11 @@ class Stage1TargetsTest {
          * 두 스크립트 모두 hardcode 방식 — backend Stage1Targets 와 별도 SoT 가 없다.
          */
         private fun collectExtractedCsvNames(): Set<String> {
-            check(extractCsvSh.isFile) { "extract-csv.sh 미존재: ${extractCsvSh.absolutePath}" }
-            check(extractSharingMetaKts.isFile) {
-                "extract-sharing-meta.main.kts 미존재: ${extractSharingMetaKts.absolutePath}"
-            }
+            assumeTrue(extractCsvSh.isFile, "extract-csv.sh 미존재 (Docker 빌드 컨텍스트) — skip: ${extractCsvSh.absolutePath}")
+            assumeTrue(
+                extractSharingMetaKts.isFile,
+                "extract-sharing-meta.main.kts 미존재 (Docker 빌드 컨텍스트) — skip: ${extractSharingMetaKts.absolutePath}",
+            )
             val result = mutableSetOf<String>()
             val outDirPattern = Regex("""\${'$'}OUT_DIR/([a-z][a-z_]*\.csv)""")
             val litPattern = Regex(""""([a-z][a-z-]*\.csv)"""")
