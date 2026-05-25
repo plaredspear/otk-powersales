@@ -192,6 +192,60 @@ class AdminMonthlyInputAdequacyServiceTest {
         }
 
         @Test
+        fun `동일 사원·거래처 × 다른 workingCategory3 는 행 분리 (레거시 동등 — 행 키에 workingCategory3 포함)`() {
+            val acc = account(1, "ACC001", "거래처A", AccountType.DISCOUNT_STORE)
+            // 같은 사원 E001 이 1월=고정 / 2월=격고 로 동일 거래처에 투입 (운영 데이터 변동 케이스)
+            val janFixedItem = item(
+                accountCode = "ACC001",
+                accountName = "거래처A",
+                employeeCode = "E001",
+                employeeName = "홍길동",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                workingCategory5 = "상시"
+            )
+            val febBifurcationItem = item(
+                accountCode = "ACC001",
+                accountName = "거래처A",
+                employeeCode = "E001",
+                employeeName = "홍길동",
+                workingCategory1 = "진열",
+                workingCategory3 = "격고",
+                workingCategory5 = "상시"
+            )
+            every { adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(1), any()) } returns listOf(suitability(acc, listOf(janFixedItem)))
+            every { adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(2), any()) } returns listOf(suitability(acc, listOf(febBifurcationItem)))
+            (3..12).forEach { m ->
+                every { adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(m), any()) } returns emptyList()
+            }
+            every {
+                adminSalesComparisonService.judgeSuitability(
+                    workingCategory3 = any(),
+                    avgClosingAmount = any(),
+                    totalDisplayConverted = any(),
+                    fixedStandard = any(),
+                    fixedMin = any(),
+                    bifurcationStandard = any(),
+                    bifurcationMin = any()
+                )
+} returns Suitability.FIT.displayName
+
+            val response = service.getMatrix(allScope, year = 2025, costCenterCodes = listOf("CC001"), workingCategory3Filter = null)
+
+            // 행 2건 (고정 / 격고) 분리
+            assertThat(response.items).hasSize(2)
+            val workTypes = response.items.map { it.workingCategory3 }.toSet()
+            assertThat(workTypes).containsExactlyInAnyOrder("고정", "격고")
+            // 고정 행은 1월만 적합 / 격고 행은 2월만 적합
+            val fixedRow = response.items.first { it.workingCategory3 == "고정" }
+            val bifurcationRow = response.items.first { it.workingCategory3 == "격고" }
+            assertThat(fixedRow.monthlySuitability[0]).isEqualTo(Suitability.FIT.displayName)
+            assertThat(fixedRow.monthlySuitability[1]).isEmpty()
+            assertThat(bifurcationRow.monthlySuitability[0]).isEmpty()
+            assertThat(bifurcationRow.monthlySuitability[1]).isEqualTo(Suitability.FIT.displayName)
+        }
+
+        @Test
         fun `workingCategory3 필터 — 고정만 선택하면 격고 사원 제외`() {
             val acc = account(1, "ACC001", "거래처A", AccountType.DISCOUNT_STORE)
             val fixedItem = item(
