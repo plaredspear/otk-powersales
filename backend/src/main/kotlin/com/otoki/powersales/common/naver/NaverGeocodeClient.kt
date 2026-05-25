@@ -7,8 +7,6 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.time.Duration
 
 /**
@@ -52,11 +50,9 @@ class NaverGeocodeClient(
      * @return 응답 DTO. 호출 실패 / 응답 파싱 실패 시 `null`.
      */
     fun geocode(address: String): NaverGeocodeResponse? {
-        val encoded = URLEncoder.encode(address, StandardCharsets.UTF_8)
-        val uri = "$ENDPOINT?query=$encoded"
         return try {
             restClient.get()
-                .uri(uri)
+                .uri(ENDPOINT) { builder -> builder.queryParam("query", address).build() }
                 .header("X-NCP-APIGW-API-KEY-ID", clientId)
                 .header("X-NCP-APIGW-API-KEY", clientSecret)
                 .retrieve()
@@ -75,11 +71,9 @@ class NaverGeocodeClient(
      * @return 응답 본문 raw JSON 문자열. 호출 실패 시 `null`.
      */
     fun geocodeRaw(address: String): String? {
-        val encoded = URLEncoder.encode(address, StandardCharsets.UTF_8)
-        val uri = "$ENDPOINT?query=$encoded"
         return try {
             restClient.get()
-                .uri(uri)
+                .uri(ENDPOINT) { builder -> builder.queryParam("query", address).build() }
                 .header("X-NCP-APIGW-API-KEY-ID", clientId)
                 .header("X-NCP-APIGW-API-KEY", clientSecret)
                 .retrieve()
