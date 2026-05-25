@@ -30,8 +30,7 @@ import java.time.Duration
 @Component
 class NaverGeocodeClient(
     @Value("\${app.naver.geocode.client-id:}") private val clientId: String,
-    @Value("\${app.naver.geocode.client-secret:}") private val clientSecret: String,
-    restClientBuilder: RestClient.Builder = RestClient.builder()
+    @Value("\${app.naver.geocode.client-secret:}") private val clientSecret: String
 ) {
 
     private val log = LoggerFactory.getLogger(NaverGeocodeClient::class.java)
@@ -41,7 +40,7 @@ class NaverGeocodeClient(
             setConnectTimeout(Duration.ofMillis(CONNECT_TIMEOUT_MS))
             setReadTimeout(Duration.ofMillis(READ_TIMEOUT_MS))
         }
-        restClientBuilder
+        RestClient.builder()
             .requestFactory(factory)
             .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
             .build()
