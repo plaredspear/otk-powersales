@@ -79,14 +79,6 @@ object SapInboundCatalog {
             description = "월별 매출 이력 페이지 단위 적재.",
         ),
         SapInboundCatalogItem(
-            endpointPath = "/api/v1/sap/claim-status",
-            koreanName = "클레임 상태 수신",
-            requiredScope = "sap.claim.write",
-            targetEntity = "Claim",
-            controllerClass = "SapClaimStatusController",
-            description = "클레임 처리 상태 업데이트 수신.",
-        ),
-        SapInboundCatalogItem(
             endpointPath = "/api/v1/sap/appointment",
             koreanName = "발령 정보 수신",
             requiredScope = "sap.attendance.write",

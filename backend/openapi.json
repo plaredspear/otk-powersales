@@ -8095,74 +8095,6 @@
         },
         "type" : "object"
       },
-      "ClaimStatusDetail" : {
-        "properties" : {
-          "failureCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "failures" : {
-            "items" : {
-              "$ref" : "#/components/schemas/ClaimStatusFailure"
-            },
-            "type" : "array"
-          },
-          "successCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
-      "ClaimStatusFailure" : {
-        "properties" : {
-          "name" : {
-            "type" : [ "string", "null" ]
-          },
-          "reason" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ClaimStatusRequest" : {
-        "properties" : {
-          "reqItemList" : {
-            "items" : {
-              "$ref" : "#/components/schemas/ClaimStatusRequestItem"
-            },
-            "type" : [ "array", "null" ]
-          }
-        },
-        "required" : [ "reqItemList" ],
-        "type" : "object"
-      },
-      "ClaimStatusRequestItem" : {
-        "properties" : {
-          "ActionCode" : {
-            "type" : "string"
-          },
-          "COSMOSKey" : {
-            "type" : "string"
-          },
-          "ClaimSequence" : {
-            "type" : "string"
-          },
-          "ClaimStatus" : {
-            "type" : "string"
-          },
-          "Content" : {
-            "type" : "string"
-          },
-          "Name" : {
-            "type" : "string"
-          },
-          "ReasonType" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "ClaimUpdateRequest" : {
         "properties" : {
           "accountId" : {
@@ -14764,20 +14696,6 @@
           },
           "RESULT_DETAIL" : {
             "$ref" : "#/components/schemas/AttendInfoDetail"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "SapResultWrapperClaimStatusDetail" : {
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/ClaimStatusDetail"
           },
           "RESULT_MSG" : {
             "type" : "string"
@@ -25284,36 +25202,6 @@
         },
         "summary" : "출근 정보 적재 (UPSERT)",
         "tags" : [ "sap-attend-info-controller" ]
-      }
-    },
-    "/api/v1/sap/claim-status" : {
-      "post" : {
-        "description" : "\n            SAP 클레임 상태를 갱신합니다 (존재하는 클레임만, 없으면 행 단위 부분 실패).\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/ClaimReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_ClaimReceive`\n\n            **동작 범위 차이**: 레거시는 INSERT + UPDATE 둘 다 처리했으나, 신규는 **상태 UPDATE-only** 입니다. 신규 클레임 INSERT 시도는 `claim not found` 부분 실패로 응답됩니다.\n\n            **응답 코드 변경**: 레거시는 `RESULT_CODE` 로 `\"S\"` (성공) / `\"E\"` (실패) 변종을 사용했으나, 신규는 다른 인터페이스와 동일하게 `\"200\"` + `RESULT_DETAIL.failures[]` 행 단위 보고로 통일됩니다.\n        ",
-        "operationId" : "updateClaimStatus",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ClaimStatusRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperClaimStatusDetail"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "클레임 상태 갱신 (UPDATE only)",
-        "tags" : [ "sap-claim-status-controller" ]
       }
     },
     "/api/v1/sap/daily-sales-history" : {
