@@ -3,11 +3,13 @@ import {
   getFkResolveProgress,
   runNaturalKeyFkResolve,
   runPicklistColumn,
+  runUserRoleHierarchyRecalc,
   startFkResolve,
   type FkResolveProgress,
   type NaturalKeyFkResponse,
   type PicklistColumn,
   type PicklistResponse,
+  type UserRoleHierarchyRecalcResponse,
 } from '@/api/admin/sfMigration';
 
 const KEY_BASE = ['admin', 'sf-migration'] as const;
@@ -44,5 +46,11 @@ export function useRunPicklistColumn() {
 export function useRunNaturalKeyFkResolve() {
   return useMutation<NaturalKeyFkResponse>({
     mutationFn: runNaturalKeyFkResolve,
+  });
+}
+
+export function useRunUserRoleHierarchyRecalc() {
+  return useMutation<UserRoleHierarchyRecalcResponse>({
+    mutationFn: runUserRoleHierarchyRecalc,
   });
 }

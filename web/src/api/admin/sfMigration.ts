@@ -108,3 +108,33 @@ export async function runPicklistColumn(column: PicklistColumn): Promise<Picklis
   }
   return res.data.data;
 }
+
+/**
+ * Stage 2 — UserRole Hierarchy snapshot 재계산.
+ *
+ * `user_role_hierarchy_snapshot` 의 `all_subordinate_ids` (jsonb) + `depth` +
+ * `ancestor_path` + `snapshot_at` 을 `user_role.parent_user_role_id` 트리 기반으로
+ * 재계산. Stage1 (UserRoleHierarchySnapshot) 적재 + Stage2 fk-natural-key 실행 직후
+ * 1회 호출 의무 — 미실행 시 `AdminDataScopeService` 등 권한 평가 path 에서 `depth`
+ * NULL 인 row 가 Hibernate primitive setter 호출 시점에 NPE 유발.
+ *
+ * 응답은 Stage 2 공통 wrapper (`SfMigrationStage2Response`) — substep / results /
+ * totalRowsAffected. 본 endpoint 는 row 카운트가 0 (snapshot 재계산 트리거 의미).
+ */
+export interface UserRoleHierarchyRecalcResponse {
+  substep: string;
+  results: NaturalKeyFkSubstepResult[];
+  totalRowsAffected: number;
+}
+
+export async function runUserRoleHierarchyRecalc(): Promise<UserRoleHierarchyRecalcResponse> {
+  const res = await client.post<ApiResponse<UserRoleHierarchyRecalcResponse>>(
+    '/api/v1/admin/sf-migration/stage2/user-role-hierarchy',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(
+      res.data.message || 'UserRole Hierarchy 재계산 실행에 실패했습니다',
+    );
+  }
+  return res.data.data;
+}

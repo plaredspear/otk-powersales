@@ -18,6 +18,7 @@ import {
   useFkResolveProgress,
   useRunNaturalKeyFkResolve,
   useRunPicklistColumn,
+  useRunUserRoleHierarchyRecalc,
   useStartFkResolve,
 } from '@/hooks/admin/useSfMigration';
 import type {
@@ -70,6 +71,7 @@ export default function SfMigrationPage() {
   const startMutation = useStartFkResolve();
   const runPicklistColumnMutation = useRunPicklistColumn();
   const runNaturalKeyFkMutation = useRunNaturalKeyFkResolve();
+  const runHierarchyRecalcMutation = useRunUserRoleHierarchyRecalc();
 
   const progress = progressQuery.data;
   const isRunning = progress?.status === 'RUNNING';
@@ -82,6 +84,10 @@ export default function SfMigrationPage() {
   const naturalKeyResult = runNaturalKeyFkMutation.data;
   const naturalKeyError = runNaturalKeyFkMutation.error as Error | null;
   const naturalKeyPending = runNaturalKeyFkMutation.isPending;
+
+  const hierarchyResult = runHierarchyRecalcMutation.data;
+  const hierarchyError = runHierarchyRecalcMutation.error as Error | null;
+  const hierarchyPending = runHierarchyRecalcMutation.isPending;
 
   const tableColumns: ColumnsType<FkResolveTableResult> = useMemo(
     () => [
@@ -299,6 +305,59 @@ export default function SfMigrationPage() {
               ]}
               dataSource={naturalKeyResult.results}
             />
+          </div>
+        )}
+      </Card>
+
+      <Card title="UserRole Hierarchy 재계산" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          <Text code>user_role_hierarchy_snapshot</Text> 의{' '}
+          <Text code>all_subordinate_ids</Text> / <Text code>depth</Text> /{' '}
+          <Text code>ancestor_path</Text> / <Text code>snapshot_at</Text> 을{' '}
+          <Text code>user_role.parent_user_role_id</Text> 트리 기반으로 재계산.{' '}
+          <Text strong>위 Natural Key FK 해소가 완료된 후</Text> 1회 실행 — 미실행 시{' '}
+          <Text code>depth</Text> NULL 인 row 가 권한 평가 path 에서 Hibernate primitive
+          setter 호출 시점에 NPE 유발 (예: <Text code>/api/v1/admin/accounts</Text>{' '}
+          500). 동기 실행 — 보통 수 초 내 완료.
+        </Paragraph>
+
+        <Space>
+          <Button
+            type="primary"
+            loading={hierarchyPending}
+            disabled={hierarchyPending}
+            onClick={() => {
+              runHierarchyRecalcMutation.mutate();
+            }}
+          >
+            실행
+          </Button>
+        </Space>
+
+        {hierarchyError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="UserRole Hierarchy 재계산 실패"
+            description={hierarchyError.message}
+            closable
+            onClose={() => {
+              runHierarchyRecalcMutation.reset();
+            }}
+          />
+        )}
+
+        {hierarchyResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{hierarchyResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="결과">
+                <Text type="success">snapshot 재계산 완료 (상세 row 수는 서버 logger 참조)</Text>
+              </Descriptions.Item>
+            </Descriptions>
           </div>
         )}
       </Card>
