@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import org.springframework.transaction.support.TransactionTemplate
 
@@ -23,6 +24,7 @@ import org.springframework.transaction.support.TransactionTemplate
  * 추월시키므로 이미 큰 값이면 no-op.
  */
 @Component
+@Profile("!test")
 class PromotionProductNameSeqSyncRunner(
     private val entityManager: EntityManager,
     private val transactionTemplate: TransactionTemplate,
