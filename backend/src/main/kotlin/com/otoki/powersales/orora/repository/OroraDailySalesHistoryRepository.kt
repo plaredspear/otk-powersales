@@ -2,6 +2,7 @@ package com.otoki.powersales.orora.repository
 
 import com.otoki.powersales.orora.entity.OroraDailySalesHistory
 import com.otoki.powersales.orora.entity.OroraDailySalesHistoryId
+import org.springframework.context.annotation.Profile
 import org.springframework.data.repository.Repository
 
 /**
@@ -29,4 +30,5 @@ import org.springframework.data.repository.Repository
  * `@Profile("dev | prod")` 가드 + `@EnableJpaRepositories` scope).
  * local / test 프로파일에서는 본 빈이 컨텍스트에 등록되지 않는다.
  */
+@Profile("dev | prod")
 interface OroraDailySalesHistoryRepository : Repository<OroraDailySalesHistory, OroraDailySalesHistoryId>
