@@ -285,6 +285,165 @@ class AdminPromotionServiceTest {
     }
 
     @Nested
+    @DisplayName("createPosProduct - 상세 POS품목 생성")
+    inner class CreatePosProductTests {
+
+        private val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+        private val request = com.otoki.powersales.promotion.dto.request.PromotionPosProductRequest(
+            productId = 200L,
+            price = java.math.BigDecimal("1500"),
+        )
+
+        @Test
+        @DisplayName("정상 생성 - 채번된 Name (PS{########}) 반환 + product/price 세팅")
+        fun createPosProduct_success() {
+            val promotion = createPromotion()
+            val product = createProduct(name = "꿀배청 680G")
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { productRepository.findById(200L) } returns Optional.of(product)
+            every { promotionProductRepository.getNextNameSeq() } returns 127052L
+            val saved = slot<PromotionProduct>()
+            every { promotionProductRepository.save(capture(saved)) } answers { firstArg<PromotionProduct>() }
+
+            val result = adminPromotionService.createPosProduct(scope, 1L, request)
+
+            assertThat(saved.captured.name).isEqualTo("PS00127052")
+            assertThat(saved.captured.promotionId).isEqualTo(1L)
+            assertThat(saved.captured.productId).isEqualTo(200L)
+            assertThat(saved.captured.price).isEqualByComparingTo("1500")
+            assertThat(result.name).isEqualTo("PS00127052")
+            assertThat(result.productName).isEqualTo("꿀배청 680G")
+        }
+
+        @Test
+        @DisplayName("productId/price 모두 null -> 정상 생성 (SF 정합 — 필수 아님)")
+        fun createPosProduct_allNullable() {
+            val promotion = createPromotion()
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionProductRepository.getNextNameSeq() } returns 1L
+            val saved = slot<PromotionProduct>()
+            every { promotionProductRepository.save(capture(saved)) } answers { firstArg<PromotionProduct>() }
+
+            val result = adminPromotionService.createPosProduct(
+                scope, 1L,
+                com.otoki.powersales.promotion.dto.request.PromotionPosProductRequest(productId = null, price = null)
+            )
+
+            assertThat(result.name).isEqualTo("PS00000001")
+            assertThat(saved.captured.productId).isNull()
+            assertThat(saved.captured.price).isNull()
+        }
+
+        @Test
+        @DisplayName("미존재 행사 -> PromotionNotFoundException")
+        fun createPosProduct_promotionNotFound() {
+            every { promotionRepository.findByIdWithRelations(999L) } returns null
+            assertThatThrownBy { adminPromotionService.createPosProduct(scope, 999L, request) }
+                .isInstanceOf(PromotionNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("권한 외 -> PromotionForbiddenException")
+        fun createPosProduct_forbidden() {
+            val limited = DataScope(branchCodes = listOf("2202"), isAllBranches = false)
+            val promotion = createPromotion(costCenterCode = "1101")
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            assertThatThrownBy { adminPromotionService.createPosProduct(limited, 1L, request) }
+                .isInstanceOf(PromotionForbiddenException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("updatePosProduct - 상세 POS품목 수정")
+    inner class UpdatePosProductTests {
+
+        private val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        @Test
+        @DisplayName("정상 수정 - productId/price 변경")
+        fun updatePosProduct_success() {
+            val promotion = createPromotion()
+            val product = createProduct(name = "꿀배청 680G")
+            val entity = PromotionProduct(
+                id = 10L, name = "PS00000001", promotionId = 1L,
+                productId = null, price = null,
+            )
+            every { promotionProductRepository.findById(10L) } returns Optional.of(entity)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { productRepository.findById(200L) } returns Optional.of(product)
+
+            val result = adminPromotionService.updatePosProduct(
+                scope, 10L,
+                com.otoki.powersales.promotion.dto.request.PromotionPosProductRequest(
+                    productId = 200L, price = java.math.BigDecimal("2000")
+                )
+            )
+
+            assertThat(entity.productId).isEqualTo(200L)
+            assertThat(entity.price).isEqualByComparingTo("2000")
+            assertThat(result.productName).isEqualTo("꿀배청 680G")
+        }
+
+        @Test
+        @DisplayName("미존재 ID -> PromotionProductNotFoundException")
+        fun updatePosProduct_notFound() {
+            every { promotionProductRepository.findById(999L) } returns Optional.empty()
+            assertThatThrownBy {
+                adminPromotionService.updatePosProduct(
+                    scope, 999L,
+                    com.otoki.powersales.promotion.dto.request.PromotionPosProductRequest()
+                )
+            }.isInstanceOf(PromotionProductNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("권한 외 -> PromotionForbiddenException")
+        fun updatePosProduct_forbidden() {
+            val limited = DataScope(branchCodes = listOf("2202"), isAllBranches = false)
+            val promotion = createPromotion(costCenterCode = "1101")
+            val entity = PromotionProduct(id = 10L, name = "PS00000001", promotionId = 1L)
+            every { promotionProductRepository.findById(10L) } returns Optional.of(entity)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+
+            assertThatThrownBy {
+                adminPromotionService.updatePosProduct(
+                    limited, 10L,
+                    com.otoki.powersales.promotion.dto.request.PromotionPosProductRequest()
+                )
+            }.isInstanceOf(PromotionForbiddenException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("deletePosProduct - 상세 POS품목 삭제")
+    inner class DeletePosProductTests {
+
+        private val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        @Test
+        @DisplayName("정상 삭제 - soft delete (is_deleted=true)")
+        fun deletePosProduct_success() {
+            val promotion = createPromotion()
+            val entity = PromotionProduct(id = 10L, name = "PS00000001", promotionId = 1L)
+            every { promotionProductRepository.findById(10L) } returns Optional.of(entity)
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+
+            adminPromotionService.deletePosProduct(scope, 10L)
+
+            assertThat(entity.isDeleted).isTrue()
+        }
+
+        @Test
+        @DisplayName("이미 삭제됨 -> PromotionProductNotFoundException")
+        fun deletePosProduct_alreadyDeleted() {
+            val entity = PromotionProduct(id = 10L, name = "PS00000001", promotionId = 1L, isDeleted = true)
+            every { promotionProductRepository.findById(10L) } returns Optional.of(entity)
+            assertThatThrownBy { adminPromotionService.deletePosProduct(scope, 10L) }
+                .isInstanceOf(PromotionProductNotFoundException::class.java)
+        }
+    }
+
+    @Nested
     @DisplayName("createPromotion - 행사마스터 생성")
     inner class CreatePromotionTests {
 

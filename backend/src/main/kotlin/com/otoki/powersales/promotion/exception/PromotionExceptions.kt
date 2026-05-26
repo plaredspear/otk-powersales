@@ -187,3 +187,9 @@ class ScheduleDateOutOfRangeException(scheduleDate: String, startDate: String, e
     message = "투입일(${scheduleDate})이 행사 기간(${startDate} ~ ${endDate})을 벗어납니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class PromotionProductNotFoundException : BusinessException(
+    errorCode = "PROMOTION_PRODUCT_NOT_FOUND",
+    message = "상세 POS품목을 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
