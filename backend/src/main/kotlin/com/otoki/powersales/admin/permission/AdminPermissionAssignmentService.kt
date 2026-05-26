@@ -10,6 +10,7 @@ import com.otoki.powersales.admin.permission.exception.AssignmentUserNotFoundExc
 import com.otoki.powersales.admin.permission.exception.CannotRevokeSelfException
 import com.otoki.powersales.admin.permission.exception.LastAdminGuardException
 import com.otoki.powersales.admin.permission.exception.PermissionSetFlagsNotFoundException
+import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.auth.permission.AdminPermissionCache
 import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.auth.permission.SfSystemPermission
@@ -42,6 +43,7 @@ class AdminPermissionAssignmentService(
     private val permissionSetFlagsRepository: PermissionSetFlagsRepository,
     private val sfPermissionResolver: SfPermissionResolver,
     private val adminPermissionCache: AdminPermissionCache,
+    private val adminDataScopeCache: AdminDataScopeCache,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -80,6 +82,7 @@ class AdminPermissionAssignmentService(
             )
         }
         adminPermissionCache.invalidate(userId)
+        adminDataScopeCache.invalidate(userId)
         log.info(
             "[AdminPermissionAssignmentService] assigned userId={} permissionSetFlagsId={} by principalUserId={}",
             userId, permissionSetFlagsId, principalUserId,
@@ -110,7 +113,10 @@ class AdminPermissionAssignmentService(
             throw LastAdminGuardException()
         }
 
-        assignment.assigneeUserId?.let { adminPermissionCache.invalidate(it) }
+        assignment.assigneeUserId?.let {
+            adminPermissionCache.invalidate(it)
+            adminDataScopeCache.invalidate(it)
+        }
         log.info(
             "[AdminPermissionAssignmentService] revoked assignmentId={} by principalUserId={}",
             assignmentId, principalUserId,

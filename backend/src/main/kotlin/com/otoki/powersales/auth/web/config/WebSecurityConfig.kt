@@ -1,7 +1,7 @@
 package com.otoki.powersales.auth.web.config
 
+import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.admin.security.WebAdminContextFilter
-import com.otoki.powersales.admin.service.AdminDataScopeService
 import com.otoki.powersales.auth.web.WebJwtAuthenticationFilter
 import com.otoki.powersales.auth.web.WebJwtService
 import com.otoki.powersales.auth.web.WebRefreshTokenStore
@@ -56,13 +56,13 @@ class WebSecurityConfig(
 
     @Bean
     fun webAdminContextFilter(
-        adminDataScopeService: AdminDataScopeService,
+        adminDataScopeCache: AdminDataScopeCache,
         requestMappingHandlerMapping: RequestMappingHandlerMapping,
         sfPermissionEvaluator: com.otoki.powersales.auth.permission.SfPermissionEvaluator,
         adminPermissionCache: com.otoki.powersales.auth.permission.AdminPermissionCache,
         objectMapper: ObjectMapper,
     ): WebAdminContextFilter = WebAdminContextFilter(
-        adminDataScopeService = adminDataScopeService,
+        adminDataScopeCache = adminDataScopeCache,
         requestMappingHandlerMapping = requestMappingHandlerMapping,
         sfPermissionEvaluator = sfPermissionEvaluator,
         adminPermissionCache = adminPermissionCache,

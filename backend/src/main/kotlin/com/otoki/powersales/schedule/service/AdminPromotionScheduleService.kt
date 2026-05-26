@@ -86,11 +86,14 @@ class AdminPromotionScheduleService(
                 }
         }
 
-        val schedulesByEmployeeId = schedules.groupBy { it.employee?.id }
+        // PE 와 TMS 는 1:N 관계이므로 promotionEmployeeId 로 그룹화해야 한다.
+        // employee.id 기준 그룹은 한 사원이 같은 행사에 여러 일자로 배치된 케이스 (PE N건)
+        // 에서 같은 일정 묶음이 PE 마다 중복 attach 되어 N×N 으로 부풀려진다.
+        val schedulesByPromotionEmployeeId = schedules.groupBy { it.promotionEmployee?.id }
 
         val members = promotionEmployees.mapNotNull { pe ->
             val employee = pe.employee ?: return@mapNotNull null
-            val items = (schedulesByEmployeeId[employee.id] ?: emptyList())
+            val items = (schedulesByPromotionEmployeeId[pe.id] ?: emptyList())
                 .sortedBy { it.workingDate ?: LocalDate.MIN }
                 .mapNotNull { schedule ->
                     val account = schedule.account ?: return@mapNotNull null
