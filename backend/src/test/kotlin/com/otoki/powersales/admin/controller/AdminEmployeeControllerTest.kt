@@ -16,6 +16,7 @@ import com.otoki.powersales.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.employee.service.AdminEmployeeManualRegisterService
 import com.otoki.powersales.employee.service.AdminEmployeeService
 import com.otoki.powersales.employee.service.AdminEmployeeUpdateService
+import com.otoki.powersales.schedule.service.EmployeeWorkHistoryService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -43,6 +44,7 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
     @MockkBean private lateinit var adminEmployeeUpdateService: AdminEmployeeUpdateService
     @MockkBean private lateinit var adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService
     @MockkBean private lateinit var sfPermissionInspectionService: SfPermissionInspectionService
+    @MockkBean private lateinit var employeeWorkHistoryService: EmployeeWorkHistoryService
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
