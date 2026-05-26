@@ -1,5 +1,6 @@
 package com.otoki.powersales.sfmigration.service
 
+import com.otoki.powersales.common.storage.UPLOAD_FILE_POLYMORPHIC_PARENTS
 import com.otoki.powersales.sfmigration.dto.SfMigrationStage2Response
 import com.otoki.powersales.sfmigration.dto.SubstepResult
 import jakarta.persistence.EntityManager
@@ -89,6 +90,44 @@ class SfMigrationStage2Service(
      *
      * 운영 backend 의 PasswordEncoder (BCrypt strength 10) 빈을 재사용한다.
      */
+    /**
+     * Stage 2-A (polymorphic parent) — UploadFile.record_id (= SF Id text) → parent_id (Long FK) 채움.
+     *
+     * 일반 FK resolve (`SfMigrationStage2FkService`) 는 `*_sfid` → `*_id` 1:1 패턴만 처리하므로,
+     * UploadFile 처럼 한 `record_id` 컬럼이 `parent_type` 분기로 여러 entity 를 가리키는 polymorphic
+     * 케이스는 본 substep 이 별도 처리한다.
+     *
+     * 매핑 표는 [UPLOAD_FILE_POLYMORPHIC_PARENTS] (SoT) — SF Object 명 → (refTable, refIdColumn).
+     * 한 entry 당 한 UPDATE 실행하며, 재호출 시 `parent_id IS NULL` 조건으로 멱등성 확보.
+     */
+    @Transactional
+    fun runUploadFilePolymorphicParent(): SfMigrationStage2Response {
+        val results = mutableListOf<SubstepResult>()
+        for ((sfObjectName, spec) in UPLOAD_FILE_POLYMORPHIC_PARENTS) {
+            val rows = em.createNativeQuery(
+                """
+                UPDATE powersales.upload_file uf
+                SET parent_id = c.${spec.refIdColumn}
+                FROM powersales.${spec.refTable} c
+                WHERE uf.parent_type = :sfObject
+                  AND uf.record_id = c.sfid
+                  AND uf.parent_id IS NULL
+                """.trimIndent()
+            )
+                .setParameter("sfObject", sfObjectName)
+                .executeUpdate()
+            results += SubstepResult(
+                label = "upload_file.parent_id ($sfObjectName → ${spec.refTable}.${spec.refIdColumn})",
+                rowsAffected = rows,
+            )
+        }
+        return SfMigrationStage2Response(
+            substep = "uploadFilePolymorphicParent",
+            results = results,
+            totalRowsAffected = results.sumOf { it.rowsAffected },
+        )
+    }
+
     @Transactional
     fun runPasswordHash(): SfMigrationStage2Response {
         val codesQuery = em.createNativeQuery(

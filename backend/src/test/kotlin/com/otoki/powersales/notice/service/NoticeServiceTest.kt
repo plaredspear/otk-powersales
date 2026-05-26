@@ -80,7 +80,7 @@ class NoticeServiceTest {
             )
 
             every { noticeRepository.findById(42L) } returns Optional.of(notice)
-            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 42L) } returns files
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Notice__c", 42L) } returns files
 
             val result = noticeService.getNoticeDetail(42L)
 
@@ -103,7 +103,7 @@ class NoticeServiceTest {
             val notice = createNotice(id = 10L, name = "공지", category = NoticeCategory.COMPANY)
 
             every { noticeRepository.findById(10L) } returns Optional.of(notice)
-            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 10L) } returns emptyList()
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Notice__c", 10L) } returns emptyList()
 
             val result = noticeService.getNoticeDetail(10L)
 
@@ -122,7 +122,7 @@ class NoticeServiceTest {
             )
 
             every { noticeRepository.findById(10L) } returns Optional.of(notice)
-            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 10L) } returns files
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Notice__c", 10L) } returns files
 
             val result = noticeService.getNoticeDetail(10L)
 
@@ -156,7 +156,7 @@ class NoticeServiceTest {
         fun getNoticeDetail_categoryMapping_company() {
             val notice = createNotice(id = 1L, category = NoticeCategory.COMPANY)
             every { noticeRepository.findById(1L) } returns Optional.of(notice)
-            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 1L) } returns emptyList()
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Notice__c", 1L) } returns emptyList()
 
             val result = noticeService.getNoticeDetail(1L)
 
@@ -169,7 +169,7 @@ class NoticeServiceTest {
         fun getNoticeDetail_categoryMapping_branch() {
             val notice = createNotice(id = 1L, category = NoticeCategory.BRANCH)
             every { noticeRepository.findById(1L) } returns Optional.of(notice)
-            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 1L) } returns emptyList()
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Notice__c", 1L) } returns emptyList()
 
             val result = noticeService.getNoticeDetail(1L)
 
@@ -182,7 +182,7 @@ class NoticeServiceTest {
         fun getNoticeDetail_categoryMapping_education() {
             val notice = createNotice(id = 1L, category = NoticeCategory.EDUCATION)
             every { noticeRepository.findById(1L) } returns Optional.of(notice)
-            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 1L) } returns emptyList()
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Notice__c", 1L) } returns emptyList()
 
             val result = noticeService.getNoticeDetail(1L)
 
@@ -195,7 +195,7 @@ class NoticeServiceTest {
         fun getNoticeDetail_categoryNull() {
             val notice = createNotice(id = 1L, category = null)
             every { noticeRepository.findById(1L) } returns Optional.of(notice)
-            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", 1L) } returns emptyList()
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Notice__c", 1L) } returns emptyList()
 
             val result = noticeService.getNoticeDetail(1L)
 
@@ -737,7 +737,7 @@ class NoticeServiceTest {
         fun deleteNoticeImage_success() {
             val uploadFile = createUploadFile(id = 200L, uniqueKey = "uploads/notice/2026/05/11/abc.png", parentId = 42L)
             every {
-                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(200L, "NOTICE", 42L)
+                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(200L, "DKRetail__Notice__c", 42L)
             } returns uploadFile
             every { storageService.delete(any()) } just Runs
 
@@ -764,7 +764,7 @@ class NoticeServiceTest {
         @DisplayName("imageId 미존재 또는 parent 불일치 -> InvalidImageIdException")
         fun deleteNoticeImage_notFoundOrMismatch() {
             every {
-                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(999L, "NOTICE", 42L)
+                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(999L, "DKRetail__Notice__c", 42L)
             } returns null
 
             assertThatThrownBy { noticeService.deleteNoticeImage(42L, 999L) }
@@ -776,7 +776,7 @@ class NoticeServiceTest {
         fun deleteNoticeImage_blankUniqueKey() {
             val uploadFile = createUploadFile(id = 200L, uniqueKey = "", parentId = 42L)
             every {
-                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(200L, "NOTICE", 42L)
+                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(200L, "DKRetail__Notice__c", 42L)
             } returns uploadFile
 
             noticeService.deleteNoticeImage(42L, 200L)
@@ -823,7 +823,7 @@ class NoticeServiceTest {
     private fun createUploadFile(
         id: Long = 1L,
         uniqueKey: String? = "test/file.jpg",
-        parentType: String = "NOTICE",
+        parentType: String = "DKRetail__Notice__c",
         parentId: Long? = null,
         createdDate: LocalDateTime? = java.time.LocalDateTime.of(2026, 1, 1, 0, 0, 0)
     ): UploadFile = UploadFile(

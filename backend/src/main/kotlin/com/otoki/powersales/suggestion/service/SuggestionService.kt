@@ -4,6 +4,7 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.service.OrgCostCenterMatchService
 import com.otoki.powersales.product.entity.Product
@@ -145,7 +146,7 @@ class SuggestionService(
                 name = file.originalFilename,
                 uniqueKey = key,
                 fileSize = formatFileSize(file.size),
-                parentType = "SUGGESTION",
+                parentType = UploadFileParentTypes.SUGGESTION,
                 parentId = saved.id,
                 isDeleted = false
             )
@@ -176,7 +177,7 @@ class SuggestionService(
         }
 
         val attachments = uploadFileRepository
-            .findByParentTypeAndParentIdAndIsDeletedFalse("SUGGESTION", suggestion.id)
+            .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestion.id)
             .filter { !it.uniqueKey.isNullOrBlank() }
             .sortedBy { it.createdAt }
             .mapIndexed { index, file ->

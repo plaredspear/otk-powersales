@@ -83,6 +83,18 @@ class SfMigrationStage2Controller(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
+    /**
+     * UploadFile polymorphic parent resolve — record_id (SF Id text) → parent_id (Long FK).
+     *
+     * fk substep 직후 1회 호출. 매핑 표는 [com.otoki.powersales.common.storage.UPLOAD_FILE_POLYMORPHIC_PARENTS].
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/upload-file-polymorphic-parent")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun runUploadFilePolymorphicParent(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = service.runUploadFilePolymorphicParent()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
     @PostMapping("/api/v1/admin/sf-migration/stage2/picklist")
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun runPicklistMapping(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {

@@ -9,6 +9,7 @@ import com.otoki.powersales.claim.repository.AdminClaimRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.UploadFileParentTypes
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -63,9 +64,8 @@ class AdminClaimService(
     fun getClaimDetail(claimId: Long): AdminClaimDetailResponse {
         val claim = adminClaimRepository.findById(claimId)
             .orElseThrow { ClaimNotFoundException(claimId) }
-        val uploadFiles: List<UploadFile> = claim.sfid
-            ?.let { uploadFileRepository.findByRecordIdAndIsDeletedFalse(it) }
-            ?: emptyList()
+        val uploadFiles: List<UploadFile> = uploadFileRepository
+            .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.CLAIM, claim.id)
         return AdminClaimDetailResponse.Companion.from(claim, uploadFiles) { publicUrlResolver.resolve(it) }
     }
 }

@@ -95,15 +95,17 @@ class AdminClaimServiceTest {
     inner class GetClaimDetailTests {
 
         @Test
-        @DisplayName("UploadFile 매칭 - sfid 로 조회된 첨부파일들이 응답에 포함됨")
+        @DisplayName("UploadFile 매칭 - (parent_type, parent_id) FK 로 조회된 첨부파일들이 응답에 포함됨")
         fun getClaimDetail_withUploadFiles() {
-            val claim = createClaim(sfid = "a012x00000ABCDE")
+            val claim = createClaim(id = 1L)
             val files = listOf(
                 createUploadFile(id = 11L, uniqueKey = "26may2026claim_001jpg", name = "claim_001.jpg"),
                 createUploadFile(id = 12L, uniqueKey = "26may2026part_001jpg", name = "part_001.jpg")
             )
             every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
-            every { uploadFileRepository.findByRecordIdAndIsDeletedFalse("a012x00000ABCDE") } returns files
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Claim__c", 1L)
+            } returns files
 
             val result = adminClaimService.getClaimDetail(1L)
 
@@ -117,23 +119,13 @@ class AdminClaimServiceTest {
         }
 
         @Test
-        @DisplayName("sfid 부재 클레임 - UploadFile 조회 생략 + 빈 photos")
-        fun getClaimDetail_nullSfid() {
-            val claim = createClaim(sfid = null)
-            every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
-
-            val result = adminClaimService.getClaimDetail(1L)
-
-            assertThat(result.claimId).isEqualTo(1L)
-            assertThat(result.photos).isEmpty()
-        }
-
-        @Test
         @DisplayName("UploadFile 매칭 0건 - 빈 photos 반환")
         fun getClaimDetail_noMatchingUploadFiles() {
-            val claim = createClaim(sfid = "a012x00000ABCDE")
+            val claim = createClaim(id = 1L)
             every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
-            every { uploadFileRepository.findByRecordIdAndIsDeletedFalse("a012x00000ABCDE") } returns emptyList()
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Claim__c", 1L)
+            } returns emptyList()
 
             val result = adminClaimService.getClaimDetail(1L)
 
@@ -143,14 +135,16 @@ class AdminClaimServiceTest {
         @Test
         @DisplayName("uniqueKey 부재 UploadFile - 응답에서 제외")
         fun getClaimDetail_uploadFileWithoutUniqueKey() {
-            val claim = createClaim(sfid = "a012x00000ABCDE")
+            val claim = createClaim(id = 1L)
             val files = listOf(
                 createUploadFile(id = 11L, uniqueKey = "valid_key.jpg"),
                 createUploadFile(id = 12L, uniqueKey = null),
                 createUploadFile(id = 13L, uniqueKey = "")
             )
             every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
-            every { uploadFileRepository.findByRecordIdAndIsDeletedFalse("a012x00000ABCDE") } returns files
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Claim__c", 1L)
+            } returns files
 
             val result = adminClaimService.getClaimDetail(1L)
 
@@ -226,6 +220,7 @@ class AdminClaimServiceTest {
         name = name,
         uniqueKey = uniqueKey,
         recordId = "a012x00000ABCDE",
-        parentType = "DKRetail__Claim__c"
+        parentType = "DKRetail__Claim__c",
+        parentId = 1L
     )
 }

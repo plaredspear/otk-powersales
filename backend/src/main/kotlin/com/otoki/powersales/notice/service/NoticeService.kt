@@ -5,6 +5,7 @@ import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.notice.dto.request.NoticeCreateRequest
 import com.otoki.powersales.notice.dto.request.NoticeUpdateRequest
@@ -49,7 +50,7 @@ class NoticeService(
             .filter { it.isDeleted != true }
             .orElseThrow { NoticePostNotFoundException() }
 
-        val images = uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("NOTICE", notice.id)
+        val images = uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.NOTICE, notice.id)
             .filter { !it.uniqueKey.isNullOrBlank() }
             .sortedBy { it.createdAt }
             .mapIndexed { index, file ->
@@ -207,7 +208,7 @@ class NoticeService(
             name = file.originalFilename,
             uniqueKey = key,
             fileSize = formatFileSize(file.size),
-            parentType = "NOTICE",
+            parentType = UploadFileParentTypes.NOTICE,
             parentId = noticeId,
             isDeleted = false
         )
@@ -244,7 +245,7 @@ class NoticeService(
         if (imageId <= 0) throw InvalidImageIdException()
 
         val uploadFile = uploadFileRepository
-            .findByIdAndParentTypeAndParentIdAndIsDeletedFalse(imageId, "NOTICE", noticeId)
+            .findByIdAndParentTypeAndParentIdAndIsDeletedFalse(imageId, UploadFileParentTypes.NOTICE, noticeId)
             ?: throw InvalidImageIdException()
 
         uploadFile.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.delete(it) }
