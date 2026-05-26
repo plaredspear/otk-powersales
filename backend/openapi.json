@@ -8144,7 +8144,7 @@
             "type" : "integer"
           },
           "photoType" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "url" : {
             "type" : "string"
@@ -22920,6 +22920,24 @@
             "type" : "string"
           }
         } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sf-migration-stage-2-controller" ]
+      }
+    },
+    "/api/v1/admin/sf-migration/stage2/upload-file-polymorphic-parent" : {
+      "post" : {
+        "operationId" : "runUploadFilePolymorphicParent",
         "responses" : {
           "200" : {
             "content" : {
