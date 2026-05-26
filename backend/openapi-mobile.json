@@ -6026,6 +6026,41 @@
         },
         "tags" : [ "suggestion-controller" ]
       }
+    },
+    "/api/v1/mobile/suggestions/{suggestionId}/photos/{photoId}" : {
+      "delete" : {
+        "operationId" : "deletePhoto",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "suggestionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "photoId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "suggestion-controller" ]
+      }
     }
   },
   "security" : [ {
