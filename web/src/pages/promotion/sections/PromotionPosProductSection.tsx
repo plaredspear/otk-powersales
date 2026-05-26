@@ -1,5 +1,6 @@
 import { Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { Link } from 'react-router-dom';
 import { usePromotionPosProducts } from '@/hooks/promotion/usePromotionPosProducts';
 import type { PromotionPosProduct } from '@/api/promotionPosProduct';
 
@@ -19,7 +20,15 @@ export default function PromotionPosProductSection({ promotionId }: Props) {
     {
       title: '제품',
       key: 'product',
-      render: (_, r) => r.productName ?? '-',
+      render: (_, r) => {
+        const name = r.productName ?? '-';
+        if (!r.productCode) return name;
+        return (
+          <Link to={`/product/${encodeURIComponent(r.productCode)}`}>
+            {name}
+          </Link>
+        );
+      },
     },
     {
       title: '금액',
