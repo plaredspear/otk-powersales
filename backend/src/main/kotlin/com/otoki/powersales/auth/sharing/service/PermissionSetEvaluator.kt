@@ -39,10 +39,13 @@ class PermissionSetEvaluator(
         val modifyAllRecordsAccum = mutableMapOf<String, Boolean>()
         val permissionSetIdsAccum = mutableSetOf<Long>()
 
-        assignments.forEach { assignment ->
-            // spec #798 — Stage1 적재 직후 Stage2 fk substep 미실행 시 permissionSetFlagsId NULL 가능 → skip
-            val flagsId = assignment.permissionSetFlagsId ?: return@forEach
-            val flags = flagsRepository.findById(flagsId).orElse(null) ?: return@forEach
+        // spec #798 — Stage1 적재 직후 Stage2 fk substep 미실행 시 permissionSetFlagsId NULL 가능 → skip.
+        // assignment 일람 만큼 findById 반복 호출 (N+1) 회피 — findAllById 1회 호출로 일괄 로드.
+        val flagsIds = assignments.mapNotNull { it.permissionSetFlagsId }.distinct()
+        if (flagsIds.isEmpty()) return PermissionSetSnapshot.NONE
+        val flagsList = flagsRepository.findAllById(flagsIds)
+
+        flagsList.forEach { flags ->
             if (flags.permissionsViewAllData) viewAllDataSystem = true
             if (flags.permissionsModifyAllData) modifyAllDataSystem = true
 

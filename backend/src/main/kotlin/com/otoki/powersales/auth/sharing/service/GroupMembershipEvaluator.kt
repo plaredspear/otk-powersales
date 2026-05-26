@@ -47,15 +47,15 @@ class GroupMembershipEvaluator(
         groupRepository.findAllByRelatedUserId(userId).forEach { result.add(it.id) }
 
         if (userRoleId != null) {
-            // 2) UserRole 매칭 + 3) RoleAndSubordinatesInternal (ancestor path)
+            // 2) UserRole 매칭 + 3) RoleAndSubordinatesInternal (ancestor path) — IN 절 1회로 N+1 회피
             val ancestorPath = try {
                 userRoleHierarchyTraversal.getAncestorPath(userRoleId)
             } catch (e: IllegalStateException) {
                 log.warn("[group-membership] cycle/depth issue for userRoleId={} — fallback to self only", userRoleId, e)
                 listOf(userRoleId)
             }
-            ancestorPath.forEach { ancestorRoleId ->
-                groupRepository.findAllByRelatedUserRoleId(ancestorRoleId).forEach { result.add(it.id) }
+            if (ancestorPath.isNotEmpty()) {
+                groupRepository.findAllByRelatedUserRoleIdIn(ancestorPath).forEach { result.add(it.id) }
             }
         }
         return result

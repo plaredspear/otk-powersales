@@ -59,13 +59,12 @@ class SfPermissionResolver(
         val profileFlags: ProfileFlags? = user.profileId?.let { profileFlagsRepository.findByProfileId(it) }
         profileFlags?.let { applyProfileFlags(it, result) }
 
-        // 2. PermissionSetAssignment 일람
+        // 2. PermissionSetAssignment 일람 — assignment 일람 만큼 findById 반복 (N+1) 회피, findAllById 1회 호출
         val assignments = permissionSetAssignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(user.id)
-        for (assignment in assignments) {
-            val psFlags: PermissionSetFlags = assignment.permissionSetFlagsId?.let {
-                permissionSetFlagsRepository.findById(it).orElse(null)
-            } ?: continue
-            applyPermissionSetFlags(psFlags, result)
+        val flagsIds = assignments.mapNotNull { it.permissionSetFlagsId }.distinct()
+        if (flagsIds.isNotEmpty()) {
+            val flagsList: List<PermissionSetFlags> = permissionSetFlagsRepository.findAllById(flagsIds)
+            flagsList.forEach { applyPermissionSetFlags(it, result) }
         }
 
         // 3. VIEW_ALL_DATA / MODIFY_ALL_DATA 펼침
