@@ -7,6 +7,7 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.sales.enums.SalesMonth
 import com.otoki.powersales.sales.enums.SalesYear
 import com.otoki.powersales.leave.repository.HolidayMasterRepository
+import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
@@ -14,7 +15,9 @@ import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.powersales.schedule.repository.EmployeeInputCriteriaMasterRepository
 import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.apache.poi.ss.usermodel.FillPatternType
@@ -44,7 +47,9 @@ class AdminMonthlyIntegrationService(
     private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
     private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
     private val holidayMasterRepository: HolidayMasterRepository,
-    private val branchCodeExpander: BranchCodeExpander
+    private val branchCodeExpander: BranchCodeExpander,
+    private val accountCategoryMasterRepository: AccountCategoryMasterRepository,
+    private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository,
 ) {
 
     fun getMonthlyIntegration(
@@ -276,12 +281,72 @@ class AdminMonthlyIntegrationService(
             BigDecimal.ZERO
         }
 
+        val employee = schedules.first().employee
+        val account = schedules.first().account
+        val first = schedules.first()
+        val workingCategory1 = first.workingCategory1?.displayName
+        val workingCategory3 = first.workingCategory3?.displayName
+        // workingCategory5 는 DisplayWorkSchedule.typeOfWork5 에서 representative 값 추출
+        // (기존 resolveWorkingCategory5 와 동일 매칭 룰 — confirmed=true + workingDate in [startDate, endDate])
+        val workingCategory5 = resolveWorkingCategory5(schedules).values.firstOrNull { it != null }
+
+        // spec #680 §5.3 — self-trigger 3필드 자동 set (legacy
+        // `MonthlyEmpIntegrationSchTriggerHandler.setAccountConvertedHeadcount` 동등).
+        // 가드: workingCategory5='상시' AND workingCategory1/3 not null AND year/month not null
+        // 그 외 row 는 3필드 모두 null.
+        val applyThreeFields = workingCategory5 == "상시" &&
+            workingCategory1 != null && workingCategory3 != null
+
+        // accountConvertedHeadcount = 본 거래처+근무유형1+년월 의 (자기 자신 제외) 다른 MFEIS row 의
+        // convertedHeadcount 합산 + 본 row 의 새 convertedHeadcount.
+        // (legacy 는 listNew + 기존 DB row 합산 — bypass 로 다른 row 의 accountConvertedHeadcount
+        // 갱신은 미발생. 본 spec 도 동일하게 본 row 만 set, 다른 row 의 stale 갱신은 비범위)
+        val accountConvertedHeadcount: BigDecimal? = if (applyThreeFields && account != null) {
+            val others = monthlyIntegrationScheduleRepository
+                .findByAccountIdAndWorkingCategory1AndYearAndMonth(account.id, workingCategory1, yearStr, monthStr)
+                .filter { it.id != (existing?.id ?: -1L) }
+            val othersSum = others
+                .mapNotNull { it.convertedHeadcount }
+                .fold(BigDecimal.ZERO) { acc, v -> acc.add(v) }
+            othersSum.add(convertedHeadcount).setScale(4, RoundingMode.HALF_UP)
+        } else null
+
+        // thisMonthAmount — Q12 옵션 1: batch persist 결과 우선 + 동기 fallback
+        val thisMonthAmount: BigDecimal? = if (applyThreeFields && account != null) {
+            val batchPersisted = existing?.thisMonthAmount
+            if (batchPersisted != null) {
+                batchPersisted
+            } else {
+                val avgMap = calculateAvgClosingAmounts(
+                    yearMonth.year, yearMonth.monthValue, listOf(account)
+                )
+                avgMap[account.id]?.let { BigDecimal(it) }
+            }
+        } else null
+
+        // employeeInputCriteriaMaster lookup — 운영 정합 dev 검증 2026-05-26.
+        // legacy `MonthlyEmpIntegrationSchTriggerHandler.cls:73-80` 의 `criteriaMap.get(Account.Type + Year + Month)`
+        // 동등 — `Account.accountType.displayName` 으로 AccountCategoryMaster.name 매칭 후 EICM 활성 기간 lookup.
+        // 활성 기간 referenceDate 는 검색월 첫날 (yearMonth.atDay(1)) 사용.
+        // (legacy 는 본 Trigger 호출 시점의 sysdate 기반 currentDate 산출 — 신규는 검색 대상 월 기준이 정확)
+        val employeeInputCriteriaMaster: com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster? =
+            if (applyThreeFields && account != null) {
+                val accountTypeName = account.accountType?.displayName
+                if (accountTypeName != null) {
+                    val category = accountCategoryMasterRepository.findByName(accountTypeName)
+                    if (category != null) {
+                        employeeInputCriteriaMasterRepository.findActiveByCategoryAndTypeOfWork1(
+                            categoryId = category.id,
+                            typeOfWork1 = TypeOfWork1.DISPLAY,
+                            referenceDate = yearMonth.atDay(1),
+                        )
+                    } else null
+                } else null
+            } else null
+
         if (existing != null) {
             monthlyIntegrationScheduleRepository.delete(existing)
         }
-
-        val employee = schedules.first().employee
-        val account = schedules.first().account
 
         val record = MonthlyFemaleEmployeeIntegrationSchedule(
             year = yearStr,
@@ -291,10 +356,15 @@ class AdminMonthlyIntegrationService(
             workingDaysMonth = BigDecimal(workingDaysMonth),
             numberOfInputs = numberOfInputs,
             equivalentNumberOfWorkingDays = equivalentWorkingDays,
-            convertedHeadcount = convertedHeadcount
+            convertedHeadcount = convertedHeadcount,
+            accountConvertedHeadcount = accountConvertedHeadcount,
+            thisMonthAmount = thisMonthAmount,
+            employeeInputCriteriaMaster = employeeInputCriteriaMaster,
+            employeeInputCriteriaMasterSfid = employeeInputCriteriaMaster?.sfid,
         )
         monthlyIntegrationScheduleRepository.save(record)
     }
+
 
     internal fun calculateBusinessDays(yearMonth: YearMonth): Int {
         val from = yearMonth.atDay(1)
@@ -397,7 +467,22 @@ class AdminMonthlyIntegrationService(
         val accountIds = grouped.keys.map { it.accountId }.distinct()
         val accounts = accountRepository.findByIdIn(accountIds).associateBy { it.id }
 
-        // 9. Calculate 6-month ABC closing amount
+        // 9. Calculate 6-month ABC closing amount — Q12 옵션 1 (#680): MFEIS persist 우선 + 동기 fallback.
+        // batch 가 매월 1일 03시에 전월 기준 this_month_amount 를 persist 한다 (MfeisThisMonthRevenueBatch).
+        // 본 조회 시점에 employee+account+year+month 의 MFEIS 가 존재 + thisMonthAmount not null 이면 그 값 사용,
+        // 그 외 (당월 / persist 미적용 / 등) 는 calculateAvgClosingAmounts 동기 계산 fallback.
+        val yearStr = year.toString()
+        val monthStr = String.format("%02d", month)
+        val employeeAccountPersistedAmounts: Map<Pair<Long, Int>, BigDecimal> = grouped.keys
+            .map { it.employeeId to it.accountId }
+            .distinct()
+            .mapNotNull { (empId, accId) ->
+                val mfeis = monthlyIntegrationScheduleRepository
+                    .findByEmployeeIdAndAccountIdAndYearAndMonth(empId, accId, yearStr, monthStr)
+                val amount = mfeis?.thisMonthAmount ?: return@mapNotNull null
+                (empId to accId) to amount
+            }
+            .toMap()
         val avgClosingAmounts = calculateAvgClosingAmounts(year, month, accounts.values.toList())
 
         // 10. Get org name map for branch names
@@ -426,7 +511,11 @@ class AdminMonthlyIntegrationService(
                 BigDecimal.ZERO
             }
 
-            val avgAmount = account?.id?.let { avgClosingAmounts[it] } ?: 0L
+            // Q12 옵션 1 (#680): MFEIS persist 우선 + 동기 fallback
+            val persisted = employeeAccountPersistedAmounts[key.employeeId to key.accountId]
+            val avgAmount = persisted?.toLong()
+                ?: account?.id?.let { avgClosingAmounts[it] }
+                ?: 0L
             val branchName = employee?.costCenterCode?.let { orgNameMap[it] } ?: employee?.orgName ?: ""
 
             MonthlyIntegrationScheduleItem(
@@ -530,13 +619,16 @@ class AdminMonthlyIntegrationService(
         }
 
         // Group by account ID and calculate average
+        // spec #680 Q2 옵션 2 — legacy `UpdateThisMonthRevenueBatch.cls:execute` + `get6MonthsAvg` 동등.
+        // 양수 (ClosingAmount > 0) 월만 합산 + divider = 양수 count (legacy `dividerMap_6M`).
+        // 0/음수 매출 월은 제외 (legacy 의 batch 외 컨트롤러는 미적용이라 비대칭 — 신규는 일관 정책).
         return filtered.groupBy { it.account?.id ?: 0 }
             .filter { it.key != 0 }
             .mapValues { (_, histories) ->
-                val sum = histories.sumOf { it.abcClosingAmount1 ?: 0.0 }
-                val divider = histories.size
+                val positives = histories.mapNotNull { it.abcClosingAmount1 }.filter { it > 0.0 }
+                val divider = positives.size
                 if (divider > 0) {
-                    BigDecimal(sum / divider).setScale(0, RoundingMode.HALF_UP).toLong()
+                    BigDecimal(positives.sum() / divider).setScale(0, RoundingMode.HALF_UP).toLong()
                 } else {
                     0L
                 }

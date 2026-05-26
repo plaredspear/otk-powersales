@@ -8,18 +8,27 @@ import com.otoki.powersales.leave.enums.HolidayType
 import com.otoki.powersales.leave.repository.HolidayMasterRepository
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
+import com.otoki.powersales.account.entity.AccountCategoryMaster
+import com.otoki.powersales.account.entity.AccountType
+import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.schedule.enums.TypeOfWork1
+import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.powersales.schedule.repository.EmployeeInputCriteriaMasterRepository
 import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -27,8 +36,9 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
 import io.mockk.every
-import io.mockk.verify
 import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 
 @DisplayName("AdminMonthlyIntegrationService 테스트")
 class AdminMonthlyIntegrationServiceTest {
@@ -42,6 +52,8 @@ class AdminMonthlyIntegrationServiceTest {
     private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository = mockk(relaxUnitFun = true)
     private val holidayMasterRepository: HolidayMasterRepository = mockk(relaxUnitFun = true)
     private val branchCodeExpander: BranchCodeExpander = mockk(relaxUnitFun = true)
+    private val accountCategoryMasterRepository: AccountCategoryMasterRepository = mockk(relaxUnitFun = true)
+    private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository = mockk(relaxUnitFun = true)
 
     private val service = AdminMonthlyIntegrationService(
         organizationRepository,
@@ -53,7 +65,34 @@ class AdminMonthlyIntegrationServiceTest {
         monthlyIntegrationScheduleRepository,
         holidayMasterRepository,
         branchCodeExpander,
+        accountCategoryMasterRepository,
+        employeeInputCriteriaMasterRepository,
     )
+
+    @BeforeEach
+    fun setupRefreshIntegrationDefaults() {
+        // spec #680 §5.3 — refreshIntegration 의 3필드 set 통합 + §5.2 buildIntegrationItems 의
+        // Q12 옵션 1 (MFEIS persist 우선) 로 인한 신규 의존 호출 default stub.
+        // 본 default 는 호출되어도 NPE/MockKException 안 나게만 보장. 개별 테스트가 필요시 override.
+        every { displayWorkScheduleRepository.findByEmployeeIdsAndAccountIds(any(), any()) } returns emptyList()
+        every {
+            monthlyIntegrationScheduleRepository.findByAccountIdAndWorkingCategory1AndYearAndMonth(
+                any(), any(), any(), any()
+            )
+        } returns emptyList()
+        every {
+            monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+                any(), any(), any(), any()
+            )
+        } returns null
+        // spec #680 §5.3 (v1.3) — EmployeeInputCriteriaMaster lookup 의존
+        every { accountCategoryMasterRepository.findByName(any()) } returns null
+        every {
+            employeeInputCriteriaMasterRepository.findActiveByCategoryAndTypeOfWork1(
+                any(), any(), any()
+            )
+        } returns null
+    }
 
     private fun setupCommonMocks() {
         every { organizationRepository.expandCostCenterCodes(any()) } returns listOf("CC001")
@@ -399,6 +438,140 @@ class AdminMonthlyIntegrationServiceTest {
             // Then
             verify { monthlyIntegrationScheduleRepository.delete(existing) }
             verify { monthlyIntegrationScheduleRepository.save(any()) }
+        }
+
+        @Test
+        @DisplayName("3필드 자동 set - workingCategory5='상시' + accountType 매칭 시 EICM lookup 결과 set (spec #680 §5.3 v1.3)")
+        fun threeFieldAutoSet_withEicmLookup() {
+            // Given
+            val accountWithType = Account(id = accountId, accountType = AccountType.SUPER)
+            val workingDate = LocalDate.of(2026, 4, 1)
+            val dws = DisplayWorkSchedule(
+                employee = Employee(id = employeeId, employeeCode = "EMP1", name = "테스트1"),
+                account = accountWithType,
+                confirmed = true,
+                startDate = LocalDate.of(2026, 1, 1),
+                endDate = LocalDate.of(2026, 12, 31),
+                typeOfWork5 = TypeOfWork5.REGULAR,
+            )
+            // entity AccountType.SUPER.displayName="수퍼" (legacy SF picklist) — AccountCategoryMaster.name 은
+            // 운영에서 "슈퍼" (1글자 차이) 로 등록되어 있는 경우가 있음. mock 은 entity enum 값 그대로 사용.
+            val mockCategory = AccountCategoryMaster(
+                id = 35L,
+                accountCode = "06",
+                name = "수퍼",
+            )
+            val mockEicm = EmployeeInputCriteriaMaster(
+                id = 8L,
+                sfid = "a0o2x000001o2OjAAI",
+                name = "IM-00000006",
+                confirmed = true,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                startDate = LocalDate.of(2023, 1, 1),
+                category = mockCategory,
+            )
+
+            every { teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
+                eq(employeeId), eq(accountId), any(), any()
+            ) } returns listOf(
+                TeamMemberSchedule(
+                    id = 1L,
+                    employee = Employee(id = employeeId, employeeCode = "EMP1", name = "테스트1"),
+                    account = accountWithType,
+                    workingDate = workingDate,
+                    workingType = WorkingType.WORK,
+                    workingCategory1 = WorkingCategory1.DISPLAY,
+                    workingCategory3 = WorkingCategory3.FIXED,
+                    commuteLogSfid = "CL001",
+                )
+            )
+            every { monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+                eq(employeeId), eq(accountId), eq("2026"), eq("04")
+            ) } returns null
+            every { teamMemberScheduleRepository.countWorkSchedulesByEmployeeAndDateAndWorkingType(
+                eq(employeeId), eq(workingDate)
+            ) } returns 1
+            every { holidayMasterRepository.findByHolidayDateBetween(any(), any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findByEmployeeIdsAndAccountIds(any(), any()) } returns listOf(dws)
+            every { monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(any(), any()) } returns emptyList()
+            every { accountCategoryMasterRepository.findByName("수퍼") } returns mockCategory
+            every {
+                employeeInputCriteriaMasterRepository.findActiveByCategoryAndTypeOfWork1(
+                    eq(35L), eq(TypeOfWork1.DISPLAY), eq(LocalDate.of(2026, 4, 1))
+                )
+            } returns mockEicm
+            every { monthlyIntegrationScheduleRepository.save(any<MonthlyFemaleEmployeeIntegrationSchedule>()) } answers { firstArg<MonthlyFemaleEmployeeIntegrationSchedule>() }
+
+            // When
+            service.refreshIntegration(employeeId, accountId, yearMonth)
+
+            // Then
+            val captured = slot<MonthlyFemaleEmployeeIntegrationSchedule>()
+            verify {
+                monthlyIntegrationScheduleRepository.save(capture(captured))
+            }
+            // 3필드 set 검증 — workingCategory5='상시' 가드 통과 시
+            val saved = captured.captured
+            assertThat(saved.employeeInputCriteriaMaster?.id).isEqualTo(8L)
+            assertThat(saved.employeeInputCriteriaMasterSfid).isEqualTo("a0o2x000001o2OjAAI")
+            assertThat(saved.accountConvertedHeadcount).isNotNull
+        }
+
+        @Test
+        @DisplayName("3필드 자동 set - workingCategory5='임시' (상시 아님) 인 경우 EICM lookup 호출 안 함 + 3필드 null")
+        fun threeFieldAutoSet_nonRegular_noLookup() {
+            // Given
+            val workingDate = LocalDate.of(2026, 4, 1)
+            val accountWithType = Account(id = accountId, accountType = AccountType.SUPER)
+            val dws = DisplayWorkSchedule(
+                employee = Employee(id = employeeId, employeeCode = "EMP1", name = "테스트1"),
+                account = accountWithType,
+                confirmed = true,
+                startDate = LocalDate.of(2026, 1, 1),
+                endDate = LocalDate.of(2026, 12, 31),
+                typeOfWork5 = TypeOfWork5.TEMPORARY, // 상시 아님
+            )
+
+            every { teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
+                eq(employeeId), eq(accountId), any(), any()
+            ) } returns listOf(
+                TeamMemberSchedule(
+                    id = 1L,
+                    employee = Employee(id = employeeId, employeeCode = "EMP1", name = "테스트1"),
+                    account = accountWithType,
+                    workingDate = workingDate,
+                    workingType = WorkingType.WORK,
+                    workingCategory1 = WorkingCategory1.DISPLAY,
+                    workingCategory3 = WorkingCategory3.FIXED,
+                    commuteLogSfid = "CL001",
+                )
+            )
+            every { monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
+                eq(employeeId), eq(accountId), eq("2026"), eq("04")
+            ) } returns null
+            every { teamMemberScheduleRepository.countWorkSchedulesByEmployeeAndDateAndWorkingType(
+                eq(employeeId), eq(workingDate)
+            ) } returns 1
+            every { holidayMasterRepository.findByHolidayDateBetween(any(), any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findByEmployeeIdsAndAccountIds(any(), any()) } returns listOf(dws)
+            every { monthlyIntegrationScheduleRepository.save(any<MonthlyFemaleEmployeeIntegrationSchedule>()) } answers { firstArg<MonthlyFemaleEmployeeIntegrationSchedule>() }
+
+            // When
+            service.refreshIntegration(employeeId, accountId, yearMonth)
+
+            // Then — EICM lookup 미호출 + 3필드 null
+            verify(exactly = 0) { accountCategoryMasterRepository.findByName(any()) }
+            verify(exactly = 0) {
+                employeeInputCriteriaMasterRepository.findActiveByCategoryAndTypeOfWork1(any(), any(), any())
+            }
+            verify {
+                monthlyIntegrationScheduleRepository.save(match<MonthlyFemaleEmployeeIntegrationSchedule> {
+                    it.employeeInputCriteriaMaster == null &&
+                        it.employeeInputCriteriaMasterSfid == null &&
+                        it.thisMonthAmount == null &&
+                        it.accountConvertedHeadcount == null
+                })
+            }
         }
     }
 

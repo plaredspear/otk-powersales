@@ -40,6 +40,11 @@ object ScheduledJobCatalog {
             description = "진열마스터 전월 매출 일괄 갱신 (기본 매일 02시) — legacy UpdateLastMonthRevenueBatch 동등",
         ),
         Entry(
+            jobName = MfeisThisMonthRevenueBatch.JOB_NAME,
+            cron = "\${app.batch.mfeis.this-month-revenue.cron:0 0 3 1 * ?}",
+            description = "여사원 통합일정 전월 평균매출 일괄 갱신 (기본 매월 1일 03시) — legacy UpdateThisMonthRevenueBatch 동등",
+        ),
+        Entry(
             jobName = AccountNaverGeocodeBatch.JOB_NAME,
             cron = AccountNaverGeocodeBatch.CRON,
             description = "거래처 주소 Naver geocode 변환 (매일 02시)",

@@ -61,6 +61,26 @@ class EmployeeInputCriteriaMasterRepositoryCustomImpl(
         return exists != null
     }
 
+    override fun findActiveByCategoryAndTypeOfWork1(
+        categoryId: Long,
+        typeOfWork1: TypeOfWork1,
+        referenceDate: LocalDate,
+    ): EmployeeInputCriteriaMaster? {
+        return queryFactory
+            .selectFrom(employeeInputCriteriaMaster)
+            .where(
+                notDeleted(),
+                employeeInputCriteriaMaster.category.id.eq(categoryId),
+                employeeInputCriteriaMaster.typeOfWork1.eq(typeOfWork1),
+                employeeInputCriteriaMaster.confirmed.isTrue,
+                employeeInputCriteriaMaster.startDate.loe(referenceDate),
+                employeeInputCriteriaMaster.endDate.isNull
+                    .or(employeeInputCriteriaMaster.endDate.goe(referenceDate)),
+            )
+            .orderBy(employeeInputCriteriaMaster.startDate.desc(), employeeInputCriteriaMaster.id.desc())
+            .fetchFirst()
+    }
+
     private fun notDeleted() =
         employeeInputCriteriaMaster.isDeleted.isNull.or(employeeInputCriteriaMaster.isDeleted.eq(false))
 }

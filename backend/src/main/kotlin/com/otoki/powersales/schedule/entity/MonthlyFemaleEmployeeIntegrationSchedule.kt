@@ -103,15 +103,15 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
 
     @SFField("ThisMonthAmount__c")
     @Column(name = "this_month_amount")
-    val thisMonthAmount: BigDecimal? = null,
+    var thisMonthAmount: BigDecimal? = null,
 
     @SFField("AccountConvertedHeadcount__c")
     @Column(name = "account_converted_headcount", precision = 18, scale = 4)
-    val accountConvertedHeadcount: BigDecimal? = null,
+    var accountConvertedHeadcount: BigDecimal? = null,
 
     @SFField("EmployeeInputCriteriaMaster__c")
     @Column(name = "employee_input_criteria_master_sfid", length = 18)
-    val employeeInputCriteriaMasterSfid: String? = null,
+    var employeeInputCriteriaMasterSfid: String? = null,
 
     @SFField("OwnerId")
     @Column(name = "owner_sfid", length = 18)
