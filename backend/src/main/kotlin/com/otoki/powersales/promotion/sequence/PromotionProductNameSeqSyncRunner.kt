@@ -39,12 +39,13 @@ class PromotionProductNameSeqSyncRunner(
     }
 
     private fun sync() {
+        // Native query 라 JPA 의 hibernate.default_schema 가 적용되지 않으므로 schema prefix 명시.
         // PS{8자리 숫자} 형식만 후보. 그 외 (수동 입력된 Name 등) 무시.
         val maxSuffix = (
             entityManager.createNativeQuery(
                 """
                 SELECT COALESCE(MAX(SUBSTRING(name FROM 3)::bigint), 0)
-                FROM promotion_product
+                FROM powersales.promotion_product
                 WHERE name ~ '^PS[0-9]+$'
                 """.trimIndent()
             ).singleResult as Number
@@ -52,7 +53,7 @@ class PromotionProductNameSeqSyncRunner(
 
         val currentSeq = (
             entityManager.createNativeQuery(
-                "SELECT last_value FROM promotion_product_name_seq"
+                "SELECT last_value FROM powersales.promotion_product_name_seq"
             ).singleResult as Number
             ).toLong()
 
@@ -67,7 +68,7 @@ class PromotionProductNameSeqSyncRunner(
 
         // setval(seq, value, true) 는 다음 nextval 이 value+1 부터 시작.
         entityManager.createNativeQuery(
-            "SELECT setval('promotion_product_name_seq', :v, true)"
+            "SELECT setval('powersales.promotion_product_name_seq', :v, true)"
         ).setParameter("v", maxSuffix).singleResult
 
         log.warn(
