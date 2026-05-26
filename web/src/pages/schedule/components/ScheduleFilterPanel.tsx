@@ -62,6 +62,18 @@ export function ScheduleFilterPanel({
         style={{ marginBottom: 12 }}
       />
 
+      <Button
+        type="primary"
+        icon={<SearchOutlined />}
+        block
+        onClick={onApply}
+        disabled={!isFilterDirty}
+        style={{ marginBottom: 12 }}
+      >
+        조회
+        {isFilterDirty ? ' (변경됨)' : ''}
+      </Button>
+
       <div style={{ marginBottom: 12 }}>
         <Typography.Text strong style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>
           전문행사조
@@ -79,7 +91,7 @@ export function ScheduleFilterPanel({
         />
       </div>
 
-      <div style={{ flex: 1, overflow: 'auto', marginBottom: 12 }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {filterTab === 'member' ? (
           <MemberFilterTab
             selectedIds={selectedEmployeeIds}
@@ -93,19 +105,6 @@ export function ScheduleFilterPanel({
             onBranchCodeChange={onSelectedBranchCodeChange}
           />
         )}
-      </div>
-
-      <div style={{ paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
-        <Button
-          type="primary"
-          icon={<SearchOutlined />}
-          block
-          onClick={onApply}
-          disabled={!isFilterDirty}
-        >
-          조회
-          {isFilterDirty ? ' (변경됨)' : ''}
-        </Button>
       </div>
     </div>
   );
