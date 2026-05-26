@@ -4,12 +4,10 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.claim.dto.request.AdminClaimCreateRequest
 import com.otoki.powersales.claim.dto.response.AdminClaimCreateResponse
 import com.otoki.powersales.claim.entity.Claim
-import com.otoki.powersales.claim.entity.ClaimPhoto
 import com.otoki.powersales.claim.entity.sfpicklist.PurchaseMethod
 import com.otoki.powersales.claim.entity.sfpicklist.RequestType
 import com.otoki.powersales.claim.enums.ClaimChannel
 import com.otoki.powersales.claim.enums.ClaimDateType
-import com.otoki.powersales.claim.enums.ClaimPhotoType
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
@@ -24,11 +22,14 @@ import com.otoki.powersales.claim.exception.InvalidPurchaseMethodException
 import com.otoki.powersales.claim.exception.InvalidRequestTypeException
 import com.otoki.powersales.claim.exception.ReceiptRequiredException
 import com.otoki.powersales.claim.exception.RequestTypeMaxExceededException
-import com.otoki.powersales.claim.repository.ClaimPhotoRepository
 import com.otoki.powersales.claim.repository.ClaimRepository
+import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.exception.ProductNotFoundException
+import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.common.storage.UploadFileKbnTypes
+import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.promotion.exception.AccountNotFoundException
@@ -65,7 +66,7 @@ import java.util.Base64
 @Service
 class AdminClaimCreateService(
     private val claimRepository: ClaimRepository,
-    private val claimPhotoRepository: ClaimPhotoRepository,
+    private val uploadFileRepository: UploadFileRepository,
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
@@ -95,10 +96,10 @@ class AdminClaimCreateService(
             ?: throw ProductNotFoundException(parsed.productCode)
 
         // 3. S3 이미지 업로드 (트랜잭션 외부)
-        val claimKey = fileStorageService.uploadClaimPhoto(claimPhoto, employee.id, 0L, ClaimPhotoType.DEFECT.name)
-        val partKey = fileStorageService.uploadClaimPhoto(partPhoto, employee.id, 0L, ClaimPhotoType.LABEL.name)
+        val claimKey = fileStorageService.uploadClaimPhoto(claimPhoto, employee.id, 0L, UploadFileKbnTypes.CLAIM_DEFECT)
+        val partKey = fileStorageService.uploadClaimPhoto(partPhoto, employee.id, 0L, UploadFileKbnTypes.CLAIM_PART)
         val receiptKey = receiptPhoto?.let {
-            fileStorageService.uploadClaimPhoto(it, employee.id, 0L, ClaimPhotoType.RECEIPT.name)
+            fileStorageService.uploadClaimPhoto(it, employee.id, 0L, UploadFileKbnTypes.CLAIM_RECEIPT)
         }
 
         // 4. Transaction 1 — DB INSERT (status=SF_PENDING)
@@ -127,14 +128,14 @@ class AdminClaimCreateService(
                 division = employee.orgName,
             )
             val saved = claimRepository.save(claim)
-            val photos = mutableListOf<ClaimPhoto>().apply {
-                add(buildPhoto(saved, claimPhoto, claimKey, ClaimPhotoType.DEFECT))
-                add(buildPhoto(saved, partPhoto, partKey, ClaimPhotoType.LABEL))
+            val photos = mutableListOf<UploadFile>().apply {
+                add(buildPhoto(saved, claimPhoto, claimKey, UploadFileKbnTypes.CLAIM_DEFECT))
+                add(buildPhoto(saved, partPhoto, partKey, UploadFileKbnTypes.CLAIM_PART))
                 if (receiptPhoto != null && receiptKey != null) {
-                    add(buildPhoto(saved, receiptPhoto, receiptKey, ClaimPhotoType.RECEIPT))
+                    add(buildPhoto(saved, receiptPhoto, receiptKey, UploadFileKbnTypes.CLAIM_RECEIPT))
                 }
             }
-            claimPhotoRepository.saveAll(photos)
+            uploadFileRepository.saveAll(photos)
             saved
         }!!
 
@@ -331,14 +332,15 @@ class AdminClaimCreateService(
         return map
     }
 
-    private fun buildPhoto(claim: Claim, file: MultipartFile, key: String, type: ClaimPhotoType): ClaimPhoto =
-        ClaimPhoto(
-            claim = claim,
-            photoType = type,
-            url = key,
-            originalFileName = file.originalFilename ?: "unknown",
-            fileSize = file.size,
-            contentType = file.contentType ?: "image/jpeg",
+    private fun buildPhoto(claim: Claim, file: MultipartFile, key: String, uploadKbn: String): UploadFile =
+        UploadFile(
+            name = file.originalFilename ?: "unknown",
+            uniqueKey = key,
+            fileSize = file.size.toString(),
+            parentType = UploadFileParentTypes.CLAIM,
+            parentId = claim.id,
+            uploadKbn = uploadKbn,
+            isDeleted = false,
         )
 
     private fun splitFilename(filename: String): Pair<String, String> {

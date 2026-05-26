@@ -30,6 +30,7 @@ import com.otoki.powersales.common.exception.ProductNotFoundException
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.common.storage.UploadFileKbnTypes
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.product.repository.ProductRepository
@@ -123,10 +124,10 @@ class ClaimService(
 
         val savedClaim = claimRepository.save(claim)
 
-        uploadPhoto(savedClaim, userId, defectPhoto)
-        uploadPhoto(savedClaim, userId, labelPhoto)
+        uploadPhoto(savedClaim, userId, defectPhoto, UploadFileKbnTypes.CLAIM_DEFECT)
+        uploadPhoto(savedClaim, userId, labelPhoto, UploadFileKbnTypes.CLAIM_PART)
         if (receiptPhoto != null) {
-            uploadPhoto(savedClaim, userId, receiptPhoto)
+            uploadPhoto(savedClaim, userId, receiptPhoto, UploadFileKbnTypes.CLAIM_RECEIPT)
         }
 
         return ClaimCreateResponse.from(savedClaim)
@@ -287,14 +288,15 @@ class ClaimService(
         }.toSet()
     }
 
-    private fun uploadPhoto(claim: Claim, userId: Long, file: MultipartFile): UploadFile {
-        val key = fileStorageService.uploadClaimPhoto(file, userId, claim.id, "")
+    private fun uploadPhoto(claim: Claim, userId: Long, file: MultipartFile, uploadKbn: String): UploadFile {
+        val key = fileStorageService.uploadClaimPhoto(file, userId, claim.id, uploadKbn)
         val uploadFile = UploadFile(
             name = file.originalFilename,
             uniqueKey = key,
             fileSize = file.size.toString(),
             parentType = UploadFileParentTypes.CLAIM,
             parentId = claim.id,
+            uploadKbn = uploadKbn,
             isDeleted = false
         )
         return uploadFileRepository.save(uploadFile)

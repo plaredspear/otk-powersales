@@ -2,12 +2,13 @@ package com.otoki.powersales.claim.service
 
 import com.otoki.powersales.claim.dto.response.AdminClaimCreateResponse
 import com.otoki.powersales.claim.enums.ClaimDateType
-import com.otoki.powersales.claim.enums.ClaimPhotoType
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.claim.exception.ClaimNotResendableException
-import com.otoki.powersales.claim.repository.ClaimPhotoRepository
 import com.otoki.powersales.claim.repository.ClaimRepository
+import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.storage.UploadFileKbnTypes
+import com.otoki.powersales.common.storage.UploadFileParentTypes
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
@@ -21,7 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate
 @Service
 class AdminClaimResendService(
     private val claimRepository: ClaimRepository,
-    private val claimPhotoRepository: ClaimPhotoRepository,
+    private val uploadFileRepository: UploadFileRepository,
     private val createService: AdminClaimCreateService,
     private val txTemplate: TransactionTemplate,
 ) {
@@ -33,10 +34,11 @@ class AdminClaimResendService(
             if (claim.status != ClaimStatus.SEND_FAILED) {
                 throw ClaimNotResendableException()
             }
-            val photos = claimPhotoRepository.findByClaimId(claimId)
-            val defect = photos.first { it.photoType == ClaimPhotoType.DEFECT }
-            val label = photos.first { it.photoType == ClaimPhotoType.LABEL }
-            val receipt = photos.firstOrNull { it.photoType == ClaimPhotoType.RECEIPT }
+            val photos = uploadFileRepository
+                .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.CLAIM, claimId)
+            val defect = photos.first { it.uploadKbn == UploadFileKbnTypes.CLAIM_DEFECT }
+            val label = photos.first { it.uploadKbn == UploadFileKbnTypes.CLAIM_PART }
+            val receipt = photos.firstOrNull { it.uploadKbn == UploadFileKbnTypes.CLAIM_RECEIPT }
 
             ResendSnapshot(
                 claimId = claim.id,
@@ -61,15 +63,15 @@ class AdminClaimResendService(
                     amount = claim.purchaseAmount,
                     requestTypes = claim.requestTypeCode,
                 ),
-                claimKey = defect.url,
-                claimFilename = defect.originalFileName,
-                claimContentType = defect.contentType,
-                partKey = label.url,
-                partFilename = label.originalFileName,
-                partContentType = label.contentType,
-                receiptKey = receipt?.url,
-                receiptFilename = receipt?.originalFileName,
-                receiptContentType = receipt?.contentType,
+                claimKey = defect.uniqueKey ?: error("DEFECT 사진 uniqueKey 누락"),
+                claimFilename = defect.name ?: "claim",
+                claimContentType = "image/jpeg",
+                partKey = label.uniqueKey ?: error("PART 사진 uniqueKey 누락"),
+                partFilename = label.name ?: "part",
+                partContentType = "image/jpeg",
+                receiptKey = receipt?.uniqueKey,
+                receiptFilename = receipt?.name,
+                receiptContentType = receipt?.let { "image/jpeg" },
             )
         }!!
 

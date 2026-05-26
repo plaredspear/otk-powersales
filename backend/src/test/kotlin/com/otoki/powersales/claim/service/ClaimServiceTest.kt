@@ -121,9 +121,11 @@ class ClaimServiceTest {
     inner class CreateClaimTests {
 
         @Test
-        @DisplayName("정상 요청 - 클레임 + 사진 2장 저장")
+        @DisplayName("정상 요청 - 클레임 + 사진 2장 저장 (uploadKbn = claim/part)")
         fun createsClaimWithRequiredPhotos() {
             stubCreateDeps()
+            val savedSlots = mutableListOf<UploadFile>()
+            every { uploadFileRepository.save(capture(savedSlots)) } answers { firstArg() }
 
             val result = claimService.createClaim(
                 userId, validRequest(),
@@ -134,7 +136,8 @@ class ClaimServiceTest {
 
             assertThat(result.accountName).isEqualTo("테스트거래처")
             assertThat(result.productCode).isEqualTo("P0001")
-            verify(exactly = 2) { uploadFileRepository.save(any<UploadFile>()) }
+            assertThat(savedSlots).hasSize(2)
+            assertThat(savedSlots.map { it.uploadKbn }).containsExactly("claim", "part")
         }
 
         @Test

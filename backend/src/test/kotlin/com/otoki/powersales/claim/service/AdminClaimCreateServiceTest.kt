@@ -4,18 +4,17 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.claim.dto.request.AdminClaimCreateRequest
 import com.otoki.powersales.claim.entity.Claim
-import com.otoki.powersales.claim.entity.ClaimPhoto
 import com.otoki.powersales.claim.entity.sfpicklist.PurchaseMethod
 import com.otoki.powersales.claim.enums.ClaimChannel
-import com.otoki.powersales.claim.enums.ClaimPhotoType
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.claim.exception.InvalidClaimDateException
 import com.otoki.powersales.claim.exception.ReceiptRequiredException
 import com.otoki.powersales.claim.exception.RequestTypeMaxExceededException
-import com.otoki.powersales.claim.repository.ClaimPhotoRepository
 import com.otoki.powersales.claim.repository.ClaimRepository
+import com.otoki.powersales.common.entity.UploadFile
+import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.employee.entity.Employee
@@ -45,7 +44,7 @@ import java.util.Optional
 class AdminClaimCreateServiceTest {
 
     private lateinit var claimRepository: ClaimRepository
-    private lateinit var claimPhotoRepository: ClaimPhotoRepository
+    private lateinit var uploadFileRepository: UploadFileRepository
     private lateinit var employeeRepository: EmployeeRepository
     private lateinit var accountRepository: AccountRepository
     private lateinit var productRepository: ProductRepository
@@ -58,7 +57,7 @@ class AdminClaimCreateServiceTest {
     @BeforeEach
     fun setUp() {
         claimRepository = mockk()
-        claimPhotoRepository = mockk()
+        uploadFileRepository = mockk()
         employeeRepository = mockk()
         accountRepository = mockk()
         productRepository = mockk()
@@ -72,7 +71,7 @@ class AdminClaimCreateServiceTest {
         }
         service = AdminClaimCreateService(
             claimRepository,
-            claimPhotoRepository,
+            uploadFileRepository,
             employeeRepository,
             accountRepository,
             productRepository,
@@ -87,7 +86,7 @@ class AdminClaimCreateServiceTest {
             "uploads/claim/2026/05/27/bbb.jpg",
             "uploads/claim/2026/05/27/ccc.jpg",
         )
-        every { claimPhotoRepository.saveAll(any<List<ClaimPhoto>>()) } answers { firstArg() }
+        every { uploadFileRepository.saveAll(any<List<UploadFile>>()) } answers { firstArg() }
     }
 
     private fun newRequest(
@@ -205,6 +204,29 @@ class AdminClaimCreateServiceTest {
         assertThat(apiMapSlot.captured["ExpirationDate"]).isEqualTo("20270101")
         assertThat(apiMapSlot.captured["ManufacturingDate"]).isEqualTo("")
         assertThat(apiMapSlot.captured["Quantity"]).isEqualTo("5")
+    }
+
+    @Test
+    @DisplayName("UploadFile 저장 — uploadKbn = claim/part/receipt (SF customName__c prefix 정합)")
+    fun create_uploadKbnMatchesSfPrefix() {
+        stubLookups()
+        stubClaimSave()
+        val savedSlot = slot<List<UploadFile>>()
+        every { uploadFileRepository.saveAll(capture(savedSlot)) } answers { firstArg() }
+        every { sfOutboundClient.callApi("/ClaimRegist", any()) } returns
+            SfApiResponse(resultCode = "200", resultMsg = "SUCCESS", rawBody = "{}")
+
+        service.createClaim(
+            request = newRequest(purchaseMethod = "B", amount = BigDecimal("10000")),
+            claimPhoto = newPhoto("claim"),
+            partPhoto = newPhoto("part"),
+            receiptPhoto = newPhoto("receipt"),
+        )
+
+        val photos = savedSlot.captured
+        assertThat(photos).hasSize(3)
+        assertThat(photos.map { it.uploadKbn }).containsExactly("claim", "part", "receipt")
+        assertThat(photos.all { it.parentType == "DKRetail__Claim__c" }).isTrue
     }
 
     @Test
