@@ -4,9 +4,11 @@ import com.zaxxer.hikari.HikariDataSource
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.flyway.autoconfigure.FlywayDataSource
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties
+import org.springframework.boot.persistence.autoconfigure.EntityScan
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import javax.sql.DataSource
 
 /**
@@ -25,6 +27,20 @@ import javax.sql.DataSource
  * - ORORA DataSource 는 `@Primary` 도 `@FlywayDataSource` 도 아니므로
  *   `@Qualifier("ororaDataSource")` 로만 주입됨
  *
+ * ## ORORA entity / repository 격리
+ * `@EntityScan` + `@EnableJpaRepositories` 의 `basePackages` 에 root 1단계 하위 패키지를
+ * 명시 나열 (ORORA 제외). `com.otoki.powersales.orora.entity` /
+ * `com.otoki.powersales.orora.repository` 는 [com.otoki.powersales.common.integration.orora.config.OroraJpaConfig]
+ * 의 ororaEntityManagerFactory 가 전담.
+ *
+ * 미적용 시: 메인 EMF 가 [com.otoki.powersales.orora.entity.OroraDailySalesHistory] 를
+ * metamodel 에 등록 → PostgreSQL 메인 RDS 에서 `ECRM_MULCUST_MH_V` view 부재로
+ * `SchemaManagementException: missing table [ECRM_MULCUST_MH_V]` 부팅 실패.
+ *
+ * **`com.otoki.powersales` 하위에 신규 top-level 패키지 추가 시 본 어노테이션 두 곳에 동시 등록
+ * 의무** (ORORA 외). 누락 시 해당 패키지 entity/repository 가 메인 EMF 에서 사라져 빈 주입
+ * 실패로 즉시 검출.
+ *
  * 설정 키:
  * - `spring.datasource.{url, username, password, driver-class-name}` — 연결 정보
  * - `spring.datasource.hikari.*` — 풀 튜닝
@@ -32,6 +48,66 @@ import javax.sql.DataSource
  * 둘 다 기존 `application.yml` 의 `spring.datasource.*` 그대로 사용.
  */
 @Configuration
+@EntityScan(
+	basePackages = [
+		"com.otoki.powersales.account",
+		"com.otoki.powersales.admin",
+		"com.otoki.powersales.agreement",
+		"com.otoki.powersales.auth",
+		"com.otoki.powersales.batch",
+		"com.otoki.powersales.claim",
+		"com.otoki.powersales.common",
+		"com.otoki.powersales.draft",
+		"com.otoki.powersales.education",
+		"com.otoki.powersales.employee",
+		"com.otoki.powersales.inspection",
+		"com.otoki.powersales.leave",
+		"com.otoki.powersales.notice",
+		"com.otoki.powersales.order",
+		"com.otoki.powersales.organization",
+		"com.otoki.powersales.product",
+		"com.otoki.powersales.productexpiration",
+		"com.otoki.powersales.promotion",
+		"com.otoki.powersales.safetycheck",
+		"com.otoki.powersales.sales",
+		"com.otoki.powersales.sap",
+		"com.otoki.powersales.schedule",
+		"com.otoki.powersales.sf",
+		"com.otoki.powersales.sfmigration",
+		"com.otoki.powersales.suggestion",
+		"com.otoki.powersales.user",
+	],
+)
+@EnableJpaRepositories(
+	basePackages = [
+		"com.otoki.powersales.account",
+		"com.otoki.powersales.admin",
+		"com.otoki.powersales.agreement",
+		"com.otoki.powersales.auth",
+		"com.otoki.powersales.batch",
+		"com.otoki.powersales.claim",
+		"com.otoki.powersales.common",
+		"com.otoki.powersales.draft",
+		"com.otoki.powersales.education",
+		"com.otoki.powersales.employee",
+		"com.otoki.powersales.inspection",
+		"com.otoki.powersales.leave",
+		"com.otoki.powersales.notice",
+		"com.otoki.powersales.order",
+		"com.otoki.powersales.organization",
+		"com.otoki.powersales.product",
+		"com.otoki.powersales.productexpiration",
+		"com.otoki.powersales.promotion",
+		"com.otoki.powersales.safetycheck",
+		"com.otoki.powersales.sales",
+		"com.otoki.powersales.sap",
+		"com.otoki.powersales.schedule",
+		"com.otoki.powersales.sf",
+		"com.otoki.powersales.sfmigration",
+		"com.otoki.powersales.suggestion",
+		"com.otoki.powersales.user",
+	],
+)
 class MainDataSourceConfig {
 	@Bean
 	@Primary
