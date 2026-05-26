@@ -115,6 +115,14 @@ data class ProductDetail(
     val lastModifiedAt: String
 ) {
     companion object {
+        // SF 레거시 수식 `IMAGE(ImgRefPathTXT__c + ImgRefPath_*__c)` 와 동등.
+        // 파일명에 공백/한글/괄호가 들어있어 path segment encoding 적용.
+        private fun buildImageUrl(baseUrl: String?, relativePath: String?): String? {
+            if (baseUrl.isNullOrBlank() || relativePath.isNullOrBlank()) return null
+            val encodedPath = java.net.URI(null, null, relativePath, null).rawPath
+            return baseUrl.trimEnd('/') + "/" + encodedPath.trimStart('/')
+        }
+
         fun from(product: Product): ProductDetail = ProductDetail(
             id = product.id,
             productCode = product.productCode,
@@ -146,8 +154,8 @@ data class ProductDetail(
             targetAccountType = product.targetAccountType,
             allergen = product.allergen,
             crossContamination = product.crossContamination,
-            imgRefPathFront = product.imgRefPathFront,
-            imgRefPathBack = product.imgRefPathBack,
+            imgRefPathFront = buildImageUrl(product.imgRefPathTxt, product.imgRefPathFront),
+            imgRefPathBack = buildImageUrl(product.imgRefPathTxt, product.imgRefPathBack),
             pallet = product.pallet,
             manufacture = product.manufacture,
             manufactureDetail = product.manufactureDetail,
