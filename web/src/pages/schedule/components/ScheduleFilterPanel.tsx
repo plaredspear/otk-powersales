@@ -1,4 +1,5 @@
-import { Segmented, Select, Typography } from 'antd';
+import { Button, Segmented, Select, Typography } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { MemberFilterTab } from './MemberFilterTab';
 import { AccountFilterTab } from './AccountFilterTab';
 import { useProfessionalPromotionTeams } from '@/hooks/team-schedule/useProfessionalPromotionTeams';
@@ -16,6 +17,8 @@ interface ScheduleFilterPanelProps {
   onSelectedBranchCodeChange: (code: string) => void;
   selectedPromotionTeams: string[];
   onSelectedPromotionTeamsChange: (teams: string[]) => void;
+  onApply: () => void;
+  isFilterDirty: boolean;
 }
 
 const TAB_OPTIONS = [
@@ -34,6 +37,8 @@ export function ScheduleFilterPanel({
   onSelectedBranchCodeChange,
   selectedPromotionTeams,
   onSelectedPromotionTeamsChange,
+  onApply,
+  isFilterDirty,
 }: ScheduleFilterPanelProps) {
   const { data: promotionTeams = [], isLoading: promotionTeamsLoading } = useProfessionalPromotionTeams();
 
@@ -74,7 +79,7 @@ export function ScheduleFilterPanel({
         />
       </div>
 
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div style={{ flex: 1, overflow: 'auto', marginBottom: 12 }}>
         {filterTab === 'member' ? (
           <MemberFilterTab
             selectedIds={selectedEmployeeIds}
@@ -88,6 +93,19 @@ export function ScheduleFilterPanel({
             onBranchCodeChange={onSelectedBranchCodeChange}
           />
         )}
+      </div>
+
+      <div style={{ paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
+        <Button
+          type="primary"
+          icon={<SearchOutlined />}
+          block
+          onClick={onApply}
+          disabled={!isFilterDirty}
+        >
+          조회
+          {isFilterDirty ? ' (변경됨)' : ''}
+        </Button>
       </div>
     </div>
   );

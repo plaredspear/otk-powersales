@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { message, Spin } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAccounts';
@@ -24,34 +24,36 @@ export default function SchedulePage() {
     dayjs().endOf('month'),
   ]);
   const [filterTab, setFilterTab] = useState<FilterTab>('account');
+
+  // staging: 사용자 체크박스 선택 (UI 즉시 반영). applied: 조회 버튼 클릭 시 commit (fetch trigger).
+  // 다수 여사원/거래처 multi-select 중 매 체크마다 자동 조회되던 동작 제거.
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
-  const [selectedBranchCode, setSelectedBranchCode] = useState<string>('');
   const [selectedPromotionTeams, setSelectedPromotionTeams] = useState<string[]>([]);
+  const [appliedEmployeeIds, setAppliedEmployeeIds] = useState<number[]>([]);
+  const [appliedAccountIds, setAppliedAccountIds] = useState<number[]>([]);
+  const [appliedPromotionTeams, setAppliedPromotionTeams] = useState<string[]>([]);
 
-  // Debounce filter values
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [debouncedEmployeeIds, setDebouncedEmployeeIds] = useState<number[]>([]);
-  const [debouncedAccountIds, setDebouncedAccountIds] = useState<number[]>([]);
-  const [debouncedPromotionTeams, setDebouncedPromotionTeams] = useState<string[]>([]);
+  const [selectedBranchCode, setSelectedBranchCode] = useState<string>('');
 
-  const handleEmployeeIdsChange = useCallback((ids: number[]) => {
-    setSelectedEmployeeIds(ids);
-    clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => setDebouncedEmployeeIds(ids), 300);
+  const handleBranchCodeChange = useCallback((code: string) => {
+    setSelectedBranchCode(code);
+    // 지점이 바뀌면 거래처 목록 자체가 달라지므로 staging 선택 초기화.
+    setSelectedAccountIds([]);
   }, []);
 
-  const handleAccountIdsChange = useCallback((ids: number[]) => {
-    setSelectedAccountIds(ids);
-    clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => setDebouncedAccountIds(ids), 300);
+  const handleFilterTabChange = useCallback((tab: FilterTab) => {
+    setFilterTab(tab);
+    // XOR — 다른 탭의 applied 도 비워 backend 가 빈 결과 분기 (fetch hook enabled=false).
+    setAppliedEmployeeIds([]);
+    setAppliedAccountIds([]);
   }, []);
 
-  const handlePromotionTeamsChange = useCallback((teams: string[]) => {
-    setSelectedPromotionTeams(teams);
-    clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => setDebouncedPromotionTeams(teams), 300);
-  }, []);
+  const handleApplyFilter = useCallback(() => {
+    setAppliedEmployeeIds(selectedEmployeeIds);
+    setAppliedAccountIds(selectedAccountIds);
+    setAppliedPromotionTeams(selectedPromotionTeams);
+  }, [selectedEmployeeIds, selectedAccountIds, selectedPromotionTeams]);
 
   // Modal state
   const [dayListModalOpen, setDayListModalOpen] = useState(false);
@@ -71,18 +73,18 @@ export default function SchedulePage() {
     return {
       from,
       to,
-      employeeIds: filterTab === 'member' ? debouncedEmployeeIds : [],
-      accountIds: filterTab === 'account' ? debouncedAccountIds : [],
-      promotionTeams: debouncedPromotionTeams,
+      employeeIds: filterTab === 'member' ? appliedEmployeeIds : [],
+      accountIds: filterTab === 'account' ? appliedAccountIds : [],
+      promotionTeams: appliedPromotionTeams,
     };
   }, [
     currentDate,
     viewType,
     listRange,
     filterTab,
-    debouncedEmployeeIds,
-    debouncedAccountIds,
-    debouncedPromotionTeams,
+    appliedEmployeeIds,
+    appliedAccountIds,
+    appliedPromotionTeams,
   ]);
 
   const { data, isLoading: schedulesLoading } = useTeamSchedules(queryParams);
@@ -112,20 +114,40 @@ export default function SchedulePage() {
   const handleEventClick = openScheduleDetail;
   const handleScheduleClickFromList = openScheduleDetail;
 
+  // staging != applied 인 경우 "조회" 버튼 강조용 dirty flag.
+  const isFilterDirty = useMemo(() => {
+    const stagingIds = filterTab === 'member' ? selectedEmployeeIds : selectedAccountIds;
+    const appliedIds = filterTab === 'member' ? appliedEmployeeIds : appliedAccountIds;
+    return (
+      !isSameSet(stagingIds, appliedIds) ||
+      !isSameSet(selectedPromotionTeams, appliedPromotionTeams)
+    );
+  }, [
+    filterTab,
+    selectedEmployeeIds,
+    selectedAccountIds,
+    appliedEmployeeIds,
+    appliedAccountIds,
+    selectedPromotionTeams,
+    appliedPromotionTeams,
+  ]);
+
   return (
     <div style={{ display: 'flex', height: '100%', gap: 16, padding: 16 }}>
       <div style={{ width: 240, flexShrink: 0 }}>
         <ScheduleFilterPanel
           filterTab={filterTab}
-          onFilterTabChange={setFilterTab}
+          onFilterTabChange={handleFilterTabChange}
           selectedEmployeeIds={selectedEmployeeIds}
-          onSelectedEmployeeIdsChange={handleEmployeeIdsChange}
+          onSelectedEmployeeIdsChange={setSelectedEmployeeIds}
           selectedAccountIds={selectedAccountIds}
-          onSelectedAccountIdsChange={handleAccountIdsChange}
+          onSelectedAccountIdsChange={setSelectedAccountIds}
           selectedBranchCode={selectedBranchCode}
-          onSelectedBranchCodeChange={setSelectedBranchCode}
+          onSelectedBranchCodeChange={handleBranchCodeChange}
           selectedPromotionTeams={selectedPromotionTeams}
-          onSelectedPromotionTeamsChange={handlePromotionTeamsChange}
+          onSelectedPromotionTeamsChange={setSelectedPromotionTeams}
+          onApply={handleApplyFilter}
+          isFilterDirty={isFilterDirty}
         />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -166,4 +188,13 @@ export default function SchedulePage() {
       />
     </div>
   );
+}
+
+function isSameSet<T extends string | number>(a: T[], b: T[]): boolean {
+  if (a.length !== b.length) return false;
+  const setA = new Set(a);
+  for (const v of b) {
+    if (!setA.has(v)) return false;
+  }
+  return true;
 }
