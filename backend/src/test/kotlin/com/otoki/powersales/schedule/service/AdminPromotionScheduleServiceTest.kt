@@ -132,6 +132,40 @@ class AdminPromotionScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("동일 사원 다일자 배치 — PE N건 × TMS N건이 N×N 으로 부풀려지지 않아야 함")
+        fun getSchedules_sameEmployeeMultipleDays_noCrossProduct() {
+            // Given — 송은주 1명이 같은 행사에 5/2~5/5 4일 배치 (PE 4건, TMS 4건, 1:1 매칭)
+            val promotion = createPromotion()
+            val employee = createEmployee(id = 50L)
+            val account = createAccount(id = 300)
+            val dates = listOf(
+                LocalDate.of(2026, 5, 2), LocalDate.of(2026, 5, 3),
+                LocalDate.of(2026, 5, 4), LocalDate.of(2026, 5, 5)
+            )
+            val promotionEmployees = dates.mapIndexed { i, _ ->
+                createPromotionEmployee(id = 200L + i, employee = employee, promotionId = promotionId)
+            }
+            val schedules = promotionEmployees.mapIndexed { i, pe ->
+                createSchedule(
+                    id = 1000L + i, employee = employee, account = account,
+                    workingDate = dates[i], promotionEmployee = pe
+                )
+            }
+
+            every { promotionRepository.findById(promotionId) } returns Optional.of(promotion)
+            every { promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId) } returns promotionEmployees
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(any(), any(), any(), any()) } returns schedules
+
+            // When
+            val result = service.getSchedules(promotionId, null, null)
+
+            // Then — PE 4건 각각에 해당 PE 의 일정 1건만 매칭. 총 4건 (16건 회귀 방지)
+            assertThat(result.totalMemberCount).isEqualTo(4)
+            assertThat(result.totalScheduleCount).isEqualTo(4)
+            result.members.forEach { m -> assertThat(m.schedules).hasSize(1) }
+        }
+
+        @Test
         @DisplayName("다른 행사 일정 필터링 - 동일 사원이 다른 행사에도 배정된 경우 본 행사 일정만 반환")
         fun getSchedules_filtersOtherPromotion() {
             val promotion = createPromotion()
