@@ -1,6 +1,5 @@
 package com.otoki.powersales.admin.security
 
-import com.otoki.powersales.admin.service.AdminDataScopeService
 import com.otoki.powersales.auth.permission.AdminPermissionCache
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionEvaluator
@@ -35,7 +34,7 @@ import tools.jackson.databind.ObjectMapper
  * `@RequiresSfPermission` 부착 endpoint 접근 시 403, 미부착 endpoint 는 통과.
  */
 class WebAdminContextFilter(
-    private val adminDataScopeService: AdminDataScopeService,
+    private val adminDataScopeCache: AdminDataScopeCache,
     private val requestMappingHandlerMapping: RequestMappingHandlerMapping,
     private val sfPermissionEvaluator: SfPermissionEvaluator,
     private val adminPermissionCache: AdminPermissionCache,
@@ -52,7 +51,7 @@ class WebAdminContextFilter(
 
         if (principal != null) {
             val permissions: Set<String> = if (principal.employeeId != null) {
-                request.setAttribute(AdminContextAttributes.DATA_SCOPE, adminDataScopeService.resolve(principal))
+                request.setAttribute(AdminContextAttributes.DATA_SCOPE, adminDataScopeCache.get(principal))
                 val resolved = adminPermissionCache.get(principal.userId)
                 request.setAttribute(AdminContextAttributes.PERMISSIONS, resolved)
                 resolved

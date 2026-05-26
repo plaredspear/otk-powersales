@@ -1,6 +1,7 @@
 package com.otoki.powersales.sap.inbound.service
 
 import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.auth.permission.AdminPermissionCache
 import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.common.repository.SystemCodeMasterRepository
@@ -32,6 +33,7 @@ class AppointmentUserProfileUpdaterTest {
     private val employeeProfileResolver: EmployeeProfileResolver = mockk(relaxed = true)
     private val userRoleResolver: UserRoleResolver = mockk(relaxed = true)
     private val adminPermissionCache: AdminPermissionCache = mockk(relaxed = true)
+    private val adminDataScopeCache: AdminDataScopeCache = mockk(relaxed = true)
     private val updater = AppointmentUserProfileUpdater(
         employeeRepository,
         organizationRepository,
@@ -40,6 +42,7 @@ class AppointmentUserProfileUpdaterTest {
         employeeProfileResolver,
         userRoleResolver,
         adminPermissionCache,
+        adminDataScopeCache,
     )
 
     private val today = LocalDate.of(2026, 3, 22)
