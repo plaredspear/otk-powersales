@@ -240,6 +240,36 @@ export interface EmployeePermissionInspection {
   systemPermissions: string[];
 }
 
+export interface EmployeeWorkHistoryItem {
+  id: number;
+  workingDate: string | null;
+  workingType: string | null;
+  workingCategory1: string | null;
+  workingCategory3: string | null;
+  workingCategory4: string | null;
+  accountName: string | null;
+  accountExternalKey: string | null;
+  isClockIn: boolean;
+}
+
+export interface EmployeeWorkHistory {
+  items: EmployeeWorkHistoryItem[];
+}
+
+export async function fetchEmployeeWorkHistory(
+  employeeId: number,
+  limit = 10,
+): Promise<EmployeeWorkHistory> {
+  const res = await client.get<ApiResponse<EmployeeWorkHistory>>(
+    `/api/v1/admin/employees/${employeeId}/work-history`,
+    { params: { limit } },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '근무이력 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function fetchEmployeePermissions(employeeId: number): Promise<EmployeePermissionInspection> {
   const res = await client.get<ApiResponse<EmployeePermissionInspection>>(
     `/api/v1/admin/employees/${employeeId}/permissions`,

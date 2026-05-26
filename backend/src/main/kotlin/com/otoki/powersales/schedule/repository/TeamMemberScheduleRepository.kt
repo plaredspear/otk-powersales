@@ -7,6 +7,7 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
 
@@ -52,4 +53,13 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
         workingDate: LocalDate,
         workingCategory3: WorkingCategory3
     ): Boolean
+
+    /**
+     * 여사원 상세 — 시간순서별 근무이력 조회.
+     * `working_date desc, created_at desc` 정렬. limit 는 호출처 `Pageable` 로 제어.
+     */
+    fun findByEmployeeOrderByWorkingDateDescCreatedAtDesc(
+        employee: Employee,
+        pageable: Pageable,
+    ): List<TeamMemberSchedule>
 }

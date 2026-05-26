@@ -45,6 +45,15 @@ const sapEmployee: EmployeeDetail = {
   usedAnnualLeave: null,
 };
 
+vi.mock('@/hooks/employee/useEmployeeWorkHistory', () => ({
+  useEmployeeWorkHistory: () => ({
+    data: { items: [] },
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
+}));
+
 vi.mock('@/hooks/employee/useEmployee', () => ({
   useEmployee: () => ({
     data: sapEmployee,

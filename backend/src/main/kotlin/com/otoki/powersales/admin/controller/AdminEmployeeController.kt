@@ -16,6 +16,8 @@ import com.otoki.powersales.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.employee.service.AdminEmployeeManualRegisterService
 import com.otoki.powersales.employee.service.AdminEmployeeService
 import com.otoki.powersales.employee.service.AdminEmployeeUpdateService
+import com.otoki.powersales.schedule.dto.response.EmployeeWorkHistoryResponse
+import com.otoki.powersales.schedule.service.EmployeeWorkHistoryService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
@@ -38,6 +40,7 @@ class AdminEmployeeController(
     private val adminEmployeeUpdateService: AdminEmployeeUpdateService,
     private val adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService,
     private val sfPermissionInspectionService: SfPermissionInspectionService,
+    private val employeeWorkHistoryService: EmployeeWorkHistoryService,
 ) {
 
     @GetMapping
@@ -139,6 +142,21 @@ class AdminEmployeeController(
         val inspection = sfPermissionInspectionService.inspectByEmployeeId(employeeId)
             ?: return ResponseEntity.ok(ApiResponse.success(emptyInspection(employeeId)))
         return ResponseEntity.ok(ApiResponse.success(inspection))
+    }
+
+    /**
+     * 여사원 상세 — 시간순서별 근무이력(TeamMemberSchedule) 조회.
+     *
+     * 기본 limit 10. working_date desc + created_at desc 정렬.
+     */
+    @GetMapping("/{employeeId}/work-history")
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)
+    fun getWorkHistory(
+        @PathVariable employeeId: Long,
+        @RequestParam(required = false, defaultValue = "10") limit: Int,
+    ): ResponseEntity<ApiResponse<EmployeeWorkHistoryResponse>> {
+        val response = employeeWorkHistoryService.getRecentHistory(employeeId, limit)
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     private fun emptyInspection(employeeId: Long): SfPermissionInspectionService.EmployeePermissionInspection =

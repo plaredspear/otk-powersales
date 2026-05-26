@@ -17,6 +17,7 @@ import EmployeeEditModal from '@/pages/employee/components/EmployeeEditModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import SfPermissionSection from '@/pages/employee/components/SfPermissionSection';
+import WorkHistorySection from '@/pages/employee/components/WorkHistorySection';
 
 function toEmployeeListItem(detail: EmployeeDetail): Employee {
   return {
@@ -229,6 +230,8 @@ export default function EmployeeDetailPage() {
           <Descriptions.Item label="사용 연차">{employee.usedAnnualLeave ?? '-'}</Descriptions.Item>
         </Descriptions>
       </Card>
+
+      {employeeId && <WorkHistorySection employeeId={employeeId} />}
 
       {employeeId && <SfPermissionSection employeeId={employeeId} />}
 

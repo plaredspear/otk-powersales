@@ -233,4 +233,75 @@ class TeamMemberScheduleRepositoryTest {
             teamMemberScheduleRepository.updateAttendanceLog(99999L, 1L)
         }
     }
+
+    @Nested
+    @DisplayName("findByEmployeeOrderByWorkingDateDescCreatedAtDesc")
+    inner class FindByEmployeeOrderByWorkingDateDescCreatedAtDesc {
+
+        @Test
+        @DisplayName("working_date 내림차순으로 정렬된 결과를 반환한다")
+        fun ordered_by_working_date_desc() {
+            val day1 = LocalDate.of(2026, 1, 10)
+            val day2 = LocalDate.of(2026, 2, 15)
+            val day3 = LocalDate.of(2026, 3, 20)
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = day1, workingType = WorkingType.WORK)
+            )
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = day3, workingType = WorkingType.WORK)
+            )
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = day2, workingType = WorkingType.WORK)
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findByEmployeeOrderByWorkingDateDescCreatedAtDesc(testEmployee, org.springframework.data.domain.PageRequest.of(0, 10))
+
+            assertThat(result.map { it.workingDate }).containsExactly(day3, day2, day1)
+        }
+
+        @Test
+        @DisplayName("Pageable limit 만큼만 반환한다")
+        fun limit_respected() {
+            for (d in 1..15) {
+                testEntityManager.persistAndFlush(
+                    TeamMemberSchedule(
+                        employee = testEmployee,
+                        workingDate = LocalDate.of(2026, 1, d),
+                        workingType = WorkingType.WORK,
+                    )
+                )
+            }
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findByEmployeeOrderByWorkingDateDescCreatedAtDesc(testEmployee, org.springframework.data.domain.PageRequest.of(0, 10))
+
+            assertThat(result).hasSize(10)
+            assertThat(result.first().workingDate).isEqualTo(LocalDate.of(2026, 1, 15))
+            assertThat(result.last().workingDate).isEqualTo(LocalDate.of(2026, 1, 6))
+        }
+
+        @Test
+        @DisplayName("다른 사원 일정은 포함되지 않는다")
+        fun other_employee_excluded() {
+            val otherEmployee = testEntityManager.persistAndFlush(
+                Employee(employeeCode = "EMP_OTHER", name = "다른사원")
+            )
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = LocalDate.of(2026, 1, 10), workingType = WorkingType.WORK)
+            )
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = otherEmployee, workingDate = LocalDate.of(2026, 1, 20), workingType = WorkingType.WORK)
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findByEmployeeOrderByWorkingDateDescCreatedAtDesc(testEmployee, org.springframework.data.domain.PageRequest.of(0, 10))
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].employee?.id).isEqualTo(testEmployee.id)
+        }
+    }
 }
