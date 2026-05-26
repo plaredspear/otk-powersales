@@ -5,7 +5,6 @@ import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.auth.repository.ProfileRepository
 import com.otoki.powersales.auth.sharing.entity.ProfileFlags
 import com.otoki.powersales.auth.sharing.repository.ProfileFlagsRepository
-import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -30,7 +29,6 @@ class LocalDataInitializer(
     private val profileRepository: ProfileRepository,
     private val profileFlagsRepository: ProfileFlagsRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val agreementWordRepository: AgreementWordRepository,
     private val transactionTemplate: TransactionTemplate,
     private val entityManager: EntityManager,
 ) : ApplicationRunner {
@@ -109,7 +107,7 @@ class LocalDataInitializer(
     }
 
     private fun seedUser() {
-        val encodedPassword = passwordEncoder.encode("1234")!!
+        val encodedPassword = passwordEncoder.encode("pwrs1234!")!!
 
         /**
          * `role`: SF DKRetail__AppAuthority__c picklist value 또는 null.
@@ -189,7 +187,7 @@ class LocalDataInitializer(
      * - User.profileId 는 명시적으로 "시스템 관리자" Profile 지정.
      */
     private fun seedSystemAdmin() {
-        val encodedPassword = passwordEncoder.encode("1234")!!
+        val encodedPassword = passwordEncoder.encode("pwrs1234!")!!
 
         data class SeedSystemAdmin(val code: String, val name: String, val orgName: String, val workEmail: String)
 
@@ -238,6 +236,7 @@ class LocalDataInitializer(
                 user.profileId = sysadminProfileId
                 userRepository.save(user)
             }
+
             log.info("시드 시스템 관리자 계정 생성 완료: employeeCode={}", seed.code)
         }
     }

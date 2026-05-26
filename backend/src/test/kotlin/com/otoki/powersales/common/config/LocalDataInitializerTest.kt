@@ -1,16 +1,11 @@
 package com.otoki.powersales.common.config
 
 import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.service.UserProvisioningService
-import io.mockk.Runs
-import io.mockk.every
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.verify
+import io.mockk.*
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
 import org.assertj.core.api.Assertions.assertThat
@@ -37,8 +32,6 @@ class LocalDataInitializerTest {
 
     private val passwordEncoder: PasswordEncoder = mockk(relaxed = true)
 
-    private val agreementWordRepository: AgreementWordRepository = mockk()
-
     private val transactionTemplate: TransactionTemplate = mockk()
 
     private val entityManager: EntityManager = mockk()
@@ -52,7 +45,6 @@ class LocalDataInitializerTest {
         profileRepository,
         profileFlagsRepository,
         passwordEncoder,
-        agreementWordRepository,
         transactionTemplate,
         entityManager,
     )
@@ -100,8 +92,8 @@ class LocalDataInitializerTest {
         every { employeeRepository.existsByEmployeeCode("99990005") } returns false
         every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns false
         every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns false
-        every { passwordEncoder.encode("1234") } returns "encoded_password"
-        every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
+        every { passwordEncoder.encode("pwrs1234!") } returns "encoded_password"
+        every { passwordEncoder.encode("pwrs1234!") } returns "encoded_password"
         every { employeeRepository.save(any<Employee>()) } answers {
             val emp = firstArg<Employee>()
             savedEmployees.add(emp)
@@ -214,8 +206,8 @@ class LocalDataInitializerTest {
             every { employeeRepository.existsByEmployeeCode("99990005") } returns false
             every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns false
             every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns false
-            every { passwordEncoder.encode("1234") } returns "encoded_password"
-            every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
+            every { passwordEncoder.encode("pwrs1234!") } returns "encoded_password"
+            every { passwordEncoder.encode("pwrs1234!") } returns "encoded_password"
             every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
 
@@ -271,8 +263,8 @@ class LocalDataInitializerTest {
             every { employeeRepository.existsByEmployeeCode("99990005") } returns false
             every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns false
             every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns false
-            every { passwordEncoder.encode("1234") } returns "encoded_password"
-            every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
+            every { passwordEncoder.encode("pwrs1234!") } returns "encoded_password"
+            every { passwordEncoder.encode("pwrs1234!") } returns "encoded_password"
             every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
 
@@ -365,8 +357,8 @@ class LocalDataInitializerTest {
             every { employeeRepository.existsByEmployeeCode("99990005") } returns false
             every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns true
             every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns true
-            every { passwordEncoder.encode("1234") } returns "encoded_password"
-            every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
+            every { passwordEncoder.encode("pwrs1234!") } returns "encoded_password"
+            every { passwordEncoder.encode("pwrs1234!") } returns "encoded_password"
             every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
 
@@ -392,8 +384,8 @@ class LocalDataInitializerTest {
             every { employeeRepository.existsByEmployeeCode("99990005") } returns false
             every { employeeRepository.existsByEmployeeCode("ADMIN-99999999") } returns false
             every { employeeRepository.existsByEmployeeCode("ADMIN-99990001") } returns false
-            every { passwordEncoder.encode("1234") } returns "encoded_password"
-            every { passwordEncoder.encode("a1234!@#$") } returns "encoded_password"
+            every { passwordEncoder.encode("pwrs1234!") } returns "encoded_password"
+            every { passwordEncoder.encode("pwrs1234!") } returns "encoded_password"
             every { employeeRepository.save(any<Employee>()) } answers { val emp = firstArg<Employee>(); savedEmployees.add(emp); emp }
             stubEmployeeInfoExists()
 
