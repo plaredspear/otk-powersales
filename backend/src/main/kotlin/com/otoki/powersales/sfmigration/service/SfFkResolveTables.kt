@@ -240,6 +240,7 @@ internal fun deriveFkResolveSpec(sfidColumn: String): FkResolveSpec? {
     val idColumn = when (prefix) {
         "owner" -> "owner_user_id"
         "commute_log" -> "attendance_log_id" // Spec #789 — legacy DKRetail__CommuteLogId__c lookup 의 신규 entity 명 = AttendanceLog
+        "full_name" -> "employee_id" // ProfessionalPromotionTeamMaster.FullName__c → employee_id 단일 컬럼으로 통합 (full_name_id 폐기)
         else -> "${prefix}_id"
     }
     val (refTable, refIdColumn) = FK_PREFIX_MAPPING[prefix]
