@@ -31,3 +31,15 @@ class InvalidSuggestionIdException : BusinessException(
     message = "유효하지 않은 제안 ID 입니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class InvalidSuggestionPhotoIdException : BusinessException(
+    errorCode = "INVALID_PARAMETER",
+    message = "유효하지 않은 사진 ID 입니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class SuggestionPhotoNotFoundException : BusinessException(
+    errorCode = "SUGGESTION_PHOTO_NOT_FOUND",
+    message = "사진을 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
