@@ -67,7 +67,6 @@ export function ScheduleFilterPanel({
         icon={<SearchOutlined />}
         block
         onClick={onApply}
-        disabled={!isFilterDirty}
         style={{ marginBottom: 12 }}
       >
         조회

@@ -49,12 +49,6 @@ export default function SchedulePage() {
     setAppliedAccountIds([]);
   }, []);
 
-  const handleApplyFilter = useCallback(() => {
-    setAppliedEmployeeIds(selectedEmployeeIds);
-    setAppliedAccountIds(selectedAccountIds);
-    setAppliedPromotionTeams(selectedPromotionTeams);
-  }, [selectedEmployeeIds, selectedAccountIds, selectedPromotionTeams]);
-
   // Modal state
   const [dayListModalOpen, setDayListModalOpen] = useState(false);
   const [dayListModalDate, setDayListModalDate] = useState('');
@@ -87,10 +81,19 @@ export default function SchedulePage() {
     appliedPromotionTeams,
   ]);
 
-  const { data, isLoading: schedulesLoading } = useTeamSchedules(queryParams);
+  const { data, isLoading: schedulesLoading, refetch: refetchSchedules } = useTeamSchedules(queryParams);
   const schedules = data?.schedules ?? [];
   const summaries = data?.dailySummary ?? [];
   const { data: accounts = [] } = useTeamScheduleAccounts(selectedBranchCode);
+
+  // staging 이 applied 와 동일해도 "조회" 클릭 시 항상 강제 재요청 — react-query 가 동일 queryKey 일 때
+  // cache 즉시 반환만 하고 background refetch 안 하므로 명시 refetch 필요.
+  const handleApplyFilter = useCallback(() => {
+    setAppliedEmployeeIds(selectedEmployeeIds);
+    setAppliedAccountIds(selectedAccountIds);
+    setAppliedPromotionTeams(selectedPromotionTeams);
+    refetchSchedules();
+  }, [selectedEmployeeIds, selectedAccountIds, selectedPromotionTeams, refetchSchedules]);
 
   const handleDateClick = useCallback((date: string) => {
     setDayListModalDate(date);
