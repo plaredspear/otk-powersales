@@ -16,7 +16,9 @@ const AttendancePage = lazy(() => import('@/pages/AttendancePage'));
 const ClaimListPage = lazy(() => import('@/pages/claims/ClaimListPage'));
 const ClaimDetailPage = lazy(() => import('@/pages/claims/ClaimDetailPage'));
 const ClaimCreatePage = lazy(() => import('@/pages/claims/ClaimCreatePage'));
-const SuggestionPage = lazy(() => import('@/pages/SuggestionPage'));
+const SuggestionListPage = lazy(() => import('@/pages/suggestion/SuggestionListPage'));
+const SuggestionDetailPage = lazy(() => import('@/pages/suggestion/SuggestionDetailPage'));
+const SuggestionCreatePage = lazy(() => import('@/pages/suggestion/SuggestionCreatePage'));
 const LeavePage = lazy(() => import('@/pages/LeavePage'));
 const SafetyCheckPage = lazy(() => import('@/pages/SafetyCheckPage'));
 const ProductPage = lazy(() => import('@/pages/ProductPage'));
@@ -125,7 +127,9 @@ export const router = createBrowserRouter(
             { path: '/claims', element: <LazyWrapper><ClaimListPage /></LazyWrapper> },
             { path: '/claims/new', element: <LazyWrapper><ClaimCreatePage /></LazyWrapper> },
             { path: '/claims/:claimId', element: <LazyWrapper><ClaimDetailPage /></LazyWrapper> },
-            { path: '/suggestion', element: <LazyWrapper><SuggestionPage /></LazyWrapper> },
+            { path: '/suggestion', element: <LazyWrapper><SuggestionListPage /></LazyWrapper> },
+            { path: '/suggestion/new', element: <LazyWrapper><SuggestionCreatePage /></LazyWrapper> },
+            { path: '/suggestion/:id', element: <LazyWrapper><SuggestionDetailPage /></LazyWrapper> },
             { path: '/leave', element: <LazyWrapper><LeavePage /></LazyWrapper> },
             { path: '/product', element: <LazyWrapper><ProductPage /></LazyWrapper> },
             { path: '/product/:productCode', element: <LazyWrapper><ProductDetailPage /></LazyWrapper> },
