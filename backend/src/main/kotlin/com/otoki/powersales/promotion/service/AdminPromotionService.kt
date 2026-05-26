@@ -125,6 +125,85 @@ class AdminPromotionService(
             .map { PromotionPosProductResponse.from(it) }
     }
 
+    /**
+     * 상세 POS품목 신규 생성 — SF Promotion 상세의 "새 상세 POS품목" 다이얼로그 동등.
+     * AutoNumber `PS{00000000}` 으로 Name 채번 (V208 promotion_product_name_seq).
+     */
+    @Transactional
+    fun createPosProduct(
+        scope: DataScope,
+        promotionId: Long,
+        request: com.otoki.powersales.promotion.dto.request.PromotionPosProductRequest,
+    ): PromotionPosProductResponse {
+        if (promotionId <= 0) throw PromotionInvalidParameterException()
+        val promotion = findActivePromotion(promotionId)
+        validateDataScope(scope, promotion)
+
+        val product = request.productId?.let {
+            productRepository.findById(it).orElseThrow { ProductNotFoundException() }
+        }
+
+        val seq = promotionProductRepository.getNextNameSeq()
+        val name = "PS" + String.format("%08d", seq)
+
+        val saved = promotionProductRepository.save(
+            PromotionProduct(
+                name = name,
+                promotionId = promotionId,
+                productId = product?.id,
+                price = request.price,
+            ).apply {
+                this.promotion = promotion
+                this.product = product
+            }
+        )
+        return PromotionPosProductResponse.from(saved)
+    }
+
+    /**
+     * 상세 POS품목 수정 — productId / price 만 변경 (Name / promotion 변경 불가, SF 정합).
+     */
+    @Transactional
+    fun updatePosProduct(
+        scope: DataScope,
+        posProductId: Long,
+        request: com.otoki.powersales.promotion.dto.request.PromotionPosProductRequest,
+    ): PromotionPosProductResponse {
+        if (posProductId <= 0) throw PromotionInvalidParameterException()
+        val entity = promotionProductRepository.findById(posProductId)
+            .orElseThrow { PromotionProductNotFoundException() }
+        if (entity.isDeleted) throw PromotionProductNotFoundException()
+
+        val promotion = entity.promotionId?.let { findActivePromotion(it) }
+            ?: throw PromotionProductNotFoundException()
+        validateDataScope(scope, promotion)
+
+        val product = request.productId?.let {
+            productRepository.findById(it).orElseThrow { ProductNotFoundException() }
+        }
+        entity.productId = product?.id
+        entity.product = product
+        entity.price = request.price
+        return PromotionPosProductResponse.from(entity)
+    }
+
+    /**
+     * 상세 POS품목 soft delete (is_deleted=true) — SF 정합.
+     */
+    @Transactional
+    fun deletePosProduct(scope: DataScope, posProductId: Long) {
+        if (posProductId <= 0) throw PromotionInvalidParameterException()
+        val entity = promotionProductRepository.findById(posProductId)
+            .orElseThrow { PromotionProductNotFoundException() }
+        if (entity.isDeleted) throw PromotionProductNotFoundException()
+
+        val promotion = entity.promotionId?.let { findActivePromotion(it) }
+            ?: throw PromotionProductNotFoundException()
+        validateDataScope(scope, promotion)
+
+        entity.isDeleted = true
+    }
+
     @Transactional
     fun createPromotion(userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
         validateDateRange(request.startDate, request.endDate)
