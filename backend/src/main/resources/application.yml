@@ -76,7 +76,7 @@ spring:
 # ---------------------------------------------------------------------------
 # Actuator — /actuator/health 만 노출. show-details=always 는 web UI 에서
 # DB/Redis 상태 카드를 렌더링하기 위함. EB Load Balancer 헬스체크 경로도 동일.
-# /api/health 외부 엔드포인트는 #539-P2 의 HealthController 가 별도 제공.
+# /api/health 외부 엔드포인트는 별도 HealthController 가 제공.
 # ---------------------------------------------------------------------------
 management:
   endpoints:
@@ -99,7 +99,7 @@ orora:
     enabled: ${ORORA_MOCK_ENABLED:true}
 
 # ---------------------------------------------------------------------------
-# SAP 인바운드 인증 (Spec #555 P1-B)
+# SAP 인바운드 인증
 #  - client_secret 평문 저장 금지. BCrypt 해시만 보관
 #  - jwt_signing_key 는 mobile/admin JWT 와 별도 (256-bit 이상)
 #  - allowed_ips 는 비어 있으면 backend 단 IP 검증 비활성 (ALB 단에 위임)
@@ -137,8 +137,14 @@ sap:
       delay-ms: ${SAP_OUTBOUND_RETRY_DELAY_MS:1000}
 
 # ---------------------------------------------------------------------------
-# SF 인바운드 OAuth 2.0 인프라 (Spec #774)
-# SAP 와 격리된 별도 시스템 — client_credentials grant 만 지원, IP allowlist 없음.
+# SF 통합 설정 — 인바운드 OAuth + 아웃바운드 Apex REST relay
+#   - inbound: SF → backend 호출용 OAuth 2.0 (client_credentials grant)
+#       SAP 와 격리된 별도 시스템. IP allowlist 없음.
+#   - outbound: backend → SF Apex REST relay (예: IF_REST_MOBILE_ClaimRegist).
+#       OAuth 2.0 password grant 로 access_token 발급 → in-memory 캐싱 →
+#       401 응답 시 1회 재발급 + 재시도.
+#   - local / test 에서는 placeholder 가 비어 있어도 빈은 생성되지만 실제 호출
+#     시 명시적 예외 발생 (운영 환경 misconfiguration 검출).
 # ---------------------------------------------------------------------------
 sf:
   auth:
@@ -152,6 +158,14 @@ sf:
     sales:
       chunk-size: 1000
       max-rows: 50000
+  outbound:
+    apex-base-url: ${SF_APEX_REST_BASE_URL:}
+    oauth:
+      token-url: ${SF_OAUTH_TOKEN_URL:}
+      client-id: ${SF_OAUTH_CLIENT_ID:}
+      client-secret: ${SF_OAUTH_CLIENT_SECRET:}
+      username: ${SF_OAUTH_USERNAME:}
+      password: ${SF_OAUTH_PASSWORD:}
 
 springdoc:
   swagger-ui:
@@ -181,8 +195,16 @@ app:
     api: ${API_DOMAIN:}
     admin: ${ADMIN_DOMAIN:}
 
+  auth:
+    uuid-check:
+      enabled: ${UUID_CHECK_ENABLED:true}
+      excluded-employee-numbers: ${UUID_CHECK_EXCLUDED:}
+
+  attendance:
+    gps-threshold-meters: ${ATTENDANCE_GPS_THRESHOLD_METERS:500}
+
   # ---------------------------------------------------------------------------
-  # ORORA 외부 MSSQL DB 직결 DataSource (Spec #695)
+  # ORORA 외부 MSSQL DB 직결 DataSource
   #  - dev / prod 프로파일에서만 빈이 활성화된다 (`@Profile("dev | prod")`).
   #  - local / test 에서는 환경변수 미설정 상태에서도 정상 기동 (Bean 부재).
   #  - JDBC URL = `jdbc:sqlserver://${host};databaseName=${database};encrypt=${encrypt}`
@@ -197,25 +219,6 @@ app:
       username: ${ORORA_DB_USER:}
       password: ${ORORA_DB_PASSWORD:}
       encrypt: ${ORORA_DB_ENCRYPT:false}
-
-# ---------------------------------------------------------------------------
-# SF outbound (backend → SF Apex REST relay) — Spec #829
-#   - web admin 클레임 등록 흐름이 SF Apex `IF_REST_MOBILE_ClaimRegist` 를 호출한다
-#     (Heroku `ApiService.callApi` 패턴 재현).
-#   - OAuth 2.0 password grant 로 access_token 발급 → in-memory `AtomicReference`
-#     캐싱 → 401 응답 시 1회 재발급 + 재시도.
-#   - local / test 에서는 placeholder 가 비어 있어도 SfOutboundClient 빈은
-#     생성되지만 실제 호출 시 명시적 예외 발생 (운영 환경 misconfiguration 검출).
-# ---------------------------------------------------------------------------
-sf:
-  outbound:
-    apex-base-url: ${SF_APEX_REST_BASE_URL:}
-    oauth:
-      token-url: ${SF_OAUTH_TOKEN_URL:}
-      client-id: ${SF_OAUTH_CLIENT_ID:}
-      client-secret: ${SF_OAUTH_CLIENT_SECRET:}
-      username: ${SF_OAUTH_USERNAME:}
-      password: ${SF_OAUTH_PASSWORD:}
       trust-server-certificate: ${ORORA_DB_TRUST_CERT:false}
       hikari:
         pool-name: ororaHikariPool
@@ -231,17 +234,9 @@ sf:
         auto-commit: true
         initialization-fail-timeout: -1
 
-  auth:
-    uuid-check:
-      enabled: ${UUID_CHECK_ENABLED:true}
-      excluded-employee-numbers: ${UUID_CHECK_EXCLUDED:}
-
-  attendance:
-    gps-threshold-meters: ${ATTENDANCE_GPS_THRESHOLD_METERS:500}
-
   # ---------------------------------------------------------------------------
-  # SAP outbound — 출근/진열 마스터 daily batch (Spec #588)
-  # cron 표현식과 page-size 는 Part 별로 독립. 인증/baseUrl/timeout 은 #534 의
+  # SAP outbound — 출근/진열 마스터 daily batch
+  # cron 표현식과 page-size 는 Part 별로 독립. 인증/baseUrl/timeout 은 위
   # `sap.outbound.*` 환경변수를 그대로 재사용한다.
   # ---------------------------------------------------------------------------
   sap:
@@ -253,12 +248,12 @@ sf:
         cron: ${APP_SAP_OUTBOUND_DISPLAY_CRON:0 0 1 * * *}
         page-size: ${APP_SAP_OUTBOUND_DISPLAY_PAGE_SIZE:100}
       ppt-master:
-        # Spec #765 — 매시간 34분 0초 KST (SF Scheduled Jobs `IF_REST_SAP_PPTMToSAP` 운영 실측 정합)
+        # 매시간 34분 0초 KST (SF Scheduled Jobs `IF_REST_SAP_PPTMToSAP` 운영 실측 정합)
         cron: ${APP_SAP_OUTBOUND_PPT_MASTER_CRON:0 34 * * * ?}
         page-size: ${APP_SAP_OUTBOUND_PPT_MASTER_PAGE_SIZE:100}
 
   # ---------------------------------------------------------------------------
-  # Naver Cloud Map Geocode API (Spec #637)
+  # Naver Cloud Map Geocode API
   # API Key 발급: NCP 콘솔 → Application Services → Maps → Geocoding 신청 후
   # X-NCP-APIGW-API-KEY-ID / X-NCP-APIGW-API-KEY 발급
   # ---------------------------------------------------------------------------

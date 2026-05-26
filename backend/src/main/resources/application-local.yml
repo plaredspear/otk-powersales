@@ -37,7 +37,7 @@ spring:
     # 설정이 Spring Boot 4 + Hibernate 7 조합에서 적용되지 않는 현상이 관찰되어,
     # JDBC 레벨에서 강제하는 방식이 더 견고하다 (Flyway/Hibernate/raw SQL 모두 일관).
     url: jdbc:postgresql://${RDS_HOST:localhost}:${RDS_PORT:15432}/${RDS_DATABASE:otoki}?currentSchema=powersales
-    username: ${RDS_USERNAME:otoki_admin}
+    username: ${RDS_USERNAME:otkadmin}
     # password 는 application.yml 의 `${RDS_PASSWORD:${password}}` 가 처리한다.
 
   # local 에서도 Flyway 자동 마이그레이션을 활성화한다. base 의 enabled: true 를
