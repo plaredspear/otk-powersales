@@ -180,6 +180,37 @@ app:
     api: ${API_DOMAIN:}
     admin: ${ADMIN_DOMAIN:}
 
+  # ---------------------------------------------------------------------------
+  # ORORA 외부 MSSQL DB 직결 DataSource (Spec #695)
+  #  - dev / prod 프로파일에서만 빈이 활성화된다 (`@Profile("dev | prod")`).
+  #  - local / test 에서는 환경변수 미설정 상태에서도 정상 기동 (Bean 부재).
+  #  - JDBC URL = `jdbc:sqlserver://${host};databaseName=${database};encrypt=${encrypt}`
+  #    (포트 명시 없음 — MSSQL 1433 기본 사용).
+  #  - v1.0 기본은 `encrypt=false` — Orora 측 TLS 가용성 미확정. 향후 운영에서 TLS
+  #    가용성이 확인되면 ORORA_DB_ENCRYPT=true 로 환경변수 토글.
+  # ---------------------------------------------------------------------------
+  datasource:
+    orora:
+      host: ${ORORA_DB_HOST:}
+      database: ${ORORA_DB_NAME:}
+      username: ${ORORA_DB_USER:}
+      password: ${ORORA_DB_PASSWORD:}
+      encrypt: ${ORORA_DB_ENCRYPT:false}
+      trust-server-certificate: ${ORORA_DB_TRUST_CERT:false}
+      hikari:
+        pool-name: ororaHikariPool
+        maximum-pool-size: 5
+        minimum-idle: 1
+        idle-timeout: 600000
+        max-lifetime: 1500000
+        keepalive-time: 120000
+        connection-test-query: "SELECT 1"
+        connection-timeout: 5000
+        validation-timeout: 3000
+        read-only: true
+        auto-commit: true
+        initialization-fail-timeout: -1
+
   auth:
     uuid-check:
       enabled: ${UUID_CHECK_ENABLED:true}

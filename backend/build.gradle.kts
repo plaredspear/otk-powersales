@@ -92,6 +92,8 @@ dependencies {
 	// PR #4311 fix 가 포함된 정식 릴리스가 나오면 Spring Boot 관리 버전으로 복귀한다.
 	runtimeOnly("com.h2database:h2:2.3.232")
 	runtimeOnly("org.postgresql:postgresql")
+	// ORORA 외부 DB 직결 (MSSQL) — dev/prod 프로파일에서만 ororaDataSource 빈이 활성화된다.
+	runtimeOnly("com.microsoft.sqlserver:mssql-jdbc")
 	// SF migration Stage 1 — PG CopyManager API 직접 호출용 (Stage1S3CopyService).
 	// runtimeOnly 로는 PGConnection / org.postgresql.copy.CopyManager 가 컴파일 classpath
 	// 에 안 보이므로 compileOnly 로 보완. 런타임 jar 는 위 runtimeOnly 가 제공.
