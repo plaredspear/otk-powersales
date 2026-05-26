@@ -15,6 +15,7 @@ const DeploymentPage = lazy(() => import('@/pages/DeploymentPage'));
 const AttendancePage = lazy(() => import('@/pages/AttendancePage'));
 const ClaimListPage = lazy(() => import('@/pages/claims/ClaimListPage'));
 const ClaimDetailPage = lazy(() => import('@/pages/claims/ClaimDetailPage'));
+const ClaimCreatePage = lazy(() => import('@/pages/claims/ClaimCreatePage'));
 const SuggestionPage = lazy(() => import('@/pages/SuggestionPage'));
 const LeavePage = lazy(() => import('@/pages/LeavePage'));
 const SafetyCheckPage = lazy(() => import('@/pages/SafetyCheckPage'));
@@ -122,6 +123,7 @@ export const router = createBrowserRouter(
               ],
             },
             { path: '/claims', element: <LazyWrapper><ClaimListPage /></LazyWrapper> },
+            { path: '/claims/new', element: <LazyWrapper><ClaimCreatePage /></LazyWrapper> },
             { path: '/claims/:claimId', element: <LazyWrapper><ClaimDetailPage /></LazyWrapper> },
             { path: '/suggestion', element: <LazyWrapper><SuggestionPage /></LazyWrapper> },
             { path: '/leave', element: <LazyWrapper><LeavePage /></LazyWrapper> },

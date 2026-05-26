@@ -96,3 +96,22 @@ class InvalidClaimDateException(message: String) : BusinessException(
     message = message,
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+/**
+ * 영수증 사진 조건부 필수 위반 (Spec #829).
+ * purchaseMethod ∈ {B(개인카드), C(현금)} 인 경우 영수증 사진이 필수.
+ */
+class ReceiptRequiredException : BusinessException(
+    errorCode = "RECEIPT_REQUIRED",
+    message = "개인카드/현금 구매 시 영수증 사진은 필수입니다",
+    httpStatus = HttpStatus.UNPROCESSABLE_ENTITY
+)
+
+/**
+ * SF 재전송 endpoint 가 SEND_FAILED 상태가 아닌 클레임에 호출됐을 때 (Spec #829).
+ */
+class ClaimNotResendableException : BusinessException(
+    errorCode = "CLAIM_NOT_RESENDABLE",
+    message = "전송실패 상태에서만 SF 재전송할 수 있습니다",
+    httpStatus = HttpStatus.CONFLICT
+)

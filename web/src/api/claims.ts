@@ -63,6 +63,46 @@ export interface ClaimPhoto {
 }
 
 
+// --- Spec #829: Admin 클레임 등록 + SF 재전송 ---
+
+export type ClaimSendStatus = 'SENT' | 'SEND_FAILED' | 'SF_PENDING' | 'DRAFT';
+
+export interface AdminClaimCreateInput {
+  sapAccountCode: string;
+  productCode: string;
+  employeeCode: string;
+  dateType: 'EXPIRY_DATE' | 'MANUFACTURE_DATE';
+  expirationDate?: string;
+  manufacturingDate?: string;
+  claimDate: string;
+  claimType1: string;
+  claimType2: string;
+  quantity: string;
+  description: string;
+  purchaseMethod?: 'A' | 'B' | 'C';
+  amount?: string;
+  requestType?: string;
+  claimPhoto: File;
+  partPhoto: File;
+  receiptPhoto?: File;
+}
+
+export interface AdminClaimCreateResult {
+  claimId: number;
+  status: ClaimSendStatus;
+  sfResultCode: string | null;
+  sfResultMsg: string | null;
+}
+
+function appendIfDefined(form: FormData, key: string, value: unknown) {
+  if (value === undefined || value === null) return;
+  if (value instanceof File) {
+    form.append(key, value);
+  } else {
+    form.append(key, String(value));
+  }
+}
+
 // --- API functions ---
 
 export async function fetchClaims(params: ClaimListParams): Promise<ClaimListData> {
@@ -77,6 +117,43 @@ export async function fetchClaimDetail(claimId: number): Promise<ClaimDetail> {
   const res = await client.get<ApiResponse<ClaimDetail>>(`/api/v1/admin/claims/${claimId}`);
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '클레임 상세 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function createClaim(input: AdminClaimCreateInput): Promise<AdminClaimCreateResult> {
+  const form = new FormData();
+  appendIfDefined(form, 'sapAccountCode', input.sapAccountCode);
+  appendIfDefined(form, 'productCode', input.productCode);
+  appendIfDefined(form, 'employeeCode', input.employeeCode);
+  appendIfDefined(form, 'dateType', input.dateType);
+  appendIfDefined(form, 'expirationDate', input.expirationDate);
+  appendIfDefined(form, 'manufacturingDate', input.manufacturingDate);
+  appendIfDefined(form, 'claimDate', input.claimDate);
+  appendIfDefined(form, 'claimType1', input.claimType1);
+  appendIfDefined(form, 'claimType2', input.claimType2);
+  appendIfDefined(form, 'quantity', input.quantity);
+  appendIfDefined(form, 'description', input.description);
+  appendIfDefined(form, 'purchaseMethod', input.purchaseMethod);
+  appendIfDefined(form, 'amount', input.amount);
+  appendIfDefined(form, 'requestType', input.requestType);
+  form.append('claimPhoto', input.claimPhoto);
+  form.append('partPhoto', input.partPhoto);
+  if (input.receiptPhoto) {
+    form.append('receiptPhoto', input.receiptPhoto);
+  }
+
+  const res = await client.post<ApiResponse<AdminClaimCreateResult>>('/api/v1/admin/claims', form);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '클레임 등록에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function resendClaim(claimId: number): Promise<AdminClaimCreateResult> {
+  const res = await client.post<ApiResponse<AdminClaimCreateResult>>(`/api/v1/admin/claims/${claimId}/sf-resend`);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'SF 재전송에 실패했습니다');
   }
   return res.data.data;
 }

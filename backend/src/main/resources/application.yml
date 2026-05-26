@@ -197,6 +197,25 @@ app:
       username: ${ORORA_DB_USER:}
       password: ${ORORA_DB_PASSWORD:}
       encrypt: ${ORORA_DB_ENCRYPT:false}
+
+# ---------------------------------------------------------------------------
+# SF outbound (backend → SF Apex REST relay) — Spec #829
+#   - web admin 클레임 등록 흐름이 SF Apex `IF_REST_MOBILE_ClaimRegist` 를 호출한다
+#     (Heroku `ApiService.callApi` 패턴 재현).
+#   - OAuth 2.0 password grant 로 access_token 발급 → in-memory `AtomicReference`
+#     캐싱 → 401 응답 시 1회 재발급 + 재시도.
+#   - local / test 에서는 placeholder 가 비어 있어도 SfOutboundClient 빈은
+#     생성되지만 실제 호출 시 명시적 예외 발생 (운영 환경 misconfiguration 검출).
+# ---------------------------------------------------------------------------
+sf:
+  outbound:
+    apex-base-url: ${SF_APEX_REST_BASE_URL:}
+    oauth:
+      token-url: ${SF_OAUTH_TOKEN_URL:}
+      client-id: ${SF_OAUTH_CLIENT_ID:}
+      client-secret: ${SF_OAUTH_CLIENT_SECRET:}
+      username: ${SF_OAUTH_USERNAME:}
+      password: ${SF_OAUTH_PASSWORD:}
       trust-server-certificate: ${ORORA_DB_TRUST_CERT:false}
       hikari:
         pool-name: ororaHikariPool

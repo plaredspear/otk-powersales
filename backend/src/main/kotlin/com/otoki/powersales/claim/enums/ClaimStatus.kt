@@ -18,6 +18,7 @@ enum class ClaimStatus(
     val displayName: String
 ) {
     DRAFT("임시저장"),
+    SF_PENDING("전송대기"),
     SENT("전송완료"),
     SEND_FAILED("전송실패");
 

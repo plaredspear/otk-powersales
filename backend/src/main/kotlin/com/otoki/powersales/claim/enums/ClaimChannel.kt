@@ -16,7 +16,8 @@ enum class ClaimChannel(
     val displayName: String
 ) {
     CRM("CRM"),
-    CAP("CAP CRM(CAP)");
+    CAP("CAP CRM(CAP)"),
+    WEB("WEB");
 
     @JsonValue
     fun toJson(): String = name

@@ -10,6 +10,11 @@ import type { ClaimListItem } from '@/api/claims';
 const { RangePicker } = DatePicker;
 
 const STATUS_TAG: Record<string, { color: string; label: string }> = {
+  DRAFT: { color: 'default', label: '임시저장' },
+  SF_PENDING: { color: 'processing', label: '전송대기' },
+  SENT: { color: 'green', label: '전송완료' },
+  SEND_FAILED: { color: 'red', label: '전송실패' },
+  // 레거시/구버전 표시값 호환
   SUBMITTED: { color: 'blue', label: '접수' },
   IN_PROGRESS: { color: 'orange', label: '처리중' },
   RESOLVED: { color: 'green', label: '처리완료' },
@@ -18,10 +23,10 @@ const STATUS_TAG: Record<string, { color: string; label: string }> = {
 
 const STATUS_OPTIONS = [
   { value: '', label: '전체' },
-  { value: 'SUBMITTED', label: '접수' },
-  { value: 'IN_PROGRESS', label: '처리중' },
-  { value: 'RESOLVED', label: '처리완료' },
-  { value: 'REJECTED', label: '반려' },
+  { value: 'DRAFT', label: '임시저장' },
+  { value: 'SF_PENDING', label: '전송대기' },
+  { value: 'SENT', label: '전송완료' },
+  { value: 'SEND_FAILED', label: '전송실패' },
 ];
 
 const PAGE_SIZE = 20;
@@ -135,6 +140,11 @@ export default function ClaimListPage() {
 
   return (
     <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <Button type="primary" onClick={() => navigate('/claims/new')}>
+          신규 등록
+        </Button>
+      </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16, alignItems: 'center' }}>
         <Space wrap>
           <span>등록일:</span>

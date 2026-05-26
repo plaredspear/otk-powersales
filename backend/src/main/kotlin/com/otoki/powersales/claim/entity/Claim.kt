@@ -297,5 +297,17 @@ class Claim(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
-    var product: Product? = null
+    var product: Product? = null,
+
+    // -- Spec #829: SF outbound dual-write 추적 (web admin 등록 경로 한정) --
+    // SF 매핑 없음 — backend 내부 lifecycle 만 관리.
+
+    @Column(name = "sent_at")
+    var sentAt: LocalDateTime? = null,
+
+    @Column(name = "send_fail_message", length = 1000)
+    var sendFailMessage: String? = null,
+
+    @Column(name = "send_attempt_count", nullable = false)
+    var sendAttemptCount: Int = 0
 ) : BaseEntity()

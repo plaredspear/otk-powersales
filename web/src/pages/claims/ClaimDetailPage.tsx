@@ -1,10 +1,16 @@
 import { useContext, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, Descriptions, Image, Spin, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Descriptions, Image, Spin, Tag, Typography, message } from 'antd';
 import { useClaimDetail } from '@/hooks/claims/useClaimDetail';
+import { useResendClaim } from '@/hooks/claims/useResendClaim';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const STATUS_TAG: Record<string, { color: string; label: string }> = {
+  DRAFT: { color: 'default', label: '임시저장' },
+  SF_PENDING: { color: 'processing', label: '전송대기' },
+  SENT: { color: 'green', label: '전송완료' },
+  SEND_FAILED: { color: 'red', label: '전송실패' },
+  // 레거시/구버전 호환
   SUBMITTED: { color: 'blue', label: '접수' },
   IN_PROGRESS: { color: 'orange', label: '처리중' },
   RESOLVED: { color: 'green', label: '처리완료' },
@@ -28,7 +34,23 @@ export default function ClaimDetailPage() {
   const id = Number(claimId);
 
   const { data: claim, isLoading, error } = useClaimDetail(id);
+  const { mutate: resendClaim, isPending: isResending } = useResendClaim();
   const { setDynamicTitle } = useContext(BreadcrumbContext);
+
+  const handleResend = () => {
+    resendClaim(id, {
+      onSuccess: (data) => {
+        if (data.status === 'SENT') {
+          message.success('SF 재전송에 성공했습니다');
+        } else {
+          message.warning(`SF 재전송에 실패했습니다: ${data.sfResultMsg ?? '연동 오류'}`);
+        }
+      },
+      onError: (err) => {
+        message.error(`재전송 실패: ${err.message}`);
+      },
+    });
+  };
 
   useEffect(() => {
     if (claim) setDynamicTitle(`클레임 #${claim.claimId}`);
@@ -66,6 +88,21 @@ export default function ClaimDetailPage() {
           ← 목록
         </Button>
       </div>
+
+      {claim.status === 'SEND_FAILED' && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="SF 전송 실패"
+          description="이 클레임은 SF에 전송되지 않았습니다. 우측 버튼으로 재전송하세요."
+          action={
+            <Button danger size="small" loading={isResending} onClick={handleResend}>
+              SF 재전송
+            </Button>
+          }
+        />
+      )}
 
       <Card title="기본정보" style={{ marginBottom: 16 }}>
         <Descriptions column={2}>

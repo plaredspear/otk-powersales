@@ -187,13 +187,15 @@ class ClaimSFAnnotationTest {
     inner class ClaimStatusEnumConsistency {
 
         @Test
-        @DisplayName("ClaimStatus.values() = 3개 멤버 (DRAFT/SENT/SEND_FAILED + SF 한국어 displayName)")
+        @DisplayName("ClaimStatus.values() = 4개 멤버 (#829 dual-write 추가: SF_PENDING)")
         fun claimStatusMembers() {
-            // SF `DKRetail__Status__c` picklist (3개 — 임시저장/전송완료/전송실패) 정합.
-            assertThat(ClaimStatus.entries).hasSize(3)
+            // SF `DKRetail__Status__c` picklist (3개 — 임시저장/전송완료/전송실패) + #829 SF_PENDING 신설.
+            // SF picklist 측은 운영자가 별도로 '전송대기' 값을 추가하거나, backend → SF push 직전 임시 상태로만 사용.
+            assertThat(ClaimStatus.entries).hasSize(4)
             assertThat(ClaimStatus.entries.map { it.name })
-                .containsExactlyInAnyOrder("DRAFT", "SENT", "SEND_FAILED")
+                .containsExactlyInAnyOrder("DRAFT", "SF_PENDING", "SENT", "SEND_FAILED")
             assertThat(ClaimStatus.DRAFT.displayName).isEqualTo("임시저장")
+            assertThat(ClaimStatus.SF_PENDING.displayName).isEqualTo("전송대기")
             assertThat(ClaimStatus.SENT.displayName).isEqualTo("전송완료")
             assertThat(ClaimStatus.SEND_FAILED.displayName).isEqualTo("전송실패")
         }
@@ -362,11 +364,11 @@ class ClaimSFAnnotationTest {
     inner class ClaimChannelEnum {
 
         @Test
-        @DisplayName("ClaimChannel.values() = {CRM, CAP} (2개)")
+        @DisplayName("ClaimChannel.values() = {CRM, CAP, WEB} (#829 web admin 신설)")
         fun claimChannelMembers() {
-            assertThat(ClaimChannel.entries).hasSize(2)
+            assertThat(ClaimChannel.entries).hasSize(3)
             assertThat(ClaimChannel.entries.map { it.name })
-                .containsExactlyInAnyOrder("CRM", "CAP")
+                .containsExactlyInAnyOrder("CRM", "CAP", "WEB")
         }
 
         @Test
