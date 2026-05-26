@@ -110,6 +110,21 @@ class AdminPromotionService(
         )
     }
 
+    /**
+     * 행사 상세 "상세 POS품목" 섹션 — DKRetail__PromotionProduct__c 일람.
+     * SF Promotion 상세 Related List ("상세 POS품목 (N)") 동등.
+     */
+    fun getPosProducts(scope: DataScope, promotionId: Long): List<PromotionPosProductResponse> {
+        if (promotionId <= 0) throw PromotionInvalidParameterException()
+
+        val promotion = findActivePromotion(promotionId)
+        validateDataScope(scope, promotion)
+
+        return promotionProductRepository
+            .findByPromotionIdAndIsDeletedFalseOrderByNameAsc(promotionId)
+            .map { PromotionPosProductResponse.from(it) }
+    }
+
     @Transactional
     fun createPromotion(userId: Long, request: PromotionCreateRequest): PromotionDetailResponse {
         validateDateRange(request.startDate, request.endDate)
