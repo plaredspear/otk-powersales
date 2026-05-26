@@ -773,6 +773,39 @@ if (placeholderEntries.isNotEmpty()) {
     println("TOTAL placeholder rows: $grandTotal")
 }
 
+// promotion_product_name_seq 추월 보정 — SF AutoNumber `PS{00000000}` 적재분과
+// 신규 시스템 채번이 충돌하지 않도록 sequence 를 max(name suffix) 로 추월.
+// 운영 부팅 시 PromotionProductNameSeqSyncRunner 가 동일 보정을 한 번 더 수행 (안전망).
+run {
+    val conn = openConnection(dbConfig)
+    try {
+        conn.autoCommit = true
+        conn.createStatement().use { st ->
+            val rs = st.executeQuery(
+                """
+                SELECT
+                    COALESCE(MAX(SUBSTRING(name FROM 3)::bigint), 0) AS max_suffix,
+                    (SELECT last_value FROM promotion_product_name_seq) AS seq
+                FROM promotion_product
+                WHERE name ~ '^PS[0-9]+$'
+                """.trimIndent()
+            )
+            if (rs.next()) {
+                val maxSuffix = rs.getLong("max_suffix")
+                val seq = rs.getLong("seq")
+                if (maxSuffix > seq) {
+                    st.execute("SELECT setval('promotion_product_name_seq', $maxSuffix, true)")
+                    println("[sequence] promotion_product_name_seq: $seq → $maxSuffix (추월 보정)")
+                } else {
+                    println("[sequence] promotion_product_name_seq: $seq (max name suffix=$maxSuffix) — no-op")
+                }
+            }
+        }
+    } finally {
+        conn.close()
+    }
+}
+
 println()
 println("✅ Stage 1 완료. 리포트: ${reportFile.absolutePath}")
 println("다음 단계: kotlin migrate-stage2.main.kts")
