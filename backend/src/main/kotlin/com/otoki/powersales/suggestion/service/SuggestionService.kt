@@ -20,8 +20,10 @@ import com.otoki.powersales.suggestion.entity.Suggestion
 import com.otoki.powersales.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.suggestion.entity.SuggestionStatus
 import com.otoki.powersales.suggestion.exception.InvalidSuggestionIdException
+import com.otoki.powersales.suggestion.exception.InvalidSuggestionPhotoIdException
 import com.otoki.powersales.suggestion.exception.SuggestionAccessDeniedException
 import com.otoki.powersales.suggestion.exception.SuggestionNotFoundException
+import com.otoki.powersales.suggestion.exception.SuggestionPhotoNotFoundException
 import com.otoki.powersales.suggestion.repository.SuggestionRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.Page
@@ -244,6 +246,35 @@ class SuggestionService(
         }
         suggestion.isDeleted = true
         suggestionRepository.save(suggestion)
+    }
+
+    /**
+     * 제안 첨부 사진 단건 삭제 (Spec #828, UC-06).
+     *
+     * 본인 row 검증 후 S3 객체 선행 삭제 → UploadFile 메타 soft delete (isDeleted=true).
+     * 상태 무관 삭제 허용 (레거시 SF S3FileUpload 정합 — Q1). 레거시 UUID 형식 키는 S3 측 no-op.
+     */
+    @Transactional
+    fun deletePhoto(employeeId: Long, suggestionId: Long, photoId: Long) {
+        if (suggestionId <= 0) throw InvalidSuggestionIdException()
+        if (photoId <= 0) throw InvalidSuggestionPhotoIdException()
+
+        val suggestion = suggestionRepository.findByIdAndIsDeletedFalse(suggestionId)
+            ?: throw SuggestionNotFoundException()
+        if (suggestion.employee?.id != employeeId) {
+            throw SuggestionAccessDeniedException()
+        }
+
+        val uploadFile = uploadFileRepository
+            .findByIdAndParentTypeAndParentIdAndIsDeletedFalse(photoId, UploadFileParentTypes.SUGGESTION, suggestion.id)
+            ?: throw SuggestionPhotoNotFoundException()
+
+        uploadFile.uniqueKey?.takeIf { it.isNotBlank() }?.let {
+            fileStorageService.deleteSuggestionPhoto(it)
+        }
+
+        uploadFile.isDeleted = true
+        uploadFileRepository.save(uploadFile)
     }
 
     /**

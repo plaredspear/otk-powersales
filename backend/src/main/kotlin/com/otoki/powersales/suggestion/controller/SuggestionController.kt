@@ -81,4 +81,17 @@ class SuggestionController(
         suggestionService.softDelete(suggestionId, principal.userId)
         return ResponseEntity.ok(ApiResponse.success(Unit, "제안이 삭제되었습니다"))
     }
+
+    /**
+     * UC-06: 제안 첨부 사진 단건 삭제 (Spec #828). 본인 row 한정, 상태 무관 허용.
+     */
+    @DeleteMapping("/{suggestionId}/photos/{photoId}")
+    fun deletePhoto(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable suggestionId: Long,
+        @PathVariable photoId: Long
+    ): ResponseEntity<ApiResponse<Unit>> {
+        suggestionService.deletePhoto(principal.userId, suggestionId, photoId)
+        return ResponseEntity.ok(ApiResponse.success(Unit, "사진이 삭제되었습니다"))
+    }
 }

@@ -100,6 +100,15 @@ class FileStorageService(
 		return result.key
 	}
 
+	/**
+	 * 제안 첨부 사진 삭제 (Spec #828). fileKey 가 신규 S3 키이면 그대로 삭제, 레거시 UUID 형식이면 no-op (마이그레이션 데이터 보호).
+	 */
+	fun deleteSuggestionPhoto(fileKey: String) {
+		if (fileKey.startsWith("uploads/")) {
+			storageService.delete(fileKey)
+		}
+	}
+
 	private fun validateNotEmpty(file: MultipartFile) {
 		if (file.isEmpty) throw InvalidFileException("빈 파일은 업로드할 수 없습니다")
 		if (file.originalFilename.isNullOrBlank()) throw InvalidFileException("파일명이 올바르지 않습니다")
