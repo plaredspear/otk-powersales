@@ -5,8 +5,10 @@ import com.otoki.powersales.claim.dto.response.AdminClaimListItem
 import com.otoki.powersales.claim.dto.response.AdminClaimListResponse
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.exception.ClaimNotFoundException
-import com.otoki.powersales.claim.repository.AdminClaimPhotoRepository
 import com.otoki.powersales.claim.repository.AdminClaimRepository
+import com.otoki.powersales.common.entity.UploadFile
+import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.storage.PublicUrlResolver
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,7 +19,8 @@ import java.time.LocalTime
 @Transactional(readOnly = true)
 class AdminClaimService(
     private val adminClaimRepository: AdminClaimRepository,
-    private val adminClaimPhotoRepository: AdminClaimPhotoRepository
+    private val uploadFileRepository: UploadFileRepository,
+    private val publicUrlResolver: PublicUrlResolver
 ) {
 
     fun getClaims(
@@ -60,7 +63,9 @@ class AdminClaimService(
     fun getClaimDetail(claimId: Long): AdminClaimDetailResponse {
         val claim = adminClaimRepository.findById(claimId)
             .orElseThrow { ClaimNotFoundException(claimId) }
-        val photos = adminClaimPhotoRepository.findByClaimId(claimId)
-        return AdminClaimDetailResponse.Companion.from(claim, photos)
+        val uploadFiles: List<UploadFile> = claim.sfid
+            ?.let { uploadFileRepository.findByRecordIdAndIsDeletedFalse(it) }
+            ?: emptyList()
+        return AdminClaimDetailResponse.Companion.from(claim, uploadFiles) { publicUrlResolver.resolve(it) }
     }
 }

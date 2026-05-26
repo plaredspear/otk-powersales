@@ -115,9 +115,11 @@ export default function ClaimDetailPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
               {claim.photos.map((photo) => (
                 <div key={photo.photoId} style={{ textAlign: 'center' }}>
-                  <Tag style={{ marginBottom: 8 }}>
-                    {PHOTO_TYPE_LABEL[photo.photoType] ?? photo.photoType}
-                  </Tag>
+                  {photo.photoType ? (
+                    <Tag style={{ marginBottom: 8 }}>
+                      {PHOTO_TYPE_LABEL[photo.photoType] ?? photo.photoType}
+                    </Tag>
+                  ) : null}
                   <div>{photo.originalFileName}</div>
                   <Image
                     width={200}

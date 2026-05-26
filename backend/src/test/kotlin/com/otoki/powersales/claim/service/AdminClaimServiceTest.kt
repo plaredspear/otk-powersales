@@ -2,14 +2,15 @@ package com.otoki.powersales.claim.service
 
 import com.otoki.powersales.claim.entity.*
 import com.otoki.powersales.claim.exception.ClaimNotFoundException
-import com.otoki.powersales.claim.repository.AdminClaimPhotoRepository
 import com.otoki.powersales.claim.repository.AdminClaimRepository
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.claim.enums.ClaimDateType
-import com.otoki.powersales.claim.enums.ClaimPhotoType
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
+import com.otoki.powersales.common.entity.UploadFile
+import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.employee.entity.Employee
 import io.mockk.every
 import io.mockk.mockk
@@ -28,11 +29,13 @@ import java.math.BigDecimal
 class AdminClaimServiceTest {
 
     private val adminClaimRepository: AdminClaimRepository = mockk()
-    private val adminClaimPhotoRepository: AdminClaimPhotoRepository = mockk()
+    private val uploadFileRepository: UploadFileRepository = mockk()
+    private val publicUrlResolver = PublicUrlResolver(prefix = "https://bucket.s3.ap-northeast-2.amazonaws.com/public")
 
     private val adminClaimService = AdminClaimService(
         adminClaimRepository,
-        adminClaimPhotoRepository,
+        uploadFileRepository,
+        publicUrlResolver,
     )
 
     @Nested
@@ -42,15 +45,12 @@ class AdminClaimServiceTest {
         @Test
         @DisplayName("기본 조회 - 필터 없이 호출 -> 페이지네이션된 목록 반환")
         fun getClaims_defaultQuery() {
-            // Given
             val claim = createClaim()
             val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
             every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
 
-            // When
             val result = adminClaimService.getClaims(null, null, null, null, null, 0, 20)
 
-            // Then
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].claimId).isEqualTo(1L)
             assertThat(result.content[0].employeeName).isEqualTo("김영업")
@@ -65,18 +65,15 @@ class AdminClaimServiceTest {
         @Test
         @DisplayName("상태 필터 - 유효한 상태값으로 필터링 -> 필터 적용된 결과 반환")
         fun getClaims_withStatusFilter() {
-            // Given
             val claim = createClaim(status = ClaimStatus.SENT)
             val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
             every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
 
-            // When
             val result = adminClaimService.getClaims(
                 LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 "SENT", null, null, 0, 20
             )
 
-            // Then
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].status).isEqualTo("SENT")
         }
@@ -84,14 +81,11 @@ class AdminClaimServiceTest {
         @Test
         @DisplayName("잘못된 상태값 - 유효하지 않은 상태 -> 상태 필터 null로 처리")
         fun getClaims_invalidStatus() {
-            // Given
             val page = PageImpl(emptyList<Claim>(), PageRequest.of(0, 20), 0)
             every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
 
-            // When
             val result = adminClaimService.getClaims(null, null, "INVALID", null, null, 0, 20)
 
-            // Then
             assertThat(result.content).isEmpty()
         }
     }
@@ -101,52 +95,74 @@ class AdminClaimServiceTest {
     inner class GetClaimDetailTests {
 
         @Test
-        @DisplayName("정상 조회 - 사진 포함 클레임 -> 상세 정보 + 사진 목록 반환")
-        fun getClaimDetail_withPhotos() {
-            // Given
-            val claim = createClaim()
-            val photos = listOf(
-                createClaimPhoto(id = 1L, claim = claim, photoType = ClaimPhotoType.DEFECT),
-                createClaimPhoto(id = 2L, claim = claim, photoType = ClaimPhotoType.RECEIPT)
+        @DisplayName("UploadFile 매칭 - sfid 로 조회된 첨부파일들이 응답에 포함됨")
+        fun getClaimDetail_withUploadFiles() {
+            val claim = createClaim(sfid = "a012x00000ABCDE")
+            val files = listOf(
+                createUploadFile(id = 11L, uniqueKey = "26may2026claim_001jpg", name = "claim_001.jpg"),
+                createUploadFile(id = 12L, uniqueKey = "26may2026part_001jpg", name = "part_001.jpg")
             )
             every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
-            every { adminClaimPhotoRepository.findByClaimId(1L) } returns photos
+            every { uploadFileRepository.findByRecordIdAndIsDeletedFalse("a012x00000ABCDE") } returns files
 
-            // When
             val result = adminClaimService.getClaimDetail(1L)
 
-            // Then
             assertThat(result.claimId).isEqualTo(1L)
-            assertThat(result.employeeName).isEqualTo("김영업")
-            assertThat(result.defectDescription).isEqualTo("제품 개봉 시 이물질 발견")
             assertThat(result.photos).hasSize(2)
-            assertThat(result.photos[0].photoType).isEqualTo("DEFECT")
-            assertThat(result.photos[1].photoType).isEqualTo("RECEIPT")
+            assertThat(result.photos[0].photoId).isEqualTo(11L)
+            assertThat(result.photos[0].url).isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/26may2026claim_001jpg")
+            assertThat(result.photos[0].originalFileName).isEqualTo("claim_001.jpg")
+            assertThat(result.photos[0].photoType).isNull()
+            assertThat(result.photos[1].url).isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/26may2026part_001jpg")
         }
 
         @Test
-        @DisplayName("사진 없는 클레임 조회 - 사진 없음 -> 빈 photos 배열 반환")
-        fun getClaimDetail_noPhotos() {
-            // Given
-            val claim = createClaim()
+        @DisplayName("sfid 부재 클레임 - UploadFile 조회 생략 + 빈 photos")
+        fun getClaimDetail_nullSfid() {
+            val claim = createClaim(sfid = null)
             every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
-            every { adminClaimPhotoRepository.findByClaimId(1L) } returns emptyList()
 
-            // When
             val result = adminClaimService.getClaimDetail(1L)
 
-            // Then
             assertThat(result.claimId).isEqualTo(1L)
             assertThat(result.photos).isEmpty()
         }
 
         @Test
+        @DisplayName("UploadFile 매칭 0건 - 빈 photos 반환")
+        fun getClaimDetail_noMatchingUploadFiles() {
+            val claim = createClaim(sfid = "a012x00000ABCDE")
+            every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
+            every { uploadFileRepository.findByRecordIdAndIsDeletedFalse("a012x00000ABCDE") } returns emptyList()
+
+            val result = adminClaimService.getClaimDetail(1L)
+
+            assertThat(result.photos).isEmpty()
+        }
+
+        @Test
+        @DisplayName("uniqueKey 부재 UploadFile - 응답에서 제외")
+        fun getClaimDetail_uploadFileWithoutUniqueKey() {
+            val claim = createClaim(sfid = "a012x00000ABCDE")
+            val files = listOf(
+                createUploadFile(id = 11L, uniqueKey = "valid_key.jpg"),
+                createUploadFile(id = 12L, uniqueKey = null),
+                createUploadFile(id = 13L, uniqueKey = "")
+            )
+            every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
+            every { uploadFileRepository.findByRecordIdAndIsDeletedFalse("a012x00000ABCDE") } returns files
+
+            val result = adminClaimService.getClaimDetail(1L)
+
+            assertThat(result.photos).hasSize(1)
+            assertThat(result.photos[0].photoId).isEqualTo(11L)
+        }
+
+        @Test
         @DisplayName("미존재 클레임 - 존재하지 않는 ID -> ClaimNotFoundException")
         fun getClaimDetail_notFound() {
-            // Given
             every { adminClaimRepository.findById(999L) } returns Optional.empty()
 
-            // Then
             assertThatThrownBy { adminClaimService.getClaimDetail(999L) }
                 .isInstanceOf(ClaimNotFoundException::class.java)
         }
@@ -174,10 +190,12 @@ class AdminClaimServiceTest {
         id: Long = 1L,
         employee: Employee = createEmployee(),
         account: Account = createAccount(),
-        status: ClaimStatus = ClaimStatus.DRAFT
+        status: ClaimStatus = ClaimStatus.DRAFT,
+        sfid: String? = null
     ): Claim {
         return Claim(
             id = id,
+            sfid = sfid,
             employee = employee,
             account = account,
             accountName = "홍길동 슈퍼",
@@ -198,17 +216,16 @@ class AdminClaimServiceTest {
         }
     }
 
-    private fun createClaimPhoto(
-        id: Long = 1L,
-        claim: Claim = createClaim(),
-        photoType: ClaimPhotoType = ClaimPhotoType.DEFECT
-    ): ClaimPhoto = ClaimPhoto(
+    private fun createUploadFile(
+        id: Long,
+        uniqueKey: String?,
+        name: String? = "file.jpg"
+    ): UploadFile = UploadFile(
         id = id,
-        claim = claim,
-        photoType = photoType,
-        url = "https://cdn.example.com/claims/1/${photoType.name.lowercase()}_001.jpg",
-        originalFileName = "${photoType.name.lowercase()}_001.jpg",
-        fileSize = 1024L,
-        contentType = "image/jpeg"
+        sfid = "a0O%012d".format(id),
+        name = name,
+        uniqueKey = uniqueKey,
+        recordId = "a012x00000ABCDE",
+        parentType = "DKRetail__Claim__c"
     )
 }

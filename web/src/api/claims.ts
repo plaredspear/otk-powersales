@@ -57,7 +57,7 @@ export interface ClaimDetail {
 
 export interface ClaimPhoto {
   photoId: number;
-  photoType: string;
+  photoType: string | null;
   url: string;
   originalFileName: string | null;
 }

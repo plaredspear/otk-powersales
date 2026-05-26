@@ -176,6 +176,7 @@ app:
     region: ${AWS_REGION:ap-northeast-2}
     s3:
       bucket: ${S3_BUCKET:}
+      public-url-prefix: ${S3_PUBLIC_URL_PREFIX:}
   domain:
     api: ${API_DOMAIN:}
     admin: ${ADMIN_DOMAIN:}
