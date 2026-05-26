@@ -6,6 +6,7 @@ import com.otoki.powersales.auth.sharing.repository.PermissionSetRecordTypeRepos
 import com.otoki.powersales.auth.sharing.repository.ProfileRecordTypeRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -26,20 +27,20 @@ class RecordTypePermissionEvaluatorTest {
     @DisplayName("Profile 0건 + PermissionSet 2건 visible — PermissionSet 위임 패턴 (운영 패턴)")
     fun permissionSetDominant() {
         every { profileRepo.findAllByProfileId(10L) } returns emptyList()
-        every { psRepo.findAllByPermissionSetId(100L) } returns listOf(
-            mkPsRt(101L, true), mkPsRt(102L, false),
+        every { psRepo.findAllByPermissionSetIdIn(setOf(100L, 200L)) } returns listOf(
+            mkPsRt(101L, true), mkPsRt(102L, false), mkPsRt(103L, true),
         )
-        every { psRepo.findAllByPermissionSetId(200L) } returns listOf(mkPsRt(103L, true))
 
         val result = evaluator.visibleRecordTypeIds(1L, 10L, setOf(100L, 200L))
         assertThat(result).containsExactlyInAnyOrder(101L, 103L)
+        verify(exactly = 1) { psRepo.findAllByPermissionSetIdIn(setOf(100L, 200L)) }
     }
 
     @Test
     @DisplayName("Profile + PermissionSet 모두 visible 0건 — 빈 set (Q2 옵션 1: sObject 차단)")
     fun noVisible() {
         every { profileRepo.findAllByProfileId(10L) } returns emptyList()
-        every { psRepo.findAllByPermissionSetId(100L) } returns listOf(mkPsRt(101L, false))
+        every { psRepo.findAllByPermissionSetIdIn(setOf(100L)) } returns listOf(mkPsRt(101L, false))
 
         val result = evaluator.visibleRecordTypeIds(1L, 10L, setOf(100L))
         assertThat(result).isEmpty()
@@ -48,7 +49,7 @@ class RecordTypePermissionEvaluatorTest {
     @Test
     @DisplayName("profileId null — Profile 측 lookup skip")
     fun profileIdNull() {
-        every { psRepo.findAllByPermissionSetId(100L) } returns listOf(mkPsRt(101L, true))
+        every { psRepo.findAllByPermissionSetIdIn(setOf(100L)) } returns listOf(mkPsRt(101L, true))
 
         val result = evaluator.visibleRecordTypeIds(1L, null, setOf(100L))
         assertThat(result).containsExactly(101L)

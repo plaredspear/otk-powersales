@@ -39,9 +39,9 @@ class RecordTypePermissionEvaluator(
                 .forEach { result.add(it.recordTypeId!!) }
         }
 
-        // PermissionSet 측 (운영 10건)
-        permissionSetIds.forEach { psId ->
-            permissionSetRecordTypeRepository.findAllByPermissionSetId(psId)
+        // PermissionSet 측 (운영 10건) — IN 절 1회로 N+1 회피
+        if (permissionSetIds.isNotEmpty()) {
+            permissionSetRecordTypeRepository.findAllByPermissionSetIdIn(permissionSetIds)
                 .filter { it.visible && it.recordTypeId != null }
                 .forEach { result.add(it.recordTypeId!!) }
         }

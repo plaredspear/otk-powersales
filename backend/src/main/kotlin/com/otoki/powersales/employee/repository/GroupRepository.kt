@@ -14,4 +14,6 @@ interface GroupRepository : JpaRepository<Group, Long> {
     fun findAllByRelatedUserId(relatedUserId: Long): List<Group>
 
     fun findAllByRelatedUserRoleId(relatedUserRoleId: Long): List<Group>
+
+    fun findAllByRelatedUserRoleIdIn(relatedUserRoleIds: Collection<Long>): List<Group>
 }

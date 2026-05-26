@@ -10,10 +10,10 @@ import com.otoki.powersales.user.entity.User
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
+import io.mockk.verify
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import tools.jackson.databind.json.JsonMapper
-import java.util.Optional
 
 @DisplayName("SfPermissionResolver")
 class SfPermissionResolverTest {
@@ -45,7 +45,7 @@ class SfPermissionResolverTest {
         every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns listOf(
             assignmentOf(permissionSetFlagsId = 100),
         )
-        every { permissionSetFlagsRepository.findById(100L) } returns Optional.of(flags)
+        every { permissionSetFlagsRepository.findAllById(listOf(100L)) } returns listOf(flags)
         every { entitySfNameRegistry.allResources() } returns emptySet()
 
         val result = resolver.resolveForUser(user)
@@ -101,13 +101,37 @@ class SfPermissionResolverTest {
         every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns listOf(
             assignmentOf(permissionSetFlagsId = 200),
         )
-        every { permissionSetFlagsRepository.findById(200L) } returns Optional.of(flags)
+        every { permissionSetFlagsRepository.findAllById(listOf(200L)) } returns listOf(flags)
         every { entitySfNameRegistry.toEntityTableName("Account") } returns "account"
         every { entitySfNameRegistry.allResources() } returns emptySet()
 
         val result = resolver.resolveForUser(user)
 
         assertThat(result).contains("account:R")
+    }
+
+    @Test
+    @DisplayName("PermissionSetFlags 조회는 assignment 일람 만큼 N+1 이 아니라 findAllById 1회 호출")
+    fun permissionSetFlagsLoadedInSingleBatch() {
+        val user = userWithProfile(profileId = null)
+        every { profileFlagsRepository.findByProfileId(any()) } returns null
+
+        val flags100 = permissionSetFlagsOf(id = 100, customPermissions = """{"a": {"allowRead": true}}""")
+        val flags200 = permissionSetFlagsOf(id = 200, customPermissions = """{"b": {"allowRead": true}}""")
+        val flags300 = permissionSetFlagsOf(id = 300, customPermissions = """{"c": {"allowRead": true}}""")
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns listOf(
+            assignmentOf(permissionSetFlagsId = 100),
+            assignmentOf(permissionSetFlagsId = 200),
+            assignmentOf(permissionSetFlagsId = 300),
+        )
+        every { permissionSetFlagsRepository.findAllById(listOf(100L, 200L, 300L)) } returns listOf(flags100, flags200, flags300)
+        every { entitySfNameRegistry.allResources() } returns emptySet()
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("a:R", "b:R", "c:R")
+        verify(exactly = 1) { permissionSetFlagsRepository.findAllById(listOf(100L, 200L, 300L)) }
+        verify(exactly = 0) { permissionSetFlagsRepository.findById(any()) }
     }
 
     private fun userWithProfile(profileId: Long?): User {
