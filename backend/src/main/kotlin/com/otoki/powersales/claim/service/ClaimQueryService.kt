@@ -5,12 +5,13 @@ import com.otoki.powersales.claim.dto.response.ClaimListItemResponse
 import com.otoki.powersales.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.claim.exception.InvalidDateFormatException
 import com.otoki.powersales.claim.exception.InvalidDateRangeException
-import com.otoki.powersales.claim.repository.ClaimPhotoRepository
 import com.otoki.powersales.claim.repository.ClaimRepository
+import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.UploadFileParentTypes
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -19,7 +20,8 @@ import java.time.format.DateTimeParseException
 @Transactional(readOnly = true)
 class ClaimQueryService(
     private val claimRepository: ClaimRepository,
-    private val claimPhotoRepository: ClaimPhotoRepository
+    private val uploadFileRepository: UploadFileRepository,
+    private val publicUrlResolver: PublicUrlResolver
 ) {
 
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -51,8 +53,9 @@ class ClaimQueryService(
             throw ClaimNotFoundException(claimId)
         }
 
-        val photos = claimPhotoRepository.findByClaimId(claimId)
-        return ClaimDetailResponse.from(claim, photos)
+        val photos = uploadFileRepository
+            .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.CLAIM, claimId)
+        return ClaimDetailResponse.from(claim, photos) { publicUrlResolver.resolve(it) }
     }
 
     private fun parseDate(dateStr: String): LocalDate {

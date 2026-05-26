@@ -43,12 +43,6 @@ class InvalidDateTypeException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
-class PurchaseInfoRequiredException : BusinessException(
-    errorCode = "PURCHASE_INFO_REQUIRED",
-    message = "구매 금액 입력 시 구매 방법과 영수증 사진은 필수입니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
 class ClaimInvalidParameterException(detail: String) : BusinessException(
     errorCode = "CLAIM_INVALID_PARAMETER",
     message = detail,

@@ -80,12 +80,6 @@ class FileStorageService(
 		return result.key
 	}
 
-	fun deleteClaimPhoto(fileKey: String) {
-		if (fileKey.startsWith("uploads/")) {
-			storageService.delete(fileKey)
-		}
-	}
-
 	/**
 	 * 제안 첨부 사진 업로드 (Spec #664). 신규 객체는 S3 키 형식(`uploads/suggestion/<yyyy>/<mm>/<dd>/<uuid>.<ext>`)으로 저장된다.
 	 */

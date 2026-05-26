@@ -4,23 +4,24 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.claim.dto.request.ClaimCreateRequest
 import com.otoki.powersales.claim.entity.Claim
-import com.otoki.powersales.claim.entity.ClaimPhoto
 import com.otoki.powersales.claim.entity.sfpicklist.RequestType
 import com.otoki.powersales.claim.enums.ClaimDateType
-import com.otoki.powersales.claim.enums.ClaimPhotoType
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.claim.exception.ClaimAccessDeniedException
 import com.otoki.powersales.claim.exception.ClaimNotEditableException
+import com.otoki.powersales.claim.exception.ClaimPhotoNotFoundException
 import com.otoki.powersales.claim.exception.ClaimTypeHierarchyMismatchException
 import com.otoki.powersales.claim.exception.InvalidClaimDateException
 import com.otoki.powersales.claim.exception.InvalidClaimType1Exception
-import com.otoki.powersales.claim.exception.PurchaseInfoRequiredException
 import com.otoki.powersales.claim.exception.RequestTypeMaxExceededException
-import com.otoki.powersales.claim.repository.ClaimPhotoRepository
 import com.otoki.powersales.claim.repository.ClaimRepository
+import com.otoki.powersales.common.entity.UploadFile
+import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.product.entity.Product
@@ -44,19 +45,21 @@ import java.math.BigDecimal
 class ClaimServiceTest {
 
     private val claimRepository: ClaimRepository = mockk(relaxUnitFun = true)
-    private val claimPhotoRepository: ClaimPhotoRepository = mockk(relaxUnitFun = true)
+    private val uploadFileRepository: UploadFileRepository = mockk(relaxUnitFun = true)
     private val employeeRepository: EmployeeRepository = mockk()
     private val accountRepository: AccountRepository = mockk()
     private val productRepository: ProductRepository = mockk()
     private val fileStorageService: FileStorageService = mockk(relaxUnitFun = true)
+    private val storageService: StorageService = mockk(relaxUnitFun = true)
 
     private val claimService = ClaimService(
         claimRepository,
-        claimPhotoRepository,
+        uploadFileRepository,
         employeeRepository,
         accountRepository,
         productRepository,
         fileStorageService,
+        storageService,
     )
 
     private val userId = 100L
@@ -110,6 +113,7 @@ class ClaimServiceTest {
         every { claimRepository.save(any<Claim>()) } answers { firstArg() }
         every { fileStorageService.uploadClaimPhoto(any(), any(), any(), any()) } returns
             "uploads/claim/2026/01/01/uuid.jpg"
+        every { uploadFileRepository.save(any<UploadFile>()) } answers { firstArg() }
     }
 
     @Nested
@@ -120,7 +124,6 @@ class ClaimServiceTest {
         @DisplayName("정상 요청 - 클레임 + 사진 2장 저장")
         fun createsClaimWithRequiredPhotos() {
             stubCreateDeps()
-            every { claimPhotoRepository.saveAll(any<List<ClaimPhoto>>()) } answers { firstArg<List<ClaimPhoto>>() }
 
             val result = claimService.createClaim(
                 userId, validRequest(),
@@ -131,7 +134,7 @@ class ClaimServiceTest {
 
             assertThat(result.accountName).isEqualTo("테스트거래처")
             assertThat(result.productCode).isEqualTo("P0001")
-            verify { claimPhotoRepository.saveAll(any<List<ClaimPhoto>>()) }
+            verify(exactly = 2) { uploadFileRepository.save(any<UploadFile>()) }
         }
 
         @Test
@@ -185,7 +188,6 @@ class ClaimServiceTest {
         @DisplayName("유통기한 미래 - 허용")
         fun allowsFutureExpiryDate() {
             stubCreateDeps()
-            every { claimPhotoRepository.saveAll(any<List<ClaimPhoto>>()) } answers { firstArg<List<ClaimPhoto>>() }
             val futureDate = LocalDate.now().plus(30, java.time.temporal.ChronoUnit.DAYS).toString()
 
             claimService.createClaim(
@@ -195,22 +197,6 @@ class ClaimServiceTest {
             )
 
             verify { claimRepository.save(any<Claim>()) }
-        }
-
-        @Test
-        @DisplayName("구매금액 있는데 영수증 누락 - PurchaseInfoRequiredException")
-        fun rejectsPurchaseInfoMissingReceipt() {
-            every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { accountRepository.findById(1) } returns Optional.of(account)
-            every { productRepository.findByProductCode("P0001") } returns product
-
-            assertThatThrownBy {
-                claimService.createClaim(
-                    userId,
-                    validRequest(purchaseAmount = BigDecimal.valueOf(10000L), purchaseMethodCode = "A"),
-                    mockPhoto("d"), mockPhoto("l"), null
-                )
-            }.isInstanceOf(PurchaseInfoRequiredException::class.java)
         }
 
         @Test
@@ -239,7 +225,6 @@ class ClaimServiceTest {
         @DisplayName("Employee.costCenterCode 우선 - claim.costCenterCode 자동 채움")
         fun fillsCostCenterCodeFromEmployee() {
             stubCreateDeps()
-            every { claimPhotoRepository.saveAll(any<List<ClaimPhoto>>()) } answers { firstArg<List<ClaimPhoto>>() }
             val claimSlot = slot<Claim>()
             every { claimRepository.save(capture(claimSlot)) } answers { firstArg() }
 
@@ -325,26 +310,33 @@ class ClaimServiceTest {
     inner class DeleteClaimTests {
 
         @Test
-        @DisplayName("DRAFT 상태 - 클레임 + 사진 모두 삭제 + S3 파일 삭제")
+        @DisplayName("DRAFT 상태 - 클레임 삭제 + 사진 S3 삭제 + soft-delete")
         fun deletesDraftClaimAndPhotos() {
             val claim = Claim(
                 id = claimId, employee = employee, account = account,
                 date = LocalDate.now(), claimType1 = ClaimType1.A, claimType2 = ClaimType2.AA,
                 defectDescription = "x", defectQuantity = BigDecimal.valueOf(1L), status = ClaimStatus.DRAFT
             )
-            val photo = ClaimPhoto(
-                id = 1L, claim = claim, photoType = ClaimPhotoType.DEFECT,
-                url = "uploads/claim/2026/01/01/x.jpg",
-                originalFileName = "x.jpg", fileSize = 100L, contentType = "image/jpeg"
+            val photo = UploadFile(
+                id = 1L,
+                name = "x.jpg",
+                uniqueKey = "uploads/claim/2026/01/01/x.jpg",
+                parentType = UploadFileParentTypes.CLAIM,
+                parentId = claimId,
+                isDeleted = false
             )
             every { claimRepository.findById(claimId) } returns Optional.of(claim)
-            every { claimPhotoRepository.findByClaimId(claimId) } returns listOf(photo)
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
+                    UploadFileParentTypes.CLAIM, claimId
+                )
+            } returns listOf(photo)
 
             claimService.deleteClaim(userId, claimId)
 
-            verify { fileStorageService.deleteClaimPhoto("uploads/claim/2026/01/01/x.jpg") }
-            verify { claimPhotoRepository.deleteAll(listOf(photo)) }
+            verify { storageService.delete("uploads/claim/2026/01/01/x.jpg") }
             verify { claimRepository.delete(claim) }
+            assertThat(photo.isDeleted).isTrue
         }
 
         @Test
@@ -368,25 +360,51 @@ class ClaimServiceTest {
     inner class DeletePhotoTests {
 
         @Test
-        @DisplayName("DRAFT 상태 - 사진 1장 삭제 + S3 파일 삭제")
+        @DisplayName("DRAFT 상태 - 사진 S3 삭제 + soft-delete")
         fun deletesPhotoOnDraft() {
             val claim = Claim(
                 id = claimId, employee = employee, account = account,
                 date = LocalDate.now(), claimType1 = ClaimType1.A, claimType2 = ClaimType2.AA,
                 defectDescription = "x", defectQuantity = BigDecimal.valueOf(1L), status = ClaimStatus.DRAFT
             )
-            val photo = ClaimPhoto(
-                id = 7L, claim = claim, photoType = ClaimPhotoType.RECEIPT,
-                url = "uploads/claim/2026/01/01/receipt.jpg",
-                originalFileName = "r.jpg", fileSize = 100L, contentType = "image/jpeg"
+            val photo = UploadFile(
+                id = 7L,
+                name = "r.jpg",
+                uniqueKey = "uploads/claim/2026/01/01/receipt.jpg",
+                parentType = UploadFileParentTypes.CLAIM,
+                parentId = claimId,
+                isDeleted = false
             )
             every { claimRepository.findById(claimId) } returns Optional.of(claim)
-            every { claimPhotoRepository.findById(7L) } returns Optional.of(photo)
+            every {
+                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(
+                    7L, UploadFileParentTypes.CLAIM, claimId
+                )
+            } returns photo
 
             claimService.deletePhoto(userId, claimId, 7L)
 
-            verify { fileStorageService.deleteClaimPhoto("uploads/claim/2026/01/01/receipt.jpg") }
-            verify { claimPhotoRepository.delete(photo) }
+            verify { storageService.delete("uploads/claim/2026/01/01/receipt.jpg") }
+            assertThat(photo.isDeleted).isTrue
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 photoId - ClaimPhotoNotFoundException")
+        fun rejectsMissingPhoto() {
+            val claim = Claim(
+                id = claimId, employee = employee, account = account,
+                date = LocalDate.now(), claimType1 = ClaimType1.A, claimType2 = ClaimType2.AA,
+                defectDescription = "x", defectQuantity = BigDecimal.valueOf(1L), status = ClaimStatus.DRAFT
+            )
+            every { claimRepository.findById(claimId) } returns Optional.of(claim)
+            every {
+                uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(
+                    99L, UploadFileParentTypes.CLAIM, claimId
+                )
+            } returns null
+
+            assertThatThrownBy { claimService.deletePhoto(userId, claimId, 99L) }
+                .isInstanceOf(ClaimPhotoNotFoundException::class.java)
         }
     }
 }

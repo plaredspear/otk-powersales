@@ -4,11 +4,9 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.claim.dto.request.ClaimCreateRequest
 import com.otoki.powersales.claim.dto.response.ClaimCreateResponse
 import com.otoki.powersales.claim.entity.Claim
-import com.otoki.powersales.claim.entity.ClaimPhoto
 import com.otoki.powersales.claim.entity.sfpicklist.PurchaseMethod
 import com.otoki.powersales.claim.entity.sfpicklist.RequestType
 import com.otoki.powersales.claim.enums.ClaimDateType
-import com.otoki.powersales.claim.enums.ClaimPhotoType
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
@@ -25,12 +23,14 @@ import com.otoki.powersales.claim.exception.InvalidDateFormatException
 import com.otoki.powersales.claim.exception.InvalidDateTypeException
 import com.otoki.powersales.claim.exception.InvalidPurchaseMethodException
 import com.otoki.powersales.claim.exception.InvalidRequestTypeException
-import com.otoki.powersales.claim.exception.PurchaseInfoRequiredException
 import com.otoki.powersales.claim.exception.RequestTypeMaxExceededException
-import com.otoki.powersales.claim.repository.ClaimPhotoRepository
 import com.otoki.powersales.claim.repository.ClaimRepository
+import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.exception.ProductNotFoundException
+import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.promotion.exception.AccountNotFoundException
@@ -45,11 +45,12 @@ import java.math.BigDecimal
 @Transactional(readOnly = true)
 class ClaimService(
     private val claimRepository: ClaimRepository,
-    private val claimPhotoRepository: ClaimPhotoRepository,
+    private val uploadFileRepository: UploadFileRepository,
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
-    private val fileStorageService: FileStorageService
+    private val fileStorageService: FileStorageService,
+    private val storageService: StorageService
 ) {
 
     /**
@@ -92,7 +93,7 @@ class ClaimService(
             throw ClaimTypeHierarchyMismatchException()
         }
 
-        val purchaseMethod = resolvePurchaseMethod(request.purchaseMethodCode, request.purchaseAmount, receiptPhoto)
+        val purchaseMethod = resolvePurchaseMethod(request.purchaseMethodCode)
         val requestTypes = resolveRequestTypes(request.requestTypeCode)
 
         val claim = Claim(
@@ -122,8 +123,11 @@ class ClaimService(
 
         val savedClaim = claimRepository.save(claim)
 
-        val photos = uploadPhotos(savedClaim, userId, defectPhoto, labelPhoto, receiptPhoto)
-        claimPhotoRepository.saveAll(photos)
+        uploadPhoto(savedClaim, userId, defectPhoto)
+        uploadPhoto(savedClaim, userId, labelPhoto)
+        if (receiptPhoto != null) {
+            uploadPhoto(savedClaim, userId, receiptPhoto)
+        }
 
         return ClaimCreateResponse.from(savedClaim)
     }
@@ -200,29 +204,30 @@ class ClaimService(
     fun deleteClaim(userId: Long, claimId: Long) {
         val claim = findEditableClaim(userId, claimId)
 
-        val photos = claimPhotoRepository.findByClaimId(claimId)
-        photos.forEach { fileStorageService.deleteClaimPhoto(it.url) }
+        val photos = uploadFileRepository
+            .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.CLAIM, claimId)
+        photos.forEach { photo ->
+            photo.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.delete(it) }
+            photo.isDeleted = true
+        }
 
-        claimPhotoRepository.deleteAll(photos)
         claimRepository.delete(claim)
     }
 
     /**
      * 클레임 사진 삭제 (UC-06).
-     * 상태가 DRAFT 일 때만 허용. S3 파일 삭제 + ClaimPhoto 레코드 삭제.
+     * 상태가 DRAFT 일 때만 허용. S3 파일 삭제 + UploadFile soft-delete.
      */
     @Transactional
     fun deletePhoto(userId: Long, claimId: Long, photoId: Long) {
-        val claim = findEditableClaim(userId, claimId)
+        findEditableClaim(userId, claimId)
 
-        val photo = claimPhotoRepository.findByIdOrNull(photoId)
+        val photo = uploadFileRepository
+            .findByIdAndParentTypeAndParentIdAndIsDeletedFalse(photoId, UploadFileParentTypes.CLAIM, claimId)
             ?: throw ClaimPhotoNotFoundException(photoId)
-        if (photo.claim?.id != claim.id) {
-            throw ClaimPhotoNotFoundException(photoId)
-        }
 
-        fileStorageService.deleteClaimPhoto(photo.url)
-        claimPhotoRepository.delete(photo)
+        photo.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.delete(it) }
+        photo.isDeleted = true
     }
 
     // ───── private helpers ─────
@@ -263,17 +268,7 @@ class ClaimService(
         }
     }
 
-    private fun resolvePurchaseMethod(
-        sfValue: String?,
-        purchaseAmount: BigDecimal?,
-        receiptPhoto: MultipartFile?
-    ): PurchaseMethod? {
-        if (purchaseAmount != null && purchaseAmount > BigDecimal.ZERO) {
-            if (sfValue.isNullOrBlank() || receiptPhoto == null) {
-                throw PurchaseInfoRequiredException()
-            }
-            return PurchaseMethod.fromSfValueOrNull(sfValue) ?: throw InvalidPurchaseMethodException()
-        }
+    private fun resolvePurchaseMethod(sfValue: String?): PurchaseMethod? {
         if (sfValue.isNullOrBlank()) return null
         return PurchaseMethod.fromSfValueOrNull(sfValue) ?: throw InvalidPurchaseMethodException()
     }
@@ -292,37 +287,17 @@ class ClaimService(
         }.toSet()
     }
 
-    private fun uploadPhotos(
-        claim: Claim,
-        userId: Long,
-        defectPhoto: MultipartFile,
-        labelPhoto: MultipartFile,
-        receiptPhoto: MultipartFile?
-    ): List<ClaimPhoto> {
-        val list = mutableListOf<ClaimPhoto>()
-        list += buildPhoto(claim, userId, defectPhoto, ClaimPhotoType.DEFECT)
-        list += buildPhoto(claim, userId, labelPhoto, ClaimPhotoType.LABEL)
-        if (receiptPhoto != null) {
-            list += buildPhoto(claim, userId, receiptPhoto, ClaimPhotoType.RECEIPT)
-        }
-        return list
-    }
-
-    private fun buildPhoto(
-        claim: Claim,
-        userId: Long,
-        file: MultipartFile,
-        photoType: ClaimPhotoType
-    ): ClaimPhoto {
-        val url = fileStorageService.uploadClaimPhoto(file, userId, claim.id, photoType.name)
-        return ClaimPhoto(
-            claim = claim,
-            photoType = photoType,
-            url = url,
-            originalFileName = file.originalFilename ?: "unknown",
-            fileSize = file.size,
-            contentType = file.contentType ?: "image/jpeg"
+    private fun uploadPhoto(claim: Claim, userId: Long, file: MultipartFile): UploadFile {
+        val key = fileStorageService.uploadClaimPhoto(file, userId, claim.id, "")
+        val uploadFile = UploadFile(
+            name = file.originalFilename,
+            uniqueKey = key,
+            fileSize = file.size.toString(),
+            parentType = UploadFileParentTypes.CLAIM,
+            parentId = claim.id,
+            isDeleted = false
         )
+        return uploadFileRepository.save(uploadFile)
     }
 }
 

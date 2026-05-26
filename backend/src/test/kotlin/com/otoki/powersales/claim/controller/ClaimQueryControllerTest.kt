@@ -134,8 +134,6 @@ class ClaimQueryControllerTest : MobileControllerTestSupport() {
                 photos = listOf(
                     ClaimPhotoItem(
                         photoId = 1L,
-                        photoType = "DEFECT",
-                        photoTypeLabel = "불량 사진",
                         url = "https://cdn.example.com/claims/1/defect.jpg",
                         originalFileName = "IMG_001.jpg"
                     )
@@ -149,8 +147,8 @@ class ClaimQueryControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.data.claimId").value(1))
                 .andExpect(jsonPath("$.data.dateType").value("EXPIRY_DATE"))
                 .andExpect(jsonPath("$.data.dateTypeLabel").value("유통기한"))
-                .andExpect(jsonPath("$.data.photos[0].photoType").value("DEFECT"))
-                .andExpect(jsonPath("$.data.photos[0].photoTypeLabel").value("불량 사진"))
+                .andExpect(jsonPath("$.data.photos[0].url").value("https://cdn.example.com/claims/1/defect.jpg"))
+                .andExpect(jsonPath("$.data.photos[0].originalFileName").value("IMG_001.jpg"))
         }
 
         // notFound (999L) / notOwner (2L) 둘 다 동일 ClaimNotFoundException → CLAIM_NOT_FOUND 매핑.

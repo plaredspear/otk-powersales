@@ -1,17 +1,19 @@
 package com.otoki.powersales.claim.service
 
-import com.otoki.powersales.claim.entity.*
-import com.otoki.powersales.claim.exception.ClaimNotFoundException
-import com.otoki.powersales.claim.exception.InvalidDateFormatException
-import com.otoki.powersales.claim.exception.InvalidDateRangeException
-import com.otoki.powersales.claim.repository.ClaimPhotoRepository
-import com.otoki.powersales.claim.repository.ClaimRepository
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.claim.entity.Claim
 import com.otoki.powersales.claim.enums.ClaimDateType
-import com.otoki.powersales.claim.enums.ClaimPhotoType
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
+import com.otoki.powersales.claim.exception.ClaimNotFoundException
+import com.otoki.powersales.claim.exception.InvalidDateFormatException
+import com.otoki.powersales.claim.exception.InvalidDateRangeException
+import com.otoki.powersales.claim.repository.ClaimRepository
+import com.otoki.powersales.common.entity.UploadFile
+import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.entity.Employee
 import io.mockk.every
 import io.mockk.mockk
@@ -28,11 +30,13 @@ import java.math.BigDecimal
 class ClaimQueryServiceTest {
 
     private val claimRepository: ClaimRepository = mockk()
-    private val claimPhotoRepository: ClaimPhotoRepository = mockk()
+    private val uploadFileRepository: UploadFileRepository = mockk()
+    private val publicUrlResolver: PublicUrlResolver = mockk()
 
     private val claimQueryService = ClaimQueryService(
         claimRepository,
-        claimPhotoRepository,
+        uploadFileRepository,
+        publicUrlResolver,
     )
 
     @Nested
@@ -96,9 +100,15 @@ class ClaimQueryServiceTest {
         @DisplayName("정상 조회 - 본인 클레임 → 상세 + 사진 반환")
         fun getClaimDetail_success() {
             val claim = createClaim()
-            val photo = createClaimPhoto(claim)
+            val photo = createUploadFile(claim.id)
             every { claimRepository.findById(1L) } returns Optional.of(claim)
-            every { claimPhotoRepository.findByClaimId(1L) } returns listOf(photo)
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
+                    UploadFileParentTypes.CLAIM, 1L
+                )
+            } returns listOf(photo)
+            every { publicUrlResolver.resolve("uploads/claim/2026/01/01/x.jpg") } returns
+                "https://cdn.example.com/uploads/claim/2026/01/01/x.jpg"
 
             val result = claimQueryService.getClaimDetail(1L, 1L)
 
@@ -108,8 +118,8 @@ class ClaimQueryServiceTest {
             assertThat(result.dateType).isEqualTo("EXPIRY_DATE")
             assertThat(result.dateTypeLabel).isEqualTo("유통기한")
             assertThat(result.photos).hasSize(1)
-            assertThat(result.photos[0].photoType).isEqualTo("DEFECT")
-            assertThat(result.photos[0].photoTypeLabel).isEqualTo("불량 사진")
+            assertThat(result.photos[0].url).isEqualTo("https://cdn.example.com/uploads/claim/2026/01/01/x.jpg")
+            assertThat(result.photos[0].originalFileName).isEqualTo("IMG_001.jpg")
         }
 
         @Test
@@ -117,7 +127,11 @@ class ClaimQueryServiceTest {
         fun getClaimDetail_noPhotos() {
             val claim = createClaim()
             every { claimRepository.findById(1L) } returns Optional.of(claim)
-            every { claimPhotoRepository.findByClaimId(1L) } returns emptyList()
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
+                    UploadFileParentTypes.CLAIM, 1L
+                )
+            } returns emptyList()
 
             val result = claimQueryService.getClaimDetail(1L, 1L)
 
@@ -129,7 +143,11 @@ class ClaimQueryServiceTest {
         fun getClaimDetail_noPurchaseInfo() {
             val claim = createClaim(purchaseAmount = null, purchaseMethodName = null, requestTypeName = null)
             every { claimRepository.findById(1L) } returns Optional.of(claim)
-            every { claimPhotoRepository.findByClaimId(1L) } returns emptyList()
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
+                    UploadFileParentTypes.CLAIM, 1L
+                )
+            } returns emptyList()
 
             val result = claimQueryService.getClaimDetail(1L, 1L)
 
@@ -202,15 +220,15 @@ class ClaimQueryServiceTest {
         }
     }
 
-    private fun createClaimPhoto(claim: Claim): ClaimPhoto {
-        return ClaimPhoto(
+    private fun createUploadFile(claimId: Long): UploadFile {
+        return UploadFile(
             id = 1L,
-            claim = claim,
-            photoType = ClaimPhotoType.DEFECT,
-            url = "https://cdn.example.com/claims/1/defect.jpg",
-            originalFileName = "IMG_001.jpg",
-            fileSize = 1024L,
-            contentType = "image/jpeg"
+            name = "IMG_001.jpg",
+            uniqueKey = "uploads/claim/2026/01/01/x.jpg",
+            fileSize = "1024",
+            parentType = UploadFileParentTypes.CLAIM,
+            parentId = claimId,
+            isDeleted = false
         )
     }
 }
