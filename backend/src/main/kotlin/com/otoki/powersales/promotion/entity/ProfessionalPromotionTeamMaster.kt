@@ -91,10 +91,6 @@ class ProfessionalPromotionTeamMaster(
     val account: Account? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "full_name_id")
-    var fullNameEmployee: Employee? = null,
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id")
     var ownerUser: User? = null,
 
