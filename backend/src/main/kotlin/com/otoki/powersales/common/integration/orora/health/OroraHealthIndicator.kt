@@ -17,7 +17,7 @@ import javax.sql.DataSource
  *   보고하여 전체 헬스에 영향을 주지 않는다 (관측은 details 의 `error` 필드로 가능).
  */
 @Component("orora")
-@Profile("dev | prod")
+@Profile("orora-disabled")
 class OroraHealthIndicator(
 	private val ororaDataSource: DataSource,
 ) : HealthIndicator {

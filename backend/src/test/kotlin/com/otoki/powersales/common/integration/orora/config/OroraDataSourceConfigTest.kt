@@ -2,6 +2,7 @@ package com.otoki.powersales.common.integration.orora.config
 
 import com.zaxxer.hikari.HikariDataSource
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration
@@ -16,6 +17,7 @@ import javax.sql.DataSource
  * 조립 + Hikari 파라미터 매핑 수준).
  */
 @DisplayName("OroraDataSourceConfig 단위 테스트")
+@Disabled("ORORA 임시 비활성화 (@Profile(\"orora-disabled\")) — dev/prod 에서 ororaDataSource 빈 부재가 의도된 상태. ORORA 재활성화 시 본 어노테이션 제거")
 class OroraDataSourceConfigTest {
 
 	private val runner = ApplicationContextRunner()

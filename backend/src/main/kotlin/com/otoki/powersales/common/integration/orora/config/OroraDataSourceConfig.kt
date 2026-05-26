@@ -21,7 +21,7 @@ import javax.sql.DataSource
  *   `@Qualifier("ororaDataSource")` 를 통해서만 주입한다.
  */
 @Configuration
-@Profile("dev | prod")
+@Profile("orora-disabled")
 @EnableConfigurationProperties(OroraDataSourceProperties::class)
 class OroraDataSourceConfig(
 	private val properties: OroraDataSourceProperties,

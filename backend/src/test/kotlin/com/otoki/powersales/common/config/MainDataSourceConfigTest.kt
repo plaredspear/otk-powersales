@@ -3,6 +3,7 @@ package com.otoki.powersales.common.config
 import com.otoki.powersales.common.integration.orora.config.OroraDataSourceConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.support.DefaultListableBeanFactory
@@ -20,6 +21,7 @@ import javax.sql.DataSource
  * Flyway 가 ORORA 를 잡고 TCP timeout 으로 부팅 실패) 회귀 방지.
  */
 @DisplayName("MainDataSourceConfig 단위 테스트")
+@Disabled("ORORA 임시 비활성화 (@Profile(\"orora-disabled\")) — dev/prod 에서 ororaDataSource 빈 부재가 의도된 상태. ORORA 재활성화 시 본 어노테이션 제거")
 class MainDataSourceConfigTest {
 
 	private val runner = ApplicationContextRunner()

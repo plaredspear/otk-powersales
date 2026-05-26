@@ -30,5 +30,5 @@ import org.springframework.data.repository.Repository
  * `@Profile("dev | prod")` 가드 + `@EnableJpaRepositories` scope).
  * local / test 프로파일에서는 본 빈이 컨텍스트에 등록되지 않는다.
  */
-@Profile("dev | prod")
+@Profile("orora-disabled")
 interface OroraDailySalesHistoryRepository : Repository<OroraDailySalesHistory, OroraDailySalesHistoryId>

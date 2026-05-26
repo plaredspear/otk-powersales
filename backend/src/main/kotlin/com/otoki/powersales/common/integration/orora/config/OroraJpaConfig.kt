@@ -38,7 +38,7 @@ import javax.sql.DataSource
  * ([com.otoki.powersales.OtokiPowerSalesApplication] 또는 별도 Main JPA Config).
  */
 @Configuration
-@Profile("dev | prod")
+@Profile("orora-disabled")
 @EnableJpaRepositories(
 	basePackages = ["com.otoki.powersales.orora.entity", "com.otoki.powersales.orora.repository"],
 	entityManagerFactoryRef = "ororaEntityManagerFactory",
