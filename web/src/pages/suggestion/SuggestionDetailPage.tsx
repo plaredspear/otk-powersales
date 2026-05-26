@@ -30,15 +30,8 @@ import {
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import type {
   SuggestionActionStatus,
-  SuggestionCategory,
   SuggestionUpdatePayload,
 } from '@/api/suggestions';
-
-const CATEGORY_OPTIONS: Array<{ value: SuggestionCategory; label: string }> = [
-  { value: 'LOGISTICS_CLAIM', label: '물류 클레임' },
-  { value: 'NEW_PRODUCT', label: '신제품 제안' },
-  { value: 'EXISTING_PRODUCT', label: '기존제품 상품가치 향상' },
-];
 
 const ACTION_STATUS_OPTIONS: Array<{ value: SuggestionActionStatus; label: string }> = [
   { value: 'UNCONFIRMED', label: '미확인' },
@@ -78,7 +71,6 @@ export default function SuggestionDetailPage() {
   useEffect(() => {
     if (suggestion && editMode) {
       form.setFieldsValue({
-        category: suggestion.category,
         title: suggestion.title,
         content: suggestion.content,
         claimType: suggestion.claimType,
@@ -116,15 +108,13 @@ export default function SuggestionDetailPage() {
     try {
       const values = await form.validateFields();
       const payload: SuggestionUpdatePayload = {
-        category: values.category,
+        category: 'LOGISTICS_CLAIM',
         title: values.title,
         content: values.content,
-        claimType: values.category === 'LOGISTICS_CLAIM' ? values.claimType : undefined,
-        claimDate: values.category === 'LOGISTICS_CLAIM' && values.claimDate
-          ? values.claimDate.format('YYYY-MM-DD')
-          : undefined,
-        carNumber: values.category === 'LOGISTICS_CLAIM' ? values.carNumber : undefined,
-        logisticsResponsibility: values.category === 'LOGISTICS_CLAIM' ? values.logisticsResponsibility : undefined,
+        claimType: values.claimType,
+        claimDate: values.claimDate ? values.claimDate.format('YYYY-MM-DD') : undefined,
+        carNumber: values.carNumber || undefined,
+        logisticsResponsibility: values.logisticsResponsibility || undefined,
         actionStatus: values.actionStatus || undefined,
         duplicateProposalNum: values.actionStatus === 'DUPLICATE_RECEPTION' ? values.duplicateProposalNum : undefined,
       };
@@ -178,7 +168,6 @@ export default function SuggestionDetailPage() {
     }
   };
 
-  const isLogisticsClaim = suggestion.category === 'LOGISTICS_CLAIM';
   const actionStatusTag = suggestion.actionStatus ? ACTION_STATUS_TAG[suggestion.actionStatus] : null;
 
   return (
@@ -215,10 +204,7 @@ export default function SuggestionDetailPage() {
         <Col xs={24} lg={16}>
           {editMode ? (
             <Form form={form} layout="vertical">
-              <Card title="제안사항 정보" style={{ marginBottom: 16 }}>
-                <Form.Item name="category" label="카테고리" rules={[{ required: true, message: '카테고리를 선택해주세요' }]}>
-                  <Select options={CATEGORY_OPTIONS} />
-                </Form.Item>
+              <Card title="기본 정보" style={{ marginBottom: 16 }}>
                 <Form.Item name="title" label="제목" rules={[{ required: true, message: '제목을 입력해주세요' }, { max: 250 }]}>
                   <Input />
                 </Form.Item>
@@ -227,26 +213,20 @@ export default function SuggestionDetailPage() {
                 </Form.Item>
               </Card>
 
-              <Form.Item shouldUpdate={(p, n) => p.category !== n.category} noStyle>
-                {({ getFieldValue }) =>
-                  getFieldValue('category') === 'LOGISTICS_CLAIM' ? (
-                    <Card title="물류 클레임 정보" style={{ marginBottom: 16 }}>
-                      <Form.Item name="claimType" label="클레임 항목" rules={[{ required: true, max: 200 }]}>
-                        <Input />
-                      </Form.Item>
-                      <Form.Item name="claimDate" label="클레임 발생일자" rules={[{ required: true }]}>
-                        <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
-                      </Form.Item>
-                      <Form.Item name="carNumber" label="차량번호" rules={[{ max: 20 }]}>
-                        <Input />
-                      </Form.Item>
-                      <Form.Item name="logisticsResponsibility" label="물류책임" rules={[{ max: 20 }]}>
-                        <Input />
-                      </Form.Item>
-                    </Card>
-                  ) : null
-                }
-              </Form.Item>
+              <Card title="물류 클레임 정보" style={{ marginBottom: 16 }}>
+                <Form.Item name="claimType" label="클레임 항목" rules={[{ required: true, max: 200 }]}>
+                  <Input />
+                </Form.Item>
+                <Form.Item name="claimDate" label="클레임 발생일자" rules={[{ required: true }]}>
+                  <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+                </Form.Item>
+                <Form.Item name="carNumber" label="차량번호" rules={[{ max: 20 }]}>
+                  <Input />
+                </Form.Item>
+                <Form.Item name="logisticsResponsibility" label="물류책임" rules={[{ max: 20 }]}>
+                  <Input />
+                </Form.Item>
+              </Card>
 
               <Card title="조치 정보" style={{ marginBottom: 16 }}>
                 <Form.Item name="actionStatus" label="조치상태">
@@ -269,10 +249,9 @@ export default function SuggestionDetailPage() {
             </Form>
           ) : (
             <>
-              <Card title="제안사항 정보" style={{ marginBottom: 16 }}>
+              <Card title="기본 정보" style={{ marginBottom: 16 }}>
                 <Descriptions column={2}>
-                  <Descriptions.Item label="제안번호">{suggestion.proposalNumber}</Descriptions.Item>
-                  <Descriptions.Item label="카테고리">{suggestion.categoryName}</Descriptions.Item>
+                  <Descriptions.Item label="제안번호" span={2}>{suggestion.proposalNumber}</Descriptions.Item>
                   <Descriptions.Item label="제목" span={2}>{suggestion.title}</Descriptions.Item>
                   <Descriptions.Item label="작성자">{suggestion.employeeName ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="사번">{suggestion.employeeCode ?? '-'}</Descriptions.Item>
@@ -292,18 +271,16 @@ export default function SuggestionDetailPage() {
                 </Typography.Paragraph>
               </Card>
 
-              {isLogisticsClaim && (
-                <Card title="물류 클레임 정보" style={{ marginBottom: 16 }}>
-                  <Descriptions column={2}>
-                    <Descriptions.Item label="클레임 항목">{suggestion.claimType ?? '-'}</Descriptions.Item>
-                    <Descriptions.Item label="클레임 발생일자">{suggestion.claimDate ?? '-'}</Descriptions.Item>
-                    <Descriptions.Item label="차량번호">{suggestion.carNumber ?? '-'}</Descriptions.Item>
-                    <Descriptions.Item label="물류책임">{suggestion.logisticsResponsibility ?? '-'}</Descriptions.Item>
-                    <Descriptions.Item label="접수 물류센터">{suggestion.receptionLogisticsCenter ?? '-'}</Descriptions.Item>
-                    <Descriptions.Item label="책임 물류센터">{suggestion.responsibleLogisticsCenter ?? '-'}</Descriptions.Item>
-                  </Descriptions>
-                </Card>
-              )}
+              <Card title="물류 클레임 정보" style={{ marginBottom: 16 }}>
+                <Descriptions column={2}>
+                  <Descriptions.Item label="클레임 항목">{suggestion.claimType ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="클레임 발생일자">{suggestion.claimDate ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="차량번호">{suggestion.carNumber ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="물류책임">{suggestion.logisticsResponsibility ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="접수 물류센터">{suggestion.receptionLogisticsCenter ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="책임 물류센터">{suggestion.responsibleLogisticsCenter ?? '-'}</Descriptions.Item>
+                </Descriptions>
+              </Card>
 
               <Card title="조치 정보" style={{ marginBottom: 16 }}>
                 <Descriptions column={2}>

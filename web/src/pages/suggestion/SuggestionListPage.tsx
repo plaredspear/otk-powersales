@@ -7,19 +7,11 @@ import { useSuggestions } from '@/hooks/suggestions/useSuggestions';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type {
   SuggestionActionStatus,
-  SuggestionCategory,
   SuggestionListItem,
   SuggestionListParams,
 } from '@/api/suggestions';
 
 const { RangePicker } = DatePicker;
-
-const CATEGORY_OPTIONS: Array<{ value: SuggestionCategory | ''; label: string }> = [
-  { value: '', label: '전체' },
-  { value: 'LOGISTICS_CLAIM', label: '물류 클레임' },
-  { value: 'NEW_PRODUCT', label: '신제품 제안' },
-  { value: 'EXISTING_PRODUCT', label: '기존제품 상품가치 향상' },
-];
 
 const ACTION_STATUS_OPTIONS: Array<{ value: SuggestionActionStatus | ''; label: string }> = [
   { value: '', label: '전체' },
@@ -44,7 +36,6 @@ export default function SuggestionListPage() {
     dayjs().subtract(30, 'day'),
     dayjs(),
   ]);
-  const [category, setCategory] = useState<SuggestionCategory | ''>('');
   const [actionStatus, setActionStatus] = useState<SuggestionActionStatus | ''>('');
   const [employeeName, setEmployeeName] = useState('');
   const [accountCode, setAccountCode] = useState('');
@@ -54,6 +45,7 @@ export default function SuggestionListPage() {
   const [searchParams, setSearchParams] = useState<SuggestionListParams>({
     startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
     endDate: dayjs().format('YYYY-MM-DD'),
+    category: 'LOGISTICS_CLAIM',
     page: 0,
     size: PAGE_SIZE,
   });
@@ -66,7 +58,7 @@ export default function SuggestionListPage() {
     setSearchParams({
       startDate: dateRange[0].format('YYYY-MM-DD'),
       endDate: dateRange[1].format('YYYY-MM-DD'),
-      category: (category || undefined) as SuggestionCategory | undefined,
+      category: 'LOGISTICS_CLAIM',
       actionStatus: (actionStatus || undefined) as SuggestionActionStatus | undefined,
       employeeName: employeeName || undefined,
       accountCode: accountCode || undefined,
@@ -78,7 +70,6 @@ export default function SuggestionListPage() {
 
   const handleReset = () => {
     setDateRange([dayjs().subtract(30, 'day'), dayjs()]);
-    setCategory('');
     setActionStatus('');
     setEmployeeName('');
     setAccountCode('');
@@ -98,7 +89,6 @@ export default function SuggestionListPage() {
       render: (_v, _r, index) => (searchParams.page ?? 0) * PAGE_SIZE + index + 1,
     },
     { title: '제안번호', dataIndex: 'proposalNumber', width: 160 },
-    { title: '카테고리', dataIndex: 'categoryName', width: 140 },
     { title: '제목', dataIndex: 'title', width: 220, ellipsis: true },
     {
       title: '작성자',
@@ -161,13 +151,6 @@ export default function SuggestionListPage() {
               }
             }}
             format="YYYY-MM-DD"
-          />
-          <span>카테고리:</span>
-          <Select
-            style={{ width: 180 }}
-            value={category}
-            options={CATEGORY_OPTIONS}
-            onChange={(v) => setCategory(v as SuggestionCategory | '')}
           />
           <span>조치상태:</span>
           <Select

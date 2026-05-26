@@ -18,15 +18,8 @@ import { fetchAccounts, type Account } from '@/api/account';
 import { fetchProducts, type Product } from '@/api/product';
 import type {
   SuggestionActionStatus,
-  SuggestionCategory,
   SuggestionCreatePayload,
 } from '@/api/suggestions';
-
-const CATEGORY_OPTIONS: Array<{ value: SuggestionCategory; label: string }> = [
-  { value: 'LOGISTICS_CLAIM', label: '물류 클레임' },
-  { value: 'NEW_PRODUCT', label: '신제품 제안' },
-  { value: 'EXISTING_PRODUCT', label: '기존제품 상품가치 향상' },
-];
 
 const ACTION_STATUS_OPTIONS: Array<{ value: SuggestionActionStatus; label: string }> = [
   { value: 'UNCONFIRMED', label: '미확인' },
@@ -100,17 +93,15 @@ export default function SuggestionCreatePage() {
         return;
       }
       const payload: SuggestionCreatePayload = {
-        category: values.category,
+        category: 'LOGISTICS_CLAIM',
         title: values.title,
         content: values.content,
         productCode: values.productCode || undefined,
         accountId: values.accountId ?? undefined,
-        claimType: values.category === 'LOGISTICS_CLAIM' ? values.claimType : undefined,
-        claimDate: values.category === 'LOGISTICS_CLAIM' && values.claimDate
-          ? values.claimDate.format('YYYY-MM-DD')
-          : undefined,
-        carNumber: values.category === 'LOGISTICS_CLAIM' ? values.carNumber : undefined,
-        logisticsResponsibility: values.category === 'LOGISTICS_CLAIM' ? values.logisticsResponsibility : undefined,
+        claimType: values.claimType,
+        claimDate: values.claimDate ? values.claimDate.format('YYYY-MM-DD') : undefined,
+        carNumber: values.carNumber || undefined,
+        logisticsResponsibility: values.logisticsResponsibility || undefined,
         actionStatus: values.actionStatus || undefined,
         duplicateProposalNum: values.actionStatus === 'DUPLICATE_RECEPTION' ? values.duplicateProposalNum : undefined,
       };
@@ -147,11 +138,8 @@ export default function SuggestionCreatePage() {
         </Button>
       </div>
 
-      <Form form={form} layout="vertical" initialValues={{ category: 'LOGISTICS_CLAIM' }}>
-        <Card title="제안사항 정보" style={{ marginBottom: 16 }}>
-          <Form.Item name="category" label="카테고리" rules={[{ required: true, message: '카테고리를 선택해주세요' }]}>
-            <Select options={CATEGORY_OPTIONS} />
-          </Form.Item>
+      <Form form={form} layout="vertical">
+        <Card title="기본 정보" style={{ marginBottom: 16 }}>
           <Form.Item name="title" label="제목" rules={[{ required: true, message: '제목을 입력해주세요' }, { max: 250 }]}>
             <Input placeholder="제안 제목" />
           </Form.Item>
@@ -183,26 +171,20 @@ export default function SuggestionCreatePage() {
           </Form.Item>
         </Card>
 
-        <Form.Item shouldUpdate={(p, n) => p.category !== n.category} noStyle>
-          {({ getFieldValue }) =>
-            getFieldValue('category') === 'LOGISTICS_CLAIM' ? (
-              <Card title="물류 클레임 정보" style={{ marginBottom: 16 }}>
-                <Form.Item name="claimType" label="클레임 항목" rules={[{ required: true, max: 200 }]}>
-                  <Input placeholder="예) 포장상태 불량" />
-                </Form.Item>
-                <Form.Item name="claimDate" label="클레임 발생일자" rules={[{ required: true }]}>
-                  <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
-                </Form.Item>
-                <Form.Item name="carNumber" label="차량번호" rules={[{ max: 20 }]}>
-                  <Input />
-                </Form.Item>
-                <Form.Item name="logisticsResponsibility" label="물류책임" rules={[{ max: 20 }]}>
-                  <Input />
-                </Form.Item>
-              </Card>
-            ) : null
-          }
-        </Form.Item>
+        <Card title="물류 클레임 정보" style={{ marginBottom: 16 }}>
+          <Form.Item name="claimType" label="클레임 항목" rules={[{ required: true, max: 200 }]}>
+            <Input placeholder="예) 포장상태 불량" />
+          </Form.Item>
+          <Form.Item name="claimDate" label="클레임 발생일자" rules={[{ required: true }]}>
+            <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+          </Form.Item>
+          <Form.Item name="carNumber" label="차량번호" rules={[{ max: 20 }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="logisticsResponsibility" label="물류책임" rules={[{ max: 20 }]}>
+            <Input />
+          </Form.Item>
+        </Card>
 
         <Card title="조치 정보 (선택)" style={{ marginBottom: 16 }}>
           <Form.Item name="actionStatus" label="조치상태">
