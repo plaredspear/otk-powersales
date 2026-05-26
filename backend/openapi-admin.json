@@ -3466,6 +3466,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseListPromotionPosProductResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionPosProductResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListRegisteredScheduledJobDto" : {
         "properties" : {
           "data" : {
@@ -9374,6 +9402,31 @@
         },
         "type" : "object"
       },
+      "PromotionPosProductResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "price" : {
+            "type" : [ "number", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "PromotionScheduleBulkDeleteRequest" : {
         "properties" : {
           "scheduleIds" : {
@@ -15198,6 +15251,40 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePromotionDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-promotion-controller" ]
+      }
+    },
+    "/api/v1/admin/promotions/{id}/pos-products" : {
+      "get" : {
+        "operationId" : "getPosProducts",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPromotionPosProductResponse"
                 }
               }
             },

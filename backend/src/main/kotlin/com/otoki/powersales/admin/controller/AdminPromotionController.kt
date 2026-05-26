@@ -6,6 +6,7 @@ import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.PromotionDetailResponse
 import com.otoki.powersales.promotion.dto.response.PromotionFormMetaResponse
 import com.otoki.powersales.promotion.dto.response.PromotionListResponse
+import com.otoki.powersales.promotion.dto.response.PromotionPosProductResponse
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.promotion.service.AdminPromotionService
@@ -67,6 +68,18 @@ class AdminPromotionController(
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
         val response = adminPromotionService.getPromotion(scope, id)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    // SF Promotion 상세의 "상세 POS품목" Related List 동등.
+    @GetMapping("/{id}/pos-products")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun getPosProducts(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @PathVariable id: Long
+    ): ResponseEntity<ApiResponse<List<PromotionPosProductResponse>>> {
+        val response = adminPromotionService.getPosProducts(scope, id)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

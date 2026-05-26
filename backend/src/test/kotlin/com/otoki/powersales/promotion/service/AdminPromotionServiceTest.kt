@@ -217,6 +217,74 @@ class AdminPromotionServiceTest {
     }
 
     @Nested
+    @DisplayName("getPosProducts - 상세 POS품목 일람 조회")
+    inner class GetPosProductsTests {
+
+        private val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        @Test
+        @DisplayName("정상 조회 - PromotionProduct 다수 -> name 정렬 list 반환")
+        fun getPosProducts_success() {
+            val promotion = createPromotion()
+            val product = createProduct(name = "꿀배청 680G")
+            val pp1 = PromotionProduct(
+                id = 10L,
+                name = "PS00000001",
+                promotionId = 1L,
+                productId = 200L,
+                price = java.math.BigDecimal("1500"),
+            ).apply { this.product = product }
+            val pp2 = PromotionProduct(
+                id = 11L,
+                name = "PS00000002",
+                promotionId = 1L,
+                productId = 200L,
+                price = java.math.BigDecimal("1200"),
+            ).apply { this.product = product }
+
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every {
+                promotionProductRepository.findByPromotionIdAndIsDeletedFalseOrderByNameAsc(1L)
+            } returns listOf(pp1, pp2)
+
+            val result = adminPromotionService.getPosProducts(scope, 1L)
+
+            assertThat(result).hasSize(2)
+            assertThat(result[0].name).isEqualTo("PS00000001")
+            assertThat(result[0].productName).isEqualTo("꿀배청 680G")
+            assertThat(result[0].price).isEqualByComparingTo("1500")
+            assertThat(result[1].name).isEqualTo("PS00000002")
+        }
+
+        @Test
+        @DisplayName("미존재 행사 -> PromotionNotFoundException")
+        fun getPosProducts_notFound() {
+            every { promotionRepository.findByIdWithRelations(999L) } returns null
+
+            assertThatThrownBy { adminPromotionService.getPosProducts(scope, 999L) }
+                .isInstanceOf(PromotionNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("권한 외 조회 -> PromotionForbiddenException")
+        fun getPosProducts_forbidden() {
+            val limitedScope = DataScope(branchCodes = listOf("2202"), isAllBranches = false)
+            val promotion = createPromotion(costCenterCode = "1101")
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+
+            assertThatThrownBy { adminPromotionService.getPosProducts(limitedScope, 1L) }
+                .isInstanceOf(PromotionForbiddenException::class.java)
+        }
+
+        @Test
+        @DisplayName("음수 ID -> PromotionInvalidParameterException")
+        fun getPosProducts_negativeId() {
+            assertThatThrownBy { adminPromotionService.getPosProducts(scope, -1L) }
+                .isInstanceOf(PromotionInvalidParameterException::class.java)
+        }
+    }
+
+    @Nested
     @DisplayName("createPromotion - 행사마스터 생성")
     inner class CreatePromotionTests {
 

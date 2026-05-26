@@ -51,6 +51,7 @@ import PromotionProductSection, {
   type ProductFormValues,
 } from './sections/PromotionProductSection';
 import PromotionAmountSection from './sections/PromotionAmountSection';
+import PromotionPosProductSection from './sections/PromotionPosProductSection';
 import PromotionScheduleSection from './components/PromotionScheduleSection';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
 
@@ -1348,6 +1349,10 @@ export default function PromotionDetailPage() {
           promotionEndDate={promotion.endDate}
         />
       )}
+
+      {/* 상세 POS품목 섹션 — SF Promotion 상세의 "상세 POS품목" Related List 동등 */}
+      <PromotionPosProductSection promotionId={promotionId} />
+
 
       {/* Scoped styles for promotion detail page */}
       <style>{`
