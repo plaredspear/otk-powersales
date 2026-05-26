@@ -81,7 +81,7 @@ export const menuRoute: MenuRoute = {
         { path: '/safety-check', name: '안전점검', entity: 'team_member_schedule', operation: 'READ' },
         { path: '/product-expiration', name: '유통기한 관리', entity: 'product', operation: 'READ' },
         { path: '/claims', name: '클레임 현황' },
-        { path: '/suggestion', name: '제안사항' },
+        { path: '/suggestion', name: '물류 클레임', entity: 'suggestion', operation: 'READ' },
       ],
     },
     {

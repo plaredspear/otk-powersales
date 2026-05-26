@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository
  * `proposal_number` 채번은 PostgreSQL sequence `suggestion_proposal_number_seq` (P1-B §2.3) 사용 — race condition free.
  */
 @Repository
-interface SuggestionRepository : JpaRepository<Suggestion, Long> {
+interface SuggestionRepository : JpaRepository<Suggestion, Long>, SuggestionRepositoryCustom {
 
     /**
      * 본인 작성 목록 조회 (paged, soft-delete 제외, created_at DESC).

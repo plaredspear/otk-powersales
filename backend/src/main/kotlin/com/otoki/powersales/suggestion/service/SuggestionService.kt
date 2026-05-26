@@ -282,8 +282,10 @@ class SuggestionService(
      *
      * 형식: `S-YYYYMMDD-NNNNNN` (NNNNNN = `suggestion_proposal_number_seq` nextval, 6자리 zero-padded).
      * PostgreSQL `nextval()` 원자성 보장.
+     *
+     * Spec #830 P1-B §2.3 — `AdminSuggestionService` 가 동일 채번 정책 재사용.
      */
-    private fun generateProposalNumber(date: LocalDate): String {
+    internal fun generateProposalNumber(date: LocalDate): String {
         val seq = suggestionRepository.nextProposalNumberSeqValue()
         return "S-${date.format(PROPOSAL_NUMBER_DATE_FMT)}-${"%06d".format(seq)}"
     }
@@ -293,8 +295,10 @@ class SuggestionService(
      *
      * 레거시 분기 조건 문자열 `'냉동/냉장'` 은 SF picklist 실측 값 `실온` / `냉장` 과 매치 안 되어 실제 운영
      * row 는 거의 else 분기로 빠짐 (R17 bug 정황). 그러나 명시적 분기 코드는 레거시 동등하게 작성.
+     *
+     * Spec #830 P1-B §2.3 — `AdminSuggestionService` 가 동일 분기 로직 재사용.
      */
-    private fun computeWerkCenters(
+    internal fun computeWerkCenters(
         account: com.otoki.powersales.account.entity.Account?,
         product: Product?
     ): Pair<String?, String?> {
@@ -310,10 +314,10 @@ class SuggestionService(
         }
     }
 
-    private fun composeS3Url(key: String): String =
+    internal fun composeS3Url(key: String): String =
         "https://$s3BucketName.s3.$s3Region.amazonaws.com/$key"
 
-    private fun formatFileSize(bytes: Long): String =
+    internal fun formatFileSize(bytes: Long): String =
         when {
             bytes >= 1024 * 1024 -> "%.1fMB".format(bytes / (1024.0 * 1024.0))
             bytes >= 1024 -> "%.1fKB".format(bytes / 1024.0)
