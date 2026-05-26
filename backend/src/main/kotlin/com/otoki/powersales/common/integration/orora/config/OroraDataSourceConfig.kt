@@ -15,6 +15,10 @@ import javax.sql.DataSource
  * - 기존 메인 RDS [DataSource] 와 분리된 빈 이름 `ororaDataSource` 로 등록한다.
  * - read-only 강제 + HikariCP `initializationFailTimeout=-1` 로 ORORA DB 도달 불가 시에도
  *   메인 애플리케이션 기동을 차단하지 않는다.
+ * - 본 빈에는 `@Primary` 도 `@FlywayDataSource` 도 부착하지 않는다 — 메인 RDS DataSource
+ *   ([com.otoki.powersales.common.config.MainDataSourceConfig]) 가 그 역할을 단독으로 맡으며,
+ *   Flyway / JPA / Hibernate 는 메인만 자동 선택해야 한다. 본 빈은 항상
+ *   `@Qualifier("ororaDataSource")` 를 통해서만 주입한다.
  */
 @Configuration
 @Profile("dev | prod")
