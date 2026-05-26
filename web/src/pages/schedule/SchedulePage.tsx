@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { message, Spin } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAccounts';
@@ -13,6 +13,7 @@ import { usePermission } from '@/hooks/usePermission';
 type FilterTab = 'member' | 'account';
 
 const DATE_FMT = 'YYYY-MM-DD';
+const COOLDOWN_MS = 1500;
 
 export default function SchedulePage() {
   const { hasEntityPermission } = usePermission();
@@ -88,12 +89,32 @@ export default function SchedulePage() {
 
   // staging 이 applied 와 동일해도 "조회" 클릭 시 항상 강제 재요청 — react-query 가 동일 queryKey 일 때
   // cache 즉시 반환만 하고 background refetch 안 하므로 명시 refetch 필요.
+  // 잦은 클릭으로 인한 서버 부하 방지 — 1.5초 cooldown.
+  const [isCoolingDown, setIsCoolingDown] = useState(false);
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+    };
+  }, []);
+
   const handleApplyFilter = useCallback(() => {
+    if (isCoolingDown) return;
     setAppliedEmployeeIds(selectedEmployeeIds);
     setAppliedAccountIds(selectedAccountIds);
     setAppliedPromotionTeams(selectedPromotionTeams);
     refetchSchedules();
-  }, [selectedEmployeeIds, selectedAccountIds, selectedPromotionTeams, refetchSchedules]);
+    setIsCoolingDown(true);
+    if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+    cooldownTimerRef.current = setTimeout(() => setIsCoolingDown(false), COOLDOWN_MS);
+  }, [
+    isCoolingDown,
+    selectedEmployeeIds,
+    selectedAccountIds,
+    selectedPromotionTeams,
+    refetchSchedules,
+  ]);
 
   const handleDateClick = useCallback((date: string) => {
     setDayListModalDate(date);
@@ -151,6 +172,7 @@ export default function SchedulePage() {
           onSelectedPromotionTeamsChange={setSelectedPromotionTeams}
           onApply={handleApplyFilter}
           isFilterDirty={isFilterDirty}
+          isCoolingDown={isCoolingDown}
         />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>

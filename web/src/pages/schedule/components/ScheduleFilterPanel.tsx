@@ -19,6 +19,7 @@ interface ScheduleFilterPanelProps {
   onSelectedPromotionTeamsChange: (teams: string[]) => void;
   onApply: () => void;
   isFilterDirty: boolean;
+  isCoolingDown: boolean;
 }
 
 const TAB_OPTIONS = [
@@ -39,6 +40,7 @@ export function ScheduleFilterPanel({
   onSelectedPromotionTeamsChange,
   onApply,
   isFilterDirty,
+  isCoolingDown,
 }: ScheduleFilterPanelProps) {
   const { data: promotionTeams = [], isLoading: promotionTeamsLoading } = useProfessionalPromotionTeams();
 
@@ -67,10 +69,10 @@ export function ScheduleFilterPanel({
         icon={<SearchOutlined />}
         block
         onClick={onApply}
+        disabled={isCoolingDown}
         style={{ marginBottom: 12 }}
       >
-        조회
-        {isFilterDirty ? ' (변경됨)' : ''}
+        {isCoolingDown ? '조회 (잠시 후 가능)' : `조회${isFilterDirty ? ' (변경됨)' : ''}`}
       </Button>
 
       <div style={{ marginBottom: 12 }}>
