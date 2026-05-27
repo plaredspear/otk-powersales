@@ -13,6 +13,7 @@ import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -28,7 +29,8 @@ class AdminTeamScheduleService(
     private val accountRepository: AccountRepository,
     private val organizationRepository: OrganizationRepository,
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
-    private val teamScheduleValidator: TeamScheduleValidator
+    private val teamScheduleValidator: TeamScheduleValidator,
+    private val branchCodeExpander: BranchCodeExpander
 ) {
 
     /**
@@ -60,12 +62,22 @@ class AdminTeamScheduleService(
             .map { TeamMemberDto.from(it) }
     }
 
+    /**
+     * 여사원 일정관리 "거래처" 탭 목록.
+     *
+     * SF 레거시 `ScheduleSearchByTeamMemberController.getSchedule()` 의 `Util.getIncludedBranchCode()` 정합 —
+     * 선택/본인 cost center 코드를 BranchMapping 으로 1:N 확장한 합집합으로 `Account.branchCode IN` 조회.
+     *
+     * 예: 입력 `"5694"` (cvs전략) → BranchMapping `{5691,5692,5693,5694}` 확장 → 4개 cost center 거래처 모두 노출.
+     * 일반 cost center (1:1 매핑) 는 입력=출력 이라 동작 변화 없음.
+     */
     fun getAccounts(principal: WebUserPrincipal, branchCode: String?): List<TeamScheduleAccountDto> {
         val effectiveBranchCode = branchCode ?: run {
             principal.costCenterCode ?: return emptyList()
         }
-        return accountRepository.findByBranchCodeAndAccountGroupIn(
-            effectiveBranchCode, listOf("1010", "1000")
+        val expandedBranchCodes = branchCodeExpander.expand(setOf(effectiveBranchCode))
+        return accountRepository.findByBranchCodeInAndAccountGroupIn(
+            expandedBranchCodes, listOf("1010", "1000")
         )
             .filter { it.isDeleted != true }
             .map { TeamScheduleAccountDto.from(it) }

@@ -15,6 +15,7 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -44,6 +45,8 @@ class AdminTeamScheduleServiceTest {
 
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService = mockk(relaxUnitFun = true)
 
+    private val branchCodeExpander: BranchCodeExpander = mockk(relaxUnitFun = true)
+
     private lateinit var service: AdminTeamScheduleService
 
     @BeforeEach
@@ -58,8 +61,12 @@ class AdminTeamScheduleServiceTest {
             accountRepository = accountRepository,
             organizationRepository = organizationRepository,
             adminMonthlyIntegrationService = adminMonthlyIntegrationService,
-            teamScheduleValidator = teamScheduleValidator
+            teamScheduleValidator = teamScheduleValidator,
+            branchCodeExpander = branchCodeExpander
         )
+        // BranchCodeExpander 는 SF Util.getIncludedBranchCode 정합 — 일반 cost center 는 입력=출력 (1:1).
+        // 1:N 확장 케이스만 테스트하는 컨텍스트에서 개별 override.
+        every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }
         // createSchedule 이 service 내부에서 leader entity 영속화를 위해 호출하는 findById(principal.employeeId).
         // 인증 컨텍스트 분기와 무관한 부수 호출이므로 기본 stub (개별 테스트에서 override 가능).
         every { employeeRepository.findById(any<Long>()) } returns Optional.of(createEmployee(id = 10L, sfid = "LEADER_SFID"))
@@ -263,7 +270,7 @@ class AdminTeamScheduleServiceTest {
             val account1 = createAccount(id = 1, sfid = "ACC_001", name = "이마트 강남점", branchCode = "1234")
             val account2 = createAccount(id = 2, sfid = "ACC_002", name = "홈플러스 역삼점", branchCode = "1234")
 
-            every { accountRepository.findByBranchCodeAndAccountGroupIn("1234", listOf("1010", "1000")) } returns listOf(account1, account2)
+            every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("1234"), listOf("1010", "1000")) } returns listOf(account1, account2)
 
             // When
             val result = service.getAccounts(principalOf(employee), null)
@@ -280,7 +287,7 @@ class AdminTeamScheduleServiceTest {
             // Given
             val account = createAccount(id = 1, sfid = "ACC_001", name = "롯데마트 잠실점", branchCode = "5678")
 
-            every { accountRepository.findByBranchCodeAndAccountGroupIn("5678", listOf("1010", "1000")) } returns listOf(account)
+            every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5678"), listOf("1010", "1000")) } returns listOf(account)
 
             // When
             val result = service.getAccounts(currentEmployeeFixture, "5678")
@@ -289,6 +296,30 @@ class AdminTeamScheduleServiceTest {
             assertThat(result).hasSize(1)
             assertThat(result[0].accountId).isEqualTo(1)
             verify(exactly = 0) { employeeRepository.findWithEmployeeInfoById(any()) }
+        }
+
+        @Test
+        @DisplayName("BranchMapping 1:N 확장 - cvs전략 '5694' → {5691,5692,5693,5694} 모두 조회")
+        fun getAccounts_branchMappingExpansion() {
+            // Given: SF customMetadata/BranchMapping.cvs.md-meta.xml 정합
+            // BranchCode__c='5694' → IncludedBranchCode__c='5691,5692,5693,5694'
+            val expandedCodes = setOf("5691", "5692", "5693", "5694")
+            every { branchCodeExpander.expand(setOf("5694")) } returns expandedCodes
+
+            val acc1 = createAccount(id = 1, sfid = "ACC_001", name = "CVS 1", branchCode = "5691")
+            val acc2 = createAccount(id = 2, sfid = "ACC_002", name = "CVS 2", branchCode = "5692")
+            val acc3 = createAccount(id = 3, sfid = "ACC_003", name = "CVS 3", branchCode = "5693")
+            val acc4 = createAccount(id = 4, sfid = "ACC_004", name = "CVS 4", branchCode = "5694")
+
+            every { accountRepository.findByBranchCodeInAndAccountGroupIn(expandedCodes, listOf("1010", "1000")) } returns
+                listOf(acc1, acc2, acc3, acc4)
+
+            // When
+            val result = service.getAccounts(currentEmployeeFixture, "5694")
+
+            // Then
+            assertThat(result).hasSize(4)
+            assertThat(result.map { it.accountId }).containsExactly(1, 2, 3, 4)
         }
     }
 

@@ -29,9 +29,12 @@ interface AccountRepository : JpaRepository<Account, Int>, AccountRepositoryCust
     fun findByExternalKeyIn(externalKeys: List<String>): List<Account>
 
     /**
-     * 지점 코드 + 거래처 그룹으로 거래처 조회 (여사원 일정관리)
+     * 지점 코드 IN + 거래처 그룹으로 거래처 조회 (여사원 일정관리).
+     *
+     * SF 정합: 호출처에서 [com.otoki.powersales.organization.branchmapping.BranchCodeExpander.expand]
+     * 로 BranchMapping 1:N 확장된 코드 집합을 전달. SF `Util.getIncludedBranchCode` 와 동등.
      */
-    fun findByBranchCodeAndAccountGroupIn(branchCode: String, accountGroups: List<String>): List<Account>
+    fun findByBranchCodeInAndAccountGroupIn(branchCodes: Collection<String>, accountGroups: List<String>): List<Account>
 
     /**
      * 거래처명 부분 일치 조회 (진열스케줄 목록 필터)
