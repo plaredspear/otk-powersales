@@ -29,7 +29,7 @@ export default function AddUserToPermissionSetModal({
   permissionSetLabel,
   onClose,
 }: Props) {
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
   const [keyword, setKeyword] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(0);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
@@ -42,6 +42,17 @@ export default function AddUserToPermissionSetModal({
 
   const batch = useCreateAssignmentBatch();
 
+  const formatUsers = (userIds: number[]): string => {
+    const rows = data?.content ?? [];
+    const labels = userIds.map((id) => {
+      const u = rows.find((r) => r.id === id);
+      if (!u) return `#${id}`;
+      const name = u.name ?? u.username;
+      return u.employeeCode ? `${name}(${u.employeeCode})` : name;
+    });
+    return labels.join(', ');
+  };
+
   const handleSubmit = async () => {
     if (selectedUserIds.length === 0) return;
     try {
@@ -49,12 +60,25 @@ export default function AddUserToPermissionSetModal({
         permissionSetFlagsId,
         userIds: selectedUserIds,
       });
-      const detail = `성공 ${result.succeeded.length} / 건너뜀(이미부여) ${result.skipped.length} / 실패 ${result.failed.length}`;
-      modal.info({
-        title: '일괄 부여 결과',
-        content: detail,
-        onOk: handleClose,
-      });
+      const { succeeded, skipped, failed } = result;
+
+      if (succeeded.length > 0) {
+        message.success(`${succeeded.length}명 부여되었습니다`);
+      }
+      if (skipped.length > 0) {
+        const who = formatUsers(skipped.map((s) => s.userId));
+        message.warning(`이미 부여된 사용자입니다: ${who}`);
+      }
+      if (failed.length > 0) {
+        const who = formatUsers(failed.map((f) => f.userId));
+        message.error(`부여 실패: ${who}`);
+      }
+
+      if (succeeded.length > 0 && failed.length === 0) {
+        handleClose();
+      } else {
+        setSelectedUserIds([]);
+      }
     } catch (e) {
       const err = e as AxiosError<{ error?: { message?: string } }>;
       message.error(err.response?.data?.error?.message || '일괄 부여에 실패했습니다');
