@@ -138,6 +138,7 @@ export const menuRoute: MenuRoute = {
         { path: '/admin/tools/sap-outbound', name: 'SAP Outbound', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/tools/sf-migration-stage1', name: 'SF Migration — Stage 1 적재', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/tools/sf-migration', name: 'SF Migration — Stage 2 FK', systemPermission: 'MODIFY_ALL_DATA' },
+        { path: '/admin/tools/cache', name: 'Redis 캐시 관리', systemPermission: 'MODIFY_ALL_DATA' },
       ],
     },
   ],

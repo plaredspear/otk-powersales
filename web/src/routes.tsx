@@ -59,6 +59,7 @@ const SapInboundPage = lazy(() => import('@/pages/admin/tools/sap-inbound/SapInb
 const SapOutboundPage = lazy(() => import('@/pages/admin/tools/sap-outbound/SapOutboundPage'));
 const SfMigrationPage = lazy(() => import('@/pages/admin/tools/sf-migration/SfMigrationPage'));
 const SfMigrationStage1Page = lazy(() => import('@/pages/admin/tools/sf-migration-stage1/SfMigrationStage1Page'));
+const CacheManagementPage = lazy(() => import('@/pages/admin/cache/CacheManagementPage'));
 const AgreementWordsPage = lazy(() => import('@/pages/admin/agreement-words/AgreementWordsPage'));
 const UserListPage = lazy(() => import('@/pages/users/UserListPage'));
 const UserDetailPage = lazy(() => import('@/pages/users/UserDetailPage'));
@@ -229,6 +230,7 @@ export const router = createBrowserRouter(
               children: [
                 { path: '/admin/tools/sf-migration', element: <LazyWrapper><SfMigrationPage /></LazyWrapper> },
                 { path: '/admin/tools/sf-migration-stage1', element: <LazyWrapper><SfMigrationStage1Page /></LazyWrapper> },
+                { path: '/admin/tools/cache', element: <LazyWrapper><CacheManagementPage /></LazyWrapper> },
               ],
             },
             {

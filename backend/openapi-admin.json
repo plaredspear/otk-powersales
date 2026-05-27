@@ -3507,6 +3507,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseEvictResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/EvictResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseHolidayMasterResponse" : {
         "properties" : {
           "data" : {
@@ -3626,6 +3655,34 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/BranchResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListCacheInfo" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CacheInfo"
             },
             "type" : [ "array", "null" ]
           },
@@ -6566,6 +6623,18 @@
         },
         "type" : "object"
       },
+      "CacheInfo" : {
+        "properties" : {
+          "estimatedKeyCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "Category2Node" : {
         "properties" : {
           "category2" : {
@@ -7630,6 +7699,22 @@
           },
           "message" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EvictResult" : {
+        "properties" : {
+          "cacheName" : {
+            "type" : "string"
+          },
+          "keysAfter" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "keysBefore" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -12955,7 +13040,7 @@
     },
     "/api/v1/admin/attendance-log" : {
       "get" : {
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "parameters" : [ {
           "in" : "query",
           "name" : "filter",
@@ -13106,6 +13191,50 @@
           }
         },
         "tags" : [ "web-authentication-controller" ]
+      }
+    },
+    "/api/v1/admin/cache" : {
+      "get" : {
+        "operationId" : "list_2",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCacheInfo"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-cache-controller" ]
+      }
+    },
+    "/api/v1/admin/cache/{cacheName}/evict" : {
+      "post" : {
+        "operationId" : "evict",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "cacheName",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEvictResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-cache-controller" ]
       }
     },
     "/api/v1/admin/claims" : {
