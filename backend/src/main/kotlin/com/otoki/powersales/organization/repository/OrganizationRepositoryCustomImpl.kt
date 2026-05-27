@@ -46,11 +46,14 @@ class OrganizationRepositoryCustomImpl(
             )
         } else {
             if (hrCode.isNullOrBlank()) return emptyList()
+            // SF `CurrentUserBranchNameList.getOrgList()` 정합 (L32) — hrCode (= `Employee.CostCenterCode__c`,
+            // 명명상 cost center 이나 실제 값은 HR 조직 코드) 는 `Org__c.OrgCodeLevel*` 매칭. `CostCenterLevel*`
+            // 와는 별개 필드. [OrgCostCenterMatchService] 의 명세 참조 — Employee.costCenterCode 의 실제 의미 = OrgCode.
             builder.and(
-                organization.costCenterLevel5.eq(hrCode)
-                    .or(organization.costCenterLevel4.eq(hrCode))
-                    .or(organization.costCenterLevel3.eq(hrCode))
-                    .or(organization.costCenterLevel2.eq(hrCode))
+                organization.orgCodeLevel5.eq(hrCode)
+                    .or(organization.orgCodeLevel4.eq(hrCode))
+                    .or(organization.orgCodeLevel3.eq(hrCode))
+                    .or(organization.orgCodeLevel2.eq(hrCode))
             )
             builder.and(
                 organization.orgNameLevel3.`in`("Retail사업부", "제1사업부", "CVS사업부")
@@ -73,11 +76,14 @@ class OrganizationRepositoryCustomImpl(
     }
 
     private fun fetchTeamScheduleBranches(where: BooleanBuilder): List<BranchResponse> {
+        // SF `CurrentUserBranchNameList.getBranchNames()` 정합 — 응답 키는 `OrgCodeLevel*__c` (HR 조직 코드).
+        // 사용자의 Employee.costCenterCode 와 동일 차원 (OrgCode) 의 값. 거래처/일정 조회 단계는 호출 측에서
+        // [BranchCodeExpander] 로 BranchMapping 확장 후 매칭.
         val tuples: List<Tuple> = queryFactory
             .select(
-                organization.costCenterLevel5,
+                organization.orgCodeLevel5,
                 organization.orgNameLevel5,
-                organization.costCenterLevel4,
+                organization.orgCodeLevel4,
                 organization.orgNameLevel4
             )
             .from(organization)
@@ -92,12 +98,12 @@ class OrganizationRepositoryCustomImpl(
         val seen = LinkedHashSet<String>()
         val result = mutableListOf<BranchResponse>()
         for (t in tuples) {
-            val cc5 = t.get(0, String::class.java)
+            val oc5 = t.get(0, String::class.java)
             val nm5 = t.get(1, String::class.java)
-            val cc4 = t.get(2, String::class.java)
+            val oc4 = t.get(2, String::class.java)
             val nm4 = t.get(3, String::class.java)
 
-            val code = if (!cc5.isNullOrBlank()) cc5 else cc4
+            val code = if (!oc5.isNullOrBlank()) oc5 else oc4
             val name = if (!nm5.isNullOrBlank()) nm5 else nm4
             if (code.isNullOrBlank() || name.isNullOrBlank()) continue
             if (seen.add(code)) {
