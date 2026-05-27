@@ -2030,12 +2030,6 @@
             "format" : "int64",
             "type" : "integer"
           },
-          "photoType" : {
-            "type" : "string"
-          },
-          "photoTypeLabel" : {
-            "type" : "string"
-          },
           "url" : {
             "type" : "string"
           }

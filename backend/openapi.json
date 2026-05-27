@@ -966,6 +966,81 @@
         },
         "type" : "object"
       },
+      "AdminClaimCreateRequest" : {
+        "properties" : {
+          "amount" : {
+            "type" : [ "number", "null" ]
+          },
+          "claimDate" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "claimType1" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "claimType2" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "dateType" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "description" : {
+            "maxLength" : 4000,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "expirationDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "manufacturingDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "purchaseMethod" : {
+            "type" : [ "string", "null" ]
+          },
+          "quantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "requestType" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "claimDate", "claimType1", "claimType2", "dateType", "description", "employeeCode", "productCode", "quantity", "sapAccountCode" ],
+        "type" : "object"
+      },
+      "AdminClaimCreateResponse" : {
+        "properties" : {
+          "claimId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sfResultCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfResultMsg" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "AdminClaimDetailResponse" : {
         "properties" : {
           "categoryLabel" : {
@@ -1695,6 +1770,306 @@
         "required" : [ "accountCode", "employeeCode", "startDate", "typeOfWork3", "typeOfWork4", "typeOfWork5" ],
         "type" : "object"
       },
+      "AdminSuggestionCreateRequest" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "actionStatus" : {
+            "enum" : [ "UNCONFIRMED", "IN_PROGRESS", "COMPLETED", "DUPLICATE_RECEPTION" ],
+            "type" : [ "string", "null" ]
+          },
+          "carNumber" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
+            "type" : [ "string", "null" ]
+          },
+          "claimDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "claimType" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "content" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "duplicateProposalNum" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "logisticsResponsibility" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "maxLength" : 250,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "category", "content", "title" ],
+        "type" : "object"
+      },
+      "AdminSuggestionDetailResponse" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionStatus" : {
+            "enum" : [ "UNCONFIRMED", "IN_PROGRESS", "COMPLETED", "DUPLICATE_RECEPTION" ],
+            "type" : [ "string", "null" ]
+          },
+          "actionStatusName" : {
+            "type" : [ "string", "null" ]
+          },
+          "attachments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SuggestionAttachment"
+            },
+            "type" : "array"
+          },
+          "carNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
+            "type" : "string"
+          },
+          "categoryName" : {
+            "type" : "string"
+          },
+          "claimDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "claimType" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimTypeMeasures" : {
+            "type" : [ "string", "null" ]
+          },
+          "content" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "duplicateProposalNum" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "logisticsResponsibility" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgCostCenterCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "proposalNumber" : {
+            "type" : "string"
+          },
+          "receptionLogisticsCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "responsibleLogisticsCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "enum" : [ "SUBMITTED", "IN_REVIEW", "ACCEPTED", "REJECTED" ],
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminSuggestionListItem" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionStatus" : {
+            "enum" : [ "UNCONFIRMED", "IN_PROGRESS", "COMPLETED", "DUPLICATE_RECEPTION" ],
+            "type" : [ "string", "null" ]
+          },
+          "actionStatusName" : {
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
+            "type" : "string"
+          },
+          "categoryName" : {
+            "type" : "string"
+          },
+          "claimDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "claimType" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "proposalNumber" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminSuggestionListResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AdminSuggestionListItem"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminSuggestionUpdateRequest" : {
+        "properties" : {
+          "actionStatus" : {
+            "enum" : [ "UNCONFIRMED", "IN_PROGRESS", "COMPLETED", "DUPLICATE_RECEPTION" ],
+            "type" : [ "string", "null" ]
+          },
+          "carNumber" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
+            "type" : [ "string", "null" ]
+          },
+          "claimDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "claimType" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "content" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "duplicateProposalNum" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "logisticsResponsibility" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "maxLength" : 250,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "category", "content", "title" ],
+        "type" : "object"
+      },
       "AdminUserDetailResponse" : {
         "properties" : {
           "active" : {
@@ -2291,6 +2666,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseAdminClaimCreateResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminClaimCreateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseAdminClaimDetailResponse" : {
         "properties" : {
           "data" : {
@@ -2499,6 +2903,64 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminProductExpirationSummaryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminSuggestionDetailResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminSuggestionDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminSuggestionListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminSuggestionListResponse"
             }, {
               "type" : "null"
             } ]
@@ -4301,6 +4763,34 @@
           "data" : {
             "items" : {
               "type" : "string"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListSuggestionAttachment" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SuggestionAttachment"
             },
             "type" : [ "array", "null" ]
           },
@@ -8150,12 +8640,6 @@
           "photoId" : {
             "format" : "int64",
             "type" : "integer"
-          },
-          "photoType" : {
-            "type" : "string"
-          },
-          "photoTypeLabel" : {
-            "type" : "string"
           },
           "url" : {
             "type" : "string"
@@ -17432,6 +17916,31 @@
           }
         },
         "tags" : [ "admin-claim-controller" ]
+      },
+      "post" : {
+        "operationId" : "createClaim_1",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminClaimCreateRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminClaimCreateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-claim-controller" ]
       }
     },
     "/api/v1/admin/claims/{claimId}" : {
@@ -17452,6 +17961,33 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAdminClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-claim-controller" ]
+      }
+    },
+    "/api/v1/admin/claims/{claimId}/sf-resend" : {
+      "post" : {
+        "operationId" : "resendClaim",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminClaimCreateResponse"
                 }
               }
             },
@@ -23169,6 +23705,302 @@
           }
         },
         "tags" : [ "sharing-recalc-admin-controller" ]
+      }
+    },
+    "/api/v1/admin/suggestions" : {
+      "get" : {
+        "operationId" : "getSuggestions",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actionStatus",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "UNCONFIRMED", "IN_PROGRESS", "COMPLETED", "DUPLICATE_RECEPTION" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "productCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminSuggestionListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-suggestion-controller" ]
+      },
+      "post" : {
+        "operationId" : "createSuggestion",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "photos" : {
+                    "items" : {
+                      "format" : "binary",
+                      "type" : "string"
+                    },
+                    "type" : "array"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/AdminSuggestionCreateRequest"
+                  }
+                },
+                "required" : [ "request" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSuggestionCreateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-suggestion-controller" ]
+      }
+    },
+    "/api/v1/admin/suggestions/{id}" : {
+      "delete" : {
+        "operationId" : "deleteSuggestion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-suggestion-controller" ]
+      },
+      "get" : {
+        "operationId" : "getSuggestionDetail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminSuggestionDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-suggestion-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateSuggestion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminSuggestionUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminSuggestionDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-suggestion-controller" ]
+      }
+    },
+    "/api/v1/admin/suggestions/{id}/photos" : {
+      "post" : {
+        "operationId" : "uploadPhotos",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "photos" : {
+                    "items" : {
+                      "format" : "binary",
+                      "type" : "string"
+                    },
+                    "type" : "array"
+                  }
+                },
+                "required" : [ "photos" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListSuggestionAttachment"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-suggestion-controller" ]
+      }
+    },
+    "/api/v1/admin/suggestions/{suggestionId}/photos/{photoId}" : {
+      "delete" : {
+        "operationId" : "deletePhoto_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "suggestionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "photoId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-suggestion-controller" ]
       }
     },
     "/api/v1/admin/team-member-search/category" : {
