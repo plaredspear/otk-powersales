@@ -103,6 +103,29 @@ export async function fetchProfessionalPromotionTeams(): Promise<string[]> {
   return res.data.data;
 }
 
+/**
+ * 여사원 일정관리 화면 초기 로드 통합 응답.
+ *
+ * `accounts` 는 단일지점 사용자일 때만 backend 가 채워 보낸다 (branches.length === 1).
+ * 다중지점 사용자는 빈 배열이며, 사용자가 지점 드롭다운에서 선택한 시점에 별도 `/accounts` 호출로 채운다.
+ */
+export interface TeamScheduleForm {
+  branches: Branch[];
+  members: TeamMember[];
+  professionalPromotionTeams: string[];
+  accounts: TeamScheduleAccount[];
+}
+
+export async function fetchTeamScheduleForm(): Promise<TeamScheduleForm> {
+  const res = await client.get<ApiResponse<TeamScheduleForm>>(
+    '/api/v1/admin/team-schedule/form',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '여사원 일정관리 초기 데이터 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function fetchTeamSchedules(params: {
   from: string;
   to: string;

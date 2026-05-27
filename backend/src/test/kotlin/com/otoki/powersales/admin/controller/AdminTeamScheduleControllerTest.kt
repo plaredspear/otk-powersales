@@ -125,6 +125,33 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
+    @DisplayName("GET /api/v1/admin/team-schedule/form - 화면 초기 로드 통합 조회")
+    inner class GetForm {
+
+        @Test
+        @DisplayName("성공 - branches/members/promotionTeams/accounts 통합 응답 반환")
+        fun getForm_success() {
+            val form = TeamScheduleFormDto(
+                branches = listOf(BranchResponse("5457", "강북유통지점")),
+                members = listOf(TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "김영희")),
+                professionalPromotionTeams = listOf("라면세일조"),
+                accounts = listOf(TeamScheduleAccountDto(accountId = 1001, externalKey = "EXT001", name = "이마트 강북점"))
+            )
+            every { adminTeamScheduleService.getForm(any()) } returns form
+
+            mockMvc.perform(get("/api/v1/admin/team-schedule/form"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.branches.length()").value(1))
+                .andExpect(jsonPath("$.data.branches[0].branchCode").value("5457"))
+                .andExpect(jsonPath("$.data.members.length()").value(1))
+                .andExpect(jsonPath("$.data.professionalPromotionTeams[0]").value("라면세일조"))
+                .andExpect(jsonPath("$.data.accounts.length()").value(1))
+                .andExpect(jsonPath("$.data.accounts[0].accountId").value(1001))
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/v1/admin/team-schedule - 월간 일정 + 일별 요약 통합 조회")
     inner class GetMonthlySchedules {
 

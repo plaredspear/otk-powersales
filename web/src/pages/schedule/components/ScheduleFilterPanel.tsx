@@ -2,13 +2,19 @@ import { Button, Segmented, Select, Typography } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { MemberFilterTab } from './MemberFilterTab';
 import { AccountFilterTab } from './AccountFilterTab';
-import { useProfessionalPromotionTeams } from '@/hooks/team-schedule/useProfessionalPromotionTeams';
+import type { Branch, TeamMember, TeamScheduleAccount } from '@/api/team-schedule';
 
 type FilterTab = 'member' | 'account';
 
 interface ScheduleFilterPanelProps {
   filterTab: FilterTab;
   onFilterTabChange: (tab: FilterTab) => void;
+  branches: Branch[];
+  members: TeamMember[];
+  accounts: TeamScheduleAccount[];
+  promotionTeams: string[];
+  isFormLoading: boolean;
+  isAccountsLoading: boolean;
   selectedEmployeeIds: number[];
   onSelectedEmployeeIdsChange: (ids: number[]) => void;
   selectedAccountIds: number[];
@@ -30,6 +36,12 @@ const TAB_OPTIONS = [
 export function ScheduleFilterPanel({
   filterTab,
   onFilterTabChange,
+  branches,
+  members,
+  accounts,
+  promotionTeams,
+  isFormLoading,
+  isAccountsLoading,
   selectedEmployeeIds,
   onSelectedEmployeeIdsChange,
   selectedAccountIds,
@@ -42,8 +54,6 @@ export function ScheduleFilterPanel({
   isFilterDirty,
   isCoolingDown,
 }: ScheduleFilterPanelProps) {
-  const { data: promotionTeams = [], isLoading: promotionTeamsLoading } = useProfessionalPromotionTeams();
-
   return (
     <div
       style={{
@@ -86,7 +96,7 @@ export function ScheduleFilterPanel({
           style={{ width: '100%' }}
           value={selectedPromotionTeams}
           onChange={onSelectedPromotionTeamsChange}
-          loading={promotionTeamsLoading}
+          loading={isFormLoading}
           options={promotionTeams.map((team) => ({ label: team, value: team }))}
           maxTagCount="responsive"
         />
@@ -95,11 +105,16 @@ export function ScheduleFilterPanel({
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {filterTab === 'member' ? (
           <MemberFilterTab
+            members={members}
+            isLoading={isFormLoading}
             selectedIds={selectedEmployeeIds}
             onChange={onSelectedEmployeeIdsChange}
           />
         ) : (
           <AccountFilterTab
+            branches={branches}
+            accounts={accounts}
+            isAccountsLoading={isFormLoading || isAccountsLoading}
             selectedIds={selectedAccountIds}
             onChange={onSelectedAccountIdsChange}
             branchCode={selectedBranchCode}

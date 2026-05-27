@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Checkbox, Empty, Input, Spin } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { useTeamMembers } from '@/hooks/team-schedule/useTeamMembers';
+import type { TeamMember } from '@/api/team-schedule';
 
 interface MemberFilterTabProps {
+  members: TeamMember[];
+  isLoading: boolean;
   selectedIds: number[];
   onChange: (ids: number[]) => void;
 }
 
-export function MemberFilterTab({ selectedIds, onChange }: MemberFilterTabProps) {
-  const { data: members = [], isLoading } = useTeamMembers();
+export function MemberFilterTab({ members, isLoading, selectedIds, onChange }: MemberFilterTabProps) {
   const [search, setSearch] = useState('');
 
   // 이름 또는 사번에 검색어를 포함하는 row 만 표시. 공백/대소문자 정규화.

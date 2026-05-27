@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.dto.response
 
+import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
@@ -93,4 +94,21 @@ data class TeamScheduleCreateResultDto(
  */
 data class TeamScheduleMassDeleteResponse(
     val deletedCount: Int
+)
+
+/**
+ * 여사원 일정관리 화면 초기 로드 통합 응답.
+ *
+ * 기존 4개 round-trip (`/branches`, `/members`, `/accounts`, `/professional-promotion-teams`) 을
+ * 1회 호출로 합쳐 초기 렌더 latency 축소 + waterfall 제거.
+ *
+ * `accounts` 는 단일지점 사용자 (`branches.size == 1`) 일 때만 채워 보낸다 — 다중지점 사용자는
+ * 사용자가 지점 드롭다운에서 선택해야 거래처가 정의되므로 본 응답 단계에서는 결정 불가.
+ * 다중지점 케이스는 클라이언트가 선택 시점에 별도 `/accounts?branchCode=...` 호출.
+ */
+data class TeamScheduleFormDto(
+    val branches: List<BranchResponse>,
+    val members: List<TeamMemberDto>,
+    val professionalPromotionTeams: List<String>,
+    val accounts: List<TeamScheduleAccountDto>
 )

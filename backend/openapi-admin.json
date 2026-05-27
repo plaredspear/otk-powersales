@@ -6002,6 +6002,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseTeamScheduleFormDto" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TeamScheduleFormDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseTeamScheduleMassDeleteResponse" : {
         "properties" : {
           "data" : {
@@ -12022,6 +12051,35 @@
           },
           "workingType" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "TeamScheduleFormDto" : {
+        "properties" : {
+          "accounts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TeamScheduleAccountDto"
+            },
+            "type" : "array"
+          },
+          "branches" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BranchResponse"
+            },
+            "type" : "array"
+          },
+          "members" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TeamMemberDto"
+            },
+            "type" : "array"
+          },
+          "professionalPromotionTeams" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -19412,6 +19470,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-team-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/team-schedule/form" : {
+      "get" : {
+        "operationId" : "getForm",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseTeamScheduleFormDto"
                 }
               }
             },

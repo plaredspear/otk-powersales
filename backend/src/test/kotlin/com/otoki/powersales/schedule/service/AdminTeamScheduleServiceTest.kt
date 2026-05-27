@@ -376,6 +376,72 @@ class AdminTeamScheduleServiceTest {
         }
     }
 
+    // ========== getForm ==========
+
+    @Nested
+    @DisplayName("getForm - 화면 초기 로드 통합 조회")
+    inner class GetFormTests {
+
+        @Test
+        @DisplayName("단일지점 사용자 - branches 1건 + accounts 자동 채움")
+        fun getForm_singleBranch_includesAccounts() {
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "5457", role = AppAuthority.LEADER)
+            val branch = com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점")
+            val member = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = AppAuthority.WOMAN)
+            val account = createAccount(id = 1, sfid = "ACC_001", name = "이마트 강북점", branchCode = "5457")
+
+            every { organizationRepository.findTeamScheduleBranches("5457", false) } returns listOf(branch)
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("5457")) } returns listOf(member)
+            every { teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams() } returns listOf("라면세일조")
+            every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5457"), listOf("1010", "1000")) } returns listOf(account)
+
+            val result = service.getForm(principalOf(leader))
+
+            assertThat(result.branches).hasSize(1)
+            assertThat(result.branches[0].branchCode).isEqualTo("5457")
+            assertThat(result.members).hasSize(1)
+            assertThat(result.professionalPromotionTeams).containsExactly("라면세일조")
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountId).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("다중지점 사용자 - branches 2건+, accounts 는 빈 리스트 (사용자가 지점 선택 후 별도 fetch)")
+        fun getForm_multiBranch_accountsEmpty() {
+            val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "3475", role = null)
+            val branches = listOf(
+                com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"),
+                com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점")
+            )
+
+            every { organizationRepository.findTeamScheduleBranches(null, true) } returns branches
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3475")) } returns emptyList()
+            every { teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams() } returns emptyList()
+
+            val result = service.getForm(principalOf(supporter, isSalesSupport = true))
+
+            assertThat(result.branches).hasSize(2)
+            assertThat(result.accounts).isEmpty()
+            verify(exactly = 0) { accountRepository.findByBranchCodeInAndAccountGroupIn(any(), any()) }
+        }
+
+        @Test
+        @DisplayName("지점 0건 사용자 - accounts 빈 리스트, /accounts 호출 없음")
+        fun getForm_noBranch_accountsEmpty() {
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "9999", role = AppAuthority.LEADER)
+
+            every { organizationRepository.findTeamScheduleBranches("9999", false) } returns emptyList()
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("9999")) } returns emptyList()
+            every { teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams() } returns emptyList()
+
+            val result = service.getForm(principalOf(leader))
+
+            assertThat(result.branches).isEmpty()
+            assertThat(result.accounts).isEmpty()
+            verify(exactly = 0) { accountRepository.findByBranchCodeInAndAccountGroupIn(any(), any()) }
+        }
+    }
+
     // ========== getSchedulesWithSummary ==========
 
     @Nested

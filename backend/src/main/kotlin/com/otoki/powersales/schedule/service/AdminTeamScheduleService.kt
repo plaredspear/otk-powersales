@@ -118,6 +118,34 @@ class AdminTeamScheduleService(
     }
 
     /**
+     * 여사원 일정관리 화면 초기 로드 통합 fetch.
+     *
+     * 기존 화면은 마운트 시 `/branches` + `/members` + `/accounts` + `/professional-promotion-teams`
+     * 4개 endpoint 를 동시 호출 → 같은 인증/권한 검증을 4번 반복하고 네트워크 waterfall 발생.
+     * 본 메서드는 동일 검증 1회 하에서 4개 결과를 한 응답으로 반환.
+     *
+     * `accounts` 정책: `branches.size == 1` 인 단일지점 사용자만 본인 branchCode 로 즉시 채움.
+     * 다중지점 사용자 (SYSTEM_ADMIN / 영업지원 / 본부) 는 사용자가 지점을 선택해야 거래처가 결정되므로
+     * 본 응답에서는 빈 리스트로 두고, 클라이언트가 선택 시점에 `/accounts?branchCode=...` 별도 호출.
+     */
+    fun getForm(principal: WebUserPrincipal): TeamScheduleFormDto {
+        val branches = getBranches(principal)
+        val members = getMembers(principal)
+        val promotionTeams = getProfessionalPromotionTeams()
+        val accounts = if (branches.size == 1) {
+            getAccounts(principal, branches[0].branchCode)
+        } else {
+            emptyList()
+        }
+        return TeamScheduleFormDto(
+            branches = branches,
+            members = members,
+            professionalPromotionTeams = promotionTeams,
+            accounts = accounts
+        )
+    }
+
+    /**
      * 일정 조회.
      *
      * SF 레거시 `FullCalendarComponentController.fetchAllShcedule()` 정합 — **XOR 분기**:

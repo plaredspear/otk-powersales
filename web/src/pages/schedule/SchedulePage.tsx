@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { message, Spin } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAccounts';
+import { useTeamScheduleForm } from '@/hooks/team-schedule/useTeamScheduleForm';
 import { useTeamSchedules } from '@/hooks/team-schedule/useTeamSchedules';
 import type { TeamSchedule } from '@/api/team-schedule';
 import { ScheduleFilterPanel } from './components/ScheduleFilterPanel';
@@ -85,7 +86,22 @@ export default function SchedulePage() {
   const { data, isLoading: schedulesLoading, refetch: refetchSchedules } = useTeamSchedules(queryParams);
   const schedules = data?.schedules ?? [];
   const summaries = data?.dailySummary ?? [];
-  const { data: accounts = [] } = useTeamScheduleAccounts(selectedBranchCode);
+
+  // 화면 초기 로드 — branches/members/professional-promotion-teams + (단일지점 시) accounts 통합 fetch.
+  const { data: form, isLoading: isFormLoading } = useTeamScheduleForm();
+  const branches = form?.branches ?? [];
+  const members = form?.members ?? [];
+  const promotionTeams = form?.professionalPromotionTeams ?? [];
+
+  // 다중지점 사용자가 지점 드롭다운에서 선택했을 때만 거래처를 별도 fetch.
+  // 단일지점 사용자는 form 응답 안에 accounts 가 이미 들어 있으므로 추가 호출 없음 (enabled=false).
+  const isSingleBranch = branches.length === 1;
+  const accountsFetchBranchCode = isSingleBranch ? '' : selectedBranchCode;
+  const { data: fetchedAccounts = [], isLoading: isAccountsLoading } = useTeamScheduleAccounts(
+    accountsFetchBranchCode,
+    { enabled: !isSingleBranch && accountsFetchBranchCode.length > 0 },
+  );
+  const accounts = isSingleBranch ? form?.accounts ?? [] : fetchedAccounts;
 
   // staging 이 applied 와 동일해도 "조회" 클릭 시 항상 강제 재요청 — react-query 가 동일 queryKey 일 때
   // cache 즉시 반환만 하고 background refetch 안 하므로 명시 refetch 필요.
@@ -162,6 +178,12 @@ export default function SchedulePage() {
         <ScheduleFilterPanel
           filterTab={filterTab}
           onFilterTabChange={handleFilterTabChange}
+          branches={branches}
+          members={members}
+          accounts={accounts}
+          promotionTeams={promotionTeams}
+          isFormLoading={isFormLoading}
+          isAccountsLoading={isAccountsLoading}
           selectedEmployeeIds={selectedEmployeeIds}
           onSelectedEmployeeIdsChange={setSelectedEmployeeIds}
           selectedAccountIds={selectedAccountIds}

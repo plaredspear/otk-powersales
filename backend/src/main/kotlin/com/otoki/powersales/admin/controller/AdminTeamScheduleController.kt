@@ -61,6 +61,19 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
+    /**
+     * 여사원 일정관리 화면 초기 로드 통합 endpoint — branches/members/accounts/professional-promotion-teams
+     * 4건 fetch 를 1 round-trip 으로 합친다.
+     */
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/form")
+    fun getForm(
+        @AuthenticationPrincipal principal: WebUserPrincipal
+    ): ResponseEntity<ApiResponse<TeamScheduleFormDto>> {
+        val result = adminTeamScheduleService.getForm(principal)
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
+
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping
     fun getSchedules(

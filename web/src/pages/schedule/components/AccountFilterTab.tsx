@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Checkbox, Empty, Input, Select, Spin } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
-import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAccounts';
+import type { Branch, TeamScheduleAccount } from '@/api/team-schedule';
 
 interface AccountFilterTabProps {
+  branches: Branch[];
+  accounts: TeamScheduleAccount[];
+  isAccountsLoading: boolean;
   selectedIds: number[];
   onChange: (ids: number[]) => void;
   branchCode: string;
@@ -12,15 +14,15 @@ interface AccountFilterTabProps {
 }
 
 export function AccountFilterTab({
+  branches,
+  accounts,
+  isAccountsLoading,
   selectedIds,
   onChange,
   branchCode,
   onBranchCodeChange,
 }: AccountFilterTabProps) {
-  const { data: branches = [] } = useTeamScheduleBranches();
   const isSingleBranch = branches.length === 1;
-  const effectiveBranchCode = isSingleBranch ? branches[0].branchCode : branchCode;
-  const { data: accounts = [], isLoading } = useTeamScheduleAccounts(effectiveBranchCode);
   const [search, setSearch] = useState('');
 
   const branchOptions = branches.map((b) => ({
@@ -79,7 +81,7 @@ export function AccountFilterTab({
         />
       )}
 
-      {isLoading ? (
+      {isAccountsLoading ? (
         <div style={{ textAlign: 'center', padding: 24 }}>
           <Spin size="small" />
         </div>
