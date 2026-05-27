@@ -62,14 +62,18 @@ export function ScheduleCalendar({
 
   const events: EventInput[] = useMemo(
     () =>
-      schedules.map((s) => ({
-        id: String(s.id),
-        title: s.employeeName,
-        date: s.workingDate,
-        backgroundColor: getEventColor(s),
-        borderColor: getEventColor(s),
-        textColor: '#fff',
-      })),
+      schedules.map((s) => {
+        const color = getEventColor(s);
+        return {
+          id: String(s.id),
+          title: s.employeeName,
+          date: s.workingDate,
+          backgroundColor: color,
+          borderColor: color,
+          textColor: '#fff',
+          extendedProps: { dotColor: color },
+        };
+      }),
     [schedules],
   );
 
@@ -138,7 +142,8 @@ export function ScheduleCalendar({
     (arg: EventContentArg) => {
       const schedule = scheduleMap.get(arg.event.id);
       if (!schedule) return null;
-      return <ScheduleEventCard schedule={schedule} />;
+      const variant = arg.view.type === 'listMonth' ? 'list' : 'month';
+      return <ScheduleEventCard schedule={schedule} variant={variant} />;
     },
     [scheduleMap],
   );
@@ -227,6 +232,8 @@ export function ScheduleCalendar({
         initialDate={currentDate.format('YYYY-MM-DD')}
         headerToolbar={false}
         locale="ko"
+        allDayText="종일"
+        noEventsText="일정이 없습니다"
         height="auto"
         dayMaxEvents={4}
         events={events}
