@@ -80,7 +80,7 @@ export const menuRoute: MenuRoute = {
         { path: '/field-inspection', name: '현장점검' },
         { path: '/safety-check', name: '안전점검', entity: 'team_member_schedule', operation: 'READ' },
         { path: '/product-expiration', name: '유통기한 관리', entity: 'product', operation: 'READ' },
-        { path: '/claims', name: '클레임 현황' },
+        { path: '/claims', name: '제품 클레임' },
         { path: '/suggestion', name: '물류 클레임', entity: 'suggestion', operation: 'READ' },
       ],
     },
