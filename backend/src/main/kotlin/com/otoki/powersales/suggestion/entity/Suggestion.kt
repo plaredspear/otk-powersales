@@ -134,6 +134,19 @@ class Suggestion(
     @Column(name = "action_status", length = 30)
     var actionStatus: SuggestionActionStatus? = null,
 
+    // Spec #833 sf-align-suggestion-action-fields — SF describe 정합 도입
+    @SFField("ActionContent__c")
+    @Column(name = "action_content", columnDefinition = "text")
+    var actionContent: String? = null,
+
+    @SFField("ActionManager__c")
+    @Column(name = "action_manager", length = 200)
+    var actionManager: String? = null,
+
+    @SFField("ActionNum__c")
+    @Column(name = "action_num", length = 30)
+    var actionNum: String? = null,
+
     @SFField("DuplicateProposalNum__c")
     @Column(name = "duplicate_proposal_num", length = 255)
     var duplicateProposalNum: String? = null,
