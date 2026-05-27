@@ -69,7 +69,7 @@ export function AccountFilterTab({
       {!isSingleBranch && (
         <Select
           style={{ width: '100%', marginBottom: 8, flexShrink: 0 }}
-          placeholder="지점 선택"
+          placeholder="지점 (전체)"
           options={branchOptions}
           value={branchCode || undefined}
           onChange={onBranchCodeChange}
@@ -79,13 +79,7 @@ export function AccountFilterTab({
         />
       )}
 
-      {!effectiveBranchCode ? (
-        <Empty
-          description="지점을 먼저 선택해주세요"
-          styles={{ image: { height: 48 } }}
-          style={{ marginTop: 24 }}
-        />
-      ) : isLoading ? (
+      {isLoading ? (
         <div style={{ textAlign: 'center', padding: 24 }}>
           <Spin size="small" />
         </div>
