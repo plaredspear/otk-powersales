@@ -4,8 +4,10 @@ interface DaySummaryBannerProps {
   summary: DailySummary | undefined;
 }
 
-const COLOR_MATCH = '#069740';
-const COLOR_MISMATCH = '#b2272d';
+// SF 레거시 정합 (FullCalendarComponentHelper.js)
+const COLOR_MATCH = '#069740';     // 진열/행사 양쪽 정확 일치 시 — 녹색 배경
+const COLOR_MISMATCH = '#b2272d';  // 미달 또는 초과 (정확히 일치하지 않음) — 빨강 배경
+const COLOR_LEAVE = '#9CAB98';     // 연차 — 회녹색 배경
 
 export function DaySummaryBanner({ summary }: DaySummaryBannerProps) {
   if (!summary) return null;
@@ -26,22 +28,32 @@ export function DaySummaryBanner({ summary }: DaySummaryBannerProps) {
 
   if (!hasDisplay && !hasPromotion && !hasLeave && !hasCompLeave) return null;
 
-  // SF 레거시 정합 — 진열/행사 는 한 행에 ` | ` 로 결합 + 양쪽 비교 모두 일치할 때만 match 색.
-  const workMatch = displayActual >= displayExpected && promotionActual >= promotionExpected;
-  const workColor = workMatch ? COLOR_MATCH : COLOR_MISMATCH;
+  // SF 레거시 정합 (FullCalendarComponentHelper.js L22-29) —
+  // 진열/행사 한 행 결합 + 양쪽 모두 actual == expected (정확 일치) 일 때만 match (녹색).
+  // 초과 달성 (actual > expected) 도 mismatch 처리 — SF 와 동일.
+  const workMatch = displayActual === displayExpected && promotionActual === promotionExpected;
+  const workBg = workMatch ? COLOR_MATCH : COLOR_MISMATCH;
+  const chipStyle = {
+    color: '#fff',
+    padding: '1px 4px',
+    borderRadius: 2,
+    marginBottom: 1,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  } as const;
 
   return (
-    <div style={{ fontSize: 10, lineHeight: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+    <div style={{ fontSize: 10, lineHeight: '14px', whiteSpace: 'nowrap' }}>
       {(hasDisplay || hasPromotion) && (
-        <div style={{ color: workColor }}>
+        <div style={{ ...chipStyle, background: workBg }}>
           진열: {displayActual}/{displayExpected} | 행사: {promotionActual}/{promotionExpected}
         </div>
       )}
       {hasLeave && (
-        <div style={{ color: '#666' }}>연차: {annualLeave}</div>
+        <div style={{ ...chipStyle, background: COLOR_LEAVE }}>연차 : {annualLeave}</div>
       )}
       {hasCompLeave && (
-        <div style={{ color: '#666' }}>대휴: {compensatoryLeave}</div>
+        <div style={{ ...chipStyle, background: COLOR_LEAVE }}>대휴 : {compensatoryLeave}</div>
       )}
     </div>
   );
