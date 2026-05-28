@@ -84,8 +84,8 @@ class ClaimListItemCard extends StatelessWidget {
 
   Widget _buildCategoryRow() {
     final category = [
-      item.categoryName,
-      item.subcategoryName,
+      item.categoryLabel,
+      item.subcategoryLabel,
     ].where((e) => e != null).join(' > ');
     final quantity =
         item.defectQuantity != null ? '${item.defectQuantity}개' : '';

@@ -13,10 +13,10 @@ data class ClaimCreateResponse(
     companion object {
         fun from(claim: Claim): ClaimCreateResponse = ClaimCreateResponse(
             id = claim.id,
-            accountName = claim.accountName,
+            accountName = claim.account?.name,
             accountId = claim.account?.id,
-            productName = claim.productName,
-            productCode = claim.productCode,
+            productName = claim.product?.name,
+            productCode = claim.product?.productCode,
             createdAt = claim.createdAt.toString()
         )
     }

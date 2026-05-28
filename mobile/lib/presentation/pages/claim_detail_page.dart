@@ -129,7 +129,7 @@ class _ClaimDetailPageState extends ConsumerState<ClaimDetailPage> {
   }
 
   Widget _buildDefectSection(ClaimDetail detail) {
-    final category = [detail.categoryName, detail.subcategoryName]
+    final category = [detail.categoryLabel, detail.subcategoryLabel]
         .where((e) => e != null)
         .join(' > ');
     return Container(

@@ -10,8 +10,8 @@ class ClaimDetailModel {
   final String? dateType;
   final String? dateTypeLabel;
   final String? date;
-  final String? categoryName;
-  final String? subcategoryName;
+  final String? categoryLabel;
+  final String? subcategoryLabel;
   final String? defectDescription;
   final int? defectQuantity;
   final int? purchaseAmount;
@@ -30,8 +30,8 @@ class ClaimDetailModel {
     this.dateType,
     this.dateTypeLabel,
     this.date,
-    this.categoryName,
-    this.subcategoryName,
+    this.categoryLabel,
+    this.subcategoryLabel,
     this.defectDescription,
     this.defectQuantity,
     this.purchaseAmount,
@@ -52,8 +52,8 @@ class ClaimDetailModel {
       dateType: json['dateType'] as String?,
       dateTypeLabel: json['dateTypeLabel'] as String?,
       date: json['date'] as String?,
-      categoryName: json['categoryName'] as String?,
-      subcategoryName: json['subcategoryName'] as String?,
+      categoryLabel: json['categoryLabel'] as String?,
+      subcategoryLabel: json['subcategoryLabel'] as String?,
       defectDescription: json['defectDescription'] as String?,
       defectQuantity: json['defectQuantity'] as int?,
       purchaseAmount: json['purchaseAmount'] as int?,
@@ -76,8 +76,8 @@ class ClaimDetailModel {
         dateType: dateType,
         dateTypeLabel: dateTypeLabel,
         date: date != null ? DateTime.parse(date!) : null,
-        categoryName: categoryName,
-        subcategoryName: subcategoryName,
+        categoryLabel: categoryLabel,
+        subcategoryLabel: subcategoryLabel,
         defectDescription: defectDescription,
         defectQuantity: defectQuantity,
         purchaseAmount: purchaseAmount,

@@ -67,18 +67,6 @@ class Claim(
     @JoinColumn(name = "account_id")
     var account: Account? = null,
 
-    @Column(name = "store_name", length = 100)
-    var accountName: String? = null,
-
-    // Spec sf-meta-diff Q1 옵션 (a): SF Formula 필드 (`DKRetail__ProductId__r.DKRetail__ProductCode__c`).
-    // §6.7 정책상 DB 컬럼 추가 금지 대상이나 application 신규 작성 시 product FK 미연결 (SAP 코드만 있는)
-    // 케이스 회피용 입력값 캐시로 컬럼 유지. SF API 마이그레이션 대상에서는 제외 — `@SFField` 제거.
-    @Column(name = "product_code", length = 1300)
-    var productCode: String? = null,
-
-    @Column(name = "product_name", length = 200)
-    var productName: String? = null,
-
     @Enumerated(EnumType.STRING)
     @Column(name = "date_type", length = 20)
     var dateType: ClaimDateType? = null,
@@ -117,16 +105,10 @@ class Claim(
     @Convert(converter = PurchaseMethodConverter::class)
     var purchaseMethodCode: PurchaseMethod? = null,
 
-    @Column(name = "purchase_method_name", length = 50)
-    var purchaseMethodName: String? = null,
-
     @SFField("DKRetail__RequestType__c")
     @Column(name = "request_type_code", length = 4099)
     @Convert(converter = RequestTypeSetConverter::class)
     var requestTypeCode: Set<RequestType> = emptySet(),
-
-    @Column(name = "request_type_name", length = 50)
-    var requestTypeName: String? = null,
 
     // Spec #705: SF Status picklist 정합 — DB 저장값 = SF 한국어 원본 (임시저장/전송완료/전송실패).
     // 신규 application 신규 클레임 디폴트 = DRAFT (임시저장).
@@ -177,20 +159,6 @@ class Claim(
     @SFField("DKRetail__ProductId__c")
     @Column(name = "product_sfid", length = 18)
     var productSfid: String? = null,
-
-    // -- Spec #747 카테고리 A — 도메인 핵심 누락 D 분류 (SF len=1300 캐시) --
-    // Spec sf-meta-diff Q8 옵션 (b): SF Formula 필드 (Barcode/Phone/ProductStatus 는 product/employee 의 미러).
-    // §6.7 정책상 DB 컬럼 추가 금지 대상이나 product/employee 미연결 케이스 회피용 application 입력값 캐시로
-    // 컬럼 유지. SF API 마이그레이션 대상에서는 제외 — `@SFField` 제거.
-
-    @Column(name = "barcode", length = 1300)
-    var barcode: String? = null,
-
-    @Column(name = "phone", length = 1300)
-    var phone: String? = null,
-
-    @Column(name = "product_status", length = 1300)
-    var productStatus: String? = null,
 
     @SFField("ReturnOrderNumber__c")
     @Column(name = "customer_delivery_date")
