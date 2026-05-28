@@ -6795,6 +6795,10 @@
           "operator" : {
             "type" : "string"
           },
+          "resolvedUserId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "value" : {
             "type" : [ "string", "null" ]
           }
