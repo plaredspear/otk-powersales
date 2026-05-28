@@ -131,6 +131,10 @@ class AdminTeamScheduleService(
      * `accounts` 정책: `branches.size == 1` 인 단일지점 사용자만 본인 branchCode 로 즉시 채움.
      * 다중지점 사용자 (SYSTEM_ADMIN / 영업지원 / 본부) 는 사용자가 지점을 선택해야 거래처가 결정되므로
      * 본 응답에서는 빈 리스트로 두고, 클라이언트가 선택 시점에 `/accounts?branchCode=...` 별도 호출.
+     *
+     * `dailySummary` 정책 (SF 정합): 단일지점 사용자는 form 응답 accounts 전체 기준 현재 월 요약을 즉시 포함 →
+     * 캘린더가 마운트 직후 사용자 선택 없이도 요약 표시. 다중지점 사용자는 거래처 미정이라 빈 리스트.
+     * 일정 개별 칩 (schedules) 은 본 응답에 포함하지 않음 — 사용자가 거래처 선택 + 조회 시점에만 fetch.
      */
     fun getForm(principal: WebUserPrincipal): TeamScheduleFormDto {
         val branches = getBranches(principal)
@@ -141,11 +145,26 @@ class AdminTeamScheduleService(
         } else {
             emptyList()
         }
+        val dailySummary = if (accounts.isNotEmpty()) {
+            val today = LocalDate.now()
+            val monthStart = today.withDayOfMonth(1)
+            val monthEnd = today.withDayOfMonth(today.lengthOfMonth())
+            getSchedulesWithSummary(
+                from = monthStart,
+                to = monthEnd,
+                employeeIds = null,
+                accountIds = accounts.map { it.accountId },
+                promotionTeams = null
+            ).dailySummary
+        } else {
+            emptyList()
+        }
         return TeamScheduleFormDto(
             branches = branches,
             members = members,
             professionalPromotionTeams = promotionTeams,
-            accounts = accounts
+            accounts = accounts,
+            dailySummary = dailySummary
         )
     }
 

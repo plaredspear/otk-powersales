@@ -110,5 +110,12 @@ data class TeamScheduleFormDto(
     val branches: List<BranchResponse>,
     val members: List<TeamMemberDto>,
     val professionalPromotionTeams: List<String>,
-    val accounts: List<TeamScheduleAccountDto>
+    val accounts: List<TeamScheduleAccountDto>,
+    /**
+     * 현재 월 + 내 거래처 전체 기준 일별 요약 (진열/행사 expected/actual + 연차/대휴).
+     *
+     * SF 레거시 정합 — 마운트 시 사용자 선택 없이도 캘린더에 요약이 즉시 노출되도록 form 응답에 포함.
+     * 일정 개별 칩 (schedules) 은 본 응답에 포함하지 않음 — 사용자가 거래처 선택 + 조회 시점에만 fetch.
+     */
+    val dailySummary: List<DailySummaryDto>
 )

@@ -409,6 +409,8 @@ class AdminTeamScheduleServiceTest {
             every { organizationRepository.findTeamScheduleBranches("5457", false) } returns listOf(branch)
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("5457")) } returns listOf(member)
             every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5457"), listOf("1010", "1000")) } returns listOf(account)
+            // 단일지점 케이스는 accounts 가 채워지므로 dailySummary 계산을 위해 schedules 조회 발생
+            every { teamMemberScheduleRepository.findMonthlyByAccountIds(eq(listOf(1)), any(), any(), isNull()) } returns emptyList()
 
             val result = service.getForm(principalOf(leader))
 
@@ -420,6 +422,7 @@ class AdminTeamScheduleServiceTest {
             )
             assertThat(result.accounts).hasSize(1)
             assertThat(result.accounts[0].accountId).isEqualTo(1)
+            assertThat(result.dailySummary).isEmpty()
         }
 
         @Test

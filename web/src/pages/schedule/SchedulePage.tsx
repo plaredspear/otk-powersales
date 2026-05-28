@@ -105,9 +105,8 @@ export default function SchedulePage() {
 
   const { data, isLoading: schedulesLoading, refetch: refetchSchedules } = useTeamSchedules(queryParams);
   const schedules = data?.schedules ?? [];
-  const summaries = data?.dailySummary ?? [];
 
-  // 화면 초기 로드 — branches/members/professional-promotion-teams + (단일지점 시) accounts 통합 fetch.
+  // 화면 초기 로드 — branches/members/professional-promotion-teams + (단일지점 시) accounts + dailySummary 통합 fetch.
   const { data: form, isLoading: isFormLoading } = useTeamScheduleForm();
   const branches = form?.branches ?? [];
   const members = form?.members ?? [];
@@ -123,18 +122,9 @@ export default function SchedulePage() {
   );
   const accounts = isSingleBranch ? form?.accounts ?? [] : fetchedAccounts;
 
-  // SF 레거시 정합 — 마운트 시 캘린더 요약은 항상 즉시 노출 (조건 선택 무관).
-  // staging (체크박스 표시) 은 비워 두고 applied 에만 거래처 전체를 채워 fetch 트리거.
-  // 사용자가 직접 거래처를 선택/조회하기 전까지 "내 거래처 전체" 가 backend 호출 기준.
-  // accounts 가 로드된 첫 시점에 한해 1회 적용 (이후 사용자 입력 우선).
-  const autoFilledRef = useRef(false);
-  useEffect(() => {
-    if (autoFilledRef.current) return;
-    if (filterTab !== 'account') return;
-    if (accounts.length === 0) return;
-    setAppliedAccountIds(accounts.map((a) => a.accountId));
-    autoFilledRef.current = true;
-  }, [accounts, filterTab]);
+  // SF 정합 — 캘린더 요약은 form 응답 (단일지점 사용자의 내 거래처 전체 기준) 으로 마운트 즉시 표시.
+  // 사용자가 직접 조회를 수행한 후에는 그 조회 결과 (schedules + dailySummary) 가 우선.
+  const summaries = data?.dailySummary ?? form?.dailySummary ?? [];
 
   // staging 이 applied 와 동일해도 "조회" 클릭 시 항상 강제 재요청 — react-query 가 동일 queryKey 일 때
   // cache 즉시 반환만 하고 background refetch 안 하므로 명시 refetch 필요.

@@ -114,7 +114,8 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
                 branches = listOf(BranchResponse("5457", "강북유통지점")),
                 members = listOf(TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "김영희")),
                 professionalPromotionTeams = listOf("라면세일조"),
-                accounts = listOf(TeamScheduleAccountDto(accountId = 1001, externalKey = "EXT001", name = "이마트 강북점"))
+                accounts = listOf(TeamScheduleAccountDto(accountId = 1001, externalKey = "EXT001", name = "이마트 강북점")),
+                dailySummary = emptyList()
             )
             every { adminTeamScheduleService.getForm(any()) } returns form
 
