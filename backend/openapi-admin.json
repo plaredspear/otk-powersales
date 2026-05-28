@@ -10046,7 +10046,13 @@
       },
       "PromotionListItem" : {
         "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
           "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "category1" : {
             "type" : [ "string", "null" ]
           },
           "closed" : {
@@ -10070,7 +10076,13 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "primaryProductName" : {
+            "type" : [ "string", "null" ]
+          },
           "productType" : {
+            "type" : [ "string", "null" ]
+          },
+          "promotionName" : {
             "type" : [ "string", "null" ]
           },
           "promotionNumber" : {
@@ -10080,6 +10092,9 @@
             "type" : [ "string", "null" ]
           },
           "remark" : {
+            "type" : [ "string", "null" ]
+          },
+          "standLocation" : {
             "type" : [ "string", "null" ]
           },
           "startDate" : {

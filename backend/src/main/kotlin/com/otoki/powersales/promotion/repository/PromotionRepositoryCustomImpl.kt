@@ -67,6 +67,7 @@ class PromotionRepositoryCustomImpl(
         val content = queryFactory
             .selectFrom(promotion)
             .leftJoin(promotion.account, account).fetchJoin()
+            .leftJoin(promotion.primaryProduct, product).fetchJoin()
             .where(builder)
             .orderBy(promotion.createdAt.desc())
             .offset(pageable.offset)
