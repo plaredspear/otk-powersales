@@ -112,6 +112,10 @@ class SharingRulePolicyEvaluator(
         scope: DataScope,
         entityPath: EntityPathBase<*>,
     ): BooleanExpression? {
+        if (!hasProperty(entityPath, "recordTypeId")) {
+            log.debug("[sharing-policy] entity {} has no recordTypeId — skip RT predicate", entityPath)
+            return null
+        }
         return try {
             val path = Expressions.numberPath(java.lang.Long::class.java, entityPath, "recordTypeId")
             if (scope.visibleRecordTypeIds.isEmpty()) {
@@ -145,12 +149,26 @@ class SharingRulePolicyEvaluator(
      */
     fun ownerPredicate(scope: DataScope, entityPath: EntityPathBase<*>): BooleanExpression? {
         val userId = scope.userId ?: return null
+        // QueryDSL Path 생성 자체는 entity field 존재 검증을 하지 않음 (실패 시 Hibernate SQL
+        // 컴파일 시점에 UnknownPathException). reflection 으로 Q-class field 사전 확인.
+        // 운영 표준 owner 명명: `ownerUser` (User? relation, FK = owner_user_id). 단순 `ownerId` 는
+        // 운영 entity 에서 사용 사례 0건이지만 backward compat 차 fallback 유지.
+        // 운영 표준 owner 명명 = `ownerUser` (User? relation, FK owner_user_id). 단순 `ownerId` 단순
+        // 필드는 운영 entity 0건 — fallback 만 유지.
+        val ownerProperty = when {
+            hasProperty(entityPath, "ownerUser") -> "ownerUser.id"
+            hasProperty(entityPath, "ownerId") -> "ownerId"
+            else -> {
+                log.debug("[sharing-policy] entity {} has no owner property — skip owner predicate", entityPath)
+                return null
+            }
+        }
         return try {
             @Suppress("UNCHECKED_CAST")
-            val ownerIdPath = Expressions.numberPath(java.lang.Long::class.java, entityPath, "ownerId")
+            val ownerIdPath = Expressions.numberPath(java.lang.Long::class.java, entityPath, ownerProperty)
             ownerIdPath.eq(userId as java.lang.Long)
         } catch (e: Exception) {
-            log.debug("[sharing-policy] entity {} has no ownerId — skip owner predicate", entityPath, e)
+            log.debug("[sharing-policy] entity {} owner predicate build failed ({})", entityPath, ownerProperty, e)
             null
         }
     }
@@ -163,13 +181,23 @@ class SharingRulePolicyEvaluator(
      */
     fun hierarchyPredicate(scope: DataScope, entityPath: EntityPathBase<*>): BooleanExpression? {
         if (scope.allSubordinateUserRoleIds.isEmpty()) return null
+        // entity 의 owner relation 의 `userRoleId` property 활용. 운영 표준 명명 = `ownerUser`.
+        // 운영 표준 owner 명명 = `ownerUser` (User?). `owner` 단순 명명은 운영 0건 — fallback 만 유지.
+        val ownerRelation = when {
+            hasProperty(entityPath, "ownerUser") -> "ownerUser.userRoleId"
+            hasProperty(entityPath, "owner") -> "owner.userRoleId"
+            else -> {
+                log.debug("[sharing-policy] entity {} has no owner relation — skip hierarchy predicate", entityPath)
+                return null
+            }
+        }
         return try {
-            val path = Expressions.numberPath(java.lang.Long::class.java, entityPath, "owner.userRoleId")
+            val path = Expressions.numberPath(java.lang.Long::class.java, entityPath, ownerRelation)
             // QueryDSL `.in(Collection<out Long>)` overload 정합 — Set<Long> 을 List<java.lang.Long> 으로 박싱.
             val values: List<java.lang.Long> = scope.allSubordinateUserRoleIds.map { it as java.lang.Long }
             path.`in`(values)
         } catch (e: Exception) {
-            log.debug("[sharing-policy] entity {} has no owner.userRoleId — skip hierarchy predicate", entityPath, e)
+            log.debug("[sharing-policy] entity {} hierarchy predicate build failed ({})", entityPath, ownerRelation, e)
             null
         }
     }
@@ -215,11 +243,45 @@ class SharingRulePolicyEvaluator(
     fun legacyBranchPredicate(scope: DataScope, entityPath: EntityPathBase<*>): BooleanExpression? {
         if (scope.isAllBranches) return Expressions.asBoolean(true).isTrue
         if (scope.branchCodes.isEmpty()) return null
+        if (!hasProperty(entityPath, "costCenterCode")) {
+            log.debug("[sharing-policy] entity {} has no costCenterCode — skip legacy branch predicate", entityPath)
+            return null
+        }
         return try {
             Expressions.stringPath(entityPath, "costCenterCode").`in`(scope.branchCodes)
         } catch (e: Exception) {
             log.debug("[sharing-policy] entity {} has no costCenterCode — skip legacy branch predicate", entityPath, e)
             null
+        }
+    }
+
+    /**
+     * QueryDSL Q-class entity path 에 [propertyName] 이 존재하는지 reflection 으로 사전 확인.
+     *
+     * QueryDSL `Expressions.numberPath/stringPath(entityPath, name)` 은 path object 생성만 하고
+     * entity field 존재 검증을 하지 않음. SQL 컴파일 시점에 Hibernate 가 UnknownPathException 발생 —
+     * try/catch 가 잡지 못함. 본 helper 가 사전 검증으로 catch fallback 을 효과 있게 만듦.
+     *
+     * Q-class field 는 public field (예: `branchCode: StringPath`) 또는 Kotlin lazy delegated
+     * property (예: `ownerUser: QUser by lazy`) 두 형태. lazy 는 backing field 명이
+     * `<name>$delegate` + getter `get<Name>()` — getter 존재 여부로 검증.
+     */
+    internal fun hasProperty(entityPath: EntityPathBase<*>, propertyName: String): Boolean {
+        val cls = entityPath.javaClass
+        // 1) public field 직접 일치
+        try {
+            cls.getField(propertyName)
+            return true
+        } catch (_: NoSuchFieldException) {
+            // pass — getter 로 재시도
+        }
+        // 2) Kotlin lazy delegated property — getter 방식
+        val getterName = "get" + propertyName.replaceFirstChar { it.uppercase() }
+        return try {
+            cls.getMethod(getterName)
+            true
+        } catch (_: NoSuchMethodException) {
+            false
         }
     }
 
@@ -257,6 +319,14 @@ class SharingRulePolicyEvaluator(
     ): BooleanExpression? {
         val property = sfApiNameToJpaProperty(cond.field)
         val value = cond.value ?: return null
+
+        if (!hasProperty(entityPath, property)) {
+            log.debug(
+                "[sharing-policy] entity {} has no property {} (field={}) — skip condition predicate",
+                entityPath, property, cond.field,
+            )
+            return null
+        }
 
         return try {
             val path = Expressions.stringPath(entityPath, property)

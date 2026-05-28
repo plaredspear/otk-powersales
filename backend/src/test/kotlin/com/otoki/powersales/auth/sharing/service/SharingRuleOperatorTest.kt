@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.sharing.service
 
-import com.otoki.powersales.account.entity.QAccount
+import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule
 import com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.HQLTemplates
@@ -29,7 +29,8 @@ import org.junit.jupiter.api.Test
 class SharingRuleOperatorTest {
 
     private val evaluator = SharingRulePolicyEvaluator(mockk(relaxed = true))
-    private val account = QAccount.account
+    // entity path — costCenterCode 를 가진 운영 entity 선택 (Account 부재)
+    private val entity = QDisplayWorkSchedule.displayWorkSchedule
 
     /**
      * BooleanExpression 의 JPQL 직렬화 결과 반환.
@@ -56,21 +57,21 @@ class SharingRuleOperatorTest {
         @Test
         @DisplayName("equals → `column = ?`")
         fun equals() {
-            val expr = evaluator.buildConditionPredicate(cond("equals", "X"), account)
+            val expr = evaluator.buildConditionPredicate(cond("equals", "X"), entity)
             assertThat(expr).isNotNull
-            assertThat(toJpql(expr!!)).contains("account.costCenterCode = ?1")
-            assertThat(expr.toString()).contains("account.costCenterCode = X")
+            assertThat(toJpql(expr!!)).contains("displayWorkSchedule.costCenterCode = ?1")
+            assertThat(expr.toString()).contains("displayWorkSchedule.costCenterCode = X")
         }
 
         @Test
         @DisplayName("notEqual → JPQL `column <> ?` / QueryDSL toString `column != ?`")
         fun notEqual() {
-            val expr = evaluator.buildConditionPredicate(cond("notEqual", "X"), account)
+            val expr = evaluator.buildConditionPredicate(cond("notEqual", "X"), entity)
             assertThat(expr).isNotNull
             // JPQLSerializer (운영 SQL 정합) 은 JPQL 표준 `<>` 로 직렬화
-            assertThat(toJpql(expr!!)).contains("account.costCenterCode <> ?1")
+            assertThat(toJpql(expr!!)).contains("displayWorkSchedule.costCenterCode <> ?1")
             // QueryDSL 내부 toString() 은 Java 식 `!=` 표현 — 가독성 보조
-            assertThat(expr.toString()).contains("account.costCenterCode != X")
+            assertThat(expr.toString()).contains("displayWorkSchedule.costCenterCode != X")
         }
     }
 
@@ -81,33 +82,33 @@ class SharingRuleOperatorTest {
         @Test
         @DisplayName("lessThan → `column < ?`")
         fun lessThan() {
-            val expr = evaluator.buildConditionPredicate(cond("lessThan", "100"), account)
+            val expr = evaluator.buildConditionPredicate(cond("lessThan", "100"), entity)
             assertThat(expr).isNotNull
-            assertThat(toJpql(expr!!)).contains("account.costCenterCode < ?1")
+            assertThat(toJpql(expr!!)).contains("displayWorkSchedule.costCenterCode < ?1")
         }
 
         @Test
         @DisplayName("greaterThan → `column > ?`")
         fun greaterThan() {
-            val expr = evaluator.buildConditionPredicate(cond("greaterThan", "100"), account)
+            val expr = evaluator.buildConditionPredicate(cond("greaterThan", "100"), entity)
             assertThat(expr).isNotNull
-            assertThat(toJpql(expr!!)).contains("account.costCenterCode > ?1")
+            assertThat(toJpql(expr!!)).contains("displayWorkSchedule.costCenterCode > ?1")
         }
 
         @Test
         @DisplayName("lessOrEqual → `column <= ?`")
         fun lessOrEqual() {
-            val expr = evaluator.buildConditionPredicate(cond("lessOrEqual", "100"), account)
+            val expr = evaluator.buildConditionPredicate(cond("lessOrEqual", "100"), entity)
             assertThat(expr).isNotNull
-            assertThat(toJpql(expr!!)).contains("account.costCenterCode <= ?1")
+            assertThat(toJpql(expr!!)).contains("displayWorkSchedule.costCenterCode <= ?1")
         }
 
         @Test
         @DisplayName("greaterOrEqual → `column >= ?`")
         fun greaterOrEqual() {
-            val expr = evaluator.buildConditionPredicate(cond("greaterOrEqual", "100"), account)
+            val expr = evaluator.buildConditionPredicate(cond("greaterOrEqual", "100"), entity)
             assertThat(expr).isNotNull
-            assertThat(toJpql(expr!!)).contains("account.costCenterCode >= ?1")
+            assertThat(toJpql(expr!!)).contains("displayWorkSchedule.costCenterCode >= ?1")
         }
     }
 
@@ -118,33 +119,33 @@ class SharingRuleOperatorTest {
         @Test
         @DisplayName("contains → JPQL `column like ?1 escape '!'` / toString `contains(column,value)`")
         fun contains() {
-            val expr = evaluator.buildConditionPredicate(cond("contains", "abc"), account)
+            val expr = evaluator.buildConditionPredicate(cond("contains", "abc"), entity)
             assertThat(expr).isNotNull
             // JPQLSerializer 는 이미 SQL LIKE 형식으로 직렬화 (escape character 박제)
-            assertThat(toJpql(expr!!)).contains("account.costCenterCode like ?1 escape '!'")
+            assertThat(toJpql(expr!!)).contains("displayWorkSchedule.costCenterCode like ?1 escape '!'")
             // QueryDSL 내부 toString() 은 함수 형태 — 가독성 보조
-            assertThat(expr.toString()).isEqualTo("contains(account.costCenterCode,abc)")
+            assertThat(expr.toString()).isEqualTo("contains(displayWorkSchedule.costCenterCode,abc)")
         }
 
         @Test
         @DisplayName("notContain → JPQL `not(column like ?1 escape '!')` / toString `!contains(...)`")
         fun notContain() {
-            val expr = evaluator.buildConditionPredicate(cond("notContain", "abc"), account)
+            val expr = evaluator.buildConditionPredicate(cond("notContain", "abc"), entity)
             assertThat(expr).isNotNull
             val jpql = toJpql(expr!!)
-            assertThat(jpql).contains("account.costCenterCode like ?1 escape '!'")
+            assertThat(jpql).contains("displayWorkSchedule.costCenterCode like ?1 escape '!'")
             // not 합성 — JPQL 또는 toString 어느 한쪽에서 not / ! prefix 확인
-            assertThat(expr.toString()).startsWith("!contains(account.costCenterCode,")
+            assertThat(expr.toString()).startsWith("!contains(displayWorkSchedule.costCenterCode,")
         }
 
         @Test
         @DisplayName("startsWith → JPQL `column like ?1 escape '!'` / toString `startsWith(column,value)`")
         fun startsWith() {
-            val expr = evaluator.buildConditionPredicate(cond("startsWith", "abc"), account)
+            val expr = evaluator.buildConditionPredicate(cond("startsWith", "abc"), entity)
             assertThat(expr).isNotNull
             // JPQLSerializer 는 이미 SQL LIKE 형식으로 직렬화 (`value%` pattern 은 Hibernate 가 처리)
-            assertThat(toJpql(expr!!)).contains("account.costCenterCode like ?1 escape '!'")
-            assertThat(expr.toString()).isEqualTo("startsWith(account.costCenterCode,abc)")
+            assertThat(toJpql(expr!!)).contains("displayWorkSchedule.costCenterCode like ?1 escape '!'")
+            assertThat(expr.toString()).isEqualTo("startsWith(displayWorkSchedule.costCenterCode,abc)")
         }
     }
 
@@ -155,10 +156,10 @@ class SharingRuleOperatorTest {
         @Test
         @DisplayName("includes → `column in (?, ?, ...)` (csv split)")
         fun includes() {
-            val expr = evaluator.buildConditionPredicate(cond("includes", "X, Y, Z"), account)
+            val expr = evaluator.buildConditionPredicate(cond("includes", "X, Y, Z"), entity)
             assertThat(expr).isNotNull
             val jpql = toJpql(expr!!)
-            assertThat(jpql).contains("account.costCenterCode in")
+            assertThat(jpql).contains("displayWorkSchedule.costCenterCode in")
             // csv split 의 trim 동작 — toString 에 X / Y / Z 3개 항목 노출
             val rendered = expr.toString()
             assertThat(rendered).contains("X").contains("Y").contains("Z")
@@ -167,10 +168,10 @@ class SharingRuleOperatorTest {
         @Test
         @DisplayName("excludes → `not(column in (?, ?, ...))`")
         fun excludes() {
-            val expr = evaluator.buildConditionPredicate(cond("excludes", "X,Y,Z"), account)
+            val expr = evaluator.buildConditionPredicate(cond("excludes", "X,Y,Z"), entity)
             assertThat(expr).isNotNull
             val jpql = toJpql(expr!!)
-            assertThat(jpql).contains("account.costCenterCode in")
+            assertThat(jpql).contains("displayWorkSchedule.costCenterCode in")
             // `path.in(values).not()` 합성 — toString 에 not 접두 분기 포함
             assertThat(expr.toString()).startsWith("!")
         }
@@ -184,14 +185,14 @@ class SharingRuleOperatorTest {
         @DisplayName("unknown operator → IllegalStateException (re-throw, L4 정정)")
         fun unknownOperator() {
             org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) {
-                evaluator.buildConditionPredicate(cond("UNSUPPORTED_OP", "X"), account)
+                evaluator.buildConditionPredicate(cond("UNSUPPORTED_OP", "X"), entity)
             }
         }
 
         @Test
         @DisplayName("value = null → null Predicate (조건 합성 생략)")
         fun nullValue() {
-            val expr = evaluator.buildConditionPredicate(cond("equals", null), account)
+            val expr = evaluator.buildConditionPredicate(cond("equals", null), entity)
             assertThat(expr).isNull()
         }
     }
