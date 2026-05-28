@@ -6,10 +6,9 @@ import com.otoki.powersales.user.entity.User
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import jakarta.persistence.PrePersist
-import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.InitializingBean
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.memberProperties
 
@@ -23,28 +22,30 @@ import kotlin.reflect.full.memberProperties
  * - INSERT 시점 (`@PrePersist`) 만. UPDATE 는 SF 와 동일하게 ownerUser 변경 없음.
  * - 미인증 / system context (스케줄러·배치·HC sync) → 기본값 set 미적용 (null 유지)
  *
- * Hibernate 6 + Spring Boot 3.x 는 `ManagedBeanRegistry` 를 통해 EntityListener 를 Spring bean 으로
- * 인스턴스화. 본 클래스를 `@Component` 로 등록하고 entity 에서 `@EntityListeners(OwnerUserDefaultListener::class)`
- * 로 부착하면 EntityManager / SecurityContext 가 정상 주입.
+ * ## 정적 holder 의존성 주입 패턴
  *
- * ## TEMP: 진단 로그 (제거 예정)
- * 인스턴스화 호출자 stacktrace 를 1회 로깅 — Spring `ManagedBeanRegistryImpl` 경로인지 Hibernate
- * reflection `new` 경로인지 판별. lateinit 미초기화 사고 원인 추적용. 검증 완료 후 제거.
+ * Hibernate 7 + Spring Boot 4 의 EntityListener 인스턴스화 모델은 `@Component` listener 에
+ * DI 를 주입하지 못한다 — 실측 확인 결과 (instance #2 stacktrace):
+ * ```
+ *   FallbackBeanInstanceProducer.produceBeanInstance
+ *   SpringBeanContainer.createBean
+ *   ManagedBeanRegistryImpl.createBean
+ *   ListenerCallback$Definition.createCallback
+ * ```
+ * 즉 `SpringBeanContainer` 가 등록되어도 Hibernate 는 listener 콜백 build 시점에
+ * `beanFactory.createBean(beanType)` 으로 **새 prototype 인스턴스를 생성**하려 시도하고
+ * (`@Component` 빈 lookup 이 아님), EMF 가 부팅 중이라 EntityManager 주입에 실패해
+ * `FallbackBeanInstanceProducer` 로 reflection `new` fallback → `lateinit` 미초기화.
+ *
+ * 따라서 listener 클래스 자체에는 DI 를 두지 않고, 별도 `Dependencies` `@Component` 가
+ * 부팅 완료 후 정적 companion 필드에 EntityManager 를 저장한다. listener 는 `@PrePersist`
+ * 호출 시점에 정적 lookup 으로 EntityManager 를 획득 — Hibernate 가 reflection `new` 로
+ * 인스턴스화해도 정상 동작.
+ *
+ * `MainJpaRepositoriesConfig` 의 `SpringBeanContainer` 등록은 보완 인프라로 유지 — 향후
+ * `useJpaCompliantCreation()=false` 인 다른 callback 이 추가되면 활용 가능.
  */
-@Component
 class OwnerUserDefaultListener {
-
-    init {
-        val n = instanceCounter.incrementAndGet()
-        log.warn(
-            "[DIAG] OwnerUserDefaultListener instance #{} created. caller stack:\n{}",
-            n,
-            Thread.currentThread().stackTrace.take(15).joinToString("\n  ") { "at $it" },
-        )
-    }
-
-    @PersistenceContext
-    private lateinit var entityManager: EntityManager
 
     @PrePersist
     fun setDefaultOwnerUser(entity: Any) {
@@ -56,7 +57,8 @@ class OwnerUserDefaultListener {
         if (current != null) return // 명시 set 된 경우 (Trigger override 동등) 유지
 
         val userId = currentUserId() ?: return
-        ownerUserProp.set(entity, entityManager.getReference(User::class.java, userId))
+        val em = Dependencies.entityManager ?: return
+        ownerUserProp.set(entity, em.getReference(User::class.java, userId))
     }
 
     private fun currentUserId(): Long? {
@@ -69,8 +71,23 @@ class OwnerUserDefaultListener {
         }
     }
 
-    companion object {
-        private val log = LoggerFactory.getLogger(OwnerUserDefaultListener::class.java)
-        private val instanceCounter = AtomicInteger(0)
+    /**
+     * 부팅 시 Spring 이 1회 인스턴스화. `@PersistenceContext` 로 받은 EntityManager
+     * (실제로는 `SharedEntityManagerCreator` proxy — thread-safe) 를 companion 필드에
+     * 저장해 listener 가 정적 lookup 으로 사용하도록 한다.
+     */
+    @Component
+    class Dependencies(
+        @PersistenceContext private val em: EntityManager,
+    ) : InitializingBean {
+        override fun afterPropertiesSet() {
+            entityManager = em
+        }
+
+        companion object {
+            @Volatile
+            var entityManager: EntityManager? = null
+                private set
+        }
     }
 }
