@@ -13,11 +13,15 @@ import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 월매출 이력 Entity
  * V1 스키마: monthlysaleshistory__c (Heroku Connect 동기화)
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "monthly_sales_history")
 @SFObject("MonthlySalesHistory__c")
@@ -183,10 +187,12 @@ class MonthlySalesHistory(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

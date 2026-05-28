@@ -17,6 +17,10 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import jakarta.persistence.EntityListeners
 
 /**
  * Salesforce `Group` 표준 sobject 매핑 entity (Spec #755).
@@ -35,6 +39,7 @@ import jakarta.persistence.Table
  * polymorphic reference (RelatedId / OwnerId) 는 sfid only 보존 (Q5 옵션 1).
  * audit (createdBy / lastModifiedBy) 는 backend `User` entity self-reference R-2 — Spec #757 정합.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "\"group\"")
 @SFObject("Group")
@@ -113,10 +118,12 @@ class Group(
     @JoinColumn(name = "owner_user_id")
     var ownerUser: User? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

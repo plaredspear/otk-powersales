@@ -11,11 +11,15 @@ import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 여사원 투입 기준 마스터 Entity (EmployeeInputCriteriaMaster__c).
  * MonthlyFemaleEmployeeIntegrationSchedule 의 인사 투입 기준 source.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "employee_input_criteria_master")
 @SFObject("EmployeeInputCriteriaMaster__c")
@@ -96,10 +100,12 @@ class EmployeeInputCriteriaMaster(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

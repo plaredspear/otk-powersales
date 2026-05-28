@@ -22,11 +22,15 @@ import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 일정 Entity
  * V1 스키마: dkretail__teammemberschedule__c (팀원 스케줄 + 안전점검 장비 + 업무보고)
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "team_member_schedule")
 @SFObject("DKRetail__TeamMemberSchedule__c")
@@ -288,10 +292,12 @@ class TeamMemberSchedule(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

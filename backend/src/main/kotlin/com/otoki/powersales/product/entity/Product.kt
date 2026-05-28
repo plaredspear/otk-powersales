@@ -14,12 +14,16 @@ import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 제품 Entity
  * V1 스키마 product 테이블에 매핑.
  * Heroku Connect로 Salesforce Product 오브젝트와 동기화된다.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "product")
 @SFObject("DKRetail__Product__c")
@@ -228,10 +232,12 @@ class Product(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

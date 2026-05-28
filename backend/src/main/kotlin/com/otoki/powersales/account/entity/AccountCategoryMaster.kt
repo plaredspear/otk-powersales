@@ -6,6 +6,9 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 거래처유형마스터 Entity
@@ -19,6 +22,7 @@ import jakarta.persistence.*
  *   sfid prefix `005` = User / `00G` = Group 분기.
  * - Spec #758: audit FK (createdBy / lastModifiedBy) Employee → User 일괄 전환.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(
     name = "account_category_master",
@@ -83,10 +87,12 @@ class AccountCategoryMaster(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null

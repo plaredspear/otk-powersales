@@ -14,6 +14,9 @@ import jakarta.persistence.*
 import org.hibernate.annotations.NotFound
 import org.hibernate.annotations.NotFoundAction
 import java.time.LocalDate
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 제안 Entity — Salesforce `DKRetail__Proposal__c` (제안사항) 매핑.
@@ -31,6 +34,7 @@ import java.time.LocalDate
  * `reception_logistics_center` / `responsible_logistics_center` 분기는 service 단에서 양쪽 동일 값을 set.
  * 정정 X — 별 스펙으로 분리 결정.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "suggestion")
 @SFObject("DKRetail__Proposal__c")
@@ -196,11 +200,13 @@ class Suggestion(
     @NotFound(action = NotFoundAction.IGNORE)
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     @NotFound(action = NotFoundAction.IGNORE)
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     @NotFound(action = NotFoundAction.IGNORE)

@@ -11,10 +11,14 @@ import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeam
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 월별 여사원 통합일정 Entity
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "monthly_female_employee_integration_schedule")
 @SFObject("MonthlyFemaleEmployeeIntegrationSchedule__c")
@@ -148,10 +152,12 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

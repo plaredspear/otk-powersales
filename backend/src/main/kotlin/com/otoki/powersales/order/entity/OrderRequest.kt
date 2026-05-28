@@ -22,11 +22,16 @@ import jakarta.persistence.Table
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import jakarta.persistence.EntityListeners
 
 /**
  * 주문요청 Entity (DKRetail__OrderRequest__c).
  * 영업사원이 거래처에 등록한 주문 요청서. SF managed package DKRetail 의 주문요청 객체에 매핑된다.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(
     name = "order_request",
@@ -132,10 +137,12 @@ class OrderRequest(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

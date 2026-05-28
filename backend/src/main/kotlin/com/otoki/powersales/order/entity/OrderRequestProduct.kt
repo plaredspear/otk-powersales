@@ -18,6 +18,10 @@ import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import java.math.BigDecimal
 import java.time.LocalDateTime
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import jakarta.persistence.EntityListeners
 
 /**
  * 주문요청 라인 Entity (DKRetail__OrderRequestProduct__c).
@@ -30,6 +34,7 @@ import java.time.LocalDateTime
  *   cancel 도메인 메서드는 `LINE_CHANGE_TYPE_CANCEL` 상수로 set + `isCancelled()` 함수로 boolean 판정 제공.
  * - 타입·길이 정합 (§4) — unit/product_code/box_quantity/amount/quantity_boxes/line_number/quantity_pieces/dk_total_count/total_count.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(
     name = "order_request_product",
@@ -174,10 +179,12 @@ class OrderRequestProduct(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,
