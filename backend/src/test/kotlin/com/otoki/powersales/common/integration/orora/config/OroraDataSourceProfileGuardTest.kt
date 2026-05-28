@@ -8,13 +8,13 @@ import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoCon
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 
 /**
- * Spec #695 — `@Profile("dev | prod")` 가드 효력 검증.
+ * ORORA DataSource / HealthIndicator 가 모든 환경 (local/test/dev/prod) 에서 등록되는지 검증.
  *
- * local / test 프로파일에서는 ORORA 관련 빈이 컨텍스트에 등록되지 않아야 한다 — VPC Peering 이
- * dev / prod 에만 구성되어 있어 local/test 환경에서는 ORORA 환경변수가 미설정이어도
- * 정상 기동이 보장되어야 한다.
+ * VPN 장애 시에도 메인 기능이 정상 부팅되어야 한다는 요구사항을 반영. 부팅 시 connection
+ * acquire 실패는 Hikari `initializationFailTimeout=-1` 가 흡수하며, ORORA 환경변수가 비어있는
+ * local/test 에서는 호출 site 자체가 없어 acquire 가 발생하지 않는다.
  */
-@DisplayName("OroraDataSource 프로파일 가드 검증")
+@DisplayName("OroraDataSource 프로파일 가드 검증 — 모든 환경 등록")
 class OroraDataSourceProfileGuardTest {
 
 	private val runner = ApplicationContextRunner()
@@ -26,31 +26,32 @@ class OroraDataSourceProfileGuardTest {
 		.withUserConfiguration(OroraDataSourceConfig::class.java, OroraHealthIndicator::class.java)
 
 	@Test
-	@DisplayName("local 프로파일에서는 ororaDataSource / OroraHealthIndicator 빈이 등록되지 않는다")
-	fun `local profile excludes orora beans`() {
+	@DisplayName("local 프로파일에서도 ororaDataSource / OroraHealthIndicator 빈이 등록된다")
+	fun `local profile registers orora beans`() {
 		runner.withPropertyValues("spring.profiles.active=local")
 			.run { context ->
-				assertThat(context).doesNotHaveBean("ororaDataSource")
-				assertThat(context).doesNotHaveBean(OroraHealthIndicator::class.java)
+				assertThat(context).hasBean("ororaDataSource")
+				assertThat(context).hasSingleBean(OroraHealthIndicator::class.java)
 			}
 	}
 
 	@Test
-	@DisplayName("test 프로파일에서는 ororaDataSource / OroraHealthIndicator 빈이 등록되지 않는다")
-	fun `test profile excludes orora beans`() {
+	@DisplayName("test 프로파일에서도 ororaDataSource / OroraHealthIndicator 빈이 등록된다")
+	fun `test profile registers orora beans`() {
 		runner.withPropertyValues("spring.profiles.active=test")
 			.run { context ->
-				assertThat(context).doesNotHaveBean("ororaDataSource")
-				assertThat(context).doesNotHaveBean(OroraHealthIndicator::class.java)
+				assertThat(context).hasBean("ororaDataSource")
+				assertThat(context).hasSingleBean(OroraHealthIndicator::class.java)
 			}
 	}
 
 	@Test
-	@DisplayName("ORORA 환경변수 전혀 미설정 상태에서도 local 프로파일은 정상 기동된다")
+	@DisplayName("ORORA 환경변수 전혀 미설정 상태에서도 local 프로파일은 정상 기동된다 (initializationFailTimeout=-1)")
 	fun `local profile starts up without orora env vars`() {
 		runner.withPropertyValues("spring.profiles.active=local")
 			.run { context ->
 				assertThat(context).hasNotFailed()
+				assertThat(context).hasBean("ororaDataSource")
 			}
 	}
 }

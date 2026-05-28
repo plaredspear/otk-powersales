@@ -55,12 +55,12 @@ class MainDataSourceHealthConfigTest {
 	}
 
 	@Test
-	@DisplayName("local 프로파일에서도 dbHealthContributor 가 메인 DataSource 만 포함하여 등록된다")
-	fun `dbHealthContributor is registered on local with main only`() {
+	@DisplayName("local 프로파일에서도 dbHealthContributor 는 메인 DataSource 단일로 등록된다 (ororaDataSource 공존 환경)")
+	fun `dbHealthContributor is registered on local with main only even when orora coexists`() {
 		runner.withPropertyValues("spring.profiles.active=local")
 			.run { context ->
 				assertThat(context).hasBean("dbHealthContributor")
-				assertThat(context).doesNotHaveBean("ororaDataSource")
+				assertThat(context).hasBean("ororaDataSource")
 
 				val contributor = context.getBean("dbHealthContributor", HealthContributor::class.java)
 				assertThat(contributor).isInstanceOf(DataSourceHealthIndicator::class.java)

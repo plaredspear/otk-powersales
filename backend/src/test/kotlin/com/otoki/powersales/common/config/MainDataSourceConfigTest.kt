@@ -3,7 +3,6 @@ package com.otoki.powersales.common.config
 import com.otoki.powersales.common.integration.orora.config.OroraDataSourceConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.support.DefaultListableBeanFactory
@@ -17,11 +16,12 @@ import javax.sql.DataSource
  * 메인 DataSource 가 ORORA DataSource 와 공존할 때 `@Primary` + `@FlywayDataSource`
  * 우선순위가 메인에 부여되어 Flyway / JPA 가 메인 RDS 만 잡도록 보장하는지 검증한다.
  *
- * Spec #695 v1.0 부팅 사고 (ORORA 빈 등장 → 메인 DataSource 자동구성 중단 →
- * Flyway 가 ORORA 를 잡고 TCP timeout 으로 부팅 실패) 회귀 방지.
+ * 회귀 방지: ORORA 빈 등장 → 메인 DataSource 자동구성 중단 → Flyway 가 ORORA 를 잡고
+ * TCP timeout 으로 부팅 실패하는 사고 방지.
+ *
+ * ORORA 빈은 모든 환경에서 등록되도록 변경됨 — local 프로파일에서도 공존 검증.
  */
 @DisplayName("MainDataSourceConfig 단위 테스트")
-@Disabled("ORORA 임시 비활성화 (@Profile(\"orora-disabled\")) — dev/prod 에서 ororaDataSource 빈 부재가 의도된 상태. ORORA 재활성화 시 본 어노테이션 제거")
 class MainDataSourceConfigTest {
 
 	private val runner = ApplicationContextRunner()
@@ -82,14 +82,18 @@ class MainDataSourceConfigTest {
 	}
 
 	@Test
-	@DisplayName("local 프로파일에서는 ororaDataSource 가 부재해도 메인 dataSource 가 정상 등록된다")
-	fun `local profile registers only main dataSource`() {
+	@DisplayName("local 프로파일에서도 메인 dataSource 와 ororaDataSource 가 공존하며 메인이 @Primary 이다")
+	fun `local profile also registers both datasources with main primary`() {
 		runner.withPropertyValues("spring.profiles.active=local")
 			.run { context ->
 				assertThat(context).hasNotFailed()
 				assertThat(context).hasBean("dataSource")
-				assertThat(context).doesNotHaveBean("ororaDataSource")
+				assertThat(context).hasBean("ororaDataSource")
 				assertThat(context.getBean("dataSource", DataSource::class.java)).isInstanceOf(HikariDataSource::class.java)
+
+				val beanFactory = (context as ConfigurableApplicationContext).beanFactory as DefaultListableBeanFactory
+				assertThat(beanFactory.getBeanDefinition("dataSource").isPrimary).isTrue()
+				assertThat(beanFactory.getBeanDefinition("ororaDataSource").isPrimary).isFalse()
 			}
 	}
 }

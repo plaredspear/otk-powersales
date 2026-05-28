@@ -35,9 +35,11 @@ import javax.sql.DataSource
  * metamodel 에 등록 → PostgreSQL 메인 RDS 에서 `ECRM_MULCUST_MH_V` view 부재로
  * `SchemaManagementException: missing table [ECRM_MULCUST_MH_V]` 부팅 실패.
  *
- * Repository 측은 OroraJpaConfig 의 `@EnableJpaRepositories(basePackages = [..orora.entity, ..orora.repository])`
- * 가 ORORA repository 를 자기 transactionManager 에 선점 등록하므로, 메인 측은 Spring Boot
- * 자동 repository scan 을 그대로 두어도 충돌 없음.
+ * ## ORORA repository 격리
+ * 메인 측 Repository scan 은 [MainJpaRepositoriesConfig] 가 명시적 `@EnableJpaRepositories`
+ * 로 전담하며, ORORA repository (`com.otoki.powersales.orora.repository.*`) 는 exclude 한다.
+ * ORORA 측 repository 는 [com.otoki.powersales.common.integration.orora.config.OroraJpaConfig]
+ * 의 `ororaEntityManagerFactory` + `ororaTransactionManager` 가 전담.
  *
  * **`com.otoki.powersales` 하위에 신규 top-level 패키지 추가 시 본 @EntityScan 에 동시 등록
  * 의무** (ORORA 외). 누락 시 해당 패키지 entity 가 메인 EMF 에서 사라져 빈 주입 실패로 즉시 검출.

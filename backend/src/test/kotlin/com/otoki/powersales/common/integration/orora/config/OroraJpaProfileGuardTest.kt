@@ -4,59 +4,47 @@ import com.otoki.powersales.orora.repository.OroraDailySalesHistoryRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.boot.autoconfigure.AutoConfigurations
-import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration
-import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import org.springframework.context.annotation.Profile
 
 /**
- * Spec #823 §9.3 — Q7 (a) component scan 무결성 검증.
+ * `OroraJpaConfig` / `OroraDailySalesHistoryRepository` 가 특정 프로파일에 묶이지 않고
+ * 모든 환경에서 등록되는지 검증.
  *
- * `@Profile("dev | prod")` 가드가 [OroraJpaConfig] 와 하위 빈 ([com.otoki.powersales.orora.repository.OroraDailySalesHistoryRepository] 등)
- * 에 정상 적용되어, local / test 프로파일에서는 본 빈들이 컨텍스트에 등록되지 않음을 검증.
+ * 과거에는 `@Profile("orora-disabled")` 로 ORORA 측 4개 빈을 모든 환경에서 차단했으나,
+ * 이제는 VPN 장애 시에도 메인 부팅이 보장되는 인프라 (initializationFailTimeout=-1) 위에
+ * 모든 환경 등록을 유지한다. 본 테스트는 누군가 ORORA 빈에 다시 `@Profile` 가드를
+ * 부착하지 못하도록 회귀 방지 역할.
  *
- * `@SpringBootTest` 가 아닌 [ApplicationContextRunner] 를 사용하여 본 스펙의 가드만 격리 검증
- * (전체 Spring Boot 컨텍스트 부팅에 무관한 baseline 통합 테스트 이슈 회피).
+ * Repository 이름 / 메인 Repository 와의 충돌 회피 검증은 함께 유지.
  */
-@DisplayName("ORORA JPA 프로파일 가드 — local/test 무결성 검증")
+@DisplayName("ORORA JPA 프로파일 가드 — 모든 환경 등록 보장")
 class OroraJpaProfileGuardTest {
 
-	private val runner = ApplicationContextRunner()
-		.withConfiguration(
-			AutoConfigurations.of(
-				PropertyPlaceholderAutoConfiguration::class.java,
-			),
-		)
-		.withUserConfiguration(OroraJpaConfig::class.java)
-
 	@Test
-	@DisplayName("local 프로파일에서 OroraJpaConfig 가 컨텍스트에 등록되지 않는다")
-	fun `local profile excludes OroraJpaConfig`() {
-		runner.withPropertyValues("spring.profiles.active=local")
-			.run { context ->
-				assertThat(context).doesNotHaveBean(OroraJpaConfig::class.java)
-				assertThat(context).doesNotHaveBean("ororaEntityManagerFactory")
-				assertThat(context).doesNotHaveBean("ororaTransactionManager")
-			}
+	@DisplayName("OroraJpaConfig 에 @Profile 어노테이션이 부착되지 않는다 (모든 환경 등록 보장)")
+	fun `OroraJpaConfig has no Profile annotation`() {
+		val profile = OroraJpaConfig::class.java.getAnnotation(Profile::class.java)
+		assertThat(profile)
+			.withFailMessage(
+				"OroraJpaConfig 에 @Profile 이 부착됨: %s. " +
+					"VPN 장애 시에도 메인 기능이 정상 부팅되도록 ORORA 빈은 모든 환경에서 등록되어야 한다. " +
+					"부팅 시 connection acquire 실패는 Hikari `initializationFailTimeout=-1` 가 흡수.",
+				profile?.value?.joinToString(),
+			)
+			.isNull()
 	}
 
 	@Test
-	@DisplayName("test 프로파일에서 OroraJpaConfig 가 컨텍스트에 등록되지 않는다")
-	fun `test profile excludes OroraJpaConfig`() {
-		runner.withPropertyValues("spring.profiles.active=test")
-			.run { context ->
-				assertThat(context).doesNotHaveBean(OroraJpaConfig::class.java)
-				assertThat(context).doesNotHaveBean("ororaEntityManagerFactory")
-				assertThat(context).doesNotHaveBean("ororaTransactionManager")
-			}
-	}
-
-	@Test
-	@DisplayName("local 프로파일에서 ORORA 환경변수 미설정 상태로도 정상 기동")
-	fun `local profile starts up without orora env vars`() {
-		runner.withPropertyValues("spring.profiles.active=local")
-			.run { context ->
-				assertThat(context).hasNotFailed()
-			}
+	@DisplayName("OroraDailySalesHistoryRepository 에 @Profile 어노테이션이 부착되지 않는다 (모든 환경 등록 보장)")
+	fun `OroraDailySalesHistoryRepository has no Profile annotation`() {
+		val profile = OroraDailySalesHistoryRepository::class.java.getAnnotation(Profile::class.java)
+		assertThat(profile)
+			.withFailMessage(
+				"OroraDailySalesHistoryRepository 에 @Profile 이 부착됨: %s. " +
+					"ORORA repository 는 모든 환경에서 컨텍스트에 등록되어야 한다.",
+				profile?.value?.joinToString(),
+			)
+			.isNull()
 	}
 
 	@Test

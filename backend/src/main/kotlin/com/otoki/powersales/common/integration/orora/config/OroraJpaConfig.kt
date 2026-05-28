@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.jpa.EntityManagerFactoryBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Profile
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.orm.jpa.JpaTransactionManager
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
@@ -13,32 +12,32 @@ import org.springframework.transaction.PlatformTransactionManager
 import javax.sql.DataSource
 
 /**
- * ORORA MSSQL JPA 컨텍스트 (Spec #823).
+ * ORORA MSSQL JPA 컨텍스트.
  *
- * Spec #695 가 등록한 [com.otoki.powersales.common.integration.orora.config.OroraDataSourceConfig.ororaDataSource]
+ * [com.otoki.powersales.common.integration.orora.config.OroraDataSourceConfig.ororaDataSource]
  * 위에 별도 `EntityManagerFactory` + `TransactionManager` 를 등록한다 — 메인 RDS 측
  * `entityManagerFactory` / `transactionManager` 와 격리.
  *
  * ## 활성 환경
- * `@Profile("dev | prod")` — VPC Peering 한정. local / test 프로파일에서는 본 Config 와
- * 하위의 모든 빈 (`ororaEntityManagerFactory`, `ororaTransactionManager`,
- * [com.otoki.powersales.orora.repository.DailySalesHistoryRepository]) 이 컨텍스트에 등록되지 않는다.
+ * 모든 환경 (local / test / dev / prod) 에서 빈 등록. VPN 장애로 dev/prod 에서 ORORA 도달
+ * 불가 시에도 본 EMF 는 lazy 하게 connection 을 잡으므로 메인 부팅 차단 없음.
+ * local/test 에서는 ORORA 호출 site 가 없어 connection acquire 자체가 발생하지 않는다.
  *
- * ## ⚠️ 절대 수정 불가 (Spec §1.3 #7 read-only 가드)
+ * ## ⚠️ 절대 수정 불가 (read-only 가드)
  * - **Hibernate `hbm2ddl.auto = none`**: 자동 DDL 생성/실행 차단
  * - **Hibernate `connection.autocommit = true`**: Hikari read-only=true 정합
  * - **`jakarta.persistence.query.timeout = 30000`**: SELECT 지연 상한
- * - JPA Repository 의 mutation API 노출은 [com.otoki.powersales.orora.repository.DailySalesHistoryRepository]
+ * - JPA Repository 의 mutation API 노출은 [com.otoki.powersales.orora.repository.OroraDailySalesHistoryRepository]
  *   가 `Repository<>` marker 만 상속하여 컴파일 시점에 차단됨
  *
- * ## JPA scope 격리 (Q6 박제)
+ * ## JPA scope 격리
  * `@EnableJpaRepositories(basePackages = ["com.otoki.powersales.orora.entity", "com.otoki.powersales.orora.repository"])`
- * 로 ORORA 측 Repository scan 범위를 좁힘. 메인 측 자동 구성이 본 패키지를 스캔하지 않도록
- * 메인 측 명시적 `@EnableJpaRepositories` + `@EntityScan` 의 `excludeFilters` 가 별도 보강 필요
- * ([com.otoki.powersales.OtokiPowerSalesApplication] 또는 별도 Main JPA Config).
+ * 로 ORORA 측 Repository scan 범위를 좁힘. 메인 측은
+ * [com.otoki.powersales.common.config.MainDataSourceConfig] 의 명시적
+ * `@EnableJpaRepositories(basePackages = ["com.otoki.powersales"], excludeFilters = orora.repository)`
+ * 가 메인 EMF/TM 에 ORORA 측 repository 가 등록되지 않도록 격리한다.
  */
 @Configuration
-@Profile("orora-disabled")
 @EnableJpaRepositories(
 	basePackages = ["com.otoki.powersales.orora.entity", "com.otoki.powersales.orora.repository"],
 	entityManagerFactoryRef = "ororaEntityManagerFactory",
@@ -64,6 +63,11 @@ class OroraJpaConfig {
 				// SELECT 지연 상한 — ORORA 측 view 응답 지연이 backend API 응답성을 침해하지 않도록
 				"jakarta.persistence.query.timeout" to "30000",
 				"hibernate.session.events.log.LOG_QUERIES_SLOWER_THAN_MS" to "5000",
+				// VPN 장애 / local 환경 부팅 시 ORORA DB 도달 불가 상황에서도 메인 부팅이 차단되지
+				// 않도록 Hibernate 가 JDBC 메타데이터를 부팅 시점에 조회하지 않게 강제.
+				// 본 옵션 없이 dialect 만 지정하면 Hibernate 5.4+ 부터는 메타데이터를 조회하지 않지만,
+				// 일부 환경에서 여전히 connection 을 잡는 경로가 있어 명시적으로 false 부착.
+				"hibernate.boot.allow_jdbc_metadata_access" to "false",
 			),
 		)
 		.build()

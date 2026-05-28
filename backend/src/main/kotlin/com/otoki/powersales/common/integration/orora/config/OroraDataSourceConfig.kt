@@ -5,13 +5,15 @@ import com.zaxxer.hikari.HikariDataSource
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Profile
 import javax.sql.DataSource
 
 /**
  * ORORA 외부 MSSQL DB 직결용 별도 DataSource Bean.
  *
- * - dev / prod 프로파일에서만 활성화된다 (VPC Peering 이 dev / prod 에만 구성됨).
+ * - 모든 환경 (local / test / dev / prod) 에서 빈이 등록된다.
+ *   VPN 장애로 dev/prod 에서 ORORA 도달 불가 시에도 메인 애플리케이션 기능은 정상 동작해야 하므로,
+ *   `initializationFailTimeout=-1` 로 부팅 시 connection acquire 실패를 흡수한다.
+ *   local/test 에서는 ORORA 호출 site 가 없어 acquire 자체가 발생하지 않는다.
  * - 기존 메인 RDS [DataSource] 와 분리된 빈 이름 `ororaDataSource` 로 등록한다.
  * - read-only 강제 + HikariCP `initializationFailTimeout=-1` 로 ORORA DB 도달 불가 시에도
  *   메인 애플리케이션 기동을 차단하지 않는다.
@@ -21,7 +23,6 @@ import javax.sql.DataSource
  *   `@Qualifier("ororaDataSource")` 를 통해서만 주입한다.
  */
 @Configuration
-@Profile("orora-disabled")
 @EnableConfigurationProperties(OroraDataSourceProperties::class)
 class OroraDataSourceConfig(
 	private val properties: OroraDataSourceProperties,

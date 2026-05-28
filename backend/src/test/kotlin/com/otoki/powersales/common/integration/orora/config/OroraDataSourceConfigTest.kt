@@ -2,7 +2,6 @@ package com.otoki.powersales.common.integration.orora.config
 
 import com.zaxxer.hikari.HikariDataSource
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration
@@ -10,14 +9,12 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import javax.sql.DataSource
 
 /**
- * Spec #695 — `OroraDataSourceConfig` 단위 테스트.
+ * `OroraDataSourceConfig` 단위 테스트.
  *
- * dev / prod 프로파일에서 `ororaDataSource` 빈이 등록되고 §6.2 의 Hikari 파라미터가
- * 정상 바인딩되는지 검증한다. 실제 MSSQL 연결은 수행하지 않는다 (driver class 로딩 + URL
- * 조립 + Hikari 파라미터 매핑 수준).
+ * `ororaDataSource` 빈이 모든 환경에서 등록되고 Hikari 파라미터가 정상 바인딩되는지 검증.
+ * 실제 MSSQL 연결은 수행하지 않는다 (driver class 로딩 + URL 조립 + Hikari 파라미터 매핑 수준).
  */
 @DisplayName("OroraDataSourceConfig 단위 테스트")
-@Disabled("ORORA 임시 비활성화 (@Profile(\"orora-disabled\")) — dev/prod 에서 ororaDataSource 빈 부재가 의도된 상태. ORORA 재활성화 시 본 어노테이션 제거")
 class OroraDataSourceConfigTest {
 
 	private val runner = ApplicationContextRunner()
@@ -37,7 +34,7 @@ class OroraDataSourceConfigTest {
 		)
 
 	@Test
-	@DisplayName("dev 프로파일 활성 시 ororaDataSource 빈이 등록되고 MSSQL driver / URL / Hikari 파라미터가 §6.2 와 일치한다")
+	@DisplayName("dev 프로파일에서 ororaDataSource 빈이 등록되고 MSSQL driver / URL / Hikari 파라미터가 일치한다")
 	fun `dev profile registers ororaDataSource bean with MSSQL driver and configured hikari params`() {
 		runner.withPropertyValues("spring.profiles.active=dev")
 			.run { context ->
@@ -66,9 +63,27 @@ class OroraDataSourceConfigTest {
 	}
 
 	@Test
-	@DisplayName("prod 프로파일 활성 시 ororaDataSource 빈이 등록된다")
+	@DisplayName("prod 프로파일에서 ororaDataSource 빈이 등록된다")
 	fun `prod profile registers ororaDataSource bean`() {
 		runner.withPropertyValues("spring.profiles.active=prod")
+			.run { context ->
+				assertThat(context).hasBean("ororaDataSource")
+			}
+	}
+
+	@Test
+	@DisplayName("local 프로파일에서도 ororaDataSource 빈이 등록된다 (모든 환경 활성)")
+	fun `local profile also registers ororaDataSource bean`() {
+		runner.withPropertyValues("spring.profiles.active=local")
+			.run { context ->
+				assertThat(context).hasBean("ororaDataSource")
+			}
+	}
+
+	@Test
+	@DisplayName("test 프로파일에서도 ororaDataSource 빈이 등록된다 (모든 환경 활성)")
+	fun `test profile also registers ororaDataSource bean`() {
+		runner.withPropertyValues("spring.profiles.active=test")
 			.run { context ->
 				assertThat(context).hasBean("ororaDataSource")
 			}
