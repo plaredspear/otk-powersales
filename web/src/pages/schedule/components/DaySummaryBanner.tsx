@@ -19,9 +19,6 @@ export function DaySummaryBanner({ summary }: DaySummaryBannerProps) {
     compensatoryLeave,
   } = summary;
 
-  const displayColor = displayActual >= displayExpected ? COLOR_MATCH : COLOR_MISMATCH;
-  const promotionColor = promotionActual >= promotionExpected ? COLOR_MATCH : COLOR_MISMATCH;
-
   const hasDisplay = displayExpected > 0 || displayActual > 0;
   const hasPromotion = promotionExpected > 0 || promotionActual > 0;
   const hasLeave = annualLeave > 0;
@@ -29,16 +26,15 @@ export function DaySummaryBanner({ summary }: DaySummaryBannerProps) {
 
   if (!hasDisplay && !hasPromotion && !hasLeave && !hasCompLeave) return null;
 
+  // SF 레거시 정합 — 진열/행사 는 한 행에 ` | ` 로 결합 + 양쪽 비교 모두 일치할 때만 match 색.
+  const workMatch = displayActual >= displayExpected && promotionActual >= promotionExpected;
+  const workColor = workMatch ? COLOR_MATCH : COLOR_MISMATCH;
+
   return (
-    <div style={{ fontSize: 10, lineHeight: '14px', whiteSpace: 'nowrap' }}>
-      {hasDisplay && (
-        <div style={{ color: displayColor }}>
-          진열: {displayActual}/{displayExpected}
-        </div>
-      )}
-      {hasPromotion && (
-        <div style={{ color: promotionColor }}>
-          행사: {promotionActual}/{promotionExpected}
+    <div style={{ fontSize: 10, lineHeight: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      {(hasDisplay || hasPromotion) && (
+        <div style={{ color: workColor }}>
+          진열: {displayActual}/{displayExpected} | 행사: {promotionActual}/{promotionExpected}
         </div>
       )}
       {hasLeave && (

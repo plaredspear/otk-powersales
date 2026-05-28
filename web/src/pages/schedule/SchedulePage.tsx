@@ -103,6 +103,20 @@ export default function SchedulePage() {
   );
   const accounts = isSingleBranch ? form?.accounts ?? [] : fetchedAccounts;
 
+  // SF 레거시 정합 — 마운트 시 거래처 전체 자동 selected → 캘린더 요약이 즉시 노출.
+  // 사용자가 한번이라도 직접 선택을 수정 (체크 해제 등) 하면 그 의도를 존중 (다시 자동 채움 X).
+  // accounts 가 로드된 첫 시점에 한해 staging + applied 양쪽 모두 채운다.
+  const autoFilledRef = useRef(false);
+  useEffect(() => {
+    if (autoFilledRef.current) return;
+    if (filterTab !== 'account') return;
+    if (accounts.length === 0) return;
+    const allIds = accounts.map((a) => a.accountId);
+    setSelectedAccountIds(allIds);
+    setAppliedAccountIds(allIds);
+    autoFilledRef.current = true;
+  }, [accounts, filterTab]);
+
   // staging 이 applied 와 동일해도 "조회" 클릭 시 항상 강제 재요청 — react-query 가 동일 queryKey 일 때
   // cache 즉시 반환만 하고 background refetch 안 하므로 명시 refetch 필요.
   // 잦은 클릭으로 인한 서버 부하 방지 — 1.5초 cooldown.
@@ -173,8 +187,8 @@ export default function SchedulePage() {
   ]);
 
   return (
-    <div style={{ display: 'flex', height: '100%', gap: 16, padding: 16 }}>
-      <div style={{ width: 240, flexShrink: 0 }}>
+    <div style={{ display: 'flex', height: '100%', minHeight: 0, gap: 16, padding: 16 }}>
+      <div style={{ width: 240, flexShrink: 0, minHeight: 0, height: '100%' }}>
         <ScheduleFilterPanel
           filterTab={filterTab}
           onFilterTabChange={handleFilterTabChange}
@@ -197,7 +211,7 @@ export default function SchedulePage() {
           isCoolingDown={isCoolingDown}
         />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, minHeight: 0, height: '100%', overflow: 'auto' }}>
         <Spin spinning={schedulesLoading}>
           <ScheduleCalendar
             currentDate={currentDate}

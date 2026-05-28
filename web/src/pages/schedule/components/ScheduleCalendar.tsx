@@ -224,7 +224,7 @@ export function ScheduleCalendar({
         />
       </div>
 
-      {/* FullCalendar */}
+      {/* FullCalendar — SF 레거시 정합: 셀 높이 고정 + 초과 일정은 popover ("+N 개") */}
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, listPlugin]}
@@ -234,8 +234,9 @@ export function ScheduleCalendar({
         locale="ko"
         allDayText="종일"
         noEventsText="일정이 없습니다"
-        height="auto"
-        dayMaxEvents={4}
+        height={isListView ? 'auto' : 720}
+        dayMaxEventRows={3}
+        moreLinkText={(num) => `+${num} 개`}
         events={events}
         dayCellContent={renderDayCellContent}
         eventContent={renderEventContent}
