@@ -1,6 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
+import com.otoki.powersales.organization.entity.QOrganization.Companion.organization
 import com.otoki.powersales.schedule.dto.response.TeamMemberCategoryResultItem
 import com.otoki.powersales.schedule.dto.response.TeamMemberCategorySearchResult
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
@@ -49,8 +50,15 @@ class TeamMemberCategorySearchService(
         val lastCountMap = aggregateCountMap(lastMonthRows, lastMonth)
         val countMap = currentCountMap + lastCountMap  // SF L97 putAll 동등
 
+        // SF `CurrentUserBranchNameList.getBranchNames()` 의 `{OrgCodeLevel5__c: OrgNameLevel5__c}` map 대응 —
+        // 사용자가 선택한 orgValue (= OrgCodeLevel5 차원) 를 `aggregateCountMap` 의 key 차원 (`employee.orgName`,
+        // = SF `BranchName__c` formula = `FullName__r.DKRetail__OrgName__c`) 으로 변환한다.
+        // 이 변환을 거치지 않으면 countMap 의 key 가 한글 지점명인 반면 lookup 은 코드값이라 영원히 매칭 불가.
+        val orgNameByCode = fetchOrgNameByCode(orgValues)
+
         val items = orgValues.map { orgValue ->
-            buildResultItem(orgValue, normMonth, lastMonth, countMap)
+            val branchName = orgNameByCode[orgValue] ?: orgValue
+            buildResultItem(branchName, normMonth, lastMonth, countMap)
         }
 
         return TeamMemberCategorySearchResult(
@@ -58,6 +66,27 @@ class TeamMemberCategorySearchService(
             resultMsg = if (items.isEmpty()) "검색결과가 없습니다." else null,
             result = items,
         )
+    }
+
+    /**
+     * `Organization.orgCodeLevel5 IN orgValues` → `{orgCodeLevel5: orgNameLevel5}` Map.
+     *
+     * web dropdown 의 branchCode 차원 (`Organization.orgCodeLevel5`) → 한글 지점명 (`orgNameLevel5`) 변환.
+     * MFEIS lazy join 시 매칭 키와 동일한 차원 (`employee.orgName`) 으로 변환되므로 countMap lookup 정합.
+     */
+    private fun fetchOrgNameByCode(orgValues: Collection<String>): Map<String, String> {
+        if (orgValues.isEmpty()) return emptyMap()
+        return queryFactory
+            .select(organization.orgCodeLevel5, organization.orgNameLevel5)
+            .from(organization)
+            .where(organization.orgCodeLevel5.`in`(orgValues))
+            .fetch()
+            .mapNotNull { tuple ->
+                val code = tuple.get(0, String::class.java) ?: return@mapNotNull null
+                val name = tuple.get(1, String::class.java) ?: return@mapNotNull null
+                code to name
+            }
+            .toMap()
     }
 
     /**
@@ -99,49 +128,52 @@ class TeamMemberCategorySearchService(
 
     /**
      * SF `getItemList` (cls:78-163) 의 단일 지점 row 생성 + 현월/전월 비교.
+     *
+     * @param branchName 한글 지점명 (`Organization.orgNameLevel5` / `Employee.orgName` 차원).
+     *                   countMap 의 key prefix 와 동일 차원이어야 한다. 응답의 `branchName` 으로도 그대로 사용.
      */
     internal fun buildResultItem(
-        orgValue: String,
+        branchName: String,
         month: String,
         lastMonth: String,
         countMap: Map<String, BigDecimal>,
     ): TeamMemberCategoryResultItem {
         // 현월 진열
-        val fix = countMap.getOrZero("$orgValue/${month}월진열고정")
-        val store = countMap.getOrZero("$orgValue/${month}월진열격고")
-        val rotate = countMap.getOrZero("$orgValue/${month}월진열순회")
+        val fix = countMap.getOrZero("$branchName/${month}월진열고정")
+        val store = countMap.getOrZero("$branchName/${month}월진열격고")
+        val rotate = countMap.getOrZero("$branchName/${month}월진열순회")
         val currentExhibition = fix + store + rotate
 
         // 전월 진열
-        val lastFix = countMap.getOrZero("$orgValue/${lastMonth}월진열고정")
-        val lastStore = countMap.getOrZero("$orgValue/${lastMonth}월진열격고")
-        val lastRotate = countMap.getOrZero("$orgValue/${lastMonth}월진열순회")
+        val lastFix = countMap.getOrZero("$branchName/${lastMonth}월진열고정")
+        val lastStore = countMap.getOrZero("$branchName/${lastMonth}월진열격고")
+        val lastRotate = countMap.getOrZero("$branchName/${lastMonth}월진열순회")
         val lastExhibition = lastFix + lastStore + lastRotate
 
         val exhibitionIncrease = currentExhibition - lastExhibition
 
         // 현월 행사 — 상온 = 상온(라면 제외) + 라면
-        val ambientExceptRamen = countMap.getOrZero("$orgValue/${month}월행사상온")
-        val ramen = countMap.getOrZero("$orgValue/${month}월행사라면")
+        val ambientExceptRamen = countMap.getOrZero("$branchName/${month}월행사상온")
+        val ramen = countMap.getOrZero("$branchName/${month}월행사라면")
         val roomTemperature = ambientExceptRamen + ramen
 
         // 현월 행사 — 냉동/냉장 = 냉동 + 냉장 + 만두 + 냉동/냉장
-        val freezing = countMap.getOrZero("$orgValue/${month}월행사냉동")
-        val refrigeration = countMap.getOrZero("$orgValue/${month}월행사냉장")
-        val dumpling = countMap.getOrZero("$orgValue/${month}월행사만두")
-        val freezingAndRefrigeration = countMap.getOrZero("$orgValue/${month}월행사냉장냉동")
+        val freezing = countMap.getOrZero("$branchName/${month}월행사냉동")
+        val refrigeration = countMap.getOrZero("$branchName/${month}월행사냉장")
+        val dumpling = countMap.getOrZero("$branchName/${month}월행사만두")
+        val freezingAndRefrigeration = countMap.getOrZero("$branchName/${month}월행사냉장냉동")
         val refrigerationAndFreezing = freezing + refrigeration + dumpling + freezingAndRefrigeration
 
         // 전월 행사 — 상온
-        val lastAmbientExceptRamen = countMap.getOrZero("$orgValue/${lastMonth}월행사상온")
-        val lastRamen = countMap.getOrZero("$orgValue/${lastMonth}월행사라면")
+        val lastAmbientExceptRamen = countMap.getOrZero("$branchName/${lastMonth}월행사상온")
+        val lastRamen = countMap.getOrZero("$branchName/${lastMonth}월행사라면")
         val lastRoomTemperature = lastAmbientExceptRamen + lastRamen
 
         // 전월 행사 — 냉동/냉장
-        val lastFreezing = countMap.getOrZero("$orgValue/${lastMonth}월행사냉동")
-        val lastRefrigeration = countMap.getOrZero("$orgValue/${lastMonth}월행사냉장")
-        val lastDumpling = countMap.getOrZero("$orgValue/${lastMonth}월행사만두")
-        val lastFreezingAndRefrigeration = countMap.getOrZero("$orgValue/${lastMonth}월행사냉장냉동")
+        val lastFreezing = countMap.getOrZero("$branchName/${lastMonth}월행사냉동")
+        val lastRefrigeration = countMap.getOrZero("$branchName/${lastMonth}월행사냉장")
+        val lastDumpling = countMap.getOrZero("$branchName/${lastMonth}월행사만두")
+        val lastFreezingAndRefrigeration = countMap.getOrZero("$branchName/${lastMonth}월행사냉장냉동")
         val lastRefrigerationAndFreezing =
             lastRefrigeration + lastFreezing + lastDumpling + lastFreezingAndRefrigeration
 
@@ -156,10 +188,10 @@ class TeamMemberCategorySearchService(
         // SF setNull() (cls:341-363) — 양 월 모두 0 이면 모든 수치 필드 null 처리
         val allZero = currentMonthTotal.signum() == 0 && lastMonthTotal.signum() == 0
         return if (allZero) {
-            TeamMemberCategoryResultItem(branchName = orgValue)
+            TeamMemberCategoryResultItem(branchName = branchName)
         } else {
             TeamMemberCategoryResultItem(
-                branchName = orgValue,
+                branchName = branchName,
                 fix = fix,
                 store = store,
                 rotate = rotate,

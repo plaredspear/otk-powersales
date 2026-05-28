@@ -186,6 +186,28 @@ class TeamMemberCategorySearchServiceTest {
             val item = service.buildResultItem("한밭1지점", "5", "4", countMap)
             assertThat(item.refrigerationAndFreezing).isEqualByComparingTo(BigDecimal("4"))
         }
+
+        @Test
+        @DisplayName("buildResultItem 의 첫 인자는 한글 지점명 차원 — 코드값 (예: '5832') 으로 호출 시 countMap 의 한글 key 와 매칭 불가하여 setNull")
+        fun keyDimensionMustMatchCountMap() {
+            // countMap 은 aggregateCountMap 이 사용하는 차원 = employee.orgName (= 한글 지점명, SF BranchName__c 동등)
+            val countMap = mapOf(
+                "원주1지점/4월진열고정" to BigDecimal("10.623"),
+                "원주1지점/4월진열격고" to BigDecimal("3.807"),
+                "원주1지점/4월진열순회" to BigDecimal("10.431"),
+            )
+            // 코드값 ("5832") 으로 호출하면 countMap 의 한글 key 와 매칭 불가 → setNull
+            val itemByCode = service.buildResultItem("5832", "4", "3", countMap)
+            assertThat(itemByCode.fix).isNull()
+            assertThat(itemByCode.currentMonthTotal).isNull()
+
+            // 한글 지점명 ("원주1지점") 으로 호출해야 정상 매칭
+            val itemByName = service.buildResultItem("원주1지점", "4", "3", countMap)
+            assertThat(itemByName.fix).isEqualByComparingTo(BigDecimal("10.623"))
+            assertThat(itemByName.store).isEqualByComparingTo(BigDecimal("3.807"))
+            assertThat(itemByName.rotate).isEqualByComparingTo(BigDecimal("10.431"))
+            assertThat(itemByName.currentExhibitionTotal).isEqualByComparingTo(BigDecimal("24.861"))
+        }
     }
 
     private fun mfeisRow(
