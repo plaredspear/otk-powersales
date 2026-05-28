@@ -109,17 +109,14 @@ class AdminTeamScheduleService(
     }
 
     /**
-     * 여사원 일정관리 "전문행사조" 필터 옵션.
+     * 여사원 일정관리 "전문행사조" 필터 옵션 — [getForm] 내부 전용.
      *
      * SF `ProfessionalPromotionTeamMaster__c.ProfessionalPromotionTeam__c` picklist 5값을
      * [ProfessionalPromotionTeamType] enum 으로 보유 중이라 enum displayName 을 그대로 반환한다.
      * SF 와의 동기는 [com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter]
      * 가 fail-fast 로 강제 — 신규 picklist 가 추가되면 SF inbound 적재 시점에 즉시 노출되므로 enum 갱신 누락은 사실상 차단.
-     *
-     * 이전 구현은 `team_member_schedule.professional_promotion_team` 전체 DISTINCT 였으나
-     * 대량 row Seq Scan + Sort 로 단건 호출이 ~11s 소요 (운영 누적). picklist 5값 고정이라 DB 조회 불요.
      */
-    fun getProfessionalPromotionTeams(): List<String> {
+    private fun getProfessionalPromotionTeams(): List<String> {
         return ProfessionalPromotionTeamType.entries.map { it.displayName }
     }
 

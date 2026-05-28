@@ -46,27 +46,6 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/team-schedule/members - 여사원 목록 조회")
-    inner class GetMembers {
-
-        @Test
-        @DisplayName("성공 - 여사원 목록 반환")
-        fun getMembers_success() {
-            val members = listOf(
-                TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "홍길동"),
-                TeamMemberDto(employeeId = 2L, employeeCode = "20030002", name = "김영희")
-            )
-            every { adminTeamScheduleService.getMembers(any()) } returns members
-
-            mockMvc.perform(get("/api/v1/admin/team-schedule/members"))
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].employeeCode").value("20030001"))
-        }
-    }
-
-    @Nested
     @DisplayName("GET /api/v1/admin/team-schedule/accounts - 거래처 목록 조회")
     inner class GetAccounts {
 

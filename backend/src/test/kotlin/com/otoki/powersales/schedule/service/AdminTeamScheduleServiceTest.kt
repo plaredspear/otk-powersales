@@ -523,16 +523,6 @@ class AdminTeamScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("getProfessionalPromotionTeams - SF picklist 5값 enum 그대로 반환 (DB 조회 없음)")
-        fun getProfessionalPromotionTeams_returnsEnumValues() {
-            val result = service.getProfessionalPromotionTeams()
-
-            assertThat(result).containsExactly(
-                "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조"
-            )
-        }
-
-        @Test
         @DisplayName("필터 없이 조회 - 빈 배열 반환")
         fun getSchedulesWithSummary_noFilter_returnsEmpty() {
             val result = service.getSchedulesWithSummary(LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), null, null)
