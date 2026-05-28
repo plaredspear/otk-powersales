@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Select, Spin } from 'antd';
-import { fetchEmployees, type Employee } from '@/api/employee';
+import { fetchEmployeesForAccountLookup, type Employee } from '@/api/employee';
 
 /**
  * 영업사원 검색 dropdown (Spec #640 P2-W).
@@ -43,7 +43,7 @@ export default function EmployeeSelect({ value, onChange, disabled, placeholder 
     }
     let cancelled = false;
     setLoading(true);
-    fetchEmployees({ keyword: debouncedKeyword.trim(), page: 0, size: SEARCH_PAGE_SIZE })
+    fetchEmployeesForAccountLookup({ keyword: debouncedKeyword.trim(), page: 0, size: SEARCH_PAGE_SIZE })
       .then((data) => {
         if (cancelled) return;
         setOptions(

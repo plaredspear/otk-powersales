@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Alert, Button, DatePicker, Modal, Select, Space, Table, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { Dayjs } from 'dayjs';
-import { useAccounts } from '@/hooks/account/useAccounts';
+import { useQuery } from '@tanstack/react-query';
+import { fetchAccountsForProductLookup } from '@/api/account';
 import { useInventorySearch } from '@/hooks/product/useProducts';
 import {
   useProductInventorySearchStore,
@@ -29,10 +30,13 @@ export default function InventorySearchModal({ open, onClose }: Props) {
   const [results, setResults] = useState<InventorySearchResultItem[] | null>(null);
 
   const inventorySearch = useInventorySearch();
-  const { data: accountList, isLoading: accountLoading } = useAccounts({
-    keyword: accountKeyword || undefined,
-    page: 0,
-    size: 20,
+  const { data: accountList, isLoading: accountLoading } = useQuery({
+    queryKey: ['admin', 'accounts', 'product-lookup', accountKeyword],
+    queryFn: () => fetchAccountsForProductLookup({
+      keyword: accountKeyword || undefined,
+      page: 0,
+      size: 20,
+    }),
   });
 
   const minDate = dayjs().add(1, 'day').startOf('day');

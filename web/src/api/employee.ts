@@ -178,6 +178,36 @@ export async function fetchEmployeesForPromotionLookup(
   return res.data.data;
 }
 
+/**
+ * 거래처 등록/수정 화면의 영업담당자 lookup search — account 권한 보유자 호출용.
+ *
+ * Employee READ 권한 없이도 호출 가능 (Spec #640 신규 영업담당자 매핑 기능).
+ */
+export async function fetchEmployeesForAccountLookup(
+  params: Pick<FetchEmployeesParams, 'keyword' | 'status' | 'page' | 'size'>,
+): Promise<EmployeeListData> {
+  const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/employees/lookup-for-account', { params });
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '사원 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 유통기한 관리 화면의 사원 lookup search — product 권한 보유자 호출용.
+ *
+ * Employee READ 권한 없이도 호출 가능 (Heroku 단독 기능, SF 매핑 없음).
+ */
+export async function fetchEmployeesForProductLookup(
+  params: Pick<FetchEmployeesParams, 'keyword' | 'status' | 'page' | 'size'>,
+): Promise<EmployeeListData> {
+  const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/employees/lookup-for-product', { params });
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '사원 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function fetchWomanEmployees(params: FetchWomanEmployeesParams): Promise<EmployeeListData> {
   const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/women-employees', { params });
   if (!res.data.success || !res.data.data) {

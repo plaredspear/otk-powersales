@@ -123,6 +123,33 @@ class AdminAccountController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
+    /**
+     * 유통기한 관리 / 재고조회 화면의 거래처 lookup search — Heroku 단독 / 신규 기능 (SF 매핑 없음).
+     *
+     * product.READ 권한 보유자가 유통기한 등록 또는 재고조회 시 거래처 검색. account.READ 권한 없이
+     * 호출 가능.
+     */
+    @GetMapping("/lookup-for-product")
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
+    fun lookupAccountsForProduct(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
+        @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
+        @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
+    ): ResponseEntity<ApiResponse<AccountListResponse>> {
+        val response = adminAccountService.getAccounts(
+            scope = scope,
+            keyword = keyword,
+            abcType = null,
+            branchCode = null,
+            accountStatusName = null,
+            page = page,
+            size = size
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
     @PostMapping
     @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.EDIT)
     fun createAccount(
