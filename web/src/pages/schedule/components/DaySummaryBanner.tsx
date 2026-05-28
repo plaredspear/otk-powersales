@@ -18,19 +18,12 @@ export function DaySummaryBanner({ summary }: DaySummaryBannerProps) {
     promotionExpected,
     promotionActual,
     annualLeave,
-    compensatoryLeave,
   } = summary;
 
-  const hasDisplay = displayExpected > 0 || displayActual > 0;
-  const hasPromotion = promotionExpected > 0 || promotionActual > 0;
-  const hasLeave = annualLeave > 0;
-  const hasCompLeave = compensatoryLeave > 0;
-
-  if (!hasDisplay && !hasPromotion && !hasLeave && !hasCompLeave) return null;
-
-  // SF 레거시 정합 (FullCalendarComponentHelper.js L22-29) —
-  // 진열/행사 한 행 결합 + 양쪽 모두 actual == expected (정확 일치) 일 때만 match (녹색).
-  // 초과 달성 (actual > expected) 도 mismatch 처리 — SF 와 동일.
+  // SF 레거시 정합 (FullCalendarComponentController.cls L183-186 + FullCalendarComponentHelper.js L32-47) —
+  // backend 가 entry 를 생성한 시점에 진열/행사/연차/대휴 중 적어도 하나는 비어있지 않음.
+  // SF 는 entry 가 있으면 (1) 진열/행사 칩 + (2) 연차 칩 (값 0 포함) 을 무조건 push.
+  // 대휴 칩은 SF 가 주석 처리하여 미노출.
   const workMatch = displayActual === displayExpected && promotionActual === promotionExpected;
   const workBg = workMatch ? COLOR_MATCH : COLOR_MISMATCH;
   const chipStyle = {
@@ -47,17 +40,10 @@ export function DaySummaryBanner({ summary }: DaySummaryBannerProps) {
 
   return (
     <div style={{ display: 'block', width: '100%', fontSize: 10, lineHeight: '14px', whiteSpace: 'nowrap' }}>
-      {(hasDisplay || hasPromotion) && (
-        <div style={{ ...chipStyle, background: workBg }}>
-          진열: {displayActual}/{displayExpected} | 행사: {promotionActual}/{promotionExpected}
-        </div>
-      )}
-      {hasLeave && (
-        <div style={{ ...chipStyle, background: COLOR_LEAVE }}>연차 : {annualLeave}</div>
-      )}
-      {hasCompLeave && (
-        <div style={{ ...chipStyle, background: COLOR_LEAVE }}>대휴 : {compensatoryLeave}</div>
-      )}
+      <div style={{ ...chipStyle, background: workBg }}>
+        진열: {displayActual}/{displayExpected} | 행사: {promotionActual}/{promotionExpected}
+      </div>
+      <div style={{ ...chipStyle, background: COLOR_LEAVE }}>연차 : {annualLeave}</div>
     </div>
   );
 }
