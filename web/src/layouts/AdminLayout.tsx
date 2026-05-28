@@ -22,6 +22,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const profileName = user?.profileName ?? null;
   const { forbidden, setForbidden } = useForbiddenStore();
   const { hasEntityPermission, hasSystemPermission } = usePermission();
 
@@ -36,6 +37,10 @@ export default function AdminLayout() {
 
   const filteredMenuRoute = useMemo(() => {
     const itemAllowed = (item: MenuItem): boolean => {
+      // allowedProfileNames 는 추가 가드. 지정되었는데 profileName 미일치면 즉시 차단.
+      if (item.allowedProfileNames && (!profileName || !item.allowedProfileNames.includes(profileName))) {
+        return false;
+      }
       const requiresEntity = !!(item.entity && item.operation);
       const requiresSystem = !!item.systemPermission;
       if (!requiresEntity && !requiresSystem) return true;
@@ -49,7 +54,7 @@ export default function AdminLayout() {
         .map((item) => (item.children ? { ...item, children: filterItems(item.children) } : item))
         .filter((item) => !item.children || item.children.length > 0);
     return { ...menuRoute, children: filterItems(menuRoute.children) };
-  }, [hasEntityPermission, hasSystemPermission]);
+  }, [hasEntityPermission, hasSystemPermission, profileName]);
 
   useEffect(() => {
     setForbidden(false);

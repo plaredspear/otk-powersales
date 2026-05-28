@@ -21,6 +21,11 @@ export interface MenuItem {
   entity?: string;
   operation?: SfEntityOperation;
   systemPermission?: SfSystemPermission;
+  /**
+   * 허용 Profile.name 집합. 지정 시 entity/systemPermission 충족과 무관하게
+   * user.profileName 매칭이 안 되면 메뉴 숨김. (라우터 가드와 동일 의미)
+   */
+  allowedProfileNames?: string[];
 }
 
 export interface MenuRoute {
@@ -125,7 +130,7 @@ export const menuRoute: MenuRoute = {
         { path: '/admin/permissions/permission-sets', name: '권한 세트 관리', entity: 'permission_set', operation: 'READ' },
         { path: '/admin/permissions/matrix', name: '권한 매트릭스', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/user-roles', name: '역할 (조직 계층)', entity: 'user_role', operation: 'READ' },
-        { path: '/admin/permissions/guide', name: '권한 사용 가이드' },
+        { path: '/admin/permissions/guide', name: '권한 사용 가이드', allowedProfileNames: ['시스템 관리자'] },
       ],
     },
     {

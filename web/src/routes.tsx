@@ -272,7 +272,12 @@ export const router = createBrowserRouter(
                 { path: '/admin/user-roles', element: <LazyWrapper><UserRoleTreePage /></LazyWrapper> },
               ],
             },
-            { path: '/admin/permissions/guide', element: <LazyWrapper><PermissionGuidePage /></LazyWrapper> },
+            {
+              element: <RoleRoute allowedProfileNames={['시스템 관리자']} />,
+              children: [
+                { path: '/admin/permissions/guide', element: <LazyWrapper><PermissionGuidePage /></LazyWrapper> },
+              ],
+            },
             { path: '*', element: <Navigate to="/" replace /> },
           ],
         },
