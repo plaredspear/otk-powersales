@@ -96,8 +96,6 @@ class OrderRequestCreateService(
         val header = OrderRequest(
             orderRequestNumber = orderRequestNumber,
             clientRequestId = request.clientRequestId,
-            employeeSfid = employee.sfid,
-            accountSfid = account.sfid,
             orderDate = now,
             deliveryDate = request.deliveryDate,
             totalAmount = totalAmountBD,

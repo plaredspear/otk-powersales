@@ -279,7 +279,6 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
     ) = EmployeeInputCriteriaMaster(
         id = id,
         category = category,
-        categorySfid = category.sfid,
         typeOfWork1 = TypeOfWork1.DISPLAY,
         startDate = startDate,
         endDate = endDate,

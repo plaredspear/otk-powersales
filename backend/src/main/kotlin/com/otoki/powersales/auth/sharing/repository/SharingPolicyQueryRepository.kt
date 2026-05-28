@@ -5,6 +5,7 @@ import com.otoki.powersales.auth.sharing.entity.QSharingRule.Companion.sharingRu
 import com.otoki.powersales.auth.sharing.entity.QSharingRuleCondition.Companion.sharingRuleCondition
 import com.otoki.powersales.auth.sharing.entity.QSharingRuleTarget.Companion.sharingRuleTarget
 import com.otoki.powersales.common.config.CacheConfig
+import com.otoki.powersales.user.repository.UserRepository
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.cache.annotation.Cacheable
@@ -38,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class SharingPolicyQueryRepository(
     private val queryFactory: JPAQueryFactory,
+    private val userRepository: UserRepository,
 ) {
 
     /**
@@ -122,15 +124,29 @@ class SharingPolicyQueryRepository(
             )
             .fetch()
 
+        // audit/owner field 의 SF user sfid → 신규 User.id 일괄 pre-resolve.
+        // application 로직은 신규 PK 만 사용 — sfid 비교 금지 정책 정합.
+        val sfidByUserId: Map<String, Long> = resolveUserSfidToId(conditionRows.mapNotNull { row ->
+            val field = row.get(sharingRuleCondition.field)!!
+            if (field !in AUDIT_OWNER_FIELDS) return@mapNotNull null
+            row.get(sharingRuleCondition.value)?.takeIf { isLikelyUserSfid(it) }
+        })
+
         val conditionsByRule = conditionRows.groupBy(
             { it.get(sharingRuleCondition.sharingRuleId)!! },
             {
+                val field = it.get(sharingRuleCondition.field)!!
+                val rawValue = it.get(sharingRuleCondition.value)
+                val resolvedId: Long? = if (field in AUDIT_OWNER_FIELDS && rawValue != null) {
+                    sfidByUserId[rawValue]
+                } else null
                 SharingRuleSnapshot.ConditionSnapshot(
-                    field = it.get(sharingRuleCondition.field)!!,
+                    field = field,
                     operator = it.get(sharingRuleCondition.operator)!!,
-                    value = it.get(sharingRuleCondition.value),
+                    value = rawValue,
                     conditionOrder = it.get(sharingRuleCondition.conditionOrder)!!,
                     logicConnector = it.get(sharingRuleCondition.logicConnector),
+                    resolvedUserId = resolvedId,
                 )
             },
         )
@@ -183,6 +199,24 @@ class SharingPolicyQueryRepository(
         return branches.reduce { acc, b -> acc.or(b) }
     }
 
+    /**
+     * SF user sfid 일람 → 신규 User.id 매핑. 매칭 실패 sfid 는 결과에서 누락 (caller 가 null fallback 처리).
+     */
+    private fun resolveUserSfidToId(sfids: List<String>): Map<String, Long> {
+        val distinct = sfids.toSet()
+        if (distinct.isEmpty()) return emptyMap()
+        return userRepository.findIdsBySfidIn(distinct).associate { row ->
+            (row[0] as String) to (row[1] as Long)
+        }
+    }
+
+    /**
+     * SF user Id 18자 패턴 — `005` prefix + 12자 alphanumeric + 3자 (가능 시 case-insensitive checksum suffix).
+     * sharing rule condition value 가 user sfid 인지 1차 필터링용. (loose check — DB 매칭이 권위)
+     */
+    private fun isLikelyUserSfid(value: String): Boolean =
+        value.length == 18 && value.startsWith("005")
+
     private data class RuleHeader(
         val sharingRuleId: Long,
         val developerName: String,
@@ -199,6 +233,11 @@ class SharingPolicyQueryRepository(
         private val TARGET_TYPES_ROLE_AND_SUBORDINATES: List<String> = listOf(
             "ROLE_AND_SUBORDINATES",
             "ROLE_AND_SUBORDINATES_INTERNAL",
+        )
+        private val AUDIT_OWNER_FIELDS: Set<String> = setOf(
+            "CreatedById",
+            "LastModifiedById",
+            "OwnerId",
         )
     }
 }

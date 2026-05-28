@@ -258,23 +258,32 @@ class SharingRulePolicyEvaluator(
     /**
      * SF API name → 실제 entity 에 평가 가능한 JPA property 경로 해석.
      *
-     * SF audit/owner field 의 value 는 SF sfid (18자 String) — 운영 entity 가 매핑한 String?
-     * sync buffer 필드 (`createdBySfid`, `ownerSfid`, `lastModifiedBySfid`) 와 직접 매칭 가능.
-     * 우선순위 (모두 String 타입 비교 가정):
-     * - CreatedById → createdById (단순) | createdBySfid (sync buffer)
-     * - LastModifiedById → lastModifiedById | lastModifiedBySfid
-     * - OwnerId → ownerId | ownerSfid
+     * **audit/owner field 는 본 메서드의 대상 아님** — `buildConditionPredicate` 가 분기로 직접 처리한다.
+     * 사유: condition value 가 SF user sfid (18자 String) 인데 application 정책상 sfid 직접 매칭 금지 →
+     * snapshot 적재 시점 pre-resolve 한 [SharingRuleSnapshot.ConditionSnapshot.resolvedUserId] 를 FK relation
+     * (`createdBy.id` / `ownerUser.id`) 의 Long 비교에 사용.
      *
      * 일반 field 는 sfApiNameToJpaProperty 변환 후 단순 property 확인.
      */
     internal fun resolveConditionProperty(sfField: String, entityPath: EntityPathBase<*>): String? {
-        val candidates: List<String> = when (sfField) {
-            "CreatedById" -> listOf("createdById", "createdBySfid")
-            "LastModifiedById" -> listOf("lastModifiedById", "lastModifiedBySfid")
-            "OwnerId" -> listOf("ownerId", "ownerSfid")
-            else -> listOf(sfApiNameToJpaProperty(sfField))
+        val candidate = sfApiNameToJpaProperty(sfField)
+        return candidate.takeIf { hasProperty(entityPath, it) }
+    }
+
+    /**
+     * audit/owner field 의 FK relation 경로. entity 에 부재하면 null (condition skip).
+     * - CreatedById → `createdBy.id`
+     * - LastModifiedById → `lastModifiedBy.id`
+     * - OwnerId → `ownerUser.id`
+     */
+    internal fun resolveAuditOwnerRelationPath(sfField: String, entityPath: EntityPathBase<*>): String? {
+        val relation = when (sfField) {
+            "CreatedById" -> "createdBy"
+            "LastModifiedById" -> "lastModifiedBy"
+            "OwnerId" -> "ownerUser"
+            else -> return null
         }
-        return candidates.firstOrNull { hasProperty(entityPath, it) }
+        return if (hasProperty(entityPath, relation)) "$relation.id" else null
     }
 
     /**
@@ -339,6 +348,11 @@ class SharingRulePolicyEvaluator(
         cond: SharingRuleSnapshot.ConditionSnapshot,
         entityPath: EntityPathBase<*>,
     ): BooleanExpression? {
+        // audit/owner field 는 별도 분기 — sfid 비교 금지 정책. snapshot pre-resolved User.id 와 FK relation Long 비교.
+        if (cond.field in AUDIT_OWNER_FIELDS) {
+            return buildAuditOwnerConditionPredicate(cond, entityPath)
+        }
+
         val property = resolveConditionProperty(cond.field, entityPath) ?: run {
             log.debug(
                 "[sharing-policy] entity {} has no property for field={} — skip condition predicate",
@@ -404,10 +418,71 @@ class SharingRulePolicyEvaluator(
     }
 
     /**
+     * audit/owner field condition 평가 — `createdBy.id` / `lastModifiedBy.id` / `ownerUser.id` Long FK 비교.
+     *
+     * SF 의 condition value 는 SF user sfid 인데 application 정책상 sfid 직접 매칭 금지.
+     * [SharingRuleSnapshot.ConditionSnapshot.resolvedUserId] 가 snapshot 적재 시점에 신규 User.id 로 미리 변환됨 —
+     * 본 메서드는 그 Long 과 entity 의 FK relation `.id` 를 비교한다.
+     *
+     * - resolvedUserId 가 null (sfid 매칭 실패 / 비-sfid value) → condition skip + 경고 로그
+     * - entity 에 FK relation 부재 → condition skip + 경고 로그
+     * - 지원 operator 는 equals / notEqual 두 종만 (audit field 는 SF UI 에서 사실상 등호 비교만 사용 — `includes` / `excludes`
+     *   다중값 케이스가 운영 데이터에 등장하면 본 메서드 확장 필요)
+     */
+    private fun buildAuditOwnerConditionPredicate(
+        cond: SharingRuleSnapshot.ConditionSnapshot,
+        entityPath: EntityPathBase<*>,
+    ): BooleanExpression? {
+        val resolvedUserId = cond.resolvedUserId ?: run {
+            log.debug(
+                "[sharing-policy] audit field {} value={} not resolved to User.id — skip condition",
+                cond.field, cond.value,
+            )
+            return null
+        }
+        val relationPath = resolveAuditOwnerRelationPath(cond.field, entityPath) ?: run {
+            log.debug(
+                "[sharing-policy] entity {} has no FK relation for audit field {} — skip condition",
+                entityPath, cond.field,
+            )
+            return null
+        }
+        return try {
+            @Suppress("UNCHECKED_CAST")
+            val path = Expressions.numberPath(java.lang.Long::class.java, entityPath, relationPath)
+            when (cond.operator) {
+                "equals" -> path.eq(resolvedUserId as java.lang.Long)
+                "notEqual" -> path.ne(resolvedUserId as java.lang.Long)
+                else -> {
+                    log.warn(
+                        "[sharing-policy] unsupported operator={} for audit field {} — skip condition",
+                        cond.operator, cond.field,
+                    )
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            log.warn(
+                "[sharing-policy] audit condition predicate build failed — field={} relation={} : {}",
+                cond.field, relationPath, e.message,
+            )
+            null
+        }
+    }
+
+    /**
      * ControlledByParent SObject 의 read query — Repository 호출측이 parent entityPath 전달.
      * `buildPredicate(scope, parentSObjectName, parentEntityPath)` 형태로 동일 메서드 재사용.
      */
     fun isControlledByParent(sObjectName: String): Boolean = sObjectSettingProvider.isControlledByParent(sObjectName)
 
     fun parentSObjectOf(sObjectName: String): String? = sObjectSettingProvider.parentSObjectOf(sObjectName)
+
+    companion object {
+        private val AUDIT_OWNER_FIELDS: Set<String> = setOf(
+            "CreatedById",
+            "LastModifiedById",
+            "OwnerId",
+        )
+    }
 }

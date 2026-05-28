@@ -57,7 +57,6 @@ class AdminEmployeeInputCriteriaMasterService(
 
         val entity = EmployeeInputCriteriaMaster(
             category = category,
-            categorySfid = category.sfid,
             typeOfWork1 = request.typeOfWork1,
             startDate = normalizedStart,
             endDate = normalizedEnd,
