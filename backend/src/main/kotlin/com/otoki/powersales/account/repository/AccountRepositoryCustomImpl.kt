@@ -24,6 +24,7 @@ class AccountRepositoryCustomImpl(
 
         builder.and(notDeleted())
         builder.and(policyPredicate)
+        builder.and(promotionLookupFilter())
 
         if (!keyword.isNullOrBlank()) {
             val lowerPattern = "%${keyword.lowercase()}%"
@@ -113,7 +114,32 @@ class AccountRepositoryCustomImpl(
 
     private fun notDeleted() = account.isDeleted.isNull.or(account.isDeleted.eq(false))
 
+    /**
+     * SF `DKRetail__Promotion__c.AccId__c.lookupFilter` 동등 비즈니스 필터.
+     *
+     * booleanFilter `1 AND 2 AND (3 OR (4 AND 5))` 원본:
+     * 1. AccountGroup__c equals 1000,1010
+     * 2. AccountGroup__c notEqual ""
+     * 3. AccountStatusName__c notEqual "폐업"
+     * 4. Distribution__c notEqual ""
+     * 5. AccountStatusName__c equals "폐업"
+     *
+     * 정규화: `accountGroup ∈ {1000,1010} AND (accountStatusName != '폐업' OR distribution NON-EMPTY)`
+     * (조건 2 는 1 에 흡수)
+     */
+    private fun promotionLookupFilter() = account.accountGroup.`in`(ACCOUNT_GROUP_SALES_VALUES)
+        .and(
+            account.accountStatusName.ne(ACCOUNT_STATUS_CLOSED)
+                .or(account.accountStatusName.isNull)
+                .or(
+                    account.distribution.isNotNull
+                        .and(account.distribution.ne(""))
+                )
+        )
+
     companion object {
         private const val ACCOUNT_STATUS_ACTIVE = "거래"
+        private const val ACCOUNT_STATUS_CLOSED = "폐업"
+        private val ACCOUNT_GROUP_SALES_VALUES = listOf("1000", "1010")
     }
 }
