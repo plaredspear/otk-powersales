@@ -11,6 +11,8 @@ import com.otoki.powersales.admin.permission.dto.PaginatedUserList
 import com.otoki.powersales.admin.permission.dto.PermissionMatrix
 import com.otoki.powersales.admin.permission.dto.PermissionMatrixProfile
 import com.otoki.powersales.admin.permission.dto.PermissionSetDetail
+import com.otoki.powersales.admin.permission.dto.PermissionSetMatrix
+import com.otoki.powersales.admin.permission.dto.PermissionSetMatrixEntry
 import com.otoki.powersales.admin.permission.dto.PermissionSetFlagsSummary
 import com.otoki.powersales.admin.permission.dto.PermissionSetSummary
 import com.otoki.powersales.admin.permission.dto.ProfileDetail
@@ -246,6 +248,42 @@ class AdminPermissionInspectionService(
         }
 
         return PermissionMatrix(profiles = matrixProfiles, rows = rows)
+    }
+
+    /**
+     * 모든 PermissionSet 의 시스템권한 flag + entity 객체권한 매트릭스 일괄 반환.
+     *
+     * "페이지별 필요 권한" 가이드 페이지가 사용. user 페이징이 없는 read-only 산출이라 캐시 없이
+     * 매 호출 fresh.
+     */
+    @Transactional(readOnly = true)
+    fun getPermissionSetMatrix(): PermissionSetMatrix {
+        val entries = permissionSetRepository.findAll().map { ps ->
+            val flags = permissionSetFlagsRepository.findByPermissionSetId(ps.id)
+            val objectPermissions = parseObjectPermissions(flags?.objectPermissions)
+                .map { (sfApiName, perms) ->
+                    ObjectPermissionRow(
+                        sfApiName = sfApiName,
+                        entity = entitySfNameRegistry.toEntityTableName(sfApiName),
+                        canRead = perms["allowRead"] == true,
+                        canCreate = perms["allowCreate"] == true,
+                        canEdit = perms["allowEdit"] == true,
+                        canDelete = perms["allowDelete"] == true,
+                    )
+                }
+                .sortedBy { it.entity ?: it.sfApiName }
+
+            PermissionSetMatrixEntry(
+                permissionSetId = ps.id,
+                name = ps.name,
+                label = ps.label,
+                viewAllData = flags?.permissionsViewAllData ?: false,
+                modifyAllData = flags?.permissionsModifyAllData ?: false,
+                objectPermissions = objectPermissions,
+            )
+        }.sortedBy { it.name }
+
+        return PermissionSetMatrix(permissionSets = entries)
     }
 
     private fun parseObjectPermissions(json: String?): Map<String, Map<String, Boolean>> =

@@ -10,6 +10,8 @@ import com.otoki.powersales.admin.permission.dto.PermissionMatrix
 import com.otoki.powersales.admin.permission.dto.PermissionMatrixProfile
 import com.otoki.powersales.admin.permission.dto.PermissionSetDetail
 import com.otoki.powersales.admin.permission.dto.PermissionSetFlagsSummary
+import com.otoki.powersales.admin.permission.dto.PermissionSetMatrix
+import com.otoki.powersales.admin.permission.dto.PermissionSetMatrixEntry
 import com.otoki.powersales.admin.permission.dto.PermissionSetSummary
 import com.otoki.powersales.admin.permission.dto.ProfileDetail
 import com.otoki.powersales.admin.permission.dto.ProfileFlagsSummary
@@ -154,6 +156,45 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
         mockMvc.perform(get("/api/v1/admin/permissions/permission-sets/99"))
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.error.code").value("PERMISSION_SET_NOT_FOUND"))
+    }
+
+    @Test
+    @DisplayName("GET /permission-sets/matrix - PermissionSet 매트릭스 일괄 반환")
+    fun getPermissionSetMatrix() {
+        every { inspectionService.getPermissionSetMatrix() } returns PermissionSetMatrix(
+            permissionSets = listOf(
+                PermissionSetMatrixEntry(
+                    permissionSetId = 10,
+                    name = "AccountManagement",
+                    label = "거래처 관리",
+                    viewAllData = false,
+                    modifyAllData = false,
+                    objectPermissions = listOf(
+                        ObjectPermissionRow(
+                            sfApiName = "Account", entity = "account",
+                            canRead = true, canCreate = true, canEdit = false, canDelete = false,
+                        ),
+                    ),
+                ),
+                PermissionSetMatrixEntry(
+                    permissionSetId = 11,
+                    name = "SystemAdmin",
+                    label = null,
+                    viewAllData = true,
+                    modifyAllData = true,
+                    objectPermissions = emptyList(),
+                ),
+            ),
+        )
+
+        mockMvc.perform(get("/api/v1/admin/permissions/permission-sets/matrix"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.permissionSets[0].permissionSetId").value(10))
+            .andExpect(jsonPath("$.data.permissionSets[0].label").value("거래처 관리"))
+            .andExpect(jsonPath("$.data.permissionSets[0].objectPermissions[0].entity").value("account"))
+            .andExpect(jsonPath("$.data.permissionSets[0].objectPermissions[0].canRead").value(true))
+            .andExpect(jsonPath("$.data.permissionSets[1].modifyAllData").value(true))
+            .andExpect(jsonPath("$.data.permissionSets[1].objectPermissions").isArray)
     }
 
     @Test

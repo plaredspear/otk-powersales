@@ -4,6 +4,7 @@ import {
   createAssignmentBatch,
   fetchPermissionMatrix,
   fetchPermissionSet,
+  fetchPermissionSetMatrix,
   fetchPermissionSets,
   fetchProfile,
   fetchProfiles,
@@ -49,6 +50,14 @@ export function usePermissionMatrix() {
   return useQuery({
     queryKey: [...KEY_BASE, 'matrix'],
     queryFn: fetchPermissionMatrix,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function usePermissionSetMatrix() {
+  return useQuery({
+    queryKey: [...KEY_BASE, 'permission-set-matrix'],
+    queryFn: fetchPermissionSetMatrix,
     staleTime: 5 * 60 * 1000,
   });
 }

@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.permission
 
 import com.otoki.powersales.admin.permission.dto.PermissionMatrix
 import com.otoki.powersales.admin.permission.dto.PermissionSetDetail
+import com.otoki.powersales.admin.permission.dto.PermissionSetMatrix
 import com.otoki.powersales.admin.permission.dto.PermissionSetSummary
 import com.otoki.powersales.admin.permission.dto.ProfileDetail
 import com.otoki.powersales.admin.permission.dto.ProfileSummary
@@ -69,5 +70,15 @@ class AdminPermissionController(
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getMatrix(): ResponseEntity<ApiResponse<PermissionMatrix>> {
         return ResponseEntity.ok(ApiResponse.success(inspectionService.getMatrix()))
+    }
+
+    /**
+     * "페이지별 필요 권한" 가이드 페이지가 사용. 모든 PermissionSet 의 시스템권한 flag + entity
+     * 객체권한 매트릭스를 한 번에 반환한다.
+     */
+    @GetMapping("/permission-sets/matrix")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
+    fun getPermissionSetMatrix(): ResponseEntity<ApiResponse<PermissionSetMatrix>> {
+        return ResponseEntity.ok(ApiResponse.success(inspectionService.getPermissionSetMatrix()))
     }
 }

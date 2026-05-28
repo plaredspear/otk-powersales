@@ -4815,6 +4815,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePermissionSetMatrix" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PermissionSetMatrix"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseProductDetail" : {
         "properties" : {
           "data" : {
@@ -9190,6 +9219,44 @@
             "type" : "boolean"
           },
           "permissionSetFlagsId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "viewAllData" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "PermissionSetMatrix" : {
+        "properties" : {
+          "permissionSets" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionSetMatrixEntry"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "PermissionSetMatrixEntry" : {
+        "properties" : {
+          "label" : {
+            "type" : [ "string", "null" ]
+          },
+          "modifyAllData" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "objectPermissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ObjectPermissionRow"
+            },
+            "type" : "array"
+          },
+          "permissionSetId" : {
             "format" : "int64",
             "type" : "integer"
           },
@@ -14736,6 +14803,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListPermissionSetSummary"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-permission-controller" ]
+      }
+    },
+    "/api/v1/admin/permissions/permission-sets/matrix" : {
+      "get" : {
+        "operationId" : "getPermissionSetMatrix",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePermissionSetMatrix"
                 }
               }
             },

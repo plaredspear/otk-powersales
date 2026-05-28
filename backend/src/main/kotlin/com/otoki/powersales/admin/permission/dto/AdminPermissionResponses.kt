@@ -139,3 +139,20 @@ data class PermissionMatrix(
     val profiles: List<PermissionMatrixProfile>,
     val rows: List<EntityProfileRow>,
 )
+
+/**
+ * "페이지별 필요 권한" 가이드 페이지가 사용. PermissionSet 일람 + 각 PS 의 시스템 권한 flag
+ * + entity 객체권한 매트릭스를 한 번의 endpoint 호출로 반환.
+ */
+data class PermissionSetMatrixEntry(
+    val permissionSetId: Long,
+    val name: String,
+    val label: String?,
+    val viewAllData: Boolean,
+    val modifyAllData: Boolean,
+    val objectPermissions: List<ObjectPermissionRow>,
+)
+
+data class PermissionSetMatrix(
+    val permissionSets: List<PermissionSetMatrixEntry>,
+)

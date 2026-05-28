@@ -68,6 +68,7 @@ const ProfileDetailPage = lazy(() => import('@/pages/admin/permissions/ProfileDe
 const PermissionSetListPage = lazy(() => import('@/pages/admin/permissions/PermissionSetListPage'));
 const PermissionSetDetailPage = lazy(() => import('@/pages/admin/permissions/PermissionSetDetailPage'));
 const PermissionMatrixPage = lazy(() => import('@/pages/admin/permissions/PermissionMatrixPage'));
+const PageAccessGuidePage = lazy(() => import('@/pages/admin/permissions/PageAccessGuidePage'));
 const PermissionGuidePage = lazy(() => import('@/pages/admin/permissions/PermissionGuidePage'));
 const UserRoleTreePage = lazy(() => import('@/pages/admin/user-roles/UserRoleTreePage'));
 
@@ -264,6 +265,7 @@ export const router = createBrowserRouter(
               element: <PermissionRoute systemPermission="VIEW_ALL_DATA" />,
               children: [
                 { path: '/admin/permissions/matrix', element: <LazyWrapper><PermissionMatrixPage /></LazyWrapper> },
+                { path: '/admin/permissions/page-access-guide', element: <LazyWrapper><PageAccessGuidePage /></LazyWrapper> },
               ],
             },
             {

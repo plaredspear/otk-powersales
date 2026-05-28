@@ -23,6 +23,7 @@ import {
   ExperimentOutlined,
   QuestionCircleOutlined,
 } from '@ant-design/icons';
+import { ENTITY_LABELS, OPERATION_LABELS } from '@/constants/permissionLabels';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -61,26 +62,29 @@ interface SimScenario {
   description: string;
 }
 
-const ENTITIES = [
-  { value: 'account', label: '거래처 (account)' },
-  { value: 'employee', label: '사원 (employee)' },
-  { value: 'promotion', label: '행사 (promotion)' },
-  { value: 'team_member_schedule', label: '여사원일정 (team_member_schedule)' },
-  { value: 'claim', label: '클레임 (claim)' },
-  { value: 'monthly_sales_history', label: '월매출 (monthly_sales_history)' },
-  { value: 'attendance_log', label: '근무 등록 (attendance_log)' },
-  { value: 'notice_post', label: '공지사항 (notice_post)' },
-  { value: 'product', label: '제품 (product)' },
-  { value: 'upload_file', label: '업로드 파일 (upload_file)' },
-  { value: 'user', label: '사용자 (user)' },
+/** 시뮬레이터 Select 가 노출할 entity 목록 — 한글 라벨은 ENTITY_LABELS 상수에서 합성. */
+const SIMULATOR_ENTITY_KEYS: string[] = [
+  'account',
+  'employee',
+  'promotion',
+  'team_member_schedule',
+  'claim',
+  'monthly_sales_history',
+  'attendance_log',
+  'notice_post',
+  'product',
+  'upload_file',
+  'user',
 ];
 
-const OPERATIONS: Array<{ value: Op; label: string }> = [
-  { value: 'READ', label: '조회' },
-  { value: 'CREATE', label: '생성' },
-  { value: 'EDIT', label: '수정' },
-  { value: 'DELETE', label: '삭제' },
-];
+const ENTITIES: Array<{ value: string; label: string }> = SIMULATOR_ENTITY_KEYS.map((value) => ({
+  value,
+  label: `${ENTITY_LABELS[value] ?? value} (${value})`,
+}));
+
+const OPERATIONS: Array<{ value: Op; label: string }> = (['READ', 'CREATE', 'EDIT', 'DELETE'] as const).map(
+  (value) => ({ value, label: OPERATION_LABELS[value] }),
+);
 
 /**
  * 프로파일 권한 정의 (시뮬레이션용 — SF 레거시 추정).

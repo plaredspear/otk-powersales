@@ -126,6 +126,23 @@ export interface PermissionMatrix {
   rows: EntityProfileRow[];
 }
 
+/**
+ * "페이지별 필요 권한" 가이드 페이지가 사용. PermissionSet 일람 + 각 PS 의 시스템 권한 flag
+ * + entity 객체권한 매트릭스 한 번에 반환.
+ */
+export interface PermissionSetMatrixEntry {
+  permissionSetId: number;
+  name: string;
+  label: string | null;
+  viewAllData: boolean;
+  modifyAllData: boolean;
+  objectPermissions: ObjectPermissionRow[];
+}
+
+export interface PermissionSetMatrix {
+  permissionSets: PermissionSetMatrixEntry[];
+}
+
 export interface FetchProfileParams {
   userPage?: number;
   userSize?: number;
@@ -177,6 +194,16 @@ export async function fetchPermissionMatrix(): Promise<PermissionMatrix> {
   const res = await client.get<ApiResponse<PermissionMatrix>>('/api/v1/admin/permissions/matrix');
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '권한 매트릭스 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function fetchPermissionSetMatrix(): Promise<PermissionSetMatrix> {
+  const res = await client.get<ApiResponse<PermissionSetMatrix>>(
+    '/api/v1/admin/permissions/permission-sets/matrix',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'PermissionSet 매트릭스 조회에 실패했습니다');
   }
   return res.data.data;
 }
