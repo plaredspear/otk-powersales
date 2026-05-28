@@ -30,8 +30,8 @@ export default function RevokeAssignmentConfirmModal({
   const handleConfirm = async () => {
     try {
       await revoke.mutateAsync(assignmentId);
-      message.success('회수되었습니다');
       onClose();
+      message.success(`${userLabel} 님에게서 ${permissionSetLabel} 권한을 회수했습니다`);
     } catch (e) {
       const err = e as AxiosError<{ error?: { code?: string; message?: string } }>;
       const errorCode = err.response?.data?.error?.code;
