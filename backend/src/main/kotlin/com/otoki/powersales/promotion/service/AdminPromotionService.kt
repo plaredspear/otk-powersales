@@ -239,7 +239,6 @@ class AdminPromotionService(
                 standLocation = StandLocation.fromDisplayNameOrNull(request.standLocation),
                 costCenterCode = costCenterCode,
                 productType = ProductTemperatureType.fromDisplayNameOrNull(request.productType),
-                category1 = request.category1,
                 remark = request.remark
             )
         )
@@ -316,7 +315,6 @@ class AdminPromotionService(
             message = request.message,
             standLocation = StandLocation.fromDisplayNameOrNull(request.standLocation),
             productType = ProductTemperatureType.fromDisplayNameOrNull(request.productType),
-            category1 = request.category1,
             remark = request.remark
         )
 
@@ -436,7 +434,6 @@ class AdminPromotionService(
             message = source.message,
             standLocation = source.standLocation?.displayName,
             productType = source.productType?.displayName,
-            category1 = source.category1,
             remark = source.remark
         )
 

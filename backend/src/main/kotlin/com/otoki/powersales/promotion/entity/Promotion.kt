@@ -84,12 +84,6 @@ class Promotion(
     @Convert(converter = ProductTemperatureTypeConverter::class)
     var productType: ProductTemperatureType? = null,
 
-    // SF Promotion.Category1__c (string, length=1300, label="제품유형")
-    // 레거시 PromotionEmployeeTriggerHandler 의 대표제품 vs 전문행사조 매칭 검증 입력
-    @SFField("Category1__c")
-    @Column(name = "category1", length = 1300)
-    var category1: String? = null,
-
     @SFField("OwnerId")
     @Column(name = "owner_sfid", length = 18)
     var ownerSfid: String? = null,
@@ -144,6 +138,11 @@ class Promotion(
     @JoinColumn(name = "primary_product_id", insertable = false, updatable = false)
     var primaryProduct: Product? = null
 
+    // SF formula `Category1__c = DKRetail__PrimaryProductId__r.StoreCondition__c` 동등.
+    // 대표제품(primaryProduct) 의 storeConditionText 를 실시간 derive (저장 컬럼 아님).
+    val category1: String?
+        get() = primaryProduct?.storeConditionText
+
     fun update(
         promotionType: PromotionType?,
         account: Account,
@@ -154,7 +153,6 @@ class Promotion(
         message: String?,
         standLocation: StandLocation?,
         productType: ProductTemperatureType?,
-        category1: String?,
         remark: String?
     ) {
         this.promotionType = promotionType
@@ -166,7 +164,6 @@ class Promotion(
         this.message = message
         this.standLocation = standLocation
         this.productType = productType
-        this.category1 = category1
         this.remark = remark
 
     }

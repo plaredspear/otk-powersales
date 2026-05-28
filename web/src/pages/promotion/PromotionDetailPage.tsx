@@ -144,7 +144,6 @@ export default function PromotionDetailPage() {
     promotionType: null,
     standLocation: null,
     message: null,
-    category1: null,
   });
   const [productForm, setProductForm] = useState<ProductFormValues>({
     primaryProductId: null,
@@ -216,7 +215,6 @@ export default function PromotionDetailPage() {
       promotionType: promotion.promotionType,
       standLocation: promotion.standLocation,
       message: promotion.message,
-      category1: promotion.category1,
     });
     setProductForm({
       primaryProductId: promotion.primaryProductId,
@@ -235,8 +233,7 @@ export default function PromotionDetailPage() {
       detailForm.endDate !== promotion.endDate ||
       detailForm.promotionType !== promotion.promotionType ||
       detailForm.standLocation !== promotion.standLocation ||
-      detailForm.message !== promotion.message ||
-      detailForm.category1 !== promotion.category1
+      detailForm.message !== promotion.message
     );
     const hasProductChange = promotion && (
       productForm.primaryProductId !== promotion.primaryProductId ||
@@ -292,7 +289,6 @@ export default function PromotionDetailPage() {
       otherProduct: productForm.otherProduct,
       message: detailForm.message,
       standLocation: detailForm.standLocation ?? '',
-      category1: detailForm.category1?.trim() || null,
       remark: productForm.remark,
     };
 
