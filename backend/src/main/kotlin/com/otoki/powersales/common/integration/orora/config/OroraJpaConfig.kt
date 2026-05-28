@@ -27,19 +27,19 @@ import javax.sql.DataSource
  * - **Hibernate `hbm2ddl.auto = none`**: 자동 DDL 생성/실행 차단
  * - **Hibernate `connection.autocommit = true`**: Hikari read-only=true 정합
  * - **`jakarta.persistence.query.timeout = 30000`**: SELECT 지연 상한
- * - JPA Repository 의 mutation API 노출은 [com.otoki.powersales.orora.repository.OroraDailySalesHistoryRepository]
+ * - JPA Repository 의 mutation API 노출은 [com.otoki.orora.repository.OroraDailySalesHistoryRepository]
  *   가 `Repository<>` marker 만 상속하여 컴파일 시점에 차단됨
  *
- * ## JPA scope 격리
- * `@EnableJpaRepositories(basePackages = ["com.otoki.powersales.orora.entity", "com.otoki.powersales.orora.repository"])`
- * 로 ORORA 측 Repository scan 범위를 좁힘. 메인 측은
- * [com.otoki.powersales.common.config.MainDataSourceConfig] 의 명시적
- * `@EnableJpaRepositories(basePackages = ["com.otoki.powersales"], excludeFilters = orora.repository)`
- * 가 메인 EMF/TM 에 ORORA 측 repository 가 등록되지 않도록 격리한다.
+ * ## JPA scope 격리 — 패키지 root 분리
+ * ORORA entity/repository 가 `com.otoki.orora.*` root 로 분리되어 있어, 메인 측
+ * [com.otoki.powersales.common.config.MainJpaRepositoriesConfig] 의
+ * `@EnableJpaRepositories("com.otoki.powersales")` 가 자동으로 ORORA 를 포함하지 않는다.
+ * 본 Config 의 `@EnableJpaRepositories("com.otoki.orora.repository")` 는 ORORA repository 만
+ * ORORA EMF/TM 에 bind.
  */
 @Configuration
 @EnableJpaRepositories(
-	basePackages = ["com.otoki.powersales.orora.entity", "com.otoki.powersales.orora.repository"],
+	basePackages = ["com.otoki.orora.repository"],
 	entityManagerFactoryRef = "ororaEntityManagerFactory",
 	transactionManagerRef = "ororaTransactionManager",
 )
@@ -50,7 +50,7 @@ class OroraJpaConfig {
 		@Qualifier("ororaDataSource") ororaDataSource: DataSource,
 	): LocalContainerEntityManagerFactoryBean = builder
 		.dataSource(ororaDataSource)
-		.packages("com.otoki.powersales.orora.entity")
+		.packages("com.otoki.orora.entity")
 		.persistenceUnit("orora")
 		.properties(
 			mapOf(

@@ -1,4 +1,4 @@
-package com.otoki.powersales.orora.entity
+package com.otoki.orora.entity
 
 import java.io.Serializable
 

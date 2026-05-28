@@ -26,23 +26,21 @@ import javax.sql.DataSource
  * - ORORA DataSource 는 `@Primary` 도 `@FlywayDataSource` 도 아니므로
  *   `@Qualifier("ororaDataSource")` 로만 주입됨
  *
- * ## ORORA entity 격리
- * `@EntityScan(basePackages = [...])` 으로 root 1단계 하위 패키지를 명시 나열 (ORORA 제외).
- * `com.otoki.powersales.orora.entity` 는 [com.otoki.powersales.common.integration.orora.config.OroraJpaConfig]
- * 의 ororaEntityManagerFactory 가 전담.
+ * ## ORORA entity 격리 — 패키지 root 분리로 자동 격리
+ * ORORA entity 는 `com.otoki.orora.entity` 로 root 가 분리되어 있어, 본 @EntityScan
+ * `com.otoki.powersales` 가 ORORA 를 자동으로 포함하지 않는다. ORORA entity 는
+ * [com.otoki.powersales.common.integration.orora.config.OroraJpaConfig] 의
+ * ororaEntityManagerFactory 가 `com.otoki.orora.entity` 를 명시 스캔하여 전담.
  *
- * 미적용 시: 메인 EMF 가 [com.otoki.powersales.orora.entity.OroraDailySalesHistory] 를
- * metamodel 에 등록 → PostgreSQL 메인 RDS 에서 `ECRM_MULCUST_MH_V` view 부재로
- * `SchemaManagementException: missing table [ECRM_MULCUST_MH_V]` 부팅 실패.
+ * 미적용 시 (예: ORORA entity 가 com.otoki.powersales 하위에 있을 때): 메인 EMF 가
+ * ORORA entity 를 metamodel 에 등록 → PostgreSQL 메인 RDS 에서 `ECRM_MULCUST_MH_V`
+ * view 부재로 `SchemaManagementException` 부팅 실패.
  *
  * ## ORORA repository 격리
  * 메인 측 Repository scan 은 [MainJpaRepositoriesConfig] 가 명시적 `@EnableJpaRepositories`
- * 로 전담하며, ORORA repository (`com.otoki.powersales.orora.repository.*`) 는 exclude 한다.
- * ORORA 측 repository 는 [com.otoki.powersales.common.integration.orora.config.OroraJpaConfig]
- * 의 `ororaEntityManagerFactory` + `ororaTransactionManager` 가 전담.
- *
- * **`com.otoki.powersales` 하위에 신규 top-level 패키지 추가 시 본 @EntityScan 에 동시 등록
- * 의무** (ORORA 외). 누락 시 해당 패키지 entity 가 메인 EMF 에서 사라져 빈 주입 실패로 즉시 검출.
+ * 로 전담. ORORA repository (`com.otoki.orora.repository.*`) 는 root 분리로 자동 제외되며,
+ * [com.otoki.powersales.common.integration.orora.config.OroraJpaConfig] 의
+ * `ororaEntityManagerFactory` + `ororaTransactionManager` 가 전담.
  *
  * 설정 키:
  * - `spring.datasource.{url, username, password, driver-class-name}` — 연결 정보
@@ -51,36 +49,7 @@ import javax.sql.DataSource
  * 둘 다 기존 `application.yml` 의 `spring.datasource.*` 그대로 사용.
  */
 @Configuration
-@EntityScan(
-	basePackages = [
-		"com.otoki.powersales.account",
-		"com.otoki.powersales.admin",
-		"com.otoki.powersales.agreement",
-		"com.otoki.powersales.auth",
-		"com.otoki.powersales.batch",
-		"com.otoki.powersales.claim",
-		"com.otoki.powersales.common",
-		"com.otoki.powersales.draft",
-		"com.otoki.powersales.education",
-		"com.otoki.powersales.employee",
-		"com.otoki.powersales.inspection",
-		"com.otoki.powersales.leave",
-		"com.otoki.powersales.notice",
-		"com.otoki.powersales.order",
-		"com.otoki.powersales.organization",
-		"com.otoki.powersales.product",
-		"com.otoki.powersales.productexpiration",
-		"com.otoki.powersales.promotion",
-		"com.otoki.powersales.safetycheck",
-		"com.otoki.powersales.sales",
-		"com.otoki.powersales.sap",
-		"com.otoki.powersales.schedule",
-		"com.otoki.powersales.sf",
-		"com.otoki.powersales.sfmigration",
-		"com.otoki.powersales.suggestion",
-		"com.otoki.powersales.user",
-	],
-)
+@EntityScan(basePackages = ["com.otoki.powersales"])
 class MainDataSourceConfig {
 	@Bean
 	@Primary

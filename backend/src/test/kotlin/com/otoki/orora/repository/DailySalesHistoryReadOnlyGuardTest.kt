@@ -1,6 +1,6 @@
-package com.otoki.powersales.orora.repository
+package com.otoki.orora.repository
 
-import com.otoki.powersales.orora.entity.OroraDailySalesHistory
+import com.otoki.orora.entity.OroraDailySalesHistory
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.annotations.Immutable
 import org.junit.jupiter.api.DisplayName

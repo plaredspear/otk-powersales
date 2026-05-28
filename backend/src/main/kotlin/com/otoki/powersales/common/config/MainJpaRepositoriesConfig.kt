@@ -4,9 +4,7 @@ import jakarta.persistence.EntityManagerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.jpa.EntityManagerFactoryBuilder
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.FilterType
 import org.springframework.context.annotation.Primary
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.orm.jpa.JpaTransactionManager
@@ -29,9 +27,14 @@ import javax.sql.DataSource
  * 등록되지 않아 빈 주입 실패로 부팅 중단 (커밋 aecd8e3f 사고 회귀 방지).
  *
  * ## 빈 구성
- * - `entityManagerFactory` (`@Primary`) — 메인 RDS [DataSource] 위에 PostgreSQL dialect 로 구성
+ * - `entityManagerFactory` (`@Primary`) — 메인 RDS [DataSource] 위에 root `com.otoki.powersales`
+ *   1개를 entity scan. ORORA entity 는 `com.otoki.orora.*` root 분리로 자동 제외됨.
+ *   ([com.otoki.powersales.common.config.MainDataSourceConfig] 의 `@EntityScan` 과 동일 범위지만,
+ *   `EntityManagerFactoryBuilder` 는 명시적 `.packages()` 호출이 없으면 entity 가 비어
+ *   "No persistence unit found" 로 실패하므로 명시 호출 필수)
  * - `transactionManager` (`@Primary`) — 메인 EMF 의 `JpaTransactionManager`
- * - `@EnableJpaRepositories` — `com.otoki.powersales` root scan + `orora.repository.*` exclude
+ * - `@EnableJpaRepositories("com.otoki.powersales")` — root 1개만 명시. ORORA repository 는
+ *   `com.otoki.orora.repository` root 분리로 자동 제외.
  *
  * ORORA 측 빈은 모두 비-`@Primary` 이므로 `@Qualifier("ororaEntityManagerFactory")` /
  * `@Qualifier("ororaTransactionManager")` 로만 주입된다.
@@ -45,12 +48,6 @@ import javax.sql.DataSource
 @Configuration
 @EnableJpaRepositories(
 	basePackages = ["com.otoki.powersales"],
-	excludeFilters = [
-		ComponentScan.Filter(
-			type = FilterType.REGEX,
-			pattern = ["com\\.otoki\\.powersales\\.orora\\.repository\\..*"],
-		),
-	],
 	entityManagerFactoryRef = "entityManagerFactory",
 	transactionManagerRef = "transactionManager",
 )
@@ -63,34 +60,7 @@ class MainJpaRepositoriesConfig {
 		@Qualifier("dataSource") dataSource: DataSource,
 	): LocalContainerEntityManagerFactoryBean = builder
 		.dataSource(dataSource)
-		.packages(
-			"com.otoki.powersales.account",
-			"com.otoki.powersales.admin",
-			"com.otoki.powersales.agreement",
-			"com.otoki.powersales.auth",
-			"com.otoki.powersales.batch",
-			"com.otoki.powersales.claim",
-			"com.otoki.powersales.common",
-			"com.otoki.powersales.draft",
-			"com.otoki.powersales.education",
-			"com.otoki.powersales.employee",
-			"com.otoki.powersales.inspection",
-			"com.otoki.powersales.leave",
-			"com.otoki.powersales.notice",
-			"com.otoki.powersales.order",
-			"com.otoki.powersales.organization",
-			"com.otoki.powersales.product",
-			"com.otoki.powersales.productexpiration",
-			"com.otoki.powersales.promotion",
-			"com.otoki.powersales.safetycheck",
-			"com.otoki.powersales.sales",
-			"com.otoki.powersales.sap",
-			"com.otoki.powersales.schedule",
-			"com.otoki.powersales.sf",
-			"com.otoki.powersales.sfmigration",
-			"com.otoki.powersales.suggestion",
-			"com.otoki.powersales.user",
-		)
+		.packages("com.otoki.powersales")
 		.persistenceUnit("main")
 		.build()
 

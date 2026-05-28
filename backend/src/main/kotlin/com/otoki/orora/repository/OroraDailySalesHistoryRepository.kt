@@ -1,7 +1,7 @@
-package com.otoki.powersales.orora.repository
+package com.otoki.orora.repository
 
-import com.otoki.powersales.orora.entity.OroraDailySalesHistory
-import com.otoki.powersales.orora.entity.OroraDailySalesHistoryId
+import com.otoki.orora.entity.OroraDailySalesHistory
+import com.otoki.orora.entity.OroraDailySalesHistoryId
 import org.springframework.data.repository.Repository
 
 /**

@@ -1,4 +1,4 @@
-package com.otoki.powersales.orora.entity
+package com.otoki.orora.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.integration.orora.config
 
-import com.otoki.powersales.orora.repository.OroraDailySalesHistoryRepository
+import com.otoki.orora.repository.OroraDailySalesHistoryRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
