@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { message, Spin } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useTeamScheduleAccounts } from '@/hooks/team-schedule/useTeamScheduleAccounts';
 import { useTeamScheduleForm } from '@/hooks/team-schedule/useTeamScheduleForm';
 import { useTeamSchedules } from '@/hooks/team-schedule/useTeamSchedules';
 import type { TeamSchedule } from '@/api/team-schedule';
@@ -60,8 +59,10 @@ export default function SchedulePage() {
 
   const handleBranchCodeChange = useCallback((code: string) => {
     setSelectedBranchCode(code);
-    // 지점이 바뀌면 거래처 목록 자체가 달라지므로 staging 선택 초기화.
+    // 지점이 바뀌면 거래처 목록 자체가 달라지므로 staging + applied 선택 모두 초기화.
+    // applied 를 비우지 않으면 이전 지점의 accountId 로 schedules fetch 가 트리거됨.
     setSelectedAccountIds([]);
+    setAppliedAccountIds([]);
   }, []);
 
   const handleFilterTabChange = useCallback((tab: FilterTab) => {
@@ -106,23 +107,17 @@ export default function SchedulePage() {
   const { data, isLoading: schedulesLoading, refetch: refetchSchedules } = useTeamSchedules(queryParams);
   const schedules = data?.schedules ?? [];
 
-  // 화면 초기 로드 — branches/members/professional-promotion-teams + (단일지점 시) accounts + dailySummary 통합 fetch.
-  const { data: form, isLoading: isFormLoading } = useTeamScheduleForm();
+  // 화면 초기 로드 — branches/members/professional-promotion-teams/accounts/dailySummary 통합 fetch.
+  // selectedBranchCode 변화 시 queryKey 가 달라져 자동 재요청 → 다중지점 사용자의 지점 선택 시점에
+  // 해당 지점 거래처 + dailySummary 가 즉시 갱신된다. 단일지점 사용자는 selectedBranchCode 가
+  // 빈 문자열이라 backend 가 본인 지점을 자동 사용.
+  const { data: form, isLoading: isFormLoading } = useTeamScheduleForm(selectedBranchCode || undefined);
   const branches = form?.branches ?? [];
   const members = form?.members ?? [];
   const promotionTeams = form?.professionalPromotionTeams ?? [];
+  const accounts = form?.accounts ?? [];
 
-  // 다중지점 사용자가 지점 드롭다운에서 선택했을 때만 거래처를 별도 fetch.
-  // 단일지점 사용자는 form 응답 안에 accounts 가 이미 들어 있으므로 추가 호출 없음 (enabled=false).
-  const isSingleBranch = branches.length === 1;
-  const accountsFetchBranchCode = isSingleBranch ? '' : selectedBranchCode;
-  const { data: fetchedAccounts = [], isLoading: isAccountsLoading } = useTeamScheduleAccounts(
-    accountsFetchBranchCode,
-    { enabled: !isSingleBranch && accountsFetchBranchCode.length > 0 },
-  );
-  const accounts = isSingleBranch ? form?.accounts ?? [] : fetchedAccounts;
-
-  // SF 정합 — 캘린더 요약은 form 응답 (단일지점 사용자의 내 거래처 전체 기준) 으로 마운트 즉시 표시.
+  // SF 정합 — 캘린더 요약은 form 응답 (선택 지점 거래처 전체 기준) 으로 즉시 표시.
   // 사용자가 직접 조회를 수행한 후에는 그 조회 결과 (schedules + dailySummary) 가 우선.
   const summaries = data?.dailySummary ?? form?.dailySummary ?? [];
 
@@ -209,7 +204,6 @@ export default function SchedulePage() {
           accounts={accounts}
           promotionTeams={promotionTeams}
           isFormLoading={isFormLoading}
-          isAccountsLoading={isAccountsLoading}
           selectedEmployeeIds={selectedEmployeeIds}
           onSelectedEmployeeIdsChange={handleEmployeeIdsChange}
           selectedAccountIds={selectedAccountIds}

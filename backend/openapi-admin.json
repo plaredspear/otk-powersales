@@ -4182,34 +4182,6 @@
         },
         "type" : "object"
       },
-      "ApiResponseListTeamScheduleAccountDto" : {
-        "properties" : {
-          "data" : {
-            "items" : {
-              "$ref" : "#/components/schemas/TeamScheduleAccountDto"
-            },
-            "type" : [ "array", "null" ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "ApiResponseListUserRoleNode" : {
         "properties" : {
           "data" : {
@@ -19514,32 +19486,6 @@
         "tags" : [ "admin-team-schedule-controller" ]
       }
     },
-    "/api/v1/admin/team-schedule/accounts" : {
-      "get" : {
-        "operationId" : "getAccounts_1",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "branchCode",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListTeamScheduleAccountDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-team-schedule-controller" ]
-      }
-    },
     "/api/v1/admin/team-schedule/branches" : {
       "get" : {
         "operationId" : "getBranches",
@@ -19561,6 +19507,14 @@
     "/api/v1/admin/team-schedule/form" : {
       "get" : {
         "operationId" : "getForm",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {

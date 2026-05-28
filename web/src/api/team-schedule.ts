@@ -62,17 +62,6 @@ export interface TeamScheduleUpdateRequest {
 
 // --- API functions ---
 
-export async function fetchTeamScheduleAccounts(branchCode: string): Promise<TeamScheduleAccount[]> {
-  const res = await client.get<ApiResponse<TeamScheduleAccount[]>>(
-    '/api/v1/admin/team-schedule/accounts',
-    { params: { branchCode } },
-  );
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || '거래처 목록 조회에 실패했습니다');
-  }
-  return res.data.data;
-}
-
 export async function fetchTeamScheduleBranches(): Promise<Branch[]> {
   const res = await client.get<ApiResponse<Branch[]>>(
     '/api/v1/admin/team-schedule/branches',
@@ -87,11 +76,13 @@ export async function fetchTeamScheduleBranches(): Promise<Branch[]> {
 /**
  * 여사원 일정관리 화면 초기 로드 통합 응답.
  *
- * `accounts` 는 단일지점 사용자일 때만 backend 가 채워 보낸다 (branches.length === 1).
- * 다중지점 사용자는 빈 배열이며, 사용자가 지점 드롭다운에서 선택한 시점에 별도 `/accounts` 호출로 채운다.
+ * `accounts` 채움 조건:
+ * - `branchCode` 쿼리 파라미터 지정 → 해당 지점 거래처 (다중지점 사용자의 지점 선택 시점)
+ * - 미지정 + 단일지점 사용자 (branches.length === 1) → 본인 지점 거래처 자동 채움
+ * - 그 외 → 빈 배열
  *
- * `dailySummary` 는 단일지점 사용자의 현재 월 + 내 거래처 전체 기준 요약. 다중지점 사용자는 빈 배열.
- * 마운트 시점에 사용자 선택 없이도 캘린더 요약을 즉시 노출하기 위한 SF 정합.
+ * `dailySummary` 는 accounts 가 결정된 경우 현재 월 + 해당 거래처 전체 기준 요약.
+ * 마운트/지점선택 시점에 사용자 조회 없이도 캘린더 요약을 즉시 노출하기 위한 SF 정합.
  */
 export interface TeamScheduleForm {
   branches: Branch[];
@@ -101,9 +92,10 @@ export interface TeamScheduleForm {
   dailySummary: DailySummary[];
 }
 
-export async function fetchTeamScheduleForm(): Promise<TeamScheduleForm> {
+export async function fetchTeamScheduleForm(branchCode?: string): Promise<TeamScheduleForm> {
   const res = await client.get<ApiResponse<TeamScheduleForm>>(
     '/api/v1/admin/team-schedule/form',
+    branchCode ? { params: { branchCode } } : undefined,
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '여사원 일정관리 초기 데이터 조회에 실패했습니다');

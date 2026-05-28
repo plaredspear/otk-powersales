@@ -256,89 +256,6 @@ class AdminTeamScheduleServiceTest {
         }
     }
 
-    // ========== getAccounts ==========
-
-    @Nested
-    @DisplayName("getAccounts - 거래처 목록 조회")
-    inner class GetAccountsTests {
-
-        @Test
-        @DisplayName("정상 조회 - 사용자 branchCode로 거래처 목록 반환")
-        fun getAccounts_success() {
-            // Given
-            val employee = createEmployee(id = 10L, costCenterCode = "1234")
-            val account1 = createAccount(id = 1, sfid = "ACC_001", name = "이마트 강남점", branchCode = "1234")
-            val account2 = createAccount(id = 2, sfid = "ACC_002", name = "홈플러스 역삼점", branchCode = "1234")
-
-            every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("1234"), listOf("1010", "1000")) } returns listOf(account1, account2)
-
-            // When
-            val result = service.getAccounts(principalOf(employee), null)
-
-            // Then
-            assertThat(result).hasSize(2)
-            assertThat(result[0].accountId).isEqualTo(1)
-            assertThat(result[1].accountId).isEqualTo(2)
-        }
-
-        @Test
-        @DisplayName("branch_code 파라미터 지정 - 지정 지점의 거래처 반환")
-        fun getAccounts_withBranchCode() {
-            // Given
-            val account = createAccount(id = 1, sfid = "ACC_001", name = "롯데마트 잠실점", branchCode = "5678")
-
-            every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5678"), listOf("1010", "1000")) } returns listOf(account)
-
-            // When
-            val result = service.getAccounts(currentEmployeeFixture, "5678")
-
-            // Then
-            assertThat(result).hasSize(1)
-            assertThat(result[0].accountId).isEqualTo(1)
-            verify(exactly = 0) { employeeRepository.findWithEmployeeInfoById(any()) }
-        }
-
-        @Test
-        @DisplayName("이름 가나다순 정렬 - 입력 순서와 무관하게 name asc 반환")
-        fun getAccounts_sortedByName() {
-            val employee = createEmployee(id = 10L, costCenterCode = "1234")
-            val homeplus = createAccount(id = 1, sfid = "ACC_001", name = "홈플러스 역삼점", branchCode = "1234")
-            val emart = createAccount(id = 2, sfid = "ACC_002", name = "이마트 강남점", branchCode = "1234")
-            val gs = createAccount(id = 3, sfid = "ACC_003", name = "GS25 강남점", branchCode = "1234")
-
-            every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("1234"), listOf("1010", "1000")) } returns
-                listOf(homeplus, emart, gs)
-
-            val result = service.getAccounts(principalOf(employee), null)
-
-            assertThat(result.map { it.name }).containsExactly("GS25 강남점", "이마트 강남점", "홈플러스 역삼점")
-        }
-
-        @Test
-        @DisplayName("BranchMapping 1:N 확장 - cvs전략 '5694' → {5691,5692,5693,5694} 모두 조회")
-        fun getAccounts_branchMappingExpansion() {
-            // Given: SF customMetadata/BranchMapping.cvs.md-meta.xml 정합
-            // BranchCode__c='5694' → IncludedBranchCode__c='5691,5692,5693,5694'
-            val expandedCodes = setOf("5691", "5692", "5693", "5694")
-            every { branchCodeExpander.expand(setOf("5694")) } returns expandedCodes
-
-            val acc1 = createAccount(id = 1, sfid = "ACC_001", name = "CVS 1", branchCode = "5691")
-            val acc2 = createAccount(id = 2, sfid = "ACC_002", name = "CVS 2", branchCode = "5692")
-            val acc3 = createAccount(id = 3, sfid = "ACC_003", name = "CVS 3", branchCode = "5693")
-            val acc4 = createAccount(id = 4, sfid = "ACC_004", name = "CVS 4", branchCode = "5694")
-
-            every { accountRepository.findByBranchCodeInAndAccountGroupIn(expandedCodes, listOf("1010", "1000")) } returns
-                listOf(acc1, acc2, acc3, acc4)
-
-            // When
-            val result = service.getAccounts(currentEmployeeFixture, "5694")
-
-            // Then
-            assertThat(result).hasSize(4)
-            assertThat(result.map { it.accountId }).containsExactly(1, 2, 3, 4)
-        }
-    }
-
     // ========== getBranches ==========
 
     @Nested
@@ -426,7 +343,7 @@ class AdminTeamScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("다중지점 사용자 - branches 2건+, accounts 는 빈 리스트 (사용자가 지점 선택 후 별도 fetch)")
+        @DisplayName("다중지점 사용자 + branchCode 미지정 - accounts 빈 리스트 (지점 선택 전)")
         fun getForm_multiBranch_accountsEmpty() {
             val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "3475", role = null)
             val branches = listOf(
@@ -445,7 +362,73 @@ class AdminTeamScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("지점 0건 사용자 - accounts 빈 리스트, /accounts 호출 없음")
+        @DisplayName("다중지점 사용자 + branchCode 지정 - 해당 지점 거래처 자동 채움 + dailySummary 계산")
+        fun getForm_multiBranch_withBranchCode() {
+            val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "3475", role = null)
+            val branches = listOf(
+                com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"),
+                com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점")
+            )
+            val account = createAccount(id = 2001, sfid = "ACC_2001", name = "이마트 강남점", branchCode = "5460")
+
+            every { organizationRepository.findTeamScheduleBranches(null, true) } returns branches
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3475")) } returns emptyList()
+            every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5460"), listOf("1010", "1000")) } returns listOf(account)
+            every { teamMemberScheduleRepository.findMonthlyByAccountIds(eq(listOf(2001)), any(), any(), isNull()) } returns emptyList()
+
+            val result = service.getForm(principalOf(supporter, isSalesSupport = true), branchCode = "5460")
+
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountId).isEqualTo(2001)
+            verify { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5460"), listOf("1010", "1000")) }
+        }
+
+        @Test
+        @DisplayName("accounts 이름 가나다순 정렬 - 입력 순서와 무관하게 name asc 반환")
+        fun getForm_accountsSortedByName() {
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "1234", role = AppAuthority.LEADER)
+            val branch = com.otoki.powersales.common.dto.response.BranchResponse("1234", "강북유통지점")
+            val homeplus = createAccount(id = 1, sfid = "ACC_001", name = "홈플러스 역삼점", branchCode = "1234")
+            val emart = createAccount(id = 2, sfid = "ACC_002", name = "이마트 강남점", branchCode = "1234")
+            val gs = createAccount(id = 3, sfid = "ACC_003", name = "GS25 강남점", branchCode = "1234")
+
+            every { organizationRepository.findTeamScheduleBranches("1234", false) } returns listOf(branch)
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")) } returns emptyList()
+            every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("1234"), listOf("1010", "1000")) } returns
+                listOf(homeplus, emart, gs)
+            every { teamMemberScheduleRepository.findMonthlyByAccountIds(any(), any(), any(), isNull()) } returns emptyList()
+
+            val result = service.getForm(principalOf(leader))
+
+            assertThat(result.accounts.map { it.name }).containsExactly("GS25 강남점", "이마트 강남점", "홈플러스 역삼점")
+        }
+
+        @Test
+        @DisplayName("BranchMapping 1:N 확장 - cvs전략 '5694' → {5691,5692,5693,5694} 모두 조회")
+        fun getForm_branchMappingExpansion() {
+            val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "3475", role = null)
+            val branches = listOf(com.otoki.powersales.common.dto.response.BranchResponse("5694", "CVS전략"))
+            val expandedCodes = setOf("5691", "5692", "5693", "5694")
+
+            every { organizationRepository.findTeamScheduleBranches(null, true) } returns branches
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3475")) } returns emptyList()
+            every { branchCodeExpander.expand(setOf("5694")) } returns expandedCodes
+            val acc1 = createAccount(id = 1, sfid = "ACC_001", name = "CVS 1", branchCode = "5691")
+            val acc2 = createAccount(id = 2, sfid = "ACC_002", name = "CVS 2", branchCode = "5692")
+            val acc3 = createAccount(id = 3, sfid = "ACC_003", name = "CVS 3", branchCode = "5693")
+            val acc4 = createAccount(id = 4, sfid = "ACC_004", name = "CVS 4", branchCode = "5694")
+            every { accountRepository.findByBranchCodeInAndAccountGroupIn(expandedCodes, listOf("1010", "1000")) } returns
+                listOf(acc1, acc2, acc3, acc4)
+            every { teamMemberScheduleRepository.findMonthlyByAccountIds(any(), any(), any(), isNull()) } returns emptyList()
+
+            val result = service.getForm(principalOf(supporter, isSalesSupport = true), branchCode = "5694")
+
+            assertThat(result.accounts).hasSize(4)
+            assertThat(result.accounts.map { it.accountId }).containsExactly(1, 2, 3, 4)
+        }
+
+        @Test
+        @DisplayName("지점 0건 사용자 - accounts 빈 리스트")
         fun getForm_noBranch_accountsEmpty() {
             val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "9999", role = AppAuthority.LEADER)
 

@@ -102,9 +102,10 @@ data class TeamScheduleMassDeleteResponse(
  * 기존 4개 round-trip (`/branches`, `/members`, `/accounts`, `/professional-promotion-teams`) 을
  * 1회 호출로 합쳐 초기 렌더 latency 축소 + waterfall 제거.
  *
- * `accounts` 는 단일지점 사용자 (`branches.size == 1`) 일 때만 채워 보낸다 — 다중지점 사용자는
- * 사용자가 지점 드롭다운에서 선택해야 거래처가 정의되므로 본 응답 단계에서는 결정 불가.
- * 다중지점 케이스는 클라이언트가 선택 시점에 별도 `/accounts?branchCode=...` 호출.
+ * `accounts` 채움 조건:
+ * - 클라이언트가 `branchCode` 쿼리 파라미터로 지정 → 해당 지점 거래처 (다중지점 사용자의 지점 선택 시점)
+ * - 미지정 + 단일지점 사용자 → 본인 지점 거래처 자동 채움
+ * - 미지정 + 다중지점 사용자 → 빈 리스트 (지점 선택 전 상태)
  */
 data class TeamScheduleFormDto(
     val branches: List<BranchResponse>,
