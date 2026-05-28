@@ -62,16 +62,6 @@ export interface TeamScheduleUpdateRequest {
 
 // --- API functions ---
 
-export async function fetchTeamMembers(): Promise<TeamMember[]> {
-  const res = await client.get<ApiResponse<TeamMember[]>>(
-    '/api/v1/admin/team-schedule/members',
-  );
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || '팀원 목록 조회에 실패했습니다');
-  }
-  return res.data.data;
-}
-
 export async function fetchTeamScheduleAccounts(branchCode: string): Promise<TeamScheduleAccount[]> {
   const res = await client.get<ApiResponse<TeamScheduleAccount[]>>(
     '/api/v1/admin/team-schedule/accounts',
@@ -93,15 +83,6 @@ export async function fetchTeamScheduleBranches(): Promise<Branch[]> {
   return res.data.data;
 }
 
-export async function fetchProfessionalPromotionTeams(): Promise<string[]> {
-  const res = await client.get<ApiResponse<string[]>>(
-    '/api/v1/admin/team-schedule/professional-promotion-teams',
-  );
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || '전문행사조 목록 조회에 실패했습니다');
-  }
-  return res.data.data;
-}
 
 /**
  * 여사원 일정관리 화면 초기 로드 통합 응답.

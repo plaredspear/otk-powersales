@@ -25,15 +25,6 @@ class AdminTeamScheduleController(
 ) {
 
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
-    @GetMapping("/members")
-    fun getMembers(
-        @AuthenticationPrincipal principal: WebUserPrincipal
-    ): ResponseEntity<ApiResponse<List<TeamMemberDto>>> {
-        val result = adminTeamScheduleService.getMembers(principal)
-        return ResponseEntity.ok(ApiResponse.success(result))
-    }
-
-    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/accounts")
     fun getAccounts(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -49,15 +40,6 @@ class AdminTeamScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
         val result = adminTeamScheduleService.getBranches(principal)
-        return ResponseEntity.ok(ApiResponse.success(result))
-    }
-
-    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
-    @GetMapping("/professional-promotion-teams")
-    fun getProfessionalPromotionTeams(
-        @AuthenticationPrincipal principal: WebUserPrincipal
-    ): ResponseEntity<ApiResponse<List<String>>> {
-        val result = adminTeamScheduleService.getProfessionalPromotionTeams()
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
