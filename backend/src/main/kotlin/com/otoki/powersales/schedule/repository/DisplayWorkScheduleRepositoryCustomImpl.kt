@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.repository
 
+import com.otoki.powersales.account.entity.QAccount.Companion.account
 import com.otoki.powersales.employee.enums.EmploymentStatus
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule
@@ -10,6 +11,7 @@ import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.OrderSpecifier
 import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.ComparableExpressionBase
 import com.querydsl.jpa.JPAExpressions
@@ -130,7 +132,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         preset: SchedulePreset?,
         costCenterCodes: List<String>?,
         pageable: Pageable
-    ): Page<DisplayWorkSchedule> {
+    ): Page<ScheduleListRow> {
         val today = LocalDate.now()
         val where = BooleanBuilder()
             .and(isNotDeleted())
@@ -144,9 +146,27 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .and(buildCostCenterCodesCondition(costCenterCodes))
 
         val content = queryFactory
-            .selectFrom(displayWorkSchedule)
-            .leftJoin(displayWorkSchedule.employee).fetchJoin()
-            .leftJoin(displayWorkSchedule.account).fetchJoin()
+            .select(
+                Projections.constructor(
+                    ScheduleListRow::class.java,
+                    displayWorkSchedule.id,
+                    employee.employeeCode,
+                    employee.name,
+                    account.externalKey,
+                    account.name,
+                    displayWorkSchedule.typeOfWork3,
+                    displayWorkSchedule.typeOfWork4,
+                    displayWorkSchedule.typeOfWork5,
+                    displayWorkSchedule.startDate,
+                    displayWorkSchedule.endDate,
+                    displayWorkSchedule.confirmed,
+                    displayWorkSchedule.costCenterCode,
+                    displayWorkSchedule.lastMonthRevenue,
+                )
+            )
+            .from(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.employee, employee)
+            .leftJoin(displayWorkSchedule.account, account)
             .where(where)
             .orderBy(*resolveOrder(pageable.sort))
             .offset(pageable.offset)

@@ -332,21 +332,21 @@ class AdminScheduleService(
             employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, costCenterCodes, pageable
         )
 
-        return schedulePage.map { schedule ->
+        return schedulePage.map { row ->
             ScheduleListItemDto(
-                id = schedule.id,
-                employeeCode = schedule.employee?.employeeCode ?: "",
-                employeeName = schedule.employee?.name ?: "",
-                accountCode = schedule.account?.externalKey,
-                accountName = schedule.account?.name,
-                typeOfWork3 = schedule.typeOfWork3?.displayName,
-                typeOfWork4 = schedule.typeOfWork4?.displayName,
-                typeOfWork5 = schedule.typeOfWork5?.displayName,
-                startDate = schedule.startDate,
-                endDate = schedule.endDate,
-                confirmed = schedule.confirmed,
-                costCenterCode = schedule.costCenterCode,
-                lastMonthRevenue = schedule.lastMonthRevenue?.toLong()
+                id = row.id,
+                employeeCode = row.employeeCode ?: "",
+                employeeName = row.employeeName ?: "",
+                accountCode = row.accountCode,
+                accountName = row.accountName,
+                typeOfWork3 = row.typeOfWork3?.displayName,
+                typeOfWork4 = row.typeOfWork4?.displayName,
+                typeOfWork5 = row.typeOfWork5?.displayName,
+                startDate = row.startDate,
+                endDate = row.endDate,
+                confirmed = row.confirmed,
+                costCenterCode = row.costCenterCode,
+                lastMonthRevenue = row.lastMonthRevenue?.toLong()
             )
         }
     }

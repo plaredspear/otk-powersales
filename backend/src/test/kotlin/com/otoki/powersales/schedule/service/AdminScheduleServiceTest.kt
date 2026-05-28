@@ -24,6 +24,7 @@ import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.schedule.enums.TypeOfWork3
 import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.powersales.schedule.repository.ScheduleListRow
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
@@ -896,14 +897,41 @@ class AdminScheduleServiceTest {
         private fun mockAdminScope(): com.otoki.powersales.admin.dto.DataScope =
             com.otoki.powersales.admin.dto.DataScope(branchCodes = emptyList(), isAllBranches = true)
 
+        private fun scheduleRow(
+            id: Long = 1L,
+            employeeCode: String? = null,
+            employeeName: String? = null,
+            accountCode: String? = null,
+            accountName: String? = null,
+            confirmed: Boolean? = false,
+        ): ScheduleListRow = ScheduleListRow(
+            id = id,
+            employeeCode = employeeCode,
+            employeeName = employeeName,
+            accountCode = accountCode,
+            accountName = accountName,
+            typeOfWork3 = null,
+            typeOfWork4 = null,
+            typeOfWork5 = null,
+            startDate = null,
+            endDate = null,
+            confirmed = confirmed,
+            costCenterCode = null,
+            lastMonthRevenue = null,
+        )
+
         @Test
         @DisplayName("정상 조회 - 필터 없이 전체 목록 반환")
         fun listSchedules_success() {
             val scope = mockAdminScope()
-            val employee = createEmployee(id = 1L, employeeCode = "20030001", name = "홍길동")
-            val account = createAccount(id = 100, externalKey = "SAP001", name = "이마트 성수점")
-            val schedule = createSchedule(id = 1L, confirmed = false, employee = employee, account = account)
-            val page = PageImpl(listOf(schedule), PageRequest.of(0, 20), 1)
+            val row = scheduleRow(
+                id = 1L,
+                employeeCode = "20030001",
+                employeeName = "홍길동",
+                accountCode = "SAP001",
+                accountName = "이마트 성수점",
+            )
+            val page = PageImpl(listOf(row), PageRequest.of(0, 20), 1)
 
             every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any()) } returns page
 
@@ -920,7 +948,7 @@ class AdminScheduleServiceTest {
         @DisplayName("빈 결과 - 매칭 없음")
         fun listSchedules_empty() {
             val scope = mockAdminScope()
-            val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
+            val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
             every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any()) } returns emptyPage
 
             val result = adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, Sort.unsorted())
@@ -935,7 +963,7 @@ class AdminScheduleServiceTest {
             val scope = mockAdminScope()
             val account = createAccount(id = 100, name = "이마트 성수점")
             every { accountRepository.findByNameContainingIgnoreCase("이마트") } returns listOf(account)
-            val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
+            val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
             every { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, any()) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 20, null, "이마트", null, null, null, null, null, Sort.unsorted())
@@ -947,7 +975,7 @@ class AdminScheduleServiceTest {
         @DisplayName("페이지 크기 제한 - 100 초과 시 100으로 제한")
         fun listSchedules_pageSizeLimit() {
             val scope = mockAdminScope()
-            val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 100), 0)
+            val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 100), 0)
             every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any()) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 200, null, null, null, null, null, null, null, Sort.unsorted())
@@ -961,7 +989,7 @@ class AdminScheduleServiceTest {
         @DisplayName("preset 필터 - 레거시 List View 매핑 (END) 가 Repository 에 전달됨")
         fun listSchedules_presetEnd() {
             val scope = mockAdminScope()
-            val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
+            val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
             every { scheduleRepository.findScheduleList(
                 null, null, null, null, null, null, eq(SchedulePreset.END), null, any()
             ) } returns emptyPage
@@ -978,7 +1006,7 @@ class AdminScheduleServiceTest {
         fun listSchedules_sortApplied() {
             val scope = mockAdminScope()
             val sort = Sort.by(Sort.Direction.DESC, "endDate")
-            val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20, sort), 0)
+            val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20, sort), 0)
             every { scheduleRepository.findScheduleList(
                 null, null, null, null, null, null, null, null, any()
             ) } returns emptyPage
@@ -995,7 +1023,7 @@ class AdminScheduleServiceTest {
         @DisplayName("UC-12 LEADER 사용자 - costCenterCodes 필터가 Repository 에 전달됨")
         fun listSchedules_leaderScope() {
             val scope = com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
-            val emptyPage = PageImpl<DisplayWorkSchedule>(emptyList(), PageRequest.of(0, 20), 0)
+            val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
             every { scheduleRepository.findScheduleList(
                 null, null, null, null, null, null, null, eq(listOf("A10010")), any()
             ) } returns emptyPage

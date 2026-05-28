@@ -2,11 +2,34 @@ package com.otoki.powersales.schedule.repository
 
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.SchedulePreset
+import com.otoki.powersales.schedule.enums.SecondWorkType
+import com.otoki.powersales.schedule.enums.TypeOfWork3
+import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.querydsl.core.types.Predicate
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import java.math.BigDecimal
 import java.time.LocalDate
+
+/**
+ * findScheduleList projection row — Employee/Account entity hydration 회피 (N+1 차단) 용.
+ * Service layer 가 enum → displayName 변환 후 [com.otoki.powersales.schedule.dto.response.ScheduleListItemDto] 로 매핑한다.
+ */
+data class ScheduleListRow(
+    val id: Long,
+    val employeeCode: String?,
+    val employeeName: String?,
+    val accountCode: String?,
+    val accountName: String?,
+    val typeOfWork3: TypeOfWork3?,
+    val typeOfWork4: SecondWorkType?,
+    val typeOfWork5: TypeOfWork5?,
+    val startDate: LocalDate?,
+    val endDate: LocalDate?,
+    val confirmed: Boolean?,
+    val costCenterCode: String?,
+    val lastMonthRevenue: BigDecimal?,
+)
 
 interface DisplayWorkScheduleRepositoryCustom {
 
@@ -51,6 +74,9 @@ interface DisplayWorkScheduleRepositoryCustom {
 
     /**
      * @param costCenterCodes UC-12 사업소 가시 범위 필터. null = 무제한(ADMIN_GRADE 등), list = 본인 담당 사업소.
+     *
+     * DTO projection — Employee entity hydration 회피 (Employee.employeeInfo 가 @NotFound 로
+     * 즉시 fetch 강제되어 페이지당 N+1 발생하던 사례 차단).
      */
     fun findScheduleList(
         employeeCode: String?,
@@ -62,7 +88,7 @@ interface DisplayWorkScheduleRepositoryCustom {
         preset: SchedulePreset?,
         costCenterCodes: List<String>?,
         pageable: Pageable
-    ): Page<DisplayWorkSchedule>
+    ): Page<ScheduleListRow>
 
     fun findByEmployeeAndStartDate(employeeId: Long, startDate: LocalDate): List<DisplayWorkSchedule>
 
