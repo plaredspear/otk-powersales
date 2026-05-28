@@ -7,6 +7,7 @@ import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeIt
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
+import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.account.entity.Account
@@ -154,7 +155,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("UC-07: 라면행사 + 라면세일조 사원 -> 매칭 OK (저장 성공)")
         fun createEmployee_uc07_ramenWithRamenSaleTeam_success() {
-            val promotion = createPromotion().also { it.category1 = "라면" }
+            val promotion = createPromotion(category1 = "라면")
             val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
                 .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE }
 
@@ -169,7 +170,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("UC-07: 만두행사 + 카레행사조 사원 -> 매칭 OK (카레는 모든 카테고리 허용)")
         fun createEmployee_uc07_manduWithCurryTeam_success() {
-            val promotion = createPromotion().also { it.category1 = "만두" }
+            val promotion = createPromotion(category1 = "만두")
             val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
                 .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.CURRY_PROMOTION }
 
@@ -184,7 +185,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("UC-07: 라면행사 + 프레시세일조_냉장 사원 -> 매칭 실패 (TeamCategoryMismatchException)")
         fun createEmployee_uc07_ramenWithFreshRefrigeratedTeam_fail() {
-            val promotion = createPromotion().also { it.category1 = "라면" }
+            val promotion = createPromotion(category1 = "라면")
             val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
                 .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED }
 
@@ -200,7 +201,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("UC-07: 냉장행사 + 프레시세일조_냉동 사원 -> 매칭 실패")
         fun createEmployee_uc07_refrigeratedWithFreshFrozenTeam_fail() {
-            val promotion = createPromotion().also { it.category1 = "냉장" }
+            val promotion = createPromotion(category1 = "냉장")
             val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
                 .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.FRESH_SALE_FROZEN }
 
@@ -216,7 +217,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("UC-07: 만두행사 + 라면세일조 사원 -> 매칭 실패 (라면은 만두 허용 룰 외)")
         fun createEmployee_uc07_manduWithRamenSaleTeam_fail() {
-            val promotion = createPromotion().also { it.category1 = "만두" }
+            val promotion = createPromotion(category1 = "만두")
             val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
                 .also { it.professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE }
 
@@ -245,7 +246,7 @@ class AdminPromotionEmployeeServiceTest {
         @Test
         @DisplayName("UC-07: employee.professionalPromotionTeam null -> 검증 스킵 (일반 사원 동등)")
         fun createEmployee_uc07_employeeTeamNull_success() {
-            val promotion = createPromotion().also { it.category1 = "라면" }
+            val promotion = createPromotion(category1 = "라면")
             val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")
                 // professionalPromotionTeam = null (일반 사원)
 
@@ -1290,12 +1291,19 @@ class AdminPromotionEmployeeServiceTest {
 
     private fun createPromotion(
         id: Long = 10L,
-        isDeleted: Boolean = false
+        isDeleted: Boolean = false,
+        category1: String? = null
     ) = Promotion(
         id = id, promotionNumber = "PM00000001",
         account = Account(id = 100, name = "테스트거래처"), startDate = LocalDate.of(2026, 3, 10), endDate = LocalDate.of(2026, 3, 20),
         isDeleted = isDeleted
-    )
+    ).also {
+        // SF formula `Category1__c = DKRetail__PrimaryProductId__r.StoreCondition__c` 동등 — 대표제품의 storeConditionText 로 derive.
+        if (category1 != null) {
+            it.primaryProduct = Product(id = 1L, productCode = "TEST", name = "TEST")
+                .apply { storeConditionText = category1 }
+        }
+    }
 
     private fun createPe(
         id: Long = 1L, promotionId: Long = 10L, employeeId: Long? = 1L,

@@ -291,7 +291,6 @@ object Stage1Targets {
             FieldMapping("CostCenterCode__c", "cost_center_code"),
             FieldMapping("DKRetail__Remark__c", "remark"),
             FieldMapping("DKRetail__ProductType__c", "product_type"),
-            FieldMapping("Category1__c", "category1"),
             FieldMapping("OwnerId", "owner_sfid"),
             FieldMapping("CreatedById", "created_by_sfid"),
             FieldMapping("CreatedDate", "created_at", nullable = false),

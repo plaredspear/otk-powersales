@@ -20,7 +20,6 @@ export interface DetailFormValues {
   promotionType: string | null;
   standLocation: string | null;
   message: string | null;
-  category1: string | null;
 }
 
 interface Props {
@@ -206,17 +205,7 @@ export default function PromotionDetailSection({
         {promotion.isClosed ? <Tag color="red">마감</Tag> : '미마감'}
       </Descriptions.Item>
       <Descriptions.Item label="제품유형">
-        {editing ? (
-          <Input
-            size="small"
-            maxLength={1300}
-            value={formValues.category1 ?? ''}
-            placeholder="라면 / 냉장 / 냉동 / 만두 중 하나 (선택)"
-            onChange={(e) => onFormChange({ category1: e.target.value || null })}
-          />
-        ) : (
-          promotion.category1 ?? '-'
-        )}
+        {promotion.category1 ?? '-'}
       </Descriptions.Item>
     </Descriptions>
   );

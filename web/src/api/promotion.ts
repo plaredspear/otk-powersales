@@ -77,7 +77,6 @@ export interface PromotionFormData {
   otherProduct?: string | null;
   message?: string | null;
   standLocation: string;
-  category1?: string | null;
   remark?: string | null;
 }
 
