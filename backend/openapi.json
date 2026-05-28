@@ -13723,11 +13723,6 @@
             "format" : "int32",
             "type" : "integer"
           },
-          "category1" : {
-            "maxLength" : 1300,
-            "minLength" : 0,
-            "type" : [ "string", "null" ]
-          },
           "endDate" : {
             "format" : "date",
             "type" : "string"
