@@ -58,7 +58,10 @@ class OrderRequestRegisterSender(
         employee: Employee,
         products: List<OrderRequestProduct>,
     ): Map<String, Any?> {
-        val sapAccountCode = account.externalKey ?: account.sfid ?: account.id.toString()
+        // SAP 의 `SAPAccountCode` 는 SF 레거시 IF_REST_MOBILE_OrderRequestRegist 가 ExternalKey__c lookup 키로 사용 —
+        // sfid 식별자 미수용. application sfid 사용 금지 정책 + SAP 인터페이스 정합 모두 만족하려면 externalKey 단일 키.
+        val sapAccountCode = account.externalKey
+            ?: error("Account ${account.id} 의 externalKey 가 비어있어 SAP 송신 불가 — SAP 는 ExternalKey 로 거래처 lookup")
         return mapOf(
             "SAPAccountCode" to sapAccountCode,
             "OrderDate" to orderRequest.orderDate.toLocalDate().format(YYYYMMDD),

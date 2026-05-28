@@ -29,7 +29,7 @@ class MonthlySalesDashboardExcelExporter {
         val headerStyle = createHeaderStyle(workbook)
 
         val headers = listOf(
-            "거래처명", "거래처 SFID", "SAP코드", "지점코드", "지점명",
+            "거래처명", "SAP코드", "지점코드", "지점명",
             "매출연도", "매출월",
             "목표", "실적", "진도율(%)",
             "상온 실적", "라면 실적", "냉동냉장 실적", "유지 실적",
@@ -48,7 +48,6 @@ class MonthlySalesDashboardExcelExporter {
             val row = sheet.createRow(rowIdx + 1)
             var col = 0
             row.createCell(col++).setCellValue(item.accountName ?: "")
-            row.createCell(col++).setCellValue(item.accountSfid ?: "")
             row.createCell(col++).setCellValue(item.sapAccountCode ?: "")
             row.createCell(col++).setCellValue(item.branchCode ?: "")
             row.createCell(col++).setCellValue(item.branchName ?: "")

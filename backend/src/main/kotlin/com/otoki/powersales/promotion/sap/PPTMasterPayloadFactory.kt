@@ -31,7 +31,6 @@ class PPTMasterPayloadFactory {
         return PPTMasterSapPayloadRow(
             Name = master.name,
             ProfessionalPromotionTeam = master.teamType.displayName,
-            Account = master.accountSfid,
             FullName = emp?.name,
             EmployeeNumber = emp?.employeeCode,
             AccountStatus = acc?.accountStatusName,

@@ -14,7 +14,6 @@ class MonthlySalesDashboardExcelExporterTest {
 
     private fun item(id: Int, name: String, isConfirmed: Boolean) = MonthlySalesDashboardListItem(
         accountId = id,
-        accountSfid = "ACC$id",
         accountName = name,
         sapAccountCode = "SAP$id",
         branchCode = "1000",
@@ -55,9 +54,9 @@ class MonthlySalesDashboardExcelExporterTest {
             val wb = WorkbookFactory.create(input)
             val sheet = wb.getSheetAt(0)
             assertThat(sheet.lastRowNum).isEqualTo(3) // 헤더 1 + 데이터 3 = 마지막 인덱스 3
-            // 마감 컬럼은 마지막 (인덱스 16)
-            assertThat(sheet.getRow(1).getCell(16).stringCellValue).isEqualTo("마감")
-            assertThat(sheet.getRow(2).getCell(16).stringCellValue).isEqualTo("미마감")
+            // 마감 컬럼은 마지막 (인덱스 15 — 거래처 SFID 컬럼 제거 후)
+            assertThat(sheet.getRow(1).getCell(15).stringCellValue).isEqualTo("마감")
+            assertThat(sheet.getRow(2).getCell(15).stringCellValue).isEqualTo("미마감")
             wb.close()
         }
     }
