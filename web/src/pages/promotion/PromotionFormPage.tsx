@@ -11,10 +11,8 @@ import {
   Select,
   Space,
   Spin,
-  Tooltip,
   message,
 } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { usePromotion } from '@/hooks/promotion/usePromotion';
 import {
@@ -41,7 +39,6 @@ interface ProductOption {
 }
 
 interface FormValues {
-  promotionName?: string;
   promotionType: string;
   accountId: number;
   startDate: dayjs.Dayjs;
@@ -98,7 +95,6 @@ export default function PromotionFormPage() {
   useEffect(() => {
     if ((isEdit || isClone) && promotion) {
       form.setFieldsValue({
-        promotionName: promotion.promotionName ?? undefined,
         promotionType: promotion.promotionType ?? undefined,
         accountId: promotion.accountId,
         startDate: dayjs(promotion.startDate),
@@ -224,21 +220,6 @@ export default function PromotionFormPage() {
           <Row gutter={24}>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="promotionName"
-                label={
-                  <span>
-                    행사명{' '}
-                    <Tooltip title="행사명은 대표상품명으로 자동 지정됩니다">
-                      <InfoCircleOutlined style={{ color: '#999' }} />
-                    </Tooltip>
-                  </span>
-                }
-              >
-                <Input disabled placeholder="대표상품을 선택하면 자동 설정됩니다" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
                 name="accountId"
                 label="거래처"
                 rules={[{ required: true, message: '거래처를 선택해주세요' }]}
@@ -341,15 +322,6 @@ export default function PromotionFormPage() {
                   loading={productSearching}
                   options={productOptions}
                   notFoundContent={productSearching ? <Spin size="small" /> : null}
-                  onChange={(value: number | undefined) => {
-                    if (value) {
-                      const selected = productOptions.find((p) => p.value === value);
-                      const nameOnly = selected?.label?.replace(/\s*\(.*\)$/, '') ?? '';
-                      form.setFieldValue('promotionName', nameOnly);
-                    } else {
-                      form.setFieldValue('promotionName', undefined);
-                    }
-                  }}
                 />
               </Form.Item>
             </Col>

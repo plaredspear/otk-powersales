@@ -92,13 +92,6 @@ export default function PromotionDetailSection({
         )}
       </Descriptions.Item>
 
-      <Descriptions.Item label="행사명">
-        {promotion.promotionName ? (
-          <>{promotion.promotionName}</>
-        ) : (
-          '-'
-        )}
-      </Descriptions.Item>
       <Descriptions.Item label="종료일">
         {editing ? (
           <DatePicker
