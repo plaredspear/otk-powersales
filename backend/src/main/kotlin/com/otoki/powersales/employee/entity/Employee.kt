@@ -16,6 +16,9 @@ import com.otoki.powersales.employee.enums.Gender
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 import com.otoki.powersales.user.entity.User
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 사원 Entity
@@ -27,6 +30,7 @@ import com.otoki.powersales.user.entity.User
  * employee_info 조인은 employee_code = employee_code (non-PK 컬럼).
  * JPA @SecondaryTable은 PK 기반 조인만 지원하므로, @OneToOne + delegate property로 구현.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "employee")
 @SFObject("DKRetail__Employee__c")
@@ -237,10 +241,12 @@ class Employee(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

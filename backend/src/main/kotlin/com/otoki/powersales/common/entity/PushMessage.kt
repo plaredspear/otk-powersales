@@ -11,11 +11,15 @@ import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDateTime
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 푸시 메시지 Entity
  * Salesforce PushMessage__c (메시지) — Spec #709 SF Object 정합 (Group A + Reference R-2).
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "push_message")
 @SFObject("PushMessage__c")
@@ -99,10 +103,12 @@ class PushMessage(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null

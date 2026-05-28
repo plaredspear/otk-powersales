@@ -14,6 +14,9 @@ import com.otoki.powersales.product.enums.ManagementType
 import com.otoki.powersales.product.enums.NewProductStatus
 import jakarta.persistence.*
 import java.time.LocalDate
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 신제품 Entity
@@ -24,6 +27,7 @@ import java.time.LocalDate
  * + Picklist 3개 enum (Initiator / NewProductStatus / ManagementType 84)
  * + RecordType 9개 sfid 보존 (도메인 모델링은 #739 후속).
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "new_product")
 @SFObject("NewProduct__c")
@@ -145,10 +149,12 @@ class NewProduct(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

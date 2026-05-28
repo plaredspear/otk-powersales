@@ -9,7 +9,11 @@ import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.leave.enums.HolidayType
 import jakarta.persistence.*
 import java.time.LocalDate
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "holiday_master")
 @SFObject("HolidayMaster__c")
@@ -66,10 +70,12 @@ class HolidayMaster(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null

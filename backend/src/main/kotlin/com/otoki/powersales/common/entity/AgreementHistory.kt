@@ -7,6 +7,9 @@ import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 동의이력 Entity
@@ -16,6 +19,7 @@ import java.time.LocalDate
  *   `owner_user_id` (User FK) + `owner_group_id` (Group FK) + XOR CHECK 제약.
  * - audit (CreatedById / LastModifiedById) FK 는 SF `referenceTo = [User]` 정합 — `User` entity 참조 (spec #757).
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "agreement_history")
 @SFObject("AgreementHistory__c")
@@ -96,10 +100,12 @@ class AgreementHistory(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

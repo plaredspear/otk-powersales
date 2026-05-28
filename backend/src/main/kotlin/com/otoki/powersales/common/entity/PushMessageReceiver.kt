@@ -8,6 +8,8 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
 
 /**
  * 푸시 메시지 수신자 Entity
@@ -87,10 +89,12 @@ class PushMessageReceiver(
 
     // V201 — SF PushMessageReceiver__c.CreatedById/LastModifiedById.referenceTo = [User].
     // audit FK Employee → User 정합 (V200 다른 entity 일괄 정합과 동일 패턴).
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null

@@ -7,6 +7,8 @@ import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
 
 /**
  * 행사상품 (DKRetail__PromotionProduct__c — DKRetail 관리형 패키지 SObject "상세 POS품목").
@@ -84,10 +86,12 @@ class PromotionProduct(
     @JoinColumn(name = "product_id", insertable = false, updatable = false)
     var product: Product? = null
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null

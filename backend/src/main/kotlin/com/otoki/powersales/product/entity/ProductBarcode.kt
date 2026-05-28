@@ -6,12 +6,16 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 제품 바코드 Entity
  * V1 스키마 product_barcode 테이블에 매핑.
  * Product와 N:1 관계 (product_id FK).
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "product_barcode")
 @SFObject("ProductBarcode__c")
@@ -92,10 +96,12 @@ class ProductBarcode(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

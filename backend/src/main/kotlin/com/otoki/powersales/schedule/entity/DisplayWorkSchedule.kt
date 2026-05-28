@@ -18,6 +18,9 @@ import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 거래처 일정 Entity (진열마스터 확정 스케줄)
@@ -31,6 +34,7 @@ import java.time.LocalDate
  * - ConfirmationAlert__c 는 SF Formula (`calculated=true`) — DB 컬럼 부재.
  * - LastMonthRevenue__c 는 SF `double precision=18 scale=0` — `BigDecimal` 매핑.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "display_work_schedule")
 @SFObject("DisplayWorkScheduleMaster__c")
@@ -133,10 +137,12 @@ class DisplayWorkSchedule(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

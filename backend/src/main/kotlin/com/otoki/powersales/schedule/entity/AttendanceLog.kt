@@ -12,11 +12,15 @@ import com.otoki.powersales.schedule.enums.SecondWorkType
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDateTime
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 출근현황 Entity
  * Salesforce: DKRetail__CommuteLog__c
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "attendance_log")
 @SFObject("DKRetail__CommuteLog__c")
@@ -103,10 +107,12 @@ class AttendanceLog(
     @JoinColumn(name = "owner_group_id")
     var ownerGroup: Group? = null,
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,

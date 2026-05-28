@@ -7,6 +7,9 @@ import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDate
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 발령정보 Entity
@@ -22,6 +25,7 @@ import java.time.LocalDate
  *
  * Spec #758: audit FK (createdBy / lastModifiedBy) 타입 Employee → User 일괄 전환.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(
     name = "appointment",
@@ -139,10 +143,12 @@ class Appointment(
 
     // -- Relations --
 
+    @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     var createdBy: User? = null,
 
+    @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,
