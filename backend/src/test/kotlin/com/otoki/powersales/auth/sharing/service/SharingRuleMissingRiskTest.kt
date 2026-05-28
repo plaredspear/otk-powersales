@@ -1,6 +1,8 @@
 package com.otoki.powersales.auth.sharing.service
 
 import com.otoki.powersales.account.entity.QAccount
+import com.otoki.powersales.auth.sharing.entity.QPermissionSetAssignment
+import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule
 import com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot
 import com.querydsl.jpa.HQLTemplates
 import com.querydsl.jpa.JPQLSerializer
@@ -27,6 +29,10 @@ class SharingRuleMissingRiskTest {
 
     private val evaluator = SharingRulePolicyEvaluator(mockk(relaxed = true))
     private val account = QAccount.account
+    // CostCenterCode 검증용 — DisplayWorkSchedule 보유 entity
+    private val displayWorkSchedule = QDisplayWorkSchedule.displayWorkSchedule
+    // CreatedById 단순 필드 검증용 — PermissionSetAssignment 가 createdById 직접 필드 보유
+    private val psaPath = QPermissionSetAssignment.permissionSetAssignment
 
     private fun toJpql(expr: com.querydsl.core.types.dsl.BooleanExpression): String {
         val serializer = JPQLSerializer(HQLTemplates.DEFAULT)
@@ -53,6 +59,8 @@ class SharingRuleMissingRiskTest {
         @DisplayName("CreatedById equals condition → createdById JPA property 매핑 + JPQL `=` 합성")
         fun createdByIdEquals() {
             // SF rule 본문 예: field="CreatedById" operator="equals" value="005xx..." (사용자 sfid)
+            // 운영 entity 의 audit 컬럼은 대부분 createdBy User relation 으로 매핑 — createdById 단순 필드
+            // 보유는 PermissionSetAssignment 등 일부 entity 한정. 변환 자체만 본 spec 검증.
             val cond = SharingRuleSnapshot.ConditionSnapshot(
                 field = "CreatedById",
                 operator = "equals",
@@ -60,17 +68,15 @@ class SharingRuleMissingRiskTest {
                 conditionOrder = 1,
                 logicConnector = null,
             )
-            val expr = evaluator.buildConditionPredicate(cond, account)
+            val expr = evaluator.buildConditionPredicate(cond, psaPath)
             assertThat(expr).isNotNull
-            // CreatedById → createdById 변환 + equals → JPQL `=` 합성 정상.
-            // (CreatedById 가 audit 컬럼인 BaseEntity 추상화 매핑은 entity 별 책임 — 변환 자체만 본 spec 검증.)
-            assertThat(toJpql(expr!!)).contains("account.createdById = ?1")
+            assertThat(toJpql(expr!!)).contains("permissionSetAssignment.createdById = ?1")
         }
 
         @Test
         @DisplayName("CreatedById in (...) — includes operator 분기 (Group 멤버십 시나리오)")
         fun createdByIdIncludes() {
-            // CreatedById IN (csv) — 본인 + 동일 Group 동료가 작성한 record 가시 (DisplayWorkSchedule 의 CreatedById 예외 패턴)
+            // CreatedById IN (csv) — 본인 + 동일 Group 동료가 작성한 record 가시 패턴
             val cond = SharingRuleSnapshot.ConditionSnapshot(
                 field = "CreatedById",
                 operator = "includes",
@@ -78,10 +84,10 @@ class SharingRuleMissingRiskTest {
                 conditionOrder = 1,
                 logicConnector = null,
             )
-            val expr = evaluator.buildConditionPredicate(cond, account)
+            val expr = evaluator.buildConditionPredicate(cond, psaPath)
             assertThat(expr).isNotNull
             // includes → csv split → IN 절 합성
-            assertThat(toJpql(expr!!)).contains("account.createdById in")
+            assertThat(toJpql(expr!!)).contains("permissionSetAssignment.createdById in")
         }
     }
 
@@ -108,9 +114,10 @@ class SharingRuleMissingRiskTest {
         }
 
         @Test
-        @DisplayName("CVS rule (AND 합성) — AccountGroup + CostCenterCode 동시 조건")
+        @DisplayName("CVS rule (AND 합성) — AccountGroup + ABCType 동시 조건 (Account 정합 field)")
         fun cvsAndComposition() {
-            // CVS rule 본문이 AccountGroup__c + CostCenterCode__c 두 condition 을 AND 로 묶는 패턴.
+            // SF Account.sharingRules 운영 표준 — AccountGroup__c + BranchCode__c 패턴 (X5832 등).
+            // Account 에 costCenterCode 부재 — 본 test 는 AND 합성 검증 의도라 entity 정합 field 로 대체.
             val cvsRule = rule(
                 "CVS_AccountGroup_Sales",
                 listOf(
@@ -122,9 +129,9 @@ class SharingRuleMissingRiskTest {
                         logicConnector = null,
                     ),
                     SharingRuleSnapshot.ConditionSnapshot(
-                        field = "CostCenterCode__c",
+                        field = "BranchCode__c",
                         operator = "equals",
-                        value = "DKB100",
+                        value = "5832",
                         conditionOrder = 2,
                         logicConnector = "AND",
                     ),
@@ -135,7 +142,7 @@ class SharingRuleMissingRiskTest {
             val jpql = toJpql(expr!!)
             // AND 합성 — 두 조건 모두 포함 + and 연산자
             assertThat(jpql).contains("account.accountGroup = ?1")
-            assertThat(jpql).contains("account.costCenterCode = ?2")
+            assertThat(jpql).contains("account.branchCode = ?2")
             assertThat(jpql).contains("and")
         }
     }

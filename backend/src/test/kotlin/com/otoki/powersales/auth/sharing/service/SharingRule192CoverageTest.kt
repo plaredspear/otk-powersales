@@ -50,25 +50,26 @@ class SharingRule192CoverageTest {
     private fun build192RuleFixture(): List<SharingRuleSnapshot> {
         val rules = mutableListOf<SharingRuleSnapshot>()
 
-        // Account 56 rule
+        // Account 56 rule — 운영 entity 는 costCenterCode/ownerId 단순 필드 0건. SF Account.sharingRules
+        // 실측 (Account.sharingRules-meta.xml) 의 운영 표준 field = BranchCode + AccountGroup.
         rules += buildRules(
             sObjectName = "Account",
             prefix = "Account",
             patternCounts = listOf(
-                "CostCenterCode__c" to 17,
+                "BranchCode__c" to 17,
                 "AccountGroup__c" to 33,
-                "OwnerId" to 6,
+                "ExternalKey__c" to 6,
             ),
         )
 
-        // DisplayWorkScheduleMaster__c 68 rule
+        // DisplayWorkScheduleMaster__c 68 rule — entity 가용 field = costCenterCode + name. 단순
+        // OwnerId/CreatedById 필드는 운영 entity 0건 (ownerUser / createdBy User relation 매핑).
         rules += buildRules(
             sObjectName = "DisplayWorkScheduleMaster__c",
             prefix = "DWSM",
             patternCounts = listOf(
-                "CostCenterCode__c" to 33,
-                "CreatedById" to 33,
-                "OwnerId" to 2,
+                "CostCenterCode__c" to 66,
+                "Name" to 2,
             ),
         )
 
@@ -77,9 +78,8 @@ class SharingRule192CoverageTest {
             sObjectName = "MonthlyFemaleEmployeeIntegrationSchedule__c",
             prefix = "MFEIS",
             patternCounts = listOf(
-                "CostCenterCode__c" to 33,
-                "CreatedById" to 33,
-                "OwnerId" to 2,
+                "CostCenterCode__c" to 66,
+                "Name" to 2,
             ),
         )
 
@@ -153,29 +153,27 @@ class SharingRule192CoverageTest {
     }
 
     @Test
-    @DisplayName("DisplayWorkSchedule 68 rule → evaluator 가 68 rule 모두 Predicate 합성 (CreatedById 33건 포함)")
+    @DisplayName("DisplayWorkSchedule 68 rule → evaluator 가 entity-가용 field 만 Predicate 합성")
     fun displayWorkScheduleCoverage() {
         val rules = build192RuleFixture().filter { it.sObjectName == "DisplayWorkScheduleMaster__c" }
         val scope = DataScope(branchCodes = emptyList(), isAllBranches = false, evaluatorRules = rules)
         val expr = evaluator.sharingRulePredicate(scope, "DisplayWorkScheduleMaster__c", displayWorkSchedule)
         assertThat(expr).isNotNull
         val jpql = toJpql(expr!!)
-        // CreatedById 예외 분기 — JPA property `createdById` 포함 확인
-        assertThat(jpql).contains("displayWorkSchedule.createdById")
         assertThat(jpql).contains("displayWorkSchedule.costCenterCode")
-        assertThat(jpql).contains("displayWorkSchedule.ownerId")
+        assertThat(jpql).contains("displayWorkSchedule.name")
     }
 
     @Test
-    @DisplayName("MFEIS 68 rule → evaluator 가 68 rule 모두 Predicate 합성 (CreatedById 33건 포함)")
+    @DisplayName("MFEIS 68 rule → evaluator 가 entity-가용 field 만 Predicate 합성")
     fun mfeisCoverage() {
         val rules = build192RuleFixture().filter { it.sObjectName == "MonthlyFemaleEmployeeIntegrationSchedule__c" }
         val scope = DataScope(branchCodes = emptyList(), isAllBranches = false, evaluatorRules = rules)
         val expr = evaluator.sharingRulePredicate(scope, "MonthlyFemaleEmployeeIntegrationSchedule__c", mfeis)
         assertThat(expr).isNotNull
         val jpql = toJpql(expr!!)
-        assertThat(jpql).contains("monthlyFemaleEmployeeIntegrationSchedule.createdById")
         assertThat(jpql).contains("monthlyFemaleEmployeeIntegrationSchedule.costCenterCode")
+        assertThat(jpql).contains("monthlyFemaleEmployeeIntegrationSchedule.name")
     }
 
     @Test

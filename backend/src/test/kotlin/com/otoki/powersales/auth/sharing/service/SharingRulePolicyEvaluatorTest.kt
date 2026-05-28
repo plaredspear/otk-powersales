@@ -291,5 +291,84 @@ class SharingRulePolicyEvaluatorTest {
             assertThat(pred).isNotNull
             assertThat(pred.toString()).contains("accountGroup in [1000, 1010, 3000]")
         }
+
+        @Test
+        @DisplayName("entity 에 없는 field 는 null 반환 (Account 의 CostCenterCode__c 등)")
+        fun conditionFieldNotInEntity() {
+            val cond = com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot.ConditionSnapshot(
+                field = "CostCenterCode__c",
+                operator = "equals",
+                value = "5832",
+                conditionOrder = 1,
+                logicConnector = null,
+            )
+            val pred = evaluator.buildConditionPredicate(cond, accountPath)
+            assertThat(pred).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("hasProperty — Q-class entity path field 사전 검증")
+    inner class HasProperty {
+        private val accountPath = com.otoki.powersales.account.entity.QAccount.account
+
+        @Test
+        @DisplayName("Account 에 ownerUser 있음 (운영 표준 owner 명명) → true")
+        fun accountHasOwnerUser() {
+            assertThat(evaluator.hasProperty(accountPath, "ownerUser")).isTrue
+        }
+
+        @Test
+        @DisplayName("Account 에 ownerId 없음 → false")
+        fun accountHasNoOwnerId() {
+            assertThat(evaluator.hasProperty(accountPath, "ownerId")).isFalse
+        }
+
+        @Test
+        @DisplayName("Account 에 branchCode 있음 → true")
+        fun accountHasBranchCode() {
+            assertThat(evaluator.hasProperty(accountPath, "branchCode")).isTrue
+        }
+
+        @Test
+        @DisplayName("Account 에 costCenterCode 없음 → false (legacy branch predicate 안전)")
+        fun accountHasNoCostCenterCode() {
+            assertThat(evaluator.hasProperty(accountPath, "costCenterCode")).isFalse
+        }
+    }
+
+    @Nested
+    @DisplayName("Account owner / hierarchy / legacy branch predicate — 운영 표준 ownerUser 매핑")
+    inner class AccountOwnerMapping {
+        private val accountPath = com.otoki.powersales.account.entity.QAccount.account
+
+        @Test
+        @DisplayName("Account ownerPredicate → ownerUser.id = userId 평가")
+        fun accountOwnerPredicateOwnerUser() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false, userId = 8L)
+            val pred = evaluator.ownerPredicate(scope, accountPath)
+            assertThat(pred).isNotNull
+            assertThat(pred.toString()).contains("account.ownerUser.id = 8")
+        }
+
+        @Test
+        @DisplayName("Account hierarchyPredicate → ownerUser.userRoleId IN subordinates")
+        fun accountHierarchyPredicateOwnerUser() {
+            val scope = DataScope(
+                branchCodes = emptyList(),
+                isAllBranches = false,
+                allSubordinateUserRoleIds = setOf(67L, 66L),
+            )
+            val pred = evaluator.hierarchyPredicate(scope, accountPath)
+            assertThat(pred).isNotNull
+            assertThat(pred.toString()).contains("ownerUser.userRoleId in")
+        }
+
+        @Test
+        @DisplayName("Account legacyBranchPredicate 는 costCenterCode 없으므로 null")
+        fun accountLegacyBranchPredicateNull() {
+            val scope = DataScope(branchCodes = listOf("5832"), isAllBranches = false)
+            assertThat(evaluator.legacyBranchPredicate(scope, accountPath)).isNull()
+        }
     }
 }

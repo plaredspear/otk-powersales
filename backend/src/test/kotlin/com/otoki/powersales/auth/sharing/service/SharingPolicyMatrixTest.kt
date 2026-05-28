@@ -131,8 +131,8 @@ class SharingPolicyMatrixTest {
         val scope = DataScope(branchCodes = emptyList(), isAllBranches = false, userId = userId)
         val expr = evaluator.ownerPredicate(scope, sObjectPath(sObjectName))
         assertThat(expr).isNotNull
-        // ownerId = userId 합성 확인 (entity path 별 alias 변동)
-        assertThat(toJpql(expr!!)).contains(".ownerId = ?1")
+        // 운영 entity 의 owner property = ownerUser (User?, FK owner_user_id) — 단순 ownerId 단순 필드는 운영 0건
+        assertThat(toJpql(expr!!)).contains(".ownerUser.id = ?1")
     }
 
     // ───────────────────────────────────────────────────────────
@@ -152,12 +152,11 @@ class SharingPolicyMatrixTest {
         val expr = evaluator.hierarchyPredicate(scope, sObjectPath(sObjectName))
         assertThat(expr).isNotNull
         val jpql = toJpql(expr!!)
-        // QueryDSL 가 single value IN → `=` 로 자동 최적화. multiple 일 때만 `in (...)`.
-        // 두 경우 모두 owner.userRoleId 가 표현에 포함되는지만 검증.
-        assertThat(jpql).contains(".owner.userRoleId")
+        // 운영 entity 의 owner relation = ownerUser. QueryDSL single value IN → `=` 자동 최적화.
+        assertThat(jpql).contains(".ownerUser.userRoleId")
         when (subordinatesCount) {
-            1 -> assertThat(jpql).contains(".owner.userRoleId = ?1")
-            else -> assertThat(jpql).contains(".owner.userRoleId in")
+            1 -> assertThat(jpql).contains(".ownerUser.userRoleId = ?1")
+            else -> assertThat(jpql).contains(".ownerUser.userRoleId in")
         }
     }
 
@@ -177,10 +176,11 @@ class SharingPolicyMatrixTest {
             accessLevel = "Read",
             includeOwnedByAll = false,
             conditions = listOf(
+                // SObject 별 가용 field — Account 는 branchCode, schedule 계열은 costCenterCode 보유
                 SharingRuleSnapshot.ConditionSnapshot(
-                    field = "OwnerId",
+                    field = if (sObjectName == "Account") "BranchCode__c" else "CostCenterCode__c",
                     operator = "equals",
-                    value = "005XYZ",
+                    value = "DKB100",
                     conditionOrder = 1,
                     logicConnector = null,
                 ),
@@ -189,7 +189,8 @@ class SharingPolicyMatrixTest {
         val scope = DataScope(branchCodes = emptyList(), isAllBranches = false, evaluatorRules = listOf(rule))
         val expr = evaluator.sharingRulePredicate(scope, sObjectName, sObjectPath(sObjectName))
         assertThat(expr).isNotNull
-        assertThat(toJpql(expr!!)).contains(".ownerId = ?1")
+        val expectedProperty = if (sObjectName == "Account") "branchCode" else "costCenterCode"
+        assertThat(toJpql(expr!!)).contains(".$expectedProperty = ?1")
     }
 
     @org.junit.jupiter.api.Test
@@ -216,23 +217,24 @@ class SharingPolicyMatrixTest {
     // ───────────────────────────────────────────────────────────
 
     @org.junit.jupiter.api.Test
-    @DisplayName("우선순위 5: Legacy branchCodes (multiple) → costCenterCode IN list (Account)")
+    @DisplayName("우선순위 5: Legacy branchCodes (multiple) → costCenterCode IN list (DisplayWorkSchedule)")
     fun legacyBranchPredicate() {
         val scope = DataScope(branchCodes = listOf("DKB100", "DKB200"), isAllBranches = false)
-        val expr = evaluator.legacyBranchPredicate(scope, account)
+        // Account 는 costCenterCode 부재 — costCenterCode 보유 entity (DisplayWorkSchedule) 로 검증
+        val expr = evaluator.legacyBranchPredicate(scope, sObjectPath("DisplayWorkScheduleMaster__c"))
         assertThat(expr).isNotNull
         // multiple value → IN
-        assertThat(toJpql(expr!!)).contains("account.costCenterCode in")
+        assertThat(toJpql(expr!!)).contains(".costCenterCode in")
     }
 
     @org.junit.jupiter.api.Test
     @DisplayName("우선순위 5: Legacy branchCodes (single) → costCenterCode = ? (QueryDSL 최적화)")
     fun legacyBranchPredicateSingle() {
         val scope = DataScope(branchCodes = listOf("DKB100"), isAllBranches = false)
-        val expr = evaluator.legacyBranchPredicate(scope, account)
+        val expr = evaluator.legacyBranchPredicate(scope, sObjectPath("DisplayWorkScheduleMaster__c"))
         assertThat(expr).isNotNull
         // QueryDSL 가 single value IN → `=` 로 자동 최적화
-        assertThat(toJpql(expr!!)).contains("account.costCenterCode = ?1")
+        assertThat(toJpql(expr!!)).contains(".costCenterCode = ?1")
     }
 
     @org.junit.jupiter.api.Test
@@ -273,7 +275,7 @@ class SharingPolicyMatrixTest {
     // ───────────────────────────────────────────────────────────
 
     @org.junit.jupiter.api.Test
-    @DisplayName("합성: Owner + Hierarchy + branchCodes 동시 매칭 → OR 합성 (single branchCode 는 = 로 최적화)")
+    @DisplayName("합성: Owner + Hierarchy 동시 매칭 → OR 합성 (Account 는 costCenterCode 부재로 legacy branch null)")
     fun orComposition() {
         val scope = DataScope(
             branchCodes = listOf("DKB100"),
@@ -283,11 +285,9 @@ class SharingPolicyMatrixTest {
         )
         val predicate = evaluator.buildPredicate(scope, "Account", account)
         val jpql = toJpql(predicate)
-        // 3 분기 모두 OR 로 합성. single value 는 `=` 로 QueryDSL 최적화.
-        assertThat(jpql).contains("account.ownerId = ?1")
-        assertThat(jpql).contains("account.owner.userRoleId in")
-        // branchCodes single ("DKB100") → `=` 로 최적화
-        assertThat(jpql).contains("account.costCenterCode = ?")
+        // Account 운영 owner property = ownerUser. legacy branch predicate 는 costCenterCode 없어 skip.
+        assertThat(jpql).contains("account.ownerUser.id = ?1")
+        assertThat(jpql).contains("account.ownerUser.userRoleId in")
         assertThat(jpql.lowercase()).contains(" or ")
     }
 
