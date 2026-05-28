@@ -18,44 +18,50 @@ function formatDecimal3(value: number): string {
   return value.toLocaleString('ko-KR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 }
 
+// SF 화면 비율 정합 — 사이드바 240px 제외 가용 영역에 15개 컬럼이 가로 스크롤 없이 들어가도록 폭 축소.
+// SF 도 헤더 ellipsis (예: "근무...", "총 환...") 적용 → 동일 정책. 셀 ellipsis + 숫자 우측 정렬 유지.
 const columns: ColumnsType<MonthlyIntegrationScheduleItem> = [
-  { title: '소속', dataIndex: 'branchName', width: 100, fixed: 'left' },
-  { title: '거래처 지점명', dataIndex: 'accountBranchName', width: 110, render: (v) => v ?? '-' },
-  { title: '거래처코드', dataIndex: 'accountCode', width: 100 },
-  { title: '거래처명', dataIndex: 'accountName', width: 140 },
-  { title: '사번', dataIndex: 'employeeCode', width: 90 },
-  { title: '직위', dataIndex: 'title', width: 70, render: (v) => v ?? '-' },
-  { title: '이름', dataIndex: 'employeeName', width: 80 },
-  { title: '근무형태1', dataIndex: 'workingCategory1', width: 90 },
-  { title: '근무형태3', dataIndex: 'workingCategory3', width: 90, render: (v) => v ?? '-' },
-  { title: '근무형태4', dataIndex: 'workingCategory4', width: 90, render: (v) => v ?? '-' },
-  { title: '근무형태5', dataIndex: 'workingCategory5', width: 90, render: (v) => v ?? '-' },
+  { title: '소속', dataIndex: 'branchName', width: 75, fixed: 'left', ellipsis: true },
+  { title: '거래처 지점명', dataIndex: 'accountBranchName', width: 80, ellipsis: true, render: (v) => v ?? '-' },
+  { title: '거래처코드', dataIndex: 'accountCode', width: 80, ellipsis: true },
+  { title: '거래처명', dataIndex: 'accountName', width: 100, ellipsis: true },
+  { title: '사번', dataIndex: 'employeeCode', width: 75, ellipsis: true },
+  { title: '직위', dataIndex: 'title', width: 55, ellipsis: true, render: (v) => v ?? '-' },
+  { title: '이름', dataIndex: 'employeeName', width: 65, ellipsis: true },
+  { title: '근무형태1', dataIndex: 'workingCategory1', width: 70, ellipsis: true },
+  { title: '근무형태3', dataIndex: 'workingCategory3', width: 70, ellipsis: true, render: (v) => v ?? '-' },
+  { title: '근무형태4', dataIndex: 'workingCategory4', width: 70, ellipsis: true, render: (v) => v ?? '-' },
+  { title: '근무형태5', dataIndex: 'workingCategory5', width: 70, ellipsis: true, render: (v) => v ?? '-' },
   {
     title: '총 투입횟수',
     dataIndex: 'totalInputCount',
-    width: 100,
+    width: 75,
     align: 'right',
+    ellipsis: true,
     render: (v: number) => formatNumber(v),
   },
   {
     title: '총 환산근무일수',
     dataIndex: 'equivalentWorkingDays',
-    width: 120,
+    width: 90,
     align: 'right',
+    ellipsis: true,
     render: (v: number) => formatDecimal3(v),
   },
   {
     title: '총 환산인원',
     dataIndex: 'convertedHeadcount',
-    width: 100,
+    width: 75,
     align: 'right',
+    ellipsis: true,
     render: (v: number) => formatDecimal3(v),
   },
   {
     title: '월 평균 매출(6개월)',
     dataIndex: 'avgClosingAmount',
-    width: 140,
+    width: 110,
     align: 'right',
+    ellipsis: true,
     render: (v: number) => formatNumber(v),
   },
 ];
@@ -199,7 +205,6 @@ export default function MonthlyIntegrationSchedulePage() {
             columns={columns}
             dataSource={data?.items ?? []}
             pagination={false}
-            scroll={{ x: 1600 }}
             size="small"
             sticky
             locale={{
