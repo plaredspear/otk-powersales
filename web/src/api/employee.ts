@@ -162,6 +162,22 @@ export async function fetchEmployees(params: FetchEmployeesParams): Promise<Empl
   return res.data.data;
 }
 
+/**
+ * 행사상세/전문행사조 화면의 사원 lookup search — promotion 권한 보유자 호출용.
+ *
+ * Employee READ 권한 없이도 호출 가능 (SF PromotionEmployee__c.EmployeeId__c Lookup
+ * 메커니즘 정합).
+ */
+export async function fetchEmployeesForPromotionLookup(
+  params: Pick<FetchEmployeesParams, 'keyword' | 'status' | 'page' | 'size'>,
+): Promise<EmployeeListData> {
+  const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/employees/lookup', { params });
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '사원 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function fetchWomanEmployees(params: FetchWomanEmployeesParams): Promise<EmployeeListData> {
   const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/women-employees', { params });
   if (!res.data.success || !res.data.data) {

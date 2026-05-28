@@ -41,7 +41,7 @@ import {
   type BatchUpdatePromotionEmployeeItem,
 } from '@/api/promotionEmployee';
 import type { PromotionFormData } from '@/api/promotion';
-import { fetchEmployees, type Employee } from '@/api/employee';
+import { fetchEmployeesForPromotionLookup, type Employee } from '@/api/employee';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import { usePermission } from '@/hooks/usePermission';
 import PromotionDetailSection, {
@@ -184,7 +184,7 @@ export default function PromotionDetailPage() {
 
     const timer = setTimeout(async () => {
       try {
-        const result = await fetchEmployees({ status: '재직', keyword, size: 5 });
+        const result = await fetchEmployeesForPromotionLookup({ status: '재직', keyword, size: 5 });
         setEmployeeOptions((prev) => new Map(prev).set(rowId, result.content));
       } catch {
         setEmployeeOptions((prev) => { const next = new Map(prev); next.delete(rowId); return next; });
