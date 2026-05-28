@@ -21,7 +21,7 @@ import {
   useUpdatePromotion,
 } from '@/hooks/promotion/usePromotionMutation';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
-import { fetchAccounts } from '@/api/account';
+import { fetchAccountsForPromotionLookup } from '@/api/account';
 import { fetchProducts } from '@/api/product';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import type { PromotionFormData } from '@/api/promotion';
@@ -124,7 +124,7 @@ export default function PromotionFormPage() {
     if (keyword.length < 2) return;
     setAccountSearching(true);
     try {
-      const result = await fetchAccounts({ keyword, size: 20 });
+      const result = await fetchAccountsForPromotionLookup({ keyword, size: 20 });
       setAccountOptions(
         result.content
           .filter((a) => a.id != null && a.name != null)

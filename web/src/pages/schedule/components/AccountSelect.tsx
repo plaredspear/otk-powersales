@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Select, Spin } from 'antd';
-import { fetchAccounts, type Account } from '@/api/account';
+import { fetchAccountsForPromotionLookup, type Account } from '@/api/account';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_PAGE_SIZE = 20;
@@ -42,7 +42,7 @@ export default function AccountSelect({ value, onChange, disabled, placeholder }
     }
     let cancelled = false;
     setLoading(true);
-    fetchAccounts({ keyword: debouncedKeyword.trim(), page: 0, size: SEARCH_PAGE_SIZE })
+    fetchAccountsForPromotionLookup({ keyword: debouncedKeyword.trim(), page: 0, size: SEARCH_PAGE_SIZE })
       .then((data) => {
         if (cancelled) return;
         setOptions(

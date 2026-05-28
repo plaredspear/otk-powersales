@@ -3,7 +3,7 @@ import { DatePicker, Descriptions, Input, Select, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import type { PromotionDetail, PromotionFormMeta } from '@/api/promotion';
 import type { Account } from '@/api/account';
-import { fetchAccounts } from '@/api/account';
+import { fetchAccountsForPromotionLookup } from '@/api/account';
 
 const PROMOTION_TYPE_TAG: Record<string, string> = {
   시식: 'blue',
@@ -51,7 +51,7 @@ export default function PromotionDetailSection({
     setAccountSearching(true);
     searchTimerRef.current = setTimeout(async () => {
       try {
-        const result = await fetchAccounts({ keyword, size: 10 });
+        const result = await fetchAccountsForPromotionLookup({ keyword, size: 10 });
         setAccountOptions(result.content);
       } catch {
         setAccountOptions([]);
