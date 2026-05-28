@@ -338,11 +338,15 @@ class OrderRequestDetailMapperTest {
             employee = employee,
             account = account,
         )
+        val productEntity = com.otoki.powersales.product.entity.Product(
+            id = 1L,
+            productCode = productCode,
+            name = productName,
+        )
         return OrderRequestProduct(
             id = 1L,
             lineNumber = BigDecimal.valueOf(1L),
             productCode = productCode,
-            productName = productName,
             quantityBoxes = quantityBoxes,
             quantityPieces = BigDecimal.valueOf(0L),
             unit = "BOX",
@@ -350,6 +354,7 @@ class OrderRequestDetailMapperTest {
             amount = BigDecimal.ZERO,
             piecesPerBox = piecesPerBox,
             orderRequest = order,
+            product = productEntity,
         )
     }
 }

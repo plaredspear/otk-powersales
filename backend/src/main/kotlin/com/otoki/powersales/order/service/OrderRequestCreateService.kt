@@ -115,7 +115,6 @@ class OrderRequestCreateService(
             OrderRequestProduct(
                 lineNumber = BigDecimal.valueOf(line.lineNumber.toLong()),
                 productCode = line.productCode,
-                productName = info.productName,
                 quantityBoxes = line.quantityBoxes,
                 quantityPieces = BigDecimal.valueOf(line.quantityPieces.toLong()),
                 unit = line.unit,
