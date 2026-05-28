@@ -126,20 +126,6 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun findDistinctProfessionalPromotionTeams(): List<String> {
-        return queryFactory
-            .select(teamMemberSchedule.professionalPromotionTeam).distinct()
-            .from(teamMemberSchedule)
-            .where(
-                teamMemberSchedule.professionalPromotionTeam.isNotNull,
-                teamMemberSchedule.professionalPromotionTeam.ne(""),
-                isNotDeleted()
-            )
-            .orderBy(teamMemberSchedule.professionalPromotionTeam.asc())
-            .fetch()
-            .filterNotNull()
-    }
-
     private fun professionalPromotionTeamIn(teams: List<String>?): BooleanExpression? {
         return if (teams.isNullOrEmpty()) null
         else teamMemberSchedule.professionalPromotionTeam.`in`(teams)

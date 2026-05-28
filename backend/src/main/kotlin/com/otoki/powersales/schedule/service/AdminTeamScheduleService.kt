@@ -15,6 +15,7 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -108,13 +109,18 @@ class AdminTeamScheduleService(
     }
 
     /**
-     * 여사원 일정관리 "전문행사조" 필터 옵션. team_member_schedule.professional_promotion_team distinct.
-     * SF `ProfessionalPromotionTeamMaster__c.ProfessionalPromotionTeam__c` picklist 5값
-     * (라면세일조 / 프레시세일조_냉동 / 프레시세일조_냉장 / 프레시세일조_만두 / 카레행사조) 기준이나,
-     * 운영 적재 실데이터를 출처로 — 신규 조 picklist 확장 시 코드 변경 없이 자동 반영.
+     * 여사원 일정관리 "전문행사조" 필터 옵션.
+     *
+     * SF `ProfessionalPromotionTeamMaster__c.ProfessionalPromotionTeam__c` picklist 5값을
+     * [ProfessionalPromotionTeamType] enum 으로 보유 중이라 enum displayName 을 그대로 반환한다.
+     * SF 와의 동기는 [com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter]
+     * 가 fail-fast 로 강제 — 신규 picklist 가 추가되면 SF inbound 적재 시점에 즉시 노출되므로 enum 갱신 누락은 사실상 차단.
+     *
+     * 이전 구현은 `team_member_schedule.professional_promotion_team` 전체 DISTINCT 였으나
+     * 대량 row Seq Scan + Sort 로 단건 호출이 ~11s 소요 (운영 누적). picklist 5값 고정이라 DB 조회 불요.
      */
     fun getProfessionalPromotionTeams(): List<String> {
-        return teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams()
+        return ProfessionalPromotionTeamType.entries.map { it.displayName }
     }
 
     /**
