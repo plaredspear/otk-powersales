@@ -209,4 +209,87 @@ class SharingRulePolicyEvaluatorTest {
             assertThat(pred).isNotNull
         }
     }
+
+    @Nested
+    @DisplayName("buildConditionPredicate — SF sharing rule criteria operator 평가")
+    inner class ConditionOperator {
+
+        private val accountPath = com.otoki.powersales.account.entity.QAccount.account
+
+        @Test
+        @DisplayName("equals + 콤마 다중값 → IN 으로 작동 (SF X5832 BranchCode__c 3844,5832)")
+        fun equalsMultiValue() {
+            val cond = com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot.ConditionSnapshot(
+                field = "BranchCode__c",
+                operator = "equals",
+                value = "3844,5832",
+                conditionOrder = 1,
+                logicConnector = null,
+            )
+            val pred = evaluator.buildConditionPredicate(cond, accountPath)
+            assertThat(pred).isNotNull
+            // QueryDSL Path.in(list) toString → "account.branchCode in [3844, 5832]"
+            assertThat(pred.toString()).contains("branchCode in [3844, 5832]")
+        }
+
+        @Test
+        @DisplayName("equals + 단일값 → eq 로 작동 (X5455 BranchCode__c 5455 등)")
+        fun equalsSingleValue() {
+            val cond = com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot.ConditionSnapshot(
+                field = "BranchCode__c",
+                operator = "equals",
+                value = "5455",
+                conditionOrder = 1,
+                logicConnector = null,
+            )
+            val pred = evaluator.buildConditionPredicate(cond, accountPath)
+            assertThat(pred).isNotNull
+            assertThat(pred.toString()).contains("branchCode = 5455")
+        }
+
+        @Test
+        @DisplayName("notEqual + 콤마 다중값 → NOT IN 으로 작동")
+        fun notEqualMultiValue() {
+            val cond = com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot.ConditionSnapshot(
+                field = "BranchCode__c",
+                operator = "notEqual",
+                value = "5719,5720",
+                conditionOrder = 1,
+                logicConnector = null,
+            )
+            val pred = evaluator.buildConditionPredicate(cond, accountPath)
+            assertThat(pred).isNotNull
+            assertThat(pred.toString()).isEqualTo("!(account.branchCode in [5719, 5720])")
+        }
+
+        @Test
+        @DisplayName("notEqual + 단일값 → ne 로 작동")
+        fun notEqualSingleValue() {
+            val cond = com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot.ConditionSnapshot(
+                field = "BranchCode__c",
+                operator = "notEqual",
+                value = "5719",
+                conditionOrder = 1,
+                logicConnector = null,
+            )
+            val pred = evaluator.buildConditionPredicate(cond, accountPath)
+            assertThat(pred).isNotNull
+            assertThat(pred.toString()).contains("branchCode != 5719")
+        }
+
+        @Test
+        @DisplayName("equals + 콤마 사이 공백 → trim 후 IN")
+        fun equalsMultiValueWithSpaces() {
+            val cond = com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot.ConditionSnapshot(
+                field = "AccountGroup__c",
+                operator = "equals",
+                value = "1000, 1010, 3000",
+                conditionOrder = 1,
+                logicConnector = null,
+            )
+            val pred = evaluator.buildConditionPredicate(cond, accountPath)
+            assertThat(pred).isNotNull
+            assertThat(pred.toString()).contains("accountGroup in [1000, 1010, 3000]")
+        }
+    }
 }

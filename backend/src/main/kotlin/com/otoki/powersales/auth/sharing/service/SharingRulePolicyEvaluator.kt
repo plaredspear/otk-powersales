@@ -260,9 +260,11 @@ class SharingRulePolicyEvaluator(
 
         return try {
             val path = Expressions.stringPath(entityPath, property)
+            // SF sharing rule UI 의 equals / notEqual 은 콤마 입력 시 IN / NOT IN 으로 작동 — 운영 표준 (X5832 `BranchCode__c equals '3844,5832'` 등 다수 rule).
+            val splitValues = value.split(",").map { it.trim() }.filter { it.isNotEmpty() }
             when (cond.operator) {
-                "equals" -> path.eq(value)
-                "notEqual" -> path.ne(value)
+                "equals" -> if (splitValues.size <= 1) path.eq(value) else path.`in`(splitValues)
+                "notEqual" -> if (splitValues.size <= 1) path.ne(value) else path.`in`(splitValues).not()
                 "lessThan" -> path.lt(value)
                 "greaterThan" -> path.gt(value)
                 "lessOrEqual" -> path.loe(value)
@@ -270,8 +272,8 @@ class SharingRulePolicyEvaluator(
                 "contains" -> path.contains(value)
                 "notContain" -> path.contains(value).not()
                 "startsWith" -> path.startsWith(value)
-                "includes" -> path.`in`(value.split(",").map { it.trim() })
-                "excludes" -> path.`in`(value.split(",").map { it.trim() }).not()
+                "includes" -> path.`in`(splitValues)
+                "excludes" -> path.`in`(splitValues).not()
                 else -> throw IllegalStateException(
                     "Unknown sharingRule operator: ${cond.operator} (field=${cond.field}, value=$value)",
                 )
