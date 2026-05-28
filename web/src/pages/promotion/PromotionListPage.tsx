@@ -17,26 +17,6 @@ const PROMOTION_TYPE_TAG: Record<string, string> = {
   증정: 'gold',
 };
 
-const CATEGORY_TAG: Record<string, string> = {
-  라면: 'red',
-  냉장: 'blue',
-  냉동: 'cyan',
-  만두: 'orange',
-};
-
-const CATEGORY_OPTIONS = [
-  { value: '', label: '전체' },
-  { value: '라면', label: '라면' },
-  { value: '냉장', label: '냉장' },
-  { value: '냉동', label: '냉동' },
-  { value: '만두', label: '만두' },
-];
-
-function formatAmount(val: number | null): string {
-  if (val == null) return '-';
-  return `${Math.floor(val / 1000).toLocaleString()}천`;
-}
-
 function formatDateRange(start: string, end: string): string {
   const s = dayjs(start);
   const e = dayjs(end);
@@ -48,7 +28,6 @@ export default function PromotionListPage() {
   const { hasEntityPermission } = usePermission();
   const canWrite = hasEntityPermission('promotion', 'EDIT');
   const [promotionType, setPromotionType] = useState<string | undefined>();
-  const [category, setCategory] = useState<string | undefined>();
   const [startDate, setStartDate] = useState<string | undefined>();
   const [endDate, setEndDate] = useState<string | undefined>();
   const [keyword, setKeyword] = useState('');
@@ -60,7 +39,6 @@ export default function PromotionListPage() {
   const { data, isLoading } = usePromotions({
     keyword: keyword || undefined,
     promotionType,
-    category,
     startDate,
     endDate,
     page,
@@ -82,12 +60,6 @@ export default function PromotionListPage() {
       ),
     },
     {
-      title: '행사명',
-      dataIndex: 'promotionName',
-      width: 200,
-      ellipsis: true,
-    },
-    {
       title: '유형',
       dataIndex: 'promotionType',
       width: 90,
@@ -95,17 +67,6 @@ export default function PromotionListPage() {
       render: (val: string | null) => {
         if (!val) return <Tag>-</Tag>;
         const color = PROMOTION_TYPE_TAG[val] ?? undefined;
-        return <Tag color={color}>{val}</Tag>;
-      },
-    },
-    {
-      title: '카테고리',
-      dataIndex: 'category',
-      width: 90,
-      align: 'center',
-      render: (val: string | null) => {
-        if (!val) return <Tag>-</Tag>;
-        const color = CATEGORY_TAG[val] ?? undefined;
         return <Tag color={color}>{val}</Tag>;
       },
     },
@@ -124,31 +85,10 @@ export default function PromotionListPage() {
         formatDateRange(record.startDate, record.endDate),
     },
     {
-      title: '목표금액',
-      dataIndex: 'targetAmount',
-      width: 110,
-      align: 'right',
-      render: (val: number | null) => formatAmount(val),
-    },
-    {
-      title: '실적금액',
-      dataIndex: 'actualAmount',
-      width: 110,
-      align: 'right',
-      render: (val: number | null) => formatAmount(val),
-    },
-    {
       title: '제품유형',
       dataIndex: 'productType',
       width: 90,
       align: 'center',
-      render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '지점명',
-      dataIndex: 'branchName',
-      width: 100,
-      ellipsis: true,
       render: (val: string | null) => val ?? '-',
     },
     {
@@ -183,15 +123,6 @@ export default function PromotionListPage() {
           options={promotionTypeOptions}
           onChange={(val) => {
             setPromotionType(val || undefined);
-            setPage(0);
-          }}
-        />
-        <Select
-          style={{ width: 120 }}
-          value={category ?? ''}
-          options={CATEGORY_OPTIONS}
-          onChange={(val) => {
-            setCategory(val || undefined);
             setPage(0);
           }}
         />

@@ -8,7 +8,6 @@ export function usePromotions(params: PromotionListParams) {
       'promotions',
       params.keyword,
       params.promotionType,
-      params.category,
       params.startDate,
       params.endDate,
       params.page,

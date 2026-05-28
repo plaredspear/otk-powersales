@@ -5,7 +5,6 @@ import type { ApiResponse } from './types';
 export interface PromotionListParams {
   keyword?: string;
   promotionType?: string;
-  category?: string;
   startDate?: string;
   endDate?: string;
   page: number;
@@ -15,16 +14,11 @@ export interface PromotionListParams {
 export interface PromotionListItem {
   id: number;
   promotionNumber: string;
-  promotionName: string | null;
   promotionType: string | null;
   accountName: string | null;
   startDate: string;
   endDate: string;
-  targetAmount: number | null;
-  actualAmount: number | null;
-  category: string | null;
   productType: string | null;
-  branchName: string | null;
   isClosed: boolean;
   costCenterCode: string | null;
   remark: string | null;
@@ -43,7 +37,6 @@ export interface PromotionListData {
 export interface PromotionDetail {
   id: number;
   promotionNumber: string;
-  promotionName: string | null;
   promotionType: string | null;
   accountId: number;
   accountName: string | null;
@@ -54,13 +47,9 @@ export interface PromotionDetail {
   otherProduct: string | null;
   message: string | null;
   standLocation: string | null;
-  targetAmount: number | null;
-  actualAmount: number | null;
   costCenterCode: string | null;
-  category: string | null;
   productType: string | null;
   category1: string | null;
-  branchName: string | null;
   isClosed: boolean;
   remark: string | null;
   isDeleted: boolean;
@@ -106,7 +95,6 @@ export async function fetchPromotions(params: PromotionListParams): Promise<Prom
   };
   if (params.keyword) queryParams.keyword = params.keyword;
   if (params.promotionType) queryParams.promotionType = params.promotionType;
-  if (params.category) queryParams.category = params.category;
   if (params.startDate) queryParams.startDate = params.startDate;
   if (params.endDate) queryParams.endDate = params.endDate;
 

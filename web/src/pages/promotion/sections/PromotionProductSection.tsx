@@ -1,15 +1,8 @@
 import { useRef, useState } from 'react';
-import { Descriptions, Input, Select, Spin, Tag } from 'antd';
+import { Descriptions, Input, Select, Spin } from 'antd';
 import type { PromotionDetail } from '@/api/promotion';
 import type { Product } from '@/api/product';
 import { fetchProducts } from '@/api/product';
-
-const CATEGORY_TAG: Record<string, string> = {
-  라면: 'red',
-  냉장: 'blue',
-  냉동: 'cyan',
-  만두: 'orange',
-};
 
 export interface ProductFormValues {
   primaryProductId: number | null;
@@ -54,8 +47,6 @@ export default function PromotionProductSection({
       }
     }, 300);
   };
-
-  const categoryColor = promotion.category ? CATEGORY_TAG[promotion.category] : undefined;
 
   return (
     <Descriptions column={2} bordered size="small">
@@ -127,15 +118,6 @@ export default function PromotionProductSection({
 
       <Descriptions.Item label="제품유형">
         {promotion.productType ?? '-'}
-      </Descriptions.Item>
-      <Descriptions.Item label=" ">{''}</Descriptions.Item>
-
-      <Descriptions.Item label="카테고리">
-        {promotion.category ? (
-          <Tag color={categoryColor}>{promotion.category}</Tag>
-        ) : (
-          '-'
-        )}
       </Descriptions.Item>
       <Descriptions.Item label=" ">{''}</Descriptions.Item>
     </Descriptions>
