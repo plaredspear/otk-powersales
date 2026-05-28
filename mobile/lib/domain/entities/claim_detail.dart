@@ -9,8 +9,8 @@ class ClaimDetail {
   final String? dateType;
   final String? dateTypeLabel;
   final DateTime? date;
-  final String? categoryName;
-  final String? subcategoryName;
+  final String? categoryLabel;
+  final String? subcategoryLabel;
   final String? defectDescription;
   final int? defectQuantity;
   final int? purchaseAmount;
@@ -29,8 +29,8 @@ class ClaimDetail {
     this.dateType,
     this.dateTypeLabel,
     this.date,
-    this.categoryName,
-    this.subcategoryName,
+    this.categoryLabel,
+    this.subcategoryLabel,
     this.defectDescription,
     this.defectQuantity,
     this.purchaseAmount,

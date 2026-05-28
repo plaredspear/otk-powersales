@@ -35,9 +35,9 @@ data class ClaimDetailResponse(
             urlResolver: (String?) -> String?
         ): ClaimDetailResponse = ClaimDetailResponse(
             claimId = claim.id,
-            accountName = claim.accountName,
-            productName = claim.productName,
-            productCode = claim.productCode,
+            accountName = claim.account?.name,
+            productName = claim.product?.name,
+            productCode = claim.product?.productCode,
             dateType = claim.dateType?.name,
             dateTypeLabel = claim.dateType?.label,
             date = claim.date,
@@ -48,8 +48,8 @@ data class ClaimDetailResponse(
             defectDescription = claim.defectDescription,
             defectQuantity = claim.defectQuantity,
             purchaseAmount = claim.purchaseAmount,
-            purchaseMethodName = claim.purchaseMethodName,
-            requestTypeName = claim.requestTypeName,
+            purchaseMethodName = claim.purchaseMethodCode?.displayName,
+            requestTypeName = claim.requestTypeCode.joinToString(";") { it.displayName }.ifBlank { null },
             status = claim.status.name,
             statusLabel = claim.status.displayName,
             createdAt = claim.createdAt,

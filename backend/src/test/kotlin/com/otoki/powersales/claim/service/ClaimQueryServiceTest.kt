@@ -14,7 +14,10 @@ import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.common.storage.UploadFileParentTypes
+import com.otoki.powersales.claim.entity.sfpicklist.PurchaseMethod
+import com.otoki.powersales.claim.entity.sfpicklist.RequestType
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.product.entity.Product
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -141,7 +144,7 @@ class ClaimQueryServiceTest {
         @Test
         @DisplayName("구매정보 없음 - purchaseAmount null → null 반환")
         fun getClaimDetail_noPurchaseInfo() {
-            val claim = createClaim(purchaseAmount = null, purchaseMethodName = null, requestTypeName = null)
+            val claim = createClaim(purchaseAmount = null, purchaseMethod = null, requestTypes = emptySet())
             every { claimRepository.findById(1L) } returns Optional.of(claim)
             every {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
@@ -195,16 +198,14 @@ class ClaimQueryServiceTest {
         id: Long = 1L,
         employeeId: Long = 1L,
         purchaseAmount: BigDecimal? = BigDecimal.valueOf(3500L),
-        purchaseMethodName: String? = "개인카드",
-        requestTypeName: String? = "교환"
+        purchaseMethod: PurchaseMethod? = PurchaseMethod.PERSONAL_CARD,
+        requestTypes: Set<RequestType> = setOf(RequestType.OPINION_REPORT)
     ): Claim {
         return Claim(
             id = id,
             employee = createEmployee(employeeId),
             account = createAccount(),
-            accountName = "미광종합물류",
-            productCode = "12345678",
-            productName = "진라면(매운맛)멀티",
+            product = createProduct(),
             dateType = ClaimDateType.EXPIRY_DATE,
             date = LocalDate.of(2026, 8, 19),
             claimType1 = ClaimType1.A,
@@ -212,13 +213,19 @@ class ClaimQueryServiceTest {
             defectDescription = "포장 파손으로 내용물 누유 확인",
             defectQuantity = BigDecimal.valueOf(3L),
             purchaseAmount = purchaseAmount,
-            purchaseMethodName = purchaseMethodName,
-            requestTypeName = requestTypeName,
+            purchaseMethodCode = purchaseMethod,
+            requestTypeCode = requestTypes,
             status = ClaimStatus.DRAFT
         ).apply {
             createdAt = java.time.LocalDateTime.of(2026, 4, 8, 10, 30, 0)
         }
     }
+
+    private fun createProduct(): Product = Product(
+        id = 1L,
+        productCode = "12345678",
+        name = "진라면(매운맛)멀티"
+    )
 
     private fun createUploadFile(claimId: Long): UploadFile {
         return UploadFile(

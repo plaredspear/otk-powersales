@@ -12,6 +12,7 @@ import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.product.entity.Product
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -175,15 +176,28 @@ class AdminClaimServiceTest {
     )
 
     private fun createAccount(
-        id: Int = 1
+        id: Int = 1,
+        name: String = "홍길동 슈퍼"
     ): Account = Account(
-        id = id
+        id = id,
+        name = name
+    )
+
+    private fun createProduct(
+        id: Long = 1L,
+        productCode: String = "12345678",
+        name: String = "오뚜기 진라면 순한맛"
+    ): Product = Product(
+        id = id,
+        productCode = productCode,
+        name = name
     )
 
     private fun createClaim(
         id: Long = 1L,
         employee: Employee = createEmployee(),
         account: Account = createAccount(),
+        product: Product = createProduct(),
         status: ClaimStatus = ClaimStatus.DRAFT,
         sfid: String? = null
     ): Claim {
@@ -192,9 +206,7 @@ class AdminClaimServiceTest {
             sfid = sfid,
             employee = employee,
             account = account,
-            accountName = "홍길동 슈퍼",
-            productCode = "12345678",
-            productName = "오뚜기 진라면 순한맛",
+            product = product,
             dateType = ClaimDateType.EXPIRY_DATE,
             date = LocalDate.of(2026, 6, 30),
             claimType1 = ClaimType1.C,
@@ -202,8 +214,6 @@ class AdminClaimServiceTest {
             defectDescription = "제품 개봉 시 이물질 발견",
             defectQuantity = BigDecimal.valueOf(5L),
             purchaseAmount = BigDecimal.valueOf(4500L),
-            purchaseMethodName = "매장구매",
-            requestTypeName = "교환",
             status = status
         ).apply {
             createdAt = java.time.LocalDateTime.of(2026, 4, 1, 9, 30, 0)

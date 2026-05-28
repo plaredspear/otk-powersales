@@ -1,9 +1,11 @@
 package com.otoki.powersales.claim.repository
 
+import com.otoki.powersales.account.entity.QAccount.Companion.account
 import com.otoki.powersales.claim.entity.Claim
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.entity.QClaim.Companion.claim
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.product.entity.QProduct.Companion.product
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -33,6 +35,8 @@ class AdminClaimRepositoryCustomImpl(
         val content = queryFactory
             .selectFrom(claim)
             .leftJoin(claim.employee, employee).fetchJoin()
+            .leftJoin(claim.account, account).fetchJoin()
+            .leftJoin(claim.product, product).fetchJoin()
             .where(where)
             .orderBy(claim.createdAt.desc())
             .offset(pageable.offset)
@@ -43,6 +47,7 @@ class AdminClaimRepositoryCustomImpl(
             .select(claim.count())
             .from(claim)
             .leftJoin(claim.employee, employee)
+            .leftJoin(claim.account, account)
             .where(where)
 
         return PageableExecutionUtils.getPage(content, pageable) {
@@ -65,6 +70,6 @@ class AdminClaimRepositoryCustomImpl(
 
     private fun buildStoreNameCondition(storeName: String?): Predicate? {
         if (storeName.isNullOrBlank()) return null
-        return claim.accountName.like("%${storeName}%")
+        return account.name.like("%${storeName}%")
     }
 }

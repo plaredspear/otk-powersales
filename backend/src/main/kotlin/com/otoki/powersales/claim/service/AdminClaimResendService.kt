@@ -46,11 +46,11 @@ class AdminClaimResendService(
                     ?: error("재전송 시점에 claim.employee 가 null"),
                 sapAccountCode = claim.account?.externalKey
                     ?: error("재전송 시점에 claim.account.externalKey 가 null"),
-                productCode = claim.productCode
-                    ?: error("재전송 시점에 claim.productCode 가 null"),
+                productCode = claim.product?.productCode
+                    ?: error("재전송 시점에 claim.product.productCode 가 null"),
                 parsed = AdminClaimCreateService.ParsedInput(
                     sapAccountCode = claim.account?.externalKey!!,
-                    productCode = claim.productCode!!,
+                    productCode = claim.product?.productCode!!,
                     employeeCode = claim.employee?.employeeCode!!,
                     dateType = claim.dateType ?: ClaimDateType.EXPIRY_DATE,
                     date = claim.date,

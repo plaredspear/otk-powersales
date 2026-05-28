@@ -6,8 +6,8 @@ class ClaimListItemModel {
   final String? accountName;
   final String? productName;
   final String? productCode;
-  final String? categoryName;
-  final String? subcategoryName;
+  final String? categoryLabel;
+  final String? subcategoryLabel;
   final int? defectQuantity;
   final String status;
   final String statusLabel;
@@ -18,8 +18,8 @@ class ClaimListItemModel {
     this.accountName,
     this.productName,
     this.productCode,
-    this.categoryName,
-    this.subcategoryName,
+    this.categoryLabel,
+    this.subcategoryLabel,
     this.defectQuantity,
     required this.status,
     required this.statusLabel,
@@ -32,8 +32,8 @@ class ClaimListItemModel {
       accountName: json['accountName'] as String?,
       productName: json['productName'] as String?,
       productCode: json['productCode'] as String?,
-      categoryName: json['categoryName'] as String?,
-      subcategoryName: json['subcategoryName'] as String?,
+      categoryLabel: json['categoryLabel'] as String?,
+      subcategoryLabel: json['subcategoryLabel'] as String?,
       defectQuantity: json['defectQuantity'] as int?,
       status: json['status'] as String,
       statusLabel: json['statusLabel'] as String,
@@ -46,8 +46,8 @@ class ClaimListItemModel {
         accountName: accountName,
         productName: productName,
         productCode: productCode,
-        categoryName: categoryName,
-        subcategoryName: subcategoryName,
+        categoryLabel: categoryLabel,
+        subcategoryLabel: subcategoryLabel,
         defectQuantity: defectQuantity,
         status: status,
         statusLabel: statusLabel,

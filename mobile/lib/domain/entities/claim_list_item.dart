@@ -4,8 +4,8 @@ class ClaimListItem {
   final String? accountName;
   final String? productName;
   final String? productCode;
-  final String? categoryName;
-  final String? subcategoryName;
+  final String? categoryLabel;
+  final String? subcategoryLabel;
   final int? defectQuantity;
   final String status;
   final String statusLabel;
@@ -16,8 +16,8 @@ class ClaimListItem {
     this.accountName,
     this.productName,
     this.productCode,
-    this.categoryName,
-    this.subcategoryName,
+    this.categoryLabel,
+    this.subcategoryLabel,
     this.defectQuantity,
     required this.status,
     required this.statusLabel,

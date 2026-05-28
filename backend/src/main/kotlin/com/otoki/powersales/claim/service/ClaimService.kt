@@ -100,9 +100,6 @@ class ClaimService(
         val claim = Claim(
             employee = employee,
             account = account,
-            accountName = account.name,
-            productCode = product.productCode,
-            productName = product.name,
             dateType = dateType,
             date = date,
             claimType1 = claimType1,
@@ -111,9 +108,7 @@ class ClaimService(
             defectQuantity = request.defectQuantity!!,
             purchaseAmount = request.purchaseAmount,
             purchaseMethodCode = purchaseMethod,
-            purchaseMethodName = purchaseMethod?.displayName,
             requestTypeCode = requestTypes,
-            requestTypeName = requestTypes.joinToString(";") { it.displayName }.ifBlank { null },
             status = ClaimStatus.DRAFT,
             product = product,
             // 레거시 Trigger 정합: 접수사원·부서 자동 채움 (HR 코드 미러)
@@ -149,15 +144,12 @@ class ClaimService(
             val account = accountRepository.findByIdOrNull(it.toInt())
                 ?: throw AccountNotFoundException()
             claim.account = account
-            claim.accountName = account.name
             // CC코드 자동 복사 — Account 변경 시 branchCode 로 재복사
             claim.costCenterCode = claim.employee?.costCenterCode ?: account.branchCode
         }
         request.productCode?.let {
             val product = productRepository.findByProductCode(it)
                 ?: throw ProductNotFoundException(it)
-            claim.productCode = product.productCode
-            claim.productName = product.name
             claim.product = product
         }
         request.dateType?.let { claim.dateType = parseDateType(it) }
@@ -186,12 +178,10 @@ class ClaimService(
         request.purchaseMethodCode?.let {
             val pm = PurchaseMethod.fromSfValueOrNull(it) ?: throw InvalidPurchaseMethodException()
             claim.purchaseMethodCode = pm
-            claim.purchaseMethodName = pm.displayName
         }
         request.requestTypeCode?.let {
             val rts = resolveRequestTypes(it)
             claim.requestTypeCode = rts
-            claim.requestTypeName = rts.joinToString(";") { rt -> rt.displayName }.ifBlank { null }
         }
 
         return ClaimCreateResponse.from(claim)

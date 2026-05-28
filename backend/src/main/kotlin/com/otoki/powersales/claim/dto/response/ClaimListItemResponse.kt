@@ -21,9 +21,9 @@ data class ClaimListItemResponse(
     companion object {
         fun from(claim: Claim): ClaimListItemResponse = ClaimListItemResponse(
             claimId = claim.id,
-            accountName = claim.accountName,
-            productName = claim.productName,
-            productCode = claim.productCode,
+            accountName = claim.account?.name,
+            productName = claim.product?.name,
+            productCode = claim.product?.productCode,
             categoryValue = claim.claimType1.value,
             categoryLabel = claim.claimType1.label,
             subcategoryValue = claim.claimType2.value,
