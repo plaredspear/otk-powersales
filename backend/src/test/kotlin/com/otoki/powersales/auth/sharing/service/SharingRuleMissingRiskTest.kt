@@ -52,42 +52,43 @@ class SharingRuleMissingRiskTest {
         )
 
     @Nested
-    @DisplayName("CreatedById 예외 — DisplayWorkSchedule / MFEIS 의 audit 컬럼 분기")
+    @DisplayName("CreatedById 예외 — audit FK relation 분기 (sfid 직접 매칭 금지 정책)")
     inner class CreatedByIdException {
 
         @Test
-        @DisplayName("CreatedById equals condition → createdById JPA property 매핑 + JPQL `=` 합성")
-        fun createdByIdEquals() {
+        @DisplayName("CreatedById equals + resolvedUserId 있음 → createdBy.id FK Long 비교 (DWSM entity)")
+        fun createdByIdEqualsWithResolvedUserId() {
             // SF rule 본문 예: field="CreatedById" operator="equals" value="005xx..." (사용자 sfid)
-            // 운영 entity 의 audit 컬럼은 대부분 createdBy User relation 으로 매핑 — createdById 단순 필드
-            // 보유는 PermissionSetAssignment 등 일부 entity 한정. 변환 자체만 본 spec 검증.
+            // 신규 시스템 정책: sfid 직접 매칭 금지. snapshot loader 가 sfid → User.id 로 pre-resolve.
+            // evaluator 는 resolvedUserId (Long) 와 entity 의 FK relation `createdBy.id` 를 비교.
             val cond = SharingRuleSnapshot.ConditionSnapshot(
                 field = "CreatedById",
                 operator = "equals",
                 value = "005ABC123",
                 conditionOrder = 1,
                 logicConnector = null,
+                resolvedUserId = 42L,
             )
-            val expr = evaluator.buildConditionPredicate(cond, psaPath)
+            val expr = evaluator.buildConditionPredicate(cond, displayWorkSchedule)
             assertThat(expr).isNotNull
-            assertThat(toJpql(expr!!)).contains("permissionSetAssignment.createdById = ?1")
+            assertThat(toJpql(expr!!)).contains("displayWorkSchedule.createdBy.id = ?1")
         }
 
         @Test
-        @DisplayName("CreatedById in (...) — includes operator 분기 (Group 멤버십 시나리오)")
-        fun createdByIdIncludes() {
-            // CreatedById IN (csv) — 본인 + 동일 Group 동료가 작성한 record 가시 패턴
+        @DisplayName("CreatedById + resolvedUserId 없음 → condition skip (User 매칭 실패)")
+        fun createdByIdWithoutResolvedUserIdSkips() {
+            // sfid 가 신규 User table 에 없거나 value 가 비-sfid 패턴이면 snapshot loader 가 resolvedUserId = null.
+            // evaluator 는 condition skip + 경고 로그. GBA01_J/GGA22_J 의 DWSM sharing rule 누락 가능 — 의도적 정합.
             val cond = SharingRuleSnapshot.ConditionSnapshot(
                 field = "CreatedById",
-                operator = "includes",
-                value = "005ABC, 005DEF, 005GHI",
+                operator = "equals",
+                value = "005ABC123",
                 conditionOrder = 1,
                 logicConnector = null,
+                resolvedUserId = null,
             )
-            val expr = evaluator.buildConditionPredicate(cond, psaPath)
-            assertThat(expr).isNotNull
-            // includes → csv split → IN 절 합성
-            assertThat(toJpql(expr!!)).contains("permissionSetAssignment.createdById in")
+            val expr = evaluator.buildConditionPredicate(cond, displayWorkSchedule)
+            assertThat(expr).isNull()
         }
     }
 

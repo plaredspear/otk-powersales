@@ -94,7 +94,6 @@ class AdminProductExpirationService(
 
         val entity = ProductExpiration(
             employeeId = employee.id,
-            employeeSfid = employee.sfid,
             accountId = account.id,
             accountName = account.name,
             accountCode = request.accountCode,

@@ -127,7 +127,6 @@ class ProductBarcodeUpsertService(
             name = productUnit,
             unit = productUnit,
             barcode = barcode,
-            productSfid = matchedProduct.sfid,
             productId = matchedProduct.id
         )
         entity.productName = command.productName

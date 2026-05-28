@@ -6,6 +6,7 @@ import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
+import com.otoki.powersales.schedule.entity.AttendanceLog
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.querydsl.jpa.impl.JPAQueryFactory
 import io.mockk.every
@@ -227,7 +228,7 @@ class FemaleEmployeeScheduleQueryServiceTest {
                 workingDate = LocalDate.of(2026, 5, day),
                 workingType = workingType,
                 workingCategory1 = cat1,
-                commuteLogSfid = if (hasCommute) "a06000000000000" else null,
+                attendanceLog = if (hasCommute) AttendanceLog() else null,
             )
         }
     }

@@ -371,7 +371,6 @@ class AdminMonthlyIntegrationService(
             accountConvertedHeadcount = accountConvertedHeadcount,
             thisMonthAmount = thisMonthAmount,
             employeeInputCriteriaMaster = employeeInputCriteriaMaster,
-            employeeInputCriteriaMasterSfid = employeeInputCriteriaMaster?.sfid,
         )
         monthlyIntegrationScheduleRepository.save(record)
     }

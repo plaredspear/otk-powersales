@@ -559,10 +559,9 @@ class AdminMonthlyIntegrationServiceTest {
             verify {
                 monthlyIntegrationScheduleRepository.save(capture(captured))
             }
-            // 3필드 set 검증 — workingCategory5='상시' 가드 통과 시
+            // 3필드 set 검증 — workingCategory5='상시' 가드 통과 시 (FK 만, sfid 사용 금지 정책 정합)
             val saved = captured.captured
             assertThat(saved.employeeInputCriteriaMaster?.id).isEqualTo(8L)
-            assertThat(saved.employeeInputCriteriaMasterSfid).isEqualTo("a0o2x000001o2OjAAI")
             assertThat(saved.accountConvertedHeadcount).isNotNull
         }
 

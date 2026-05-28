@@ -132,7 +132,8 @@ class FemaleEmployeeScheduleQueryService(
             val day = row.workingDate?.dayOfMonth ?: continue
             val wType = row.workingType
             val wCat1 = row.workingCategory1
-            val hasCommute = row.commuteLogSfid != null
+            // 출근 여부 — attendance_log FK (Spec #749 R-2) 채워짐 여부로 판정. sfid 비즈니스 로직 사용 금지 정책 정합.
+            val hasCommute = row.attendanceLog != null
 
             when {
                 wType == WorkingType.WORK && wCat1 != WorkingCategory1.EVENT -> {
@@ -222,7 +223,7 @@ class FemaleEmployeeScheduleQueryService(
             recordId = id,
             title = title,
             start = workingDate?.toString().orEmpty(),
-            isClockIn = commuteLogSfid != null,
+            isClockIn = attendanceLog != null,
             accountId = acc?.id?.toLong(),
             employeeId = emp?.id,
             workingType = workingType?.displayName,

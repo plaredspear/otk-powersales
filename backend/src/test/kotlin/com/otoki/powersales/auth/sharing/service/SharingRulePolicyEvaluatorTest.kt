@@ -307,8 +307,8 @@ class SharingRulePolicyEvaluatorTest {
         }
 
         @Test
-        @DisplayName("CreatedById condition → createdBySfid sync buffer fallback (DWSM 운영 6 rule)")
-        fun createdByIdFallbackToSyncBuffer() {
+        @DisplayName("CreatedById equals + resolvedUserId 있음 → createdBy.id Long FK 비교 (sfid 직접 매칭 금지 정책)")
+        fun createdByIdEqualsWithResolvedUserId() {
             val dwsm = com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.displayWorkSchedule
             val cond = com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot.ConditionSnapshot(
                 field = "CreatedById",
@@ -316,16 +316,17 @@ class SharingRulePolicyEvaluatorTest {
                 value = "005ABC123",
                 conditionOrder = 1,
                 logicConnector = null,
+                resolvedUserId = 42L,
             )
             val pred = evaluator.buildConditionPredicate(cond, dwsm)
             assertThat(pred).isNotNull
-            // entity 에 createdById 단순 필드 없음 → createdBySfid (String? sync buffer) 로 fallback
-            assertThat(pred.toString()).contains("displayWorkSchedule.createdBySfid = 005ABC123")
+            // FK relation `createdBy.id` Long 비교
+            assertThat(pred.toString()).contains("displayWorkSchedule.createdBy.id = 42")
         }
 
         @Test
-        @DisplayName("OwnerId condition → ownerSfid sync buffer fallback")
-        fun ownerIdFallbackToSyncBuffer() {
+        @DisplayName("OwnerId equals + resolvedUserId 있음 → ownerUser.id Long FK 비교")
+        fun ownerIdEqualsWithResolvedUserId() {
             val dwsm = com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.displayWorkSchedule
             val cond = com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot.ConditionSnapshot(
                 field = "OwnerId",
@@ -333,10 +334,43 @@ class SharingRulePolicyEvaluatorTest {
                 value = "005XYZ789",
                 conditionOrder = 1,
                 logicConnector = null,
+                resolvedUserId = 99L,
             )
             val pred = evaluator.buildConditionPredicate(cond, dwsm)
             assertThat(pred).isNotNull
-            assertThat(pred.toString()).contains("displayWorkSchedule.ownerSfid = 005XYZ789")
+            assertThat(pred.toString()).contains("displayWorkSchedule.ownerUser.id = 99")
+        }
+
+        @Test
+        @DisplayName("CreatedById + resolvedUserId 없음 → condition skip (sfid 매칭 실패 / 비-sfid value)")
+        fun createdByIdWithoutResolvedUserIdSkips() {
+            val dwsm = com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.displayWorkSchedule
+            val cond = com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot.ConditionSnapshot(
+                field = "CreatedById",
+                operator = "equals",
+                value = "005ABC123",
+                conditionOrder = 1,
+                logicConnector = null,
+                resolvedUserId = null,
+            )
+            val pred = evaluator.buildConditionPredicate(cond, dwsm)
+            assertThat(pred).isNull()
+        }
+
+        @Test
+        @DisplayName("audit field 의 unsupported operator → null (skip + 경고)")
+        fun createdByIdUnsupportedOperator() {
+            val dwsm = com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.displayWorkSchedule
+            val cond = com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot.ConditionSnapshot(
+                field = "CreatedById",
+                operator = "includes",
+                value = "005ABC, 005DEF",
+                conditionOrder = 1,
+                logicConnector = null,
+                resolvedUserId = 42L,
+            )
+            val pred = evaluator.buildConditionPredicate(cond, dwsm)
+            assertThat(pred).isNull()
         }
     }
 

@@ -22,5 +22,14 @@ data class SharingRuleSnapshot(
         val value: String?,
         val conditionOrder: Int,
         val logicConnector: String?, // AND / OR / null
+        /**
+         * audit/owner field (`CreatedById` / `LastModifiedById` / `OwnerId`) 의 value 가 SF user sfid (18자) 인 경우,
+         * snapshot 적재 시점에 User repository 로 매칭한 신규 시스템 User.id (Long) 를 미리 채워둔다.
+         *
+         * application 로직은 신규 시스템 PK 만 사용하는 정책 (sfid 직접 매칭 금지) — evaluator 는 본 값을
+         * 우선 사용하여 FK relation (`createdBy.id` / `ownerUser.id`) 와 Long 비교한다. 매칭 실패 시 null —
+         * evaluator 가 해당 condition 을 skip 한다.
+         */
+        val resolvedUserId: Long? = null,
     )
 }
