@@ -43,6 +43,22 @@ export async function fetchAccounts(params: FetchAccountsParams): Promise<Accoun
   return res.data.data;
 }
 
+/**
+ * 행사마스터 등록/수정 화면의 거래처 lookup search — promotion 권한 보유자 호출용.
+ *
+ * Account READ 권한 없이도 호출 가능 (SF lookup search 메커니즘 정합). lookupFilter +
+ * sharing rule 평가는 백엔드가 동일하게 적용.
+ */
+export async function fetchAccountsForPromotionLookup(
+  params: Pick<FetchAccountsParams, 'keyword' | 'page' | 'size'>,
+): Promise<AccountListData> {
+  const res = await client.get<ApiResponse<AccountListData>>('/api/v1/admin/accounts/lookup', { params });
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '거래처 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 // --- 신규 거래처 등록 (Spec #640 P2-W) ---
 
 export interface AdminAccountCreateRequest {

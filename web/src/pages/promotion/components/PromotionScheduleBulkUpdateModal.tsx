@@ -8,7 +8,7 @@ import type {
   WorkingCategory1,
   WorkingCategory3,
 } from '@/api/promotionSchedule';
-import { fetchAccounts, type Account } from '@/api/account';
+import { fetchAccountsForPromotionLookup, type Account } from '@/api/account';
 import { useBulkUpdatePromotionSchedules } from '@/hooks/promotion/usePromotionSchedules';
 
 interface SelectedRow {
@@ -101,7 +101,7 @@ export default function PromotionScheduleBulkUpdateModal({
     setAccountSearchLoading(true);
     searchTimerRef.current = setTimeout(async () => {
       try {
-        const result = await fetchAccounts({ keyword, size: 10 });
+        const result = await fetchAccountsForPromotionLookup({ keyword, size: 10 });
         setAccountOptions(result.content);
       } catch {
         setAccountOptions([]);
