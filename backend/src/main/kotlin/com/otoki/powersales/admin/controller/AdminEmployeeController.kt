@@ -97,6 +97,61 @@ class AdminEmployeeController(
     }
 
     /**
+     * 거래처 등록/수정 화면의 영업담당자 lookup search — Spec #640 신규 기능.
+     *
+     * SF 직접 매핑 없음 (Account.OwnerId 는 User reference, 신규 시스템에서 영업담당자를 Employee
+     * 로 매핑). account.EDIT 권한 보유자가 거래처 등록/수정 시 호출.
+     */
+    @GetMapping("/lookup-for-account")
+    @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.EDIT)
+    fun lookupEmployeesForAccount(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false, defaultValue = "0") page: Int,
+        @RequestParam(required = false, defaultValue = "20") size: Int
+    ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
+        val response = adminEmployeeService.getEmployees(
+            scope = scope,
+            status = status,
+            costCenterCode = null,
+            keyword = keyword,
+            role = null,
+            page = page,
+            size = size
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 유통기한 관리 화면의 사원 lookup search — Heroku 단독 기능 (SF 매핑 없음).
+     *
+     * product.READ 권한 보유자가 유통기한 등록 시 사원 검색. employee.READ 권한 없이 호출 가능.
+     */
+    @GetMapping("/lookup-for-product")
+    @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
+    fun lookupEmployeesForProduct(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false, defaultValue = "0") page: Int,
+        @RequestParam(required = false, defaultValue = "20") size: Int
+    ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
+        val response = adminEmployeeService.getEmployees(
+            scope = scope,
+            status = status,
+            costCenterCode = null,
+            keyword = keyword,
+            role = null,
+            page = page,
+            size = size
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
      * 사원 단건 상세 조회 — 6개 그룹 (인사·조직·직무·연락처·앱 설정·근무) 의 모든 필드.
      *
      * 레거시 SF 표준 레코드 상세 페이지 동등.

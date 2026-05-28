@@ -6,7 +6,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import { notification } from 'antd';
 import AdminAccountUpdateModal from './AdminAccountUpdateModal';
 import { updateAdminAccount, type Account, type AdminAccountUpdateResponseData } from '@/api/account';
-import { fetchEmployees } from '@/api/employee';
+import { fetchEmployeesForAccountLookup } from '@/api/employee';
 import type { Employee } from '@/api/employee';
 
 vi.mock('@/api/account', async () => {
@@ -21,12 +21,12 @@ vi.mock('@/api/employee', async () => {
   const actual = await vi.importActual<typeof import('@/api/employee')>('@/api/employee');
   return {
     ...actual,
-    fetchEmployees: vi.fn(),
+    fetchEmployeesForAccountLookup: vi.fn(),
   };
 });
 
 const mockedUpdate = vi.mocked(updateAdminAccount);
-const mockedFetchEmployees = vi.mocked(fetchEmployees);
+const mockedFetchEmployees = vi.mocked(fetchEmployeesForAccountLookup);
 
 const sampleAccount: Account = {
   id: 1234,

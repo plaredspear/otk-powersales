@@ -27,8 +27,8 @@ import {
   useDeleteProductExpiration,
   useBatchDeleteProductExpiration,
 } from '@/hooks/productExpiration/useProductExpirations';
-import { fetchEmployees } from '@/api/employee';
-import { fetchAccounts } from '@/api/account';
+import { fetchEmployeesForProductLookup } from '@/api/employee';
+import { fetchAccountsForProductLookup } from '@/api/account';
 import { fetchProducts } from '@/api/product';
 import type { ProductExpiration, CreateProductExpirationRequest, UpdateProductExpirationRequest } from '@/api/productExpiration';
 import { useAuthStore } from '@/stores/authStore';
@@ -400,7 +400,7 @@ function CreateModal({
     if (!keyword) return;
     setEmployeeLoading(true);
     try {
-      const data = await fetchEmployees({ keyword, size: 20 });
+      const data = await fetchEmployeesForProductLookup({ keyword, size: 20 });
       setEmployeeOptions(data.content.map((e) => ({
         label: `${e.name} (${e.employeeCode})`,
         value: e.employeeCode,
@@ -414,7 +414,7 @@ function CreateModal({
     if (!keyword) return;
     setAccountLoading(true);
     try {
-      const data = await fetchAccounts({ keyword, size: 20 });
+      const data = await fetchAccountsForProductLookup({ keyword, size: 20 });
       setAccountOptions(data.content.map((a) => ({
         label: `${a.name ?? ''} (${a.externalKey ?? ''})`,
         value: a.externalKey ?? '',
