@@ -392,7 +392,6 @@ class AdminTeamScheduleServiceTest {
 
             every { organizationRepository.findTeamScheduleBranches("5457", false) } returns listOf(branch)
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("5457")) } returns listOf(member)
-            every { teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams() } returns listOf("라면세일조")
             every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5457"), listOf("1010", "1000")) } returns listOf(account)
 
             val result = service.getForm(principalOf(leader))
@@ -400,7 +399,9 @@ class AdminTeamScheduleServiceTest {
             assertThat(result.branches).hasSize(1)
             assertThat(result.branches[0].branchCode).isEqualTo("5457")
             assertThat(result.members).hasSize(1)
-            assertThat(result.professionalPromotionTeams).containsExactly("라면세일조")
+            assertThat(result.professionalPromotionTeams).containsExactly(
+                "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조"
+            )
             assertThat(result.accounts).hasSize(1)
             assertThat(result.accounts[0].accountId).isEqualTo(1)
         }
@@ -416,7 +417,6 @@ class AdminTeamScheduleServiceTest {
 
             every { organizationRepository.findTeamScheduleBranches(null, true) } returns branches
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3475")) } returns emptyList()
-            every { teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams() } returns emptyList()
 
             val result = service.getForm(principalOf(supporter, isSalesSupport = true))
 
@@ -432,7 +432,6 @@ class AdminTeamScheduleServiceTest {
 
             every { organizationRepository.findTeamScheduleBranches("9999", false) } returns emptyList()
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("9999")) } returns emptyList()
-            every { teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams() } returns emptyList()
 
             val result = service.getForm(principalOf(leader))
 
@@ -524,13 +523,13 @@ class AdminTeamScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("getProfessionalPromotionTeams - repository 결과 그대로 반환")
-        fun getProfessionalPromotionTeams_returnsRepoResult() {
-            every { teamMemberScheduleRepository.findDistinctProfessionalPromotionTeams() } returns listOf("라면세일조", "카레행사조")
-
+        @DisplayName("getProfessionalPromotionTeams - SF picklist 5값 enum 그대로 반환 (DB 조회 없음)")
+        fun getProfessionalPromotionTeams_returnsEnumValues() {
             val result = service.getProfessionalPromotionTeams()
 
-            assertThat(result).containsExactly("라면세일조", "카레행사조")
+            assertThat(result).containsExactly(
+                "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조"
+            )
         }
 
         @Test
