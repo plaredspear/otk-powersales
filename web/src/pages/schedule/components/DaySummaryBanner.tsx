@@ -34,6 +34,9 @@ export function DaySummaryBanner({ summary }: DaySummaryBannerProps) {
   const workMatch = displayActual === displayExpected && promotionActual === promotionExpected;
   const workBg = workMatch ? COLOR_MATCH : COLOR_MISMATCH;
   const chipStyle = {
+    display: 'block',
+    width: '100%',
+    boxSizing: 'border-box',
     color: '#fff',
     padding: '1px 4px',
     borderRadius: 2,
@@ -43,7 +46,7 @@ export function DaySummaryBanner({ summary }: DaySummaryBannerProps) {
   } as const;
 
   return (
-    <div style={{ fontSize: 10, lineHeight: '14px', whiteSpace: 'nowrap' }}>
+    <div style={{ display: 'block', width: '100%', fontSize: 10, lineHeight: '14px', whiteSpace: 'nowrap' }}>
       {(hasDisplay || hasPromotion) && (
         <div style={{ ...chipStyle, background: workBg }}>
           진열: {displayActual}/{displayExpected} | 행사: {promotionActual}/{promotionExpected}
