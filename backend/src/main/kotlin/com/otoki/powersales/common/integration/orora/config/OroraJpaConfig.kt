@@ -28,7 +28,8 @@ import javax.sql.DataSource
  * - **Hibernate `connection.autocommit = true`**: Hikari read-only=true 정합
  * - **`jakarta.persistence.query.timeout = 30000`**: SELECT 지연 상한
  * - JPA Repository 의 mutation API 노출은 [com.otoki.orora.repository.OroraDailySalesHistoryRepository]
- *   가 `Repository<>` marker 만 상속하여 컴파일 시점에 차단됨
+ *   / [com.otoki.orora.repository.OroraMonthlySalesHistoryRepository] 가 `Repository<>` marker 만
+ *   상속하여 컴파일 시점에 차단됨
  *
  * ## JPA scope 격리 — 패키지 root 분리
  * ORORA entity/repository 가 `com.otoki.orora.*` root 로 분리되어 있어, 메인 측

@@ -1,13 +1,14 @@
 package com.otoki.powersales.common.integration.orora.config
 
 import com.otoki.orora.repository.OroraDailySalesHistoryRepository
+import com.otoki.orora.repository.OroraMonthlySalesHistoryRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.context.annotation.Profile
 
 /**
- * `OroraJpaConfig` / `OroraDailySalesHistoryRepository` 가 특정 프로파일에 묶이지 않고
+ * `OroraJpaConfig` / ORORA Repository 들이 특정 프로파일에 묶이지 않고
  * 모든 환경에서 등록되는지 검증.
  *
  * 과거에는 `@Profile("orora-disabled")` 로 ORORA 측 4개 빈을 모든 환경에서 차단했으나,
@@ -55,5 +56,25 @@ class OroraJpaProfileGuardTest {
 		// 회피. 본 단언은 향후 클래스명 변경 시 회귀 방지.
 		assertThat(OroraDailySalesHistoryRepository::class.simpleName)
 			.isEqualTo("OroraDailySalesHistoryRepository")
+	}
+
+	@Test
+	@DisplayName("OroraMonthlySalesHistoryRepository 에 @Profile 어노테이션이 부착되지 않는다 (모든 환경 등록 보장)")
+	fun `OroraMonthlySalesHistoryRepository has no Profile annotation`() {
+		val profile = OroraMonthlySalesHistoryRepository::class.java.getAnnotation(Profile::class.java)
+		assertThat(profile)
+			.withFailMessage(
+				"OroraMonthlySalesHistoryRepository 에 @Profile 이 부착됨: %s. " +
+					"ORORA repository 는 모든 환경에서 컨텍스트에 등록되어야 한다.",
+				profile?.value?.joinToString(),
+			)
+			.isNull()
+	}
+
+	@Test
+	@DisplayName("Repository 클래스명이 OroraMonthlySalesHistoryRepository 인지 검증 (Hibernate entity name / Spring Bean name 충돌 회피)")
+	fun `monthly repository class name has Orora prefix`() {
+		assertThat(OroraMonthlySalesHistoryRepository::class.simpleName)
+			.isEqualTo("OroraMonthlySalesHistoryRepository")
 	}
 }
