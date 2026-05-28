@@ -256,6 +256,28 @@ class SharingRulePolicyEvaluator(
     }
 
     /**
+     * SF API name → 실제 entity 에 평가 가능한 JPA property 경로 해석.
+     *
+     * SF audit/owner field 의 value 는 SF sfid (18자 String) — 운영 entity 가 매핑한 String?
+     * sync buffer 필드 (`createdBySfid`, `ownerSfid`, `lastModifiedBySfid`) 와 직접 매칭 가능.
+     * 우선순위 (모두 String 타입 비교 가정):
+     * - CreatedById → createdById (단순) | createdBySfid (sync buffer)
+     * - LastModifiedById → lastModifiedById | lastModifiedBySfid
+     * - OwnerId → ownerId | ownerSfid
+     *
+     * 일반 field 는 sfApiNameToJpaProperty 변환 후 단순 property 확인.
+     */
+    internal fun resolveConditionProperty(sfField: String, entityPath: EntityPathBase<*>): String? {
+        val candidates: List<String> = when (sfField) {
+            "CreatedById" -> listOf("createdById", "createdBySfid")
+            "LastModifiedById" -> listOf("lastModifiedById", "lastModifiedBySfid")
+            "OwnerId" -> listOf("ownerId", "ownerSfid")
+            else -> listOf(sfApiNameToJpaProperty(sfField))
+        }
+        return candidates.firstOrNull { hasProperty(entityPath, it) }
+    }
+
+    /**
      * QueryDSL Q-class entity path 에 [propertyName] 이 존재하는지 reflection 으로 사전 확인.
      *
      * QueryDSL `Expressions.numberPath/stringPath(entityPath, name)` 은 path object 생성만 하고
@@ -317,16 +339,14 @@ class SharingRulePolicyEvaluator(
         cond: SharingRuleSnapshot.ConditionSnapshot,
         entityPath: EntityPathBase<*>,
     ): BooleanExpression? {
-        val property = sfApiNameToJpaProperty(cond.field)
-        val value = cond.value ?: return null
-
-        if (!hasProperty(entityPath, property)) {
+        val property = resolveConditionProperty(cond.field, entityPath) ?: run {
             log.debug(
-                "[sharing-policy] entity {} has no property {} (field={}) — skip condition predicate",
-                entityPath, property, cond.field,
+                "[sharing-policy] entity {} has no property for field={} — skip condition predicate",
+                entityPath, cond.field,
             )
             return null
         }
+        val value = cond.value ?: return null
 
         return try {
             val path = Expressions.stringPath(entityPath, property)
