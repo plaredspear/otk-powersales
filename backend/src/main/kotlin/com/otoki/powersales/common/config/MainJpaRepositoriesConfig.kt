@@ -1,6 +1,11 @@
 package com.otoki.powersales.common.config
 
+import jakarta.annotation.PostConstruct
 import jakarta.persistence.EntityManagerFactory
+import org.hibernate.SessionFactory
+import org.hibernate.engine.spi.SessionFactoryImplementor
+import org.hibernate.resource.beans.spi.ManagedBeanRegistry
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import org.springframework.boot.jpa.EntityManagerFactoryBuilder
@@ -87,4 +92,47 @@ class MainJpaRepositoriesConfig {
 	fun transactionManager(
 		@Qualifier("entityManagerFactory") emf: EntityManagerFactory,
 	): PlatformTransactionManager = JpaTransactionManager(emf)
+
+	/**
+	 * TEMP — 진단 빈. 부팅 완료 후 Hibernate `SessionFactory` 의 ServiceRegistry 에서 BeanContainer 가
+	 * 실제로 `SpringBeanContainer` 로 등록되었는지 확인한다. lateinit 미초기화 사고 검증용. 제거 예정.
+	 */
+	@Bean
+	fun beanContainerProbe(@Qualifier("entityManagerFactory") emf: EntityManagerFactory): BeanContainerProbe =
+		BeanContainerProbe(emf)
+
+	class BeanContainerProbe(private val emf: EntityManagerFactory) {
+		private val log = LoggerFactory.getLogger(javaClass)
+
+		@PostConstruct
+		fun probe() {
+			val sf = emf.unwrap(SessionFactory::class.java) as SessionFactoryImplementor
+			val mbr: ManagedBeanRegistry? = try {
+				sf.serviceRegistry.getService(ManagedBeanRegistry::class.java)
+			} catch (e: Exception) {
+				log.warn("[DIAG] failed to get ManagedBeanRegistry: {}", e.message)
+				null
+			}
+			val isSpringContainerRegistry = mbr != null &&
+				mbr.javaClass.simpleName.contains("ContainerManagedLifecycleStrategy", ignoreCase = true).let {
+					// 클래스명 휴리스틱 + reflection 으로 내부 BeanContainer 필드 확인
+					mbr.javaClass.declaredFields.any { f ->
+						f.type == org.hibernate.resource.beans.container.spi.BeanContainer::class.java
+					}
+				}
+			log.warn(
+				"[DIAG] main EMF ManagedBeanRegistry = {} (hasBeanContainer={})",
+				mbr?.javaClass?.name ?: "<null>",
+				isSpringContainerRegistry,
+			)
+			// 더 간단한 검증 — EMF 의 properties map 에 직접 확인
+			val props = emf.properties
+			val beanContainerProp = props["hibernate.resource.beans.container"]
+			log.warn(
+				"[DIAG] hibernate.resource.beans.container property = {} (isSpringBeanContainer={})",
+				beanContainerProp?.javaClass?.name ?: "<null>",
+				beanContainerProp is SpringBeanContainer,
+			)
+		}
+	}
 }
