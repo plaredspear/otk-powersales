@@ -288,7 +288,6 @@ class MonthlySalesAdminQueryService(
 
             MonthlySalesDashboardListItem(
                 accountId = account.id,
-                accountSfid = account.sfid,
                 accountName = account.name,
                 sapAccountCode = current?.sapAccountCode ?: account.externalKey,
                 // 참고: RDS row 의 sapAccountCode 우선, 부재 시 Account.externalKey fallback —

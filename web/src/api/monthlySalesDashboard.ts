@@ -26,7 +26,6 @@ export interface MonthlySalesDashboardSummary {
 
 export interface MonthlySalesDashboardListItem {
   accountId: number;
-  accountSfid: string | null;
   accountName: string | null;
   sapAccountCode: string | null;
   branchCode: string | null;

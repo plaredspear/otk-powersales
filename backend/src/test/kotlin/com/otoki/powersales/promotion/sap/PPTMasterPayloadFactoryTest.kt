@@ -27,7 +27,6 @@ class PPTMasterPayloadFactoryTest {
             id = 1L,
             name = "PM0000001",
             teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
-            accountSfid = "001ABC",
             isConfirmed = true,
             startDate = LocalDate.of(2026, 5, 1),
             endDate = LocalDate.of(2026, 5, 31),
@@ -41,7 +40,6 @@ class PPTMasterPayloadFactoryTest {
 
         assertThat(row.Name).isEqualTo("PM0000001")
         assertThat(row.ProfessionalPromotionTeam).isEqualTo("라면세일조")
-        assertThat(row.Account).isEqualTo("001ABC")
         assertThat(row.FullName).isEqualTo("홍길동")
         assertThat(row.EmployeeNumber).isEqualTo("100123")
         assertThat(row.AccountStatus).isEqualTo("정상")
@@ -197,7 +195,6 @@ class PPTMasterPayloadFactoryTest {
         id: Long = 1L,
         name: String? = "PM0000001",
         teamType: ProfessionalPromotionTeamType = ProfessionalPromotionTeamType.RAMEN_SALE,
-        accountSfid: String? = "001ABC",
         isConfirmed: Boolean = true,
         startDate: LocalDate = today.minus(1, java.time.temporal.ChronoUnit.DAYS),
         endDate: LocalDate? = today.plus(1, java.time.temporal.ChronoUnit.DAYS),
@@ -209,7 +206,6 @@ class PPTMasterPayloadFactoryTest {
         every { mock.id } returns id
         every { mock.name } returns name
         every { mock.teamType } returns teamType
-        every { mock.accountSfid } returns accountSfid
         every { mock.isConfirmed } returns isConfirmed
         every { mock.startDate } returns startDate
         every { mock.endDate } returns endDate

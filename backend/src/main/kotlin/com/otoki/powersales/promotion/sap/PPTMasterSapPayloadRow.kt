@@ -3,9 +3,11 @@ package com.otoki.powersales.promotion.sap
 /**
  * 전문행사조 마스터 SAP 송신 row (Spec #765 §6.1).
  *
- * 레거시 `IF_REST_SAP_PPTMToSAP.cls:99-124` 의 paraMap 17개 키와 1:1 정합.
- * `Valid` 키는 미송신 (레거시 `:112` 주석처리 dead, Q5 확정). 키 명은 PascalCase
- * (레거시 정합 — `sap-integration.md §3` 예외 = SAP outbound 레거시 호환).
+ * 레거시 `IF_REST_SAP_PPTMToSAP.cls:99-124` 의 paraMap 17개 키와 정합 — 단, 레거시의 `Account`
+ * (SF Account sfid 18자) 키는 신규 시스템에서 미송신 (application sfid 사용 금지 정책).
+ * SAP 측은 `AccountCode` (ExternalKey) 단일 키로 거래처 식별 — 레거시도 동일 거래처를 두 키로 보냈을 뿐
+ * primary identifier 는 ExternalKey 로 추정 (IF_REST_MOBILE_OrderRequestRegist 등 다른 SAP 인터페이스
+ * 정합 패턴). 본 키 제거가 SAP 측 호환성에 영향을 주는 사실이 발견되면 별도 spec 으로 정정.
  *
  * 값은 모두 `String` 타입 — 레거시 `Map<String,String>` 정합. null 가능 필드도 빈 문자열이 아닌
  * `null` 또는 레거시 `String.valueOf(null)` = `"null"` 문자열로 직렬화될 수 있다.
@@ -16,8 +18,6 @@ data class PPTMasterSapPayloadRow(
     val Name: String?,
     /** 전문행사조 picklist 한글 값 (레거시 `obj.ProfessionalPromotionTeam__c`). */
     val ProfessionalPromotionTeam: String?,
-    /** SF Account.Id 18자리 (레거시 `obj.Account__c`). */
-    val Account: String?,
     /** 직원 한글 이름 (레거시 `obj.FullName__c` Lookup 표시값). */
     val FullName: String?,
     /** 사번 (레거시 수식 `FullName__r.DKRetail__EmpCode__c`). */

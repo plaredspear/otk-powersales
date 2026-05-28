@@ -76,7 +76,7 @@ class AdminMonthlySalesDashboardControllerTest : AdminControllerTestSupport() {
         val response = MonthlySalesDashboardListResponse(
             items = listOf(
                 MonthlySalesDashboardListItem(
-                    accountId = 1, accountSfid = "ACC1", accountName = "거래처A",
+                    accountId = 1, accountName = "거래처A",
                     sapAccountCode = "SAP1", branchCode = "1000", branchName = "서울지점",
                     salesYear = 2026, salesMonth = 5,
                     targetAmount = 1_000_000L, totalAchievedAmount = 800_000L, achievementRate = 80.0,
