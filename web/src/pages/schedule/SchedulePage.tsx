@@ -38,6 +38,26 @@ export default function SchedulePage() {
 
   const [selectedBranchCode, setSelectedBranchCode] = useState<string>('');
 
+  // 사용자가 staging 필터를 한 번이라도 수정했는지 여부 — dirty 판정 가드.
+  // 초기 mount 시 staging=빈/applied=전체거래처 자연 mismatch 가 dirty 로 잘못 표시되는 것 회피.
+  const userTouchedFilterRef = useRef(false);
+  const markUserTouched = useCallback(() => { userTouchedFilterRef.current = true; }, []);
+
+  const handleEmployeeIdsChange = useCallback((ids: number[]) => {
+    markUserTouched();
+    setSelectedEmployeeIds(ids);
+  }, [markUserTouched]);
+
+  const handleAccountIdsChange = useCallback((ids: number[]) => {
+    markUserTouched();
+    setSelectedAccountIds(ids);
+  }, [markUserTouched]);
+
+  const handlePromotionTeamsChange = useCallback((teams: string[]) => {
+    markUserTouched();
+    setSelectedPromotionTeams(teams);
+  }, [markUserTouched]);
+
   const handleBranchCodeChange = useCallback((code: string) => {
     setSelectedBranchCode(code);
     // 지점이 바뀌면 거래처 목록 자체가 달라지므로 staging 선택 초기화.
@@ -103,17 +123,16 @@ export default function SchedulePage() {
   );
   const accounts = isSingleBranch ? form?.accounts ?? [] : fetchedAccounts;
 
-  // SF 레거시 정합 — 마운트 시 거래처 전체 자동 selected → 캘린더 요약이 즉시 노출.
-  // 사용자가 한번이라도 직접 선택을 수정 (체크 해제 등) 하면 그 의도를 존중 (다시 자동 채움 X).
-  // accounts 가 로드된 첫 시점에 한해 staging + applied 양쪽 모두 채운다.
+  // SF 레거시 정합 — 마운트 시 캘린더 요약은 항상 즉시 노출 (조건 선택 무관).
+  // staging (체크박스 표시) 은 비워 두고 applied 에만 거래처 전체를 채워 fetch 트리거.
+  // 사용자가 직접 거래처를 선택/조회하기 전까지 "내 거래처 전체" 가 backend 호출 기준.
+  // accounts 가 로드된 첫 시점에 한해 1회 적용 (이후 사용자 입력 우선).
   const autoFilledRef = useRef(false);
   useEffect(() => {
     if (autoFilledRef.current) return;
     if (filterTab !== 'account') return;
     if (accounts.length === 0) return;
-    const allIds = accounts.map((a) => a.accountId);
-    setSelectedAccountIds(allIds);
-    setAppliedAccountIds(allIds);
+    setAppliedAccountIds(accounts.map((a) => a.accountId));
     autoFilledRef.current = true;
   }, [accounts, filterTab]);
 
@@ -169,7 +188,10 @@ export default function SchedulePage() {
   const handleScheduleClickFromList = openScheduleDetail;
 
   // staging != applied 인 경우 "조회" 버튼 강조용 dirty flag.
+  // 초기 mount 시점에는 staging 비어 있고 applied 가 auto-fill (전체 거래처) 로 채워져
+  // 자연 mismatch 가 발생하므로, 사용자가 한번이라도 staging 을 수정했을 때만 dirty 판정.
   const isFilterDirty = useMemo(() => {
+    if (!userTouchedFilterRef.current) return false;
     const stagingIds = filterTab === 'member' ? selectedEmployeeIds : selectedAccountIds;
     const appliedIds = filterTab === 'member' ? appliedEmployeeIds : appliedAccountIds;
     return (
@@ -199,20 +221,25 @@ export default function SchedulePage() {
           isFormLoading={isFormLoading}
           isAccountsLoading={isAccountsLoading}
           selectedEmployeeIds={selectedEmployeeIds}
-          onSelectedEmployeeIdsChange={setSelectedEmployeeIds}
+          onSelectedEmployeeIdsChange={handleEmployeeIdsChange}
           selectedAccountIds={selectedAccountIds}
-          onSelectedAccountIdsChange={setSelectedAccountIds}
+          onSelectedAccountIdsChange={handleAccountIdsChange}
           selectedBranchCode={selectedBranchCode}
           onSelectedBranchCodeChange={handleBranchCodeChange}
           selectedPromotionTeams={selectedPromotionTeams}
-          onSelectedPromotionTeamsChange={setSelectedPromotionTeams}
+          onSelectedPromotionTeamsChange={handlePromotionTeamsChange}
           onApply={handleApplyFilter}
           isFilterDirty={isFilterDirty}
           isCoolingDown={isCoolingDown}
         />
       </div>
-      <div style={{ flex: 1, minWidth: 0, minHeight: 0, height: '100%', overflow: 'auto' }}>
-        <Spin spinning={schedulesLoading}>
+      <div style={{ flex: 1, minWidth: 0, minHeight: 0, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        {schedulesLoading && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.5)', zIndex: 10 }}>
+            <Spin />
+          </div>
+        )}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <ScheduleCalendar
             currentDate={currentDate}
             onDateChange={setCurrentDate}
@@ -226,7 +253,7 @@ export default function SchedulePage() {
             onEventClick={handleEventClick}
             isLoading={schedulesLoading}
           />
-        </Spin>
+        </div>
       </div>
 
       <DayScheduleListModal

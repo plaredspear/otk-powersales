@@ -81,6 +81,7 @@ class AdminTeamScheduleService(
             expandedBranchCodes, listOf("1010", "1000")
         )
             .filter { it.isDeleted != true }
+            .sortedWith(compareBy(nullsLast()) { it.name })
             .map { TeamScheduleAccountDto.from(it) }
     }
 

@@ -167,6 +167,10 @@ export function ScheduleCalendar({
         borderRadius: 8,
         padding: 16,
         border: '1px solid #f0f0f0',
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       {/* Custom Header */}
@@ -224,25 +228,27 @@ export function ScheduleCalendar({
         />
       </div>
 
-      {/* FullCalendar — SF 레거시 정합: 셀 높이 고정 + 초과 일정은 popover ("+N 개") */}
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, listPlugin]}
-        initialView={viewType}
-        initialDate={currentDate.format('YYYY-MM-DD')}
-        headerToolbar={false}
-        locale="ko"
-        allDayText="종일"
-        noEventsText="일정이 없습니다"
-        height={isListView ? 'auto' : 720}
-        dayMaxEventRows={3}
-        moreLinkText={(num) => `+${num} 개`}
-        events={events}
-        dayCellContent={renderDayCellContent}
-        eventContent={renderEventContent}
-        eventClick={handleEventClick}
-        fixedWeekCount={false}
-      />
+      {/* FullCalendar — SF 레거시 정합: 캘린더 전체가 한 화면에 보이도록 height=100% 컨테이너 채움 + 셀별 +N 개 popover */}
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, listPlugin]}
+          initialView={viewType}
+          initialDate={currentDate.format('YYYY-MM-DD')}
+          headerToolbar={false}
+          locale="ko"
+          allDayText="종일"
+          noEventsText="일정이 없습니다"
+          height={isListView ? 'auto' : '100%'}
+          dayMaxEventRows={true}
+          moreLinkText={(num) => `+${num} 개`}
+          events={events}
+          dayCellContent={renderDayCellContent}
+          eventContent={renderEventContent}
+          eventClick={handleEventClick}
+          fixedWeekCount={false}
+        />
+      </div>
     </div>
   );
 }

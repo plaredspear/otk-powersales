@@ -299,6 +299,22 @@ class AdminTeamScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("이름 가나다순 정렬 - 입력 순서와 무관하게 name asc 반환")
+        fun getAccounts_sortedByName() {
+            val employee = createEmployee(id = 10L, costCenterCode = "1234")
+            val homeplus = createAccount(id = 1, sfid = "ACC_001", name = "홈플러스 역삼점", branchCode = "1234")
+            val emart = createAccount(id = 2, sfid = "ACC_002", name = "이마트 강남점", branchCode = "1234")
+            val gs = createAccount(id = 3, sfid = "ACC_003", name = "GS25 강남점", branchCode = "1234")
+
+            every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("1234"), listOf("1010", "1000")) } returns
+                listOf(homeplus, emart, gs)
+
+            val result = service.getAccounts(principalOf(employee), null)
+
+            assertThat(result.map { it.name }).containsExactly("GS25 강남점", "이마트 강남점", "홈플러스 역삼점")
+        }
+
+        @Test
         @DisplayName("BranchMapping 1:N 확장 - cvs전략 '5694' → {5691,5692,5693,5694} 모두 조회")
         fun getAccounts_branchMappingExpansion() {
             // Given: SF customMetadata/BranchMapping.cvs.md-meta.xml 정합
