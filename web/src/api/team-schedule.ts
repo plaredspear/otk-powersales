@@ -89,12 +89,16 @@ export async function fetchTeamScheduleBranches(): Promise<Branch[]> {
  *
  * `accounts` 는 단일지점 사용자일 때만 backend 가 채워 보낸다 (branches.length === 1).
  * 다중지점 사용자는 빈 배열이며, 사용자가 지점 드롭다운에서 선택한 시점에 별도 `/accounts` 호출로 채운다.
+ *
+ * `dailySummary` 는 단일지점 사용자의 현재 월 + 내 거래처 전체 기준 요약. 다중지점 사용자는 빈 배열.
+ * 마운트 시점에 사용자 선택 없이도 캘린더 요약을 즉시 노출하기 위한 SF 정합.
  */
 export interface TeamScheduleForm {
   branches: Branch[];
   members: TeamMember[];
   professionalPromotionTeams: string[];
   accounts: TeamScheduleAccount[];
+  dailySummary: DailySummary[];
 }
 
 export async function fetchTeamScheduleForm(): Promise<TeamScheduleForm> {
