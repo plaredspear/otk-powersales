@@ -89,6 +89,31 @@ class AdminProductController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
+    /**
+     * 물류 클레임 등록/수정 화면의 제품 lookup search — SF Claim__c.ProductId__c Lookup 정합.
+     *
+     * SF 의 lookup search 는 Product FLS/object access 와 무관하게 화면 권한 (Suggestion/Claim CRUD)
+     * 으로 작동 — 본 endpoint 는 SF 메커니즘 정합.
+     */
+    @GetMapping("/lookup-for-claim")
+    @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
+    fun lookupProductsForClaim(
+        @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
+        @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
+        @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
+    ): ResponseEntity<ApiResponse<ProductListResponse>> {
+        val response = adminProductService.getProducts(
+            keyword = keyword,
+            category1 = null,
+            category2 = null,
+            category3 = null,
+            productStatus = null,
+            page = page,
+            size = size
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
     @GetMapping("/categories")
     @RequiresSfPermission(entity = "product", operation = SfPermissionOperation.READ)
     fun getCategories(): ResponseEntity<ApiResponse<List<CategoryTree>>> {
