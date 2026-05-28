@@ -266,6 +266,8 @@ class Employee(
 ) : BaseEntity() {
 
     // --- employee_info @OneToOne 관계 ---
+    // LAZY 동작은 build.gradle.kts 의 hibernate.enhancement.enableLazyInitialization 에 의존.
+    // enhance 미적용 시 JPA 명세상 non-PK OneToOne LAZY 는 즉시 SELECT 로 fallback (N+1 위험).
 
     @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.LAZY, optional = true)
     @JoinColumn(

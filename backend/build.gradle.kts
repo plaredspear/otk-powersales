@@ -5,6 +5,11 @@ plugins {
 	id("org.springframework.boot") version "4.0.5"
 	id("io.spring.dependency-management") version "1.1.7"
 	kotlin("plugin.jpa") version "2.2.21"
+	// Hibernate ORM bytecode enhancement —
+	// @OneToOne(LAZY) non-PK 조인 (Employee.employeeInfo) 가 JPA proxy 만으로는 LAZY 동작 불가하여
+	// 매 Employee fetch 시 employee_info SELECT 가 추가로 발생 (N+1) 하는 문제 해소용.
+	// lazyInitialization=true 만 활성화 (dirtyTracking / associationManagement 는 OFF 유지).
+	id("org.hibernate.orm") version "7.2.7.Final"
 }
 
 group = "com.otoki.powersales"
@@ -120,6 +125,19 @@ dependencies {
 kotlin {
 	compilerOptions {
 		freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
+	}
+}
+
+// Hibernate bytecode enhancement —
+// @OneToOne(LAZY) 가 진짜 LAZY 로 동작하도록 entity .class 에 field-access interceptor 삽입.
+// Hibernate 7 부터 enableDirtyTracking 은 항상 true 로 강제 (옵션 제거 예정) — 명시 생략.
+// JPA access type 이 PROPERTY (Employee.@Id 가 property 에 있음) 라 setter 경유 변경만 발생,
+// dirty tracking 강제 활성화의 부작용 없음.
+// enableAssociationManagement 만 명시적으로 OFF (양방향 자동 sync 비활성).
+hibernate {
+	enhancement {
+		enableLazyInitialization.set(true)
+		enableAssociationManagement.set(false)
 	}
 }
 
