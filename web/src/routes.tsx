@@ -137,10 +137,25 @@ export const router = createBrowserRouter(
             { path: '/product/:productCode', element: <LazyWrapper><ProductDetailPage /></LazyWrapper> },
             { path: '/field-inspection', element: <LazyWrapper><FieldInspectionPage /></LazyWrapper> },
             { path: '/report', element: <LazyWrapper><ReportPage /></LazyWrapper> },
-            { path: '/notices', element: <LazyWrapper><NoticeListPage /></LazyWrapper> },
-            { path: '/notices/new', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
-            { path: '/notices/:id', element: <LazyWrapper><NoticeDetailPage /></LazyWrapper> },
-            { path: '/notices/:id/edit', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
+            {
+              element: <PermissionRoute entity="notice" operation="READ" />,
+              children: [
+                { path: '/notices', element: <LazyWrapper><NoticeListPage /></LazyWrapper> },
+                { path: '/notices/:id', element: <LazyWrapper><NoticeDetailPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute entity="notice" operation="CREATE" />,
+              children: [
+                { path: '/notices/new', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute entity="notice" operation="EDIT" />,
+              children: [
+                { path: '/notices/:id/edit', element: <LazyWrapper><NoticeFormPage /></LazyWrapper> },
+              ],
+            },
             { path: '/education', element: <LazyWrapper><EducationListPage /></LazyWrapper> },
             { path: '/education/new', element: <LazyWrapper><EducationFormPage /></LazyWrapper> },
             { path: '/education/:id', element: <LazyWrapper><EducationDetailPage /></LazyWrapper> },

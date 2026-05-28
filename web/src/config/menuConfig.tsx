@@ -136,10 +136,12 @@ export const menuRoute: MenuRoute = {
         {
           path: '/notices',
           name: '공지사항',
+          entity: 'notice',
+          operation: 'READ',
           subRoutes: [
-            { path: '/notices/new', name: '공지사항 등록' },
-            { path: '/notices/:id', name: '공지사항 상세' },
-            { path: '/notices/:id/edit', name: '공지사항 수정' },
+            { path: '/notices/new', name: '공지사항 등록', entity: 'notice', operation: 'CREATE' },
+            { path: '/notices/:id', name: '공지사항 상세', entity: 'notice', operation: 'READ' },
+            { path: '/notices/:id/edit', name: '공지사항 수정', entity: 'notice', operation: 'EDIT' },
           ],
         },
         {
