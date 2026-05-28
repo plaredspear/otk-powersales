@@ -46,44 +46,6 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/team-schedule/accounts - 거래처 목록 조회")
-    inner class GetAccounts {
-
-        @Test
-        @DisplayName("성공 - 거래처 목록 반환")
-        fun getAccounts_success() {
-            val accounts = listOf(
-                TeamScheduleAccountDto(accountId = 1001, externalKey = "EXT001", name = "이마트 강남점"),
-                TeamScheduleAccountDto(accountId = 1002, externalKey = "EXT002", name = "홈플러스 잠실점")
-            )
-            every { adminTeamScheduleService.getAccounts(any(), null) } returns accounts
-
-            mockMvc.perform(get("/api/v1/admin/team-schedule/accounts"))
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].externalKey").value("EXT001"))
-        }
-
-        @Test
-        @DisplayName("성공 - branch_code 파라미터 지정")
-        fun getAccounts_withBranchCode() {
-            val accounts = listOf(
-                TeamScheduleAccountDto(accountId = 1003, externalKey = "EXT003", name = "롯데마트 서울역점")
-            )
-            every { adminTeamScheduleService.getAccounts(any(), eq("BR001")) } returns accounts
-
-            mockMvc.perform(
-                get("/api/v1/admin/team-schedule/accounts")
-                    .param("branchCode", "BR001")
-            )
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].accountId").value(1003))
-        }
-    }
-
-    @Nested
     @DisplayName("GET /api/v1/admin/team-schedule/branches - 지점 목록 조회")
     inner class GetBranches {
 
@@ -108,7 +70,7 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
     inner class GetForm {
 
         @Test
-        @DisplayName("성공 - branches/members/promotionTeams/accounts 통합 응답 반환")
+        @DisplayName("성공 - branchCode 미지정 → 단일지점 사용자 본인 지점 거래처 자동 채움")
         fun getForm_success() {
             val form = TeamScheduleFormDto(
                 branches = listOf(BranchResponse("5457", "강북유통지점")),
@@ -117,7 +79,7 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
                 accounts = listOf(TeamScheduleAccountDto(accountId = 1001, externalKey = "EXT001", name = "이마트 강북점")),
                 dailySummary = emptyList()
             )
-            every { adminTeamScheduleService.getForm(any()) } returns form
+            every { adminTeamScheduleService.getForm(any(), null) } returns form
 
             mockMvc.perform(get("/api/v1/admin/team-schedule/form"))
                 .andExpect(status().isOk)
@@ -128,6 +90,30 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.professionalPromotionTeams[0]").value("라면세일조"))
                 .andExpect(jsonPath("$.data.accounts.length()").value(1))
                 .andExpect(jsonPath("$.data.accounts[0].accountId").value(1001))
+        }
+
+        @Test
+        @DisplayName("성공 - branchCode 지정 → 다중지점 사용자의 선택 지점 거래처 채움")
+        fun getForm_withBranchCode() {
+            val form = TeamScheduleFormDto(
+                branches = listOf(
+                    BranchResponse("5457", "강북유통지점"),
+                    BranchResponse("5458", "강남유통지점")
+                ),
+                members = listOf(TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "김영희")),
+                professionalPromotionTeams = listOf("라면세일조"),
+                accounts = listOf(TeamScheduleAccountDto(accountId = 2001, externalKey = "EXT002", name = "이마트 강남점")),
+                dailySummary = emptyList()
+            )
+            every { adminTeamScheduleService.getForm(any(), eq("5458")) } returns form
+
+            mockMvc.perform(
+                get("/api/v1/admin/team-schedule/form")
+                    .param("branchCode", "5458")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.accounts.length()").value(1))
+                .andExpect(jsonPath("$.data.accounts[0].accountId").value(2001))
         }
     }
 

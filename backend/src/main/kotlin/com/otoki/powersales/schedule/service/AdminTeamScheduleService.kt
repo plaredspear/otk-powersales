@@ -64,7 +64,7 @@ class AdminTeamScheduleService(
     }
 
     /**
-     * 여사원 일정관리 "거래처" 탭 목록.
+     * 여사원 일정관리 "거래처" 탭 목록 — [getForm] 내부 전용.
      *
      * SF 레거시 `ScheduleSearchByTeamMemberController.getSchedule()` 의 `Util.getIncludedBranchCode()` 정합 —
      * 선택/본인 cost center 코드를 BranchMapping 으로 1:N 확장한 합집합으로 `Account.branchCode IN` 조회.
@@ -72,7 +72,7 @@ class AdminTeamScheduleService(
      * 예: 입력 `"5694"` (cvs전략) → BranchMapping `{5691,5692,5693,5694}` 확장 → 4개 cost center 거래처 모두 노출.
      * 일반 cost center (1:1 매핑) 는 입력=출력 이라 동작 변화 없음.
      */
-    fun getAccounts(principal: WebUserPrincipal, branchCode: String?): List<TeamScheduleAccountDto> {
+    private fun getAccounts(principal: WebUserPrincipal, branchCode: String?): List<TeamScheduleAccountDto> {
         val effectiveBranchCode = branchCode ?: run {
             principal.costCenterCode ?: return emptyList()
         }
@@ -128,20 +128,22 @@ class AdminTeamScheduleService(
      * 4개 endpoint 를 동시 호출 → 같은 인증/권한 검증을 4번 반복하고 네트워크 waterfall 발생.
      * 본 메서드는 동일 검증 1회 하에서 4개 결과를 한 응답으로 반환.
      *
-     * `accounts` 정책: `branches.size == 1` 인 단일지점 사용자만 본인 branchCode 로 즉시 채움.
-     * 다중지점 사용자 (SYSTEM_ADMIN / 영업지원 / 본부) 는 사용자가 지점을 선택해야 거래처가 결정되므로
-     * 본 응답에서는 빈 리스트로 두고, 클라이언트가 선택 시점에 `/accounts?branchCode=...` 별도 호출.
+     * `accounts` 결정 우선순위:
+     * 1) 클라이언트가 `branchCode` 를 지정 → 해당 지점의 거래처 (다중지점 사용자가 지점 드롭다운에서 선택했을 때)
+     * 2) 단일지점 사용자 (`branches.size == 1`) → 본인 branchCode 자동 사용
+     * 3) 그 외 (다중지점 사용자가 지점 미선택) → 빈 리스트
      *
-     * `dailySummary` 정책 (SF 정합): 단일지점 사용자는 form 응답 accounts 전체 기준 현재 월 요약을 즉시 포함 →
-     * 캘린더가 마운트 직후 사용자 선택 없이도 요약 표시. 다중지점 사용자는 거래처 미정이라 빈 리스트.
+     * `dailySummary` 정책 (SF 정합): accounts 가 결정되면 form 응답 accounts 전체 기준 현재 월 요약을 즉시 포함 →
+     * 캘린더가 마운트/지점선택 직후 사용자 조회 없이도 요약 표시.
      * 일정 개별 칩 (schedules) 은 본 응답에 포함하지 않음 — 사용자가 거래처 선택 + 조회 시점에만 fetch.
      */
-    fun getForm(principal: WebUserPrincipal): TeamScheduleFormDto {
+    fun getForm(principal: WebUserPrincipal, branchCode: String? = null): TeamScheduleFormDto {
         val branches = getBranches(principal)
         val members = getMembers(principal)
         val promotionTeams = getProfessionalPromotionTeams()
-        val accounts = if (branches.size == 1) {
-            getAccounts(principal, branches[0].branchCode)
+        val effectiveBranchCode = branchCode ?: branches.singleOrNull()?.branchCode
+        val accounts = if (effectiveBranchCode != null) {
+            getAccounts(principal, effectiveBranchCode)
         } else {
             emptyList()
         }

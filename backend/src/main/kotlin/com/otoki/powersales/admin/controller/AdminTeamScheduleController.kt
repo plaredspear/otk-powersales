@@ -25,16 +25,6 @@ class AdminTeamScheduleController(
 ) {
 
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
-    @GetMapping("/accounts")
-    fun getAccounts(
-        @AuthenticationPrincipal principal: WebUserPrincipal,
-        @RequestParam(required = false) branchCode: String?
-    ): ResponseEntity<ApiResponse<List<TeamScheduleAccountDto>>> {
-        val result = adminTeamScheduleService.getAccounts(principal, branchCode)
-        return ResponseEntity.ok(ApiResponse.success(result))
-    }
-
-    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/branches")
     fun getBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal
@@ -44,15 +34,19 @@ class AdminTeamScheduleController(
     }
 
     /**
-     * 여사원 일정관리 화면 초기 로드 통합 endpoint — branches/members/accounts/professional-promotion-teams
-     * 4건 fetch 를 1 round-trip 으로 합친다.
+     * 여사원 일정관리 화면 초기 로드 통합 endpoint — branches/members/accounts/professional-promotion-teams/dailySummary
+     * 5건 fetch 를 1 round-trip 으로 합친다.
+     *
+     * `branchCode` 지정 시 해당 지점 거래처를 채워 보낸다 (다중지점 사용자가 지점 드롭다운 변경 시 재호출).
+     * 미지정 + 단일지점 사용자는 본인 지점 거래처 자동 사용.
      */
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/form")
     fun getForm(
-        @AuthenticationPrincipal principal: WebUserPrincipal
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @RequestParam(required = false) branchCode: String?
     ): ResponseEntity<ApiResponse<TeamScheduleFormDto>> {
-        val result = adminTeamScheduleService.getForm(principal)
+        val result = adminTeamScheduleService.getForm(principal, branchCode)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 

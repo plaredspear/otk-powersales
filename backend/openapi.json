@@ -1285,7 +1285,7 @@
             "type" : [ "string", "null" ]
           },
           "professionalPromotionTeam" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
             "type" : [ "string", "null" ]
           },
           "role" : {
@@ -1481,7 +1481,7 @@
             "type" : [ "string", "null" ]
           },
           "professionalPromotionTeam" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
             "type" : [ "string", "null" ]
           },
           "role" : {
@@ -4815,95 +4815,11 @@
         },
         "type" : "object"
       },
-      "ApiResponseListString" : {
-        "properties" : {
-          "data" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : [ "array", "null" ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "ApiResponseListSuggestionAttachment" : {
         "properties" : {
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/SuggestionAttachment"
-            },
-            "type" : [ "array", "null" ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ApiResponseListTeamMemberDto" : {
-        "properties" : {
-          "data" : {
-            "items" : {
-              "$ref" : "#/components/schemas/TeamMemberDto"
-            },
-            "type" : [ "array", "null" ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ApiResponseListTeamScheduleAccountDto" : {
-        "properties" : {
-          "data" : {
-            "items" : {
-              "$ref" : "#/components/schemas/TeamScheduleAccountDto"
             },
             "type" : [ "array", "null" ]
           },
@@ -12377,7 +12293,7 @@
             "type" : "string"
           },
           "teamType" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
             "type" : "string"
           }
         },
@@ -12433,7 +12349,7 @@
             "type" : "string"
           },
           "teamType" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
             "type" : "string"
           }
         },
@@ -12488,11 +12404,11 @@
             "type" : "integer"
           },
           "newValue" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
             "type" : [ "string", "null" ]
           },
           "oldValue" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
             "type" : [ "string", "null" ]
           },
           "orgName" : {
@@ -12576,7 +12492,7 @@
             "type" : "string"
           },
           "teamType" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
             "type" : "string"
           },
           "updatedAt" : {
@@ -12621,7 +12537,7 @@
             "type" : "string"
           },
           "teamType" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉장", "프레시세일조_냉동", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
             "type" : "string"
           }
         },
@@ -16832,6 +16748,12 @@
           "branches" : {
             "items" : {
               "$ref" : "#/components/schemas/BranchResponse"
+            },
+            "type" : "array"
+          },
+          "dailySummary" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DailySummaryDto"
             },
             "type" : "array"
           },
@@ -24358,32 +24280,6 @@
         "tags" : [ "admin-team-schedule-controller" ]
       }
     },
-    "/api/v1/admin/team-schedule/accounts" : {
-      "get" : {
-        "operationId" : "getAccounts_2",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "branchCode",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListTeamScheduleAccountDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-team-schedule-controller" ]
-      }
-    },
     "/api/v1/admin/team-schedule/branches" : {
       "get" : {
         "operationId" : "getBranches",
@@ -24405,6 +24301,14 @@
     "/api/v1/admin/team-schedule/form" : {
       "get" : {
         "operationId" : "getForm",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {
@@ -24439,42 +24343,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseTeamScheduleMassDeleteResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-team-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/team-schedule/members" : {
-      "get" : {
-        "operationId" : "getMembers",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListTeamMemberDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-team-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/team-schedule/professional-promotion-teams" : {
-      "get" : {
-        "operationId" : "getProfessionalPromotionTeams",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListString"
                 }
               }
             },

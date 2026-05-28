@@ -14,7 +14,6 @@ interface ScheduleFilterPanelProps {
   accounts: TeamScheduleAccount[];
   promotionTeams: string[];
   isFormLoading: boolean;
-  isAccountsLoading: boolean;
   selectedEmployeeIds: number[];
   onSelectedEmployeeIdsChange: (ids: number[]) => void;
   selectedAccountIds: number[];
@@ -41,7 +40,6 @@ export function ScheduleFilterPanel({
   accounts,
   promotionTeams,
   isFormLoading,
-  isAccountsLoading,
   selectedEmployeeIds,
   onSelectedEmployeeIdsChange,
   selectedAccountIds,
@@ -114,7 +112,7 @@ export function ScheduleFilterPanel({
           <AccountFilterTab
             branches={branches}
             accounts={accounts}
-            isAccountsLoading={isFormLoading || isAccountsLoading}
+            isAccountsLoading={isFormLoading}
             selectedIds={selectedAccountIds}
             onChange={onSelectedAccountIdsChange}
             branchCode={selectedBranchCode}
