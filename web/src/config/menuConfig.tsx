@@ -93,7 +93,7 @@ export const menuRoute: MenuRoute = {
       name: '알림/교육',
       icon: <NotificationOutlined />,
       children: [
-        { path: '/notices', name: '공지사항' },
+        { path: '/notices', name: '공지사항', entity: 'notice', operation: 'READ' },
         { path: '/education', name: '교육' },
       ],
     },
