@@ -131,8 +131,8 @@ export default function ClaimDetailPage() {
 
       <Card title="클레임 정보" style={{ marginBottom: 16 }}>
         <Descriptions column={2}>
-          <Descriptions.Item label="대분류">{claim.categoryName ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="소분류">{claim.subcategoryName ?? '-'}</Descriptions.Item>
+          <Descriptions.Item label="대분류">{claim.categoryLabel ?? '-'}</Descriptions.Item>
+          <Descriptions.Item label="소분류">{claim.subcategoryLabel ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="구매방법">{claim.purchaseMethodName ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="구매금액">
             {claim.purchaseAmount != null ? `${claim.purchaseAmount.toLocaleString()}원` : '-'}

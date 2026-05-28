@@ -19,8 +19,10 @@ export interface ClaimListItem {
   storeName: string | null;
   productName: string | null;
   productCode: string | null;
-  categoryName: string | null;
-  subcategoryName: string | null;
+  categoryValue: string | null;
+  categoryLabel: string | null;
+  subcategoryValue: string | null;
+  subcategoryLabel: string | null;
   defectQuantity: number | null;
   status: string;
   createdAt: string;
@@ -43,8 +45,10 @@ export interface ClaimDetail {
   productName: string | null;
   dateType: string | null;
   date: string | null;
-  categoryName: string | null;
-  subcategoryName: string | null;
+  categoryValue: string | null;
+  categoryLabel: string | null;
+  subcategoryValue: string | null;
+  subcategoryLabel: string | null;
   defectDescription: string | null;
   defectQuantity: number | null;
   purchaseAmount: number | null;

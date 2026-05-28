@@ -105,13 +105,13 @@ export default function ClaimListPage() {
     },
     {
       title: '대분류',
-      dataIndex: 'categoryName',
+      dataIndex: 'categoryLabel',
       width: 100,
       render: (val: string | null) => val ?? '-',
     },
     {
       title: '소분류',
-      dataIndex: 'subcategoryName',
+      dataIndex: 'subcategoryLabel',
       width: 100,
       render: (val: string | null) => val ?? '-',
     },
