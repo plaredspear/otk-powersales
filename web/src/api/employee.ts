@@ -208,6 +208,22 @@ export async function fetchEmployeesForProductLookup(
   return res.data.data;
 }
 
+/**
+ * 진열사원 스케줄 마스터 화면의 사원 lookup search — team_member_schedule 권한 보유자 호출용.
+ *
+ * Employee READ 권한 없이도 호출 가능 (SF TeamMemberSchedule__c.EmployeeId__c Lookup
+ * 메커니즘 정합).
+ */
+export async function fetchEmployeesForScheduleLookup(
+  params: Pick<FetchEmployeesParams, 'keyword' | 'status' | 'page' | 'size'>,
+): Promise<EmployeeListData> {
+  const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/employees/lookup-for-schedule', { params });
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '사원 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function fetchWomanEmployees(params: FetchWomanEmployeesParams): Promise<EmployeeListData> {
   const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/women-employees', { params });
   if (!res.data.success || !res.data.data) {
