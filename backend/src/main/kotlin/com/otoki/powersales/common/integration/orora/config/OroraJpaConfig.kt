@@ -2,12 +2,14 @@ package com.otoki.powersales.common.integration.orora.config
 
 import jakarta.persistence.EntityManagerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import org.springframework.boot.jpa.EntityManagerFactoryBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.orm.jpa.JpaTransactionManager
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
+import org.springframework.orm.jpa.hibernate.SpringBeanContainer
 import org.springframework.transaction.PlatformTransactionManager
 import javax.sql.DataSource
 
@@ -49,6 +51,7 @@ class OroraJpaConfig {
 	fun ororaEntityManagerFactory(
 		builder: EntityManagerFactoryBuilder,
 		@Qualifier("ororaDataSource") ororaDataSource: DataSource,
+		beanFactory: ConfigurableListableBeanFactory,
 	): LocalContainerEntityManagerFactoryBean = builder
 		.dataSource(ororaDataSource)
 		.packages("com.otoki.orora.entity")
@@ -69,6 +72,9 @@ class OroraJpaConfig {
 				// 본 옵션 없이 dialect 만 지정하면 Hibernate 5.4+ 부터는 메타데이터를 조회하지 않지만,
 				// 일부 환경에서 여전히 connection 을 잡는 경로가 있어 명시적으로 false 부착.
 				"hibernate.boot.allow_jdbc_metadata_access" to "false",
+				// @EntityListeners 가 @Component bean 으로 인스턴스화되도록 Spring bean container 등록.
+				// 자동 EMF 경로 (Spring Boot JpaBaseConfiguration) 우회 시 누락되는 customizer 를 명시 재현.
+				"hibernate.resource.beans.container" to SpringBeanContainer(beanFactory),
 			),
 		)
 		.build()
