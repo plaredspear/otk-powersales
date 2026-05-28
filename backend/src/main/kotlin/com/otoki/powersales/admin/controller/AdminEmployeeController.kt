@@ -152,6 +152,35 @@ class AdminEmployeeController(
     }
 
     /**
+     * 진열사원 스케줄 마스터 화면의 사원 lookup search — SF TeamMemberSchedule__c.EmployeeId__c Lookup 정합.
+     *
+     * SF 의 lookup search 는 Employee FLS/object access 와 무관하게 화면 권한 (Schedule CRUD) 으로
+     * 작동 — 본 endpoint 는 SF 메커니즘 정합. 결과는 동일 [EmployeeListResponse] 재사용
+     * (sharing rule 평가는 `adminEmployeeService.getEmployees` 가 그대로 적용).
+     */
+    @GetMapping("/lookup-for-schedule")
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    fun lookupEmployeesForSchedule(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false, defaultValue = "0") page: Int,
+        @RequestParam(required = false, defaultValue = "20") size: Int
+    ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
+        val response = adminEmployeeService.getEmployees(
+            scope = scope,
+            status = status,
+            costCenterCode = null,
+            keyword = keyword,
+            role = null,
+            page = page,
+            size = size
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
      * 사원 단건 상세 조회 — 6개 그룹 (인사·조직·직무·연락처·앱 설정·근무) 의 모든 필드.
      *
      * 레거시 SF 표준 레코드 상세 페이지 동등.

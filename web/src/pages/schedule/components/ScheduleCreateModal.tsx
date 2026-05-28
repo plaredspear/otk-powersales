@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Form, DatePicker, Select, message, Alert } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import EmployeeSelect from '@/pages/admin/accounts/components/EmployeeSelect';
+import EmployeeSelect from './EmployeeSelect';
 import AccountSelect from './AccountSelect';
 import { useScheduleCreate, useScheduleUpdate } from '@/hooks/schedule/useScheduleCreate';
 import type { ScheduleCreateRequest, ScheduleListItem } from '@/api/schedule';
