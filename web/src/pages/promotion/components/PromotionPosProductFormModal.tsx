@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Form, InputNumber, Modal, Select, Spin, message } from 'antd';
 import { useQuery } from '@tanstack/react-query';
-import { fetchProducts } from '@/api/product';
+import { fetchProductsForPromotionLookup } from '@/api/product';
 import {
   useCreatePromotionPosProduct,
   useUpdatePromotionPosProduct,
@@ -52,7 +52,7 @@ export default function PromotionPosProductFormModal({
   const { data: productPage, isFetching } = useQuery({
     queryKey: ['admin', 'products', 'pos-lookup', productKeyword],
     queryFn: () =>
-      fetchProducts({
+      fetchProductsForPromotionLookup({
         keyword: productKeyword.length >= 1 ? productKeyword : undefined,
         size: 20,
       }),

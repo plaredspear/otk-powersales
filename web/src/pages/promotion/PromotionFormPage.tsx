@@ -22,7 +22,7 @@ import {
 } from '@/hooks/promotion/usePromotionMutation';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
 import { fetchAccountsForPromotionLookup } from '@/api/account';
-import { fetchProducts } from '@/api/product';
+import { fetchProductsForPromotionLookup } from '@/api/product';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import type { PromotionFormData } from '@/api/promotion';
 
@@ -142,7 +142,7 @@ export default function PromotionFormPage() {
     if (keyword.length < 2) return;
     setProductSearching(true);
     try {
-      const result = await fetchProducts({ keyword, size: 20 });
+      const result = await fetchProductsForPromotionLookup({ keyword, size: 20 });
       setProductOptions(
         result.content
           .filter((p) => p.id != null && p.name != null)
