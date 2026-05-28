@@ -2,6 +2,7 @@ package com.otoki.powersales.common.config
 
 import jakarta.persistence.EntityManagerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import org.springframework.boot.jpa.EntityManagerFactoryBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -9,6 +10,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.orm.jpa.JpaTransactionManager
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
+import org.springframework.orm.jpa.hibernate.SpringBeanContainer
 import org.springframework.transaction.PlatformTransactionManager
 import javax.sql.DataSource
 
@@ -44,6 +46,16 @@ import javax.sql.DataSource
  * JPA infra 의존을 강제하므로, DataSource 만 검증하는 단위 테스트
  * (`MainDataSourceConfigTest`, `MainDataSourceHealthConfigTest`) 에서 JPA infra
  * 부재로 컨텍스트 부팅이 깨진다. 책임 분리로 DataSource Config 는 JPA 의존 없이 검증 가능.
+ *
+ * ## SpringBeanContainer 명시 주입 (`hibernate.resource.beans.container`)
+ * Spring Boot `JpaBaseConfiguration` 이 자동 EMF 를 만들 때는 `SpringBeanContainer` 를
+ * Hibernate 에 자동 등록해, `@EntityListeners(SomeListener::class)` 의 listener 가
+ * `@Component` 일 때 Spring bean 으로 인스턴스화되어 `@PersistenceContext` / `@Autowired`
+ * 주입이 동작한다. 본 Config 가 `EntityManagerFactoryBuilder.build()` 를 직접 호출하면서
+ * 자동 EMF 경로를 우회하면 `SpringBeanContainer` 등록이 누락되어 Hibernate 가 listener 를
+ * reflection 으로 `new` 인스턴스화 → `lateinit` 필드가 비어 `UninitializedPropertyAccessException`.
+ * 본 클래스는 `OwnerUserDefaultListener` (32개 entity 부착) 가 사용하는 `entityManager` 가
+ * 정상 주입되도록 명시적으로 컨테이너를 properties 에 부착한다.
  */
 @Configuration
 @EnableJpaRepositories(
@@ -58,10 +70,16 @@ class MainJpaRepositoriesConfig {
 	fun entityManagerFactory(
 		builder: EntityManagerFactoryBuilder,
 		@Qualifier("dataSource") dataSource: DataSource,
+		beanFactory: ConfigurableListableBeanFactory,
 	): LocalContainerEntityManagerFactoryBean = builder
 		.dataSource(dataSource)
 		.packages("com.otoki.powersales")
 		.persistenceUnit("main")
+		.properties(
+			mapOf(
+				"hibernate.resource.beans.container" to SpringBeanContainer(beanFactory),
+			),
+		)
 		.build()
 
 	@Bean
