@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Modal, Form, Select, DatePicker, Checkbox, Button, message } from 'antd';
 import dayjs from 'dayjs';
-import { fetchEmployees, type Employee } from '@/api/employee';
+import { fetchEmployeesForPromotionLookup, type Employee } from '@/api/employee';
 import { fetchAccountsForPromotionLookup, type Account } from '@/api/account';
 import { useCreatePPTMaster, useUpdatePPTMaster } from '@/hooks/promotion/usePPTMasters';
 import type { PPTMaster } from '@/api/pptMaster';
@@ -95,7 +95,7 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
     if (!keyword || keyword.length < 2) return;
     setEmployeeLoading(true);
     try {
-      const result = await fetchEmployees({ keyword, size: 20 });
+      const result = await fetchEmployeesForPromotionLookup({ keyword, size: 20 });
       setEmployeeOptions(result.content);
     } catch {
       // ignore
