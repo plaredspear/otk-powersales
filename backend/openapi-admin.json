@@ -8151,9 +8151,6 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
-          "accountSfid" : {
-            "type" : [ "string", "null" ]
-          },
           "achievementRate" : {
             "format" : "double",
             "type" : [ "number", "null" ]
