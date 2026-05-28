@@ -14,7 +14,7 @@ import {
 import type { RcFile, UploadFile, UploadProps } from 'antd/es/upload/interface';
 import { UploadOutlined } from '@ant-design/icons';
 import { useSuggestionCreate } from '@/hooks/suggestions/useSuggestionCreate';
-import { fetchAccounts, type Account } from '@/api/account';
+import { fetchAccountsForClaimLookup, type Account } from '@/api/account';
 import { fetchProducts, type Product } from '@/api/product';
 import type {
   SuggestionActionStatus,
@@ -50,7 +50,7 @@ export default function SuggestionCreatePage() {
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
-        const data = await fetchAccounts({ keyword: accountKeyword.trim(), page: 0, size: 20 });
+        const data = await fetchAccountsForClaimLookup({ keyword: accountKeyword.trim(), page: 0, size: 20 });
         if (!cancelled) setAccountOptions(data.content);
       } catch {
         if (!cancelled) setAccountOptions([]);

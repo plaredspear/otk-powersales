@@ -95,6 +95,34 @@ class AdminAccountController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
+    /**
+     * 물류 클레임 등록/수정 화면의 거래처 lookup search — SF Claim__c.AccId__c Lookup 정합.
+     *
+     * SF 의 lookup search 는 Account FLS/object access 와 무관하게 화면 권한 (Suggestion/Claim CRUD)
+     * 으로 작동 — 본 endpoint 는 SF 메커니즘 정합. 결과는 동일 [AccountListResponse] 재사용
+     * (lookupFilter + sharing rule 평가는 `adminAccountService.getAccounts` 가 그대로 적용).
+     */
+    @GetMapping("/lookup-for-claim")
+    @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
+    fun lookupAccountsForClaim(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
+        @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
+        @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
+    ): ResponseEntity<ApiResponse<AccountListResponse>> {
+        val response = adminAccountService.getAccounts(
+            scope = scope,
+            keyword = keyword,
+            abcType = null,
+            branchCode = null,
+            accountStatusName = null,
+            page = page,
+            size = size
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
     @PostMapping
     @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.EDIT)
     fun createAccount(
