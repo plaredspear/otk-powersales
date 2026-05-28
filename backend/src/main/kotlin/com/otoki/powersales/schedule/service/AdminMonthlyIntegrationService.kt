@@ -50,15 +50,26 @@ class AdminMonthlyIntegrationService(
     private val branchCodeExpander: BranchCodeExpander,
     private val accountCategoryMasterRepository: AccountCategoryMasterRepository,
     private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository,
+    private val teamMemberScheduleSearchService: TeamMemberScheduleSearchService,
+    private val teamMemberCategorySearchService: TeamMemberCategorySearchService,
 ) {
 
+    // 조회 (`getMonthlyIntegration` / `getCategorySchedule`) 는 SF `ScheduleSearchByTeamMember` /
+    // `CategorySearchByTeamMember` 와 동등하게 MFEIS 를 직접 IN 필터로 조회한다 (`TeamMemberSchedule*SearchService`).
+    // 기존 `buildIntegrationItems` 의 TeamMemberSchedule 동적 집계 + `attendance_log IS NOT NULL` 가드는
+    // SF 정합 차원에서 0건이 되는 원인이라 사용하지 않는다. (Write 흐름 `refreshIntegration` 은 그대로 유지.)
     fun getMonthlyIntegration(
         year: Int,
         month: Int,
         costCenterCodes: List<String>
     ): MonthlyIntegrationScheduleResponse {
         validateParams(year, month, costCenterCodes)
-        val items = buildIntegrationItems(year, month, costCenterCodes)
+        val sf = teamMemberScheduleSearchService.search(
+            year = year.toString(),
+            month = month.toString(),
+            orgValues = costCenterCodes,
+        )
+        val items = sf.result.map { it.toMonthlyIntegrationItem() }
         return MonthlyIntegrationScheduleResponse(
             year = year,
             month = month,
@@ -73,12 +84,12 @@ class AdminMonthlyIntegrationService(
         costCenterCodes: List<String>
     ): CategoryScheduleResponse {
         validateParams(year, month, costCenterCodes)
-
-        val currentItems = buildIntegrationItems(year, month, costCenterCodes)
-        val prevYearMonth = YearMonth.of(year, month).minusMonths(1)
-        val prevItems = buildIntegrationItems(prevYearMonth.year, prevYearMonth.monthValue, costCenterCodes)
-
-        val items = buildCategoryItems(currentItems, prevItems)
+        val sf = teamMemberCategorySearchService.search(
+            year = year.toString(),
+            month = month.toString(),
+            orgValues = costCenterCodes,
+        )
+        val items = sf.result.mapNotNull { it.toCategoryItem() }
         return CategoryScheduleResponse(year = year, month = month, items = items)
     }
 
@@ -748,3 +759,48 @@ class InvalidParameterException(detail: String) : BusinessException(
     message = detail,
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+// SF `ScheduleSearchByTeamMember` row → web admin 화면 DTO 변환.
+// `numberOfInputs` 는 MFEIS 가 BigDecimal 로 보유, 화면은 Int 로 표시 (행 수 의미).
+private fun TeamMemberScheduleResultItem.toMonthlyIntegrationItem(): MonthlyIntegrationScheduleItem =
+    MonthlyIntegrationScheduleItem(
+        branchName = orgName ?: "",
+        accountBranchName = accountBranchName,
+        accountCode = accountCode ?: "",
+        accountName = accountName ?: "",
+        employeeCode = employeeNumber ?: "",
+        title = title,
+        employeeName = employeeName ?: "",
+        workingCategory1 = workingCategory1 ?: "",
+        workingCategory3 = workingCategory3,
+        workingCategory4 = workingCategory4,
+        workingCategory5 = workingCategory5,
+        totalInputCount = numberOfInputs?.toInt() ?: 0,
+        equivalentWorkingDays = equivalentNumberOfWorkingDays,
+        convertedHeadcount = convertedHeadcount,
+        avgClosingAmount = actualAmount.toLong(),
+    )
+
+// SF `CategorySearchByTeamMember` row → web admin 카테고리 DTO 변환.
+// 양 월 모두 0 인 row 는 SF `setNull()` 로 모든 수치가 null → 화면에서 제외 (returns null).
+private fun TeamMemberCategoryResultItem.toCategoryItem(): CategoryScheduleItem? {
+    val curTotal = currentMonthTotal ?: return null
+    val prevTotal = lastMonthTotal ?: java.math.BigDecimal.ZERO
+    return CategoryScheduleItem(
+        branchName = branchName,
+        currentMonthTotal = curTotal,
+        previousMonthTotal = prevTotal,
+        totalChange = totalIncrease ?: java.math.BigDecimal.ZERO,
+        displayFixed = fix ?: java.math.BigDecimal.ZERO,
+        displayAlternate = store ?: java.math.BigDecimal.ZERO,
+        displayPatrol = rotate ?: java.math.BigDecimal.ZERO,
+        currentMonthDisplayTotal = currentExhibitionTotal ?: java.math.BigDecimal.ZERO,
+        previousMonthDisplayTotal = lastExhibitionTotal ?: java.math.BigDecimal.ZERO,
+        displayChange = exhibitionIncrease ?: java.math.BigDecimal.ZERO,
+        eventAmbient = roomTemperature ?: java.math.BigDecimal.ZERO,
+        eventFrozenChilled = refrigerationAndFreezing ?: java.math.BigDecimal.ZERO,
+        currentMonthEventTotal = currentEventTotal ?: java.math.BigDecimal.ZERO,
+        previousMonthEventTotal = lastEventTotal ?: java.math.BigDecimal.ZERO,
+        eventChange = eventIncrease ?: java.math.BigDecimal.ZERO,
+    )
+}

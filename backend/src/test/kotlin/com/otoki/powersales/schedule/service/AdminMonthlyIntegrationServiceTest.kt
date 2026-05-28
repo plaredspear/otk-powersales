@@ -24,6 +24,10 @@ import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.EmployeeInputCriteriaMasterRepository
+import com.otoki.powersales.schedule.dto.response.TeamMemberCategoryResultItem
+import com.otoki.powersales.schedule.dto.response.TeamMemberCategorySearchResult
+import com.otoki.powersales.schedule.dto.response.TeamMemberScheduleResultItem
+import com.otoki.powersales.schedule.dto.response.TeamMemberScheduleSearchResult
 import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -54,6 +58,8 @@ class AdminMonthlyIntegrationServiceTest {
     private val branchCodeExpander: BranchCodeExpander = mockk(relaxUnitFun = true)
     private val accountCategoryMasterRepository: AccountCategoryMasterRepository = mockk(relaxUnitFun = true)
     private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository = mockk(relaxUnitFun = true)
+    private val teamMemberScheduleSearchService: TeamMemberScheduleSearchService = mockk(relaxUnitFun = true)
+    private val teamMemberCategorySearchService: TeamMemberCategorySearchService = mockk(relaxUnitFun = true)
 
     private val service = AdminMonthlyIntegrationService(
         organizationRepository,
@@ -67,6 +73,8 @@ class AdminMonthlyIntegrationServiceTest {
         branchCodeExpander,
         accountCategoryMasterRepository,
         employeeInputCriteriaMasterRepository,
+        teamMemberScheduleSearchService,
+        teamMemberCategorySearchService,
     )
 
     @BeforeEach
@@ -109,15 +117,21 @@ class AdminMonthlyIntegrationServiceTest {
     inner class GetMonthlyIntegrationTests {
 
         @Test
-        @DisplayName("정상 조회 - 유효한 파라미터 -> 통합일정 결과 반환")
+        @DisplayName("정상 조회 - SF 동등 sub-service 결과를 화면 DTO 로 변환")
         fun success() {
-            // Given
-            setupCommonMocks()
-            every { teamMemberScheduleRepository.findIntegrationScheduleRecords(any(), any(), any()) } returns listOf(
-                    createScheduleRecord(id = 1L, employeeId = 1L, accountId = 100, workingDate = LocalDate.of(2026, 3, 1)),
-                    createScheduleRecord(id = 2L, employeeId = 1L, accountId = 100, workingDate = LocalDate.of(2026, 3, 2))
+            // Given — getMonthlyIntegration 은 TeamMemberScheduleSearchService.search 결과를 어댑팅한다.
+            every { teamMemberScheduleSearchService.search("2026", "3", listOf("CC001")) } returns
+                TeamMemberScheduleSearchResult(
+                    resultCode = "S",
+                    result = listOf(
+                        sfScheduleRow(
+                            accountCode = "A001", accountName = "이마트 강남점",
+                            employeeNumber = "E001", numberOfInputs = BigDecimal("2"),
+                            equivalentNumberOfWorkingDays = BigDecimal("2.000"),
+                            convertedHeadcount = BigDecimal("1.000"),
+                        )
+                    ),
                 )
-            every { accountRepository.findByIdIn(any()) } returns listOf(createAccount(id = 100, externalKey = "A001", name = "이마트 강남점"))
 
             // When
             val result = service.getMonthlyIntegration(2026, 3, listOf("CC001"))
@@ -130,6 +144,8 @@ class AdminMonthlyIntegrationServiceTest {
 
             val item = result.items[0]
             assertThat(item.accountCode).isEqualTo("A001")
+            assertThat(item.accountName).isEqualTo("이마트 강남점")
+            assertThat(item.employeeCode).isEqualTo("E001")
             assertThat(item.totalInputCount).isEqualTo(2)
             assertThat(item.equivalentWorkingDays).isEqualByComparingTo(BigDecimal("2.000"))
             assertThat(item.convertedHeadcount).isEqualByComparingTo(BigDecimal("1.000"))
@@ -139,8 +155,8 @@ class AdminMonthlyIntegrationServiceTest {
         @DisplayName("데이터 없는 월 조회 - 빈 결과 반환")
         fun emptyResult() {
             // Given
-            setupCommonMocks()
-            every { teamMemberScheduleRepository.findIntegrationScheduleRecords(any(), any(), any()) } returns emptyList()
+            every { teamMemberScheduleSearchService.search("2020", "1", listOf("CC001")) } returns
+                TeamMemberScheduleSearchResult(resultCode = "S", result = emptyList())
 
             // When
             val result = service.getMonthlyIntegration(2020, 1, listOf("CC001"))
@@ -151,18 +167,17 @@ class AdminMonthlyIntegrationServiceTest {
         }
 
         @Test
-        @DisplayName("환산근무일수 검증 - 사원A가 3/1에 거래처 2곳 투입 시 각 0.5")
-        fun equivalentWorkingDays_twoAccounts() {
-            // Given
-            val date = LocalDate.of(2026, 3, 1)
-            setupCommonMocks()
-            every { teamMemberScheduleRepository.findIntegrationScheduleRecords(any(), any(), any()) } returns listOf(
-                    createScheduleRecord(id = 1L, employeeId = 1L, accountId = 100, workingDate = date),
-                    createScheduleRecord(id = 2L, employeeId = 1L, accountId = 200, workingDate = date)
-                )
-            every { accountRepository.findByIdIn(any()) } returns listOf(
-                    createAccount(id = 100, externalKey = "A001"),
-                    createAccount(id = 200, externalKey = "A002")
+        @DisplayName("환산근무일수 어댑팅 - sub-service 가 산출한 BigDecimal 값을 그대로 전달")
+        fun equivalentWorkingDays_passthrough() {
+            // Given — 환산근무일수 계산 로직 자체는 TeamMemberScheduleSearchService 가 책임지므로
+            // 본 service 의 책임은 어댑팅 정확성 검증으로 한정.
+            every { teamMemberScheduleSearchService.search("2026", "3", listOf("CC001")) } returns
+                TeamMemberScheduleSearchResult(
+                    resultCode = "S",
+                    result = listOf(
+                        sfScheduleRow(accountCode = "A001", equivalentNumberOfWorkingDays = BigDecimal("0.500")),
+                        sfScheduleRow(accountCode = "A002", equivalentNumberOfWorkingDays = BigDecimal("0.500")),
+                    ),
                 )
 
             // When
@@ -210,18 +225,28 @@ class AdminMonthlyIntegrationServiceTest {
     inner class GetCategoryScheduleTests {
 
         @Test
-        @DisplayName("정상 조회 - 카테고리별 집계 결과 반환")
+        @DisplayName("정상 조회 - SF 동등 sub-service 결과를 카테고리 DTO 로 변환")
         fun success() {
             // Given
-            setupCommonMocks()
-            every { teamMemberScheduleRepository.findIntegrationScheduleRecords(any(), any(), any()) } returns 
-                    listOf(createScheduleRecord(
-                        id = 1L, employeeId = 1L, accountId = 100,
-                        workingDate = LocalDate.of(2026, 3, 1),
-                        workingCategory1 = WorkingCategory1.DISPLAY, workingCategory3 = WorkingCategory3.FIXED
-                    ))
-                
-            every { accountRepository.findByIdIn(any()) } returns listOf(createAccount(id = 100, externalKey = "A001"))
+            every { teamMemberCategorySearchService.search("2026", "3", listOf("CC001")) } returns
+                TeamMemberCategorySearchResult(
+                    resultCode = "S",
+                    result = listOf(
+                        TeamMemberCategoryResultItem(
+                            branchName = "강남1지점",
+                            fix = BigDecimal("1.000"),
+                            currentExhibitionTotal = BigDecimal("1.000"),
+                            lastExhibitionTotal = BigDecimal.ZERO,
+                            exhibitionIncrease = BigDecimal("1.000"),
+                            currentEventTotal = BigDecimal.ZERO,
+                            lastEventTotal = BigDecimal.ZERO,
+                            eventIncrease = BigDecimal.ZERO,
+                            currentMonthTotal = BigDecimal("1.0"),
+                            lastMonthTotal = BigDecimal.ZERO,
+                            totalIncrease = BigDecimal("1.0"),
+                        )
+                    ),
+                )
 
             // When
             val result = service.getCategorySchedule(2026, 3, listOf("CC001"))
@@ -229,6 +254,30 @@ class AdminMonthlyIntegrationServiceTest {
             // Then
             assertThat(result.year).isEqualTo(2026)
             assertThat(result.month).isEqualTo(3)
+            assertThat(result.items).hasSize(1)
+            val item = result.items[0]
+            assertThat(item.branchName).isEqualTo("강남1지점")
+            assertThat(item.displayFixed).isEqualByComparingTo(BigDecimal("1.000"))
+            assertThat(item.currentMonthTotal).isEqualByComparingTo(BigDecimal("1.0"))
+        }
+
+        @Test
+        @DisplayName("양 월 모두 0 인 row 는 결과에서 제외 (SF setNull 정합)")
+        fun bothZeroExcluded() {
+            // Given
+            every { teamMemberCategorySearchService.search("2026", "3", listOf("CC001")) } returns
+                TeamMemberCategorySearchResult(
+                    resultCode = "S",
+                    result = listOf(
+                        TeamMemberCategoryResultItem(branchName = "강남1지점"),  // 모든 수치 null
+                    ),
+                )
+
+            // When
+            val result = service.getCategorySchedule(2026, 3, listOf("CC001"))
+
+            // Then
+            assertThat(result.items).isEmpty()
         }
     }
 
@@ -646,8 +695,10 @@ class AdminMonthlyIntegrationServiceTest {
             every { employeeRepository.findByCostCenterCodeInAndStatus(any(), any()) } returns emptyList()
             every { organizationRepository.searchForAdmin(any(), any(), any()) } returns emptyList()
 
-            // When
-            service.getMonthlyIntegration(2026, 5, listOf("5849"))
+            // When — getMonthlyIntegration 은 SF 동등 sub-service 호출로 위임되었으므로
+            // 본 BranchCodeExpander 합성 경로 검증은 buildIntegrationItems 직접 호출로 수행.
+            // (AdminSalesComparisonService 가 본 함수를 매출비교 화면에서 그대로 사용)
+            service.buildIntegrationItems(2026, 5, listOf("5849"))
 
             // Then: BranchCodeExpander 결과 (["5849","5479"]) 로 employee 조회
             verify {
@@ -668,7 +719,7 @@ class AdminMonthlyIntegrationServiceTest {
             every { organizationRepository.searchForAdmin(any(), any(), any()) } returns emptyList()
 
             // When
-            service.getMonthlyIntegration(2026, 5, listOf("L3-CODE"))
+            service.buildIntegrationItems(2026, 5, listOf("L3-CODE"))
 
             // Then: 조직 펼침 결과를 BranchCodeExpander 에 전달 + 최종 결과로 employee 조회
             verify { organizationRepository.expandCostCenterCodes(listOf("L3-CODE")) }
@@ -691,7 +742,7 @@ class AdminMonthlyIntegrationServiceTest {
             every { organizationRepository.searchForAdmin(any(), any(), any()) } returns emptyList()
 
             // When
-            service.getMonthlyIntegration(2026, 5, listOf("9999"))
+            service.buildIntegrationItems(2026, 5, listOf("9999"))
 
             // Then
             verify {
@@ -710,10 +761,10 @@ class AdminMonthlyIntegrationServiceTest {
             every { branchCodeExpander.expand(emptyList()) } returns emptySet()
 
             // When
-            val result = service.getMonthlyIntegration(2026, 5, listOf("CC001"))
+            val items = service.buildIntegrationItems(2026, 5, listOf("CC001"))
 
             // Then: 조기 종료로 빈 결과
-            assertThat(result.items).isEmpty()
+            assertThat(items).isEmpty()
             verify(exactly = 0) { employeeRepository.findByCostCenterCodeInAndStatus(any(), any()) }
         }
     }
@@ -770,4 +821,42 @@ class AdminMonthlyIntegrationServiceTest {
             branchName = branchName
         )
     }
+
+    private fun sfScheduleRow(
+        accountCode: String = "A001",
+        accountName: String = "이마트 강남점",
+        accountBranchName: String? = "강남1지점",
+        employeeNumber: String = "E001",
+        employeeName: String = "사원A",
+        orgName: String = "강남1지점",
+        title: String? = "OSPM",
+        workingCategory1: String? = "진열",
+        workingCategory3: String? = "고정",
+        workingCategory4: String? = null,
+        workingCategory5: String? = "상시",
+        numberOfInputs: BigDecimal? = BigDecimal("1"),
+        equivalentNumberOfWorkingDays: BigDecimal = BigDecimal("1.000"),
+        convertedHeadcount: BigDecimal = BigDecimal("1.000"),
+        actualAmount: BigDecimal = BigDecimal.ZERO,
+    ): TeamMemberScheduleResultItem =
+        TeamMemberScheduleResultItem(
+            year = "2026",
+            month = "3",
+            name = null,
+            accountBranchName = accountBranchName,
+            accountName = accountName,
+            accountCode = accountCode,
+            orgName = orgName,
+            employeeNumber = employeeNumber,
+            title = title,
+            employeeName = employeeName,
+            workingCategory1 = workingCategory1,
+            workingCategory3 = workingCategory3,
+            workingCategory4 = workingCategory4,
+            workingCategory5 = workingCategory5,
+            numberOfInputs = numberOfInputs,
+            equivalentNumberOfWorkingDays = equivalentNumberOfWorkingDays,
+            convertedHeadcount = convertedHeadcount,
+            actualAmount = actualAmount,
+        )
 }
