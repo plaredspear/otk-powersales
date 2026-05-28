@@ -16779,6 +16779,12 @@
             },
             "type" : "array"
           },
+          "dailySummary" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DailySummaryDto"
+            },
+            "type" : "array"
+          },
           "members" : {
             "items" : {
               "$ref" : "#/components/schemas/TeamMemberDto"
