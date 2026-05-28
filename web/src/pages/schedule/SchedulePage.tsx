@@ -209,7 +209,7 @@ export default function SchedulePage() {
   ]);
 
   return (
-    <div style={{ display: 'flex', height: '100%', minHeight: 0, gap: 16, padding: 16 }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 160px)', minHeight: 0, gap: 16, padding: 16, boxSizing: 'border-box' }}>
       <div style={{ width: 240, flexShrink: 0, minHeight: 0, height: '100%' }}>
         <ScheduleFilterPanel
           filterTab={filterTab}
