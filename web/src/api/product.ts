@@ -121,6 +121,21 @@ export async function fetchProducts(params: FetchProductsParams): Promise<Produc
   return res.data.data;
 }
 
+/**
+ * 행사마스터 등록/수정 화면의 제품 lookup search — promotion 권한 보유자 호출용.
+ *
+ * Product READ 권한 없이도 호출 가능 (SF lookup search 메커니즘 정합).
+ */
+export async function fetchProductsForPromotionLookup(
+  params: Pick<FetchProductsParams, 'keyword' | 'page' | 'size'>,
+): Promise<ProductListData> {
+  const res = await client.get<ApiResponse<ProductListData>>('/api/v1/admin/products/lookup', { params });
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '제품 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function fetchProductCategories(): Promise<CategoryTree[]> {
   const res = await client.get<ApiResponse<CategoryTree[]>>('/api/v1/admin/products/categories');
   if (!res.data.success || !res.data.data) {

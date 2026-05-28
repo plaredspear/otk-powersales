@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Descriptions, Input, Select, Spin } from 'antd';
 import type { PromotionDetail } from '@/api/promotion';
 import type { Product } from '@/api/product';
-import { fetchProducts } from '@/api/product';
+import { fetchProductsForPromotionLookup } from '@/api/product';
 
 export interface ProductFormValues {
   primaryProductId: number | null;
@@ -38,7 +38,7 @@ export default function PromotionProductSection({
     setProductSearching(true);
     searchTimerRef.current = setTimeout(async () => {
       try {
-        const result = await fetchProducts({ keyword, size: 10 });
+        const result = await fetchProductsForPromotionLookup({ keyword, size: 10 });
         setProductOptions(result.content);
       } catch {
         setProductOptions([]);
