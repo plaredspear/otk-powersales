@@ -1,16 +1,14 @@
 import './AdminLayout.css';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ProLayout from '@ant-design/pro-layout';
 import { Dropdown, Typography, type MenuProps } from 'antd';
 import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
-import { useForbiddenStore } from '@/stores/forbiddenStore';
 import { menuRoute, type MenuItem } from '@/config/menuConfig';
 import queryClient from '@/lib/queryClient';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import AppBreadcrumb from '@/components/AppBreadcrumb';
-import ForbiddenResult from '@/components/ForbiddenResult';
 import { usePermission } from '@/hooks/usePermission';
 
 const { Text } = Typography;
@@ -23,7 +21,6 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const profileName = user?.profileName ?? null;
-  const { forbidden, setForbidden } = useForbiddenStore();
   const { hasEntityPermission, hasSystemPermission } = usePermission();
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -56,9 +53,6 @@ export default function AdminLayout() {
     return { ...menuRoute, children: filterItems(menuRoute.children) };
   }, [hasEntityPermission, hasSystemPermission, profileName]);
 
-  useEffect(() => {
-    setForbidden(false);
-  }, [location.pathname, setForbidden]);
   const handleLogout = () => {
     queryClient.clear();
     logout();
@@ -141,7 +135,7 @@ export default function AdminLayout() {
         </div>
         <AppBreadcrumb />
         <div style={{ padding: 24 }}>
-          {forbidden ? <ForbiddenResult /> : <Outlet />}
+          <Outlet />
         </div>
       </ProLayout>
     </BreadcrumbProvider>

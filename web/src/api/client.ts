@@ -2,7 +2,6 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { notification } from 'antd';
 import { refreshToken } from './auth';
 import queryClient from '@/lib/queryClient';
-import { useForbiddenStore } from '@/stores/forbiddenStore';
 
 const client = axios.create({
   baseURL: '',
@@ -43,9 +42,17 @@ client.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
 
-    // 403: 권한 없음 — forbidden 상태 설정 후 에러 전파 (로그아웃 안 함)
+    // 403: 권한 없음 — 알림만 표시하고 에러 전파 (페이지 유지, 로그아웃 안 함)
+    // 페이지 진입 권한은 라우터 가드(PermissionRoute/RoleRoute)가 동기 판정하므로
+    // 인터셉터가 받는 403 은 항상 "페이지 내부에서 권한 없는 데이터를 조회한 경우" 이다.
     if (status === 403) {
-      useForbiddenStore.getState().setForbidden(true);
+      const data = error.response?.data as { message?: string } | undefined;
+      notification.warning({
+        key: 'api-forbidden',
+        message: '권한 없음',
+        description: data?.message ?? '요청한 데이터에 접근할 권한이 없습니다.',
+        duration: 4,
+      });
       return Promise.reject(error);
     }
 
