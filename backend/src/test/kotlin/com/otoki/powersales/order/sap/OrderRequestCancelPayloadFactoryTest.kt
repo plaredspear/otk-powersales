@@ -72,7 +72,6 @@ class OrderRequestCancelPayloadFactoryTest {
         id = id,
         lineNumber = lineNumber,
         productCode = productCode,
-        productName = "P-$productCode",
         unit = "EA",
         orderRequest = orderRequest,
     )

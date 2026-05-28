@@ -68,9 +68,6 @@ class OrderRequestProduct(
     @Column(name = "product_code", nullable = false, length = 255)
     val productCode: String,
 
-    @Column(name = "product_name", nullable = false, length = 100)
-    val productName: String,
-
     @SFField("TotalQuantity_Box__c")
     @Column(name = "quantity_boxes", nullable = false, precision = 18, scale = 2)
     val quantityBoxes: BigDecimal = BigDecimal.ZERO,

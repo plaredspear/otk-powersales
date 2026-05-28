@@ -143,7 +143,6 @@ class OrderRequestProductSFAnnotationTest {
                 id = 100L,
                 lineNumber = BigDecimal.valueOf(1L),
                 productCode = "P001",
-                productName = "test",
                 quantityPieces = BigDecimal.valueOf(1L),
                 unit = "EA",
                 orderRequest = orderRequest,

@@ -382,7 +382,6 @@ class OrderRequestServiceTest {
             id = 1L,
             lineNumber = BigDecimal.valueOf(1L),
             productCode = productCode,
-            productName = productName,
             quantityBoxes = BigDecimal("10"),
             quantityPieces = BigDecimal.valueOf(0L),
             unit = "BOX",
@@ -390,6 +389,11 @@ class OrderRequestServiceTest {
             amount = BigDecimal.ZERO,
             piecesPerBox = piecesPerBox,
             orderRequest = orderRequest,
+            product = com.otoki.powersales.product.entity.Product(
+                id = 1L,
+                productCode = productCode,
+                name = productName,
+            ),
         )
 
     private fun buildSapLine(

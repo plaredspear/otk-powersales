@@ -55,7 +55,7 @@ class OrderRequestDetailMapper {
             val productCode = sapLine.productCode.orEmpty()
             val crmProduct = crmProductsByCode[productCode]
 
-            val productName = crmProduct?.productName ?: sapLine.productName.orEmpty()
+            val productName = crmProduct?.product?.name ?: sapLine.productName.orEmpty()
 
             // 결품: DefaultReason 채워짐 (평가 5 — 마지막 매칭 우선)
             if (!sapLine.defaultReason.isNullOrEmpty()) {

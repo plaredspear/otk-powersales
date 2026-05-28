@@ -8,7 +8,7 @@ import java.math.BigDecimal
  */
 data class OrderedItemResponse(
     val productCode: String,
-    val productName: String,
+    val productName: String?,
     val totalQuantityBoxes: BigDecimal,
     val totalQuantityPieces: BigDecimal,
     val isCancelled: Boolean,
@@ -17,7 +17,7 @@ data class OrderedItemResponse(
         fun from(item: OrderRequestProduct): OrderedItemResponse =
             OrderedItemResponse(
                 productCode = item.productCode,
-                productName = item.productName,
+                productName = item.product?.name,
                 totalQuantityBoxes = item.quantityBoxes,
                 totalQuantityPieces = item.quantityPieces,
                 isCancelled = item.isCancelled(),
