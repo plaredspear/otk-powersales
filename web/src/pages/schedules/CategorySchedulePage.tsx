@@ -19,39 +19,37 @@ function renderChange(value: number, formatter: (v: number) => string) {
   return <span style={style}>{formatter(value)}</span>;
 }
 
-// SF 화면 비율 정합 — 사이드바 240px 제외 가용 영역에 15개 컬럼이 가로 스크롤 없이 들어가도록 폭 축소.
-// 셀 ellipsis + 숫자 우측 정렬 유지로 좁힌 폭에서도 가독성 확보. 헤더가 잘릴 경우 antd 가 자동 줄바꿈.
-const NUM_COL_WIDTH = 70;
-const SUM_COL_WIDTH = 90;
+// 가용 영역에 맞춰 자동 분배 — width 미지정 시 antd 가 부모 wrapper 폭에 맞춰 균등 분배.
+// SF 화면처럼 좁아져도 ellipsis 로 텍스트 축약하여 가로 스크롤 없이 한 화면 표시.
 const columns: ColumnsType<CategoryScheduleItem> = [
-  { title: '지점명', dataIndex: 'branchName', width: 80, fixed: 'left', ellipsis: true },
+  { title: '지점명', dataIndex: 'branchName', ellipsis: true },
   {
     title: '총계',
     children: [
-      { title: '당월총합계', dataIndex: 'currentMonthTotal', width: SUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal1(v) },
-      { title: '전월마감합계', dataIndex: 'previousMonthTotal', width: SUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal1(v) },
-      { title: '전체증감수', dataIndex: 'totalChange', width: SUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => renderChange(v, formatDecimal1) },
+      { title: '당월총합계', dataIndex: 'currentMonthTotal', align: 'right', ellipsis: true, render: (v: number) => formatDecimal1(v) },
+      { title: '전월마감합계', dataIndex: 'previousMonthTotal', align: 'right', ellipsis: true, render: (v: number) => formatDecimal1(v) },
+      { title: '전체증감수', dataIndex: 'totalChange', align: 'right', ellipsis: true, render: (v: number) => renderChange(v, formatDecimal1) },
     ],
   },
   {
     title: '진열',
     children: [
-      { title: '고정', dataIndex: 'displayFixed', width: NUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
-      { title: '격고', dataIndex: 'displayAlternate', width: NUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
-      { title: '순회', dataIndex: 'displayPatrol', width: NUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
-      { title: '당월진열합계', dataIndex: 'currentMonthDisplayTotal', width: SUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
-      { title: '전월진열합계', dataIndex: 'previousMonthDisplayTotal', width: SUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
-      { title: '진열증감수', dataIndex: 'displayChange', width: SUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => renderChange(v, formatDecimal3) },
+      { title: '고정', dataIndex: 'displayFixed', align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
+      { title: '격고', dataIndex: 'displayAlternate', align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
+      { title: '순회', dataIndex: 'displayPatrol', align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
+      { title: '당월진열합계', dataIndex: 'currentMonthDisplayTotal', align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
+      { title: '전월진열합계', dataIndex: 'previousMonthDisplayTotal', align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
+      { title: '진열증감수', dataIndex: 'displayChange', align: 'right', ellipsis: true, render: (v: number) => renderChange(v, formatDecimal3) },
     ],
   },
   {
     title: '행사',
     children: [
-      { title: '상온', dataIndex: 'eventAmbient', width: NUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
-      { title: '냉동/냉장', dataIndex: 'eventFrozenChilled', width: NUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
-      { title: '당월행사합계', dataIndex: 'currentMonthEventTotal', width: SUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
-      { title: '전월행사합계', dataIndex: 'previousMonthEventTotal', width: SUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
-      { title: '행사증감수', dataIndex: 'eventChange', width: SUM_COL_WIDTH, align: 'right', ellipsis: true, render: (v: number) => renderChange(v, formatDecimal3) },
+      { title: '상온', dataIndex: 'eventAmbient', align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
+      { title: '냉동/냉장', dataIndex: 'eventFrozenChilled', align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
+      { title: '당월행사합계', dataIndex: 'currentMonthEventTotal', align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
+      { title: '전월행사합계', dataIndex: 'previousMonthEventTotal', align: 'right', ellipsis: true, render: (v: number) => formatDecimal3(v) },
+      { title: '행사증감수', dataIndex: 'eventChange', align: 'right', ellipsis: true, render: (v: number) => renderChange(v, formatDecimal3) },
     ],
   },
 ];
@@ -143,6 +141,7 @@ export default function CategorySchedulePage() {
           size="small"
           sticky
           bordered
+          tableLayout="fixed"
           locale={{
             emptyText:
               queryParams == null ? '조회 조건을 설정하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',

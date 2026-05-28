@@ -18,24 +18,23 @@ function formatDecimal3(value: number): string {
   return value.toLocaleString('ko-KR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 }
 
-// SF 화면 비율 정합 — 사이드바 240px 제외 가용 영역에 15개 컬럼이 가로 스크롤 없이 들어가도록 폭 축소.
-// SF 도 헤더 ellipsis (예: "근무...", "총 환...") 적용 → 동일 정책. 셀 ellipsis + 숫자 우측 정렬 유지.
+// 가용 영역에 맞춰 자동 분배 — width 미지정 시 antd 가 부모 wrapper 폭에 맞춰 균등 분배.
+// SF 화면처럼 좁아져도 ellipsis 로 텍스트 축약하여 가로 스크롤 없이 한 화면 표시.
 const columns: ColumnsType<MonthlyIntegrationScheduleItem> = [
-  { title: '소속', dataIndex: 'branchName', width: 75, fixed: 'left', ellipsis: true },
-  { title: '거래처 지점명', dataIndex: 'accountBranchName', width: 80, ellipsis: true, render: (v) => v ?? '-' },
-  { title: '거래처코드', dataIndex: 'accountCode', width: 80, ellipsis: true },
-  { title: '거래처명', dataIndex: 'accountName', width: 100, ellipsis: true },
-  { title: '사번', dataIndex: 'employeeCode', width: 75, ellipsis: true },
-  { title: '직위', dataIndex: 'title', width: 55, ellipsis: true, render: (v) => v ?? '-' },
-  { title: '이름', dataIndex: 'employeeName', width: 65, ellipsis: true },
-  { title: '근무형태1', dataIndex: 'workingCategory1', width: 70, ellipsis: true },
-  { title: '근무형태3', dataIndex: 'workingCategory3', width: 70, ellipsis: true, render: (v) => v ?? '-' },
-  { title: '근무형태4', dataIndex: 'workingCategory4', width: 70, ellipsis: true, render: (v) => v ?? '-' },
-  { title: '근무형태5', dataIndex: 'workingCategory5', width: 70, ellipsis: true, render: (v) => v ?? '-' },
+  { title: '소속', dataIndex: 'branchName', ellipsis: true },
+  { title: '거래처 지점명', dataIndex: 'accountBranchName', ellipsis: true, render: (v) => v ?? '-' },
+  { title: '거래처코드', dataIndex: 'accountCode', ellipsis: true },
+  { title: '거래처명', dataIndex: 'accountName', ellipsis: true },
+  { title: '사번', dataIndex: 'employeeCode', ellipsis: true },
+  { title: '직위', dataIndex: 'title', ellipsis: true, render: (v) => v ?? '-' },
+  { title: '이름', dataIndex: 'employeeName', ellipsis: true },
+  { title: '근무형태1', dataIndex: 'workingCategory1', ellipsis: true },
+  { title: '근무형태3', dataIndex: 'workingCategory3', ellipsis: true, render: (v) => v ?? '-' },
+  { title: '근무형태4', dataIndex: 'workingCategory4', ellipsis: true, render: (v) => v ?? '-' },
+  { title: '근무형태5', dataIndex: 'workingCategory5', ellipsis: true, render: (v) => v ?? '-' },
   {
     title: '총 투입횟수',
     dataIndex: 'totalInputCount',
-    width: 75,
     align: 'right',
     ellipsis: true,
     render: (v: number) => formatNumber(v),
@@ -43,7 +42,6 @@ const columns: ColumnsType<MonthlyIntegrationScheduleItem> = [
   {
     title: '총 환산근무일수',
     dataIndex: 'equivalentWorkingDays',
-    width: 90,
     align: 'right',
     ellipsis: true,
     render: (v: number) => formatDecimal3(v),
@@ -51,7 +49,6 @@ const columns: ColumnsType<MonthlyIntegrationScheduleItem> = [
   {
     title: '총 환산인원',
     dataIndex: 'convertedHeadcount',
-    width: 75,
     align: 'right',
     ellipsis: true,
     render: (v: number) => formatDecimal3(v),
@@ -59,7 +56,6 @@ const columns: ColumnsType<MonthlyIntegrationScheduleItem> = [
   {
     title: '월 평균 매출(6개월)',
     dataIndex: 'avgClosingAmount',
-    width: 110,
     align: 'right',
     ellipsis: true,
     render: (v: number) => formatNumber(v),
@@ -207,6 +203,7 @@ export default function MonthlyIntegrationSchedulePage() {
             pagination={false}
             size="small"
             sticky
+            tableLayout="fixed"
             locale={{
               emptyText:
                 queryParams == null ? '조회 조건을 설정하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',
