@@ -28,6 +28,10 @@ export interface PageAccessGuideRow {
   requirementKind: RequirementKind;
   /** 사람이 읽는 요구사항 라벨. raw 코드 병기 ("거래처 (account, READ/조회)"). */
   requirementLabel: string;
+  /** 모페이지(list)의 sub-route (등록/수정/상세) 인지 여부. true 면 행 들여쓰기. */
+  isSubRoute: boolean;
+  /** sub-route 일 때 모페이지 name. 그 외에는 null. */
+  parentName: string | null;
   /** 요구사항을 만족하는 Profile 목록. */
   satisfyingProfiles: { profileId: number; name: string }[];
   /** 요구사항을 만족하는 PermissionSet 목록. */
@@ -45,9 +49,9 @@ interface BuildRowsInput {
 export function buildRows(input: BuildRowsInput): PageAccessGuideRow[] {
   const { menu, profiles, profileMatrix, permissionSetMatrix } = input;
 
-  const leaves = flattenMenuLeaves(menu);
+  const leaves = flattenMenuLeaves(menu, { includeSubRoutes: true });
 
-  return leaves.map(({ category, item }) => {
+  return leaves.map(({ category, item, isSubRoute, parentName }) => {
     const requirement = classify(item);
     const requirementLabel = formatRequirement(requirement);
     const { satisfyingProfiles, satisfyingPermissionSets } = match(requirement, {
@@ -63,6 +67,8 @@ export function buildRows(input: BuildRowsInput): PageAccessGuideRow[] {
       path: item.path ?? '',
       requirementKind: requirement.kind,
       requirementLabel,
+      isSubRoute,
+      parentName,
       satisfyingProfiles,
       satisfyingPermissionSets,
     };

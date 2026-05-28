@@ -218,6 +218,62 @@ describe('buildRows', () => {
     expect(row.requirementLabel).toBe('unknown_entity (unknown_entity, READ/조회)');
   });
 
+  it('모페이지의 subRoutes (등록/수정) 도 별도 row 로 평탄화 + 자체 권한 요구로 매칭', () => {
+    const rows = buildRows({
+      menu: {
+        path: '/',
+        children: [
+          {
+            name: '행사/배치',
+            children: [
+              {
+                path: '/promotions',
+                name: '행사마스터',
+                entity: 'promotion',
+                operation: 'READ',
+                subRoutes: [
+                  { path: '/promotions/new', name: '행사마스터 등록', entity: 'promotion', operation: 'CREATE' },
+                  { path: '/promotions/:id/edit', name: '행사마스터 수정', entity: 'promotion', operation: 'EDIT' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      profiles: makeProfiles(),
+      permissionSets: makePermissionSets(),
+      profileMatrix: {
+        profiles: [{ profileId: 1, name: '시스템 관리자' }],
+        rows: [
+          {
+            entity: 'promotion',
+            byProfile: [
+              { profileId: 1, canRead: true, canCreate: true, canEdit: true, canDelete: false },
+            ],
+          },
+        ],
+      },
+      permissionSetMatrix: { permissionSets: [] },
+    });
+
+    expect(rows).toHaveLength(3);
+    const [list, create, edit] = rows;
+    expect(list.path).toBe('/promotions');
+    expect(list.isSubRoute).toBe(false);
+    expect(list.parentName).toBeNull();
+    expect(list.requirementLabel).toBe('행사 (promotion, READ/조회)');
+
+    expect(create.path).toBe('/promotions/new');
+    expect(create.isSubRoute).toBe(true);
+    expect(create.parentName).toBe('행사마스터');
+    expect(create.requirementLabel).toBe('행사 (promotion, CREATE/생성)');
+    expect(create.satisfyingProfiles).toEqual([{ profileId: 1, name: '시스템 관리자' }]);
+
+    expect(edit.path).toBe('/promotions/:id/edit');
+    expect(edit.isSubRoute).toBe(true);
+    expect(edit.requirementLabel).toBe('행사 (promotion, EDIT/수정)');
+  });
+
   it('system 요구 중 PS 가 지원 못하는 권한 (MANAGE_USERS) — Profile 만 매칭, PS 는 빈 배열', () => {
     const rows = buildRows({
       menu: {

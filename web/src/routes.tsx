@@ -177,7 +177,17 @@ export const router = createBrowserRouter(
               children: [
                 { path: '/promotions', element: <LazyWrapper><PromotionListPage /></LazyWrapper> },
                 { path: '/promotions/:id', element: <LazyWrapper><PromotionDetailPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute entity="promotion" operation="CREATE" />,
+              children: [
                 { path: '/promotions/new', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute entity="promotion" operation="EDIT" />,
+              children: [
                 { path: '/promotions/:id/edit', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
               ],
             },

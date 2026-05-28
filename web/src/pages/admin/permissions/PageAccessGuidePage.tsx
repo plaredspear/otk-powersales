@@ -179,10 +179,17 @@ const columns: ColumnsType<PageAccessGuideRow> = [
   {
     title: '페이지명',
     key: 'pageName',
-    width: 220,
+    width: 260,
     render: (_, row) => (
-      <Space direction="vertical" size={0}>
-        <Text strong>{row.pageName}</Text>
+      <Space direction="vertical" size={0} style={{ paddingLeft: row.isSubRoute ? 16 : 0 }}>
+        <Space size={4}>
+          {row.isSubRoute && (
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              └ {row.parentName} /
+            </Text>
+          )}
+          <Text strong>{row.pageName}</Text>
+        </Space>
         <Text type="secondary" style={{ fontSize: 12 }}>{row.path}</Text>
       </Space>
     ),

@@ -26,6 +26,12 @@ export interface MenuItem {
    * user.profileName 매칭이 안 되면 메뉴 숨김. (라우터 가드와 동일 의미)
    */
   allowedProfileNames?: string[];
+  /**
+   * 사이드바에는 노출하지 않지만 PageAccessGuide 같은 라우트 인벤토리에는 포함할 sub-route.
+   * 모페이지(list page) 아래에 등록/수정/상세 같은 항목을 묶을 때 사용.
+   * AdminLayout 사이드바 구성에는 영향이 없으며 ProLayout 의 children 처리와 분리된다.
+   */
+  subRoutes?: MenuItem[];
 }
 
 export interface MenuRoute {
@@ -50,7 +56,17 @@ export const menuRoute: MenuRoute = {
       name: '행사/배치',
       icon: <BulbOutlined />,
       children: [
-        { path: '/promotions', name: '행사마스터', entity: 'promotion', operation: 'READ' },
+        {
+          path: '/promotions',
+          name: '행사마스터',
+          entity: 'promotion',
+          operation: 'READ',
+          subRoutes: [
+            { path: '/promotions/new', name: '행사마스터 등록', entity: 'promotion', operation: 'CREATE' },
+            { path: '/promotions/:id', name: '행사마스터 상세', entity: 'promotion', operation: 'READ' },
+            { path: '/promotions/:id/edit', name: '행사마스터 수정', entity: 'promotion', operation: 'EDIT' },
+          ],
+        },
         { path: '/display-schedules', name: '진열스케줄마스터', entity: 'promotion', operation: 'EDIT' },
         { path: '/promotion/ppt-masters', name: '전문행사조' },
         { path: '/promotion/ppt-master-history', name: '전문행사조 이력', entity: 'promotion', operation: 'READ' },
@@ -62,7 +78,15 @@ export const menuRoute: MenuRoute = {
       name: '인사/근무',
       icon: <TeamOutlined />,
       children: [
-        { path: '/employee', name: '여사원 현황', entity: 'employee', operation: 'READ' },
+        {
+          path: '/employee',
+          name: '여사원 현황',
+          entity: 'employee',
+          operation: 'READ',
+          subRoutes: [
+            { path: '/employee/:employeeId', name: '여사원 상세', entity: 'employee', operation: 'READ' },
+          ],
+        },
         { path: '/leave', name: '휴무관리' },
         { path: '/attendance', name: '근무 등록현황', entity: 'attendance_log', operation: 'READ' },
         { path: '/attend-info', name: '근무기간 조회', entity: 'attend_info', operation: 'READ' },
@@ -85,25 +109,75 @@ export const menuRoute: MenuRoute = {
         { path: '/field-inspection', name: '현장점검' },
         { path: '/safety-check', name: '안전점검', entity: 'team_member_schedule', operation: 'READ' },
         { path: '/product-expiration', name: '유통기한 관리', entity: 'product', operation: 'READ' },
-        { path: '/claims', name: '제품 클레임' },
-        { path: '/suggestion', name: '물류 클레임', entity: 'suggestion', operation: 'READ' },
+        {
+          path: '/claims',
+          name: '제품 클레임',
+          subRoutes: [
+            { path: '/claims/new', name: '제품 클레임 등록' },
+            { path: '/claims/:claimId', name: '제품 클레임 상세' },
+          ],
+        },
+        {
+          path: '/suggestion',
+          name: '물류 클레임',
+          entity: 'suggestion',
+          operation: 'READ',
+          subRoutes: [
+            { path: '/suggestion/new', name: '물류 클레임 등록' },
+            { path: '/suggestion/:id', name: '물류 클레임 상세' },
+          ],
+        },
       ],
     },
     {
       name: '알림/교육',
       icon: <NotificationOutlined />,
       children: [
-        { path: '/notices', name: '공지사항' },
-        { path: '/education', name: '교육' },
+        {
+          path: '/notices',
+          name: '공지사항',
+          subRoutes: [
+            { path: '/notices/new', name: '공지사항 등록' },
+            { path: '/notices/:id', name: '공지사항 상세' },
+            { path: '/notices/:id/edit', name: '공지사항 수정' },
+          ],
+        },
+        {
+          path: '/education',
+          name: '교육',
+          subRoutes: [
+            { path: '/education/new', name: '교육 등록' },
+            { path: '/education/:id', name: '교육 상세' },
+            { path: '/education/:id/edit', name: '교육 수정' },
+          ],
+        },
       ],
     },
     {
       name: '기준정보',
       icon: <DatabaseOutlined />,
       children: [
-        { path: '/product', name: '제품' },
+        {
+          path: '/product',
+          name: '제품',
+          subRoutes: [
+            { path: '/product/:productCode', name: '제품 상세' },
+          ],
+        },
         { path: '/account', name: '거래처', entity: 'account', operation: 'READ' },
-        { path: '/settings/employees', name: '사원', entity: 'employee', operation: 'READ' },
+        {
+          path: '/settings/employees',
+          name: '사원',
+          entity: 'employee',
+          operation: 'READ',
+          subRoutes: [
+            {
+              path: '/settings/admin-accounts/new',
+              name: '관리자 계정 등록',
+              allowedProfileNames: ['시스템 관리자'],
+            },
+          ],
+        },
         { path: '/settings/organizations', name: '조직마스터' },
         { path: '/settings/holiday-masters', name: '공휴일 관리' },
         {
@@ -125,9 +199,33 @@ export const menuRoute: MenuRoute = {
       name: '시스템',
       icon: <SettingOutlined />,
       children: [
-        { path: '/users', name: '사용자 관리', entity: 'user', operation: 'READ' },
-        { path: '/admin/permissions/profiles', name: '프로파일 관리', entity: 'profile', operation: 'READ' },
-        { path: '/admin/permissions/permission-sets', name: '권한 세트 관리', entity: 'permission_set', operation: 'READ' },
+        {
+          path: '/users',
+          name: '사용자 관리',
+          entity: 'user',
+          operation: 'READ',
+          subRoutes: [
+            { path: '/users/:id', name: '사용자 상세', entity: 'user', operation: 'READ' },
+          ],
+        },
+        {
+          path: '/admin/permissions/profiles',
+          name: '프로파일 관리',
+          entity: 'profile',
+          operation: 'READ',
+          subRoutes: [
+            { path: '/admin/permissions/profiles/:profileId', name: '프로파일 상세', entity: 'profile', operation: 'READ' },
+          ],
+        },
+        {
+          path: '/admin/permissions/permission-sets',
+          name: '권한 세트 관리',
+          entity: 'permission_set',
+          operation: 'READ',
+          subRoutes: [
+            { path: '/admin/permissions/permission-sets/:permissionSetId', name: '권한 세트 상세', entity: 'permission_set', operation: 'READ' },
+          ],
+        },
         { path: '/admin/permissions/matrix', name: '권한 매트릭스', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/permissions/page-access-guide', name: '페이지별 필요 권한', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/user-roles', name: '역할 (조직 계층)', entity: 'user_role', operation: 'READ' },
