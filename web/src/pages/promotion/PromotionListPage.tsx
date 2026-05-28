@@ -17,10 +17,8 @@ const PROMOTION_TYPE_TAG: Record<string, string> = {
   증정: 'gold',
 };
 
-function formatDateRange(start: string, end: string): string {
-  const s = dayjs(start);
-  const e = dayjs(end);
-  return `${s.format('MM/DD')}~${e.format('MM/DD')}`;
+function formatDate(value: string): string {
+  return dayjs(value).format('YYYY-MM-DD');
 }
 
 export default function PromotionListPage() {
@@ -52,6 +50,27 @@ export default function PromotionListPage() {
 
   const columns: ColumnsType<PromotionListItem> = [
     {
+      title: '거래처',
+      dataIndex: 'accountName',
+      width: 160,
+      ellipsis: true,
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '시작일',
+      dataIndex: 'startDate',
+      width: 110,
+      align: 'center',
+      render: formatDate,
+    },
+    {
+      title: '종료일',
+      dataIndex: 'endDate',
+      width: 110,
+      align: 'center',
+      render: formatDate,
+    },
+    {
       title: '행사번호',
       dataIndex: 'promotionNumber',
       width: 130,
@@ -60,7 +79,28 @@ export default function PromotionListPage() {
       ),
     },
     {
-      title: '유형',
+      title: '행사명',
+      dataIndex: 'promotionName',
+      width: 200,
+      ellipsis: true,
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '거래처코드',
+      dataIndex: 'accountCode',
+      width: 110,
+      align: 'center',
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '대표제품',
+      dataIndex: 'primaryProductName',
+      width: 180,
+      ellipsis: true,
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '행사유형',
       dataIndex: 'promotionType',
       width: 90,
       align: 'center',
@@ -71,32 +111,18 @@ export default function PromotionListPage() {
       },
     },
     {
-      title: '거래처',
-      dataIndex: 'accountName',
-      width: 150,
-      ellipsis: true,
-      render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '기간',
-      width: 160,
+      title: '매대위치',
+      dataIndex: 'standLocation',
+      width: 100,
       align: 'center',
-      render: (_: unknown, record: PromotionListItem) =>
-        formatDateRange(record.startDate, record.endDate),
+      render: (val: string | null) => val ?? '-',
     },
     {
       title: '제품유형',
-      dataIndex: 'productType',
-      width: 90,
+      dataIndex: 'category1',
+      width: 100,
       align: 'center',
       render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '마감',
-      dataIndex: 'isClosed',
-      width: 60,
-      align: 'center',
-      render: (val: boolean) => (val ? <Tag color="red">마감</Tag> : null),
     },
   ];
 
@@ -156,7 +182,7 @@ export default function PromotionListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        scroll={{ x: 1300 }}
+        scroll={{ x: 1400 }}
         pagination={{
           current: (data?.page ?? 0) + 1,
           total: data?.totalElements ?? 0,

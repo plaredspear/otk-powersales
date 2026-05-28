@@ -15,11 +15,16 @@ data class PromotionListResponse(
 data class PromotionListItem(
     val id: Long,
     val promotionNumber: String,
+    val promotionName: String?,
     val promotionType: String?,
     val accountName: String?,
+    val accountCode: String?,
     val startDate: LocalDate,
     val endDate: LocalDate,
+    val primaryProductName: String?,
+    val standLocation: String?,
     val productType: String?,
+    val category1: String?,
     val isClosed: Boolean,
     val costCenterCode: String?,
     val isDeleted: Boolean,
@@ -29,21 +34,35 @@ data class PromotionListItem(
     companion object {
         fun from(
             promotion: Promotion,
-            accountName: String?
-        ): PromotionListItem = PromotionListItem(
-            id = promotion.id,
-            promotionNumber = promotion.promotionNumber,
-            promotionType = promotion.promotionType?.displayName,
-            accountName = accountName,
-            startDate = promotion.startDate,
-            endDate = promotion.endDate,
-            productType = promotion.productType?.displayName,
-            isClosed = promotion.isClosed,
-            costCenterCode = promotion.costCenterCode,
-            isDeleted = promotion.isDeleted,
-            createdAt = promotion.createdAt,
-            remark = promotion.remark
-        )
+            accountName: String?,
+            accountCode: String?,
+            primaryProductName: String?
+        ): PromotionListItem {
+            val productTypeName = promotion.productType?.displayName
+            // SF formula DKRetail__PromotionName__c = TEXT(DKRetail__ProductType__c) + '(' + DKRetail__PrimaryProductId__r.Name + ')'
+            val promotionName = if (primaryProductName != null) {
+                "${productTypeName.orEmpty()}(${primaryProductName})"
+            } else null
+            return PromotionListItem(
+                id = promotion.id,
+                promotionNumber = promotion.promotionNumber,
+                promotionName = promotionName,
+                promotionType = promotion.promotionType?.displayName,
+                accountName = accountName,
+                accountCode = accountCode,
+                startDate = promotion.startDate,
+                endDate = promotion.endDate,
+                primaryProductName = primaryProductName,
+                standLocation = promotion.standLocation?.displayName,
+                productType = productTypeName,
+                category1 = promotion.category1,
+                isClosed = promotion.isClosed,
+                costCenterCode = promotion.costCenterCode,
+                isDeleted = promotion.isDeleted,
+                createdAt = promotion.createdAt,
+                remark = promotion.remark
+            )
+        }
     }
 }
 

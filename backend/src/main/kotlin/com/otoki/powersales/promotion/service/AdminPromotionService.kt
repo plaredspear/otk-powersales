@@ -87,7 +87,9 @@ class AdminPromotionService(
             content = promotionPage.content.map { promotion ->
                 PromotionListItem.from(
                     promotion = promotion,
-                    accountName = promotion.account?.name
+                    accountName = promotion.account?.name,
+                    accountCode = promotion.account?.externalKey,
+                    primaryProductName = promotion.primaryProduct?.name
                 )
             },
             page = page,
