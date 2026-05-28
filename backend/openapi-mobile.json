@@ -3474,7 +3474,7 @@
             "type" : "string"
           },
           "productName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "totalQuantityBoxes" : {
             "type" : "number"
