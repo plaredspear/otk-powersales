@@ -14,11 +14,16 @@ export interface PromotionListParams {
 export interface PromotionListItem {
   id: number;
   promotionNumber: string;
+  promotionName: string | null;
   promotionType: string | null;
   accountName: string | null;
+  accountCode: string | null;
   startDate: string;
   endDate: string;
+  primaryProductName: string | null;
+  standLocation: string | null;
   productType: string | null;
+  category1: string | null;
   isClosed: boolean;
   costCenterCode: string | null;
   remark: string | null;
