@@ -228,6 +228,22 @@ export function ScheduleCalendar({
         />
       </div>
 
+      {/*
+        FullCalendar daygrid 셀 상단 영역은 기본적으로 day-number 만 우측 정렬되는 inline-flex 라
+        dayCellContent 에 넣은 요약 칩이 셀 전폭을 차지하지 못한다. SF 정합 (셀 전체 폭 chip) 을 위해
+        .fc-daygrid-day-top 의 레이아웃을 column + stretch 로 override + 자식 div 도 width 100%.
+      */}
+      <style>{`
+        .fc-daygrid-day-top {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: stretch !important;
+          width: 100% !important;
+        }
+        .fc-daygrid-day-top > * {
+          width: 100% !important;
+        }
+      `}</style>
       {/* FullCalendar — SF 레거시 정합: 캘린더 전체가 한 화면에 보이도록 height=100% 컨테이너 채움 + 셀별 +N 개 popover */}
       <div style={{ flex: 1, minHeight: 0 }}>
         <FullCalendar
