@@ -96,7 +96,7 @@ export const menuRoute: MenuRoute = {
       name: '매출/실적',
       icon: <BarChartOutlined />,
       children: [
-        { path: '/sales/monthly', name: '월매출 조회', entity: 'monthly_sales_history', operation: 'READ' },
+        { path: '/sales/monthly', name: '월 매출(물류배부)', entity: 'monthly_sales_history', operation: 'READ' },
         { path: '/sales/electronic', name: '전산실적' },
         { path: '/sales/pos', name: 'POS매출' },
         { path: '/report', name: '보고서' },

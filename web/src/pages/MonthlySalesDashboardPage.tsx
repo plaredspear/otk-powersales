@@ -22,7 +22,7 @@ interface QueryParams {
 }
 
 /**
- * 월매출 조회 — web admin 대시보드 페이지.
+ * 월 매출(물류배부) — web admin 대시보드 페이지.
  *
  * 상단 = 권한 범위 거래처 합산 KPI 5종 + 월별 추이 차트 (최근 6개월).
  * 하단 = 거래처별 명세 table + 페이징 + 정렬 + 엑셀 export. row 클릭 시 모바일 동등 상세 modal.
