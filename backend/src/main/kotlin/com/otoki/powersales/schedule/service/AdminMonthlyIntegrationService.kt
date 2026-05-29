@@ -4,13 +4,11 @@ import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.common.exception.BusinessException
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.sales.enums.SalesMonth
-import com.otoki.powersales.sales.enums.SalesYear
 import com.otoki.powersales.leave.repository.HolidayMasterRepository
 import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
@@ -44,7 +42,7 @@ class AdminMonthlyIntegrationService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val accountRepository: AccountRepository,
-    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
+    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
     private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
     private val holidayMasterRepository: HolidayMasterRepository,
     private val branchCodeExpander: BranchCodeExpander,
@@ -585,60 +583,47 @@ class AdminMonthlyIntegrationService(
         accounts: List<Account>
     ): Map<Int, Long> {
         if (accounts.isEmpty()) return emptyMap()
+        val externalKeyToId: Map<String, Int> = accounts
+            .filter { it.externalKey != null }
+            .associate { it.externalKey!! to it.id }
+        if (externalKeyToId.isEmpty()) return emptyMap()
 
         val now = YearMonth.now()
         val searchYm = YearMonth.of(year, month)
 
-        // Determine 6-month range
+        // Determine 6-month range — legacy `UpdateThisMonthRevenueBatch.execute` 동등.
         val (startYm, endYm) = if (searchYm == now) {
             searchYm.minusMonths(6) to searchYm.minusMonths(1)
         } else {
             searchYm.minusMonths(5) to searchYm
         }
 
-        // Collect all year-month pairs
-        val yearMonthPairs = mutableListOf<YearMonth>()
+        // ORORA `SalesDate` 원본 형식 ("YYYYMM" 6자 문자열) 리스트 생성
+        val salesDates = mutableListOf<String>()
         var current = startYm
         while (!current.isAfter(endYm)) {
-            yearMonthPairs.add(current)
+            salesDates.add("%d%02d".format(current.year, current.monthValue))
             current = current.plusMonths(1)
         }
 
-        val salesYears = yearMonthPairs
-            .mapNotNull { SalesYear.fromValueOrNull(it.year.toString()) }
-            .distinct()
-        val allHistory = if (salesYears.isEmpty()) {
-            emptyList()
-        } else {
-            monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(accounts, salesYears)
-        }
-
-        // Filter to valid year-month range (enum 페어 집합)
-        val validYmPairs: Set<Pair<SalesYear, SalesMonth>> = yearMonthPairs
-            .mapNotNull { ym ->
-                val sy = SalesYear.fromValueOrNull(ym.year.toString()) ?: return@mapNotNull null
-                val sm = SalesMonth.fromValueOrNull(String.format("%02d", ym.monthValue)) ?: return@mapNotNull null
-                sy to sm
-            }
-            .toSet()
-
-        val filtered = allHistory.filter { h ->
-            val sy = h.salesYear
-            val sm = h.salesMonth
-            sy != null && sm != null && (sy to sm) in validYmPairs
-        }
+        val histories = ororaGateway.findBySalesDates(salesDates, externalKeyToId.keys)
 
         // Group by account ID and calculate average
         // spec #680 Q2 옵션 2 — legacy `UpdateThisMonthRevenueBatch.cls:execute` + `get6MonthsAvg` 동등.
         // 양수 (ClosingAmount > 0) 월만 합산 + divider = 양수 count (legacy `dividerMap_6M`).
         // 0/음수 매출 월은 제외 (legacy 의 batch 외 컨트롤러는 미적용이라 비대칭 — 신규는 일관 정책).
-        return filtered.groupBy { it.account?.id ?: 0 }
+        return histories.groupBy { externalKeyToId[it.sapAccountCode] ?: 0 }
             .filter { it.key != 0 }
-            .mapValues { (_, histories) ->
-                val positives = histories.mapNotNull { it.abcClosingAmount1 }.filter { it > 0.0 }
+            .mapValues { (_, rows) ->
+                val positives = rows
+                    .mapNotNull { it.abcClosingAmount1 }
+                    .filter { it > BigDecimal.ZERO }
                 val divider = positives.size
                 if (divider > 0) {
-                    BigDecimal(positives.sum() / divider).setScale(0, RoundingMode.HALF_UP).toLong()
+                    positives
+                        .fold(BigDecimal.ZERO) { acc, v -> acc.add(v) }
+                        .divide(BigDecimal(divider), 0, RoundingMode.HALF_UP)
+                        .toLong()
                 } else {
                     0L
                 }

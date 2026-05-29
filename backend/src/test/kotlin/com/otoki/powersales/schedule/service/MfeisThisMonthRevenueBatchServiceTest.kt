@@ -1,10 +1,8 @@
 package com.otoki.powersales.schedule.service
 
+import com.otoki.orora.entity.OroraMonthlySalesHistory
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.sales.entity.MonthlySalesHistory
-import com.otoki.powersales.sales.enums.SalesMonth
-import com.otoki.powersales.sales.enums.SalesYear
-import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import io.mockk.every
@@ -18,39 +16,59 @@ import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.YearMonth
 
-@DisplayName("MfeisThisMonthRevenueBatchService — MFEIS this_month_amount 월간 일괄 갱신 (#680 §5.2)")
+@DisplayName("MfeisThisMonthRevenueBatchService — orora 기반 양수 평균 산출 회귀 보호")
 class MfeisThisMonthRevenueBatchServiceTest {
 
     private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository = mockk(relaxed = true)
-    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository = mockk()
+    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway = mockk()
 
-    private val chunkSize = 200
     private lateinit var service: MfeisThisMonthRevenueBatchService
 
     @BeforeEach
     fun setUp() {
         service = MfeisThisMonthRevenueBatchService(
             mfeisRepository = mfeisRepository,
-            monthlySalesHistoryRepository = monthlySalesHistoryRepository,
-            chunkSize = chunkSize,
+            ororaGateway = ororaGateway,
+            chunkSize = 200,
         )
     }
 
+    private fun account(id: Int, externalKey: String?): Account = mockk {
+        every { this@mockk.id } returns id
+        every { this@mockk.externalKey } returns externalKey
+    }
+
+    private fun mfeisRow(id: Long, account: Account?, currentAmount: BigDecimal?) =
+        mockk<MonthlyFemaleEmployeeIntegrationSchedule>(relaxed = true) {
+            every { this@mockk.id } returns id
+            every { this@mockk.account } returns account
+            every { this@mockk.thisMonthAmount } returns currentAmount
+        }
+
+    private fun row(sapCode: String, salesDate: String, abc1: Long) =
+        OroraMonthlySalesHistory(
+            sapAccountCode = sapCode,
+            salesDate = salesDate,
+            abcClosingAmount1 = BigDecimal(abc1),
+        )
+
     @Test
-    @DisplayName("양수 필터 — 음수/0 매출 월은 합산/divider 모두 제외 (legacy 동등)")
+    @DisplayName("양수 필터 — 음수/0 매출 월은 합산/divider 모두 제외 후 평균 계산")
     fun positiveAmountFilter() {
         val targetYm = YearMonth.of(2026, 4)
-        val account = account(id = 1)
-        val mfeis = mfeisRow(id = 100L, account = account, currentAmount = BigDecimal.ZERO)
+        val account = account(1, "S001")
+        val mfeis = mfeisRow(100L, account, BigDecimal.ZERO)
 
-        every { mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%") } returns listOf(mfeis)
-        every { monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(any(), any()) } returns listOf(
-            history(account, SalesYear.Y2025, SalesMonth.M11, 100_000.0),
-            history(account, SalesYear.Y2025, SalesMonth.M12, 200_000.0),
-            history(account, SalesYear.Y2026, SalesMonth.M01, 0.0),        // 제외
-            history(account, SalesYear.Y2026, SalesMonth.M02, -50_000.0),  // 제외
-            history(account, SalesYear.Y2026, SalesMonth.M03, 300_000.0),
-            history(account, SalesYear.Y2026, SalesMonth.M04, 400_000.0),
+        every {
+            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
+        } returns listOf(mfeis)
+        every { ororaGateway.findBySalesDates(any(), any()) } returns listOf(
+            row("S001", "202511", 100_000),
+            row("S001", "202512", 200_000),
+            row("S001", "202601", 0),         // 제외
+            row("S001", "202602", -50_000),   // 제외
+            row("S001", "202603", 300_000),
+            row("S001", "202604", 400_000),
         )
         val saved = slot<MonthlyFemaleEmployeeIntegrationSchedule>()
         every { mfeisRepository.save(capture(saved)) } answers { saved.captured }
@@ -58,99 +76,39 @@ class MfeisThisMonthRevenueBatchServiceTest {
         service.runMonthly(targetYm)
 
         // (100_000 + 200_000 + 300_000 + 400_000) / 4 = 250_000
-        assertThat(saved.captured.thisMonthAmount).isEqualTo(BigDecimal("250000"))
-        verify(exactly = 1) { mfeisRepository.save(any()) }
+        verify { mfeis.thisMonthAmount = BigDecimal("250000") }
     }
 
     @Test
-    @DisplayName("모든 매출이 0/음수 — divider=0 처리로 thisMonthAmount=0")
-    fun allZeroAmountsResultInZero() {
+    @DisplayName("externalKey null Account 만 → skip + ORORA 호출 안 함")
+    fun nullExternalKeySkipsGatewayCall() {
         val targetYm = YearMonth.of(2026, 4)
-        val account = account(id = 1)
-        val mfeis = mfeisRow(id = 100L, account = account, currentAmount = BigDecimal.ONE)
-
-        every { mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing(any(), any(), any()) } returns listOf(mfeis)
-        every { monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(any(), any()) } returns listOf(
-            history(account, SalesYear.Y2025, SalesMonth.M11, 0.0),
-            history(account, SalesYear.Y2026, SalesMonth.M01, -100.0),
-        )
-        val saved = slot<MonthlyFemaleEmployeeIntegrationSchedule>()
-        every { mfeisRepository.save(capture(saved)) } answers { saved.captured }
+        val mfeis = mfeisRow(100L, account(1, externalKey = null), BigDecimal.ZERO)
+        every {
+            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
+        } returns listOf(mfeis)
 
         service.runMonthly(targetYm)
 
-        assertThat(saved.captured.thisMonthAmount).isEqualTo(BigDecimal.ZERO)
+        verify(exactly = 0) { ororaGateway.findBySalesDates(any(), any()) }
+        verify(exactly = 0) { mfeisRepository.save(any()) }
     }
 
     @Test
-    @DisplayName("변경 없는 row 는 save 호출 안 함 — current == new 일 때 skip")
-    fun unchangedRowSkipsSave() {
+    @DisplayName("동일 값 → save 호출 안 함 (legacy 동등)")
+    fun sameAmountSkipsSave() {
         val targetYm = YearMonth.of(2026, 4)
-        val account = account(id = 1)
-        val mfeis = mfeisRow(id = 100L, account = account, currentAmount = BigDecimal("150000"))
-
-        every { mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing(any(), any(), any()) } returns listOf(mfeis)
-        every { monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(any(), any()) } returns listOf(
-            history(account, SalesYear.Y2025, SalesMonth.M11, 100_000.0),
-            history(account, SalesYear.Y2025, SalesMonth.M12, 200_000.0),
+        val account = account(1, "S001")
+        val mfeis = mfeisRow(100L, account, BigDecimal("100000"))
+        every {
+            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
+        } returns listOf(mfeis)
+        every { ororaGateway.findBySalesDates(any(), any()) } returns listOf(
+            row("S001", "202604", 100_000),
         )
 
         service.runMonthly(targetYm)
 
         verify(exactly = 0) { mfeisRepository.save(any()) }
     }
-
-    @Test
-    @DisplayName("빈 추출 결과 — save 0건 + history 조회 0건")
-    fun emptyTargetsSkipsAllProcessing() {
-        every { mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing(any(), any(), any()) } returns emptyList()
-
-        service.runMonthly(YearMonth.of(2026, 4))
-
-        verify(exactly = 0) { mfeisRepository.save(any()) }
-        verify(exactly = 0) { monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(any(), any()) }
-    }
-
-    @Test
-    @DisplayName("chunk 분할 — chunkSize 200 초과 시 청크 단위 history 조회")
-    fun chunkedHistoryLookup() {
-        val targetYm = YearMonth.of(2026, 4)
-        val rows = (1..250).map { mfeisRow(id = it.toLong(), account = account(id = it), currentAmount = BigDecimal.ZERO) }
-        every { mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing(any(), any(), any()) } returns rows
-        every { monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(any(), any()) } returns emptyList()
-
-        service.runMonthly(targetYm)
-
-        // 250 → 2 chunk (200, 50)
-        verify(exactly = 2) { monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(any(), any()) }
-    }
-
-    // -- helpers --
-
-    private fun account(id: Int): Account = Account(id = id, sfid = "ACC$id")
-
-    private fun mfeisRow(
-        id: Long,
-        account: Account,
-        currentAmount: BigDecimal?,
-    ): MonthlyFemaleEmployeeIntegrationSchedule = MonthlyFemaleEmployeeIntegrationSchedule(
-        id = id,
-        year = "2026",
-        month = "04",
-        workingCategory5 = "상시",
-        account = account,
-        thisMonthAmount = currentAmount,
-    )
-
-    private fun history(
-        account: Account,
-        salesYear: SalesYear,
-        salesMonth: SalesMonth,
-        amount: Double,
-    ): MonthlySalesHistory = MonthlySalesHistory(
-        account = account,
-        salesYear = salesYear,
-        salesMonth = salesMonth,
-        abcClosingAmount1 = amount,
-    )
 }

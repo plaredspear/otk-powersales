@@ -1,9 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
-import com.otoki.powersales.sales.enums.SalesMonth
-import com.otoki.powersales.sales.enums.SalesYear
-import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
+import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import org.slf4j.LoggerFactory
@@ -30,7 +28,7 @@ import java.time.YearMonth
 @Service
 class MfeisThisMonthRevenueBatchService(
     private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
-    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
+    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
     @Value("\${app.batch.mfeis.this-month-revenue.chunk-size:200}") private val chunkSize: Int,
 ) {
 
@@ -57,46 +55,38 @@ class MfeisThisMonthRevenueBatchService(
         // (lastYearMonth 가 전월이므로 targetYearMonth = 전월. 6개월 범위는 [targetYM - 5, targetYM])
         val startYm = targetYearMonth.minusMonths(5)
         val endYm = targetYearMonth
-        val yearMonthPairs = mutableListOf<YearMonth>()
+        val salesDates = mutableListOf<String>()
         var current = startYm
         while (!current.isAfter(endYm)) {
-            yearMonthPairs.add(current)
+            salesDates.add("%d%02d".format(current.year, current.monthValue))
             current = current.plusMonths(1)
         }
-        val salesYears = yearMonthPairs
-            .mapNotNull { SalesYear.fromValueOrNull(it.year.toString()) }
-            .distinct()
-        val validYmPairs: Set<Pair<SalesYear, SalesMonth>> = yearMonthPairs
-            .mapNotNull { ym ->
-                val sy = SalesYear.fromValueOrNull(ym.year.toString()) ?: return@mapNotNull null
-                val sm = SalesMonth.fromValueOrNull(String.format("%02d", ym.monthValue)) ?: return@mapNotNull null
-                sy to sm
-            }
-            .toSet()
 
         targets.chunked(chunkSize).forEach { chunk ->
             val accounts = chunk.mapNotNull { it.account }.distinctBy { it.id }
-            if (accounts.isEmpty() || salesYears.isEmpty()) {
+            val externalKeyToId: Map<String, Int> = accounts
+                .filter { it.externalKey != null }
+                .associate { it.externalKey!! to it.id }
+            if (externalKeyToId.isEmpty()) {
                 skippedRows += chunk.size
                 return@forEach
             }
 
-            val histories = monthlySalesHistoryRepository.findByAccountInAndSalesYearIn(accounts, salesYears)
-            val filteredByYmPair = histories.filter { h ->
-                val sy = h.salesYear
-                val sm = h.salesMonth
-                sy != null && sm != null && (sy to sm) in validYmPairs
-            }
+            val histories = ororaGateway.findBySalesDates(salesDates, externalKeyToId.keys)
 
             // 거래처별 평균 — 양수 필터 + 양수 count divider (legacy 동등)
-            val avgByAccountId: Map<Int, BigDecimal> = filteredByYmPair
-                .groupBy { it.account?.id ?: 0 }
+            val avgByAccountId: Map<Int, BigDecimal> = histories
+                .groupBy { externalKeyToId[it.sapAccountCode] ?: 0 }
                 .filter { it.key != 0 }
                 .mapValues { (_, accountHistories) ->
-                    val positives = accountHistories.mapNotNull { it.abcClosingAmount1 }.filter { it > 0.0 }
+                    val positives = accountHistories
+                        .mapNotNull { it.abcClosingAmount1 }
+                        .filter { it > BigDecimal.ZERO }
                     val divider = positives.size
                     if (divider > 0) {
-                        BigDecimal(positives.sum() / divider).setScale(0, RoundingMode.HALF_UP)
+                        positives
+                            .fold(BigDecimal.ZERO) { acc, v -> acc.add(v) }
+                            .divide(BigDecimal(divider), 0, RoundingMode.HALF_UP)
                     } else {
                         BigDecimal.ZERO
                     }

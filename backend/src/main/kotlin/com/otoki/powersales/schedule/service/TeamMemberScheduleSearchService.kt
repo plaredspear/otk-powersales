@@ -1,10 +1,8 @@
 package com.otoki.powersales.schedule.service
 
+import com.otoki.orora.entity.OroraMonthlySalesHistory
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
-import com.otoki.powersales.sales.entity.MonthlySalesHistory
-import com.otoki.powersales.sales.entity.QMonthlySalesHistory.Companion.monthlySalesHistory
-import com.otoki.powersales.sales.enums.SalesMonth
-import com.otoki.powersales.sales.enums.SalesYear
+import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
 import com.otoki.powersales.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.schedule.dto.response.TeamMemberScheduleSearchResult
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
@@ -24,12 +22,16 @@ import java.time.YearMonth
  *
  * D3=(a): SF `MonthlySalesHistory.ClosingAmountSum__c` (formula) = `abcClosingSumAmount + shipClosingSumAmount` 합산
  * D4=(a): SF `MFEIS.BranchName__c` (formula) = `mfeis.employee.orgName` lazy join
+ *
+ * 마감실적 source 는 ORORA view `ECRM_ABCCUST_MH_V` — SF formula `ClosingAmountSum__c` 동등 산출은
+ * [OroraMonthlySalesHistory.closingAmountSum] 가 책임 (= (abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)).
  */
 @Service
 @Transactional(readOnly = true)
 class TeamMemberScheduleSearchService(
     private val expander: BranchCodeExpander,
     private val queryFactory: JPAQueryFactory,
+    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
 ) {
 
     /**
@@ -91,7 +93,8 @@ class TeamMemberScheduleSearchService(
      * - 선택 년월 == 당월: [선택월 -6, 선택월 -1]
      * - 그 외: [선택월 -5, 선택월]
      *
-     * ABC 마감실적 합계 = SF `ClosingAmountSum__c` formula = `abcClosingSumAmount + shipClosingSumAmount` (D3=a).
+     * ABC 마감실적 합계 = SF `ClosingAmountSum__c` formula (D3=a) = [OroraMonthlySalesHistory.closingAmountSum]
+     *                  = (abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)
      * 평균 = 합산 / 데이터 존재 월 수 (divider, SF L164-181).
      */
     internal fun computeSixMonthAverageSales(
@@ -99,59 +102,39 @@ class TeamMemberScheduleSearchService(
         year: String,
         month: String,
     ): Map<Long, BigDecimal> {
-        val accountIds = schedules.mapNotNull { it.account?.id?.toLong() }.toSet()
-        if (accountIds.isEmpty()) return emptyMap()
+        val accountByExternalKey: Map<String, Long> = schedules
+            .mapNotNull { sm ->
+                val acc = sm.account ?: return@mapNotNull null
+                val externalKey = acc.externalKey ?: return@mapNotNull null
+                externalKey to acc.id.toLong()
+            }
+            .toMap()
+        if (accountByExternalKey.isEmpty()) return emptyMap()
 
         val (startYm, endYm) = sixMonthRange(year, month, today = LocalDate.now())
-        val monthList = enumerateMonths(startYm, endYm)
-        val salesYears = monthList.map { SalesYear.valueOf("Y${it.year}") }.toSet().toList()
-        val salesMonths = monthList.map { SalesMonth.valueOf("M${"%02d".format(it.monthValue)}") }.toSet().toList()
+        val salesDates = enumerateMonths(startYm, endYm)
+            .map { "%d%02d".format(it.year, it.monthValue) }
 
-        // YearMonth set 으로 in-memory 재필터 (SalesYear x SalesMonth 카르테시안 곱이 6개월 범위를 초과할 수 있음)
-        val monthSet = monthList.toSet()
-
-        val q = monthlySalesHistory
-        val rows: List<MonthlySalesHistory> = queryFactory
-            .selectFrom(q)
-            .where(
-                q.account.id.`in`(accountIds.map { it.toInt() })
-                    .and(q.salesYear.`in`(salesYears))
-                    .and(q.salesMonth.`in`(salesMonths))
-            )
-            .fetch()
+        val rows: List<OroraMonthlySalesHistory> = ororaGateway.findBySalesDates(
+            salesDates = salesDates,
+            sapAccountCodes = accountByExternalKey.keys,
+        )
 
         // SF divider — 데이터 존재 월 수 (SF L164-181: avgAmount += closing; div++)
         val sumByAccount = mutableMapOf<Long, BigDecimal>()
         val countByAccount = mutableMapOf<Long, Int>()
         for (row in rows) {
-            val ym = rowYearMonth(row) ?: continue
-            if (ym !in monthSet) continue
-            val accId = row.account?.id?.toLong() ?: continue
-            val closingSum = closingAmountSum(row)
+            val accId = accountByExternalKey[row.sapAccountCode] ?: continue
+            val closingSum = row.closingAmountSum
             sumByAccount.merge(accId, closingSum) { a, b -> a + b }
             countByAccount.merge(accId, 1) { a, b -> a + b }
         }
 
-        return accountIds.associateWith { accId ->
+        return accountByExternalKey.values.associateWith { accId ->
             val sum = sumByAccount[accId] ?: BigDecimal.ZERO
             val div = countByAccount[accId] ?: 0
             if (div == 0) BigDecimal.ZERO else (sum.divide(BigDecimal(div), 0, RoundingMode.HALF_UP))
         }
-    }
-
-    /**
-     * D3=(a): SF `ClosingAmountSum__c = ABCClosingSumAmount__c + ShipClosingSumAmount__c`.
-     */
-    internal fun closingAmountSum(row: MonthlySalesHistory): BigDecimal {
-        val abc = row.abcClosingSumAmount?.let { BigDecimal.valueOf(it) } ?: BigDecimal.ZERO
-        val ship = row.shipClosingSumAmount?.let { BigDecimal.valueOf(it) } ?: BigDecimal.ZERO
-        return abc + ship
-    }
-
-    private fun rowYearMonth(row: MonthlySalesHistory): YearMonth? {
-        val y = row.salesYear?.value?.toIntOrNull() ?: return null
-        val m = row.salesMonth?.value?.toIntOrNull() ?: return null
-        return YearMonth.of(y, m)
     }
 
     /**
