@@ -10,10 +10,6 @@ import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardDetailRespon
 import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardListItem
 import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardListResponse
 import com.otoki.powersales.sales.dto.response.MonthlySalesDashboardSummaryResponse
-import com.otoki.powersales.sales.entity.MonthlySalesHistory
-import com.otoki.powersales.sales.enums.SalesMonth
-import com.otoki.powersales.sales.enums.SalesYear
-import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import com.otoki.powersales.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -24,8 +20,14 @@ import java.time.LocalDate
 /**
  * 월매출 대시보드 admin 조회 service.
  *
- * 권한 범위 거래처 N건의 월매출 이력을 집계 + 거래처별 명세 + 단건 상세 형태로 반환한다.
- * 레거시 매핑: 모바일 「월매출조회-물류배부」 페이지 (docs/plan/legacy-pages-heroku/월매출조회-물류배부) 의 9개 UC 를 web admin 으로 확장 — SF chain 제거 + RDS 직접 조회 + 전체 거래처 집계 KPI / 월별 추이 차트 신규 추가.
+ * ## 데이터 source
+ * [OroraMonthlySalesHistory] (ORORA view `ECRM_ABCCUST_MH_V`) 100% 의존.
+ * 목표 (`thisMonthTarget`) / 확정 상태 (`isConfirmed`) 는 폐기 — 응답 호환성 유지를 위해
+ * `targetAmount = null`, `achievementRate = null`, `isConfirmed = false` 로 고정.
+ *
+ * ## 동작 요약
+ * 권한 범위 거래처 N건의 ORORA 마감실적을 합산 + 거래처별 명세 + 단건 상세 형태로 반환.
+ * 레거시 매핑: 모바일 「월매출조회-물류배부」 페이지 (docs/plan/legacy-pages-heroku/월매출조회-물류배부) 의 9개 UC 를 web admin 으로 확장.
  * 부수 효과: 없음 (조회 전용).
  *
  * 신규 도입 — admin 측 대시보드 view 는 레거시 미존재 (모바일 페이지의 web admin 확장). origin spec: #776.
@@ -33,7 +35,6 @@ import java.time.LocalDate
 @Service
 @Transactional(readOnly = true)
 class MonthlySalesAdminQueryService(
-    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository,
     private val accountRepository: AccountRepository,
     private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
 ) {
@@ -41,7 +42,8 @@ class MonthlySalesAdminQueryService(
     /**
      * 상단 KPI + 최근 6개월 월별 추이 조회.
      *
-     * 권한 범위 거래처의 당월 목표 / 실적 / 진도율 합산 + 전년 동월 비교 + 기준 진도율 (영업일 기반) 산출.
+     * 권한 범위 거래처의 당월 마감실적 합산 + 전년 동월 비교 + 기준 진도율 (영업일 기반) 산출.
+     * 목표 / 진도율은 폐기 — `totalTargetAmount = 0`, `overallAchievementRate = 0.0`.
      * 월별 추이 6개월은 (조회 기준 월) 부터 5개월 이전까지 + 같은 기간의 전년 동월 매출.
      *
      * @throws AdminForbiddenException 권한 범위와 입력 costCenterCodes 의 교집합이 비어있을 때
@@ -57,9 +59,6 @@ class MonthlySalesAdminQueryService(
     ): MonthlySalesDashboardSummaryResponse {
         validateParams(year, month, costCenterCodes)
         val effectiveCodes = applyScope(scope, costCenterCodes)
-
-        val salesYear = toSalesYear(year)
-        val salesMonth = toSalesMonth(month)
         val accounts = findAccounts(effectiveCodes, accountGroup, customerKeyword)
 
         if (accounts.isEmpty()) {
@@ -72,14 +71,11 @@ class MonthlySalesAdminQueryService(
                 referenceAchievementRate = referenceAchievementRate(year, month, LocalDate.now()),
                 totalLastYearAchievedAmount = null,
                 lastYearComparisonRatio = null,
-                monthlyTrend = buildMonthlyTrend(year, month, emptyList(), emptyList()),
+                monthlyTrend = buildMonthlyTrend(year, month, emptyList()),
             )
         }
 
-        val currentMonthRows = monthlySalesHistoryRepository
-            .findBySalesYearAndSalesMonthAndAccountIn(salesYear, salesMonth, accounts)
-
-        // ORORA fetch — 당월 + 전년 동월 일괄 1 trip. VPN 장애 시 gateway 가 emptyList fallback
+        // ORORA fetch — 당월 + 전년 동월 일괄 1 trip
         val accountSapCodes = accounts.mapNotNull { it.externalKey }
         val currentSalesDate = toOroraSalesDate(year, month)
         val lastYearSalesDate = toOroraSalesDate(year - 1, month)
@@ -87,46 +83,32 @@ class MonthlySalesAdminQueryService(
             .findBySalesDates(listOf(currentSalesDate, lastYearSalesDate), accountSapCodes)
             .associateBy { it.sapAccountCode to it.salesDate }
 
-        val totalTarget = currentMonthRows.sumOf { (it.thisMonthTarget ?: BigDecimal.ZERO).toLong() }
-        val totalAchieved = currentMonthRows.sumOf { rds ->
-            shipClosingSum(oroByKey[rds.account?.externalKey to currentSalesDate])
+        val totalAchieved = accounts.sumOf { acc ->
+            shipClosingSum(oroByKey[acc.externalKey to currentSalesDate])
         }
-        val overallRate = computeAchievementRate(totalAchieved, totalTarget)
-        val reference = referenceAchievementRate(year, month, LocalDate.now())
-
-        val lastYearSalesYear = toSalesYearOrNull(year - 1)
-        val lastYearRows = if (lastYearSalesYear != null) {
-            monthlySalesHistoryRepository
-                .findBySalesYearAndSalesMonthAndAccountIn(lastYearSalesYear, salesMonth, accounts)
-        } else {
-            emptyList()
-        }
-        val totalLastYearAchieved = if (lastYearRows.isEmpty()) null
-        else lastYearRows.sumOf { rds ->
-            shipClosingSum(oroByKey[rds.account?.externalKey to lastYearSalesDate])
-        }
+        val totalLastYearAchieved = accounts
+            .sumOf { acc -> shipClosingSum(oroByKey[acc.externalKey to lastYearSalesDate]) }
+            .takeIf { it > 0L }
         val lastYearRatio = if (totalLastYearAchieved == null || totalLastYearAchieved == 0L) null
         else (totalAchieved.toDouble() / totalLastYearAchieved.toDouble()) * 100.0
-
-        val trend = buildMonthlyTrend(year, month, accounts, currentMonthRows + lastYearRows)
 
         return MonthlySalesDashboardSummaryResponse(
             salesYear = year,
             salesMonth = month,
-            totalTargetAmount = totalTarget,
+            totalTargetAmount = 0L,
             totalAchievedAmount = totalAchieved,
-            overallAchievementRate = overallRate,
-            referenceAchievementRate = reference,
+            overallAchievementRate = 0.0,
+            referenceAchievementRate = referenceAchievementRate(year, month, LocalDate.now()),
             totalLastYearAchievedAmount = totalLastYearAchieved,
             lastYearComparisonRatio = lastYearRatio,
-            monthlyTrend = trend,
+            monthlyTrend = buildMonthlyTrend(year, month, accounts),
         )
     }
 
     /**
      * 하단 거래처별 명세 조회 — 페이징 + 정렬 + 필터.
      *
-     * 권한 범위 거래처 N건의 당월 매출 이력 row 별 카테고리 4종 (상온/라면/냉동냉장/유지) 마감실적 + 전년 동월 비교 + 마감 상태 응답.
+     * 권한 범위 거래처 N건의 당월 마감실적 row 별 카테고리 4종 (상온/라면/냉동냉장/유지) + 전년 동월 비교 응답.
      * 페이징은 조회된 거래처 list 를 메모리에서 sort + slice (거래처 수가 통상 수백 이내라 충분).
      *
      * @throws AdminForbiddenException 권한 범위 위반
@@ -166,6 +148,7 @@ class MonthlySalesAdminQueryService(
 
     /**
      * 단건 거래처 상세 조회 — 모바일 동등 6 영역 (진도율 바 / 목표·실적 / 카테고리 4종 / 전년 동월 / 전년 평균).
+     * 목표 / 진도율은 폐기.
      *
      * @throws AdminForbiddenException 거래처가 권한 범위 밖일 때
      */
@@ -179,19 +162,13 @@ class MonthlySalesAdminQueryService(
             )
         if (!scope.validateAccess(account.branchCode)) throw AdminForbiddenException()
 
-        val salesYear = toSalesYear(year)
-        val salesMonth = toSalesMonth(month)
-        val currentRow = monthlySalesHistoryRepository
-            .findBySalesYearAndSalesMonthAndAccountIn(salesYear, salesMonth, listOf(account))
-            .firstOrNull()
-
         // ORORA fetch — 당월 + 전년 + 1~조회월 누적 일괄 1 trip
         val accountSap = account.externalKey?.let { listOf(it) } ?: emptyList()
-        val months = (1..month).map { toSalesMonth(it) }
+        val months = (1..month).toList()
         val currentSalesDate = toOroraSalesDate(year, month)
         val lastYearSalesDate = toOroraSalesDate(year - 1, month)
-        val currentRangeSalesDates = (1..month).map { toOroraSalesDate(year, it) }
-        val previousRangeSalesDates = (1..month).map { toOroraSalesDate(year - 1, it) }
+        val currentRangeSalesDates = months.map { toOroraSalesDate(year, it) }
+        val previousRangeSalesDates = months.map { toOroraSalesDate(year - 1, it) }
         val oroByKey = ororaGateway
             .findBySalesDates(
                 (currentRangeSalesDates + previousRangeSalesDates).distinct(),
@@ -201,16 +178,12 @@ class MonthlySalesAdminQueryService(
         val currentOro = oroByKey[account.externalKey to currentSalesDate]
         val lastYearOro = oroByKey[account.externalKey to lastYearSalesDate]
 
-        val target = (currentRow?.thisMonthTarget ?: BigDecimal.ZERO).toLong()
         val achieved = shipClosingSum(currentOro)
-        val rate = computeAchievementRate(achieved, target)
-        val reference = referenceAchievementRate(year, month, LocalDate.now())
 
         val today = LocalDate.now()
         val isPastMonth = year < today.year || (year == today.year && month < today.monthValue)
-        val categorySales = if (isPastMonth) buildCategorySales(currentRow, currentOro) else emptyList()
+        val categorySales = if (isPastMonth) buildCategorySales(currentOro) else emptyList()
 
-        val lastYearSalesYear = toSalesYearOrNull(year - 1)
         val lastYearAchieved = shipClosingSum(lastYearOro)
         val yearComparison = MonthlySalesDashboardDetailResponse.YearComparisonInfo(
             currentYear = achieved / MILLION,
@@ -220,7 +193,7 @@ class MonthlySalesAdminQueryService(
         // 1월~조회월 누적 평균 (백만원 단위 절사) — ORORA row 기반
         val currentAvg = if (months.isEmpty()) 0L
         else currentRangeSalesDates.sumOf { sd -> shipClosingSum(oroByKey[account.externalKey to sd]) } / months.size
-        val previousAvg = if (months.isEmpty() || lastYearSalesYear == null) 0L
+        val previousAvg = if (months.isEmpty()) 0L
         else previousRangeSalesDates.sumOf { sd -> shipClosingSum(oroByKey[account.externalKey to sd]) } / months.size
         val monthlyAverage = MonthlySalesDashboardDetailResponse.MonthlyAverageInfo(
             currentYearAverage = currentAvg / MILLION,
@@ -234,10 +207,10 @@ class MonthlySalesAdminQueryService(
             customerName = account.name,
             salesYear = year,
             salesMonth = month,
-            targetAmount = target,
+            targetAmount = 0L,
             achievedAmount = achieved,
-            achievementRate = rate,
-            referenceAchievementRate = reference,
+            achievementRate = 0.0,
+            referenceAchievementRate = referenceAchievementRate(year, month, LocalDate.now()),
             categorySales = categorySales,
             yearComparison = yearComparison,
             monthlyAverage = monthlyAverage,
@@ -247,23 +220,11 @@ class MonthlySalesAdminQueryService(
     // ------------------- helpers -------------------
 
     private fun buildListItems(effectiveCodes: List<String>, request: MonthlySalesDashboardListRequest): List<MonthlySalesDashboardListItem> {
-        val salesYear = toSalesYear(request.year)
-        val salesMonth = toSalesMonth(request.month)
         val accounts = findAccounts(effectiveCodes, request.accountGroup, request.customerKeyword)
             .let { all ->
                 if (request.accountIds.isEmpty()) all else all.filter { it.id in request.accountIds }
             }
         if (accounts.isEmpty()) return emptyList()
-
-        val currentRows = monthlySalesHistoryRepository
-            .findBySalesYearAndSalesMonthAndAccountIn(salesYear, salesMonth, accounts)
-            .associateBy { it.account?.id }
-        val lastYearSalesYear = toSalesYearOrNull(request.year - 1)
-        val lastYearRows = if (lastYearSalesYear != null) {
-            monthlySalesHistoryRepository
-                .findBySalesYearAndSalesMonthAndAccountIn(lastYearSalesYear, salesMonth, accounts)
-                .associateBy { it.account?.id }
-        } else emptyMap()
 
         // ORORA fetch — 당월 + 전년 동월 일괄 1 trip
         val currentSalesDate = toOroraSalesDate(request.year, request.month)
@@ -274,14 +235,10 @@ class MonthlySalesAdminQueryService(
             .associateBy { it.sapAccountCode to it.salesDate }
 
         return accounts.map { account ->
-            val current = currentRows[account.id]
-            val lastYear = lastYearRows[account.id]
             val currentOro = oroByKey[account.externalKey to currentSalesDate]
             val lastYearOro = oroByKey[account.externalKey to lastYearSalesDate]
 
-            val target = current?.thisMonthTarget?.toLong()
             val achieved = shipClosingSum(currentOro)
-            val rate = if (target != null) computeAchievementRate(achieved, target) else null
             val lastYearAchieved = shipClosingSum(lastYearOro)
             val lastYearRatio = if (lastYearAchieved > 0)
                 (achieved.toDouble() / lastYearAchieved.toDouble()) * 100.0 else null
@@ -289,23 +246,21 @@ class MonthlySalesAdminQueryService(
             MonthlySalesDashboardListItem(
                 accountId = account.id,
                 accountName = account.name,
-                sapAccountCode = current?.sapAccountCode ?: account.externalKey,
-                // 참고: RDS row 의 sapAccountCode 우선, 부재 시 Account.externalKey fallback —
-                // SAP inbound (SapClientMasterService) 가 sapAccountCode → externalKey 동등 적재
+                sapAccountCode = account.externalKey,
                 branchCode = account.branchCode,
                 branchName = account.branchName,
                 salesYear = request.year,
                 salesMonth = request.month,
-                targetAmount = target,
+                targetAmount = null,
                 totalAchievedAmount = achieved,
-                achievementRate = rate,
+                achievementRate = null,
                 ambientAchievedAmount = categoryAchieved(currentOro, SalesCategory.AMBIENT),
                 noodleAchievedAmount = categoryAchieved(currentOro, SalesCategory.NOODLE),
                 frozenRefrigeratedAchievedAmount = categoryAchieved(currentOro, SalesCategory.FROZEN_REFRIGERATED),
                 oilFatAchievedAmount = categoryAchieved(currentOro, SalesCategory.OIL_FAT),
                 lastYearAchievedAmount = lastYearAchieved,
                 lastYearComparisonRatio = lastYearRatio,
-                isConfirmed = current?.isConfirmed ?: false,
+                isConfirmed = false,
             )
         }
     }
@@ -329,7 +284,6 @@ class MonthlySalesAdminQueryService(
         baseYear: Int,
         baseMonth: Int,
         accounts: List<Account>,
-        precomputed: List<MonthlySalesHistory>,
     ): List<MonthlySalesDashboardSummaryResponse.MonthlyTrendPoint> {
         // 최근 6개월 — (baseYear, baseMonth) 부터 5개월 이전까지 역순 → 시간순으로 재정렬
         val keys = (0..5).map { offset ->
@@ -348,16 +302,7 @@ class MonthlySalesAdminQueryService(
             }
         }
 
-        // 효율: 6개월 + 전년 동월 6개월 = 12개월. salesYear/salesMonth enum 변환 가능한 것만.
-        val targetSalesYears = keys.mapNotNull { toSalesYearOrNull(it.first) }.distinct()
-        val targetSalesMonths = keys.mapNotNull { toSalesMonthOrNull(it.second) }.distinct()
         val lastYearKeys = keys.map { (y, m) -> (y - 1) to m }
-        val lastYearSalesYears = lastYearKeys.mapNotNull { toSalesYearOrNull(it.first) }.distinct()
-
-        val rdsRowsByKey = (targetSalesYears + lastYearSalesYears).distinct().flatMap { sy ->
-            monthlySalesHistoryRepository
-                .findBySalesYearAndSalesMonthInAndAccountIn(sy, targetSalesMonths, accounts)
-        }.groupBy { (it.salesYear?.value?.toIntOrNull() ?: 0) to (it.salesMonth?.value?.toIntOrNull() ?: 0) }
 
         // ORORA fetch — 12개월 (현재 6 + 전년 6) 일괄 1 trip
         val accountSapCodes = accounts.mapNotNull { it.externalKey }
@@ -366,7 +311,6 @@ class MonthlySalesAdminQueryService(
             .groupBy { it.salesDate }
 
         return keys.map { (y, m) ->
-            val current = rdsRowsByKey[y to m].orEmpty()
             val currentSalesDate = toOroraSalesDate(y, m)
             val lastYearSalesDate = toOroraSalesDate(y - 1, m)
             val currentOroRows = oroByKey[currentSalesDate].orEmpty()
@@ -374,7 +318,7 @@ class MonthlySalesAdminQueryService(
             MonthlySalesDashboardSummaryResponse.MonthlyTrendPoint(
                 salesYear = y,
                 salesMonth = m,
-                targetAmount = current.sumOf { (it.thisMonthTarget ?: BigDecimal.ZERO).toLong() },
+                targetAmount = 0L,
                 achievedAmount = currentOroRows.sumOf { shipClosingSum(it) },
                 lastYearAchievedAmount = if (lastYearOroRows.isEmpty()) null
                 else lastYearOroRows.sumOf { shipClosingSum(it) },
@@ -403,18 +347,15 @@ class MonthlySalesAdminQueryService(
     }
 
     private fun buildCategorySales(
-        rdsRow: MonthlySalesHistory?,
         oroRow: OroraMonthlySalesHistory?,
     ): List<MonthlySalesDashboardDetailResponse.CategorySalesInfo> {
-        if (rdsRow == null && oroRow == null) return emptyList()
+        if (oroRow == null) return emptyList()
         return SalesCategory.entries.map { category ->
-            val targetAmount = categoryTarget(rdsRow, category)
-            val achievedAmount = categoryAchieved(oroRow, category)
             MonthlySalesDashboardDetailResponse.CategorySalesInfo(
                 category = category.name,
-                targetAmount = targetAmount,
-                achievedAmount = achievedAmount,
-                achievementRate = computeAchievementRate(achievedAmount, targetAmount),
+                targetAmount = 0L,
+                achievedAmount = categoryAchieved(oroRow, category),
+                achievementRate = 0.0,
             )
         }
     }
@@ -444,17 +385,6 @@ class MonthlySalesAdminQueryService(
     }
 
     /**
-     * 카테고리별 목표 — RDS `MonthlySalesHistory.thisMonthTarget` 합계를 카테고리 수로 균등 분배.
-     *
-     * 레거시는 FridgePurpose / AmbientPurpose 등 별도 필드가 있으나 신규 entity 에서는 일부만
-     * 매핑되어 있고 4종 모두 대응되지 않음. 후속 보강 검토 필요 (#776 분석 한계).
-     */
-    private fun categoryTarget(rdsRow: MonthlySalesHistory?, @Suppress("UNUSED_PARAMETER") category: SalesCategory): Long {
-        val total = (rdsRow?.thisMonthTarget ?: BigDecimal.ZERO).toLong()
-        return total / SalesCategory.entries.size
-    }
-
-    /**
      * ORORA row 의 카테고리 4종 `ShipClosingAmount` 합산 — 물류 배부 채널 누적 마감실적.
      *
      * SF Apex `IF_REST_MOBILE_MonthlySalesHistory.cls` 응답의 `ShipClosingSumAmount` 동등.
@@ -466,11 +396,6 @@ class MonthlySalesAdminQueryService(
             oro.shipClosingAmount1, oro.shipClosingAmount2,
             oro.shipClosingAmount3, oro.shipClosingAmount4,
         ).sumOf { it.toLong() }
-    }
-
-    private fun computeAchievementRate(achieved: Long, target: Long): Double {
-        if (target <= 0L) return 0.0
-        return (achieved.toDouble() / target.toDouble()) * 100.0
     }
 
     /**
@@ -537,27 +462,6 @@ class MonthlySalesAdminQueryService(
         }
     }
 
-    private fun toSalesYear(year: Int): SalesYear =
-        SalesYear.fromValueOrNull(year.toString())
-            ?: throw BusinessException(
-                errorCode = "INVALID_PARAMETER",
-                message = "지원하지 않는 매출연도: $year",
-                httpStatus = HttpStatus.BAD_REQUEST,
-            )
-
-    private fun toSalesYearOrNull(year: Int): SalesYear? = SalesYear.fromValueOrNull(year.toString())
-
-    private fun toSalesMonth(month: Int): SalesMonth =
-        SalesMonth.fromValueOrNull(month.toString().padStart(2, '0'))
-            ?: throw BusinessException(
-                errorCode = "INVALID_PARAMETER",
-                message = "지원하지 않는 매출월: $month",
-                httpStatus = HttpStatus.BAD_REQUEST,
-            )
-
-    private fun toSalesMonthOrNull(month: Int): SalesMonth? =
-        SalesMonth.fromValueOrNull(month.toString().padStart(2, '0'))
-
     /**
      * ORORA `SalesDate` 컬럼 형식 (`YYYYMM` 6자) 생성.
      *
@@ -569,16 +473,4 @@ class MonthlySalesAdminQueryService(
     companion object {
         private const val MILLION = 1_000_000L
     }
-}
-
-/**
- * 매출 카테고리 — 레거시 SF `IF_REST_MOBILE_MonthlySalesHistory.cls` 가공 로직 정합.
- *
- * 카테고리 1~4 의 매출 합산은 entity 의 ABCClosingAmount1~4 필드에 매핑된다 (ABC 채널 + 물류 Ship 합산값).
- */
-enum class SalesCategory {
-    AMBIENT,
-    NOODLE,
-    FROZEN_REFRIGERATED,
-    OIL_FAT,
 }

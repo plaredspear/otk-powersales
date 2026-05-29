@@ -1,34 +1,116 @@
 package com.otoki.powersales.sales.service
 
+import com.otoki.orora.entity.OroraMonthlySalesHistory
 import com.otoki.powersales.sales.dto.request.MonthlySalesRequest
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
-import com.otoki.powersales.sales.repository.MonthlySalesHistoryRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 
 /**
- * 월매출 관련 비즈니스 로직
- * TODO: V1 필드(salesYear, salesMonth, accountExternalKey, targetMonthResults, shipClosingAmount 등) 기반으로 재구현 필요 (후속 스펙)
+ * 월매출 조회 service.
+ *
+ * ## 데이터 source
+ * [OroraMonthlySalesHistory] (ORORA view `ECRM_ABCCUST_MH_V`) 의 실측 마감실적만 사용.
+ * 목표 (`thisMonthTarget`) / 확정 상태 (`isConfirmed`) 는 폐기 — 응답 필드 호환성 유지를 위해
+ * `targetAmount = 0`, `achievementRate = 0.0` 로 고정 반환.
+ *
+ * ## 응답 산출
+ * - `achievedAmount` = 카테고리 4종 ABC + Ship 합산 ([OroraMonthlySalesHistory.closingAmountSum] 동등)
+ * - `categorySales` = 카테고리별 ABC + Ship 합산 — SF Apex `IF_REST_MOBILE_MonthlySalesHistory.cls` 정합
+ * - `yearComparison` = 당년 / 전년 동월 ABC+Ship 합산
+ * - `monthlyAverage` = 1월~조회월 누적 ABC+Ship 합산 / 월수 (당년 / 전년)
  */
 @Service
 @Transactional(readOnly = true)
 class MonthlySalesService(
-    private val monthlySalesHistoryRepository: MonthlySalesHistoryRepository
+    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
 ) {
 
     fun getMonthlySales(request: MonthlySalesRequest): MonthlySalesResponse {
-        // TODO: V1 스키마 필드 기반으로 재구현 (후속 스펙)
-        val customerId = request.customerId ?: "ALL"
+        val customerId = request.customerId
+        val year = request.getYear()
+        val month = request.getMonth()
+        val sapCode = customerId ?: ""
+        if (sapCode.isBlank()) {
+            return emptyResponse(customerId ?: "ALL", request.yearMonth, year, month)
+        }
+
+        val currentRangeSalesDates = (1..month).map { toSalesDate(year, it) }
+        val previousRangeSalesDates = (1..month).map { toSalesDate(year - 1, it) }
+        val rowsByDate = ororaGateway
+            .findBySalesDates((currentRangeSalesDates + previousRangeSalesDates).distinct(), listOf(sapCode))
+            .associateBy { it.salesDate }
+
+        val currentRow = rowsByDate[toSalesDate(year, month)]
+        val previousRow = rowsByDate[toSalesDate(year - 1, month)]
+
+        val achieved = currentRow?.closingAmountSum?.toLong() ?: 0L
+        val previousAchieved = previousRow?.closingAmountSum?.toLong() ?: 0L
+
+        val currentAvg = currentRangeSalesDates
+            .sumOf { rowsByDate[it]?.closingAmountSum?.toLong() ?: 0L } / month
+        val previousAvg = previousRangeSalesDates
+            .sumOf { rowsByDate[it]?.closingAmountSum?.toLong() ?: 0L } / month
+
         return MonthlySalesResponse(
-            customerId = customerId,
-            customerName = customerId,
+            customerId = customerId ?: sapCode,
+            customerName = customerId ?: sapCode,
             yearMonth = request.yearMonth,
-            targetAmount = 0,
-            achievedAmount = 0,
+            targetAmount = 0L,
+            achievedAmount = achieved,
             achievementRate = 0.0,
-            categorySales = emptyList(),
-            yearComparison = MonthlySalesResponse.YearComparisonInfo(0, 0),
-            monthlyAverage = MonthlySalesResponse.MonthlyAverageInfo(0, 0, 1, request.getMonth())
+            categorySales = buildCategorySales(currentRow),
+            yearComparison = MonthlySalesResponse.YearComparisonInfo(achieved, previousAchieved),
+            monthlyAverage = MonthlySalesResponse.MonthlyAverageInfo(
+                currentYearAverage = currentAvg,
+                previousYearAverage = previousAvg,
+                startMonth = 1,
+                endMonth = month,
+            ),
         )
     }
+
+    private fun emptyResponse(customerId: String, yearMonth: String, year: Int, month: Int) =
+        MonthlySalesResponse(
+            customerId = customerId,
+            customerName = customerId,
+            yearMonth = yearMonth,
+            targetAmount = 0L,
+            achievedAmount = 0L,
+            achievementRate = 0.0,
+            categorySales = emptyList(),
+            yearComparison = MonthlySalesResponse.YearComparisonInfo(0L, 0L),
+            monthlyAverage = MonthlySalesResponse.MonthlyAverageInfo(0L, 0L, 1, month),
+        )
+
+    private fun buildCategorySales(oro: OroraMonthlySalesHistory?): List<MonthlySalesResponse.CategorySalesInfo> {
+        if (oro == null) return emptyList()
+        return SalesCategory.entries.map { category ->
+            MonthlySalesResponse.CategorySalesInfo(
+                category = category.name,
+                targetAmount = 0L,
+                achievedAmount = categoryAchieved(oro, category),
+                achievementRate = 0.0,
+            )
+        }
+    }
+
+    private fun categoryAchieved(oro: OroraMonthlySalesHistory, category: SalesCategory): Long {
+        val abc = when (category) {
+            SalesCategory.AMBIENT -> oro.abcClosingAmount1
+            SalesCategory.NOODLE -> oro.abcClosingAmount2
+            SalesCategory.FROZEN_REFRIGERATED -> oro.abcClosingAmount3
+            SalesCategory.OIL_FAT -> oro.abcClosingAmount4
+        }
+        val ship = when (category) {
+            SalesCategory.AMBIENT -> oro.shipClosingAmount1
+            SalesCategory.NOODLE -> oro.shipClosingAmount2
+            SalesCategory.FROZEN_REFRIGERATED -> oro.shipClosingAmount3
+            SalesCategory.OIL_FAT -> oro.shipClosingAmount4
+        }
+        return (abc ?: BigDecimal.ZERO).toLong() + (ship ?: BigDecimal.ZERO).toLong()
+    }
+
+    private fun toSalesDate(year: Int, month: Int): String = "%04d%02d".format(year, month)
 }

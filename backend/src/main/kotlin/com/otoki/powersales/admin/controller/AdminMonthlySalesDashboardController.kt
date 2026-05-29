@@ -1,5 +1,6 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.auth.permission.PermissionResource
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.DataScope
@@ -24,6 +25,7 @@ import java.nio.charset.StandardCharsets
 
 @RestController
 @RequestMapping("/api/v1/admin/sales/monthly")
+@PermissionResource("monthly_sales_history")
 class AdminMonthlySalesDashboardController(
     private val queryService: MonthlySalesAdminQueryService,
     private val excelExporter: MonthlySalesDashboardExcelExporter,
