@@ -172,6 +172,11 @@ data class PermissionSetMatrix(
  * 모든 필드 포함 (메타 + flags + 권한 비트 본문 + dirty/origin 식별).
  *
  * 정책 (#837 결정 1-A): sfid 자체는 노출하지 않고 `sfOrigin: Boolean` 으로 SF 출처 여부만 표시.
+ *
+ * 형식 차이 (#837 결정 C): [objectPermissions]/[customPermissions] 는 매트릭스 UI 저장-전송
+ * round-trip 을 위해 `Map<String, Map<String, Boolean>>` (DB jsonb 본문 그대로) 형식. 반면
+ * Inspection 의 [PermissionSetDetail] 은 표 렌더링용 [ObjectPermissionRow] 리스트. Web client 는
+ * PermissionMatrixEditor 컴포넌트 안의 어댑터로 두 형식을 상호 변환한다.
  */
 data class PermissionSetMutationResponse(
     val permissionSetId: Long,

@@ -5,6 +5,7 @@ import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateFlagsRequest
 import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateMetaRequest
 import com.otoki.powersales.admin.permission.exception.InvalidCustomPermissionKeyException
 import com.otoki.powersales.admin.permission.exception.InvalidObjectPermissionKeyException
+import com.otoki.powersales.admin.permission.exception.PermissionSetFlagsNotFoundException
 import com.otoki.powersales.admin.permission.exception.PermissionSetNameAlreadyExistsException
 import com.otoki.powersales.admin.permission.exception.PermissionSetNameInvalidException
 import com.otoki.powersales.admin.permission.exception.PermissionSetNotFoundException
@@ -322,5 +323,70 @@ class AdminPermissionSetMutationServiceTest {
         assertThatThrownBy {
             service.delete(99, 100)
         }.isInstanceOf(PermissionSetNotFoundException::class.java)
+    }
+
+    @Test
+    @DisplayName("updateFlags - 신규 자체 PS 비트 수정 → dirty 안 set")
+    fun updateFlagsDoesNotSetDirtyForNewPs() {
+        val ps = permissionSet(sfid = null)
+        val flags = permissionSetFlags(isLocallyModified = false)
+        every { permissionSetRepository.findById(90) } returns Optional.of(ps)
+        every { permissionSetFlagsRepository.findByPermissionSetId(90) } returns flags
+        every { entitySfNameRegistry.snapshot() } returns mapOf("account" to "Account")
+        every { entitySfNameRegistry.allResources() } returns setOf("account")
+        every { permissionSetFlagsRepository.save(any()) } returnsArgument 0
+        every { permissionSetChangeLogRepository.save(any()) } returnsArgument 0
+
+        val response = service.updateFlags(
+            permissionSetId = 90,
+            request = PermissionSetUpdateFlagsRequest(
+                objectPermissions = mapOf("Account" to mapOf("allowRead" to true)),
+            ),
+            principalUserId = 100,
+        )
+
+        assertThat(response.isLocallyModified).isFalse
+        assertThat(response.sfOrigin).isFalse
+    }
+
+    @Test
+    @DisplayName("updateFlags - flags 누락 시 PERMISSION_SET_FLAGS_NOT_FOUND (500 노출 차단)")
+    fun updateFlagsFlagsMissing() {
+        val ps = permissionSet(sfid = null)
+        every { permissionSetRepository.findById(90) } returns Optional.of(ps)
+        every { permissionSetFlagsRepository.findByPermissionSetId(90) } returns null
+
+        assertThatThrownBy {
+            service.updateFlags(90, PermissionSetUpdateFlagsRequest(), 100)
+        }.isInstanceOf(PermissionSetFlagsNotFoundException::class.java)
+    }
+
+    @Test
+    @DisplayName("listChangeLog - changedAt desc 정렬 + changedByName 채움")
+    fun listChangeLogReturnsResponses() {
+        val log1 = com.otoki.powersales.auth.sharing.entity.PermissionSetChangeLog(
+            id = 12,
+            permissionSetId = 90,
+            eventType = com.otoki.powersales.auth.sharing.entity.PermissionSetChangeLogEventType.UPDATE_FLAGS,
+            beforeSnapshot = """{"viewAllData":false}""",
+            afterSnapshot = """{"viewAllData":true}""",
+            changedById = 100,
+        )
+        val pageResult = org.springframework.data.domain.PageImpl(
+            listOf(log1),
+            org.springframework.data.domain.PageRequest.of(0, 20, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "changedAt")),
+            1,
+        )
+        every { permissionSetChangeLogRepository.findByPermissionSetId(eq(90), any()) } returns pageResult
+        val mockUser: com.otoki.powersales.user.entity.User = io.mockk.mockk()
+        every { mockUser.name } returns "관리자"
+        every { userRepository.findById(100) } returns Optional.of(mockUser)
+
+        val result = service.listChangeLog(90, 0, 20)
+
+        assertThat(result.content).hasSize(1)
+        assertThat(result.content[0].changeLogId).isEqualTo(12)
+        assertThat(result.content[0].eventType).isEqualTo("UPDATE_FLAGS")
+        assertThat(result.content[0].changedByName).isEqualTo("관리자")
     }
 }

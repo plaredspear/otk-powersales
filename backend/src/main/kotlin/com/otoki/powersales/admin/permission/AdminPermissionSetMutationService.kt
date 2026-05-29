@@ -7,6 +7,7 @@ import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateFlagsRequest
 import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateMetaRequest
 import com.otoki.powersales.admin.permission.exception.InvalidCustomPermissionKeyException
 import com.otoki.powersales.admin.permission.exception.InvalidObjectPermissionKeyException
+import com.otoki.powersales.admin.permission.exception.PermissionSetFlagsNotFoundException
 import com.otoki.powersales.admin.permission.exception.PermissionSetNameAlreadyExistsException
 import com.otoki.powersales.admin.permission.exception.PermissionSetNameInvalidException
 import com.otoki.powersales.admin.permission.exception.PermissionSetNotFoundException
@@ -15,6 +16,7 @@ import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.auth.permission.AdminPermissionCache
 import com.otoki.powersales.auth.permission.EntitySfNameRegistry
 import com.otoki.powersales.auth.sharing.entity.PermissionSet
+import com.otoki.powersales.auth.sharing.entity.PermissionSetAssignment
 import com.otoki.powersales.auth.sharing.entity.PermissionSetChangeLog
 import com.otoki.powersales.auth.sharing.entity.PermissionSetChangeLogEventType
 import com.otoki.powersales.auth.sharing.entity.PermissionSetFlags
@@ -35,6 +37,10 @@ import tools.jackson.databind.ObjectMapper
 
 /**
  * Spec #837 — PermissionSet 자체 관리 (CRUD + 권한 비트 수정 + 변경 이력 적재) service.
+ *
+ * ## 레거시 매핑
+ * **신규 도입 — 레거시 미존재**. SF org 의 PS 생성/수정/삭제는 SF Setup UI 가 수행 (Apex 코드 외).
+ * Heroku 도 본 기능 부재. spec #837 §6 "레거시 참조" 참조.
  *
  * 정책:
  * - 가드: MANAGE_USERS 시스템 권한 (controller @RequiresSfPermission, Q6 옵션 1)
@@ -175,8 +181,10 @@ class AdminPermissionSetMutationService(
         val ps = permissionSetRepository.findById(permissionSetId).orElseThrow {
             PermissionSetNotFoundException(permissionSetId)
         }
+        // PS 와 flags 는 본 service.create 또는 Stage1 적재로 1:1 보장. 만약 flags 가 누락된
+        // 비정상 PS 라면 PermissionSetFlagsNotFoundException (404) 으로 운영자에게 정합 위반 알림.
         val flags = permissionSetFlagsRepository.findByPermissionSetId(permissionSetId)
-            ?: error("PermissionSetFlags 누락 — permissionSetId=$permissionSetId. 기존 PS 적재 정합 위반 (Stage1 확인 필요)")
+            ?: throw PermissionSetFlagsNotFoundException(permissionSetId)
 
         validateObjectPermissionKeys(request.objectPermissions)
         validateCustomPermissionKeys(request.customPermissions)
@@ -227,10 +235,10 @@ class AdminPermissionSetMutationService(
         }
 
         val flags = permissionSetFlagsRepository.findByPermissionSetId(permissionSetId)
-        val beforeSnapshot = buildDeleteSnapshot(ps, flags)
+        val assignments = flags?.let { permissionSetAssignmentRepository.findAllByPermissionSetFlagsId(it.id) }.orEmpty()
+        val beforeSnapshot = buildDeleteSnapshot(ps, flags, assignments)
 
         if (flags != null) {
-            val assignments = permissionSetAssignmentRepository.findAllByPermissionSetFlagsId(flags.id)
             if (assignments.isNotEmpty()) {
                 permissionSetAssignmentRepository.deleteAll(assignments)
                 assignments.forEach { a -> a.assigneeUserId?.let { adminPermissionCache.invalidate(it) } }
@@ -297,16 +305,18 @@ class AdminPermissionSetMutationService(
         )
     }
 
-    private fun buildDeleteSnapshot(ps: PermissionSet, flags: PermissionSetFlags?): PermissionSetDeleteSnapshot {
-        val assignmentSnapshots = flags?.let {
-            permissionSetAssignmentRepository.findAllByPermissionSetFlagsId(it.id).map { a ->
-                PermissionSetDeleteSnapshot.AssignmentEntry(
-                    assignmentId = a.id,
-                    assigneeUserId = a.assigneeUserId,
-                    isActive = a.isActive,
-                )
-            }
-        } ?: emptyList()
+    private fun buildDeleteSnapshot(
+        ps: PermissionSet,
+        flags: PermissionSetFlags?,
+        assignments: List<PermissionSetAssignment>,
+    ): PermissionSetDeleteSnapshot {
+        val assignmentSnapshots = assignments.map { a ->
+            PermissionSetDeleteSnapshot.AssignmentEntry(
+                assignmentId = a.id,
+                assigneeUserId = a.assigneeUserId,
+                isActive = a.isActive,
+            )
+        }
         return PermissionSetDeleteSnapshot(
             permissionSetId = ps.id,
             name = ps.name,
