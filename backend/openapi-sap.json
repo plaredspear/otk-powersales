@@ -660,47 +660,6 @@
         },
         "type" : "object"
       },
-      "MonthlySalesHistoryRequest" : {
-        "properties" : {
-          "reqItemList" : {
-            "items" : {
-              "$ref" : "#/components/schemas/MonthlySalesHistoryRequestItem"
-            },
-            "type" : [ "array", "null" ]
-          }
-        },
-        "required" : [ "reqItemList" ],
-        "type" : "object"
-      },
-      "MonthlySalesHistoryRequestItem" : {
-        "properties" : {
-          "ABCClosingAmount1" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount2" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount3" : {
-            "type" : "string"
-          },
-          "SAPAccountCode" : {
-            "type" : "string"
-          },
-          "SalesYearMonth" : {
-            "type" : "string"
-          },
-          "ShipClosingAmount" : {
-            "type" : "string"
-          },
-          "TotalLedgerAmount" : {
-            "type" : "string"
-          },
-          "rlsales" : {
-            "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
       "OrganizeMasterDetail" : {
         "properties" : {
           "failureCount" : {
@@ -1339,36 +1298,6 @@
         },
         "summary" : "ERP 주문 적재 (헤더+라인 UPSERT)",
         "tags" : [ "sap-erp-order-controller" ]
-      }
-    },
-    "/api/v1/sap/monthly-sales-history" : {
-      "post" : {
-        "description" : "\n            SAP 월 매출 이력을 (SAPAccountCode + SalesYearMonth) 기준으로 UPSERT 합니다.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/MonthlySalesHistory`\n            - 레거시 Apex 클래스: `IF_REST_SAP_MonthlySalesHistory`\n        ",
-        "operationId" : "upsertMonthly",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/MonthlySalesHistoryRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperSalesHistoryDetail"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "월 매출 이력 적재 (청크 UPSERT)",
-        "tags" : [ "sap-sales-history-controller" ]
       }
     },
     "/api/v1/sap/oauth/token" : {

@@ -11350,47 +11350,6 @@
         },
         "type" : "object"
       },
-      "MonthlySalesHistoryRequest" : {
-        "properties" : {
-          "reqItemList" : {
-            "items" : {
-              "$ref" : "#/components/schemas/MonthlySalesHistoryRequestItem"
-            },
-            "type" : [ "array", "null" ]
-          }
-        },
-        "required" : [ "reqItemList" ],
-        "type" : "object"
-      },
-      "MonthlySalesHistoryRequestItem" : {
-        "properties" : {
-          "ABCClosingAmount1" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount2" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount3" : {
-            "type" : "string"
-          },
-          "SAPAccountCode" : {
-            "type" : "string"
-          },
-          "SalesYearMonth" : {
-            "type" : "string"
-          },
-          "ShipClosingAmount" : {
-            "type" : "string"
-          },
-          "TotalLedgerAmount" : {
-            "type" : "string"
-          },
-          "rlsales" : {
-            "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
       "MonthlySalesRequest" : {
         "properties" : {
           "customerId" : {
@@ -16206,36 +16165,6 @@
         },
         "type" : "object"
       },
-      "SfChunkResult" : {
-        "properties" : {
-          "count" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "index" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "reason" : {
-            "type" : [ "string", "null" ]
-          },
-          "status" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "SfFailureItem" : {
-        "properties" : {
-          "identifier" : {
-            "type" : [ "string", "null" ]
-          },
-          "reason" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "SfFkResolveProgressResponse" : {
         "properties" : {
           "completedTables" : {
@@ -16305,47 +16234,6 @@
         },
         "type" : "object"
       },
-      "SfMonthlySalesHistoryRequest" : {
-        "properties" : {
-          "reqItemList" : {
-            "items" : {
-              "$ref" : "#/components/schemas/SfMonthlySalesHistoryRequestItem"
-            },
-            "type" : [ "array", "null" ]
-          }
-        },
-        "required" : [ "reqItemList" ],
-        "type" : "object"
-      },
-      "SfMonthlySalesHistoryRequestItem" : {
-        "properties" : {
-          "ABCClosingAmount1" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount2" : {
-            "type" : "string"
-          },
-          "ABCClosingAmount3" : {
-            "type" : "string"
-          },
-          "SAPAccountCode" : {
-            "type" : "string"
-          },
-          "SalesYearMonth" : {
-            "type" : "string"
-          },
-          "ShipClosingAmount" : {
-            "type" : "string"
-          },
-          "TotalLedgerAmount" : {
-            "type" : "string"
-          },
-          "rlsales" : {
-            "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
       "SfObjectResource" : {
         "properties" : {
           "entity" : {
@@ -16377,45 +16265,6 @@
               "type" : "integer"
             },
             "type" : [ "array", "null" ]
-          }
-        },
-        "type" : "object"
-      },
-      "SfResultWrapperSfSalesHistoryDetail" : {
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/SfSalesHistoryDetail"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "SfSalesHistoryDetail" : {
-        "properties" : {
-          "chunks" : {
-            "items" : {
-              "$ref" : "#/components/schemas/SfChunkResult"
-            },
-            "type" : "array"
-          },
-          "failureCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "failures" : {
-            "items" : {
-              "$ref" : "#/components/schemas/SfFailureItem"
-            },
-            "type" : "array"
-          },
-          "successCount" : {
-            "format" : "int32",
-            "type" : "integer"
           }
         },
         "type" : "object"
@@ -27689,36 +27538,6 @@
         "tags" : [ "sap-erp-order-controller" ]
       }
     },
-    "/api/v1/sap/monthly-sales-history" : {
-      "post" : {
-        "description" : "\n            SAP 월 매출 이력을 (SAPAccountCode + SalesYearMonth) 기준으로 UPSERT 합니다.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/MonthlySalesHistory`\n            - 레거시 Apex 클래스: `IF_REST_SAP_MonthlySalesHistory`\n        ",
-        "operationId" : "upsertMonthly_1",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/MonthlySalesHistoryRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperSalesHistoryDetail"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "월 매출 이력 적재 (청크 UPSERT)",
-        "tags" : [ "sap-sales-history-controller" ]
-      }
-    },
     "/api/v1/sap/oauth/token" : {
       "post" : {
         "operationId" : "issueTokenForm_1",
@@ -27915,39 +27734,6 @@
         } ],
         "summary" : "SF 인바운드 health check",
         "tags" : [ "sf-inbound-health-controller" ]
-      }
-    },
-    "/api/v1/sf/inbound/monthly-sales-history" : {
-      "post" : {
-        "description" : "\n            SF Apex 측에서 신규 backend 로 월 매출 이력을 (SAPAccountCode + SalesYearMonth) 기준으로 UPSERT.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **인증**: client_credentials grant 으로 발급받은 token + `scope=sf.write`.\n            **도메인 service**: SAP / SF 공유 (`MonthlySalesHistoryUpsertService`).\n        ",
-        "operationId" : "upsertMonthly",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/SfMonthlySalesHistoryRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SfResultWrapperSfSalesHistoryDetail"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "security" : [ {
-          "Bearer" : [ ]
-        } ],
-        "summary" : "[SF inbound] 월 매출 이력 적재 (청크 UPSERT)",
-        "tags" : [ "sf-monthly-sales-history-controller" ]
       }
     },
     "/api/v1/sf/oauth/token" : {
