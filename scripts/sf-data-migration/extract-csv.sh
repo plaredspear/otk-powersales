@@ -54,7 +54,7 @@ set -euo pipefail
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
 SKIP_GROUP_MEMBERS=0
 SKIP_VERIFY=0
 # spec #790 Q4 채택 — XML 메타 (extract-sharing-meta.sh) 자동 포함, --skip-sharing-meta 로 제외 가능
@@ -569,23 +569,6 @@ SELECT
     EmployeeInputCriteriaMaster__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM MonthlyFemaleEmployeeIntegrationSchedule__c
-WHERE IsDeleted = FALSE
-EOF
-)
-
-MONTHLY_SALES_HISTORY_SOQL=$(cat <<'EOF'
-SELECT
-    Id, Name, SalesYear__c, SalesMonth__c, LastMonthResults__c,
-    ShipClosingAmount__c, ABCClosingAmount1__c, ABCClosingAmount2__c,
-    ABCClosingAmount3__c, AmbientPurpose__c, FridgePurpose__c, IsDeleted,
-    Externalkey__c, TotalLedgerAmount__c, AccountId__c, SAPAccountCode__c,
-    SalesDate__c, LastMonthlySalesHistory__c, Confirm__c,
-    Remark__c, ShipClosingAmountNH__c, ShipClosingAmount1__c,
-    ShipClosingAmount2__c, ShipClosingAmount3__c, ShipClosingAmount4__c,
-    ShipClosingSumAmount__c, ABCClosingAmount4__c, ABCClosingSumAmount__c,
-    LastMonthTargetByHand__c, ThisMonthTarget__c, OwnerId,
-    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
-FROM MonthlySalesHistory__c
 WHERE IsDeleted = FALSE
 EOF
 )
@@ -1111,10 +1094,6 @@ fi
 
 if contains_target "MonthlyFemaleEmployeeIntegrationSchedule"; then
     run_query "MonthlyFemaleEmployeeIntegrationSchedule (MonthlyFemaleEmployeeIntegrationSchedule__c)" "$MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_SOQL" "$OUT_DIR/monthly_female_employee_integration_schedules.csv"
-fi
-
-if contains_target "MonthlySalesHistory"; then
-    run_query "MonthlySalesHistory (MonthlySalesHistory__c)" "$MONTHLY_SALES_HISTORY_SOQL" "$OUT_DIR/monthly_sales_historys.csv"
 fi
 
 if contains_target "NewProduct"; then

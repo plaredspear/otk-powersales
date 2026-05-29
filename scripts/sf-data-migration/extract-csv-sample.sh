@@ -33,7 +33,7 @@ LIMIT=100
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PushMessage,PushMessageReceiver,TeamMemberSchedule,UploadFile,Permission,GroupMember"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PushMessage,PushMessageReceiver,TeamMemberSchedule,UploadFile,Permission,GroupMember"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -437,23 +437,6 @@ WHERE IsDeleted = FALSE
 EOF
 )
 
-MONTHLY_SALES_HISTORY_SOQL=$(cat <<'EOF'
-SELECT
-    Id, Name, SalesYear__c, SalesMonth__c, LastMonthResults__c,
-    ShipClosingAmount__c, ABCClosingAmount1__c, ABCClosingAmount2__c,
-    ABCClosingAmount3__c, AmbientPurpose__c, FridgePurpose__c, IsDeleted,
-    Externalkey__c, TotalLedgerAmount__c, AccountId__c, SAPAccountCode__c,
-    SalesDate__c, LastMonthlySalesHistory__c, Confirm__c,
-    Remark__c, ShipClosingAmountNH__c, ShipClosingAmount1__c,
-    ShipClosingAmount2__c, ShipClosingAmount3__c, ShipClosingAmount4__c,
-    ShipClosingSumAmount__c, ABCClosingAmount4__c, ABCClosingSumAmount__c,
-    LastMonthTargetByHand__c, ThisMonthTarget__c, OwnerId,
-    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
-FROM MonthlySalesHistory__c
-WHERE IsDeleted = FALSE
-EOF
-)
-
 NEW_PRODUCT_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, Customer_Survey__c, Initiator__c, ManagementType__c,
@@ -671,7 +654,6 @@ for target in "${TARGET_ARR[@]}"; do
         HolidayMaster) run_query "HolidayMaster" "$HOLIDAY_MASTER_SOQL" "$OUT_DIR/holiday_masters.csv" ;;
         InspectionTheme) run_query "InspectionTheme" "$INSPECTION_THEME_SOQL" "$OUT_DIR/inspection_themes.csv" ;;
         MonthlyFemaleEmployeeIntegrationSchedule) run_query "MonthlyFemaleEmployeeIntegrationSchedule" "$MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_SOQL" "$OUT_DIR/monthly_female_employee_integration_schedules.csv" ;;
-        MonthlySalesHistory) run_query "MonthlySalesHistory" "$MONTHLY_SALES_HISTORY_SOQL" "$OUT_DIR/monthly_sales_historys.csv" ;;
         NewProduct) run_query "NewProduct" "$NEW_PRODUCT_SOQL" "$OUT_DIR/new_products.csv" ;;
         OrderRequest) run_query "OrderRequest" "$ORDER_REQUEST_SOQL" "$OUT_DIR/order_requests.csv" ;;
         OrderRequestProduct) run_query "OrderRequestProduct" "$ORDER_REQUEST_PRODUCT_SOQL" "$OUT_DIR/order_request_products.csv" ;;
