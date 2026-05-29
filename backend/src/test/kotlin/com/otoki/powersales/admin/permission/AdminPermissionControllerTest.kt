@@ -37,6 +37,12 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
     @MockkBean
     private lateinit var inspectionService: AdminPermissionInspectionService
 
+    @MockkBean
+    private lateinit var mutationService: AdminPermissionSetMutationService
+
+    @MockkBean
+    private lateinit var entitySfNameRegistry: com.otoki.powersales.auth.permission.EntitySfNameRegistry
+
     @BeforeEach
     fun setUpPrincipal() {
         authenticateAsAdmin(role = null)
@@ -116,6 +122,8 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
                 modifyAllData = false,
                 objectPermissionCount = 5,
                 assignedUserCount = 12,
+                sfOrigin = true,
+                isLocallyModified = false,
             ),
         )
 
@@ -139,6 +147,8 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
             ),
             customPermissions = emptyList(),
             assignedUsers = PaginatedPermissionSetUserList(0, 0, 0, 20, emptyList()),
+            sfOrigin = true,
+            isLocallyModified = false,
         )
 
         mockMvc.perform(get("/api/v1/admin/permissions/permission-sets/10"))
@@ -215,5 +225,148 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.profiles[0].profileId").value(1))
             .andExpect(jsonPath("$.data.rows[0].entity").value("account"))
             .andExpect(jsonPath("$.data.rows[0].byProfile[0].canDelete").value(true))
+    }
+
+    // ── Spec #837 — PermissionSet 자체 관리 endpoint 테스트 ──────────────────
+
+    @Test
+    @DisplayName("GET /permission-sets/available-resources - SF + custom 자원 카탈로그 반환")
+    fun listAvailableResources() {
+        io.mockk.every { entitySfNameRegistry.snapshot() } returns mapOf(
+            "account" to "Account",
+            "claim" to "DKRetail__Claim__c",
+        )
+        io.mockk.every { entitySfNameRegistry.allResources() } returns setOf("account", "claim", "dashboard")
+
+        mockMvc.perform(get("/api/v1/admin/permissions/permission-sets/available-resources"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.sfObjects.length()").value(2))
+            .andExpect(jsonPath("$.data.sfObjects[0].sfApiName").value("Account"))
+            .andExpect(jsonPath("$.data.customResources[0]").value("dashboard"))
+    }
+
+    @Test
+    @DisplayName("POST /permission-sets - 신규 생성 → 201")
+    fun createPermissionSet() {
+        every { mutationService.create(any(), 100L) } returns com.otoki.powersales.admin.permission.dto.PermissionSetMutationResponse(
+            permissionSetId = 90,
+            name = "신규_조회_권한",
+            label = "신규 조회 권한",
+            description = null,
+            sfOrigin = false,
+            permissionSetFlagsId = 90,
+            viewAllData = false,
+            modifyAllData = false,
+            objectPermissions = emptyMap(),
+            customPermissions = emptyMap(),
+            isLocallyModified = false,
+        )
+
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .post("/api/v1/admin/permissions/permission-sets")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("""{"name":"신규_조회_권한","label":"신규 조회 권한"}""")
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.data.permissionSetId").value(90))
+            .andExpect(jsonPath("$.data.sfOrigin").value(false))
+            .andExpect(jsonPath("$.data.isLocallyModified").value(false))
+    }
+
+    @Test
+    @DisplayName("POST /permission-sets - name 중복 → 409")
+    fun createPermissionSetNameConflict() {
+        every { mutationService.create(any(), 100L) } throws
+            com.otoki.powersales.admin.permission.exception.PermissionSetNameAlreadyExistsException("AccountManagement")
+
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .post("/api/v1/admin/permissions/permission-sets")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("""{"name":"AccountManagement"}""")
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.error.code").value("NAME_ALREADY_EXISTS"))
+    }
+
+    @Test
+    @DisplayName("PUT /permission-sets/{id}/flags - 권한 비트 갱신 → 200")
+    fun updatePermissionSetFlags() {
+        every { mutationService.updateFlags(90L, any(), 100L) } returns com.otoki.powersales.admin.permission.dto.PermissionSetMutationResponse(
+            permissionSetId = 90,
+            name = "신규_조회_권한",
+            label = null,
+            description = null,
+            sfOrigin = false,
+            permissionSetFlagsId = 90,
+            viewAllData = false,
+            modifyAllData = false,
+            objectPermissions = mapOf("Account" to mapOf("allowRead" to true)),
+            customPermissions = emptyMap(),
+            isLocallyModified = false,
+        )
+
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .put("/api/v1/admin/permissions/permission-sets/90/flags")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("""{"viewAllData":false,"modifyAllData":false,"objectPermissions":{"Account":{"allowRead":true}},"customPermissions":{}}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.objectPermissions.Account.allowRead").value(true))
+    }
+
+    @Test
+    @DisplayName("DELETE /permission-sets/{id} - SF 출처 PS 삭제 시도 → 409")
+    fun deleteSfOriginBlocked() {
+        every { mutationService.delete(90L, 100L) } throws
+            com.otoki.powersales.admin.permission.exception.SfOriginDeleteBlockedException(90L)
+
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .delete("/api/v1/admin/permissions/permission-sets/90")
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.error.code").value("SF_ORIGIN_DELETE_BLOCKED"))
+    }
+
+    @Test
+    @DisplayName("DELETE /permission-sets/{id} - 신규 PS 정상 삭제 → 204")
+    fun deletePermissionSetSuccess() {
+        io.mockk.every { mutationService.delete(90L, 100L) } returns Unit
+
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .delete("/api/v1/admin/permissions/permission-sets/90")
+        )
+            .andExpect(status().isNoContent)
+    }
+
+    @Test
+    @DisplayName("GET /permission-sets/{id}/change-log - 변경 이력 페이지네이션")
+    fun listChangeLog() {
+        every { mutationService.listChangeLog(90L, 0, 20) } returns org.springframework.data.domain.PageImpl(
+            listOf(
+                com.otoki.powersales.admin.permission.dto.PermissionSetChangeLogResponse(
+                    changeLogId = 1,
+                    permissionSetId = 90,
+                    eventType = "CREATE",
+                    beforeSnapshot = null,
+                    afterSnapshot = """{"name":"신규_조회_권한"}""",
+                    changedById = 100,
+                    changedByName = "관리자",
+                    changedAt = java.time.LocalDateTime.now(),
+                    changeReason = null,
+                ),
+            ),
+            org.springframework.data.domain.PageRequest.of(0, 20),
+            1,
+        )
+
+        mockMvc.perform(get("/api/v1/admin/permissions/permission-sets/90/change-log"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.totalElements").value(1))
+            .andExpect(jsonPath("$.data.content[0].eventType").value("CREATE"))
     }
 }

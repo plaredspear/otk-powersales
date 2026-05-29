@@ -54,3 +54,35 @@ class AssignmentUserNotFoundException(userId: Long) : BusinessException(
     message = "User($userId) 를 찾을 수 없습니다",
     httpStatus = HttpStatus.NOT_FOUND,
 )
+
+// ── Spec #837 — PermissionSet 자체 관리 예외 ─────────────────────────────
+
+class PermissionSetNameInvalidException(name: String, reason: String) : BusinessException(
+    errorCode = "INVALID_NAME",
+    message = "PermissionSet name 형식 위반 (name=$name, reason=$reason)",
+    httpStatus = HttpStatus.BAD_REQUEST,
+)
+
+class PermissionSetNameAlreadyExistsException(name: String) : BusinessException(
+    errorCode = "NAME_ALREADY_EXISTS",
+    message = "이미 존재하는 PermissionSet 이름입니다 (name=$name)",
+    httpStatus = HttpStatus.CONFLICT,
+)
+
+class SfOriginDeleteBlockedException(permissionSetId: Long) : BusinessException(
+    errorCode = "SF_ORIGIN_DELETE_BLOCKED",
+    message = "SF 출처 PermissionSet($permissionSetId) 은 삭제할 수 없습니다 (Stage1 재적재 정합 보호)",
+    httpStatus = HttpStatus.CONFLICT,
+)
+
+class InvalidObjectPermissionKeyException(sfApiName: String) : BusinessException(
+    errorCode = "INVALID_OBJECT_PERMISSION_KEY",
+    message = "등록되지 않은 SObject API name 입니다 (sfApiName=$sfApiName)",
+    httpStatus = HttpStatus.BAD_REQUEST,
+)
+
+class InvalidCustomPermissionKeyException(resourceName: String) : BusinessException(
+    errorCode = "INVALID_CUSTOM_PERMISSION_KEY",
+    message = "등록되지 않은 custom resource name 입니다 (resourceName=$resourceName)",
+    httpStatus = HttpStatus.BAD_REQUEST,
+)

@@ -39,7 +39,8 @@ import tools.jackson.databind.ObjectMapper
  * Spec #803 — 권한 관리 admin 페이지 조회 service.
  *
  * Profile / PermissionSet / Assignment / entity×Profile Matrix 일람·상세 산출.
- * 모두 read-only. 부여/회수 편집은 spec #804 에서 별도 service.
+ * 본 service 자체는 read-only — 부여/회수 편집은 spec #804 [AdminPermissionAssignmentService],
+ * PS CRUD + 권한 비트 수정은 spec #837 [AdminPermissionSetMutationService] 가 분담.
  */
 @Service
 class AdminPermissionInspectionService(
@@ -123,6 +124,8 @@ class AdminPermissionInspectionService(
                 modifyAllData = flags?.permissionsModifyAllData ?: false,
                 objectPermissionCount = objectPermissionCount,
                 assignedUserCount = assignedUserCount,
+                sfOrigin = ps.sfid != null,
+                isLocallyModified = flags?.isLocallyModified ?: false,
             )
         }.sortedBy { it.name }
     }
@@ -200,7 +203,8 @@ class AdminPermissionInspectionService(
             name = ps.name,
             label = ps.label,
             description = ps.description,
-            // sfid 는 SF 데이터 마이그레이션 보조 필드 — API 응답에 노출 금지 (정책).
+            // sfid 는 SF 데이터 마이그레이션 보조 필드 — API 응답에 노출 금지 (정책). Spec #837 결정 1-A:
+            // SF 출처 여부는 sfOrigin boolean 으로만 노출.
             flags = flags?.let {
                 PermissionSetFlagsSummary(
                     permissionSetFlagsId = it.id,
@@ -211,6 +215,8 @@ class AdminPermissionInspectionService(
             objectPermissions = objectPermissions,
             customPermissions = customPermissions,
             assignedUsers = paginatedUsers,
+            sfOrigin = ps.sfid != null,
+            isLocallyModified = flags?.isLocallyModified ?: false,
         )
     }
 

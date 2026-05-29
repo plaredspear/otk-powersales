@@ -46,6 +46,10 @@ data class PermissionSetSummary(
     val modifyAllData: Boolean,
     val objectPermissionCount: Int,
     val assignedUserCount: Long,
+    /** Spec #837 — SF 출처 PS 여부 (sfid IS NOT NULL). UI 의 "출처" 컬럼 / 삭제 버튼 비활성화 판정용. */
+    val sfOrigin: Boolean,
+    /** Spec #837 — dirty 플래그. 신규 시스템에서 메타/비트가 수정된 SF 출처 PS 표시용. */
+    val isLocallyModified: Boolean,
 )
 
 data class PermissionSetFlagsSummary(
@@ -84,6 +88,10 @@ data class PermissionSetDetail(
     val objectPermissions: List<ObjectPermissionRow>,
     val customPermissions: List<CustomPermissionRow>,
     val assignedUsers: PaginatedPermissionSetUserList,
+    /** Spec #837 — SF 출처 PS 여부. */
+    val sfOrigin: Boolean,
+    /** Spec #837 — dirty 플래그. */
+    val isLocallyModified: Boolean,
 )
 
 data class AssignedPermissionSetUserSummary(
@@ -155,4 +163,66 @@ data class PermissionSetMatrixEntry(
 
 data class PermissionSetMatrix(
     val permissionSets: List<PermissionSetMatrixEntry>,
+)
+
+// ── Spec #837 — PermissionSet 자체 관리 응답 DTO ─────────────────────────
+
+/**
+ * Spec #837 — PS 등록 / 메타·비트 수정 후 반환. 본 응답에는 매트릭스 편집 UI 가 재로드 필요한
+ * 모든 필드 포함 (메타 + flags + 권한 비트 본문 + dirty/origin 식별).
+ *
+ * 정책 (#837 결정 1-A): sfid 자체는 노출하지 않고 `sfOrigin: Boolean` 으로 SF 출처 여부만 표시.
+ */
+data class PermissionSetMutationResponse(
+    val permissionSetId: Long,
+    val name: String,
+    val label: String?,
+    val description: String?,
+    val sfOrigin: Boolean,
+    val permissionSetFlagsId: Long?,
+    val viewAllData: Boolean,
+    val modifyAllData: Boolean,
+    val objectPermissions: Map<String, Map<String, Boolean>>,
+    val customPermissions: Map<String, Map<String, Boolean>>,
+    val isLocallyModified: Boolean,
+)
+
+/**
+ * Spec #837 — 변경 이력 조회 응답.
+ * before/after 는 JSON 문자열 그대로 반환 — 클라이언트가 diff 모달에서 파싱.
+ */
+data class PermissionSetChangeLogResponse(
+    val changeLogId: Long,
+    val permissionSetId: Long?,
+    val eventType: String,
+    val beforeSnapshot: String?,
+    val afterSnapshot: String?,
+    val changedById: Long,
+    val changedByName: String?,
+    val changedAt: java.time.LocalDateTime,
+    val changeReason: String?,
+)
+
+data class PaginatedPermissionSetChangeLogList(
+    val totalElements: Long,
+    val totalPages: Int,
+    val number: Int,
+    val size: Int,
+    val content: List<PermissionSetChangeLogResponse>,
+)
+
+/**
+ * Spec #837 — 권한 비트 매트릭스 편집 UI 의 자원 카탈로그.
+ *
+ * - [sfObjects]       : EntitySfNameRegistry.snapshot() (SF API name → 신규 entity table name)
+ * - [customResources] : EntitySfNameRegistry.allResources() 중 SF 매핑 외 자원 (`@PermissionResource`)
+ */
+data class AvailablePermissionResources(
+    val sfObjects: List<SfObjectResource>,
+    val customResources: List<String>,
+)
+
+data class SfObjectResource(
+    val sfApiName: String,
+    val entity: String,
 )

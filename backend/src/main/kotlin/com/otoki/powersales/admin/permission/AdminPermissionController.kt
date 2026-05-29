@@ -1,20 +1,36 @@
 package com.otoki.powersales.admin.permission
 
+import com.otoki.powersales.admin.permission.dto.AvailablePermissionResources
+import com.otoki.powersales.admin.permission.dto.PaginatedPermissionSetChangeLogList
 import com.otoki.powersales.admin.permission.dto.PermissionMatrix
+import com.otoki.powersales.admin.permission.dto.PermissionSetCreateRequest
 import com.otoki.powersales.admin.permission.dto.PermissionSetDetail
 import com.otoki.powersales.admin.permission.dto.PermissionSetMatrix
+import com.otoki.powersales.admin.permission.dto.PermissionSetMutationResponse
 import com.otoki.powersales.admin.permission.dto.PermissionSetSummary
+import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateFlagsRequest
+import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateMetaRequest
 import com.otoki.powersales.admin.permission.dto.ProfileDetail
 import com.otoki.powersales.admin.permission.dto.ProfileSummary
+import com.otoki.powersales.admin.permission.dto.SfObjectResource
 import com.otoki.powersales.admin.permission.exception.PermissionSetNotFoundException
 import com.otoki.powersales.admin.permission.exception.ProfileNotFoundException
+import com.otoki.powersales.auth.permission.EntitySfNameRegistry
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.auth.permission.SfSystemPermission
+import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.dto.ApiResponse
+import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -26,6 +42,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/permissions")
 class AdminPermissionController(
     private val inspectionService: AdminPermissionInspectionService,
+    private val mutationService: AdminPermissionSetMutationService,
+    private val entitySfNameRegistry: EntitySfNameRegistry,
 ) {
 
     @GetMapping("/profiles")
@@ -80,5 +98,88 @@ class AdminPermissionController(
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getPermissionSetMatrix(): ResponseEntity<ApiResponse<PermissionSetMatrix>> {
         return ResponseEntity.ok(ApiResponse.success(inspectionService.getPermissionSetMatrix()))
+    }
+
+    // ── Spec #837 — PermissionSet 자체 관리 endpoint ─────────────────────────
+
+    /**
+     * 권한 비트 매트릭스 편집 UI 의 자원 카탈로그.
+     * SF 매핑 entity 와 가상 자원 (`@PermissionResource`) 을 분리하여 반환.
+     */
+    @GetMapping("/permission-sets/available-resources")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MANAGE_USERS)
+    fun listAvailableResources(): ResponseEntity<ApiResponse<AvailablePermissionResources>> {
+        val sfMapping = entitySfNameRegistry.snapshot()
+        val sfObjects = sfMapping.entries
+            .map { (entity, sfApiName) -> SfObjectResource(sfApiName = sfApiName, entity = entity) }
+            .sortedBy { it.sfApiName }
+        val customResources = (entitySfNameRegistry.allResources() - sfMapping.keys).toList().sorted()
+        return ResponseEntity.ok(
+            ApiResponse.success(AvailablePermissionResources(sfObjects = sfObjects, customResources = customResources)),
+        )
+    }
+
+    @PostMapping("/permission-sets")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MANAGE_USERS)
+    fun createPermissionSet(
+        @Valid @RequestBody request: PermissionSetCreateRequest,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<PermissionSetMutationResponse>> {
+        val response = mutationService.create(request, principal.userId)
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(ApiResponse.success(response, "PermissionSet 이 생성되었습니다"))
+    }
+
+    @PutMapping("/permission-sets/{permissionSetId}")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MANAGE_USERS)
+    fun updatePermissionSetMeta(
+        @PathVariable permissionSetId: Long,
+        @Valid @RequestBody request: PermissionSetUpdateMetaRequest,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<PermissionSetMutationResponse>> {
+        val response = mutationService.updateMeta(permissionSetId, request, principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    @PutMapping("/permission-sets/{permissionSetId}/flags")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MANAGE_USERS)
+    fun updatePermissionSetFlags(
+        @PathVariable permissionSetId: Long,
+        @Valid @RequestBody request: PermissionSetUpdateFlagsRequest,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<PermissionSetMutationResponse>> {
+        val response = mutationService.updateFlags(permissionSetId, request, principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    @DeleteMapping("/permission-sets/{permissionSetId}")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MANAGE_USERS)
+    fun deletePermissionSet(
+        @PathVariable permissionSetId: Long,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<Void> {
+        mutationService.delete(permissionSetId, principal.userId)
+        return ResponseEntity.noContent().build()
+    }
+
+    @GetMapping("/permission-sets/{permissionSetId}/change-log")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MANAGE_USERS)
+    fun listPermissionSetChangeLog(
+        @PathVariable permissionSetId: Long,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ResponseEntity<ApiResponse<PaginatedPermissionSetChangeLogList>> {
+        val pageResult = mutationService.listChangeLog(permissionSetId, page, size)
+        return ResponseEntity.ok(
+            ApiResponse.success(
+                PaginatedPermissionSetChangeLogList(
+                    totalElements = pageResult.totalElements,
+                    totalPages = pageResult.totalPages,
+                    number = pageResult.number,
+                    size = pageResult.size,
+                    content = pageResult.content,
+                ),
+            ),
+        )
     }
 }

@@ -15,4 +15,7 @@ interface PermissionSetAssignmentRepository : JpaRepository<PermissionSetAssignm
         assigneeUserId: Long,
         permissionSetFlagsId: Long,
     ): PermissionSetAssignment?
+
+    /** Spec #837 — PS 자체 삭제 시 active/inactive 무관 전체 행 일괄 hard delete (cascade). */
+    fun findAllByPermissionSetFlagsId(permissionSetFlagsId: Long): List<PermissionSetAssignment>
 }

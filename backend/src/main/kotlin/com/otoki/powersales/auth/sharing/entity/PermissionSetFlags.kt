@@ -58,4 +58,9 @@ class PermissionSetFlags(
     // spec #796 — permission_set 정규 테이블 FK (Stage2 fk resolve 후 채움)
     @Column(name = "permission_set_id")
     var permissionSetId: Long? = null,
+
+    // spec #837 — dirty 플래그. SF 출처 (sfid 보유 PS 의 flags) 가 신규 시스템에서 수정되면 true.
+    // Stage1 재적재 시 본 컬럼 true 인 행은 보존 정책 (재적재 service 변경은 후속 — 현재는 audit 컬럼만).
+    @Column(name = "is_locally_modified", nullable = false)
+    var isLocallyModified: Boolean = false,
 )
