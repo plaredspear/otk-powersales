@@ -20107,6 +20107,13 @@
         "operationId" : "getSuggestions",
         "parameters" : [ {
           "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
           "name" : "startDate",
           "required" : false,
           "schema" : {
@@ -20234,6 +20241,13 @@
       "delete" : {
         "operationId" : "deleteSuggestion",
         "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "in" : "path",
           "name" : "id",
           "required" : true,
@@ -20259,6 +20273,13 @@
       "get" : {
         "operationId" : "getSuggestionDetail",
         "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "in" : "path",
           "name" : "id",
           "required" : true,
@@ -20284,6 +20305,13 @@
       "put" : {
         "operationId" : "updateSuggestion",
         "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "in" : "path",
           "name" : "id",
           "required" : true,
@@ -20333,17 +20361,7 @@
           "content" : {
             "multipart/form-data" : {
               "schema" : {
-                "properties" : {
-                  "photos" : {
-                    "items" : {
-                      "format" : "binary",
-                      "type" : "string"
-                    },
-                    "type" : "array"
-                  }
-                },
-                "required" : [ "photos" ],
-                "type" : "object"
+                "$ref" : "#/components/schemas/DataScope"
               }
             }
           }
@@ -20367,6 +20385,13 @@
       "delete" : {
         "operationId" : "deletePhoto",
         "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "in" : "path",
           "name" : "suggestionId",
           "required" : true,
