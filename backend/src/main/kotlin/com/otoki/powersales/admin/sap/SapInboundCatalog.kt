@@ -71,14 +71,6 @@ object SapInboundCatalog {
             description = "일별 매출 이력 페이지 단위 적재.",
         ),
         SapInboundCatalogItem(
-            endpointPath = "/api/v1/sap/monthly-sales-history",
-            koreanName = "월 매출 이력 수신",
-            requiredScope = "sap.sales.write",
-            targetEntity = "MonthlySalesHistory",
-            controllerClass = "SapSalesHistoryController",
-            description = "월별 매출 이력 페이지 단위 적재.",
-        ),
-        SapInboundCatalogItem(
             endpointPath = "/api/v1/sap/appointment",
             koreanName = "발령 정보 수신",
             requiredScope = "sap.attendance.write",

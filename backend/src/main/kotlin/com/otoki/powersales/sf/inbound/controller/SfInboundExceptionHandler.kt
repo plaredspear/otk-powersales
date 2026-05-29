@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 // SF chain 의 accessDeniedHandler (SfAuthSecurityConfig) 에서 처리.
 @RestControllerAdvice(
     assignableTypes = [
-        SfMonthlySalesHistoryController::class,
         com.otoki.powersales.sf.auth.controller.SfTokenController::class,
         com.otoki.powersales.sf.inbound.health.SfInboundHealthController::class
     ]
