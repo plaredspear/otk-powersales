@@ -97,4 +97,39 @@ class OroraMonthlySalesHistory(
 
 	@Column(name = "ShipClosingAmount4", precision = 18, scale = 0)
 	val shipClosingAmount4: BigDecimal? = null,
-)
+) {
+	/**
+	 * SF formula `ABCClosingSumAmount__c = ABCClosingAmount1__c + ABCClosingAmount2__c +
+	 * ABCClosingAmount3__c + ABCClosingAmount4__c` 동등 산출.
+	 *
+	 * SF formula 의 `formulaTreatBlanksAs=BlankAsZero` 정합 — null 컬럼은 `ZERO` 치환.
+	 */
+	val abcClosingSumAmount: BigDecimal
+		get() = (abcClosingAmount1 ?: BigDecimal.ZERO) +
+			(abcClosingAmount2 ?: BigDecimal.ZERO) +
+			(abcClosingAmount3 ?: BigDecimal.ZERO) +
+			(abcClosingAmount4 ?: BigDecimal.ZERO)
+
+	/**
+	 * SF formula `ShipClosingSumAmount__c = ShipClosingAmount1__c + ShipClosingAmount2__c +
+	 * ShipClosingAmount3__c + ShipClosingAmount4__c` 동등 산출.
+	 *
+	 * SF formula 의 `formulaTreatBlanksAs=BlankAsZero` 정합 — null 컬럼은 `ZERO` 치환.
+	 */
+	val shipClosingSumAmount: BigDecimal
+		get() = (shipClosingAmount1 ?: BigDecimal.ZERO) +
+			(shipClosingAmount2 ?: BigDecimal.ZERO) +
+			(shipClosingAmount3 ?: BigDecimal.ZERO) +
+			(shipClosingAmount4 ?: BigDecimal.ZERO)
+
+	/**
+	 * SF formula `ClosingAmountSum__c = ABCClosingSumAmount__c + ShipClosingSumAmount__c` 동등 산출
+	 * (= `MonthlySalesHistory__c` 의 마감실적 합계).
+	 *
+	 * SF `UpdateLastMonthRevenueBatch.cls` 의 `LastMonthRevenue__c` 적재 source 와 동등 — 신규 시스템의
+	 * `DisplayWorkSchedule.lastMonthRevenue` 갱신 / `TeamMemberScheduleSearchService` 의 6개월 평균
+	 * ABC 마감실적 산출에 사용.
+	 */
+	val closingAmountSum: BigDecimal
+		get() = abcClosingSumAmount + shipClosingSumAmount
+}
