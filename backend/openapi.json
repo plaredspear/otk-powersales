@@ -1953,6 +1953,9 @@
           "actionStatusName" : {
             "type" : [ "string", "null" ]
           },
+          "carNumber" : {
+            "type" : [ "string", "null" ]
+          },
           "category" : {
             "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
             "type" : "string"
@@ -1966,6 +1969,9 @@
           },
           "claimType" : {
             "type" : [ "string", "null" ]
+          },
+          "content" : {
+            "type" : "string"
           },
           "createdAt" : {
             "format" : "date-time",
@@ -1981,6 +1987,15 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "logisticsResponsibility" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCategory" : {
+            "type" : [ "string", "null" ]
+          },
           "productCode" : {
             "type" : [ "string", "null" ]
           },
@@ -1989,6 +2004,9 @@
           },
           "proposalNumber" : {
             "type" : "string"
+          },
+          "responsibleLogisticsCenter" : {
+            "type" : [ "string", "null" ]
           },
           "title" : {
             "type" : "string"

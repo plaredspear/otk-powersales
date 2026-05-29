@@ -19,39 +19,69 @@ data class AdminSuggestionListResponse(
     val totalPages: Int
 )
 
+/**
+ * admin 제안 목록 row — SF `plant_claim` List View 15개 컬럼 정합.
+ *
+ * SF 컬럼 순서: NAME / ActionStatus__c / CREATED_DATE / ClaimDate__c / WERK3_TEXT2__c /
+ * LogisticsResponsibility__c / ClaimType__c / DKRetail__Title__c / DKRetail__Description__c /
+ * DKRetail__ProductId__c / ProductCategory__c / AccountId__c / OrgName__c /
+ * DKRetail__EmployeeId__c / CarNumber__c.
+ */
 data class AdminSuggestionListItem(
     val id: Long,
     val proposalNumber: String,
     val category: SuggestionCategory,
     val categoryName: String,
     val title: String,
+    val content: String,
     val employeeName: String?,
     val employeeCode: String?,
+    val orgName: String?,
     val accountName: String?,
     val accountCode: String?,
     val productName: String?,
     val productCode: String?,
+    /** SF `ProductCategory__c` formula 동등: 보관조건 ∈ {냉동,냉장,만두} → "냉동/냉장", else "상온". */
+    val productCategory: String?,
     val claimType: String?,
     val claimDate: LocalDate?,
+    val responsibleLogisticsCenter: String?,
+    val logisticsResponsibility: String?,
+    val carNumber: String?,
     val actionStatus: SuggestionActionStatus?,
     val actionStatusName: String?,
     val createdAt: LocalDateTime
 ) {
     companion object {
+        /** SF `ProductCategory__c` formula (`StoreCondition__c` 기준) 재현. 제품 미연계 시 null. */
+        private val COLD_STORE_CONDITIONS = setOf("냉동", "냉장", "만두")
+
+        private fun productCategory(suggestion: Suggestion): String? {
+            val condition = suggestion.product?.storeConditionText?.trim()?.takeIf { it.isNotBlank() }
+                ?: return null
+            return if (condition in COLD_STORE_CONDITIONS) "냉동/냉장" else "상온"
+        }
+
         fun from(suggestion: Suggestion): AdminSuggestionListItem = AdminSuggestionListItem(
             id = suggestion.id,
             proposalNumber = suggestion.proposalNumber,
             category = suggestion.category,
             categoryName = suggestion.category.displayName,
             title = suggestion.title,
+            content = suggestion.content,
             employeeName = suggestion.employee?.name,
             employeeCode = suggestion.employee?.employeeCode,
+            orgName = suggestion.employee?.orgName,
             accountName = suggestion.account?.name,
             accountCode = suggestion.account?.externalKey,
             productName = suggestion.product?.name,
             productCode = suggestion.productCode,
+            productCategory = productCategory(suggestion),
             claimType = suggestion.claimType,
             claimDate = suggestion.claimDate,
+            responsibleLogisticsCenter = suggestion.responsibleLogisticsCenter,
+            logisticsResponsibility = suggestion.logisticsResponsibility,
+            carNumber = suggestion.carNumber,
             actionStatus = suggestion.actionStatus,
             actionStatusName = suggestion.actionStatus?.displayName,
             createdAt = suggestion.createdAt

@@ -82,44 +82,17 @@ export default function SuggestionListPage() {
     setSearchParams((prev) => ({ ...prev, page: zeroIndexedPage }));
   };
 
+  const dash = (val: string | null) => val ?? '-';
+
+  // SF `plant_claim` List View 15개 컬럼 정합 (순서 동일).
   const columns: ColumnsType<SuggestionListItem> = [
     {
       title: 'No',
       width: 60,
+      fixed: 'left',
       render: (_v, _r, index) => (searchParams.page ?? 0) * PAGE_SIZE + index + 1,
     },
-    { title: '제안번호', dataIndex: 'proposalNumber', width: 160 },
-    { title: '제목', dataIndex: 'title', width: 220, ellipsis: true },
-    {
-      title: '작성자',
-      dataIndex: 'employeeName',
-      width: 100,
-      render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '사번',
-      dataIndex: 'employeeCode',
-      width: 90,
-      render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '거래처',
-      dataIndex: 'accountName',
-      width: 160,
-      render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '제품',
-      dataIndex: 'productName',
-      width: 160,
-      render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '클레임 항목',
-      dataIndex: 'claimType',
-      width: 120,
-      render: (val: string | null) => val ?? '-',
-    },
+    { title: '제안사항 번호', dataIndex: 'proposalNumber', width: 150, fixed: 'left' },
     {
       title: '조치상태',
       dataIndex: 'actionStatus',
@@ -131,10 +104,78 @@ export default function SuggestionListPage() {
       },
     },
     {
-      title: '등록일',
+      title: '작성 일자',
       dataIndex: 'createdAt',
-      width: 100,
+      width: 110,
       render: (val: string) => val?.substring(0, 10),
+    },
+    {
+      title: '물류 클레임 발생일자',
+      dataIndex: 'claimDate',
+      width: 140,
+      render: dash,
+    },
+    {
+      title: '책임 물류센터',
+      dataIndex: 'responsibleLogisticsCenter',
+      width: 140,
+      render: dash,
+    },
+    {
+      title: '물류책임',
+      dataIndex: 'logisticsResponsibility',
+      width: 100,
+      render: dash,
+    },
+    {
+      title: '클레임 항목',
+      dataIndex: 'claimType',
+      width: 140,
+      render: dash,
+    },
+    { title: '제목', dataIndex: 'title', width: 160, ellipsis: true },
+    {
+      title: '제안내용',
+      dataIndex: 'content',
+      width: 220,
+      ellipsis: true,
+      render: dash,
+    },
+    {
+      title: '제품',
+      dataIndex: 'productName',
+      width: 140,
+      render: dash,
+    },
+    {
+      title: '제품유형',
+      dataIndex: 'productCategory',
+      width: 90,
+      render: dash,
+    },
+    {
+      title: '거래처',
+      dataIndex: 'accountName',
+      width: 160,
+      render: dash,
+    },
+    {
+      title: '소속',
+      dataIndex: 'orgName',
+      width: 100,
+      render: dash,
+    },
+    {
+      title: '접수사원',
+      dataIndex: 'employeeName',
+      width: 100,
+      render: dash,
+    },
+    {
+      title: '물류 차량번호',
+      dataIndex: 'carNumber',
+      width: 120,
+      render: dash,
     },
   ];
 
@@ -198,7 +239,7 @@ export default function SuggestionListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        scroll={{ x: 1500 }}
+        scroll={{ x: 2030 }}
         pagination={{
           current: page + 1,
           total: data?.totalElements ?? 0,
