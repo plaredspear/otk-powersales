@@ -4,8 +4,7 @@ import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSche
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface MonthlyFemaleEmployeeIntegrationScheduleRepository :
-    JpaRepository<MonthlyFemaleEmployeeIntegrationSchedule, Long>,
-    MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
+    JpaRepository<MonthlyFemaleEmployeeIntegrationSchedule, Long> {
 
     fun findByEmployeeIdAndAccountIdAndYearAndMonth(
         employeeId: Long,
