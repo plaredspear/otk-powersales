@@ -5,7 +5,6 @@ import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.enums.SecondWorkType
 import com.otoki.powersales.schedule.enums.TypeOfWork3
 import com.otoki.powersales.schedule.enums.TypeOfWork5
-import com.querydsl.core.types.Predicate
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import java.math.BigDecimal
@@ -32,13 +31,6 @@ data class ScheduleListRow(
 )
 
 interface DisplayWorkScheduleRepositoryCustom {
-
-    /**
-     * SF Sharing Rule 정책이 합성된 가시 DisplayWorkSchedule 일람 (spec #782 P4-B).
-     *
-     * Service layer 가 SharingRulePolicyEvaluator.buildPredicate 결과를 [policyPredicate] 로 전달.
-     */
-    fun findAllAccessibleByPolicy(policyPredicate: Predicate): List<DisplayWorkSchedule>
 
     fun findDistinctAccountIdsByEmployeeIdAndStartDateBetween(
         employeeId: Long,

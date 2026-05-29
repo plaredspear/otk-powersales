@@ -10,7 +10,6 @@ import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.OrderSpecifier
-import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.ComparableExpressionBase
@@ -27,13 +26,6 @@ import java.time.LocalTime
 class DisplayWorkScheduleRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory,
 ) : DisplayWorkScheduleRepositoryCustom {
-
-    override fun findAllAccessibleByPolicy(policyPredicate: Predicate): List<DisplayWorkSchedule> {
-        return queryFactory
-            .selectFrom(displayWorkSchedule)
-            .where(policyPredicate)
-            .fetch()
-    }
 
     override fun findDistinctAccountIdsByEmployeeIdAndStartDateBetween(
         employeeId: Long,
