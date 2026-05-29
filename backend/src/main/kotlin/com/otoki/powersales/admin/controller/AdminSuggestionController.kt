@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
@@ -47,6 +49,7 @@ class AdminSuggestionController(
     @GetMapping
     @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
     fun getSuggestions(
+        @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
         @RequestParam(required = false) category: SuggestionCategory?,
@@ -58,6 +61,7 @@ class AdminSuggestionController(
         @RequestParam(required = false, defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<AdminSuggestionListResponse>> {
         val response = adminSuggestionService.search(
+            scope = scope,
             startDate = startDate,
             endDate = endDate,
             filter = AdminSuggestionFilterParams(
@@ -76,9 +80,10 @@ class AdminSuggestionController(
     @GetMapping("/{id}")
     @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
     fun getSuggestionDetail(
+        @CurrentDataScope scope: DataScope,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<AdminSuggestionDetailResponse>> {
-        val response = adminSuggestionService.getDetail(id)
+        val response = adminSuggestionService.getDetail(scope, id)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -102,29 +107,32 @@ class AdminSuggestionController(
     @PutMapping("/{id}")
     @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.EDIT)
     fun updateSuggestion(
+        @CurrentDataScope scope: DataScope,
         @PathVariable id: Long,
         @Valid @RequestBody request: AdminSuggestionUpdateRequest
     ): ResponseEntity<ApiResponse<AdminSuggestionDetailResponse>> {
-        val response = adminSuggestionService.update(id, request)
+        val response = adminSuggestionService.update(scope, id, request)
         return ResponseEntity.ok(ApiResponse.success(response, "제안이 수정되었습니다"))
     }
 
     @DeleteMapping("/{id}")
     @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.DELETE)
     fun deleteSuggestion(
+        @CurrentDataScope scope: DataScope,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Unit>> {
-        adminSuggestionService.softDelete(id)
+        adminSuggestionService.softDelete(scope, id)
         return ResponseEntity.ok(ApiResponse.success(Unit, "제안이 삭제되었습니다"))
     }
 
     @PostMapping("/{id}/photos", consumes = ["multipart/form-data"])
     @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.EDIT)
     fun uploadPhotos(
+        @CurrentDataScope scope: DataScope,
         @PathVariable id: Long,
         @RequestPart photos: List<MultipartFile>
     ): ResponseEntity<ApiResponse<List<SuggestionAttachment>>> {
-        val result = adminSuggestionService.uploadPhotos(id, photos)
+        val result = adminSuggestionService.uploadPhotos(scope, id, photos)
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse.success(result, "사진이 추가되었습니다"))
@@ -133,10 +141,11 @@ class AdminSuggestionController(
     @DeleteMapping("/{suggestionId}/photos/{photoId}")
     @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.EDIT)
     fun deletePhoto(
+        @CurrentDataScope scope: DataScope,
         @PathVariable suggestionId: Long,
         @PathVariable photoId: Long
     ): ResponseEntity<ApiResponse<Unit>> {
-        adminSuggestionService.deletePhoto(suggestionId, photoId)
+        adminSuggestionService.deletePhoto(scope, suggestionId, photoId)
         return ResponseEntity.ok(ApiResponse.success(Unit, "사진이 삭제되었습니다"))
     }
 }

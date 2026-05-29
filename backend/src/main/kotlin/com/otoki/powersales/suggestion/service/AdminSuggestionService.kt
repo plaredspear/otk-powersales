@@ -1,6 +1,8 @@
 package com.otoki.powersales.suggestion.service
 
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
@@ -17,6 +19,7 @@ import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionListResponse
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionUpdateRequest
 import com.otoki.powersales.suggestion.dto.response.SuggestionAttachment
 import com.otoki.powersales.suggestion.dto.response.SuggestionCreateResponse
+import com.otoki.powersales.suggestion.entity.QSuggestion.Companion.suggestion
 import com.otoki.powersales.suggestion.entity.Suggestion
 import com.otoki.powersales.suggestion.entity.SuggestionStatus
 import com.otoki.powersales.suggestion.exception.InvalidSuggestionIdException
@@ -58,7 +61,8 @@ class AdminSuggestionService(
     private val orgCostCenterMatchService: OrgCostCenterMatchService,
     private val fileStorageService: FileStorageService,
     private val validator: SuggestionValidator,
-    private val suggestionService: SuggestionService
+    private val suggestionService: SuggestionService,
+    private val policyEvaluator: SharingRulePolicyEvaluator
 ) {
 
     companion object {
@@ -70,8 +74,17 @@ class AdminSuggestionService(
      * admin 목록 조회 — 7종 필터 + 페이징 (Spec #830 P1-B §2.4).
      *
      * 기간 미지정 시 최근 30일. soft-delete 자동 제외.
+     *
+     * SF 가시 범위 적용: [SharingRulePolicyEvaluator] 가 `DKRetail__Proposal__c` 의 OWD(Private) +
+     * owner / role hierarchy / sharing rule(OLS 물류클레임 전사 공유) 을 종합한 Predicate 를 산출하여
+     * 검색 필터와 AND 합성한다. 결과:
+     * - 시스템 관리자 / ViewAll / OLS 그룹 → 전사 전체
+     * - 본부장 / 지사장 → role hierarchy 하위 조직 전체
+     * - 지점장 / 조장 → 본인 + role hierarchy 하위 (자기 지점) 한정
+     * SF OWD=Private + Role Hierarchy 동등.
      */
     fun search(
+        scope: DataScope,
         startDate: LocalDate?,
         endDate: LocalDate?,
         filter: AdminSuggestionFilterParams,
@@ -84,6 +97,12 @@ class AdminSuggestionService(
             throw IllegalArgumentException("종료일이 시작일보다 빠를 수 없습니다")
         }
 
+        val policyPredicate = policyEvaluator.buildPredicate(
+            scope = scope,
+            sObjectName = "DKRetail__Proposal__c",
+            entityPath = suggestion
+        )
+
         val pageable = PageRequest.of(page.coerceAtLeast(0), size.coerceIn(1, MAX_PAGE_SIZE))
         val filterDto = AdminSuggestionFilter(
             startDateTime = effectiveStart.atStartOfDay(),
@@ -94,7 +113,7 @@ class AdminSuggestionService(
             actionStatus = filter.actionStatus,
             productCode = filter.productCode
         )
-        val result = suggestionRepository.searchForAdmin(filterDto, pageable)
+        val result = suggestionRepository.searchForAdmin(policyPredicate, filterDto, pageable)
         return AdminSuggestionListResponse(
             content = result.content.map { AdminSuggestionListItem.from(it) },
             page = result.number,
@@ -106,9 +125,20 @@ class AdminSuggestionService(
 
     /**
      * admin 단건 상세 조회 (Spec #830 P1-B §3.2).
+     *
+     * SF 가시 범위 적용: 목록과 동일한 [SharingRulePolicyEvaluator] Predicate 로 단건 가시성을 검증한다.
+     * 가시 범위 밖(목록에 안 보이는 레코드)이면 [SuggestionNotFoundException] (404) — SF OWD=Private 동등.
      */
-    fun getDetail(id: Long): AdminSuggestionDetailResponse {
+    fun getDetail(scope: DataScope, id: Long): AdminSuggestionDetailResponse {
         if (id <= 0) throw InvalidSuggestionIdException()
+        verifyVisible(scope, id)
+        return buildDetailResponse(id)
+    }
+
+    /**
+     * 단건 상세 응답 합성 — 가시성 검증 이후 호출 (내부용).
+     */
+    private fun buildDetailResponse(id: Long): AdminSuggestionDetailResponse {
         val suggestion = suggestionRepository.findByIdAndIsDeletedFalse(id)
             ?: throw SuggestionNotFoundException()
 
@@ -228,11 +258,13 @@ class AdminSuggestionService(
     /**
      * admin 수정 (Spec #830 P1-B §3.4).
      *
-     * 본인 row 검증 미실시. 자동 채움 미실행 (수정 시 정합). actionStatus / duplicateProposalNum 도 수정 가능.
+     * SF 가시 범위 검증 — 목록에 안 보이는 레코드는 수정 불가(404). 자동 채움 미실행 (수정 시 정합).
+     * actionStatus / duplicateProposalNum 도 수정 가능.
      */
     @Transactional
-    fun update(id: Long, request: AdminSuggestionUpdateRequest): AdminSuggestionDetailResponse {
+    fun update(scope: DataScope, id: Long, request: AdminSuggestionUpdateRequest): AdminSuggestionDetailResponse {
         if (id <= 0) throw InvalidSuggestionIdException()
+        verifyVisible(scope, id)
         val suggestion = suggestionRepository.findByIdAndIsDeletedFalse(id)
             ?: throw SuggestionNotFoundException()
 
@@ -258,17 +290,18 @@ class AdminSuggestionService(
         suggestion.duplicateProposalNum = request.duplicateProposalNum
 
         suggestionRepository.save(suggestion)
-        return getDetail(id)
+        return buildDetailResponse(id)
     }
 
     /**
      * admin soft delete (Spec #830 P1-B §3.5).
      *
-     * 본인 row 검증 미실시. UploadFile cascade 미실행 (별 책임 — 본 스펙 비범위).
+     * SF 가시 범위 검증 — 목록에 안 보이는 레코드는 삭제 불가(404). UploadFile cascade 미실행 (별 책임 — 본 스펙 비범위).
      */
     @Transactional
-    fun softDelete(id: Long) {
+    fun softDelete(scope: DataScope, id: Long) {
         if (id <= 0) throw InvalidSuggestionIdException()
+        verifyVisible(scope, id)
         val suggestion = suggestionRepository.findByIdAndIsDeletedFalse(id)
             ?: throw SuggestionNotFoundException()
         suggestion.isDeleted = true
@@ -276,15 +309,32 @@ class AdminSuggestionService(
     }
 
     /**
+     * SF 가시 범위 검증 공통 헬퍼 — 가시 범위 밖이면 [SuggestionNotFoundException] (404).
+     *
+     * 목록(`search`)과 동일한 [SharingRulePolicyEvaluator] Predicate 사용. SF OWD=Private 동등.
+     */
+    private fun verifyVisible(scope: DataScope, id: Long) {
+        val policyPredicate = policyEvaluator.buildPredicate(
+            scope = scope,
+            sObjectName = "DKRetail__Proposal__c",
+            entityPath = suggestion
+        )
+        if (!suggestionRepository.existsVisibleById(id, policyPredicate)) {
+            throw SuggestionNotFoundException()
+        }
+    }
+
+    /**
      * admin 이미지 추가 업로드 (Spec #830 P1-B §2.5).
      *
      * 기존 첨부 + 신규 photos 의 합이 [MAX_PHOTO_COUNT] 초과 시 400. soft-deleted 메타는 카운팅 대상에서 제외.
-     * 응답은 신규 추가된 사진만.
+     * 응답은 신규 추가된 사진만. SF 가시 범위 검증 — 목록에 안 보이는 레코드는 사진 추가 불가(404).
      */
     @Transactional
-    fun uploadPhotos(id: Long, photos: List<MultipartFile>): List<SuggestionAttachment> {
+    fun uploadPhotos(scope: DataScope, id: Long, photos: List<MultipartFile>): List<SuggestionAttachment> {
         if (id <= 0) throw InvalidSuggestionIdException()
         if (photos.isEmpty()) throw IllegalArgumentException("업로드할 사진이 없습니다")
+        verifyVisible(scope, id)
 
         val suggestion = suggestionRepository.findByIdAndIsDeletedFalse(id)
             ?: throw SuggestionNotFoundException()
@@ -320,12 +370,14 @@ class AdminSuggestionService(
     /**
      * admin 단건 사진 삭제 (Spec #830 P1-B — Q-add admin endpoint).
      *
-     * 본인 row 검증 미실시 (admin 우회). S3 선행 → DB soft delete (mobile [SuggestionService.deletePhoto] 정합).
+     * SF 가시 범위 검증 — 목록에 안 보이는 레코드의 사진은 삭제 불가(404).
+     * S3 선행 → DB soft delete (mobile [SuggestionService.deletePhoto] 정합).
      */
     @Transactional
-    fun deletePhoto(suggestionId: Long, photoId: Long) {
+    fun deletePhoto(scope: DataScope, suggestionId: Long, photoId: Long) {
         if (suggestionId <= 0) throw InvalidSuggestionIdException()
         if (photoId <= 0) throw InvalidSuggestionPhotoIdException()
+        verifyVisible(scope, suggestionId)
 
         val suggestion = suggestionRepository.findByIdAndIsDeletedFalse(suggestionId)
             ?: throw SuggestionNotFoundException()

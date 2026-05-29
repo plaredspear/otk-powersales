@@ -2,6 +2,8 @@ package com.otoki.powersales.suggestion.service
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
@@ -22,6 +24,7 @@ import com.otoki.powersales.suggestion.exception.InvalidSuggestionPhotoIdExcepti
 import com.otoki.powersales.suggestion.exception.SuggestionNotFoundException
 import com.otoki.powersales.suggestion.exception.SuggestionPhotoNotFoundException
 import com.otoki.powersales.suggestion.repository.SuggestionRepository
+import com.querydsl.core.types.dsl.Expressions
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -51,6 +54,7 @@ class AdminSuggestionServiceTest {
     private val fileStorageService: FileStorageService = mockk(relaxUnitFun = true)
     private val validator: SuggestionValidator = mockk(relaxUnitFun = true)
     private val suggestionService: SuggestionService = mockk()
+    private val policyEvaluator: SharingRulePolicyEvaluator = mockk()
 
     private val service = AdminSuggestionService(
         suggestionRepository,
@@ -61,8 +65,12 @@ class AdminSuggestionServiceTest {
         orgCostCenterMatchService,
         fileStorageService,
         validator,
-        suggestionService
+        suggestionService,
+        policyEvaluator
     )
+
+    /** SF 가시 범위 평가 결과 — 테스트에서는 항상-true Predicate stub (필터/페이징 검증에 집중). */
+    private val allowAllScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
     private val adminId = 1L
     private val targetEmployeeId = 100L
@@ -82,6 +90,10 @@ class AdminSuggestionServiceTest {
         every { suggestionService.formatFileSize(any()) } returns "1.0KB"
         every { suggestionService.computeWerkCenters(any(), any()) } returns (null to null)
         every { suggestionService.generateProposalNumber(any()) } returns "S-20260527-000001"
+        // SF 가시 범위 Predicate stub — evaluator 자체 로직은 SharingRulePolicyEvaluator 테스트에서 검증.
+        every { policyEvaluator.buildPredicate(any(), any(), any()) } returns Expressions.asBoolean(true).isTrue
+        // 단건 가시성 — 기본 stub 은 가시(true). 가시 범위 밖 케이스에서 개별 override.
+        every { suggestionRepository.existsVisibleById(any(), any()) } returns true
     }
 
     private fun suggestionOf(employee: Employee?, account: Account? = null): Suggestion = Suggestion(
@@ -111,9 +123,9 @@ class AdminSuggestionServiceTest {
         @DisplayName("기본 조회 — 최근 30일 기간 default, 필터 없음")
         fun defaultSearch() {
             val page = PageImpl(listOf(suggestionOf(otherEmployee)), PageRequest.of(0, 20), 1L)
-            every { suggestionRepository.searchForAdmin(any(), any()) } returns page
+            every { suggestionRepository.searchForAdmin(any(), any(), any()) } returns page
 
-            val result = service.search(null, null, AdminSuggestionFilterParams(), 0, 20)
+            val result = service.search(allowAllScope, null, null, AdminSuggestionFilterParams(), 0, 20)
 
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].id).isEqualTo(suggestionId)
@@ -126,19 +138,19 @@ class AdminSuggestionServiceTest {
         @DisplayName("종료일이 시작일보다 빠르면 IllegalArgumentException")
         fun invalidDateRange() {
             assertThatThrownBy {
-                service.search(LocalDate.of(2026, 5, 27), LocalDate.of(2026, 5, 26), AdminSuggestionFilterParams(), 0, 20)
+                service.search(allowAllScope, LocalDate.of(2026, 5, 27), LocalDate.of(2026, 5, 26), AdminSuggestionFilterParams(), 0, 20)
             }.isInstanceOf(IllegalArgumentException::class.java)
-            verify(exactly = 0) { suggestionRepository.searchForAdmin(any(), any()) }
+            verify(exactly = 0) { suggestionRepository.searchForAdmin(any(), any(), any()) }
         }
 
         @Test
         @DisplayName("size 100 초과 시 100 으로 cap")
         fun sizeClampedTo100() {
             val captured = slot<org.springframework.data.domain.Pageable>()
-            every { suggestionRepository.searchForAdmin(any(), capture(captured)) } returns
+            every { suggestionRepository.searchForAdmin(any(), any(), capture(captured)) } returns
                 PageImpl(emptyList<Suggestion>(), PageRequest.of(0, 100), 0L)
 
-            service.search(null, null, AdminSuggestionFilterParams(), 0, 500)
+            service.search(allowAllScope, null, null, AdminSuggestionFilterParams(), 0, 500)
 
             assertThat(captured.captured.pageSize).isEqualTo(100)
         }
@@ -147,11 +159,11 @@ class AdminSuggestionServiceTest {
         @DisplayName("필터 — category + employeeName 전달")
         fun filterPropagation() {
             val captured = slot<AdminSuggestionFilter>()
-            every { suggestionRepository.searchForAdmin(capture(captured), any()) } returns
+            every { suggestionRepository.searchForAdmin(any(), capture(captured), any()) } returns
                 PageImpl(emptyList<Suggestion>(), PageRequest.of(0, 20), 0L)
 
             service.search(
-                null, null,
+                allowAllScope, null, null,
                 AdminSuggestionFilterParams(category = SuggestionCategory.LOGISTICS_CLAIM, employeeName = "홍"),
                 0, 20
             )
@@ -159,21 +171,41 @@ class AdminSuggestionServiceTest {
             assertThat(captured.captured.category).isEqualTo(SuggestionCategory.LOGISTICS_CLAIM)
             assertThat(captured.captured.employeeName).isEqualTo("홍")
         }
+
+        @Test
+        @DisplayName("SF 가시 범위 — evaluator 에 scope + DKRetail__Proposal__c 전달, 산출 Predicate 를 repository 에 합성")
+        fun appliesSharingPolicy() {
+            val scope = DataScope(branchCodes = listOf("GHD03"), isAllBranches = false, userId = 42L)
+            val policy = Expressions.asBoolean(true).isTrue
+            val scopeSlot = slot<DataScope>()
+            val sObjectSlot = slot<String>()
+            every { policyEvaluator.buildPredicate(capture(scopeSlot), capture(sObjectSlot), any()) } returns policy
+            val predicateSlot = slot<com.querydsl.core.types.Predicate>()
+            every { suggestionRepository.searchForAdmin(capture(predicateSlot), any(), any()) } returns
+                PageImpl(emptyList<Suggestion>(), PageRequest.of(0, 20), 0L)
+
+            service.search(scope, null, null, AdminSuggestionFilterParams(), 0, 20)
+
+            assertThat(sObjectSlot.captured).isEqualTo("DKRetail__Proposal__c")
+            assertThat(scopeSlot.captured.userId).isEqualTo(42L)
+            assertThat(scopeSlot.captured.branchCodes).containsExactly("GHD03")
+            assertThat(predicateSlot.captured).isEqualTo(policy)
+        }
     }
 
     @Nested
     @DisplayName("getDetail - 단건 상세")
     inner class GetDetailTests {
         @Test
-        @DisplayName("정상 - admin 은 본인 row 검증 없이 조회")
-        fun returnsDetailWithoutOwnerCheck() {
+        @DisplayName("정상 - SF 가시 범위 내 레코드 조회")
+        fun returnsDetailWhenVisible() {
             val suggestion = suggestionOf(otherEmployee)
             every { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) } returns suggestion
             every {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestionId)
             } returns listOf(photoOf())
 
-            val result = service.getDetail(suggestionId)
+            val result = service.getDetail(allowAllScope, suggestionId)
 
             assertThat(result.id).isEqualTo(suggestionId)
             assertThat(result.attachments).hasSize(1)
@@ -181,9 +213,19 @@ class AdminSuggestionServiceTest {
         }
 
         @Test
+        @DisplayName("SF 가시 범위 밖 — SuggestionNotFoundException (404, SF OWD=Private 동등)")
+        fun throwsWhenNotVisible() {
+            every { suggestionRepository.existsVisibleById(suggestionId, any()) } returns false
+
+            assertThatThrownBy { service.getDetail(allowAllScope, suggestionId) }
+                .isInstanceOf(SuggestionNotFoundException::class.java)
+            verify(exactly = 0) { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) }
+        }
+
+        @Test
         @DisplayName("id <= 0 → InvalidSuggestionIdException")
         fun rejectsInvalidId() {
-            assertThatThrownBy { service.getDetail(0L) }
+            assertThatThrownBy { service.getDetail(allowAllScope, 0L) }
                 .isInstanceOf(InvalidSuggestionIdException::class.java)
         }
 
@@ -191,7 +233,7 @@ class AdminSuggestionServiceTest {
         @DisplayName("없는 id → SuggestionNotFoundException")
         fun throwsWhenMissing() {
             every { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) } returns null
-            assertThatThrownBy { service.getDetail(suggestionId) }
+            assertThatThrownBy { service.getDetail(allowAllScope, suggestionId) }
                 .isInstanceOf(SuggestionNotFoundException::class.java)
         }
     }
@@ -257,8 +299,8 @@ class AdminSuggestionServiceTest {
     @DisplayName("update - 수정")
     inner class UpdateTests {
         @Test
-        @DisplayName("정상 - admin 우회 (본인 row 검증 없음)")
-        fun updatesWithoutOwnerCheck() {
+        @DisplayName("정상 - SF 가시 범위 내 레코드 수정")
+        fun updatesWhenVisible() {
             val suggestion = suggestionOf(otherEmployee)
             every { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) } returns suggestion
             every { suggestionRepository.save(any<Suggestion>()) } returns suggestion
@@ -272,7 +314,7 @@ class AdminSuggestionServiceTest {
                 claimType = "포장상태", claimDate = LocalDate.now(),
                 actionStatus = SuggestionActionStatus.IN_PROGRESS
             )
-            val result = service.update(suggestionId, request)
+            val result = service.update(allowAllScope, suggestionId, request)
 
             assertThat(suggestion.title).isEqualTo("수정 제목")
             assertThat(suggestion.actionStatus).isEqualTo(SuggestionActionStatus.IN_PROGRESS)
@@ -280,9 +322,22 @@ class AdminSuggestionServiceTest {
         }
 
         @Test
+        @DisplayName("SF 가시 범위 밖 — SuggestionNotFoundException (수정 불가)")
+        fun throwsWhenNotVisible() {
+            every { suggestionRepository.existsVisibleById(suggestionId, any()) } returns false
+
+            val request = AdminSuggestionUpdateRequest(
+                category = SuggestionCategory.LOGISTICS_CLAIM, title = "x", content = "y"
+            )
+            assertThatThrownBy { service.update(allowAllScope, suggestionId, request) }
+                .isInstanceOf(SuggestionNotFoundException::class.java)
+            verify(exactly = 0) { suggestionRepository.save(any<Suggestion>()) }
+        }
+
+        @Test
         @DisplayName("id <= 0 → InvalidSuggestionIdException")
         fun rejectsInvalidId() {
-            assertThatThrownBy { service.update(0L, AdminSuggestionUpdateRequest(category = SuggestionCategory.LOGISTICS_CLAIM, title = "x", content = "y")) }
+            assertThatThrownBy { service.update(allowAllScope, 0L, AdminSuggestionUpdateRequest(category = SuggestionCategory.LOGISTICS_CLAIM, title = "x", content = "y")) }
                 .isInstanceOf(InvalidSuggestionIdException::class.java)
         }
     }
@@ -298,16 +353,26 @@ class AdminSuggestionServiceTest {
             val captured = slot<Suggestion>()
             every { suggestionRepository.save(capture(captured)) } answers { captured.captured }
 
-            service.softDelete(suggestionId)
+            service.softDelete(allowAllScope, suggestionId)
 
             assertThat(captured.captured.isDeleted).isTrue()
+        }
+
+        @Test
+        @DisplayName("SF 가시 범위 밖 — SuggestionNotFoundException (삭제 불가)")
+        fun throwsWhenNotVisible() {
+            every { suggestionRepository.existsVisibleById(suggestionId, any()) } returns false
+
+            assertThatThrownBy { service.softDelete(allowAllScope, suggestionId) }
+                .isInstanceOf(SuggestionNotFoundException::class.java)
+            verify(exactly = 0) { suggestionRepository.save(any<Suggestion>()) }
         }
 
         @Test
         @DisplayName("없는 id → SuggestionNotFoundException")
         fun throwsWhenMissing() {
             every { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) } returns null
-            assertThatThrownBy { service.softDelete(suggestionId) }
+            assertThatThrownBy { service.softDelete(allowAllScope, suggestionId) }
                 .isInstanceOf(SuggestionNotFoundException::class.java)
         }
     }
@@ -327,7 +392,7 @@ class AdminSuggestionServiceTest {
             every { uploadFileRepository.save(any<UploadFile>()) } answers { firstArg<UploadFile>() }
 
             val photos = (1..3).map { MockMultipartFile("photos", "$it.jpg", "image/jpeg", byteArrayOf(1)) }
-            val result = service.uploadPhotos(suggestionId, photos)
+            val result = service.uploadPhotos(allowAllScope, suggestionId, photos)
 
             assertThat(result).hasSize(3)
             assertThat(result[0].sortOrder).isEqualTo(1)  // baseIndex = existing.size = 1
@@ -344,7 +409,7 @@ class AdminSuggestionServiceTest {
             } returns (1..8).map { photoOf(key = "uploads/suggestion/$it.jpg") }  // existing = 8
 
             val photos = (1..3).map { MockMultipartFile("photos", "$it.jpg", "image/jpeg", byteArrayOf(1)) }
-            assertThatThrownBy { service.uploadPhotos(suggestionId, photos) }
+            assertThatThrownBy { service.uploadPhotos(allowAllScope, suggestionId, photos) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("최대 10")
             verify(exactly = 0) { fileStorageService.uploadSuggestionPhoto(any(), any()) }
@@ -353,8 +418,19 @@ class AdminSuggestionServiceTest {
         @Test
         @DisplayName("빈 photos → IllegalArgumentException")
         fun rejectsEmptyPhotos() {
-            assertThatThrownBy { service.uploadPhotos(suggestionId, emptyList()) }
+            assertThatThrownBy { service.uploadPhotos(allowAllScope, suggestionId, emptyList()) }
                 .isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        @DisplayName("SF 가시 범위 밖 — SuggestionNotFoundException (사진 추가 불가)")
+        fun throwsWhenNotVisible() {
+            every { suggestionRepository.existsVisibleById(suggestionId, any()) } returns false
+
+            val photos = listOf(MockMultipartFile("photos", "1.jpg", "image/jpeg", byteArrayOf(1)))
+            assertThatThrownBy { service.uploadPhotos(allowAllScope, suggestionId, photos) }
+                .isInstanceOf(SuggestionNotFoundException::class.java)
+            verify(exactly = 0) { fileStorageService.uploadSuggestionPhoto(any(), any()) }
         }
     }
 
@@ -373,7 +449,7 @@ class AdminSuggestionServiceTest {
             val captured = slot<UploadFile>()
             every { uploadFileRepository.save(capture(captured)) } answers { captured.captured }
 
-            service.deletePhoto(suggestionId, photoId)
+            service.deletePhoto(allowAllScope, suggestionId, photoId)
 
             verify(exactly = 1) { fileStorageService.deleteSuggestionPhoto(key) }
             assertThat(captured.captured.isDeleted).isTrue()
@@ -388,14 +464,24 @@ class AdminSuggestionServiceTest {
                 uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(photoId, UploadFileParentTypes.SUGGESTION, suggestionId)
             } returns null
 
-            assertThatThrownBy { service.deletePhoto(suggestionId, photoId) }
+            assertThatThrownBy { service.deletePhoto(allowAllScope, suggestionId, photoId) }
                 .isInstanceOf(SuggestionPhotoNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("SF 가시 범위 밖 — SuggestionNotFoundException (사진 삭제 불가)")
+        fun throwsWhenNotVisible() {
+            every { suggestionRepository.existsVisibleById(suggestionId, any()) } returns false
+
+            assertThatThrownBy { service.deletePhoto(allowAllScope, suggestionId, photoId) }
+                .isInstanceOf(SuggestionNotFoundException::class.java)
+            verify(exactly = 0) { fileStorageService.deleteSuggestionPhoto(any()) }
         }
 
         @Test
         @DisplayName("photoId <= 0 → InvalidSuggestionPhotoIdException")
         fun rejectsInvalidPhotoId() {
-            assertThatThrownBy { service.deletePhoto(suggestionId, 0L) }
+            assertThatThrownBy { service.deletePhoto(allowAllScope, suggestionId, 0L) }
                 .isInstanceOf(InvalidSuggestionPhotoIdException::class.java)
         }
     }

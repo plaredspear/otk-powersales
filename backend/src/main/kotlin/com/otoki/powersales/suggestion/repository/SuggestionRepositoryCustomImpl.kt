@@ -20,8 +20,13 @@ class SuggestionRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : SuggestionRepositoryCustom {
 
-    override fun searchForAdmin(filter: AdminSuggestionFilter, pageable: Pageable): Page<Suggestion> {
+    override fun searchForAdmin(
+        policyPredicate: Predicate,
+        filter: AdminSuggestionFilter,
+        pageable: Pageable
+    ): Page<Suggestion> {
         val where = BooleanBuilder()
+            .and(policyPredicate)
             .and(suggestion.isDeleted.eq(false))
             .and(suggestion.createdAt.between(filter.startDateTime, filter.endDateTime))
             .and(categoryEq(filter))
@@ -51,6 +56,19 @@ class SuggestionRepositoryCustomImpl(
         return PageableExecutionUtils.getPage(content, pageable) {
             countQuery.fetchOne() ?: 0L
         }
+    }
+
+    override fun existsVisibleById(id: Long, policyPredicate: Predicate): Boolean {
+        val where = BooleanBuilder()
+            .and(suggestion.id.eq(id))
+            .and(suggestion.isDeleted.eq(false))
+            .and(policyPredicate)
+
+        return queryFactory
+            .selectOne()
+            .from(suggestion)
+            .where(where)
+            .fetchFirst() != null
     }
 
     private fun categoryEq(filter: AdminSuggestionFilter): Predicate? =
