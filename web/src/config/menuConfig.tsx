@@ -226,6 +226,8 @@ export const menuRoute: MenuRoute = {
           operation: 'READ',
           subRoutes: [
             { path: '/admin/permissions/permission-sets/:permissionSetId', name: '권한 세트 상세', entity: 'permission_set', operation: 'READ' },
+            { path: '/admin/permissions/permission-sets/new', name: '권한 세트 등록', systemPermission: 'MANAGE_USERS' },
+            { path: '/admin/permissions/permission-sets/:permissionSetId/edit', name: '권한 세트 편집', systemPermission: 'MANAGE_USERS' },
           ],
         },
         { path: '/admin/permissions/matrix', name: '권한 매트릭스', systemPermission: 'VIEW_ALL_DATA' },

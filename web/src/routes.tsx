@@ -67,6 +67,8 @@ const ProfileListPage = lazy(() => import('@/pages/admin/permissions/ProfileList
 const ProfileDetailPage = lazy(() => import('@/pages/admin/permissions/ProfileDetailPage'));
 const PermissionSetListPage = lazy(() => import('@/pages/admin/permissions/PermissionSetListPage'));
 const PermissionSetDetailPage = lazy(() => import('@/pages/admin/permissions/PermissionSetDetailPage'));
+const PermissionSetCreatePage = lazy(() => import('@/pages/admin/permissions/PermissionSetCreatePage'));
+const PermissionSetEditPage = lazy(() => import('@/pages/admin/permissions/PermissionSetEditPage'));
 const PermissionMatrixPage = lazy(() => import('@/pages/admin/permissions/PermissionMatrixPage'));
 const PageAccessGuidePage = lazy(() => import('@/pages/admin/permissions/PageAccessGuidePage'));
 const PermissionGuidePage = lazy(() => import('@/pages/admin/permissions/PermissionGuidePage'));
@@ -284,6 +286,14 @@ export const router = createBrowserRouter(
               children: [
                 { path: '/admin/permissions/permission-sets', element: <LazyWrapper><PermissionSetListPage /></LazyWrapper> },
                 { path: '/admin/permissions/permission-sets/:permissionSetId', element: <LazyWrapper><PermissionSetDetailPage /></LazyWrapper> },
+              ],
+            },
+            {
+              // Spec #837 — PS 등록/편집 페이지. MANAGE_USERS 가드 (PSA 부여와 동일 가드).
+              element: <PermissionRoute systemPermission="MANAGE_USERS" />,
+              children: [
+                { path: '/admin/permissions/permission-sets/new', element: <LazyWrapper><PermissionSetCreatePage /></LazyWrapper> },
+                { path: '/admin/permissions/permission-sets/:permissionSetId/edit', element: <LazyWrapper><PermissionSetEditPage /></LazyWrapper> },
               ],
             },
             {

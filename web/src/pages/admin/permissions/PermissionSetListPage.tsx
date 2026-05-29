@@ -1,17 +1,21 @@
 import { useNavigate } from 'react-router-dom';
-import { Alert, Card, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Space, Spin, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { usePermissionSets } from '@/hooks/admin/useAdminPermission';
+import { usePermission } from '@/hooks/usePermission';
 import type { PermissionSetSummary } from '@/api/admin/permission';
 
 const { Title } = Typography;
 
 /**
  * Spec #803 — PermissionSet 일람 페이지.
+ * Spec #837 — 신규 PS 등록 버튼 + 출처 (SF/신규) + dirty 플래그 컬럼 추가.
  */
 export default function PermissionSetListPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, error } = usePermissionSets();
+  const { hasSystemPermission } = usePermission();
+  const canManage = hasSystemPermission('MANAGE_USERS');
 
   if (isLoading) {
     return (
@@ -34,6 +38,27 @@ export default function PermissionSetListPage() {
   const columns: ColumnsType<PermissionSetSummary> = [
     { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
     { title: 'Label', dataIndex: 'label', key: 'label' },
+    {
+      title: '출처',
+      dataIndex: 'sfOrigin',
+      key: 'sfOrigin',
+      width: 110,
+      filters: [
+        { text: 'SF 출처', value: true },
+        { text: '신규', value: false },
+      ],
+      onFilter: (val, row) => row.sfOrigin === val,
+      render: (v: boolean) => (v ? <Tag color="blue">SF 출처</Tag> : <Tag color="purple">신규</Tag>),
+    },
+    {
+      title: '로컬 수정',
+      dataIndex: 'isLocallyModified',
+      key: 'isLocallyModified',
+      width: 110,
+      filters: [{ text: '⚠️ 로컬 수정', value: true }],
+      onFilter: (val, row) => row.isLocallyModified === val,
+      render: (v: boolean) => (v ? <Tag color="orange">⚠️ 로컬 수정</Tag> : null),
+    },
     { title: 'Description', dataIndex: 'description', key: 'description', ellipsis: true },
     { title: 'VIEW_ALL_DATA', dataIndex: 'viewAllData', key: 'viewAllData', render: renderBit, width: 130 },
     { title: 'MODIFY_ALL_DATA', dataIndex: 'modifyAllData', key: 'modifyAllData', render: renderBit, width: 140 },
@@ -55,7 +80,14 @@ export default function PermissionSetListPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <Title level={4}>PermissionSet 관리</Title>
+      <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
+        <Title level={4} style={{ margin: 0 }}>PermissionSet 관리</Title>
+        {canManage && (
+          <Button type="primary" onClick={() => navigate('/admin/permissions/permission-sets/new')}>
+            + 신규 PS 등록
+          </Button>
+        )}
+      </Space>
       <Card>
         <Table<PermissionSetSummary>
           dataSource={data ?? []}
@@ -63,7 +95,10 @@ export default function PermissionSetListPage() {
           columns={columns}
           pagination={{ pageSize: 50 }}
           size="small"
-          onRow={(row) => ({ onClick: () => navigate(`/admin/permissions/permission-sets/${row.permissionSetId}`), style: { cursor: 'pointer' } })}
+          onRow={(row) => ({
+            onClick: () => navigate(`/admin/permissions/permission-sets/${row.permissionSetId}`),
+            style: { cursor: 'pointer' },
+          })}
         />
       </Card>
     </div>
