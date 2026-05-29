@@ -14,6 +14,12 @@ interface ClaimRepository : JpaRepository<Claim, Long> {
         end: LocalDateTime
     ): List<Claim>
 
+    fun findByCostCenterCodeAndCreatedAtBetweenOrderByCreatedAtDesc(
+        costCenterCode: String,
+        start: LocalDateTime,
+        end: LocalDateTime
+    ): List<Claim>
+
     /** SAP 인바운드 단건 조회 (Spec #561) */
     fun findByName(name: String): Claim?
 

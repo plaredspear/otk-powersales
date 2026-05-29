@@ -1,6 +1,7 @@
 package com.otoki.powersales.claim.service
 
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.claim.entity.Claim
 import com.otoki.powersales.claim.enums.ClaimDateType
 import com.otoki.powersales.claim.enums.ClaimStatus
@@ -17,9 +18,11 @@ import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.claim.entity.sfpicklist.PurchaseMethod
 import com.otoki.powersales.claim.entity.sfpicklist.RequestType
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.product.entity.Product
 import io.mockk.every
 import io.mockk.mockk
+import org.springframework.data.repository.findByIdOrNull
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -33,11 +36,13 @@ import java.math.BigDecimal
 class ClaimQueryServiceTest {
 
     private val claimRepository: ClaimRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
     private val uploadFileRepository: UploadFileRepository = mockk()
     private val publicUrlResolver: PublicUrlResolver = mockk()
 
     private val claimQueryService = ClaimQueryService(
         claimRepository,
+        employeeRepository,
         uploadFileRepository,
         publicUrlResolver,
     )
@@ -47,9 +52,10 @@ class ClaimQueryServiceTest {
     inner class GetClaimsTests {
 
         @Test
-        @DisplayName("정상 조회 - 기본 파라미터(최근 7일) → 목록 반환")
-        fun getClaims_defaultDates_success() {
+        @DisplayName("여사원 - 본인 등록분만 반환 (employee_id 분기)")
+        fun getClaims_woman_ownOnly() {
             val claim = createClaim()
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
             every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns listOf(claim)
 
             val result = claimQueryService.getClaims(1L, null, null)
@@ -61,8 +67,43 @@ class ClaimQueryServiceTest {
         }
 
         @Test
+        @DisplayName("조장 - 같은 원가센터 전체 반환 (cost_center_code 분기) — SF 동등")
+        fun getClaims_leader_sameCostCenter() {
+            val claim = createClaim()
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.LEADER, costCenterCode = "CC01")
+            every { claimRepository.findByCostCenterCodeAndCreatedAtBetweenOrderByCreatedAtDesc("CC01", any(), any()) } returns listOf(claim)
+
+            val result = claimQueryService.getClaims(1L, null, null)
+
+            assertThat(result).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("지점장 - 같은 원가센터 전체 반환 (조장과 동일 분기)")
+        fun getClaims_branchManager_sameCostCenter() {
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.BRANCH_MANAGER, costCenterCode = "CC01")
+            every { claimRepository.findByCostCenterCodeAndCreatedAtBetweenOrderByCreatedAtDesc("CC01", any(), any()) } returns emptyList()
+
+            val result = claimQueryService.getClaims(1L, null, null)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("조장이지만 원가센터 미설정 - 본인 등록분으로 fallback (전사 노출 방지)")
+        fun getClaims_leader_noCostCenter_fallbackToOwn() {
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.LEADER, costCenterCode = null)
+            every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns emptyList()
+
+            val result = claimQueryService.getClaims(1L, null, null)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
         @DisplayName("정상 조회 - 기간 지정 → 목록 반환")
         fun getClaims_withDates_success() {
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
             every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns emptyList()
 
             val result = claimQueryService.getClaims(1L, "2026-04-01", "2026-04-08")
@@ -73,6 +114,7 @@ class ClaimQueryServiceTest {
         @Test
         @DisplayName("빈 결과 - 해당 기간에 클레임 없음 → 빈 리스트")
         fun getClaims_empty() {
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
             every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns emptyList()
 
             val result = claimQueryService.getClaims(1L, null, null)
@@ -105,6 +147,7 @@ class ClaimQueryServiceTest {
             val claim = createClaim()
             val photo = createUploadFile(claim.id)
             every { claimRepository.findById(1L) } returns Optional.of(claim)
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
             every {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
                     UploadFileParentTypes.CLAIM, 1L
@@ -130,6 +173,7 @@ class ClaimQueryServiceTest {
         fun getClaimDetail_noPhotos() {
             val claim = createClaim()
             every { claimRepository.findById(1L) } returns Optional.of(claim)
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
             every {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
                     UploadFileParentTypes.CLAIM, 1L
@@ -146,6 +190,7 @@ class ClaimQueryServiceTest {
         fun getClaimDetail_noPurchaseInfo() {
             val claim = createClaim(purchaseAmount = null, purchaseMethod = null, requestTypes = emptySet())
             every { claimRepository.findById(1L) } returns Optional.of(claim)
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
             every {
                 uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
                     UploadFileParentTypes.CLAIM, 1L
@@ -169,21 +214,56 @@ class ClaimQueryServiceTest {
         }
 
         @Test
-        @DisplayName("타인 클레임 조회 - 다른 사원의 클레임 → ClaimNotFoundException")
-        fun getClaimDetail_notOwner() {
-            val claim = createClaim(employeeId = 2L)
+        @DisplayName("타인 클레임 조회 - 여사원이 다른 사원의 클레임 → ClaimNotFoundException")
+        fun getClaimDetail_woman_notOwner() {
+            val claim = createClaim(employeeId = 2L, costCenterCode = "CC01")
             every { claimRepository.findById(1L) } returns Optional.of(claim)
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
+
+            assertThatThrownBy { claimQueryService.getClaimDetail(1L, 1L) }
+                .isInstanceOf(ClaimNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("조장이 같은 원가센터 여사원 클레임 조회 → 정상 반환 (SF 동등)")
+        fun getClaimDetail_leader_sameCostCenter_success() {
+            val claim = createClaim(employeeId = 2L, costCenterCode = "CC01")
+            every { claimRepository.findById(1L) } returns Optional.of(claim)
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.LEADER, costCenterCode = "CC01")
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(
+                    UploadFileParentTypes.CLAIM, 1L
+                )
+            } returns emptyList()
+
+            val result = claimQueryService.getClaimDetail(1L, 1L)
+
+            assertThat(result.claimId).isEqualTo(1L)
+        }
+
+        @Test
+        @DisplayName("조장이 다른 원가센터 클레임 조회 → ClaimNotFoundException")
+        fun getClaimDetail_leader_differentCostCenter_denied() {
+            val claim = createClaim(employeeId = 2L, costCenterCode = "CC99")
+            every { claimRepository.findById(1L) } returns Optional.of(claim)
+            every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.LEADER, costCenterCode = "CC01")
 
             assertThatThrownBy { claimQueryService.getClaimDetail(1L, 1L) }
                 .isInstanceOf(ClaimNotFoundException::class.java)
         }
     }
 
-    private fun createEmployee(id: Long = 1L): Employee {
+    private fun createEmployee(
+        id: Long = 1L,
+        role: String? = AppAuthority.WOMAN,
+        costCenterCode: String? = "CC01"
+    ): Employee {
         return Employee(
             id = id,
             employeeCode = "20030117",
-            name = "테스트사원"
+            name = "테스트사원",
+            role = role,
+            costCenterCode = costCenterCode
         )
     }
 
@@ -199,7 +279,8 @@ class ClaimQueryServiceTest {
         employeeId: Long = 1L,
         purchaseAmount: BigDecimal? = BigDecimal.valueOf(3500L),
         purchaseMethod: PurchaseMethod? = PurchaseMethod.PERSONAL_CARD,
-        requestTypes: Set<RequestType> = setOf(RequestType.OPINION_REPORT)
+        requestTypes: Set<RequestType> = setOf(RequestType.OPINION_REPORT),
+        costCenterCode: String? = "CC01"
     ): Claim {
         return Claim(
             id = id,
@@ -215,7 +296,8 @@ class ClaimQueryServiceTest {
             purchaseAmount = purchaseAmount,
             purchaseMethodCode = purchaseMethod,
             requestTypeCode = requestTypes,
-            status = ClaimStatus.DRAFT
+            status = ClaimStatus.DRAFT,
+            costCenterCode = costCenterCode
         ).apply {
             createdAt = java.time.LocalDateTime.of(2026, 4, 8, 10, 30, 0)
         }
