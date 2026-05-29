@@ -56,27 +56,7 @@ class OroraJpaConfig {
 		.dataSource(ororaDataSource)
 		.packages("com.otoki.orora.entity")
 		.persistenceUnit("orora")
-		.properties(
-			mapOf(
-				"hibernate.dialect" to "org.hibernate.dialect.SQLServerDialect",
-				// L3: 자동 DDL 차단 — ORORA 측에 어떤 schema 변경도 발사되지 않음
-				"hibernate.hbm2ddl.auto" to "none",
-				// Hikari read-only=true 정합 — JPA 트랜잭션이 autocommit 모드로 동작
-				"hibernate.connection.autocommit" to "true",
-				"hibernate.connection.provider_disables_autocommit" to "false",
-				// SELECT 지연 상한 — ORORA 측 view 응답 지연이 backend API 응답성을 침해하지 않도록
-				"jakarta.persistence.query.timeout" to "30000",
-				"hibernate.session.events.log.LOG_QUERIES_SLOWER_THAN_MS" to "5000",
-				// VPN 장애 / local 환경 부팅 시 ORORA DB 도달 불가 상황에서도 메인 부팅이 차단되지
-				// 않도록 Hibernate 가 JDBC 메타데이터를 부팅 시점에 조회하지 않게 강제.
-				// 본 옵션 없이 dialect 만 지정하면 Hibernate 5.4+ 부터는 메타데이터를 조회하지 않지만,
-				// 일부 환경에서 여전히 connection 을 잡는 경로가 있어 명시적으로 false 부착.
-				"hibernate.boot.allow_jdbc_metadata_access" to "false",
-				// @EntityListeners 가 @Component bean 으로 인스턴스화되도록 Spring bean container 등록.
-				// 자동 EMF 경로 (Spring Boot JpaBaseConfiguration) 우회 시 누락되는 customizer 를 명시 재현.
-				"hibernate.resource.beans.container" to SpringBeanContainer(beanFactory),
-			),
-		)
+		.properties(ororaHibernateProperties(beanFactory))
 		.build()
 
 	@Bean
@@ -85,5 +65,38 @@ class OroraJpaConfig {
 	): PlatformTransactionManager = JpaTransactionManager(emf).apply {
 		// ORORA 트랜잭션 default timeout 30초 — Hikari connection-timeout 5초 + SELECT 지연 상한과 정합
 		defaultTimeout = 30
+	}
+
+	companion object {
+		/**
+		 * ORORA EMF 의 Hibernate properties 빌더.
+		 *
+		 * 별도 함수로 분리하여 단위 테스트가 빈 부팅 없이 검증할 수 있도록 노출.
+		 * 회귀 방지 대상 — 메인 RDS 의 `default_schema=powersales` 가 ORORA EMF 로 전파되어
+		 * ORORA MSSQL view 앞에 `powersales.` prefix 가 붙는 사고.
+		 */
+		fun ororaHibernateProperties(beanFactory: ConfigurableListableBeanFactory): Map<String, Any> = mapOf(
+			"hibernate.dialect" to "org.hibernate.dialect.SQLServerDialect",
+			// 메인 RDS 측 application.yml 의 spring.jpa.properties.hibernate.default_schema=powersales
+			// 가 EntityManagerFactoryBuilder 의 jpaProperties 로 본 ORORA EMF 에도 전파되어
+			// ORORA MSSQL view 앞에 `powersales.` 가 prefix 되는 사고 방지 — 빈 문자열로 명시 override.
+			"hibernate.default_schema" to "",
+			// L3: 자동 DDL 차단 — ORORA 측에 어떤 schema 변경도 발사되지 않음
+			"hibernate.hbm2ddl.auto" to "none",
+			// Hikari read-only=true 정합 — JPA 트랜잭션이 autocommit 모드로 동작
+			"hibernate.connection.autocommit" to "true",
+			"hibernate.connection.provider_disables_autocommit" to "false",
+			// SELECT 지연 상한 — ORORA 측 view 응답 지연이 backend API 응답성을 침해하지 않도록
+			"jakarta.persistence.query.timeout" to "30000",
+			"hibernate.session.events.log.LOG_QUERIES_SLOWER_THAN_MS" to "5000",
+			// VPN 장애 / local 환경 부팅 시 ORORA DB 도달 불가 상황에서도 메인 부팅이 차단되지
+			// 않도록 Hibernate 가 JDBC 메타데이터를 부팅 시점에 조회하지 않게 강제.
+			// 본 옵션 없이 dialect 만 지정하면 Hibernate 5.4+ 부터는 메타데이터를 조회하지 않지만,
+			// 일부 환경에서 여전히 connection 을 잡는 경로가 있어 명시적으로 false 부착.
+			"hibernate.boot.allow_jdbc_metadata_access" to "false",
+			// @EntityListeners 가 @Component bean 으로 인스턴스화되도록 Spring bean container 등록.
+			// 자동 EMF 경로 (Spring Boot JpaBaseConfiguration) 우회 시 누락되는 customizer 를 명시 재현.
+			"hibernate.resource.beans.container" to SpringBeanContainer(beanFactory),
+		)
 	}
 }

@@ -2,9 +2,11 @@ package com.otoki.powersales.common.integration.orora.config
 
 import com.otoki.orora.repository.OroraDailySalesHistoryRepository
 import com.otoki.orora.repository.OroraMonthlySalesHistoryRepository
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import org.springframework.context.annotation.Profile
 
 /**
@@ -76,5 +78,32 @@ class OroraJpaProfileGuardTest {
 	fun `monthly repository class name has Orora prefix`() {
 		assertThat(OroraMonthlySalesHistoryRepository::class.simpleName)
 			.isEqualTo("OroraMonthlySalesHistoryRepository")
+	}
+
+	@Test
+	@DisplayName("ororaHibernateProperties 의 hibernate.default_schema 가 빈 문자열로 override 되어 있다 (메인 RDS powersales prefix 누수 회귀 방지)")
+	fun `default_schema is overridden to empty string`() {
+		// 메인 RDS application.yml 의 spring.jpa.properties.hibernate.default_schema=powersales 가
+		// EntityManagerFactoryBuilder 의 jpaProperties 로 ORORA EMF 에도 전파되면, ORORA MSSQL
+		// view 가 `powersales.ECRM_ABCCUST_MH_V` 형태로 발사되어 invalid object name 에러가 난다.
+		// 본 단언은 OroraJpaConfig 가 항상 hibernate.default_schema 를 빈 문자열로 override 하는지 회귀 방지.
+		val props = OroraJpaConfig.ororaHibernateProperties(mockk<ConfigurableListableBeanFactory>())
+
+		assertThat(props)
+			.withFailMessage(
+				"ororaHibernateProperties 에 hibernate.default_schema 키가 없음. " +
+					"메인 RDS 의 default_schema=powersales 가 ORORA EMF 에 전파되어 " +
+					"ORORA MSSQL view 앞에 `powersales.` prefix 가 붙는 사고를 막으려면 " +
+					"본 키를 빈 문자열로 명시 override 해야 함.",
+			)
+			.containsKey("hibernate.default_schema")
+
+		assertThat(props["hibernate.default_schema"])
+			.withFailMessage(
+				"hibernate.default_schema 값이 빈 문자열이 아님: %s. " +
+					"ORORA MSSQL view (ECRM_*) 앞에 어떤 schema prefix 도 붙으면 안 됨.",
+				props["hibernate.default_schema"],
+			)
+			.isEqualTo("")
 	}
 }
