@@ -45,14 +45,17 @@ class AdminConvertedHeadcountReportService(
             excludeConsignment = variant.excludeConsignment,
             costCenterCode = variant.costCenterCode,
             accountTypeFilter = variant.accountTypeFilter,
+            accountTypeNotIn = variant.accountTypeNotIn,
+            excludeEmpBranchName = variant.excludeEmpBranchName,
         )
 
-        // 구분 × 근무유형1 (× 근무유형3) × 지점 × 연월 단위 SUM(환산인원) 집계.
+        // 구분(또는 ABC유형) × 근무유형1 (× 근무유형3) × 지점 × 연월 단위 SUM(환산인원) 집계.
+        // 세분화 variant(groupByAbcType) 는 구분 그룹 자리에 거래처 ABC유형(FK_$Account.ABCType__c)을 사용.
         // 근무유형3 은 variant.includeWorkingCategory3 인 경우에만 집계 키에 포함 (그 외 null 로 평탄화).
         val aggregated = rows
             .groupBy {
                 AggKey(
-                    accountType = it.account?.accountType?.displayName,
+                    accountType = groupKeyOf(it, variant),
                     workingCategory1 = it.workingCategory1,
                     workingCategory3 = if (variant.includeWorkingCategory3) it.workingCategory3 else null,
                     branchName = branchNameOf(it, variant),
@@ -92,6 +95,7 @@ class AdminConvertedHeadcountReportService(
             year = year,
             month = month,
             includeWorkingCategory3 = variant.includeWorkingCategory3,
+            groupByAbcType = variant.groupByAbcType,
             groups = groups,
             totalHeadcount = groups.sumOf { it.subtotalHeadcount },
         )
@@ -109,8 +113,9 @@ class AdminConvertedHeadcountReportService(
 
         // 근무유형3 컬럼은 variant.includeWorkingCategory3 인 경우에만 표시 (대리점 3종 + 대형마트 X3_rq9).
         val wc3 = report.includeWorkingCategory3
+        val groupLabel = if (report.groupByAbcType) "ABC유형" else "구분"
         val headers = buildList {
-            add("구분")
+            add(groupLabel)
             add("근무유형1")
             if (wc3) add("근무유형3")
             add("지점")
@@ -155,9 +160,13 @@ class AdminConvertedHeadcountReportService(
         return ExcelResult(bytes, "${variant.reportName}_${year}-${month}.xlsx")
     }
 
-    /** variant 별 지점 기준 — 1-x: 여사원 소속(empBranchName) / 2-1: 거래처(account.branchName). */
+    /** variant 별 지점 기준 — 1-x/대형마트: 여사원 소속(empBranchName) / 2-1/대리점: 거래처(account.branchName). */
     private fun branchNameOf(m: MonthlyFemaleEmployeeIntegrationSchedule, variant: ConvertedHeadcountReportVariant): String? =
         if (variant.useAccountBranch) m.account?.branchName else m.empBranchName
+
+    /** variant 별 그룹 기준 — 세분화(groupByAbcType): 거래처 ABC유형 / 그 외: 구분(거래처유형 displayName). */
+    private fun groupKeyOf(m: MonthlyFemaleEmployeeIntegrationSchedule, variant: ConvertedHeadcountReportVariant): String? =
+        if (variant.groupByAbcType) m.account?.abcType else m.account?.accountType?.displayName
 
     /** SF DateForReport__c (Month) = year-month 재구성. */
     private fun yearMonthOf(m: MonthlyFemaleEmployeeIntegrationSchedule): String? {

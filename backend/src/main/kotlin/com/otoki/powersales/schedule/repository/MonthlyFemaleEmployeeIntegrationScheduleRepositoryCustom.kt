@@ -17,6 +17,8 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
      * @param excludeConsignment  위탁농협(Account.consignmentAcc) 제외 여부 (1-2/1-5)
      * @param costCenterCode      영업지원2팀 코스트센터 코드 필터 (2-1 = "4889", 그 외 null)
      * @param accountTypeFilter   구분(Account.accountType) equals 필터 displayName (대리점 3종 = "대리점" 등). null = 전체
+     * @param accountTypeNotIn    구분(Account.accountType) notIn 제외 필터 displayName 목록 (2팀분리 = 대리점·백화점). 빈 목록 = 미적용
+     * @param excludeEmpBranchName 사원지점명(EmpBranchName) notEqual 제외 필터 (2팀분리 = 영업지원2팀). null = 미적용
      *
      * 전사 스코프 (DataScope 미적용). isDeleted 제외. account fetch join.
      */
@@ -28,5 +30,7 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
         excludeConsignment: Boolean,
         costCenterCode: String?,
         accountTypeFilter: String?,
+        accountTypeNotIn: List<String>,
+        excludeEmpBranchName: String?,
     ): List<MonthlyFemaleEmployeeIntegrationSchedule>
 }

@@ -9465,6 +9465,9 @@
       },
       "ConvertedHeadcountReportResult" : {
         "properties" : {
+          "groupByAbcType" : {
+            "type" : "boolean"
+          },
           "groups" : {
             "items" : {
               "$ref" : "#/components/schemas/ConvertedHeadcountReportGroup"

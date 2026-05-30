@@ -16,6 +16,8 @@ data class ConvertedHeadcountReportResult(
     val month: String,
     /** 근무유형3 컬럼 표시 여부 (대리점 3종 + 대형마트 X3_rq9). web 컬럼 노출 분기용. */
     val includeWorkingCategory3: Boolean,
+    /** 구분 그룹 라벨이 거래처유형(false) 인지 ABC유형(true) 인지 (세분화 variant). web/엑셀 헤더 분기용. */
+    val groupByAbcType: Boolean,
     val groups: List<ConvertedHeadcountReportGroup>,
     val totalHeadcount: BigDecimal,
 )
