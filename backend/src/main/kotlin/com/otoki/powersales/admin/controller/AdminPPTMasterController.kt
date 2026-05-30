@@ -7,6 +7,7 @@ import com.otoki.powersales.promotion.dto.request.PPTMasterConfirmByIdsRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.promotion.dto.response.*
+import com.otoki.powersales.promotion.service.AdminPPTConfirmedReportService
 import com.otoki.powersales.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
@@ -24,7 +25,8 @@ import java.time.format.DateTimeFormatter
 
 @RestController
 class AdminPPTMasterController(
-    private val adminPPTMasterService: AdminPPTMasterService
+    private val adminPPTMasterService: AdminPPTMasterService,
+    private val pptConfirmedReportService: AdminPPTConfirmedReportService,
 ) {
 
     @GetMapping("/api/v1/admin/ppt-masters")
@@ -44,6 +46,29 @@ class AdminPPTMasterController(
             PageRequest.of(page, size)
         )
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 전문행사조 확정 인원 보고서 조회 (Spec #846). isConfirmed=true 전사. */
+    @GetMapping("/api/v1/admin/ppt-masters/confirmed-report")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun getConfirmedReport(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<PPTConfirmedReportResponse>> {
+        val response = pptConfirmedReportService.getReport()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 전문행사조 확정 인원 엑셀 다운로드. */
+    @GetMapping("/api/v1/admin/ppt-masters/confirmed-report/export")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun exportConfirmedReport(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ByteArray> {
+        val result = pptConfirmedReportService.exportReport()
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${result.filename}\"")
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(result.bytes)
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/{id}")

@@ -5842,6 +5842,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePPTConfirmedReportResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PPTConfirmedReportResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePPTMasterHistoryListResponse" : {
         "properties" : {
           "data" : {
@@ -6601,6 +6630,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/PromotionScheduleListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePromotionTargetActualReportResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PromotionTargetActualReportResponse"
             }, {
               "type" : "null"
             } ]
@@ -13117,6 +13175,40 @@
         },
         "type" : "object"
       },
+      "PPTConfirmedReportItem" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "fullName" : {
+            "type" : [ "string", "null" ]
+          },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "PPTConfirmedReportResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PPTConfirmedReportItem"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "PPTMasterBulkItem" : {
         "properties" : {
           "accountCode" : {
@@ -15374,6 +15466,152 @@
               "$ref" : "#/components/schemas/PromotionScheduleItem"
             },
             "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionTargetActualChartItem" : {
+        "properties" : {
+          "actualAmount" : {
+            "type" : "number"
+          },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionTargetActualReportGroup" : {
+        "properties" : {
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "rows" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionTargetActualReportRow"
+            },
+            "type" : "array"
+          },
+          "subtotalActualAmount" : {
+            "type" : "number"
+          },
+          "subtotalOtherQuantity" : {
+            "type" : "number"
+          },
+          "subtotalPrimaryQuantity" : {
+            "type" : "number"
+          },
+          "subtotalTargetAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionTargetActualReportResponse" : {
+        "properties" : {
+          "chart" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionTargetActualChartItem"
+            },
+            "type" : "array"
+          },
+          "endDate" : {
+            "type" : "string"
+          },
+          "groups" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionTargetActualReportGroup"
+            },
+            "type" : "array"
+          },
+          "startDate" : {
+            "type" : "string"
+          },
+          "totalActualAmount" : {
+            "type" : "number"
+          },
+          "totalOtherQuantity" : {
+            "type" : "number"
+          },
+          "totalPrimaryQuantity" : {
+            "type" : "number"
+          },
+          "totalTargetAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionTargetActualReportRow" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "actualAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "category1" : {
+            "type" : [ "string", "null" ]
+          },
+          "commuteDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeOrgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "otherProduct" : {
+            "type" : [ "string", "null" ]
+          },
+          "otherSalesAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "otherSalesQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "primaryProductAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "primaryProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "primarySalesQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
+          },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "scheduleDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "standLocation" : {
+            "type" : [ "string", "null" ]
+          },
+          "targetAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "workType2" : {
+            "type" : [ "string", "null" ]
+          },
+          "workType3" : {
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -21979,6 +22217,43 @@
         "tags" : [ "admin-ppt-master-controller" ]
       }
     },
+    "/api/v1/admin/ppt-masters/confirmed-report" : {
+      "get" : {
+        "operationId" : "getConfirmedReport",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePPTConfirmedReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-ppt-master-controller" ]
+      }
+    },
+    "/api/v1/admin/ppt-masters/confirmed-report/export" : {
+      "get" : {
+        "operationId" : "exportConfirmedReport",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-ppt-master-controller" ]
+      }
+    },
     "/api/v1/admin/ppt-masters/excel-template" : {
       "get" : {
         "operationId" : "downloadExcelTemplate",
@@ -22963,6 +23238,77 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePromotionFormMetaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-promotion-controller" ]
+      }
+    },
+    "/api/v1/admin/promotions/target-actual-report" : {
+      "get" : {
+        "operationId" : "getTargetActualReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePromotionTargetActualReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-promotion-controller" ]
+      }
+    },
+    "/api/v1/admin/promotions/target-actual-report/export" : {
+      "get" : {
+        "operationId" : "exportTargetActualReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
                 }
               }
             },

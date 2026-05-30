@@ -8,6 +8,7 @@ import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.promotion.service.AdminPromotionService
+import com.otoki.powersales.promotion.service.AdminPromotionTargetActualReportService
 import com.otoki.powersales.promotion.exception.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -37,6 +38,8 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     @MockkBean private lateinit var adminPromotionService: AdminPromotionService
+
+    @MockkBean private lateinit var targetActualReportService: AdminPromotionTargetActualReportService
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver

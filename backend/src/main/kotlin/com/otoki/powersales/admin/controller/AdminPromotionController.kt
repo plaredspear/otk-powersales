@@ -8,26 +8,35 @@ import com.otoki.powersales.promotion.dto.response.PromotionDetailResponse
 import com.otoki.powersales.promotion.dto.response.PromotionFormMetaResponse
 import com.otoki.powersales.promotion.dto.response.PromotionListResponse
 import com.otoki.powersales.promotion.dto.response.PromotionPosProductResponse
+import com.otoki.powersales.promotion.dto.response.PromotionTargetActualReportResponse
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.promotion.service.AdminPromotionService
+import com.otoki.powersales.promotion.service.AdminPromotionTargetActualReportService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Size
+import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import java.time.LocalDate
 
 @RestController
 @RequestMapping("/api/v1/admin/promotions")
 @Validated
 class AdminPromotionController(
     private val adminPromotionService: AdminPromotionService,
+    private val targetActualReportService: AdminPromotionTargetActualReportService,
 ) {
 
     @GetMapping("/form-meta")
@@ -35,6 +44,37 @@ class AdminPromotionController(
     fun getPromotionFormMeta(): ResponseEntity<ApiResponse<PromotionFormMetaResponse>> {
         val response = adminPromotionService.getPromotionFormMeta()
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 행사사원 목표 대비 실적 보고서 조회 (Spec #845). ScheduleDate 기간(필수) 전사 조회.
+     * 행사명 그룹 + 소계 + 전체 합계 + 도넛 차트 데이터.
+     */
+    @GetMapping("/target-actual-report")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun getTargetActualReport(
+        @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate,
+        @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate,
+    ): ResponseEntity<ApiResponse<PromotionTargetActualReportResponse>> {
+        val response = targetActualReportService.getReport(startDate, endDate)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 행사사원 목표 대비 실적 엑셀 다운로드. */
+    @GetMapping("/target-actual-report/export")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun exportTargetActualReport(
+        @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate,
+        @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate,
+    ): ResponseEntity<ByteArray> {
+        val result = targetActualReportService.exportReport(startDate, endDate)
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
+        return ResponseEntity.ok().headers(headers).body(result.bytes)
     }
 
     @GetMapping

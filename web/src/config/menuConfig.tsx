@@ -162,6 +162,18 @@ export const menuRoute: MenuRoute = {
           entity: 'suggestion',
           operation: 'READ',
         },
+        {
+          path: '/promotion-target-actual-report',
+          name: '행사사원 목표 대비 실적',
+          entity: 'promotion',
+          operation: 'READ',
+        },
+        {
+          path: '/ppt-confirmed-members-report',
+          name: '전문행사조 확정 인원',
+          entity: 'promotion',
+          operation: 'READ',
+        },
       ],
     },
     {

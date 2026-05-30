@@ -26,4 +26,12 @@ interface PromotionEmployeeRepositoryCustom {
     fun sumActualAmountByPromotionId(promotionId: Long): Long
 
     fun findMinScheduleDateByPromotionIdAndEmployeeId(promotionId: Long, employeeId: Long): LocalDate?
+
+    /**
+     * 행사사원 목표 대비 실적 보고서 조회 (Spec #845 — SF Report `new_report_AtQ` 이식).
+     * `promotion_employee` ⋈ promotion ⋈ promotion.account ⋈ promotion.primaryProduct ⋈ employee ⋈ teamMemberSchedule.
+     * 전사 (SF scope=organization). 필터: scheduleDate ∈ [startDate, endDate], soft-delete 제외.
+     * 정렬: 행사명(promotion.promotionNumber = SF Name) 오름차순 + scheduleDate 오름차순 (Summary 그룹 재현).
+     */
+    fun findTargetActualReport(startDate: LocalDate, endDate: LocalDate): List<PromotionEmployee>
 }

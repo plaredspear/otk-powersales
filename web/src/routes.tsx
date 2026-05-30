@@ -55,6 +55,8 @@ const FemaleEmployeeSafetyCheckReportPage = lazy(() => import('@/pages/FemaleEmp
 const FemaleEmployeeSafetyCheckReportRpaPage = lazy(() => import('@/pages/FemaleEmployeeSafetyCheckReportRpaPage'));
 const ClaimPeriodReportPage = lazy(() => import('@/pages/ClaimPeriodReportPage'));
 const LogisticsClaimReportPage = lazy(() => import('@/pages/LogisticsClaimReportPage'));
+const PromotionTargetActualReportPage = lazy(() => import('@/pages/PromotionTargetActualReportPage'));
+const PptConfirmedReportPage = lazy(() => import('@/pages/PptConfirmedReportPage'));
 const PPTMasterPage = lazy(() => import('@/pages/promotion/PPTMasterPage'));
 const PPTHistoryPage = lazy(() => import('@/pages/promotion/PPTHistoryPage'));
 const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
@@ -257,6 +259,13 @@ export const router = createBrowserRouter(
                 { path: '/logistics-claim-report-period', element: <LazyWrapper><LogisticsClaimReportPage period="CUSTOM" /></LazyWrapper> },
                 { path: '/logistics-claim-report-this-month', element: <LazyWrapper><LogisticsClaimReportPage period="THIS_MONTH" /></LazyWrapper> },
                 { path: '/logistics-claim-report-last-month', element: <LazyWrapper><LogisticsClaimReportPage period="LAST_MONTH" /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute entity="promotion" operation="READ" />,
+              children: [
+                { path: '/promotion-target-actual-report', element: <LazyWrapper><PromotionTargetActualReportPage /></LazyWrapper> },
+                { path: '/ppt-confirmed-members-report', element: <LazyWrapper><PptConfirmedReportPage /></LazyWrapper> },
               ],
             },
             {
