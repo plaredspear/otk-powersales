@@ -15,7 +15,9 @@ export type ConvertedHeadcountReportVariant =
   | 'AGENCY_PERMANENT_ONLY' // 3-2 대리점 only 상시
   | 'AGENCY_TEMP_ONLY' // 3-3 대리점 only 임시
   | 'HYPERMARKET_PERMANENT' // 대형마트 상시
-  | 'HYPERMARKET_PERMANENT_WC3'; // 대형마트 상시 (근무유형3 추가)
+  | 'HYPERMARKET_PERMANENT_WC3' // 대형마트 상시 (근무유형3 추가)
+  | 'SEGMENTED_ALL' // 세분화 거래처유형별 (ABC유형 그룹)
+  | 'TEAM2_SPLIT_CHECK'; // 거래처유형별 (상시,임시, 영업지원2팀 분리) 확인용
 
 /** 환산인원 집계 1행 — 구분 × 근무유형1 (× 근무유형3) × 지점 × 연월 × SUM(환산인원). */
 export interface ConvertedHeadcountReportRow {
@@ -40,6 +42,8 @@ export interface ConvertedHeadcountReportResult {
   month: string;
   /** 근무유형3 컬럼 표시 여부 (대리점 3종 + 대형마트 근무유형3 추가). */
   includeWorkingCategory3: boolean;
+  /** 구분 그룹 라벨이 거래처유형(false) 인지 ABC유형(true) 인지 (세분화 variant). */
+  groupByAbcType: boolean;
   groups: ConvertedHeadcountReportGroup[];
   totalHeadcount: number;
 }

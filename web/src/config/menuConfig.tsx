@@ -234,6 +234,24 @@ export const menuRoute: MenuRoute = {
           entity: 'team_member_schedule',
           operation: 'READ',
         },
+        {
+          path: '/converted-headcount-report-segmented',
+          name: '세분화 거래처유형별 환산인원',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/converted-headcount-report-team2-split-check',
+          name: '거래처유형별 환산인원 (상시·임시, 영업지원2팀 분리) 확인용',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/valid-employee-confirmed-report',
+          name: '진열사원 유효사원 (확정)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
       ],
     },
     {

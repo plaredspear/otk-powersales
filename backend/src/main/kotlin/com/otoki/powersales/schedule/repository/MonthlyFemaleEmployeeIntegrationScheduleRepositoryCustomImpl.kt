@@ -23,6 +23,8 @@ class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
         excludeConsignment: Boolean,
         costCenterCode: String?,
         accountTypeFilter: String?,
+        accountTypeNotIn: List<String>,
+        excludeEmpBranchName: String?,
     ): List<MonthlyFemaleEmployeeIntegrationSchedule> {
         val mfeis = monthlyFemaleEmployeeIntegrationSchedule
 
@@ -61,6 +63,19 @@ class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
             } else {
                 where.and(Expressions.FALSE)
             }
+        }
+
+        // 구분(거래처유형) notIn 제외 — 2팀분리 = 대리점·백화점 제외. 매칭 enum 만 제외 (부재 displayName 은 무시).
+        if (accountTypeNotIn.isNotEmpty()) {
+            val excludeTypes = accountTypeNotIn.mapNotNull { AccountType.fromDisplayNameOrNull(it) }
+            if (excludeTypes.isNotEmpty()) {
+                where.and(account.accountType.notIn(excludeTypes))
+            }
+        }
+
+        // 사원지점명(EmpBranchName) notEqual 제외 — 2팀분리 = 영업지원2팀 제외 (SF notEqual: NULL 행도 제외).
+        if (excludeEmpBranchName != null) {
+            where.and(mfeis.empBranchName.ne(excludeEmpBranchName))
         }
 
         return queryFactory

@@ -19,10 +19,11 @@ class AdminConvertedHeadcountReportServiceTest {
     private val repository: MonthlyFemaleEmployeeIntegrationScheduleRepository = mockk()
     private val service = AdminConvertedHeadcountReportService(repository)
 
-    private fun account(type: AccountType, branchName: String?): Account {
+    private fun account(type: AccountType, branchName: String?, abcType: String? = null): Account {
         val acc = Account(id = type.ordinal + 1)
         acc.accountType = type
         acc.branchName = branchName
+        acc.abcType = abcType
         return acc
     }
 
@@ -32,6 +33,7 @@ class AdminConvertedHeadcountReportServiceTest {
         empBranchName: String? = "서울지점",
         workingCategory1: String? = "근무A",
         workingCategory3: String? = null,
+        abcType: String? = null,
         year: String? = "2026",
         month: String? = "5",
         convertedHeadcount: BigDecimal? = BigDecimal("1.0"),
@@ -43,7 +45,7 @@ class AdminConvertedHeadcountReportServiceTest {
             workingCategory3 = workingCategory3,
             empBranchName = empBranchName,
             convertedHeadcount = convertedHeadcount,
-            account = account(accountType, accountBranchName),
+            account = account(accountType, accountBranchName, abcType),
         )
 
     /** repository.findConvertedHeadcountReport(any...) 를 주어진 결과로 stub. */
@@ -57,6 +59,8 @@ class AdminConvertedHeadcountReportServiceTest {
                 excludeConsignment = any(),
                 costCenterCode = any(),
                 accountTypeFilter = any(),
+                accountTypeNotIn = any(),
+                excludeEmpBranchName = any(),
             )
         } returns result
     }
@@ -81,6 +85,8 @@ class AdminConvertedHeadcountReportServiceTest {
                     excludeConsignment = capture(excludeConsignSlot),
                     costCenterCode = captureNullable(costCenterSlot),
                     accountTypeFilter = any(),
+                    accountTypeNotIn = any(),
+                    excludeEmpBranchName = any(),
                 )
             } returns emptyList()
 
@@ -105,6 +111,8 @@ class AdminConvertedHeadcountReportServiceTest {
                     excludeConsignment = capture(excludeConsignSlot),
                     costCenterCode = any(),
                     accountTypeFilter = any(),
+                    accountTypeNotIn = any(),
+                    excludeEmpBranchName = any(),
                 )
             } returns emptyList()
 
@@ -127,6 +135,8 @@ class AdminConvertedHeadcountReportServiceTest {
                     excludeConsignment = any(),
                     costCenterCode = any(),
                     accountTypeFilter = captureNullable(accountTypeSlot),
+                    accountTypeNotIn = any(),
+                    excludeEmpBranchName = any(),
                 )
             } returns emptyList()
 
@@ -149,12 +159,39 @@ class AdminConvertedHeadcountReportServiceTest {
                     excludeConsignment = any(),
                     costCenterCode = any(),
                     accountTypeFilter = captureNullable(accountTypeSlot),
+                    accountTypeNotIn = any(),
+                    excludeEmpBranchName = any(),
                 )
             } returns emptyList()
 
             service.getReport(ConvertedHeadcountReportVariant.HYPERMARKET_PERMANENT, "2026", "5")
 
             assertThat(accountTypeSlot.captured).isEqualTo("대형마트(3대)")
+        }
+
+        @Test
+        @DisplayName("2팀분리 variant 는 대리점·백화점 notIn + 영업지원2팀 EmpBranchName 제외를 전달한다")
+        fun passesTeam2SplitFilters() {
+            val notInSlot = slot<List<String>>()
+            val excludeEmpBranchSlot = slot<String?>()
+            every {
+                repository.findConvertedHeadcountReport(
+                    year = any(),
+                    month = any(),
+                    workingCategory5In = any(),
+                    includeNullWc5 = any(),
+                    excludeConsignment = any(),
+                    costCenterCode = any(),
+                    accountTypeFilter = any(),
+                    accountTypeNotIn = capture(notInSlot),
+                    excludeEmpBranchName = captureNullable(excludeEmpBranchSlot),
+                )
+            } returns emptyList()
+
+            service.getReport(ConvertedHeadcountReportVariant.TEAM2_SPLIT_CHECK, "2026", "5")
+
+            assertThat(notInSlot.captured).containsExactlyInAnyOrder("대리점", "백화점")
+            assertThat(excludeEmpBranchSlot.captured).isEqualTo("영업지원2팀")
         }
     }
 
@@ -256,6 +293,27 @@ class AdminConvertedHeadcountReportServiceTest {
             assertThat(res.groups[0].rows).hasSize(1)
             assertThat(res.groups[0].rows[0].workingCategory3).isNull()
             assertThat(res.groups[0].rows[0].convertedHeadcount).isEqualByComparingTo("3.0")
+        }
+
+        @Test
+        @DisplayName("세분화 variant(groupByAbcType)는 구분 그룹 자리에 거래처 ABC유형을 사용한다")
+        fun groupsByAbcTypeWhenSegmented() {
+            stubReport(
+                listOf(
+                    row(AccountType.SUPER, abcType = "A", convertedHeadcount = BigDecimal("1.0")),
+                    row(AccountType.DISCOUNT_STORE, abcType = "A", convertedHeadcount = BigDecimal("2.0")),
+                    row(AccountType.SUPER, abcType = "B", convertedHeadcount = BigDecimal("3.0")),
+                ),
+            )
+
+            val res = service.getReport(ConvertedHeadcountReportVariant.SEGMENTED_ALL, "2026", "5")
+
+            assertThat(res.groupByAbcType).isTrue()
+            // 구분(거래처유형)이 달라도 같은 ABC유형(A)이면 한 그룹으로 묶임
+            val byGroup = res.groups.associateBy { it.accountType }
+            assertThat(byGroup.keys).containsExactlyInAnyOrder("A", "B")
+            assertThat(byGroup["A"]!!.subtotalHeadcount).isEqualByComparingTo("3.0")
+            assertThat(byGroup["B"]!!.subtotalHeadcount).isEqualByComparingTo("3.0")
         }
     }
 

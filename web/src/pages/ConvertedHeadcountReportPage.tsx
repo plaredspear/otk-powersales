@@ -62,10 +62,11 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
   const data = reportQuery.data;
   const hasResult = data != null && data.groups.length > 0;
   const showWc3 = data?.includeWorkingCategory3 ?? false;
+  const groupLabel = data?.groupByAbcType ? 'ABC유형' : '구분';
 
   const columns: ColumnsType<ConvertedHeadcountReportRow> = useMemo(
     () => [
-      { title: '구분', dataIndex: 'accountType', width: 120, render: (v) => v ?? '-' },
+      { title: groupLabel, dataIndex: 'accountType', width: 120, render: (v) => v ?? '-' },
       { title: '근무유형1', dataIndex: 'workingCategory1', width: 110, render: (v) => v ?? '-' },
       ...(showWc3
         ? [
@@ -87,7 +88,7 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
         render: num,
       },
     ],
-    [showWc3],
+    [showWc3, groupLabel],
   );
 
   return (

@@ -25,6 +25,14 @@ package com.otoki.powersales.schedule.service
  *
  * @param accountTypeFilter  구분(Account.accountType.displayName) equals 필터. null = 전체 유형.
  * @param includeWorkingCategory3  근무유형3 컬럼/그룹 표시 여부 (SF groupingsAcross WorkingCategory3__c 정합).
+ * @param accountTypeNotIn  구분(Account.accountType.displayName) notEqual 제외 필터 (2팀분리 = 대리점·백화점 제외).
+ * @param excludeEmpBranchName  사원지점명(EmpBranchName) notEqual 제외 필터 (2팀분리 = 영업지원2팀 제외).
+ * @param groupByAbcType  그룹 기준을 구분(거래처유형) 대신 거래처 ABC유형으로 사용 (세분화 = FK_$Account.ABCType__c).
+ *
+ * | variant | SF | 구분필터 | 근무유형5 | 빈값포함 | 위탁제외 | 코스트센터 | 지점기준 | 근무유형3 | 특이 |
+ * |---|---|---|---|---|---|---|---|---|---|
+ * | SEGMENTED_ALL       | 세분화   | -            | (전체) | - | -  | - | 여사원소속 | O | ABC유형 그룹 |
+ * | TEAM2_SPLIT_CHECK   | 2팀분리  | ≠대리점·백화점 | 상시,임시 | O | O | - | 여사원소속 | - | EmpBranchName≠영업지원2팀 |
  */
 enum class ConvertedHeadcountReportVariant(
     val reportName: String,
@@ -35,6 +43,9 @@ enum class ConvertedHeadcountReportVariant(
     val useAccountBranch: Boolean,
     val accountTypeFilter: String? = null,
     val includeWorkingCategory3: Boolean = false,
+    val accountTypeNotIn: List<String> = emptyList(),
+    val excludeEmpBranchName: String? = null,
+    val groupByAbcType: Boolean = false,
 ) {
     PERMANENT_TEMP_ALL(
         reportName = "거래처유형별환산인원(상시임시전체)",
@@ -129,5 +140,30 @@ enum class ConvertedHeadcountReportVariant(
         useAccountBranch = false,
         accountTypeFilter = "대형마트(3대)",
         includeWorkingCategory3 = true,
+    ),
+
+    // -- 세분화 거래처유형별 (new_report_HGQ): 필터 없음, 그룹=거래처 ABC유형, 근무유형3 컬럼, 지점=여사원소속 --
+    SEGMENTED_ALL(
+        reportName = "세분화_거래처유형별환산인원",
+        workingCategory5In = emptyList(), // 근무유형5 필터 없음 = 전체
+        includeNullWc5 = false,
+        excludeConsignment = false,
+        costCenterCode = null,
+        useAccountBranch = false,
+        includeWorkingCategory3 = true,
+        groupByAbcType = true,
+    ),
+
+    // -- 거래처유형별 (상시,임시, 영업지원2팀 분리) 확인용 (X2_Mxr) --
+    //    근무유형5=상시,임시(빈값포함) + 대리점·백화점 제외 + 영업지원2팀(EmpBranchName) 제외 + 위탁 제외. 지점=여사원소속
+    TEAM2_SPLIT_CHECK(
+        reportName = "거래처유형별환산인원(상시임시_영업지원2팀분리)확인용",
+        workingCategory5In = listOf("상시", "임시"),
+        includeNullWc5 = true,
+        excludeConsignment = true,
+        costCenterCode = null,
+        useAccountBranch = false,
+        accountTypeNotIn = listOf("대리점", "백화점"),
+        excludeEmpBranchName = "영업지원2팀",
     ),
 }
