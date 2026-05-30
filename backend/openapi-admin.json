@@ -3322,6 +3322,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseConvertedHeadcountReportResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ConvertedHeadcountReportResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseDashboardResponse" : {
         "properties" : {
           "data" : {
@@ -7265,6 +7294,66 @@
           "skippedCount" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ConvertedHeadcountReportGroup" : {
+        "properties" : {
+          "accountType" : {
+            "type" : "string"
+          },
+          "rows" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ConvertedHeadcountReportRow"
+            },
+            "type" : "array"
+          },
+          "subtotalHeadcount" : {
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
+      "ConvertedHeadcountReportResult" : {
+        "properties" : {
+          "groups" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ConvertedHeadcountReportGroup"
+            },
+            "type" : "array"
+          },
+          "month" : {
+            "type" : "string"
+          },
+          "totalHeadcount" : {
+            "type" : "number"
+          },
+          "variant" : {
+            "type" : "string"
+          },
+          "year" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ConvertedHeadcountReportRow" : {
+        "properties" : {
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "convertedHeadcount" : {
+            "type" : "number"
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "yearMonth" : {
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -16115,6 +16204,87 @@
           }
         },
         "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/converted-headcount-report/{variant}" : {
+      "get" : {
+        "operationId" : "getConvertedHeadcountReport",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "variant",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseConvertedHeadcountReportResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/converted-headcount-report/{variant}/export" : {
+      "get" : {
+        "operationId" : "exportConvertedHeadcountReport",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "variant",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
       }
     },
     "/api/v1/admin/female-employees/placement-check" : {

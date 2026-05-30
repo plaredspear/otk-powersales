@@ -1,0 +1,30 @@
+package com.otoki.powersales.schedule.repository
+
+import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
+
+/**
+ * MFEIS Querydsl 확장 — 거래처유형별 환산인원 현황 보고서 조회 (Spec #847).
+ */
+interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
+
+    /**
+     * 거래처유형별 환산인원 현황 보고서 조회 (SF Report 5변형 베이스).
+     *
+     * @param year                연도 (entity year 가 String — 문자열 비교)
+     * @param month               월 (entity month 가 String)
+     * @param workingCategory5In  근무유형5 IN 값집합 (variant 별)
+     * @param includeNullWc5      근무유형5 빈/NULL 포함 여부 (SF multi-value equals 의 선두 빈 값)
+     * @param excludeConsignment  위탁농협(Account.consignmentAcc) 제외 여부 (1-2/1-5)
+     * @param costCenterCode      영업지원2팀 코스트센터 코드 필터 (2-1 = "4889", 그 외 null)
+     *
+     * 전사 스코프 (DataScope 미적용). isDeleted 제외. account fetch join.
+     */
+    fun findConvertedHeadcountReport(
+        year: String,
+        month: String,
+        workingCategory5In: List<String>,
+        includeNullWc5: Boolean,
+        excludeConsignment: Boolean,
+        costCenterCode: String?,
+    ): List<MonthlyFemaleEmployeeIntegrationSchedule>
+}
