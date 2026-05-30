@@ -26,6 +26,8 @@ class NoticeRepositoryCustomImpl(
 
         val content = queryFactory
             .selectFrom(notice)
+            .leftJoin(notice.employee).fetchJoin()
+            .leftJoin(notice.ownerUser).fetchJoin()
             .where(where)
             .orderBy(notice.createdAt.desc())
             .offset(pageable.offset)
@@ -54,6 +56,8 @@ class NoticeRepositoryCustomImpl(
 
         val content = queryFactory
             .selectFrom(notice)
+            .leftJoin(notice.employee).fetchJoin()
+            .leftJoin(notice.ownerUser).fetchJoin()
             .where(where)
             .orderBy(notice.createdAt.desc())
             .offset(pageable.offset)

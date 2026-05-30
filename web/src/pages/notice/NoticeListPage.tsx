@@ -31,6 +31,16 @@ export default function NoticeListPage() {
       render: (_v, _r, index) => (page - 1) * 10 + index + 1,
     },
     {
+      title: '제목',
+      dataIndex: 'title',
+    },
+    {
+      title: '공개범위',
+      dataIndex: 'scope',
+      width: 110,
+      render: (val: string | null) => val ?? '-',
+    },
+    {
       title: '카테고리',
       dataIndex: 'category',
       width: 120,
@@ -40,14 +50,28 @@ export default function NoticeListPage() {
       },
     },
     {
-      title: '제목',
-      dataIndex: 'title',
+      title: '지점',
+      dataIndex: 'branch',
+      width: 200,
+      render: (val: string | null) => val ?? '-',
     },
     {
-      title: '등록일',
+      title: '작성일',
       dataIndex: 'createdAt',
       width: 120,
       render: (val: string) => val?.substring(0, 10),
+    },
+    {
+      title: '부서',
+      dataIndex: 'department',
+      width: 140,
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '작성자명',
+      dataIndex: 'authorName',
+      width: 110,
+      render: (val: string | null) => val ?? '-',
     },
   ];
 

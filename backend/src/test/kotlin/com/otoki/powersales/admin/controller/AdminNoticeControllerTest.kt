@@ -56,7 +56,17 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
         fun getPosts_success() {
             val response = NoticePostListResponse(
                 content = listOf(
-                    NoticePostSummaryResponse(1L, "COMPANY", "회사공지", "테스트 공지", java.time.LocalDateTime.parse("2026-03-04T10:00:00"))
+                    NoticePostSummaryResponse(
+                        id = 1L,
+                        category = "COMPANY",
+                        categoryName = "회사공지",
+                        scope = "영업사원",
+                        title = "테스트 공지",
+                        branch = null,
+                        department = "판매전략실",
+                        authorName = "판매전략실",
+                        createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00")
+                    )
                 ),
                 totalCount = 1,
                 totalPages = 1,
