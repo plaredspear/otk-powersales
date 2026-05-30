@@ -68,7 +68,7 @@ export const menuRoute: MenuRoute = {
             { path: '/promotions/:id/edit', name: '행사마스터 수정', entity: 'promotion', operation: 'EDIT' },
           ],
         },
-        { path: '/display-schedules', name: '진열스케줄마스터', entity: 'promotion', operation: 'EDIT' },
+        { path: '/display-schedules', name: '진열스케줄마스터', entity: 'team_member_schedule', operation: 'READ' },
         { path: '/promotion/ppt-masters', name: '전문행사조' },
         { path: '/promotion/ppt-master-history', name: '전문행사조 이력', entity: 'promotion', operation: 'READ' },
         { path: '/deployment', name: '거래처별 진열사원 배치적합성', entity: 'monthly_sales_history', operation: 'READ' },

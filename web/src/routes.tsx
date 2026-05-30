@@ -214,7 +214,7 @@ export const router = createBrowserRouter(
               ],
             },
             {
-              element: <PermissionRoute entity="promotion" operation="EDIT" />,
+              element: <PermissionRoute entity="team_member_schedule" operation="READ" />,
               children: [
                 { path: '/display-schedules', element: <LazyWrapper><DisplaySchedulePage /></LazyWrapper> },
               ],
