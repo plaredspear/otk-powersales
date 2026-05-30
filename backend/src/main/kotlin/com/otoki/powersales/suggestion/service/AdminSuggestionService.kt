@@ -76,12 +76,15 @@ class AdminSuggestionService(
      * 기간 미지정 시 최근 30일. soft-delete 자동 제외.
      *
      * SF 가시 범위 적용: [SharingRulePolicyEvaluator] 가 `DKRetail__Proposal__c` 의 OWD(Private) +
-     * owner / role hierarchy / sharing rule(OLS 물류클레임 전사 공유) 을 종합한 Predicate 를 산출하여
-     * 검색 필터와 AND 합성한다. 결과:
-     * - 시스템 관리자 / ViewAll / OLS 그룹 → 전사 전체
+     * owner / role hierarchy 를 종합한 Predicate 를 산출하여 검색 필터와 AND 합성한다.
+     * (`DKRetail__Proposal__c` 대상 sharing rule 은 SF 운영에 0건 — 가시 범위는 OWD Private +
+     * Owner + Role Hierarchy + ViewAll 권한만으로 결정.) 결과:
+     * - 시스템 관리자 / ViewAll 권한 보유 (OLS 등) → 전사 전체 (permission matrix 의 viewAll 경로)
      * - 본부장 / 지사장 → role hierarchy 하위 조직 전체
      * - 지점장 / 조장 → 본인 + role hierarchy 하위 (자기 지점) 한정
      * SF OWD=Private + Role Hierarchy 동등.
+     * 주의: SF List View `plant_claim` 의 sharedTo(group=OLS, CEO 역할계층)는 "List View UI 표시 대상"
+     * 일 뿐 레코드 공유가 아니므로 evaluator 에 OLS 그룹 기반 record-share predicate 는 없다(정합).
      */
     fun search(
         scope: DataScope,
