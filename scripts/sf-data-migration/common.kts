@@ -438,6 +438,13 @@ val SUGGESTION_METADATA = EntityMetadata(
         FieldMapping("WERK3_TEXT2__c", "responsible_logistics_center"),
         FieldMapping("ActionStatus__c", "action_status"),
         FieldMapping("DuplicateProposalNum__c", "duplicate_proposal_num"),
+        // Spec #833 sf-align-suggestion-action-fields — SF describe 정합 도입
+        FieldMapping("ActionContent__c", "action_content"),
+        FieldMapping("ActionManager__c", "action_manager"),
+        FieldMapping("ActionNum__c", "action_num", nullable = false),
+        FieldMapping("OwnerId", "owner_sfid"),
+        FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         FieldMapping("IsDeleted", "is_deleted", nullable = false, isString = false),
         FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false)

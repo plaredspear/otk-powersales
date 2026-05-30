@@ -388,6 +388,7 @@ SELECT
     CarNumber__c, ClaimDate__c, ClaimType__c, ClaimTypeMeasures__c,
     LogisticsResponsibility__c, WERK1_TEXT2__c, WERK3_TEXT2__c,
     ActionStatus__c, DuplicateProposalNum__c,
+    ActionContent__c, ActionManager__c, ActionNum__c,
     OwnerId, CreatedById, LastModifiedById,
     IsDeleted, CreatedDate, LastModifiedDate
 FROM DKRetail__Proposal__c
