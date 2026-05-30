@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
@@ -28,9 +30,10 @@ class AdminPromotionEmployeeController(
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getEmployees(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @PathVariable promotionId: Long
     ): ResponseEntity<ApiResponse<List<PromotionEmployeeListResponse>>> {
-        val response = adminPromotionEmployeeService.getEmployees(promotionId)
+        val response = adminPromotionEmployeeService.getEmployees(scope, promotionId)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

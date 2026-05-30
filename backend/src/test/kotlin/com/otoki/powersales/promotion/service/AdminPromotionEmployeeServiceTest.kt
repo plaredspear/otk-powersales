@@ -53,6 +53,12 @@ class AdminPromotionEmployeeServiceTest {
         teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
     )
 
+    // 부모 Promotion 가시 범위 검증 통과용 — 전체 지점 권한 (isAllBranches=true → validateAccess 항상 true).
+    private val allBranchesScope = com.otoki.powersales.admin.dto.DataScope(
+        branchCodes = emptyList(),
+        isAllBranches = true,
+    )
+
     // 원본 mockito 테스트가 @MockitoSettings(LENIENT) 였으므로 strict MockK 환경에서
     // 일부 호출 (employeeRepository.findById 등) 이 silent no-op 으로 통과해 왔다.
     // 본 기본 stub 은 그 호환성을 위한 default — 각 테스트에서 override 가능.
@@ -76,7 +82,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionEmployeeRepository.findWithEmployeeByPromotionId(10L) } returns employees
 
 
-            val result = service.getEmployees(10L)
+            val result = service.getEmployees(allBranchesScope, 10L)
             assertThat(result).hasSize(2)
             assertThat(result[0].employeeName).isEqualTo("김여사")
         }
@@ -85,8 +91,21 @@ class AdminPromotionEmployeeServiceTest {
         @DisplayName("행사 미존재 -> PromotionNotFoundException")
         fun getEmployees_promotionNotFound() {
             every { promotionRepository.findById(999L) } returns Optional.empty()
-            assertThatThrownBy { service.getEmployees(999L) }
+            assertThatThrownBy { service.getEmployees(allBranchesScope, 999L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("가시 범위 밖 행사 -> PromotionForbiddenException (ControlledByParent)")
+        fun getEmployees_outOfScope() {
+            // promotion costCenterCode 가 scope.branchCodes 에 없음 → 부모 가시성 검증 실패
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            val restrictedScope = com.otoki.powersales.admin.dto.DataScope(
+                branchCodes = listOf("ZZZ99"),
+                isAllBranches = false,
+            )
+            assertThatThrownBy { service.getEmployees(restrictedScope, 10L) }
+                .isInstanceOf(PromotionForbiddenException::class.java)
         }
     }
 

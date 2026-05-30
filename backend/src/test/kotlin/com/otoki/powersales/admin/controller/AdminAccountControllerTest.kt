@@ -97,7 +97,7 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
                 totalElements = 1,
                 totalPages = 1
             )
-            every { adminAccountService.getAccounts(any(), any(), any(), any(), any(), any(), any()) } returns response
+            every { adminAccountService.getAccounts(any(), any(), any(), any(), any(), any(), any(), any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/accounts"))
                 .andExpect(status().isOk)
@@ -111,7 +111,7 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 필터 파라미터 전달")
         fun getAccounts_withFilters() {
             val response = AccountListResponse(content = emptyList(), page = 0, size = 10, totalElements = 0, totalPages = 0)
-            every { adminAccountService.getAccounts(any(), eq("GS25"), eq("편의점"), eq("A001"), eq("활성"), eq(0), eq(10)) } returns response
+            every { adminAccountService.getAccounts(any(), eq("GS25"), eq("편의점"), eq("A001"), eq("활성"), eq(0), eq(10), eq(false)) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/accounts")

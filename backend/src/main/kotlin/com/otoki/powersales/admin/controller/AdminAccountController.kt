@@ -62,7 +62,9 @@ class AdminAccountController(
             branchCode = branchCode,
             accountStatusName = accountStatusName,
             page = page,
-            size = size
+            size = size,
+            // SF 메인 거래처 탭 listView(AllAccounts)=Everything — lookupFilter 미적용 (lookup 진입점에만 적용).
+            applyPromotionFilter = false
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }

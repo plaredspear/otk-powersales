@@ -101,6 +101,7 @@ class AdminAccountServiceTest {
                     keyword = "GS25",
                     abcType = null,
                     accountStatusName = null,
+                    applyPromotionFilter = any(),
                     pageable = any(),
                 )
             }
@@ -121,6 +122,7 @@ class AdminAccountServiceTest {
                     keyword = null,
                     abcType = "편의점",
                     accountStatusName = null,
+                    applyPromotionFilter = any(),
                     pageable = any(),
                 )
             }
@@ -141,6 +143,7 @@ class AdminAccountServiceTest {
                     keyword = null,
                     abcType = null,
                     accountStatusName = "활성",
+                    applyPromotionFilter = any(),
                     pageable = any(),
                 )
             }
@@ -158,6 +161,7 @@ class AdminAccountServiceTest {
                     keyword = null,
                     abcType = null,
                     accountStatusName = null,
+                    applyPromotionFilter = any(),
                     pageable = any(),
                 )
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
@@ -181,6 +185,7 @@ class AdminAccountServiceTest {
                     keyword = null,
                     abcType = null,
                     accountStatusName = null,
+                    applyPromotionFilter = any(),
                     pageable = any(),
                 )
             } returns PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 100L)
@@ -206,6 +211,7 @@ class AdminAccountServiceTest {
                     keyword = null,
                     abcType = null,
                     accountStatusName = null,
+                    applyPromotionFilter = any(),
                     pageable = capture(pageableSlot),
                 )
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
@@ -233,6 +239,7 @@ class AdminAccountServiceTest {
                 keyword = any(),
                 abcType = any(),
                 accountStatusName = any(),
+                applyPromotionFilter = any(),
                 pageable = any(),
             )
         } returns PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), accounts.size.toLong())

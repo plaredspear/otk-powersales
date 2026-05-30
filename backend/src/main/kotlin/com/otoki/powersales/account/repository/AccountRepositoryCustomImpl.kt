@@ -18,13 +18,18 @@ class AccountRepositoryCustomImpl(
         keyword: String?,
         abcType: String?,
         accountStatusName: String?,
+        applyPromotionFilter: Boolean,
         pageable: Pageable,
     ): Page<Account> {
         val builder = BooleanBuilder()
 
         builder.and(notDeleted())
         builder.and(policyPredicate)
-        builder.and(promotionLookupFilter())
+        // SF AccId__c.lookupFilter 는 Promotion 거래처 선택 Lookup 에만 존재 — 메인 거래처 탭 listView
+        // (AllAccounts=Everything) 에는 미적용. 따라서 lookup 진입점만 AND 합성.
+        if (applyPromotionFilter) {
+            builder.and(promotionLookupFilter())
+        }
 
         if (!keyword.isNullOrBlank()) {
             val lowerPattern = "%${keyword.lowercase()}%"

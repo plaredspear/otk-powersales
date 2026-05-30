@@ -21,6 +21,10 @@ interface AccountRepositoryCustom {
      * @param keyword 거래처코드 (externalKey) / 거래처명 (name) 부분 일치 (lowercase 매칭)
      * @param abcType ABC 유형 정확 일치
      * @param accountStatusName 상태 정확 일치
+     * @param applyPromotionFilter `DKRetail__Promotion__c.AccId__c.lookupFilter` (accountGroup ∈ {1000,1010}
+     *                        + 폐업/distribution 조건) 적용 여부. SF 에서 이 조건은 Promotion 거래처 선택
+     *                        Lookup 필드에만 존재하고 메인 거래처 탭 listView(AllAccounts=Everything)에는
+     *                        미적용 — 따라서 lookup 진입점은 true, 메인 목록은 false.
      * @param pageable 페이지네이션 + 정렬 (count query 정합 자동 처리)
      */
     fun findAllAccessibleByPolicy(
@@ -28,6 +32,7 @@ interface AccountRepositoryCustom {
         keyword: String?,
         abcType: String?,
         accountStatusName: String?,
+        applyPromotionFilter: Boolean,
         pageable: Pageable,
     ): Page<Account>
 

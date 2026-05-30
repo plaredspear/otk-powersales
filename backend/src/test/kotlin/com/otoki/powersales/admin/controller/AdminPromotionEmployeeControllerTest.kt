@@ -1,6 +1,9 @@
 package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeDetailResponse
@@ -15,6 +18,8 @@ import org.junit.jupiter.api.Test
 import io.mockk.every
 import io.mockk.just
 import io.mockk.Runs
+import org.junit.jupiter.api.BeforeEach
+import org.springframework.core.MethodParameter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -36,6 +41,20 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
     @MockkBean private lateinit var adminPromotionEmployeeService: AdminPromotionEmployeeService
     @MockkBean private lateinit var adminPromotionConfirmService: AdminPromotionConfirmService
 
+    // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
+    @MockkBean
+    private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
+
+    @BeforeEach
+    fun stubArgumentResolver() {
+        every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
+            val parameter = firstArg<MethodParameter>()
+            parameter.hasParameterAnnotation(CurrentDataScope::class.java)
+        }
+        every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns
+            DataScope(branchCodes = emptyList(), isAllBranches = true)
+    }
+
     @Nested
     @DisplayName("GET /api/v1/admin/promotions/{promotionId}/employees - 목록 조회")
     inner class GetEmployees {
@@ -44,7 +63,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 조원 목록 반환")
         fun getEmployees_success() {
             val response = listOf(createListResponse())
-            every { adminPromotionEmployeeService.getEmployees(10L) } returns response
+            every { adminPromotionEmployeeService.getEmployees(any(), eq(10L)) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions/10/employees"))
                 .andExpect(status().isOk)
@@ -58,7 +77,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 행사 미존재")
         fun getEmployees_promotionNotFound() {
-            every { adminPromotionEmployeeService.getEmployees(999L) } throws PromotionNotFoundException()
+            every { adminPromotionEmployeeService.getEmployees(any(), eq(999L)) } throws PromotionNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/promotions/999/employees"))
                 .andExpect(status().isNotFound)

@@ -17410,6 +17410,13 @@
       "get" : {
         "operationId" : "getEmployees",
         "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "in" : "path",
           "name" : "promotionId",
           "required" : true,

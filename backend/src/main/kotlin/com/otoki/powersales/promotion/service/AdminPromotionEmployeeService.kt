@@ -86,13 +86,31 @@ class AdminPromotionEmployeeService(
 
     private data class ResolvedEmployee(val id: Long?, val name: String?, val employeeCode: String?)
 
-    fun getEmployees(promotionId: Long): List<PromotionEmployeeListResponse> {
-        findActivePromotion(promotionId)
+    /**
+     * 행사 진열사원 일람 — SF `DKRetail__PromotionEmployee__c` = ControlledByParent (parent = Promotion).
+     *
+     * 부모 Promotion 의 가시 범위를 상속해야 하므로 [scope] 로 부모 가시성을 검증한다.
+     * 가시 범위 밖 행사면 [PromotionForbiddenException] (403) — promotionId 추측으로 타 지점 행사의
+     * 진열사원을 열람하는 과다노출 방지(ControlledByParent 동등).
+     */
+    fun getEmployees(scope: DataScope, promotionId: Long): List<PromotionEmployeeListResponse> {
+        val promotion = findActivePromotion(promotionId)
+        validateParentVisible(scope, promotion)
 
         val employees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
 
         return employees.map { pe ->
             PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode)
+        }
+    }
+
+    /**
+     * 부모 Promotion 가시 범위 검증 (ControlledByParent). [AdminPromotionService.validateDataScope] 동등 —
+     * `scope.validateAccess(promotion.costCenterCode)` 실패 시 [PromotionForbiddenException].
+     */
+    private fun validateParentVisible(scope: DataScope, promotion: Promotion) {
+        if (!scope.validateAccess(promotion.costCenterCode)) {
+            throw PromotionForbiddenException()
         }
     }
 

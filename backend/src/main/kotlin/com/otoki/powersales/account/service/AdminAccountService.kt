@@ -35,6 +35,10 @@ class AdminAccountService(
      *
      * @param scope 호출자(controller) 에서 산출/주입한 현재 사용자의 DataScope.
      *              service 가 holder/ambient context 에 의존하지 않도록 explicit parameter 로 받는다.
+     * @param applyPromotionFilter `AccId__c.lookupFilter` (accountGroup ∈ {1000,1010} + 폐업/distribution)
+     *              적용 여부. 행사/클레임/제품 거래처 lookup 진입점은 true (SF Lookup 필드 정합),
+     *              메인 거래처 목록(`GET /api/v1/admin/accounts`)은 false (SF AllAccounts listView=Everything,
+     *              추가 필터 없음 — lookupFilter 를 메인 목록에 적용하면 과소노출 GAP).
      */
     fun getAccounts(
         scope: DataScope,
@@ -43,7 +47,8 @@ class AdminAccountService(
         branchCode: String?,
         accountStatusName: String?,
         page: Int,
-        size: Int
+        size: Int,
+        applyPromotionFilter: Boolean = true
     ): AccountListResponse {
         val policyPredicate = policyEvaluator.buildPredicate(
             scope = scope,
@@ -66,6 +71,7 @@ class AdminAccountService(
             keyword = keyword,
             abcType = abcType,
             accountStatusName = accountStatusName,
+            applyPromotionFilter = applyPromotionFilter,
             pageable = pageable,
         )
 
