@@ -3525,6 +3525,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseClaimPeriodReportResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ClaimPeriodReportResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseClientOrderDetailResponse" : {
         "properties" : {
           "data" : {
@@ -3965,6 +3994,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/FemaleEmployeeSafetyCheckReportResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseFemaleEmployeeSafetyCheckRpaResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FemaleEmployeeSafetyCheckRpaResponse"
             }, {
               "type" : "null"
             } ]
@@ -5063,6 +5121,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseLogisticsClaimReportResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LogisticsClaimReportResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseMobilePromotionDetailResponse" : {
         "properties" : {
           "data" : {
@@ -5731,6 +5818,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/OrderRequestListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePPTConfirmedReportResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PPTConfirmedReportResponse"
             }, {
               "type" : "null"
             } ]
@@ -6514,6 +6630,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/PromotionScheduleListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePromotionTargetActualReportResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PromotionTargetActualReportResponse"
             }, {
               "type" : "null"
             } ]
@@ -8884,6 +9029,103 @@
         },
         "type" : "object"
       },
+      "ClaimPeriodReportItem" : {
+        "properties" : {
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "actContent" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimName" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimType1" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimType2" : {
+            "type" : [ "string", "null" ]
+          },
+          "counselNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "defectDescription" : {
+            "type" : [ "string", "null" ]
+          },
+          "detailSnsName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "expirationDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "externalKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "interfaceDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "manufacturingDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "mobilePhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "quantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "reasonType" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "ClaimPeriodReportResponse" : {
+        "properties" : {
+          "endDate" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ClaimPeriodReportItem"
+            },
+            "type" : "array"
+          },
+          "startDate" : {
+            "type" : "string"
+          },
+          "totalQuantity" : {
+            "type" : "number"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ClaimPhotoItem" : {
         "properties" : {
           "originalFileName" : {
@@ -10640,6 +10882,98 @@
         },
         "type" : "object"
       },
+      "FemaleEmployeeSafetyCheckRpaItem" : {
+        "properties" : {
+          "accountBranchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
+          "checkTime" : {
+            "type" : [ "string", "null" ]
+          },
+          "custName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeOrgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment1" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment2" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment3" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment4" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment5" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment6" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment7" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment8" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment9" : {
+            "type" : [ "string", "null" ]
+          },
+          "hrCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "ladyName" : {
+            "type" : "string"
+          },
+          "precaution" : {
+            "type" : [ "string", "null" ]
+          },
+          "precautionChk" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "secondWorkType" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory2" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeSafetyCheckRpaResponse" : {
+        "properties" : {
+          "date" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeeSafetyCheckRpaItem"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "FemaleEmployeeScheduleEventDto" : {
         "properties" : {
           "accountId" : {
@@ -11186,6 +11520,100 @@
           },
           "user" : {
             "$ref" : "#/components/schemas/UserInfo"
+          }
+        },
+        "type" : "object"
+      },
+      "LogisticsClaimReportItem" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionContent" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "carNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "claimType" : {
+            "type" : [ "string", "null" ]
+          },
+          "content" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "custName" : {
+            "type" : [ "string", "null" ]
+          },
+          "duplicateProposalNum" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "jikwee" : {
+            "type" : [ "string", "null" ]
+          },
+          "jobCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "logisticsResponsibility" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCategory" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "responsibleLogisticsCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "LogisticsClaimReportResponse" : {
+        "properties" : {
+          "endDate" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LogisticsClaimReportItem"
+            },
+            "type" : "array"
+          },
+          "period" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -12743,6 +13171,40 @@
           },
           "allNull" : {
             "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "PPTConfirmedReportItem" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "fullName" : {
+            "type" : [ "string", "null" ]
+          },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "PPTConfirmedReportResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PPTConfirmedReportItem"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -15004,6 +15466,152 @@
               "$ref" : "#/components/schemas/PromotionScheduleItem"
             },
             "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionTargetActualChartItem" : {
+        "properties" : {
+          "actualAmount" : {
+            "type" : "number"
+          },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionTargetActualReportGroup" : {
+        "properties" : {
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "rows" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionTargetActualReportRow"
+            },
+            "type" : "array"
+          },
+          "subtotalActualAmount" : {
+            "type" : "number"
+          },
+          "subtotalOtherQuantity" : {
+            "type" : "number"
+          },
+          "subtotalPrimaryQuantity" : {
+            "type" : "number"
+          },
+          "subtotalTargetAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionTargetActualReportResponse" : {
+        "properties" : {
+          "chart" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionTargetActualChartItem"
+            },
+            "type" : "array"
+          },
+          "endDate" : {
+            "type" : "string"
+          },
+          "groups" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionTargetActualReportGroup"
+            },
+            "type" : "array"
+          },
+          "startDate" : {
+            "type" : "string"
+          },
+          "totalActualAmount" : {
+            "type" : "number"
+          },
+          "totalOtherQuantity" : {
+            "type" : "number"
+          },
+          "totalPrimaryQuantity" : {
+            "type" : "number"
+          },
+          "totalTargetAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionTargetActualReportRow" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "actualAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "category1" : {
+            "type" : [ "string", "null" ]
+          },
+          "commuteDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeOrgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "otherProduct" : {
+            "type" : [ "string", "null" ]
+          },
+          "otherSalesAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "otherSalesQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "primaryProductAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "primaryProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "primarySalesQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
+          },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "scheduleDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "standLocation" : {
+            "type" : [ "string", "null" ]
+          },
+          "targetAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "workType2" : {
+            "type" : [ "string", "null" ]
+          },
+          "workType3" : {
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -18834,6 +19442,95 @@
         "tags" : [ "admin-claim-controller" ]
       }
     },
+    "/api/v1/admin/claims/period-report" : {
+      "get" : {
+        "operationId" : "getPeriodReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "default" : "ALL",
+            "enum" : [ "PACKAGING", "ALL" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseClaimPeriodReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-claim-controller" ]
+      }
+    },
+    "/api/v1/admin/claims/period-report/export" : {
+      "get" : {
+        "operationId" : "exportPeriodReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "default" : "ALL",
+            "enum" : [ "PACKAGING", "ALL" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-claim-controller" ]
+      }
+    },
     "/api/v1/admin/claims/{claimId}" : {
       "get" : {
         "operationId" : "getClaimDetail_1",
@@ -20203,6 +20900,59 @@
         "tags" : [ "admin-female-employee-placement-check-controller" ]
       }
     },
+    "/api/v1/admin/female-employees/safety-check-report-rpa" : {
+      "get" : {
+        "operationId" : "getSafetyCheckReportRpa",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "date",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseFemaleEmployeeSafetyCheckRpaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/safety-check-report-rpa/export" : {
+      "get" : {
+        "operationId" : "exportSafetyCheckReportRpa",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "date",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
+      }
+    },
     "/api/v1/admin/female-employees/safety-check-report/export" : {
       "get" : {
         "operationId" : "exportSafetyCheckReport",
@@ -21467,6 +22217,43 @@
         "tags" : [ "admin-ppt-master-controller" ]
       }
     },
+    "/api/v1/admin/ppt-masters/confirmed-report" : {
+      "get" : {
+        "operationId" : "getConfirmedReport",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePPTConfirmedReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-ppt-master-controller" ]
+      }
+    },
+    "/api/v1/admin/ppt-masters/confirmed-report/export" : {
+      "get" : {
+        "operationId" : "exportConfirmedReport",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-ppt-master-controller" ]
+      }
+    },
     "/api/v1/admin/ppt-masters/excel-template" : {
       "get" : {
         "operationId" : "downloadExcelTemplate",
@@ -22451,6 +23238,77 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePromotionFormMetaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-promotion-controller" ]
+      }
+    },
+    "/api/v1/admin/promotions/target-actual-report" : {
+      "get" : {
+        "operationId" : "getTargetActualReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePromotionTargetActualReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-promotion-controller" ]
+      }
+    },
+    "/api/v1/admin/promotions/target-actual-report/export" : {
+      "get" : {
+        "operationId" : "exportTargetActualReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
                 }
               }
             },
@@ -25596,6 +26454,95 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseSuggestionCreateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-suggestion-controller" ]
+      }
+    },
+    "/api/v1/admin/suggestions/logistics-claim-report" : {
+      "get" : {
+        "operationId" : "getLogisticsClaimReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "period",
+          "required" : false,
+          "schema" : {
+            "default" : "THIS_MONTH",
+            "enum" : [ "THIS_MONTH", "LAST_MONTH", "CUSTOM" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLogisticsClaimReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-suggestion-controller" ]
+      }
+    },
+    "/api/v1/admin/suggestions/logistics-claim-report/export" : {
+      "get" : {
+        "operationId" : "exportLogisticsClaimReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "period",
+          "required" : false,
+          "schema" : {
+            "default" : "THIS_MONTH",
+            "enum" : [ "THIS_MONTH", "LAST_MONTH", "CUSTOM" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
                 }
               }
             },

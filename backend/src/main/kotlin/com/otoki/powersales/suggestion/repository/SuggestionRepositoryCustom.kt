@@ -5,6 +5,7 @@ import com.otoki.powersales.suggestion.entity.Suggestion
 import com.querydsl.core.types.Predicate
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import java.time.LocalDate
 
 /**
  * 제안 Repository Custom (Spec #830 P1-B §2.4).
@@ -29,4 +30,16 @@ interface SuggestionRepositoryCustom {
      * SF OWD=Private 동등: 목록에 안 보이는 레코드는 상세도 접근 불가. `false` 면 호출 측에서 404 처리.
      */
     fun existsVisibleById(id: Long, policyPredicate: Predicate): Boolean
+
+    /**
+     * 물류 클레임 보고서 조회 (Spec #844 — SF Report `OLS_dmK`/`new_report_6dy`/`OLS_NDx` 이식).
+     * `suggestion` ⋈ employee ⋈ account ⋈ product. 페이지네이션 없이 전량 추출 (전사 — SF scope=organization).
+     * 필터: category='물류 클레임'(LOGISTICS_CLAIM), claimDate ∈ [startDate, endDate], soft-delete 제외.
+     *       SF WERK1_TX/WERK3_TX 의 'contains 빈값' 은 항상 참(no-op)이라 미구현.
+     * 정렬: claimDate 내림차순.
+     */
+    fun findLogisticsClaimReport(
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): List<Suggestion>
 }

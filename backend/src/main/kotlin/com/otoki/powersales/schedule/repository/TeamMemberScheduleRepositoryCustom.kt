@@ -117,4 +117,14 @@ interface TeamMemberScheduleRepositoryCustom {
         date: LocalDate,
         branchCodes: List<String>,
     ): List<TeamMemberSchedule>
+
+    /**
+     * 판매여사원 일일 안전점검 현황 (RPA용) 조회 (Spec #842 — SF Report `X00/new_report_xdB` 이식).
+     * `findSafetyCheckReport` 와 동일 필터(workingDate/traversalFlag='O'/yesChkCnt IS NOT NULL)지만,
+     * (a) 지점 스코프 없음 (전사 고정 — SF scope=organization), (b) ownerUser fetchJoin (CUST_NAME 컬럼용).
+     * 정렬: workingCategory1 오름차순.
+     */
+    fun findSafetyCheckReportRpa(
+        date: LocalDate,
+    ): List<TeamMemberSchedule>
 }

@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.promotion.dto.response.*
+import com.otoki.powersales.promotion.service.AdminPPTConfirmedReportService
 import com.otoki.powersales.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.exception.PPTMasterDuplicateException
@@ -30,6 +31,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
 
     @Autowired private lateinit var objectMapper: ObjectMapper
     @MockkBean private lateinit var adminPPTMasterService: AdminPPTMasterService
+    @MockkBean private lateinit var pptConfirmedReportService: AdminPPTConfirmedReportService
 
     private fun createResponse(): PPTMasterResponse = PPTMasterResponse(
         id = 1L,

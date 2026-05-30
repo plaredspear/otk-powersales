@@ -84,6 +84,23 @@ class PPTMasterRepositoryCustomImpl(
         return PageableExecutionUtils.getPage(content, pageable) { countQuery.fetchOne() ?: 0L }
     }
 
+    override fun findConfirmedReport(): List<ProfessionalPromotionTeamMaster> {
+        return queryFactory
+            .selectFrom(professionalPromotionTeamMaster)
+            .leftJoin(professionalPromotionTeamMaster.employee, employee).fetchJoin()
+            .leftJoin(professionalPromotionTeamMaster.account, account).fetchJoin()
+            .where(
+                // 확정 인원만 (SF Confirmed__c = 1)
+                professionalPromotionTeamMaster.isConfirmed.isTrue,
+                // soft-delete 제외
+                professionalPromotionTeamMaster.isDeleted.isNull
+                    .or(professionalPromotionTeamMaster.isDeleted.isFalse),
+                // 전사 — SF scope=organization (지점 스코프 없음)
+            )
+            .orderBy(professionalPromotionTeamMaster.branchCode.asc())
+            .fetch()
+    }
+
     override fun findValidMasters(today: LocalDate): List<ProfessionalPromotionTeamMaster> {
         return queryFactory
             .selectFrom(professionalPromotionTeamMaster)

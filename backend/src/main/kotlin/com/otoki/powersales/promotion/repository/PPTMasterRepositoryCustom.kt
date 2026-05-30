@@ -33,6 +33,14 @@ interface PPTMasterRepositoryCustom {
     fun findValidMastersByEmployeeId(employeeId: Long, today: LocalDate): List<ProfessionalPromotionTeamMaster>
 
     fun findSapOutboundTargets(monthFirstDay: LocalDate, monthLastDay: LocalDate): List<ProfessionalPromotionTeamMaster>
+
+    /**
+     * 전문행사조 확정 인원 보고서 조회 (Spec #846 — SF Report `new_report_swJ` 이식).
+     * `professional_promotion_team_master` ⋈ employee ⋈ account. 전사 (SF scope=organization).
+     * 필터: isConfirmed=true (확정), soft-delete 제외.
+     * 정렬: branchCode 오름차순.
+     */
+    fun findConfirmedReport(): List<ProfessionalPromotionTeamMaster>
 }
 
 data class PPTMasterSearchResult(

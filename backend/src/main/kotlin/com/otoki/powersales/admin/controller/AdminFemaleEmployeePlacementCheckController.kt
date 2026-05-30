@@ -7,9 +7,11 @@ import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeePlacementCheckResponse
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeeSafetyCheckReportResponse
+import com.otoki.powersales.schedule.dto.response.FemaleEmployeeSafetyCheckRpaResponse
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeeWorkHistoryResponse
 import com.otoki.powersales.schedule.service.AdminFemaleEmployeePlacementCheckService
 import com.otoki.powersales.schedule.service.AdminFemaleEmployeeSafetyCheckReportService
+import com.otoki.powersales.schedule.service.AdminFemaleEmployeeSafetyCheckRpaService
 import com.otoki.powersales.schedule.service.AdminFemaleEmployeeWorkHistoryService
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -37,6 +39,7 @@ class AdminFemaleEmployeePlacementCheckController(
     private val service: AdminFemaleEmployeePlacementCheckService,
     private val workHistoryService: AdminFemaleEmployeeWorkHistoryService,
     private val safetyCheckReportService: AdminFemaleEmployeeSafetyCheckReportService,
+    private val safetyCheckRpaService: AdminFemaleEmployeeSafetyCheckRpaService,
 ) {
 
     /** 월간 배치 점검 조회 (퇴직자 포함 · 여사원/조장). */
@@ -122,6 +125,32 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam(required = false) date: String?,
     ): ResponseEntity<ByteArray> {
         val result = safetyCheckReportService.exportReport(scope, parseDate(date))
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
+        return ResponseEntity.ok().headers(headers).body(result.bytes)
+    }
+
+    /** 일일 안전점검 현황 (RPA용) 조회 (Spec #842). 전사 고정 — DataScope 미적용. date 미지정 시 어제. */
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/safety-check-report-rpa")
+    fun getSafetyCheckReportRpa(
+        @RequestParam(required = false) date: String?,
+    ): ResponseEntity<ApiResponse<FemaleEmployeeSafetyCheckRpaResponse>> {
+        val response = safetyCheckRpaService.getReport(parseDate(date))
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 일일 안전점검 현황 (RPA용) 엑셀 다운로드. */
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/safety-check-report-rpa/export")
+    fun exportSafetyCheckReportRpa(
+        @RequestParam(required = false) date: String?,
+    ): ResponseEntity<ByteArray> {
+        val result = safetyCheckRpaService.exportReport(parseDate(date))
         val headers = HttpHeaders()
         headers.contentType = MediaType.parseMediaType(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
