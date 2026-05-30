@@ -16,7 +16,7 @@ export interface FetchEmployeesParams {
 /**
  * 여사원 현황 페이지 전용 — role 은 backend 에서 WOMAN 으로 강제되므로 제외.
  */
-export interface FetchWomanEmployeesParams {
+export interface FetchFemaleEmployeesParams {
   status?: string;
   costCenterCode?: string;
   keyword?: string;
@@ -224,8 +224,8 @@ export async function fetchEmployeesForScheduleLookup(
   return res.data.data;
 }
 
-export async function fetchWomanEmployees(params: FetchWomanEmployeesParams): Promise<EmployeeListData> {
-  const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/women-employees', { params });
+export async function fetchFemaleEmployees(params: FetchFemaleEmployeesParams): Promise<EmployeeListData> {
+  const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/female-employees', { params });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '여사원 목록 조회에 실패했습니다');
   }

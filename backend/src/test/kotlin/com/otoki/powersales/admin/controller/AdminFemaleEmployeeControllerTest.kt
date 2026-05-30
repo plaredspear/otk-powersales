@@ -21,10 +21,10 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-@WebMvcTest(AdminWomanEmployeeController::class)
+@WebMvcTest(AdminFemaleEmployeeController::class)
 @AutoConfigureMockMvc(addFilters = false)
-@DisplayName("AdminWomanEmployeeController 테스트")
-class AdminWomanEmployeeControllerTest : AdminControllerTestSupport() {
+@DisplayName("AdminFemaleEmployeeController 테스트")
+class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
 
     @MockkBean
     private lateinit var adminEmployeeService: AdminEmployeeService
@@ -43,8 +43,8 @@ class AdminWomanEmployeeControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("GET /api/v1/admin/women-employees - role 파라미터 없이도 WOMAN 으로 강제 조회")
-    fun getWomanEmployees_forcesWomanRole() {
+    @DisplayName("GET /api/v1/admin/female-employees - role 파라미터 없이도 WOMAN 으로 강제 조회")
+    fun getFemaleEmployees_forcesWomanRole() {
         val response = EmployeeListResponse(
             content = listOf(
                 EmployeeListItem(
@@ -78,7 +78,7 @@ class AdminWomanEmployeeControllerTest : AdminControllerTestSupport() {
             adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(AppAuthority.WOMAN), any(), any())
         } returns response
 
-        mockMvc.perform(get("/api/v1/admin/women-employees"))
+        mockMvc.perform(get("/api/v1/admin/female-employees"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.content[0].role").value("여사원"))
@@ -90,7 +90,7 @@ class AdminWomanEmployeeControllerTest : AdminControllerTestSupport() {
 
     @Test
     @DisplayName("필터 파라미터 (status/costCenterCode/keyword/page/size) 전달")
-    fun getWomanEmployees_withFilters() {
+    fun getFemaleEmployees_withFilters() {
         val response = EmployeeListResponse(
             content = emptyList(),
             page = 0,
@@ -103,7 +103,7 @@ class AdminWomanEmployeeControllerTest : AdminControllerTestSupport() {
         } returns response
 
         mockMvc.perform(
-            get("/api/v1/admin/women-employees")
+            get("/api/v1/admin/female-employees")
                 .param("status", "재직")
                 .param("costCenterCode", "A001")
                 .param("keyword", "김")

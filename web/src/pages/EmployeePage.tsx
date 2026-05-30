@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useWomanEmployees } from '@/hooks/employee/useEmployees';
+import { useFemaleEmployees } from '@/hooks/employee/useEmployees';
 import type { Employee } from '@/api/employee';
 import { usePermission } from '@/hooks/usePermission';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
@@ -44,7 +44,7 @@ export default function EmployeePage() {
   const canResetCredentials = hasSystemPermission('MANAGE_USERS');
   const canWrite = hasEntityPermission('employee', 'EDIT');
 
-  const { data, isLoading, isError, error, refetch } = useWomanEmployees({
+  const { data, isLoading, isError, error, refetch } = useFemaleEmployees({
     status,
     costCenterCode,
     keyword,

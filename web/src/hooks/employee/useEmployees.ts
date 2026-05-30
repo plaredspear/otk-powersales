@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchEmployees,
-  fetchWomanEmployees,
+  fetchFemaleEmployees,
   type FetchEmployeesParams,
-  type FetchWomanEmployeesParams,
+  type FetchFemaleEmployeesParams,
 } from '@/api/employee';
 
 export function useEmployees(params: FetchEmployeesParams) {
@@ -13,9 +13,9 @@ export function useEmployees(params: FetchEmployeesParams) {
   });
 }
 
-export function useWomanEmployees(params: FetchWomanEmployeesParams) {
+export function useFemaleEmployees(params: FetchFemaleEmployeesParams) {
   return useQuery({
-    queryKey: ['admin', 'women-employees', params.status, params.costCenterCode, params.keyword, params.page, params.size],
-    queryFn: () => fetchWomanEmployees(params),
+    queryKey: ['admin', 'female-employees', params.status, params.costCenterCode, params.keyword, params.page, params.size],
+    queryFn: () => fetchFemaleEmployees(params),
   });
 }
