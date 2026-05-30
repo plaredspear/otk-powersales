@@ -15,7 +15,7 @@ final getEducationPostDetailUseCaseProvider =
 /// 게시물 ID를 받아 해당 게시물의 상세 정보를 조회한다.
 /// [postId] 게시물 ID
 final educationPostDetailProvider =
-    FutureProvider.family<EducationPostDetail, int>((ref, postId) async {
+    FutureProvider.family<EducationPostDetail, String>((ref, postId) async {
   final useCase = ref.watch(getEducationPostDetailUseCaseProvider);
   return await useCase(postId);
 });

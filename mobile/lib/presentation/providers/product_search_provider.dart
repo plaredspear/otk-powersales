@@ -1,15 +1,25 @@
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock/mock_product_repository.dart';
+import '../../core/network/dio_provider.dart';
+import '../../data/datasources/product_api_datasource.dart';
+import '../../data/datasources/product_remote_datasource.dart';
+import '../../data/repositories/product_repository_impl.dart';
 import '../../domain/repositories/product_repository.dart';
 import 'product_search_state.dart';
 
 // --- Dependency Providers ---
 
-/// Product Repository Provider
+/// Product 원격 데이터소스 Provider (실 API)
+final productRemoteDataSourceProvider = Provider<ProductRemoteDataSource>((ref) {
+  return ProductApiDataSource(ref.watch(dioProvider));
+});
+
+/// Product Repository Provider (실 API — ProductController)
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
-  return MockProductRepository();
+  return ProductRepositoryImpl(
+    remoteDataSource: ref.watch(productRemoteDataSourceProvider),
+  );
 });
 
 // --- ProductSearchNotifier ---

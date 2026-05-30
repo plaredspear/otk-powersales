@@ -14,10 +14,10 @@ class GetEducationPostDetailUseCase {
   /// [postId]: 게시물 ID
   ///
   /// Returns: 게시물 상세 정보 (본문, 이미지, 첨부파일 포함)
-  Future<EducationPostDetail> call(int postId) async {
+  Future<EducationPostDetail> call(String postId) async {
     // 게시물 ID 유효성 검증
-    if (postId <= 0) {
-      throw ArgumentError('Post ID must be greater than 0');
+    if (postId.isEmpty) {
+      throw ArgumentError('Post ID must not be empty');
     }
 
     return await _repository.getPostDetail(postId);

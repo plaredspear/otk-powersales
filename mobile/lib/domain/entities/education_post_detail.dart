@@ -5,7 +5,7 @@ import 'education_category.dart';
 /// 교육 상세 화면에 표시되는 게시물의 전체 정보.
 /// 본문 내용, 이미지 목록, 첨부파일 목록을 포함한다.
 class EducationPostDetail {
-  final int id;
+  final String id;
   final EducationCategory category;
   final String categoryName;
   final String title;
@@ -32,7 +32,7 @@ class EducationPostDetail {
   bool get hasAttachments => attachments.isNotEmpty;
 
   EducationPostDetail copyWith({
-    int? id,
+    String? id,
     EducationCategory? category,
     String? categoryName,
     String? title,
@@ -68,7 +68,7 @@ class EducationPostDetail {
 
   factory EducationPostDetail.fromJson(Map<String, dynamic> json) {
     return EducationPostDetail(
-      id: json['id'] as int,
+      id: json['id'] as String,
       category: EducationCategory.fromCode(json['category'] as String),
       categoryName: json['categoryName'] as String,
       title: json['title'] as String,
@@ -183,7 +183,7 @@ class EducationImage {
 ///
 /// 교육 게시물에 첨부된 파일 정보.
 class EducationAttachment {
-  final int id;
+  final String id;
   final String fileName;
   final String fileUrl;
   final int fileSize;
@@ -209,7 +209,7 @@ class EducationAttachment {
   }
 
   EducationAttachment copyWith({
-    int? id,
+    String? id,
     String? fileName,
     String? fileUrl,
     int? fileSize,
@@ -233,10 +233,10 @@ class EducationAttachment {
 
   factory EducationAttachment.fromJson(Map<String, dynamic> json) {
     return EducationAttachment(
-      id: json['id'] as int,
+      id: json['id'] as String,
       fileName: json['fileName'] as String,
       fileUrl: json['fileUrl'] as String,
-      fileSize: json['fileSize'] as int,
+      fileSize: (json['fileSize'] as num).toInt(),
     );
   }
 

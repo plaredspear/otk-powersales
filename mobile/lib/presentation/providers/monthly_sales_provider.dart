@@ -1,15 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock/monthly_sales_mock_repository.dart';
+import '../../core/network/dio_provider.dart';
+import '../../data/datasources/monthly_sales_api_datasource.dart';
+import '../../data/datasources/monthly_sales_remote_datasource.dart';
+import '../../data/repositories/monthly_sales_repository_impl.dart';
 import '../../domain/repositories/monthly_sales_repository.dart';
 import '../../domain/usecases/get_monthly_sales.dart';
 import 'monthly_sales_state.dart';
 
 // --- Dependency Providers ---
 
-/// MonthlySales Repository Provider (Mock)
+/// MonthlySales 원격 데이터소스 Provider (실 API)
+final monthlySalesRemoteDataSourceProvider =
+    Provider<MonthlySalesRemoteDataSource>((ref) {
+  return MonthlySalesApiDataSource(ref.watch(dioProvider));
+});
+
+/// MonthlySales Repository Provider (실 API — MonthlySalesController)
 final monthlySalesRepositoryProvider = Provider<MonthlySalesRepository>((ref) {
-  return MonthlySalesMockRepository();
+  return MonthlySalesRepositoryImpl(
+    remoteDataSource: ref.watch(monthlySalesRemoteDataSourceProvider),
+  );
 });
 
 /// GetMonthlySales UseCase Provider
