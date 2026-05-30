@@ -204,6 +204,36 @@ export const menuRoute: MenuRoute = {
           entity: 'team_member_schedule',
           operation: 'READ',
         },
+        {
+          path: '/converted-headcount-report-agency-permanent-temp-all',
+          name: '대리점 환산인원 (상시·임시 전체)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/converted-headcount-report-agency-permanent-only',
+          name: '대리점 환산인원 (only 상시)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/converted-headcount-report-agency-temp-only',
+          name: '대리점 환산인원 (only 임시)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/converted-headcount-report-hypermarket-permanent',
+          name: '대형마트 환산인원 (상시)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/converted-headcount-report-hypermarket-permanent-wc3',
+          name: '대형마트 환산인원 (상시, 근무유형3 추가)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
       ],
     },
     {

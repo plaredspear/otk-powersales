@@ -9471,6 +9471,9 @@
             },
             "type" : "array"
           },
+          "includeWorkingCategory3" : {
+            "type" : "boolean"
+          },
           "month" : {
             "type" : "string"
           },
@@ -9498,6 +9501,9 @@
             "type" : "number"
           },
           "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
             "type" : [ "string", "null" ]
           },
           "yearMonth" : {

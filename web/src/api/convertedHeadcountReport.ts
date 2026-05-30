@@ -2,7 +2,7 @@ import client from './client';
 import type { ApiResponse } from './types';
 
 /**
- * 거래처유형별 환산인원 현황 보고서 variant — SF Report 5변형 (Spec #847).
+ * 환산인원 현황 보고서 variant — SF Report 변형 (Spec #847 — 거래처유형 5종 + 대리점/대형마트 5종).
  * 백엔드 ConvertedHeadcountReportVariant enum 값과 1:1.
  */
 export type ConvertedHeadcountReportVariant =
@@ -10,12 +10,18 @@ export type ConvertedHeadcountReportVariant =
   | 'PERMANENT_ONLY_EXCL_CONSIGN' // 1-2 상시 (위탁농협 제외)
   | 'TEMP_ALL' // 1-4 임시 전체
   | 'TEMP_ONLY_EXCL_CONSIGN' // 1-5 임시 전체 (위탁농협 제외)
-  | 'TEAM2_PERMANENT_TEMP_ALL'; // (2팀)2-1 상시,임시 전체
+  | 'TEAM2_PERMANENT_TEMP_ALL' // (2팀)2-1 상시,임시 전체
+  | 'AGENCY_PERMANENT_TEMP_ALL' // 3-1 대리점 상시,임시 전체
+  | 'AGENCY_PERMANENT_ONLY' // 3-2 대리점 only 상시
+  | 'AGENCY_TEMP_ONLY' // 3-3 대리점 only 임시
+  | 'HYPERMARKET_PERMANENT' // 대형마트 상시
+  | 'HYPERMARKET_PERMANENT_WC3'; // 대형마트 상시 (근무유형3 추가)
 
-/** 환산인원 집계 1행 — 구분 × 근무유형1 × 지점 × 연월 × SUM(환산인원). */
+/** 환산인원 집계 1행 — 구분 × 근무유형1 (× 근무유형3) × 지점 × 연월 × SUM(환산인원). */
 export interface ConvertedHeadcountReportRow {
   accountType: string | null;
   workingCategory1: string | null;
+  workingCategory3: string | null;
   branchName: string | null;
   yearMonth: string | null;
   convertedHeadcount: number;
@@ -32,6 +38,8 @@ export interface ConvertedHeadcountReportResult {
   variant: string;
   year: string;
   month: string;
+  /** 근무유형3 컬럼 표시 여부 (대리점 3종 + 대형마트 근무유형3 추가). */
+  includeWorkingCategory3: boolean;
   groups: ConvertedHeadcountReportGroup[];
   totalHeadcount: number;
 }

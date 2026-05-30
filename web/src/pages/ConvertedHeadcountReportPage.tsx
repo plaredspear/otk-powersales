@@ -59,10 +59,24 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
     }
   };
 
+  const data = reportQuery.data;
+  const hasResult = data != null && data.groups.length > 0;
+  const showWc3 = data?.includeWorkingCategory3 ?? false;
+
   const columns: ColumnsType<ConvertedHeadcountReportRow> = useMemo(
     () => [
       { title: '구분', dataIndex: 'accountType', width: 120, render: (v) => v ?? '-' },
       { title: '근무유형1', dataIndex: 'workingCategory1', width: 110, render: (v) => v ?? '-' },
+      ...(showWc3
+        ? [
+            {
+              title: '근무유형3',
+              dataIndex: 'workingCategory3',
+              width: 110,
+              render: (v: string | null) => v ?? '-',
+            },
+          ]
+        : []),
       { title: '지점', dataIndex: 'branchName', width: 130, render: (v) => v ?? '-' },
       { title: '연월', dataIndex: 'yearMonth', width: 100, render: (v) => v ?? '-' },
       {
@@ -73,11 +87,8 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
         render: num,
       },
     ],
-    [],
+    [showWc3],
   );
-
-  const data = reportQuery.data;
-  const hasResult = data != null && data.groups.length > 0;
 
   return (
     <div style={{ padding: 16 }}>
@@ -127,7 +138,7 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
               </Text>
               <Table
                 rowKey={(r, idx) =>
-                  `${r.workingCategory1 ?? ''}-${r.branchName ?? ''}-${r.yearMonth ?? ''}-${idx}`
+                  `${r.workingCategory1 ?? ''}-${r.workingCategory3 ?? ''}-${r.branchName ?? ''}-${r.yearMonth ?? ''}-${idx}`
                 }
                 size="small"
                 columns={columns}

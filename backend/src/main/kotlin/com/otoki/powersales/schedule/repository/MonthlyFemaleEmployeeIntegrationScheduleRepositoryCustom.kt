@@ -16,6 +16,7 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
      * @param includeNullWc5      근무유형5 빈/NULL 포함 여부 (SF multi-value equals 의 선두 빈 값)
      * @param excludeConsignment  위탁농협(Account.consignmentAcc) 제외 여부 (1-2/1-5)
      * @param costCenterCode      영업지원2팀 코스트센터 코드 필터 (2-1 = "4889", 그 외 null)
+     * @param accountTypeFilter   구분(Account.accountType) equals 필터 displayName (대리점 3종 = "대리점" 등). null = 전체
      *
      * 전사 스코프 (DataScope 미적용). isDeleted 제외. account fetch join.
      */
@@ -26,5 +27,6 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
         includeNullWc5: Boolean,
         excludeConsignment: Boolean,
         costCenterCode: String?,
+        accountTypeFilter: String?,
     ): List<MonthlyFemaleEmployeeIntegrationSchedule>
 }

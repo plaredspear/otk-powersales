@@ -250,6 +250,11 @@ export const router = createBrowserRouter(
                 { path: '/converted-headcount-report-temp-all', element: <LazyWrapper><ConvertedHeadcountReportPage variant="TEMP_ALL" title="거래처유형별 환산인원 (임시 전체)" /></LazyWrapper> },
                 { path: '/converted-headcount-report-temp-excl-consign', element: <LazyWrapper><ConvertedHeadcountReportPage variant="TEMP_ONLY_EXCL_CONSIGN" title="거래처유형별 환산인원 (임시 전체, 위탁농협 제외)" /></LazyWrapper> },
                 { path: '/converted-headcount-report-team2-permanent-temp-all', element: <LazyWrapper><ConvertedHeadcountReportPage variant="TEAM2_PERMANENT_TEMP_ALL" title="(2팀) 거래처유형별 환산인원 (상시·임시 전체)" /></LazyWrapper> },
+                { path: '/converted-headcount-report-agency-permanent-temp-all', element: <LazyWrapper><ConvertedHeadcountReportPage variant="AGENCY_PERMANENT_TEMP_ALL" title="대리점 환산인원 (상시·임시 전체)" /></LazyWrapper> },
+                { path: '/converted-headcount-report-agency-permanent-only', element: <LazyWrapper><ConvertedHeadcountReportPage variant="AGENCY_PERMANENT_ONLY" title="대리점 환산인원 (only 상시)" /></LazyWrapper> },
+                { path: '/converted-headcount-report-agency-temp-only', element: <LazyWrapper><ConvertedHeadcountReportPage variant="AGENCY_TEMP_ONLY" title="대리점 환산인원 (only 임시)" /></LazyWrapper> },
+                { path: '/converted-headcount-report-hypermarket-permanent', element: <LazyWrapper><ConvertedHeadcountReportPage variant="HYPERMARKET_PERMANENT" title="대형마트 환산인원 (상시)" /></LazyWrapper> },
+                { path: '/converted-headcount-report-hypermarket-permanent-wc3', element: <LazyWrapper><ConvertedHeadcountReportPage variant="HYPERMARKET_PERMANENT_WC3" title="대형마트 환산인원 (상시, 근무유형3 추가)" /></LazyWrapper> },
               ],
             },
             {
