@@ -15,6 +15,7 @@ object UploadFileParentTypes {
     const val CLAIM: String = "DKRetail__Claim__c"
     const val NOTICE: String = "DKRetail__Notice__c"
     const val SUGGESTION: String = "DKRetail__Proposal__c"
+    const val SITE_ACTIVITY: String = "DKRetail__SiteAcitivity__c"
 }
 
 /**
@@ -41,4 +42,5 @@ internal val UPLOAD_FILE_POLYMORPHIC_PARENTS: Map<String, PolymorphicParentSpec>
     UploadFileParentTypes.CLAIM to PolymorphicParentSpec("claim", "claim_id"),
     UploadFileParentTypes.NOTICE to PolymorphicParentSpec("notice", "notice_id"),
     UploadFileParentTypes.SUGGESTION to PolymorphicParentSpec("suggestion", "suggestion_id"),
+    UploadFileParentTypes.SITE_ACTIVITY to PolymorphicParentSpec("site_activity", "site_activity_id"),
 )

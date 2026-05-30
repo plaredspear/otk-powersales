@@ -103,6 +103,17 @@ class FileStorageService(
 		}
 	}
 
+	fun uploadSiteActivityPhoto(file: MultipartFile, siteActivityId: Long): String {
+		validateNotEmpty(file)
+		val result = storageService.upload(
+			domain = "site-activity",
+			originalName = file.originalFilename ?: "unknown",
+			bytes = file.bytes,
+			contentType = file.contentType ?: throw InvalidFileException("파일 타입을 확인할 수 없습니다")
+		)
+		return result.key
+	}
+
 	private fun validateNotEmpty(file: MultipartFile) {
 		if (file.isEmpty) throw InvalidFileException("빈 파일은 업로드할 수 없습니다")
 		if (file.originalFilename.isNullOrBlank()) throw InvalidFileException("파일명이 올바르지 않습니다")

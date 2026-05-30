@@ -4250,6 +4250,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseInspectionDetailResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/InspectionDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseInspectionListItem" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/InspectionListItem"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseInventorySearchResponse" : {
         "properties" : {
           "data" : {
@@ -4700,6 +4758,62 @@
         },
         "type" : "object"
       },
+      "ApiResponseListInspectionFieldTypeResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InspectionFieldTypeResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListInspectionListItem" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InspectionListItem"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListLeaderAccountListResponse" : {
         "properties" : {
           "data" : {
@@ -5041,6 +5155,34 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/SuggestionAttachment"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListThemeResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ThemeResponse"
             },
             "type" : [ "array", "null" ]
           },
@@ -11374,6 +11516,181 @@
             "type" : "array"
           }
         },
+        "type" : "object"
+      },
+      "InspectionDetailResponse" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "competitorActivity" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductPrice" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorSalesQuantity" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorTasting" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "fieldType" : {
+            "type" : "string"
+          },
+          "fieldTypeCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "inspectionDate" : {
+            "type" : "string"
+          },
+          "photos" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InspectionPhotoResponse"
+            },
+            "type" : "array"
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "themeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "themeName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "InspectionFieldTypeResponse" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "InspectionListItem" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "fieldType" : {
+            "type" : "string"
+          },
+          "fieldTypeCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "inspectionDate" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "InspectionPhotoResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "url" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "InspectionRegisterRequest" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "category" : {
+            "enum" : [ "OWN", "COMPETITOR" ],
+            "type" : [ "string", "null" ]
+          },
+          "competitorActivity" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductPrice" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorSalesQuantity" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorTasting" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "fieldTypeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "inspectionDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "themeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "accountId", "category", "fieldTypeCode", "inspectionDate", "themeId" ],
         "type" : "object"
       },
       "InventorySearchRequest" : {
@@ -18173,6 +18490,24 @@
         "required" : [ "workingDate", "workingType" ],
         "type" : "object"
       },
+      "ThemeResponse" : {
+        "properties" : {
+          "endDate" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "TokenInfo" : {
         "properties" : {
           "accessToken" : {
@@ -20264,7 +20599,7 @@
         "tags" : [ "admin-employee-controller" ]
       },
       "post" : {
-        "operationId" : "register_1",
+        "operationId" : "register_2",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -22663,7 +22998,7 @@
     },
     "/api/v1/admin/product-expiration" : {
       "get" : {
-        "operationId" : "getList",
+        "operationId" : "getList_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "fromDate",
@@ -24090,7 +24425,7 @@
     },
     "/api/v1/admin/sales/monthly/detail/{customerId}" : {
       "get" : {
-        "operationId" : "getDetail_3",
+        "operationId" : "getDetail_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -24140,7 +24475,7 @@
     },
     "/api/v1/admin/sales/monthly/list" : {
       "get" : {
-        "operationId" : "getList_1",
+        "operationId" : "getList_2",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -25908,7 +26243,7 @@
     },
     "/api/v1/admin/schedules/sales-comparison/detail" : {
       "get" : {
-        "operationId" : "getDetail_2",
+        "operationId" : "getDetail_3",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -27524,7 +27859,7 @@
     },
     "/api/v1/mobile/attendance" : {
       "post" : {
-        "operationId" : "register",
+        "operationId" : "register_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -28132,6 +28467,158 @@
           }
         },
         "tags" : [ "home-controller" ]
+      }
+    },
+    "/api/v1/mobile/inspections" : {
+      "get" : {
+        "operationId" : "getList",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "accountId",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "OWN", "COMPETITOR" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "fromDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "toDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListInspectionListItem"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "inspection-controller" ]
+      },
+      "post" : {
+        "operationId" : "register",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "photos" : {
+                    "items" : {
+                      "format" : "binary",
+                      "type" : "string"
+                    },
+                    "type" : "array"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/InspectionRegisterRequest"
+                  }
+                },
+                "required" : [ "request" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseInspectionListItem"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "inspection-controller" ]
+      }
+    },
+    "/api/v1/mobile/inspections/field-types" : {
+      "get" : {
+        "operationId" : "getFieldTypes",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListInspectionFieldTypeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "inspection-controller" ]
+      }
+    },
+    "/api/v1/mobile/inspections/themes" : {
+      "get" : {
+        "operationId" : "getThemes",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListThemeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "inspection-controller" ]
+      }
+    },
+    "/api/v1/mobile/inspections/{inspectionId}" : {
+      "get" : {
+        "operationId" : "getDetail_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "inspectionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseInspectionDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "inspection-controller" ]
       }
     },
     "/api/v1/mobile/leader/accounts" : {
