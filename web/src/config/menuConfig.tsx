@@ -238,7 +238,7 @@ export const menuRoute: MenuRoute = {
       ],
     },
     {
-      name: '운영 도구',
+      name: '개발자 도구',
       icon: <ToolOutlined />,
       children: [
         { path: '/admin/tools/naver-geocode', name: 'Naver Geocode 변환 테스트', systemPermission: 'MODIFY_ALL_DATA' },

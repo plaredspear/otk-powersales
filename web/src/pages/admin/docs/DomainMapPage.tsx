@@ -52,18 +52,18 @@ const DOMAINS: DomainRow[] = [
   { key: 'employee', pkg: 'employee', name: '여사원 정보', responsibility: '여사원 프로필·인사 정보 조회/관리', entities: 'Employee · EmployeeInfo · Group', webMenu: '인사/근무 > 여사원 현황 / 기준정보 > 사원', mobileArea: '—', kind: 'admin' },
   { key: 'account', pkg: 'account', name: '거래처 관리', responsibility: '거래처(고객사) 마스터 CRUD 및 분류, Naver 지오코딩', entities: 'Account · AccountCategoryMaster', webMenu: '기준정보 > 거래처', mobileArea: '(거래처 조회는 일부 영업 화면에서 사용)', kind: 'admin' },
   { key: 'organization', pkg: 'organization', name: '조직 마스터', responsibility: '조직 구조, 비용 센터 매핑 (Redis 24h 캐시)', entities: 'Organization', webMenu: '기준정보 > 조직마스터', mobileArea: '—', kind: 'admin' },
-  { key: 'admin', pkg: 'admin', name: '관리자 기능 모음', responsibility: '권한·사용자·역할·운영도구 등 백오피스 전반', entities: '(하위 도메인 연계)', webMenu: '시스템 / 운영 도구 메뉴 전체', mobileArea: '—', kind: 'admin' },
+  { key: 'admin', pkg: 'admin', name: '관리자 기능 모음', responsibility: '권한·사용자·역할·운영도구 등 백오피스 전반', entities: '(하위 도메인 연계)', webMenu: '시스템 / 개발자 도구 메뉴 전체', mobileArea: '—', kind: 'admin' },
 
   // ── 인증 / 인프라 / 외부 연동 ──
   { key: 'auth', pkg: 'auth', name: '인증/권한', responsibility: '로그인, JWT 발급, SF Profile/PermissionSet 권한 산출', entities: 'Profile · AppAuthority', webMenu: '시스템 > 사용자/프로파일 관리', mobileArea: '(로그인)', kind: 'infra' },
   { key: 'user', pkg: 'user', name: '사용자', responsibility: 'User 엔티티 관리, 프로비저닝 이벤트 발행', entities: 'User', webMenu: '시스템 > 사용자 관리', mobileArea: '—', kind: 'infra' },
   { key: 'agreement', pkg: 'agreement', name: '약관/동의', responsibility: '모바일 앱 약관 순환(cycle)·버전 관리', entities: 'AgreementWord · AgreementHistory', webMenu: '모바일앱 > 동의 약관 등록', mobileArea: '(약관 동의)', kind: 'infra' },
-  { key: 'sap', pkg: 'sap', name: 'SAP 연동', responsibility: 'SAP OAuth + Inbound(마스터 수신) / Outbound(Outbox 전송)', entities: 'SapOutbox', webMenu: '운영 도구 > SAP Inbound/Outbound', mobileArea: '—', kind: 'infra' },
+  { key: 'sap', pkg: 'sap', name: 'SAP 연동', responsibility: 'SAP OAuth + Inbound(마스터 수신) / Outbound(Outbox 전송)', entities: 'SapOutbox', webMenu: '개발자 도구 > SAP Inbound/Outbound', mobileArea: '—', kind: 'infra' },
   { key: 'orora', pkg: 'orora', name: 'Orora 연동', responsibility: '영업시스템(Orora) 매출 데이터 조회·적재', entities: 'OroraDailySalesHistory · OroraMonthlySalesHistory', webMenu: '—', mobileArea: '—', kind: 'infra' },
-  { key: 'sf', pkg: 'sf', name: 'Salesforce 연동', responsibility: 'SF OAuth, 권한/데이터 인바운드 동기, 헬스체크', entities: '(연동 전용)', webMenu: '운영 도구 > SF Migration', mobileArea: '—', kind: 'infra' },
-  { key: 'sfmigration', pkg: 'sfmigration', name: 'SF 마이그레이션', responsibility: 'SF 데이터 복제(Stage 1) → FK 정합(Stage 2)', entities: '(임시 단계 도구)', webMenu: '운영 도구 > SF Migration', mobileArea: '—', kind: 'infra' },
+  { key: 'sf', pkg: 'sf', name: 'Salesforce 연동', responsibility: 'SF OAuth, 권한/데이터 인바운드 동기, 헬스체크', entities: '(연동 전용)', webMenu: '개발자 도구 > SF Migration', mobileArea: '—', kind: 'infra' },
+  { key: 'sfmigration', pkg: 'sfmigration', name: 'SF 마이그레이션', responsibility: 'SF 데이터 복제(Stage 1) → FK 정합(Stage 2)', entities: '(임시 단계 도구)', webMenu: '개발자 도구 > SF Migration', mobileArea: '—', kind: 'infra' },
   { key: 'draft', pkg: 'draft', name: '임시 데이터', responsibility: '레거시 마이그레이션용 임시 적재(미지급 claim/onsite)', entities: 'TmpClaim · TmpOnsite', webMenu: '—', mobileArea: '—', kind: 'infra' },
-  { key: 'batch', pkg: 'batch', name: '배치', responsibility: 'SAP 전송·매출 집계·약관 순환·지오코딩 등 정기 작업 진입점 (ShedLock)', entities: '(서비스 위임)', webMenu: '운영 도구 > 스케줄 잡 실행 이력', mobileArea: '—', kind: 'infra' },
+  { key: 'batch', pkg: 'batch', name: '배치', responsibility: 'SAP 전송·매출 집계·약관 순환·지오코딩 등 정기 작업 진입점 (ShedLock)', entities: '(서비스 위임)', webMenu: '개발자 도구 > 스케줄 잡 실행 이력', mobileArea: '—', kind: 'infra' },
   { key: 'common', pkg: 'common', name: '공통 인프라', responsibility: '스토리지(S3/로컬), 보안, Naver, 공통 엔티티 기저', entities: 'AuditedEntity 등', webMenu: '(전반에 사용)', mobileArea: '(전반에 사용)', kind: 'infra' },
 ];
 

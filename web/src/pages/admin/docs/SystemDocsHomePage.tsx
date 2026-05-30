@@ -99,7 +99,7 @@ const SECTIONS: DocSection[] = [
     ],
   },
   {
-    title: '운영 / 연동',
+    title: '개발자 도구 / 연동',
     cards: [
       {
         key: 'jobs',
