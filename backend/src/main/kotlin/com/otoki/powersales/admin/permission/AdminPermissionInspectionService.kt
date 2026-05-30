@@ -238,7 +238,10 @@ class AdminPermissionInspectionService(
             profile.id to permissions
         }
 
-        val entitySnapshot = entitySfNameRegistry.snapshot().keys.sorted()
+        // 권한 자원 카탈로그 (allResources) 기준 — @SFObject 미부착 신규 entity + @PermissionResource 가상 자원까지
+        // 포함. 권한 가드(@RequiresSfPermission) / 평탄화(SfPermissionResolver) 와 동일 카탈로그라야 매트릭스가
+        // 실제 권한 부여/검사 대상과 일치. snapshot() (= SF 매핑 entity 만) 사용 시 SF 비대응 자원이 매트릭스에서 누락.
+        val entitySnapshot = entitySfNameRegistry.allResources().sorted()
         val rows = entitySnapshot.map { entityTableName ->
             val byProfile = profiles.map { profile ->
                 val perms = profileToPermissions[profile.id].orEmpty()
