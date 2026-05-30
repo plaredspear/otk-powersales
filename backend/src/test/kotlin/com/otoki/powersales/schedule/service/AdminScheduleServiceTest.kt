@@ -83,6 +83,9 @@ class AdminScheduleServiceTest {
 
     private val branchCodeExpander: BranchCodeExpander = mockk(relaxUnitFun = true)
 
+    private val policyEvaluator: com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator =
+        mockk(relaxed = true)
+
     private val adminScheduleService = AdminScheduleService(
         employeeRepository,
         accountRepository,
@@ -99,6 +102,7 @@ class AdminScheduleServiceTest {
         redisTemplate,
         objectMapper,
         branchCodeExpander,
+        policyEvaluator,
     )
 
     /** SF UplExcelBtnSchduleMasterController 정합 — 기본 scope (`["CC001"]`) + BranchCodeExpander pass-through. */
@@ -114,6 +118,8 @@ class AdminScheduleServiceTest {
         // BranchCodeExpander default — pass-through (BranchMapping seed 없는 환경)
         every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }
         every { organizationRepository.findAllLeafBranchCodes() } returns emptyList()
+        // SF 가시 범위 — 단건 검증(requireScheduleScope/export/batchDelete) 기본 통과. forbidden 케이스는 개별 override.
+        every { scheduleRepository.existsVisibleById(any(), any()) } returns true
     }
 
     @Nested
@@ -361,12 +367,15 @@ class AdminScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("UC-12 scope 위반 - LEADER scope 밖 레코드는 조용히 제외")
+        @DisplayName("SF 가시 범위 위반 - 가시 범위 밖 레코드는 조용히 제외")
         fun exportSchedules_leaderScopeFilter() {
             val scope = com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             val inScope = DisplayWorkSchedule(id = 11L, costCenterCode = "A10010")
             val outOfScope = DisplayWorkSchedule(id = 12L, costCenterCode = "B20020")
             every { scheduleRepository.findAllById(listOf(11L, 12L)) } returns listOf(inScope, outOfScope)
+            // SF 가시 범위 — id=11 가시, id=12 비가시
+            every { scheduleRepository.existsVisibleById(11L, any()) } returns true
+            every { scheduleRepository.existsVisibleById(12L, any()) } returns false
             every { exportGenerator.generate(any()) } returns ByteArray(200)
 
             adminScheduleService.exportSchedules(scope, listOf(11L, 12L))
@@ -933,7 +942,7 @@ class AdminScheduleServiceTest {
             )
             val page = PageImpl(listOf(row), PageRequest.of(0, 20), 1)
 
-            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any()) } returns page
+            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, any(), any()) } returns page
 
             val result = adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, Sort.unsorted())
 
@@ -949,7 +958,7 @@ class AdminScheduleServiceTest {
         fun listSchedules_empty() {
             val scope = mockAdminScope()
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
-            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any()) } returns emptyPage
+            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, any(), any()) } returns emptyPage
 
             val result = adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, Sort.unsorted())
 
@@ -964,11 +973,11 @@ class AdminScheduleServiceTest {
             val account = createAccount(id = 100, name = "이마트 성수점")
             every { accountRepository.findByNameContainingIgnoreCase("이마트") } returns listOf(account)
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
-            every { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, any()) } returns emptyPage
+            every { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, any(), any()) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 20, null, "이마트", null, null, null, null, null, Sort.unsorted())
 
-            verify { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, any()) }
+            verify { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, any(), any()) }
         }
 
         @Test
@@ -976,12 +985,12 @@ class AdminScheduleServiceTest {
         fun listSchedules_pageSizeLimit() {
             val scope = mockAdminScope()
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 100), 0)
-            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any()) } returns emptyPage
+            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, any(), any()) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 200, null, null, null, null, null, null, null, Sort.unsorted())
 
             verify { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, match<org.springframework.data.domain.Pageable> { it.pageSize == 100 }
+                null, null, null, null, null, null, null, any(), match<org.springframework.data.domain.Pageable> { it.pageSize == 100 }
             ) }
         }
 
@@ -991,13 +1000,13 @@ class AdminScheduleServiceTest {
             val scope = mockAdminScope()
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
             every { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, eq(SchedulePreset.END), null, any()
+                null, null, null, null, null, null, eq(SchedulePreset.END), any(), any()
             ) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, SchedulePreset.END, Sort.unsorted())
 
             verify { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, eq(SchedulePreset.END), null, any()
+                null, null, null, null, null, null, eq(SchedulePreset.END), any(), any()
             ) }
         }
 
@@ -1008,30 +1017,32 @@ class AdminScheduleServiceTest {
             val sort = Sort.by(Sort.Direction.DESC, "endDate")
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20, sort), 0)
             every { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, any()
+                null, null, null, null, null, null, null, any(), any()
             ) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, sort)
 
             verify { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, any(),
                 match { it.sort == sort }
             ) }
         }
 
         @Test
-        @DisplayName("UC-12 LEADER 사용자 - costCenterCodes 필터가 Repository 에 전달됨")
+        @DisplayName("LEADER 사용자 - SF 가시 범위 evaluator Predicate 가 Repository 에 전달됨")
         fun listSchedules_leaderScope() {
             val scope = com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
             every { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, eq(listOf("A10010")), any()
+                null, null, null, null, null, null, null, any(), any()
             ) } returns emptyPage
 
             adminScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, Sort.unsorted())
 
+            // SF DisplayWorkScheduleMaster__c 가시 범위를 evaluator 가 산출하고 그 Predicate 가 repo 로 전달
+            verify { policyEvaluator.buildPredicate(scope, "DisplayWorkScheduleMaster__c", any()) }
             verify { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, eq(listOf("A10010")), any()
+                null, null, null, null, null, null, null, any(), any()
             ) }
         }
     }
@@ -1606,13 +1617,15 @@ class AdminScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("UC-12 scope 위반 - LEADER 가 본인 담당 사업소 외 레코드 삭제 시도 시 ScheduleForbiddenException")
+        @DisplayName("SF 가시 범위 위반 - LEADER 가 가시 범위 외 레코드 삭제 시도 시 ScheduleForbiddenException")
         fun deleteSchedule_uc12LeaderForbidden() {
             val scope = com.otoki.powersales.admin.dto.DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             val user = createEmployee(id = userId, role = AppAuthority.LEADER, costCenterCode = "A10010")
             val schedule = DisplayWorkSchedule(id = scheduleId, costCenterCode = "B20020")
             every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
             every { employeeRepository.findById(userId) } returns Optional.of(user)
+            // SF 가시 범위 밖 — evaluator predicate 로 단건 미가시
+            every { scheduleRepository.existsVisibleById(scheduleId, any()) } returns false
 
             assertThatThrownBy { adminScheduleService.deleteSchedule(scope, userId, scheduleId) }
                 .isInstanceOf(ScheduleForbiddenException::class.java)

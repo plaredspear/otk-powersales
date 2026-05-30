@@ -122,12 +122,13 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
-        costCenterCodes: List<String>?,
+        policyPredicate: com.querydsl.core.types.Predicate,
         pageable: Pageable
     ): Page<ScheduleListRow> {
         val today = LocalDate.now()
         val where = BooleanBuilder()
             .and(isNotDeleted())
+            .and(policyPredicate)
             .and(buildEmployeeCodeCondition(employeeCode))
             .and(buildAccountIdsCondition(accountIds))
             .and(buildConfirmedCondition(confirmed))
@@ -135,7 +136,6 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .and(buildStartDateFromCondition(startDateFrom))
             .and(buildStartDateToCondition(startDateTo))
             .and(buildPresetCondition(preset, today))
-            .and(buildCostCenterCodesCondition(costCenterCodes))
 
         val content = queryFactory
             .select(
@@ -159,6 +159,9 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .from(displayWorkSchedule)
             .leftJoin(displayWorkSchedule.employee, employee)
             .leftJoin(displayWorkSchedule.account, account)
+            // policyPredicate 의 owner/hierarchy path (displayWorkSchedule.ownerUser.*) implicit
+            // inner join 회피. OR 합성이라 ownerUser=null row 도 sharing rule/branch 절로 통과.
+            .leftJoin(displayWorkSchedule.ownerUser)
             .where(where)
             .orderBy(*resolveOrder(pageable.sort))
             .offset(pageable.offset)
@@ -168,6 +171,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         val countQuery = queryFactory
             .select(displayWorkSchedule.count())
             .from(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.ownerUser)
             .where(where)
 
         return PageableExecutionUtils.getPage(content, pageable) {
@@ -511,17 +515,21 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         return startDateTo?.let { displayWorkSchedule.startDate.loe(it) }
     }
 
-    private fun isNotDeleted(): BooleanExpression {
-        return displayWorkSchedule.isDeleted.isNull.or(displayWorkSchedule.isDeleted.eq(false))
+    override fun existsVisibleById(id: Long, policyPredicate: com.querydsl.core.types.Predicate): Boolean {
+        val where = BooleanBuilder()
+            .and(displayWorkSchedule.id.eq(id))
+            .and(isNotDeleted())
+            .and(policyPredicate)
+
+        return queryFactory
+            .selectOne()
+            .from(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.ownerUser)
+            .where(where)
+            .fetchFirst() != null
     }
 
-    /**
-     * UC-12 사업소 가시 범위 필터.
-     * null = 무제한 (ADMIN_GRADE / SYSTEM_ADMIN), 빈 list = no match (-1), list = 그 안에만.
-     */
-    private fun buildCostCenterCodesCondition(costCenterCodes: List<String>?): BooleanExpression? {
-        if (costCenterCodes == null) return null
-        if (costCenterCodes.isEmpty()) return displayWorkSchedule.costCenterCode.eq("__NO_MATCH__")
-        return displayWorkSchedule.costCenterCode.`in`(costCenterCodes)
+    private fun isNotDeleted(): BooleanExpression {
+        return displayWorkSchedule.isDeleted.isNull.or(displayWorkSchedule.isDeleted.eq(false))
     }
 }

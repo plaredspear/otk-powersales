@@ -65,7 +65,10 @@ interface DisplayWorkScheduleRepositoryCustom {
     fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Int>
 
     /**
-     * @param costCenterCodes UC-12 사업소 가시 범위 필터. null = 무제한(ADMIN_GRADE 등), list = 본인 담당 사업소.
+     * @param policyPredicate SF `DisplayWorkScheduleMaster__c` 가시 범위 Predicate
+     *        ([com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator] 산출 —
+     *        OWD Private → owner / role hierarchy / sharing rule(CostCenterCode 코드쌍 + CreatedById) /
+     *        legacy branch OR 합성). 검색 필터와 AND 합성.
      *
      * DTO projection — Employee entity hydration 회피 (Employee.employeeInfo 가 @NotFound 로
      * 즉시 fetch 강제되어 페이지당 N+1 발생하던 사례 차단).
@@ -78,9 +81,17 @@ interface DisplayWorkScheduleRepositoryCustom {
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
-        costCenterCodes: List<String>?,
+        policyPredicate: com.querydsl.core.types.Predicate,
         pageable: Pageable
     ): Page<ScheduleListRow>
+
+    /**
+     * 단건이 SF 가시 범위(`policyPredicate`) 안에 있는지 (soft-delete 제외).
+     *
+     * 목록과 동일한 가시 범위 Predicate 로 단건 가시성을 평가 (목록↔쓰기 경로 일관성).
+     * `false` 면 호출 측에서 권한 예외 처리.
+     */
+    fun existsVisibleById(id: Long, policyPredicate: com.querydsl.core.types.Predicate): Boolean
 
     fun findByEmployeeAndStartDate(employeeId: Long, startDate: LocalDate): List<DisplayWorkSchedule>
 

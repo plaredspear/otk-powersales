@@ -30,7 +30,7 @@ class AdminOrganizationServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
             val orgs = listOf(createOrg(id = 1L, orgNameLevel4 = "강남지점"))
-            every { organizationRepository.searchForAdmin(null, null, null) } returns orgs
+            every { organizationRepository.searchForAdminByOrgTree(null, null, null) } returns orgs
 
             val result = adminOrganizationService.getOrganizations(scope, null, null)
 
@@ -45,7 +45,7 @@ class AdminOrganizationServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
             val orgs = listOf(createOrg(orgNameLevel4 = "강남지점"))
-            every { organizationRepository.searchForAdmin("강남", null, null) } returns orgs
+            every { organizationRepository.searchForAdminByOrgTree("강남", null, null) } returns orgs
 
             val result = adminOrganizationService.getOrganizations(scope, "강남", null)
 
@@ -59,7 +59,7 @@ class AdminOrganizationServiceTest {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
             val orgs = listOf(createOrg(orgNameLevel5 = "강남1조"))
-            every { organizationRepository.searchForAdmin(null, "L5", null) } returns orgs
+            every { organizationRepository.searchForAdminByOrgTree(null, "L5", null) } returns orgs
 
             val result = adminOrganizationService.getOrganizations(scope, null, "L5")
 
@@ -68,12 +68,13 @@ class AdminOrganizationServiceTest {
         }
 
         @Test
-        @DisplayName("지점 권한 - 필터 없이 조회 -> 본인 CC코드 매칭 조직만 반환")
+        @DisplayName("지점 권한 - 필터 없이 조회 -> 본인 HR코드 OrgCode 트리 매칭 조직만 반환 (SF getOrgList 정합)")
         fun branchOnly_noFilter() {
-            val scope = DataScope(branchCodes = listOf("1101"), isAllBranches = false)
+            val scope = DataScope(branchCodes = listOf("A111"), isAllBranches = false)
 
-            val orgs = listOf(createOrg(costCenterLevel4 = "1101", orgNameLevel4 = "강남지점"))
-            every { organizationRepository.searchForAdmin(null, null, listOf("1101")) } returns orgs
+            val orgs = listOf(createOrg(orgCodeLevel4 = "A111", orgNameLevel4 = "강남지점"))
+            // SF getOrgList — HR 코드를 OrgCodeLevel* 트리에 매칭 (CostCenterLevel* 아님)
+            every { organizationRepository.searchForAdminByOrgTree(null, null, listOf("A111")) } returns orgs
 
             val result = adminOrganizationService.getOrganizations(scope, null, null)
 
@@ -95,7 +96,7 @@ class AdminOrganizationServiceTest {
         fun emptyResult() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
-            every { organizationRepository.searchForAdmin("존재하지않는조직", null, null) } returns emptyList()
+            every { organizationRepository.searchForAdminByOrgTree("존재하지않는조직", null, null) } returns emptyList()
 
             val result = adminOrganizationService.getOrganizations(scope, "존재하지않는조직", null)
 

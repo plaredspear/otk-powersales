@@ -56,7 +56,7 @@ class OrganizationRepositoryCustomImpl(
                     .or(organization.orgCodeLevel2.eq(hrCode))
             )
             builder.and(
-                organization.orgNameLevel3.`in`("Retail사업부", "제1사업부", "CVS사업부")
+                organization.orgNameLevel3.`in`(SALES_DIVISION_NAMES)
             )
         }
 
@@ -168,6 +168,64 @@ class OrganizationRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun searchForAdminByOrgTree(
+        keyword: String?,
+        level: String?,
+        orgTreeCodes: List<String>?
+    ): List<Organization> {
+        val builder = BooleanBuilder()
+
+        if (!keyword.isNullOrBlank()) {
+            val lowerPattern = "%${keyword.lowercase()}%"
+            builder.and(
+                organization.costCenterLevel2.lower().like(lowerPattern)
+                    .or(organization.orgCodeLevel2.lower().like(lowerPattern))
+                    .or(organization.orgNameLevel2.lower().like(lowerPattern))
+                    .or(organization.costCenterLevel3.lower().like(lowerPattern))
+                    .or(organization.orgCodeLevel3.lower().like(lowerPattern))
+                    .or(organization.orgNameLevel3.lower().like(lowerPattern))
+                    .or(organization.costCenterLevel4.lower().like(lowerPattern))
+                    .or(organization.orgCodeLevel4.lower().like(lowerPattern))
+                    .or(organization.orgNameLevel4.lower().like(lowerPattern))
+                    .or(organization.costCenterLevel5.lower().like(lowerPattern))
+                    .or(organization.orgCodeLevel5.lower().like(lowerPattern))
+                    .or(organization.orgNameLevel5.lower().like(lowerPattern))
+            )
+        }
+
+        if (!level.isNullOrBlank()) {
+            when (level) {
+                "L2" -> builder.and(organization.orgNameLevel2.isNotNull)
+                "L3" -> builder.and(organization.orgNameLevel3.isNotNull)
+                "L4" -> builder.and(organization.orgNameLevel4.isNotNull)
+                "L5" -> builder.and(organization.orgNameLevel5.isNotNull)
+            }
+        }
+
+        // SF getOrgList (L32) 정합 — HR 코드(orgTreeCodes)를 OrgCodeLevel*(org_cd*) 에 매칭 +
+        // OrgNameLevel3 사업부 제약. CostCenterLevel*(cc_cd*) 매칭(searchForAdmin) 과 별개 차원.
+        if (orgTreeCodes != null) {
+            builder.and(
+                organization.orgCodeLevel5.`in`(orgTreeCodes)
+                    .or(organization.orgCodeLevel4.`in`(orgTreeCodes))
+                    .or(organization.orgCodeLevel3.`in`(orgTreeCodes))
+                    .or(organization.orgCodeLevel2.`in`(orgTreeCodes))
+            )
+            builder.and(organization.orgNameLevel3.`in`(SALES_DIVISION_NAMES))
+        }
+
+        return queryFactory
+            .selectFrom(organization)
+            .where(builder)
+            .orderBy(
+                organization.orgCodeLevel2.asc(),
+                organization.orgCodeLevel3.asc(),
+                organization.orgCodeLevel4.asc(),
+                organization.orgCodeLevel5.asc()
+            )
+            .fetch()
+    }
+
     override fun findFirstByAnyOrgCodeLevel(orgCode: String): Organization? {
         return queryFactory
             .selectFrom(organization)
@@ -273,5 +331,10 @@ class OrganizationRepositoryCustomImpl(
             .fetch()
             .filterNotNull()
         return (level5 + level4Only).distinct()
+    }
+
+    companion object {
+        /** SF `CurrentUserBranchNameList.getOrgList()` (L32) 의 OrgNameLevel3 사업부 제약 3종. */
+        private val SALES_DIVISION_NAMES = listOf("Retail사업부", "제1사업부", "CVS사업부")
     }
 }

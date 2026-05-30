@@ -1,9 +1,10 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.promotion.entity.QPromotion.Companion.promotion as qPromotion
 import com.otoki.powersales.promotion.enums.ProductTemperatureType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
@@ -36,7 +37,8 @@ class AdminPromotionService(
     private val productRepository: ProductRepository,
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper
+    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper,
+    private val policyEvaluator: SharingRulePolicyEvaluator
 ) {
 
     fun getPromotionFormMeta(): PromotionFormMetaResponse {
@@ -67,19 +69,21 @@ class AdminPromotionService(
         page: Int,
         size: Int
     ): PromotionListResponse {
-        val effectiveBranchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(null)) {
-            is EffectiveBranchResult.All -> null
-            is EffectiveBranchResult.Filtered -> result.codes
-            is EffectiveBranchResult.NoAccess -> return emptyResponse(page, size)
-        }
+        // SF DKRetail__Promotion__c OWD=Private — owner / role hierarchy / sharing rule / legacy branch
+        // OR 합성 가시 범위. costCenter 단일 차원 필터(방식 B) 대체.
+        val policyPredicate = policyEvaluator.buildPredicate(
+            scope = scope,
+            sObjectName = "DKRetail__Promotion__c",
+            entityPath = qPromotion
+        )
 
         val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
         val promotionPage = promotionRepository.searchForAdmin(
+            policyPredicate = policyPredicate,
             keyword = keyword,
             promotionType = PromotionType.fromDisplayNameOrNull(promotionType),
             startDate = startDate,
             endDate = endDate,
-            branchCodes = effectiveBranchCodes,
             pageable = pageable
         )
 
@@ -509,8 +513,20 @@ class AdminPromotionService(
         return promotion
     }
 
+    /**
+     * SF 가시 범위 검증 (목록과 동일한 [SharingRulePolicyEvaluator] Predicate).
+     *
+     * 목록(`getPromotions`)이 owner / role hierarchy / sharing rule / legacy branch OR 합성으로
+     * 평가하므로, 단건 상세/수정/삭제/clone/POS품목 도 동일 기준으로 통일 (목록↔단건 일관성).
+     * 가시 범위 밖이면 [PromotionForbiddenException] (403) — 기존 promotion API 계약 유지.
+     */
     private fun validateDataScope(scope: DataScope, promotion: Promotion) {
-        if (!scope.validateAccess(promotion.costCenterCode)) {
+        val policyPredicate = policyEvaluator.buildPredicate(
+            scope = scope,
+            sObjectName = "DKRetail__Promotion__c",
+            entityPath = qPromotion
+        )
+        if (!promotionRepository.existsVisibleById(promotion.id, policyPredicate)) {
             throw PromotionForbiddenException()
         }
     }
@@ -530,12 +546,4 @@ class AdminPromotionService(
             throw InvalidOtherProductException()
         }
     }
-
-    private fun emptyResponse(page: Int, size: Int) = PromotionListResponse(
-        content = emptyList(),
-        page = page,
-        size = size,
-        totalElements = 0,
-        totalPages = 0
-    )
 }

@@ -14,20 +14,23 @@ class AdminOrganizationService(
 ) {
 
     /**
+     * 조직마스터 목록 조회 — SF `CurrentUserBranchNameList.getOrgList()` (L32) 가시 범위 정합.
+     *
+     * 전사 권한(영업지원/관리자, `isAllBranches`)은 무제한, 그 외 사용자는 본인 HR 코드를
+     * `OrgCodeLevel*` 트리에 매칭 + `OrgNameLevel3 IN (Retail/제1/CVS 사업부)` 제약
+     * ([OrganizationRepository.searchForAdminByOrgTree]). 기존 `searchForAdmin` 의 `CostCenterLevel*`
+     * 매칭(cost-center 시맨틱, AdminMonthlyIntegrationService 전용)과 분리.
+     *
      * @param scope 호출자(controller) 에서 산출/주입한 현재 사용자의 DataScope.
-     *              service 가 holder/ambient context 에 의존하지 않도록 explicit parameter 로 받는다.
      */
     fun getOrganizations(scope: DataScope, keyword: String?, level: String?): List<OrganizationResponse> {
-        val branchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(null)) {
-            is EffectiveBranchResult.All -> null
-            is EffectiveBranchResult.Filtered -> result.codes
-            is EffectiveBranchResult.NoAccess -> return emptyList()
-        }
-
-        return organizationRepository.searchForAdmin(
-            keyword = keyword,
-            level = level,
-            branchCodes = branchCodes
-        ).map { OrganizationResponse.from(it) }
+        return when (val result = scope.effectiveBranchCodes(null)) {
+            is EffectiveBranchResult.All ->
+                // 전사 권한 — 사업부/트리 제약 없이 전체 조직 (keyword/level 만)
+                organizationRepository.searchForAdminByOrgTree(keyword, level, orgTreeCodes = null)
+            is EffectiveBranchResult.Filtered ->
+                organizationRepository.searchForAdminByOrgTree(keyword, level, orgTreeCodes = result.codes)
+            is EffectiveBranchResult.NoAccess -> emptyList()
+        }.map { OrganizationResponse.from(it) }
     }
 }

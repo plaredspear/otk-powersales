@@ -7,6 +7,7 @@ import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.account.entity.QAccount.Companion.account
 import com.otoki.powersales.product.entity.QProduct.Companion.product
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
@@ -28,16 +29,17 @@ class PromotionRepositoryCustomImpl(
     }
 
     override fun searchForAdmin(
+        policyPredicate: Predicate,
         keyword: String?,
         promotionType: PromotionType?,
         startDate: String?,
         endDate: String?,
-        branchCodes: List<String>?,
         pageable: Pageable
     ): Page<Promotion> {
         val builder = BooleanBuilder()
 
         builder.and(promotion.isDeleted.eq(false))
+        builder.and(policyPredicate)
 
         if (!keyword.isNullOrBlank()) {
             val lowerPattern = "%${keyword.lowercase()}%"
@@ -60,14 +62,13 @@ class PromotionRepositoryCustomImpl(
             builder.and(promotion.startDate.loe(date))
         }
 
-        if (branchCodes != null) {
-            builder.and(promotion.costCenterCode.`in`(branchCodes))
-        }
-
         val content = queryFactory
             .selectFrom(promotion)
             .leftJoin(promotion.account, account).fetchJoin()
             .leftJoin(promotion.primaryProduct, product).fetchJoin()
+            // policyPredicate 의 owner/hierarchy path (promotion.ownerUser.*) 가 implicit inner join 을
+            // 만들지 않도록 명시적 leftJoin. OR 합성이라 ownerUser=null row 도 다른 절로 통과해야 함.
+            .leftJoin(promotion.ownerUser)
             .where(builder)
             .orderBy(promotion.createdAt.desc())
             .offset(pageable.offset)
@@ -77,11 +78,26 @@ class PromotionRepositoryCustomImpl(
         val countQuery = queryFactory
             .select(promotion.count())
             .from(promotion)
+            .leftJoin(promotion.ownerUser)
             .where(builder)
 
         return PageableExecutionUtils.getPage(content, pageable) {
             countQuery.fetchOne() ?: 0L
         }
+    }
+
+    override fun existsVisibleById(id: Long, policyPredicate: Predicate): Boolean {
+        val where = BooleanBuilder()
+            .and(promotion.id.eq(id))
+            .and(promotion.isDeleted.eq(false))
+            .and(policyPredicate)
+
+        return queryFactory
+            .selectOne()
+            .from(promotion)
+            .leftJoin(promotion.ownerUser)
+            .where(where)
+            .fetchFirst() != null
     }
 
     override fun searchForMobile(

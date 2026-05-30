@@ -3,6 +3,8 @@ package com.otoki.powersales.schedule.service
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule as qDisplayWorkSchedule
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
@@ -61,6 +63,7 @@ class AdminScheduleService(
     private val redisTemplate: RedisTemplate<String, String>,
     private val objectMapper: ObjectMapper,
     private val branchCodeExpander: BranchCodeExpander,
+    private val policyEvaluator: SharingRulePolicyEvaluator,
 ) {
 
     companion object {
@@ -132,10 +135,11 @@ class AdminScheduleService(
      * 입력 순서 보존하여 출력 (사용자가 선택한 순서대로 행 정렬).
      */
     fun exportSchedules(scope: DataScope, ids: List<Long>): TemplateResult {
-        // UC-12 사업소 가시 범위 — scope 밖 ID 는 조용히 제외 (레거시 SF Sharing Rule row-level filter 동등)
+        // SF 가시 범위 — scope 밖 ID 는 조용히 제외 (목록과 동일한 evaluator Predicate, SF Sharing Rule row-level filter 동등)
+        val policyPredicate = schedulePolicyPredicate(scope)
         val schedules = scheduleRepository.findAllById(ids)
             .filter { it.isDeleted != true }
-            .filter { scope.validateAccess(it.costCenterCode) }
+            .filter { scheduleRepository.existsVisibleById(it.id, policyPredicate) }
             .associateBy { it.id }
         val ordered = ids.mapNotNull { schedules[it] }
 
@@ -325,11 +329,12 @@ class AdminScheduleService(
             null
         }
 
-        // UC-12 사업소 가시 범위 필터 — LEADER/BRANCH_MANAGER 는 본인 담당 사업소만, ADMIN_GRADE 는 무제한(null)
-        val costCenterCodes = scopeBranchCodesOrNull(scope)
+        // SF DisplayWorkScheduleMaster__c OWD=Private — owner / role hierarchy / sharing rule
+        // (CostCenterCode 코드쌍 + CreatedById) / legacy branch OR 합성 가시 범위. 단일 코드 필터(방식 B) 대체.
+        val policyPredicate = schedulePolicyPredicate(scope)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, costCenterCodes, pageable
+            employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, policyPredicate, pageable
         )
 
         return schedulePage.map { row ->
@@ -610,6 +615,8 @@ class AdminScheduleService(
 
         val isAdmin = isAdminGrade(user.employeeCode)
         val schedules = scheduleRepository.findAllById(ids).associateBy { it.id }
+        // SF 가시 범위 — 목록과 동일한 evaluator Predicate (루프 밖 1회 산출)
+        val policyPredicate = schedulePolicyPredicate(scope)
 
         var deletedCount = 0
         val failures = mutableListOf<ScheduleBatchDeleteFailure>()
@@ -627,8 +634,8 @@ class AdminScheduleService(
                 continue
             }
 
-            // UC-12 사업소 가시 범위 검증 — 본인 담당 사업소 외 레코드는 partial fail 로 기록
-            if (!scope.validateAccess(schedule.costCenterCode)) {
+            // SF 가시 범위 검증 — 가시 범위 외 레코드는 partial fail 로 기록
+            if (!scheduleRepository.existsVisibleById(schedule.id, policyPredicate)) {
                 failures.add(
                     ScheduleBatchDeleteFailure(
                         id = id,
@@ -702,20 +709,23 @@ class AdminScheduleService(
     }
 
     /**
-     * UC-12 helper — 사용자 scope 의 사업소 코드 목록을 반환.
-     * ADMIN_GRADE / SYSTEM_ADMIN 은 무제한 → null 반환 (repository 측 무필터).
-     * LEADER / BRANCH_MANAGER 는 본인 담당 사업소 코드 목록.
+     * SF `DisplayWorkScheduleMaster__c` 가시 범위 Predicate 산출 ([SharingRulePolicyEvaluator]).
+     *
+     * OWD Private → owner / role hierarchy / sharing rule(CostCenterCode 코드쌍 + CreatedById) /
+     * legacy branch OR 합성. 목록(listSchedules)과 단건 가시성 검증이 동일 기준 사용.
      */
-    private fun scopeBranchCodesOrNull(scope: DataScope): List<String>? {
-        return if (scope.isAllBranches) null else scope.branchCodes
-    }
+    private fun schedulePolicyPredicate(scope: DataScope) = policyEvaluator.buildPredicate(
+        scope = scope,
+        sObjectName = "DisplayWorkScheduleMaster__c",
+        entityPath = qDisplayWorkSchedule,
+    )
 
     /**
-     * UC-12 helper — 스케줄 entity 의 costCenterCode 가 사용자 scope 내인지 검증.
-     * 위반 시 ScheduleForbiddenException.
+     * SF 가시 범위 검증 — 스케줄 단건이 가시 범위 안인지 (목록과 동일한 evaluator Predicate).
+     * 위반 시 ScheduleForbiddenException. SF OWD=Private + owner/hierarchy/sharingRule 동등.
      */
     private fun requireScheduleScope(scope: DataScope, schedule: DisplayWorkSchedule) {
-        if (!scope.validateAccess(schedule.costCenterCode)) {
+        if (!scheduleRepository.existsVisibleById(schedule.id, schedulePolicyPredicate(scope))) {
             throw ScheduleForbiddenException()
         }
     }

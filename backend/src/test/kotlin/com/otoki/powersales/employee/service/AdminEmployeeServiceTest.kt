@@ -62,39 +62,52 @@ class AdminEmployeeServiceTest {
         }
 
         @Test
-        @DisplayName("지점 권한 - 필터 없이 조회 -> 본인 지점 사원만 반환")
+        @DisplayName("SF 이진 모델 - 지점 권한 사용자도 필터 없이 조회 시 전사 반환 (게이트 통과=전사)")
         fun branchOnly_noFilter() {
             val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
 
-            val employees = listOf(createEmployee(employeeCode = "10000001", costCenterCode = "A001"))
+            val employees = listOf(
+                createEmployee(employeeCode = "10000001", costCenterCode = "A001"),
+                createEmployee(employeeCode = "10000002", costCenterCode = "B002"),
+            )
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 2L)
+            // SF 이진 모델 — 지점 보안축 미적용. costCenterCode 미지정 → 전사(branchFilter=null).
+            every { employeeRepository.findEmployees(null, null, null, null, any()) } returns page
+
+            val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
+
+            assertThat(result.content).hasSize(2)
+        }
+
+        @Test
+        @DisplayName("SF 이진 모델 - costCenterCode 는 순수 표시 필터 (권한 외 지점도 차단 안 함)")
+        fun branchOnly_displayFilterOnly() {
+            val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
+
+            val employees = listOf(createEmployee(employeeCode = "10000002", costCenterCode = "B002"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { employeeRepository.findEmployees(null, listOf("A001"), null, null, any()) } returns page
+            // scope.branchCodes=["A001"] 이지만 SF 이진 모델이라 표시 필터(B002)를 그대로 전달
+            every { employeeRepository.findEmployees(null, listOf("B002"), null, null, any()) } returns page
+
+            val result = adminEmployeeService.getEmployees(scope, null, "B002", null, null, 0, 20)
+
+            assertThat(result.content).hasSize(1)
+            assertThat(result.content[0].costCenterCode).isEqualTo("B002")
+        }
+
+        @Test
+        @DisplayName("SF 이진 모델 - branchCodes 비어있어도 게이트 통과자는 전사 반환")
+        fun branchOnly_emptyBranchCodes() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
+
+            val employees = listOf(createEmployee(employeeCode = "10000001"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            // NoAccess 개념 소멸 — 게이트 통과 = 전사(branchFilter=null)
+            every { employeeRepository.findEmployees(null, null, null, null, any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
 
             assertThat(result.content).hasSize(1)
-        }
-
-        @Test
-        @DisplayName("지점 권한 + 권한 외 지점 필터 -> 빈 결과")
-        fun branchOnly_forbiddenBranch() {
-            val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
-
-            val result = adminEmployeeService.getEmployees(scope, null, "B002", null, null, 0, 20)
-
-            assertThat(result.content).isEmpty()
-            assertThat(result.totalElements).isEqualTo(0)
-        }
-
-        @Test
-        @DisplayName("지점 권한 + branchCodes 비어있음 -> 빈 결과")
-        fun branchOnly_emptyBranchCodes() {
-            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
-
-            val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
-
-            assertThat(result.content).isEmpty()
-            assertThat(result.totalElements).isEqualTo(0)
         }
 
         @Test

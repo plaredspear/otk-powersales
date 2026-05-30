@@ -52,6 +52,8 @@ class AdminPromotionServiceTest {
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
     private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper = mockk(relaxUnitFun = true)
+    private val policyEvaluator: com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator =
+        mockk(relaxed = true)
 
     private val adminPromotionService: AdminPromotionService = AdminPromotionService(
         promotionRepository = promotionRepository,
@@ -62,6 +64,7 @@ class AdminPromotionServiceTest {
         employeeRepository = employeeRepository,
         teamMemberScheduleRepository = teamMemberScheduleRepository,
         teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
+        policyEvaluator = policyEvaluator,
     )
 
     private val userId = 1L
@@ -76,6 +79,8 @@ class AdminPromotionServiceTest {
         every {
             promotionProductRepository.save(any<PromotionProduct>())
         } answers { firstArg<PromotionProduct>() }
+        // SF 가시 범위 — 단건 검증(validateDataScope) 기본 통과. forbidden 케이스는 개별 override.
+        every { promotionRepository.existsVisibleById(any(), any()) } returns true
     }
 
     @Nested
@@ -117,8 +122,8 @@ class AdminPromotionServiceTest {
             val pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending())
             val page = PageImpl(listOf(promotion), pageable, 1)
             every { promotionRepository.searchForAdmin(
-                keyword = null, promotionType = null,
-                startDate = null, endDate = null, branchCodes = null, pageable = pageable
+                policyPredicate = any(), keyword = null, promotionType = null,
+                startDate = null, endDate = null, pageable = pageable
             ) } returns page
 
             val result = adminPromotionService.getPromotions(scope = scope,
@@ -134,10 +139,15 @@ class AdminPromotionServiceTest {
         }
 
         @Test
-        @DisplayName("지점 제한 사용자 - branchCodes 비어있음 -> 빈 결과")
-        fun getPromotions_emptyBranchCodes_emptyResult() {
+        @DisplayName("가시 범위 밖 사용자 - evaluator deny predicate -> repo 0건 반환")
+        fun getPromotions_outOfScope_emptyResult() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
-            // scope 는 service 호출 시 직접 전달 (holder mock 제거 — explicit parameter 패턴)
+            // SF 가시 범위 전환: 조기 반환이 아니라 evaluator deny predicate → repository 0건 (자연 처리).
+            val pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending())
+            every { promotionRepository.searchForAdmin(
+                policyPredicate = any(), keyword = null, promotionType = null,
+                startDate = null, endDate = null, pageable = pageable
+            ) } returns PageImpl(emptyList(), pageable, 0)
 
             val result = adminPromotionService.getPromotions(scope = scope,
                 keyword = null, promotionType = null,
@@ -210,6 +220,8 @@ class AdminPromotionServiceTest {
 
             val promotion = createPromotion(costCenterCode = "1101")
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            // SF 가시 범위 밖 — evaluator predicate 로 단건 미가시
+            every { promotionRepository.existsVisibleById(1L, any()) } returns false
 
             assertThatThrownBy { adminPromotionService.getPromotion(scope, 1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
@@ -271,6 +283,7 @@ class AdminPromotionServiceTest {
             val limitedScope = DataScope(branchCodes = listOf("2202"), isAllBranches = false)
             val promotion = createPromotion(costCenterCode = "1101")
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionRepository.existsVisibleById(1L, any()) } returns false
 
             assertThatThrownBy { adminPromotionService.getPosProducts(limitedScope, 1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
@@ -348,6 +361,7 @@ class AdminPromotionServiceTest {
             val limited = DataScope(branchCodes = listOf("2202"), isAllBranches = false)
             val promotion = createPromotion(costCenterCode = "1101")
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionRepository.existsVisibleById(1L, any()) } returns false
             assertThatThrownBy { adminPromotionService.createPosProduct(limited, 1L, request) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
         }
@@ -404,6 +418,7 @@ class AdminPromotionServiceTest {
             val entity = PromotionProduct(id = 10L, name = "PS00000001", promotionId = 1L)
             every { promotionProductRepository.findById(10L) } returns Optional.of(entity)
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionRepository.existsVisibleById(1L, any()) } returns false
 
             assertThatThrownBy {
                 adminPromotionService.updatePosProduct(
@@ -1049,6 +1064,7 @@ class AdminPromotionServiceTest {
 
             val promotion = createPromotion(costCenterCode = "1101")
             every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionRepository.existsVisibleById(1L, any()) } returns false
 
             assertThatThrownBy { adminPromotionService.deletePromotion(scope, principal, 1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
