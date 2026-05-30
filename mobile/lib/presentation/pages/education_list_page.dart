@@ -57,7 +57,7 @@ class _EducationListPageState extends ConsumerState<EducationListPage> {
   }
 
   /// 게시물 탭 핸들러
-  void _onPostTap(int postId) {
+  void _onPostTap(String postId) {
     // TODO: Router 연동 시 게시물 상세 화면으로 이동
     // context.push('/education/detail/$postId');
     debugPrint('Post tapped: $postId');

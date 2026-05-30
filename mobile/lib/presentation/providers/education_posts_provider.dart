@@ -1,13 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/data/repositories/mock/education_mock_repository.dart';
+import 'package:mobile/core/network/dio_provider.dart';
+import 'package:mobile/data/datasources/education_api_datasource.dart';
+import 'package:mobile/data/datasources/education_remote_datasource.dart';
+import 'package:mobile/data/repositories/education_repository_impl.dart';
 import 'package:mobile/domain/entities/education_category.dart';
 import 'package:mobile/domain/repositories/education_repository.dart';
 import 'package:mobile/domain/usecases/get_education_posts_usecase.dart';
 import 'package:mobile/presentation/providers/education_posts_state.dart';
 
-/// 교육 Repository Provider
+/// 교육 원격 데이터소스 Provider (실 API)
+final educationRemoteDataSourceProvider =
+    Provider<EducationRemoteDataSource>((ref) {
+  return EducationApiDataSource(ref.watch(dioProvider));
+});
+
+/// 교육 Repository Provider (실 API — EducationController)
 final educationRepositoryProvider = Provider<EducationRepository>((ref) {
-  return EducationMockRepository();
+  return EducationRepositoryImpl(
+    remoteDataSource: ref.watch(educationRemoteDataSourceProvider),
+  );
 });
 
 /// 교육 게시물 목록 조회 UseCase Provider

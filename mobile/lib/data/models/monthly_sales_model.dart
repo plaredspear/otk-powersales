@@ -19,8 +19,8 @@ class CategorySalesModel {
   factory CategorySalesModel.fromJson(Map<String, dynamic> json) {
     return CategorySalesModel(
       category: json['category'] as String,
-      targetAmount: json['targetAmount'] as int,
-      achievedAmount: json['achievedAmount'] as int,
+      targetAmount: (json['targetAmount'] as num).toInt(),
+      achievedAmount: (json['achievedAmount'] as num).toInt(),
       achievementRate: (json['achievementRate'] as num).toDouble(),
     );
   }
@@ -93,10 +93,10 @@ class MonthlyAverageModel {
 
   factory MonthlyAverageModel.fromJson(Map<String, dynamic> json) {
     return MonthlyAverageModel(
-      currentYearAverage: json['currentYearAverage'] as int,
-      previousYearAverage: json['previousYearAverage'] as int,
-      startMonth: json['startMonth'] as int,
-      endMonth: json['endMonth'] as int,
+      currentYearAverage: (json['currentYearAverage'] as num).toInt(),
+      previousYearAverage: (json['previousYearAverage'] as num).toInt(),
+      startMonth: (json['startMonth'] as num).toInt(),
+      endMonth: (json['endMonth'] as num).toInt(),
     );
   }
 
@@ -182,17 +182,21 @@ class MonthlySalesModel {
   });
 
   factory MonthlySalesModel.fromJson(Map<String, dynamic> json) {
+    // 백엔드(MonthlySalesResponse)는 전년 동월 비교를 yearComparison 객체로 반환한다
+    // ({currentYear, previousYear}). currentYear 는 achievedAmount 와 동일하므로
+    // 엔티티의 previousYearSameMonth 에는 previousYear 만 매핑한다.
+    final yearComparison = json['yearComparison'] as Map<String, dynamic>;
     return MonthlySalesModel(
       customerId: json['customerId'] as String,
       customerName: json['customerName'] as String,
       yearMonth: json['yearMonth'] as String,
-      targetAmount: json['targetAmount'] as int,
-      achievedAmount: json['achievedAmount'] as int,
+      targetAmount: (json['targetAmount'] as num).toInt(),
+      achievedAmount: (json['achievedAmount'] as num).toInt(),
       achievementRate: (json['achievementRate'] as num).toDouble(),
       categorySales: (json['categorySales'] as List<dynamic>)
           .map((item) => CategorySalesModel.fromJson(item as Map<String, dynamic>))
           .toList(),
-      previousYearSameMonth: json['previousYearSameMonth'] as int,
+      previousYearSameMonth: (yearComparison['previousYear'] as num).toInt(),
       monthlyAverage: MonthlyAverageModel.fromJson(
         json['monthlyAverage'] as Map<String, dynamic>,
       ),

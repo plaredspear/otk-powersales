@@ -4,9 +4,10 @@ import '../../domain/entities/education_post.dart';
 ///
 /// API 응답의 JSON을 Domain Entity로 변환한다.
 class EducationPostModel {
-  final int id;
+  final String id;
   final String title;
-  final String createdAt;
+  // 백엔드(EducationPostSummaryResponse)는 createdAt 을 nullable 로 선언한다.
+  final String? createdAt;
 
   const EducationPostModel({
     required this.id,
@@ -16,9 +17,9 @@ class EducationPostModel {
 
   factory EducationPostModel.fromJson(Map<String, dynamic> json) {
     return EducationPostModel(
-      id: json['id'] as int,
+      id: json['id'] as String,
       title: json['title'] as String,
-      createdAt: json['createdAt'] as String,
+      createdAt: json['createdAt'] as String?,
     );
   }
 
@@ -34,7 +35,11 @@ class EducationPostModel {
     return EducationPost(
       id: id,
       title: title,
-      createdAt: DateTime.parse(createdAt),
+      // createdAt 이 null 인 경우(방어적) "미상"을 epoch 센티넬로 표현한다.
+      // 조회 시각(now)으로 위조하지 않는다.
+      createdAt: createdAt != null
+          ? DateTime.parse(createdAt!)
+          : DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
@@ -89,10 +94,10 @@ class EducationPostPageModel {
       content: (json['content'] as List<dynamic>)
           .map((item) => EducationPostModel.fromJson(item as Map<String, dynamic>))
           .toList(),
-      totalCount: json['totalCount'] as int,
-      totalPages: json['totalPages'] as int,
-      currentPage: json['currentPage'] as int,
-      size: json['size'] as int,
+      totalCount: (json['totalCount'] as num).toInt(),
+      totalPages: (json['totalPages'] as num).toInt(),
+      currentPage: (json['currentPage'] as num).toInt(),
+      size: (json['size'] as num).toInt(),
     );
   }
 

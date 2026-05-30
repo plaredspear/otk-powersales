@@ -26,5 +26,5 @@ abstract class EducationRepository {
   /// [postId]: 게시물 ID
   ///
   /// Returns: 게시물 상세 정보 (본문, 이미지, 첨부파일 포함)
-  Future<EducationPostDetail> getPostDetail(int postId);
+  Future<EducationPostDetail> getPostDetail(String postId);
 }

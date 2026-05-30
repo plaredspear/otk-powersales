@@ -7,22 +7,22 @@ class EducationMockData {
   /// 시식 매뉴얼 카테고리 게시물 목록
   static final List<EducationPost> tastingManualPosts = [
     EducationPost(
-      id: 10,
+      id: '10',
       title: '이미지',
       createdAt: DateTime.parse('2020-08-11T00:00:00'),
     ),
     EducationPost(
-      id: 9,
+      id: '9',
       title: '진짬뽕 시식 매뉴얼',
       createdAt: DateTime.parse('2020-08-10T00:00:00'),
     ),
     EducationPost(
-      id: 8,
+      id: '8',
       title: '동영상 테스트',
       createdAt: DateTime.parse('2020-08-06T00:00:00'),
     ),
     EducationPost(
-      id: 7,
+      id: '7',
       title: '미숫가루 시식매뉴얼',
       createdAt: DateTime.parse('2020-08-06T00:00:00'),
     ),
@@ -31,12 +31,12 @@ class EducationMockData {
   /// CS/안전 카테고리 게시물 목록
   static final List<EducationPost> csSafetyPosts = [
     EducationPost(
-      id: 20,
+      id: '20',
       title: '고객 응대 매뉴얼',
       createdAt: DateTime.parse('2020-08-15T00:00:00'),
     ),
     EducationPost(
-      id: 19,
+      id: '19',
       title: '안전사고 대응 가이드',
       createdAt: DateTime.parse('2020-08-14T00:00:00'),
     ),
@@ -45,7 +45,7 @@ class EducationMockData {
   /// 교육 평가 카테고리 게시물 목록
   static final List<EducationPost> evaluationPosts = [
     EducationPost(
-      id: 30,
+      id: '30',
       title: '2020년 상반기 교육 평가',
       createdAt: DateTime.parse('2020-07-01T00:00:00'),
     ),
@@ -54,12 +54,12 @@ class EducationMockData {
   /// 신제품 소개 카테고리 게시물 목록
   static final List<EducationPost> newProductPosts = [
     EducationPost(
-      id: 40,
+      id: '40',
       title: '2020년 신제품 라인업',
       createdAt: DateTime.parse('2020-08-20T00:00:00'),
     ),
     EducationPost(
-      id: 39,
+      id: '39',
       title: '진짬뽕 출시 안내',
       createdAt: DateTime.parse('2020-08-01T00:00:00'),
     ),
@@ -67,7 +67,7 @@ class EducationMockData {
 
   /// 게시물 상세 (ID: 9 - 진짬뽕 시식 매뉴얼)
   static final EducationPostDetail postDetail9 = EducationPostDetail(
-    id: 9,
+    id: '9',
     category: EducationCategory.tastingManual,
     categoryName: '시식 매뉴얼',
     title: '진짬뽕 시식 매뉴얼',
@@ -107,13 +107,13 @@ class EducationMockData {
     ],
     attachments: [
       EducationAttachment(
-        id: 1,
+        id: '1',
         fileName: '진짬뽕_시식_가이드.pdf',
         fileUrl: 'https://example.com/files/tasting-guide.pdf',
         fileSize: 2048576, // 2 MB
       ),
       EducationAttachment(
-        id: 2,
+        id: '2',
         fileName: '고객_설문지.xlsx',
         fileUrl: 'https://example.com/files/survey.xlsx',
         fileSize: 512000, // 500 KB
@@ -123,7 +123,7 @@ class EducationMockData {
 
   /// 게시물 상세 (ID: 7 - 미숫가루 시식매뉴얼, 이미지/첨부파일 없음)
   static final EducationPostDetail postDetail7 = EducationPostDetail(
-    id: 7,
+    id: '7',
     category: EducationCategory.tastingManual,
     categoryName: '시식 매뉴얼',
     title: '미숫가루 시식매뉴얼',
@@ -153,7 +153,7 @@ class EducationMockData {
 
   /// 게시물 상세 (ID: 20 - 고객 응대 매뉴얼)
   static final EducationPostDetail postDetail20 = EducationPostDetail(
-    id: 20,
+    id: '20',
     category: EducationCategory.csSafety,
     categoryName: 'CS/안전',
     title: '고객 응대 매뉴얼',
@@ -200,13 +200,13 @@ class EducationMockData {
   }
 
   /// 게시물 ID로 상세 조회
-  static EducationPostDetail? getPostDetailById(int postId) {
+  static EducationPostDetail? getPostDetailById(String postId) {
     switch (postId) {
-      case 9:
+      case '9':
         return postDetail9;
-      case 7:
+      case '7':
         return postDetail7;
-      case 20:
+      case '20':
         return postDetail20;
       default:
         return null; // 404 시뮬레이션

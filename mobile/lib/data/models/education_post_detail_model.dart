@@ -71,7 +71,8 @@ class EducationImageModel {
 ///
 /// API 응답의 첨부파일 JSON을 Domain Entity로 변환한다.
 class EducationAttachmentModel {
-  final int id;
+  // 백엔드 EducationAttachmentResponse.id 는 fileKey(String) 이다.
+  final String id;
   final String fileName;
   final String fileUrl;
   final int fileSize;
@@ -85,10 +86,10 @@ class EducationAttachmentModel {
 
   factory EducationAttachmentModel.fromJson(Map<String, dynamic> json) {
     return EducationAttachmentModel(
-      id: json['id'] as int,
+      id: json['id'] as String,
       fileName: json['fileName'] as String,
       fileUrl: json['fileUrl'] as String,
-      fileSize: json['fileSize'] as int,
+      fileSize: (json['fileSize'] as num).toInt(),
     );
   }
 
@@ -144,12 +145,13 @@ class EducationAttachmentModel {
 ///
 /// API 응답의 게시물 상세 JSON을 Domain Entity로 변환한다.
 class EducationPostDetailModel {
-  final int id;
+  final String id;
   final String category;
   final String categoryName;
   final String title;
   final String content;
-  final String createdAt;
+  // 백엔드(EducationPostDetailResponse)는 createdAt 을 nullable 로 선언한다.
+  final String? createdAt;
   final List<EducationImageModel> images;
   final List<EducationAttachmentModel> attachments;
 
@@ -166,12 +168,12 @@ class EducationPostDetailModel {
 
   factory EducationPostDetailModel.fromJson(Map<String, dynamic> json) {
     return EducationPostDetailModel(
-      id: json['id'] as int,
+      id: json['id'] as String,
       category: json['category'] as String,
       categoryName: json['categoryName'] as String,
       title: json['title'] as String,
       content: json['content'] as String,
-      createdAt: json['createdAt'] as String,
+      createdAt: json['createdAt'] as String?,
       images: (json['images'] as List<dynamic>)
           .map((item) => EducationImageModel.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -201,7 +203,10 @@ class EducationPostDetailModel {
       categoryName: categoryName,
       title: title,
       content: content,
-      createdAt: DateTime.parse(createdAt),
+      // createdAt 이 null 인 경우(방어적) "미상"을 epoch 센티넬로 표현한다.
+      createdAt: createdAt != null
+          ? DateTime.parse(createdAt!)
+          : DateTime.fromMillisecondsSinceEpoch(0),
       images: images.map((model) => model.toEntity()).toList(),
       attachments: attachments.map((model) => model.toEntity()).toList(),
     );
