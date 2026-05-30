@@ -314,6 +314,82 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findPlacementCheck(
+        from: LocalDate,
+        to: LocalDate,
+        roles: List<String>,
+        branchCodes: List<String>,
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .join(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .where(
+                teamMemberSchedule.workingDate.between(from, to),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
+                employee.role.`in`(roles),
+                employee.name.notLike("%테스트용%"),
+                employee.name.notLike("%관리자%"),
+                employee.name.notLike("%파워세일즈%"),
+                // 퇴직자 포함 (status 필터 없음) — soft-delete 사원만 제외 (Spec #839 Q2)
+                employee.isDeleted.isNull.or(employee.isDeleted.eq(false)),
+                costCenterCodeIn(branchCodes),
+                isNotDeleted(),
+            )
+            .fetch()
+    }
+
+    override fun findWorkHistory(
+        employeeCode: String,
+        from: LocalDate,
+        to: LocalDate,
+        branchCodes: List<String>,
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .join(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .where(
+                employee.employeeCode.eq(employeeCode),
+                teamMemberSchedule.workingDate.between(from, to),
+                costCenterCodeIn(branchCodes),
+                isNotDeleted(),
+            )
+            .orderBy(teamMemberSchedule.workingDate.asc())
+            .fetch()
+    }
+
+    override fun findSafetyCheckReport(
+        date: LocalDate,
+        branchCodes: List<String>,
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .join(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .where(
+                teamMemberSchedule.workingDate.eq(date),
+                // 순회/점검 대상 (레거시 TraversalFlag = ',O')
+                teamMemberSchedule.traversalFlag.eq("O"),
+                // 점검 응답 존재 = 점검 완료 (레거시 Yes_ChkCnt != 빈값)
+                teamMemberSchedule.yesChkCnt.isNotNull,
+                costCenterCodeIn(branchCodes),
+                isNotDeleted(),
+            )
+            .orderBy(teamMemberSchedule.workingCategory1.asc())
+            .fetch()
+    }
+
+    /**
+     * DataScope 지점 스코프 — 사원 소속 지점(costCenterCode) 기준 (Spec #839/#840 Q3).
+     * SF `CurrentUserBranchNameList` + 여사원 일정관리(`ScheduleSearchByTeamMemberController`) 정합 —
+     * 거래처 소재 지점(account.branchCode) 이 아니라 일정의 costCenterCode 로 필터.
+     */
+    private fun costCenterCodeIn(branchCodes: List<String>): BooleanExpression? {
+        return if (branchCodes.isEmpty()) null
+        else teamMemberSchedule.costCenterCode.`in`(branchCodes)
+    }
+
     private fun isNotDeleted(): BooleanExpression {
         return teamMemberSchedule.isDeleted.isNull.or(teamMemberSchedule.isDeleted.eq(false))
     }
