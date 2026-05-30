@@ -57,6 +57,7 @@ const ClaimPeriodReportPage = lazy(() => import('@/pages/ClaimPeriodReportPage')
 const LogisticsClaimReportPage = lazy(() => import('@/pages/LogisticsClaimReportPage'));
 const PromotionTargetActualReportPage = lazy(() => import('@/pages/PromotionTargetActualReportPage'));
 const PptConfirmedReportPage = lazy(() => import('@/pages/PptConfirmedReportPage'));
+const ConvertedHeadcountReportPage = lazy(() => import('@/pages/ConvertedHeadcountReportPage'));
 const PPTMasterPage = lazy(() => import('@/pages/promotion/PPTMasterPage'));
 const PPTHistoryPage = lazy(() => import('@/pages/promotion/PPTHistoryPage'));
 const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
@@ -244,6 +245,11 @@ export const router = createBrowserRouter(
                 { path: '/female-employee-work-history', element: <LazyWrapper><FemaleEmployeeWorkHistoryPage /></LazyWrapper> },
                 { path: '/female-employee-safety-check-report', element: <LazyWrapper><FemaleEmployeeSafetyCheckReportPage /></LazyWrapper> },
                 { path: '/female-employee-safety-check-report-rpa', element: <LazyWrapper><FemaleEmployeeSafetyCheckReportRpaPage /></LazyWrapper> },
+                { path: '/converted-headcount-report-permanent-temp-all', element: <LazyWrapper><ConvertedHeadcountReportPage variant="PERMANENT_TEMP_ALL" title="거래처유형별 환산인원 (상시·임시 전체)" /></LazyWrapper> },
+                { path: '/converted-headcount-report-permanent-excl-consign', element: <LazyWrapper><ConvertedHeadcountReportPage variant="PERMANENT_ONLY_EXCL_CONSIGN" title="거래처유형별 환산인원 (상시, 위탁농협 제외)" /></LazyWrapper> },
+                { path: '/converted-headcount-report-temp-all', element: <LazyWrapper><ConvertedHeadcountReportPage variant="TEMP_ALL" title="거래처유형별 환산인원 (임시 전체)" /></LazyWrapper> },
+                { path: '/converted-headcount-report-temp-excl-consign', element: <LazyWrapper><ConvertedHeadcountReportPage variant="TEMP_ONLY_EXCL_CONSIGN" title="거래처유형별 환산인원 (임시 전체, 위탁농협 제외)" /></LazyWrapper> },
+                { path: '/converted-headcount-report-team2-permanent-temp-all', element: <LazyWrapper><ConvertedHeadcountReportPage variant="TEAM2_PERMANENT_TEMP_ALL" title="(2팀) 거래처유형별 환산인원 (상시·임시 전체)" /></LazyWrapper> },
               ],
             },
             {

@@ -174,6 +174,36 @@ export const menuRoute: MenuRoute = {
           entity: 'promotion',
           operation: 'READ',
         },
+        {
+          path: '/converted-headcount-report-permanent-temp-all',
+          name: '거래처유형별 환산인원 (상시·임시 전체)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/converted-headcount-report-permanent-excl-consign',
+          name: '거래처유형별 환산인원 (상시, 위탁농협 제외)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/converted-headcount-report-temp-all',
+          name: '거래처유형별 환산인원 (임시 전체)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/converted-headcount-report-temp-excl-consign',
+          name: '거래처유형별 환산인원 (임시 전체, 위탁농협 제외)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/converted-headcount-report-team2-permanent-temp-all',
+          name: '(2팀) 거래처유형별 환산인원 (상시·임시 전체)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
       ],
     },
     {
