@@ -3583,6 +3583,93 @@
         },
         "type" : "object"
       },
+      "ApiResponseFemaleEmployeePlacementCheckResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FemaleEmployeePlacementCheckResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseFemaleEmployeeSafetyCheckReportResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FemaleEmployeeSafetyCheckReportResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseFemaleEmployeeWorkHistoryResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FemaleEmployeeWorkHistoryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseHolidayMasterResponse" : {
         "properties" : {
           "data" : {
@@ -7805,6 +7892,184 @@
         },
         "type" : "object"
       },
+      "FemaleEmployeePlacementCheckItem" : {
+        "properties" : {
+          "accountBranchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountBranchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
+          "age" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "commuteDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employmentStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "jikwee" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
+          },
+          "secondWorkType" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory2" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory5" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "yearsOfService" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeePlacementCheckResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeePlacementCheckItem"
+            },
+            "type" : "array"
+          },
+          "month" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "year" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeSafetyCheckReportItem" : {
+        "properties" : {
+          "accountBranchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
+          "checkTime" : {
+            "type" : [ "string", "null" ]
+          },
+          "commuteDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeOrgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment1" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment2" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment3" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment4" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment5" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment6" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment7" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment8" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment9" : {
+            "type" : [ "string", "null" ]
+          },
+          "hrCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "ladyName" : {
+            "type" : "string"
+          },
+          "precaution" : {
+            "type" : [ "string", "null" ]
+          },
+          "precautionChk" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "secondWorkType" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory2" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeSafetyCheckReportResponse" : {
+        "properties" : {
+          "date" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeeSafetyCheckReportItem"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "FemaleEmployeeScheduleEventDto" : {
         "properties" : {
           "accountId" : {
@@ -7876,6 +8141,76 @@
           "subHoliday" : {
             "format" : "int32",
             "type" : [ "integer", "null" ]
+          },
+          "year" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeWorkHistoryItem" : {
+        "properties" : {
+          "accountBranchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountBranchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "age" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "commuteDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "scheduleName" : {
+            "type" : [ "string", "null" ]
+          },
+          "secondWorkType" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory2" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingType" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeWorkHistoryResponse" : {
+        "properties" : {
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeeWorkHistoryItem"
+            },
+            "type" : "array"
+          },
+          "month" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "year" : {
             "format" : "int32",
@@ -14882,7 +15217,7 @@
     },
     "/api/v1/admin/employees/{employeeId}/work-history" : {
       "get" : {
-        "operationId" : "getWorkHistory",
+        "operationId" : "getWorkHistory_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "employeeId",
@@ -15071,6 +15406,279 @@
           }
         },
         "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/placement-check" : {
+      "get" : {
+        "operationId" : "getPlacementCheck",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCodes",
+          "required" : false,
+          "schema" : {
+            "default" : [ ],
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseFemaleEmployeePlacementCheckResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/placement-check/export" : {
+      "get" : {
+        "operationId" : "exportPlacementCheck",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCodes",
+          "required" : false,
+          "schema" : {
+            "default" : [ ],
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/safety-check-report" : {
+      "get" : {
+        "operationId" : "getSafetyCheckReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "date",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseFemaleEmployeeSafetyCheckReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/safety-check-report/export" : {
+      "get" : {
+        "operationId" : "exportSafetyCheckReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "date",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/work-history" : {
+      "get" : {
+        "operationId" : "getWorkHistory",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseFemaleEmployeeWorkHistoryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/work-history/export" : {
+      "get" : {
+        "operationId" : "exportWorkHistory",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
       }
     },
     "/api/v1/admin/holiday-masters" : {
