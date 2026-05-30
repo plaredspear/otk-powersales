@@ -31,6 +31,7 @@ class AdminConvertedHeadcountReportServiceTest {
         accountBranchName: String? = "거래처지점",
         empBranchName: String? = "서울지점",
         workingCategory1: String? = "근무A",
+        workingCategory3: String? = null,
         year: String? = "2026",
         month: String? = "5",
         convertedHeadcount: BigDecimal? = BigDecimal("1.0"),
@@ -39,6 +40,7 @@ class AdminConvertedHeadcountReportServiceTest {
             year = year,
             month = month,
             workingCategory1 = workingCategory1,
+            workingCategory3 = workingCategory3,
             empBranchName = empBranchName,
             convertedHeadcount = convertedHeadcount,
             account = account(accountType, accountBranchName),
@@ -54,6 +56,7 @@ class AdminConvertedHeadcountReportServiceTest {
                 includeNullWc5 = any(),
                 excludeConsignment = any(),
                 costCenterCode = any(),
+                accountTypeFilter = any(),
             )
         } returns result
     }
@@ -77,6 +80,7 @@ class AdminConvertedHeadcountReportServiceTest {
                     includeNullWc5 = capture(includeNullSlot),
                     excludeConsignment = capture(excludeConsignSlot),
                     costCenterCode = captureNullable(costCenterSlot),
+                    accountTypeFilter = any(),
                 )
             } returns emptyList()
 
@@ -100,12 +104,57 @@ class AdminConvertedHeadcountReportServiceTest {
                     includeNullWc5 = any(),
                     excludeConsignment = capture(excludeConsignSlot),
                     costCenterCode = any(),
+                    accountTypeFilter = any(),
                 )
             } returns emptyList()
 
             service.getReport(ConvertedHeadcountReportVariant.PERMANENT_ONLY_EXCL_CONSIGN, "2026", "5")
 
             assertThat(excludeConsignSlot.captured).isTrue()
+        }
+
+        @Test
+        @DisplayName("대리점 variant 는 accountTypeFilter=대리점 + 근무유형5 필터 없음(전체)을 전달한다")
+        fun passesAgencyFilters() {
+            val accountTypeSlot = slot<String?>()
+            val wc5Slot = slot<List<String>>()
+            every {
+                repository.findConvertedHeadcountReport(
+                    year = any(),
+                    month = any(),
+                    workingCategory5In = capture(wc5Slot),
+                    includeNullWc5 = any(),
+                    excludeConsignment = any(),
+                    costCenterCode = any(),
+                    accountTypeFilter = captureNullable(accountTypeSlot),
+                )
+            } returns emptyList()
+
+            service.getReport(ConvertedHeadcountReportVariant.AGENCY_PERMANENT_TEMP_ALL, "2026", "5")
+
+            assertThat(accountTypeSlot.captured).isEqualTo("대리점")
+            assertThat(wc5Slot.captured).isEmpty()
+        }
+
+        @Test
+        @DisplayName("대형마트 variant 는 accountTypeFilter=대형마트(3대)를 전달한다 (SF 죽은 필터 정합)")
+        fun passesHypermarketFilter() {
+            val accountTypeSlot = slot<String?>()
+            every {
+                repository.findConvertedHeadcountReport(
+                    year = any(),
+                    month = any(),
+                    workingCategory5In = any(),
+                    includeNullWc5 = any(),
+                    excludeConsignment = any(),
+                    costCenterCode = any(),
+                    accountTypeFilter = captureNullable(accountTypeSlot),
+                )
+            } returns emptyList()
+
+            service.getReport(ConvertedHeadcountReportVariant.HYPERMARKET_PERMANENT, "2026", "5")
+
+            assertThat(accountTypeSlot.captured).isEqualTo("대형마트(3대)")
         }
     }
 
@@ -171,6 +220,42 @@ class AdminConvertedHeadcountReportServiceTest {
             val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
 
             assertThat(res.groups[0].rows[0].yearMonth).isEqualTo("2026-05")
+        }
+
+        @Test
+        @DisplayName("근무유형3 포함 variant(대리점)는 근무유형3 가 다르면 별도 행으로 분리한다")
+        fun splitsByWorkingCategory3WhenIncluded() {
+            stubReport(
+                listOf(
+                    row(AccountType.AGENCY, workingCategory3 = "WC3-A", convertedHeadcount = BigDecimal("1.0")),
+                    row(AccountType.AGENCY, workingCategory3 = "WC3-B", convertedHeadcount = BigDecimal("2.0")),
+                ),
+            )
+
+            val res = service.getReport(ConvertedHeadcountReportVariant.AGENCY_PERMANENT_TEMP_ALL, "2026", "5")
+
+            assertThat(res.includeWorkingCategory3).isTrue()
+            assertThat(res.groups[0].rows).hasSize(2)
+            assertThat(res.groups[0].rows.map { it.workingCategory3 })
+                .containsExactlyInAnyOrder("WC3-A", "WC3-B")
+        }
+
+        @Test
+        @DisplayName("근무유형3 미포함 variant(거래처유형)는 근무유형3 가 달라도 한 행으로 합산한다")
+        fun ignoresWorkingCategory3WhenExcluded() {
+            stubReport(
+                listOf(
+                    row(AccountType.SUPER, workingCategory3 = "WC3-A", convertedHeadcount = BigDecimal("1.0")),
+                    row(AccountType.SUPER, workingCategory3 = "WC3-B", convertedHeadcount = BigDecimal("2.0")),
+                ),
+            )
+
+            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
+
+            assertThat(res.includeWorkingCategory3).isFalse()
+            assertThat(res.groups[0].rows).hasSize(1)
+            assertThat(res.groups[0].rows[0].workingCategory3).isNull()
+            assertThat(res.groups[0].rows[0].convertedHeadcount).isEqualByComparingTo("3.0")
         }
     }
 

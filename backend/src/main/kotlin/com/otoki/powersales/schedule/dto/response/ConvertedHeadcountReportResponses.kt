@@ -14,6 +14,8 @@ data class ConvertedHeadcountReportResult(
     val variant: String,
     val year: String,
     val month: String,
+    /** 근무유형3 컬럼 표시 여부 (대리점 3종 + 대형마트 X3_rq9). web 컬럼 노출 분기용. */
+    val includeWorkingCategory3: Boolean,
     val groups: List<ConvertedHeadcountReportGroup>,
     val totalHeadcount: BigDecimal,
 )
@@ -28,13 +30,15 @@ data class ConvertedHeadcountReportGroup(
 )
 
 /**
- * 환산인원 집계 1행 — 구분 × 근무유형1 × 지점 × 연월 × SUM(환산인원).
+ * 환산인원 집계 1행 — 구분 × 근무유형1 (× 근무유형3) × 지점 × 연월 × SUM(환산인원).
  *
- * branchName = variant 별 지점 기준 (1-x: 여사원 소속 empBranchName / 2-1: 거래처 account.branchName).
+ * branchName = variant 별 지점 기준 (1-x/대형마트: 여사원 소속 empBranchName / 2-1/대리점: 거래처 account.branchName).
+ * workingCategory3 = variant.includeWorkingCategory3 인 경우에만 채워짐 (대리점 3종 + 대형마트 X3_rq9). 그 외 null.
  */
 data class ConvertedHeadcountReportRow(
     val accountType: String?,
     val workingCategory1: String?,
+    val workingCategory3: String?,
     val branchName: String?,
     val yearMonth: String?,
     val convertedHeadcount: BigDecimal,

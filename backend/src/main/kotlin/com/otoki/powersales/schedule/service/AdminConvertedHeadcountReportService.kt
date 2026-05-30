@@ -44,14 +44,17 @@ class AdminConvertedHeadcountReportService(
             includeNullWc5 = variant.includeNullWc5,
             excludeConsignment = variant.excludeConsignment,
             costCenterCode = variant.costCenterCode,
+            accountTypeFilter = variant.accountTypeFilter,
         )
 
-        // 구분 × 근무유형1 × 지점 × 연월 단위 SUM(환산인원) 집계
+        // 구분 × 근무유형1 (× 근무유형3) × 지점 × 연월 단위 SUM(환산인원) 집계.
+        // 근무유형3 은 variant.includeWorkingCategory3 인 경우에만 집계 키에 포함 (그 외 null 로 평탄화).
         val aggregated = rows
             .groupBy {
                 AggKey(
                     accountType = it.account?.accountType?.displayName,
                     workingCategory1 = it.workingCategory1,
+                    workingCategory3 = if (variant.includeWorkingCategory3) it.workingCategory3 else null,
                     branchName = branchNameOf(it, variant),
                     yearMonth = yearMonthOf(it),
                 )
@@ -60,13 +63,14 @@ class AdminConvertedHeadcountReportService(
                 ConvertedHeadcountReportRow(
                     accountType = key.accountType,
                     workingCategory1 = key.workingCategory1,
+                    workingCategory3 = key.workingCategory3,
                     branchName = key.branchName,
                     yearMonth = key.yearMonth,
                     convertedHeadcount = group.sumOf { it.convertedHeadcount ?: BigDecimal.ZERO },
                 )
             }
 
-        // 구분(accountType) 그룹 + 그룹별 소계. 정렬: 구분 Asc → 근무유형1 → 지점 → 연월 (SF groupings 정합)
+        // 구분(accountType) 그룹 + 그룹별 소계. 정렬: 구분 Asc → 근무유형1 → 근무유형3 → 지점 → 연월 (SF groupings 정합)
         val groups = aggregated
             .groupBy { it.accountType }
             .toSortedMap(nullsLast(naturalOrder()))
@@ -76,6 +80,7 @@ class AdminConvertedHeadcountReportService(
                     subtotalHeadcount = groupRows.sumOf { it.convertedHeadcount },
                     rows = groupRows.sortedWith(
                         compareBy<ConvertedHeadcountReportRow, String?>(nullsLast()) { it.workingCategory1 }
+                            .thenBy(nullsLast()) { it.workingCategory3 }
                             .thenBy(nullsLast()) { it.branchName }
                             .thenBy(nullsLast()) { it.yearMonth },
                     ),
@@ -86,6 +91,7 @@ class AdminConvertedHeadcountReportService(
             variant = variant.name,
             year = year,
             month = month,
+            includeWorkingCategory3 = variant.includeWorkingCategory3,
             groups = groups,
             totalHeadcount = groups.sumOf { it.subtotalHeadcount },
         )
@@ -101,7 +107,17 @@ class AdminConvertedHeadcountReportService(
         val sheet = workbook.createSheet("환산인원현황")
         val headerStyle = createHeaderStyle(workbook)
 
-        val headers = listOf("구분", "근무유형1", "지점", "연월", "환산인원")
+        // 근무유형3 컬럼은 variant.includeWorkingCategory3 인 경우에만 표시 (대리점 3종 + 대형마트 X3_rq9).
+        val wc3 = report.includeWorkingCategory3
+        val headers = buildList {
+            add("구분")
+            add("근무유형1")
+            if (wc3) add("근무유형3")
+            add("지점")
+            add("연월")
+            add("환산인원")
+        }
+        val hcCol = headers.lastIndex // 환산인원 컬럼 인덱스
         val headerRow = sheet.createRow(0)
         headers.forEachIndexed { i, h ->
             headerRow.createCell(i).apply {
@@ -115,21 +131,23 @@ class AdminConvertedHeadcountReportService(
         report.groups.forEach { group ->
             group.rows.forEach { r ->
                 val row = sheet.createRow(rowIdx++)
-                row.createCell(0).setCellValue(r.accountType ?: "")
-                row.createCell(1).setCellValue(r.workingCategory1 ?: "")
-                row.createCell(2).setCellValue(r.branchName ?: "")
-                row.createCell(3).setCellValue(r.yearMonth ?: "")
-                row.createCell(4).setCellValue(r.convertedHeadcount.toDouble())
+                var c = 0
+                row.createCell(c++).setCellValue(r.accountType ?: "")
+                row.createCell(c++).setCellValue(r.workingCategory1 ?: "")
+                if (wc3) row.createCell(c++).setCellValue(r.workingCategory3 ?: "")
+                row.createCell(c++).setCellValue(r.branchName ?: "")
+                row.createCell(c++).setCellValue(r.yearMonth ?: "")
+                row.createCell(c).setCellValue(r.convertedHeadcount.toDouble())
             }
             // 그룹 소계 행
             val subtotalRow = sheet.createRow(rowIdx++)
             subtotalRow.createCell(0).setCellValue("${group.accountType} 소계")
-            subtotalRow.createCell(4).setCellValue(group.subtotalHeadcount.toDouble())
+            subtotalRow.createCell(hcCol).setCellValue(group.subtotalHeadcount.toDouble())
         }
         // 전체 총계 행
         val totalRow = sheet.createRow(rowIdx)
         totalRow.createCell(0).setCellValue("합계")
-        totalRow.createCell(4).setCellValue(report.totalHeadcount.toDouble())
+        totalRow.createCell(hcCol).setCellValue(report.totalHeadcount.toDouble())
 
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
@@ -151,6 +169,7 @@ class AdminConvertedHeadcountReportService(
     private data class AggKey(
         val accountType: String?,
         val workingCategory1: String?,
+        val workingCategory3: String?,
         val branchName: String?,
         val yearMonth: String?,
     )
