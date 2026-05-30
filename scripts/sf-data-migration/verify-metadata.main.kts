@@ -40,7 +40,7 @@ val EXPECTED_META_ONLY: Set<String> = setOf(
     "Appointment:Id", "AttendanceLog:Id", "AttendInfo:Id",
     "Claim:Id", "DisplayWorkSchedule:Id", "EmployeeInputCriteriaMaster:Id", "ErpOrder:Id",
     "ErpOrderProduct:Id", "HolidayMaster:Id", "InspectionTheme:Id",
-    "MonthlyFemaleEmployeeIntegrationSchedule:Id", "MonthlySalesHistory:Id", "NewProduct:Id", "OrderRequest:Id",
+    "MonthlyFemaleEmployeeIntegrationSchedule:Id", "NewProduct:Id", "OrderRequest:Id",
     "OrderRequestProduct:Id", "ProductBarcode:Id", "ProfessionalPromotionTeamHistory:Id", "ProfessionalPromotionTeamMaster:Id",
     "PromotionEmployee:Id", "PushMessage:Id", "PushMessageReceiver:Id",
     "TeamMemberSchedule:Id", "UploadFile:Id",

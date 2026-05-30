@@ -223,7 +223,6 @@ SELECT
     DKRetail__PrimaryProductId__c, DKRetail__OtherProduct__c,
     DKRetail__Message__c, DKRetail__StandLocation__c,
     CostCenterCode__c, DKRetail__Remark__c, DKRetail__ProductType__c,
-    Category1__c,
     OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
     IsDeleted, DKRetail__ActualAmount__c, DKRetail__TargetAmount__c
 FROM DKRetail__Promotion__c

@@ -365,7 +365,9 @@ val PROMOTION_METADATA = EntityMetadata(
         FieldMapping("CostCenterCode__c", "cost_center_code"),
         FieldMapping("DKRetail__Remark__c", "remark"),
         FieldMapping("DKRetail__ProductType__c", "product_type"),
-        FieldMapping("Category1__c", "category1"),
+        // Category1__c 는 SF formula (= DKRetail__PrimaryProductId__r.StoreCondition__c) →
+        // entity 는 primaryProduct 기반 derive getter (저장 컬럼 아님, @SFField 없음),
+        // DB 컬럼도 V202605281844 에서 drop. calculated 라 SOQL 적재 불가 → METADATA 제외.
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
         FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
@@ -1636,7 +1638,6 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "HolidayMaster",
     "InspectionTheme",
     "MonthlyFemaleEmployeeIntegrationSchedule",
-    "MonthlySalesHistory",
     "NewProduct",
     "OrderRequest",
     "OrderRequestProduct",
@@ -1660,7 +1661,7 @@ val SUPPORTED_TARGETS = setOf(
     "AgreementHistory", "AgreementWord", "AlternativeHoliday", "Appointment", "AttendanceLog",
     "AttendInfo", "Claim", "DisplayWorkSchedule", "EmployeeInputCriteriaMaster",
     "ErpOrder", "ErpOrderProduct", "HolidayMaster", "InspectionTheme",
-    "MonthlyFemaleEmployeeIntegrationSchedule", "MonthlySalesHistory", "NewProduct", "OrderRequest", "OrderRequestProduct",
+    "MonthlyFemaleEmployeeIntegrationSchedule", "NewProduct", "OrderRequest", "OrderRequestProduct",
     "ProductBarcode", "ProfessionalPromotionTeamHistory", "ProfessionalPromotionTeamMaster", "PromotionEmployee", "PushMessage",
     "PushMessageReceiver", "TeamMemberSchedule", "UploadFile", "Suggestion",
     "UserRole", "Profile"
