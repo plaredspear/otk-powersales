@@ -6,8 +6,8 @@ CLAUDE.md
 CLAUDE.local.md
 .claudeignore
 
-# Documentation
-docs
+# Documentation (worktree 루트의 docs symlink만 무시 — 소스 내부 docs 디렉토리는 추적)
+/docs
 
 # db-tunnel 환경 설정 (RDS endpoint + Secret ARN)
 scripts/db-tunnel.*.env

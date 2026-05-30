@@ -73,6 +73,8 @@ const PermissionMatrixPage = lazy(() => import('@/pages/admin/permissions/Permis
 const PageAccessGuidePage = lazy(() => import('@/pages/admin/permissions/PageAccessGuidePage'));
 const PermissionGuidePage = lazy(() => import('@/pages/admin/permissions/PermissionGuidePage'));
 const UserRoleTreePage = lazy(() => import('@/pages/admin/user-roles/UserRoleTreePage'));
+const SystemDocsHomePage = lazy(() => import('@/pages/admin/docs/SystemDocsHomePage'));
+const SystemOverviewPage = lazy(() => import('@/pages/admin/docs/SystemOverviewPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -313,6 +315,8 @@ export const router = createBrowserRouter(
               element: <RoleRoute allowedProfileNames={['시스템 관리자']} />,
               children: [
                 { path: '/admin/permissions/guide', element: <LazyWrapper><PermissionGuidePage /></LazyWrapper> },
+                { path: '/admin/docs', element: <LazyWrapper><SystemDocsHomePage /></LazyWrapper> },
+                { path: '/admin/docs/overview', element: <LazyWrapper><SystemOverviewPage /></LazyWrapper> },
               ],
             },
             { path: '*', element: <Navigate to="/" replace /> },

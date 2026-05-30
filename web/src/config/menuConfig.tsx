@@ -10,6 +10,7 @@ import {
   SettingOutlined,
   ToolOutlined,
   MobileOutlined,
+  ReadOutlined,
 } from '@ant-design/icons';
 import type { SfEntityOperation, SfSystemPermission } from '@/hooks/usePermission';
 
@@ -247,6 +248,14 @@ export const menuRoute: MenuRoute = {
         { path: '/admin/tools/sf-migration-stage1', name: 'SF Migration — Stage 1 적재', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/tools/sf-migration', name: 'SF Migration — Stage 2 FK', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/tools/cache', name: 'Redis 캐시 관리', systemPermission: 'MODIFY_ALL_DATA' },
+      ],
+    },
+    {
+      name: '시스템 안내',
+      icon: <ReadOutlined />,
+      children: [
+        { path: '/admin/docs', name: '시스템 안내 홈', allowedProfileNames: ['시스템 관리자'] },
+        { path: '/admin/docs/overview', name: '시스템 개요', allowedProfileNames: ['시스템 관리자'] },
       ],
     },
   ],
