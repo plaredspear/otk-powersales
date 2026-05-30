@@ -61,9 +61,9 @@ export default function EmployeePage() {
         <a
           onClick={(e) => {
             e.preventDefault();
-            navigate(`/employee/${record.id}`);
+            navigate(`/female-employee/${record.id}`);
           }}
-          href={`/employee/${record.id}`}
+          href={`/female-employee/${record.id}`}
         >
           {val}
         </a>
@@ -77,9 +77,9 @@ export default function EmployeePage() {
         <a
           onClick={(e) => {
             e.preventDefault();
-            navigate(`/employee/${record.id}`);
+            navigate(`/female-employee/${record.id}`);
           }}
-          href={`/employee/${record.id}`}
+          href={`/female-employee/${record.id}`}
         >
           {val}
         </a>
@@ -232,7 +232,11 @@ export default function EmployeePage() {
         />
       )}
       {registerOpen && (
-        <EmployeeRegisterModal open={true} onClose={() => setRegisterOpen(false)} />
+        <EmployeeRegisterModal
+          open={true}
+          onClose={() => setRegisterOpen(false)}
+          detailBasePath="/female-employee"
+        />
       )}
     </div>
   );

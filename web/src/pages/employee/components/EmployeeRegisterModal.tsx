@@ -9,6 +9,8 @@ import { PPT_TEAM_TYPES, type PPTTeamType } from '@/constants/pptTeamType';
 interface EmployeeRegisterModalProps {
   open: boolean;
   onClose: () => void;
+  /** 등록 완료 후 이동할 상세 페이지의 base path (예: '/female-employee'). 기본값은 '/employee'. */
+  detailBasePath?: string;
 }
 
 interface FormValues {
@@ -38,7 +40,11 @@ const MANUAL_REGISTER_ROLES: Array<{ value: AppAuthority; label: string }> = [
   { value: 'AccountViewAll', label: 'AccountViewAll' },
 ];
 
-export default function EmployeeRegisterModal({ open, onClose }: EmployeeRegisterModalProps) {
+export default function EmployeeRegisterModal({
+  open,
+  onClose,
+  detailBasePath = '/employee',
+}: EmployeeRegisterModalProps) {
   const [form] = Form.useForm<FormValues>();
   const mutation = useManualRegisterEmployee();
   const navigate = useNavigate();
@@ -70,7 +76,7 @@ export default function EmployeeRegisterModal({ open, onClose }: EmployeeRegiste
       });
       form.resetFields();
       onClose();
-      navigate(`/employee/${result.id}`);
+      navigate(`${detailBasePath}/${result.id}`);
     } catch (err) {
       if (err && typeof err === 'object' && 'errorFields' in err) {
         return;

@@ -15,7 +15,7 @@ function makeMenu(): MenuRoute {
       {
         name: '인사/근무',
         children: [
-          { path: '/employee', name: '여사원 현황', entity: 'employee', operation: 'READ' },
+          { path: '/female-employee', name: '여사원 현황', entity: 'employee', operation: 'READ' },
         ],
       },
       {
@@ -134,7 +134,7 @@ describe('buildRows', () => {
       profileMatrix: makeProfileMatrix(),
       permissionSetMatrix: makePermissionSetMatrix(),
     });
-    const employee = rows.find((r) => r.path === '/employee')!;
+    const employee = rows.find((r) => r.path === '/female-employee')!;
     expect(employee.requirementKind).toBe('entity');
     expect(employee.requirementLabel).toBe('사원 (employee, READ/조회)');
     expect(employee.satisfyingProfiles).toEqual([

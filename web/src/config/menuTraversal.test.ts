@@ -17,7 +17,7 @@ describe('flattenMenuLeaves', () => {
         {
           name: '인사/근무',
           children: [
-            { path: '/employee', name: '여사원 현황' },
+            { path: '/female-employee', name: '여사원 현황' },
           ],
         },
       ],
@@ -39,7 +39,7 @@ describe('flattenMenuLeaves', () => {
       },
       {
         category: '인사/근무',
-        item: { path: '/employee', name: '여사원 현황' },
+        item: { path: '/female-employee', name: '여사원 현황' },
         isSubRoute: false,
         parentName: null,
       },
@@ -113,7 +113,7 @@ describe('flattenMenuLeaves', () => {
               systemPermission: 'MODIFY_ALL_DATA',
             },
             {
-              path: '/employee',
+              path: '/female-employee',
               name: '여사원 현황',
               entity: 'employee',
               operation: 'READ',
