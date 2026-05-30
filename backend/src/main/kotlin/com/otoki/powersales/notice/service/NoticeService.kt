@@ -85,15 +85,7 @@ class NoticeService(
         val pageable = PageRequest.of(page - 1, size)
         val noticePage = noticeRepository.findNotices(parsedCategory, truncatedSearch, branch, pageable)
 
-        val content = noticePage.content.map { notice ->
-            NoticePostSummaryResponse(
-                id = notice.id,
-                category = notice.category?.apiCode ?: "",
-                categoryName = notice.category?.displayName ?: "",
-                title = notice.name ?: "",
-                createdAt = notice.createdAt
-            )
-        }
+        val content = noticePage.content.map { it.toSummaryResponse() }
 
         return NoticePostListResponse(
             content = content,
@@ -111,15 +103,7 @@ class NoticeService(
         val pageable = PageRequest.of(page - 1, size)
         val noticePage = noticeRepository.findAllNotices(parsedCategory, truncatedSearch, pageable)
 
-        val content = noticePage.content.map { notice ->
-            NoticePostSummaryResponse(
-                id = notice.id,
-                category = notice.category?.apiCode ?: "",
-                categoryName = notice.category?.displayName ?: "",
-                title = notice.name ?: "",
-                createdAt = notice.createdAt
-            )
-        }
+        val content = noticePage.content.map { it.toSummaryResponse() }
 
         return NoticePostListResponse(
             content = content,
@@ -129,6 +113,25 @@ class NoticeService(
             size = size
         )
     }
+
+    /**
+     * Notice 엔티티 → 목록 요약 Response.
+     * 컬럼 매핑은 SF `DKRetail__Notice__c` 의 `DKRetail__All` ListView 기준.
+     * - department ← employee.orgName (= SF Department__c formula)
+     * - authorName ← ownerUser.lastName (= SF OwnerName__c = Owner:User.LastName)
+     */
+    private fun Notice.toSummaryResponse(): NoticePostSummaryResponse =
+        NoticePostSummaryResponse(
+            id = id,
+            category = category?.apiCode ?: "",
+            categoryName = category?.displayName ?: "",
+            scope = scope?.displayName,
+            title = name ?: "",
+            branch = branch,
+            department = employee?.orgName,
+            authorName = ownerUser?.lastName,
+            createdAt = createdAt
+        )
 
     @Transactional
     fun createNotice(request: NoticeCreateRequest, creatorId: Long): NoticeMutationResponse {

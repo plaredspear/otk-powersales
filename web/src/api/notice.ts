@@ -13,7 +13,11 @@ export interface NoticeSummary {
   id: number;
   category: string;
   categoryName: string;
+  scope: string | null;
   title: string;
+  branch: string | null;
+  department: string | null;
+  authorName: string | null;
   createdAt: string;
 }
 

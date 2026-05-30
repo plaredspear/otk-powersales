@@ -3046,6 +3046,12 @@
       },
       "NoticePostSummaryResponse" : {
         "properties" : {
+          "authorName" : {
+            "type" : [ "string", "null" ]
+          },
+          "branch" : {
+            "type" : [ "string", "null" ]
+          },
           "category" : {
             "type" : "string"
           },
@@ -3056,9 +3062,15 @@
             "format" : "date-time",
             "type" : [ "string", "null" ]
           },
+          "department" : {
+            "type" : [ "string", "null" ]
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "scope" : {
+            "type" : [ "string", "null" ]
           },
           "title" : {
             "type" : "string"

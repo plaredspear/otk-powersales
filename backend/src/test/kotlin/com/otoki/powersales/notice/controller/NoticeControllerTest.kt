@@ -38,8 +38,8 @@ class NoticeControllerTest : MobileControllerTestSupport() {
         fun getPosts_success() {
             val response = NoticePostListResponse(
                 content = listOf(
-                    NoticePostSummaryResponse(id = 42L, category = "COMPANY", categoryName = "회사공지", title = "전체공지 제목", createdAt = java.time.LocalDateTime.parse("2026-02-28T10:30:00")),
-                    NoticePostSummaryResponse(id = 41L, category = "BRANCH", categoryName = "지점공지", title = "지점공지 제목", createdAt = java.time.LocalDateTime.parse("2026-02-27T09:00:00"))
+                    NoticePostSummaryResponse(id = 42L, category = "COMPANY", categoryName = "회사공지", scope = "영업사원", title = "전체공지 제목", branch = null, department = "판매전략실", authorName = "판매전략실", createdAt = java.time.LocalDateTime.parse("2026-02-28T10:30:00")),
+                    NoticePostSummaryResponse(id = 41L, category = "BRANCH", categoryName = "지점공지", scope = "영업사원", title = "지점공지 제목", branch = "[제1사업부] 1영업부-강서1지점", department = "강서1지점", authorName = "홍길동", createdAt = java.time.LocalDateTime.parse("2026-02-27T09:00:00"))
                 ),
                 totalCount = 5,
                 totalPages = 1,
@@ -61,7 +61,7 @@ class NoticeControllerTest : MobileControllerTestSupport() {
         fun getPosts_withParams() {
             val response = NoticePostListResponse(
                 content = listOf(
-                    NoticePostSummaryResponse(id = 1L, category = "COMPANY", categoryName = "회사공지", title = "영업 목표", createdAt = java.time.LocalDateTime.parse("2026-02-28T10:30:00"))
+                    NoticePostSummaryResponse(id = 1L, category = "COMPANY", categoryName = "회사공지", scope = "영업사원", title = "영업 목표", branch = null, department = "판매전략실", authorName = "판매전략실", createdAt = java.time.LocalDateTime.parse("2026-02-28T10:30:00"))
                 ),
                 totalCount = 1,
                 totalPages = 1,
