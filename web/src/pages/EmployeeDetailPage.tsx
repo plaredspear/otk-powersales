@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Alert,
   Button,
@@ -57,6 +57,11 @@ export default function EmployeeDetailPage() {
   const { employeeId: rawId } = useParams<{ employeeId: string }>();
   const employeeId = rawId ? Number(rawId) : undefined;
   const navigate = useNavigate();
+  const location = useLocation();
+  // 진입 맥락별 "목록으로" 대상: 여사원 현황(/female-employee/...) → 여사원 목록, 그 외(설정 사원목록 /employee/...) → 설정 사원 목록.
+  const listPath = location.pathname.startsWith('/female-employee')
+    ? '/female-employee'
+    : '/settings/employees';
   const { hasEntityPermission, hasSystemPermission } = usePermission();
   const canEdit = hasEntityPermission('employee', 'EDIT');
   const canReset = hasSystemPermission('MANAGE_USERS');
@@ -85,7 +90,7 @@ export default function EmployeeDetailPage() {
           action={
             <Space>
               <Button onClick={() => refetch()}>재시도</Button>
-              <Button onClick={() => navigate('/employee')}>목록으로</Button>
+              <Button onClick={() => navigate(listPath)}>목록으로</Button>
             </Space>
           }
         />
@@ -112,7 +117,7 @@ export default function EmployeeDetailPage() {
   return (
     <div style={{ padding: 16 }}>
       <Space style={{ marginBottom: 16 }}>
-        <Button onClick={() => navigate('/employee')}>← 목록으로</Button>
+        <Button onClick={() => navigate(listPath)}>← 목록으로</Button>
         <Tooltip title={editTooltip}>
           <Button type="primary" disabled={editDisabled} onClick={() => setEditOpen(true)}>
             수정

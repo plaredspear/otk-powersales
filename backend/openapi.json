@@ -19636,6 +19636,71 @@
         "tags" : [ "female-employee-schedule-controller" ]
       }
     },
+    "/api/v1/admin/female-employees" : {
+      "get" : {
+        "operationId" : "getFemaleEmployees",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
     "/api/v1/admin/holiday-masters" : {
       "get" : {
         "operationId" : "getHolidayMasters",
@@ -25577,71 +25642,6 @@
           }
         },
         "tags" : [ "admin-user-controller" ]
-      }
-    },
-    "/api/v1/admin/women-employees" : {
-      "get" : {
-        "operationId" : "getWomanEmployees",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
-          "name" : "status",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "costCenterCode",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "keyword",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "page",
-          "required" : false,
-          "schema" : {
-            "default" : 0,
-            "format" : "int32",
-            "type" : "integer"
-          }
-        }, {
-          "in" : "query",
-          "name" : "size",
-          "required" : false,
-          "schema" : {
-            "default" : 20,
-            "format" : "int32",
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseEmployeeListResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-woman-employee-controller" ]
       }
     },
     "/api/v1/mobile/accounts/my" : {

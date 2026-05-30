@@ -24,14 +24,14 @@ import org.springframework.web.bind.annotation.RestController
  * 여사원 현황 화면에서만 호출한다.
  */
 @RestController
-@RequestMapping("/api/v1/admin/women-employees")
-class AdminWomanEmployeeController(
+@RequestMapping("/api/v1/admin/female-employees")
+class AdminFemaleEmployeeController(
     private val adminEmployeeService: AdminEmployeeService,
 ) {
 
     @GetMapping
     @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)
-    fun getWomanEmployees(
+    fun getFemaleEmployees(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) status: String?,

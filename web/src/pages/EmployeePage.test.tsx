@@ -8,7 +8,7 @@ import type { Employee } from '@/api/employee';
 
 // 여사원 목록 hook 은 본 테스트와 무관하므로 고정 데이터를 반환하도록 mock 한다.
 vi.mock('@/hooks/employee/useEmployees', () => ({
-  useWomanEmployees: () => ({
+  useFemaleEmployees: () => ({
     data: {
       content: [activeEmployee, inactiveEmployee],
       page: 0,

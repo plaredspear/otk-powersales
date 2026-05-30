@@ -80,12 +80,12 @@ export const menuRoute: MenuRoute = {
       icon: <TeamOutlined />,
       children: [
         {
-          path: '/employee',
+          path: '/female-employee',
           name: '여사원 현황',
           entity: 'employee',
           operation: 'READ',
           subRoutes: [
-            { path: '/employee/:employeeId', name: '여사원 상세', entity: 'employee', operation: 'READ' },
+            { path: '/female-employee/:employeeId', name: '여사원 상세', entity: 'employee', operation: 'READ' },
           ],
         },
         { path: '/leave', name: '휴무관리' },

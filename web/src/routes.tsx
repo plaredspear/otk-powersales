@@ -220,7 +220,8 @@ export const router = createBrowserRouter(
             {
               element: <PermissionRoute entity="employee" operation="READ" />,
               children: [
-                { path: '/employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
+                { path: '/female-employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
+                { path: '/female-employee/:employeeId', element: <LazyWrapper><EmployeeDetailPage /></LazyWrapper> },
                 { path: '/employee/:employeeId', element: <LazyWrapper><EmployeeDetailPage /></LazyWrapper> },
                 { path: '/settings/employees', element: <LazyWrapper><EmployeeListPage /></LazyWrapper> },
               ],
