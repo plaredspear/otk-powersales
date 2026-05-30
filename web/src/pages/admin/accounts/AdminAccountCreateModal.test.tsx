@@ -47,6 +47,11 @@ const sampleEmployee: Employee = {
   jobCode: null,
   appointmentDate: null,
   ordDetailNode: null,
+  jikjong: null,
+  workEmail: null,
+  phone: null,
+  age: null,
+  yearsOfService: null,
 };
 
 function makeAxiosError(status: number, code: string, message: string): AxiosError {

@@ -10,6 +10,7 @@ import org.hibernate.annotations.NotFound
 import org.hibernate.annotations.NotFoundAction
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import com.otoki.powersales.employee.enums.CrmWorkType
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.enums.Gender
@@ -362,5 +363,32 @@ class Employee(
 
     fun resetDevice() {
         this.deviceUuid = null
+    }
+
+    /**
+     * 만나이 (SF `Age__c` 계산식 정합).
+     *
+     * SF formula: `FLOOR((TODAY() - DATEVALUE(Birthdate)) / 365.2425) + '살'`.
+     * `birthDate` 는 `yyyy-MM-dd` 문자열. 미지정/파싱 불가 시 null.
+     * SF 의 `여사원` 게이트는 호출 endpoint (role=WOMAN) 가 이미 한정.
+     */
+    fun calculateAge(today: LocalDate): String? {
+        val birth = birthDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
+        val days = ChronoUnit.DAYS.between(birth, today)
+        if (days < 0) return null
+        return "${Math.floor(days / 365.2425).toLong()}살"
+    }
+
+    /**
+     * 근속년수 (SF `yearsOfService__c` 계산식 정합).
+     *
+     * SF formula: `FLOOR((TODAY() - StartDate) / 365) + '년'` (만나이와 달리 윤년 미보정 — 365 고정).
+     * `startDate` 미지정 시 null.
+     */
+    fun calculateYearsOfService(today: LocalDate): String? {
+        val start = startDate ?: return null
+        val days = ChronoUnit.DAYS.between(start, today)
+        if (days < 0) return null
+        return "${days / 365}년"
     }
 }

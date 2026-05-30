@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import EmployeePage from './EmployeePage';
 import { useAuthStore } from '@/stores/authStore';
+import { entityPermissionKey, systemPermissionKey } from '@/hooks/usePermission';
 import type { Employee } from '@/api/employee';
 
 // 여사원 목록 hook 은 본 테스트와 무관하므로 고정 데이터를 반환하도록 mock 한다.
@@ -41,6 +42,11 @@ const activeEmployee: Employee = {
   jobCode: null,
   appointmentDate: null,
   ordDetailNode: null,
+  jikjong: 'OSPM',
+  workEmail: 'hong@otoki.com',
+  phone: '01012345678',
+  age: '47살',
+  yearsOfService: '6년',
 };
 
 const inactiveEmployee: Employee = {
@@ -86,16 +92,16 @@ describe('EmployeePage 계정 관리 컬럼 (Spec #582 P2-W)', () => {
     useAuthStore.setState({ user: null, accessToken: null, isAuthenticated: false });
   });
 
-  it('EMPLOYEE_RESET_CREDENTIALS 권한 미보유 - 계정 관리 컬럼이 렌더링되지 않음', () => {
-    setPermissions(['EMPLOYEE_READ']);
+  it('MANAGE_USERS 권한 미보유 - 계정 관리 컬럼이 렌더링되지 않음', () => {
+    setPermissions([entityPermissionKey('employee', 'READ')]);
     renderPage();
     expect(screen.queryByText('계정 관리')).not.toBeInTheDocument();
     expect(screen.queryAllByRole('button', { name: '단말 초기화' })).toHaveLength(0);
     expect(screen.queryAllByRole('button', { name: '비밀번호 초기화' })).toHaveLength(0);
   });
 
-  it('EMPLOYEE_RESET_CREDENTIALS 권한 보유 - active 사원은 버튼 활성, 비활성 사원은 disabled', () => {
-    setPermissions(['EMPLOYEE_READ', 'EMPLOYEE_RESET_CREDENTIALS']);
+  it('MANAGE_USERS 권한 보유 - active 사원은 버튼 활성, 비활성 사원은 disabled', () => {
+    setPermissions([entityPermissionKey('employee', 'READ'), systemPermissionKey('MANAGE_USERS')]);
     renderPage();
 
     const deviceButtons = screen.getAllByRole('button', { name: '단말 초기화' });

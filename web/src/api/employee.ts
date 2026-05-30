@@ -43,6 +43,12 @@ export interface Employee {
   jobCode: string | null;
   appointmentDate: string | null;
   ordDetailNode: string | null;
+  // SF 여사원 리스트뷰 정합 컬럼
+  jikjong: string | null;
+  workEmail: string | null;
+  phone: string | null;
+  age: string | null;
+  yearsOfService: string | null;
 }
 
 export interface EmployeeListData {

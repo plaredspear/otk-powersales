@@ -1,6 +1,7 @@
 package com.otoki.powersales.employee.dto.response
 
 import com.otoki.powersales.employee.entity.Employee
+import java.time.LocalDate
 
 data class EmployeeListResponse(
     val content: List<EmployeeListItem>,
@@ -28,10 +29,16 @@ data class EmployeeListItem(
     val jikgub: String?,
     val jobCode: String?,
     val appointmentDate: String?,
-    val ordDetailNode: String?
+    val ordDetailNode: String?,
+    // SF 여사원 리스트뷰 정합 컬럼 (직종명 / 회사 이메일 / 휴대전화 / 만나이 / 근속년수)
+    val jikjong: String?,
+    val workEmail: String?,
+    val phone: String?,
+    val age: String?,
+    val yearsOfService: String?
 ) {
     companion object {
-        fun from(employee: Employee): EmployeeListItem = EmployeeListItem(
+        fun from(employee: Employee, today: LocalDate): EmployeeListItem = EmployeeListItem(
             id = employee.id,
             employeeCode = employee.employeeCode,
             name = employee.name,
@@ -49,7 +56,12 @@ data class EmployeeListItem(
             jikgub = employee.jikgub,
             jobCode = employee.jobCode,
             appointmentDate = employee.appointmentDate?.toString(),
-            ordDetailNode = employee.ordDetailNode
+            ordDetailNode = employee.ordDetailNode,
+            jikjong = employee.jikjong,
+            workEmail = employee.workEmail,
+            phone = employee.phone,
+            age = employee.calculateAge(today),
+            yearsOfService = employee.calculateYearsOfService(today)
         )
     }
 }

@@ -60,6 +60,11 @@ const sampleEmployee: Employee = {
   jobCode: null,
   appointmentDate: null,
   ordDetailNode: null,
+  jikjong: null,
+  workEmail: null,
+  phone: null,
+  age: null,
+  yearsOfService: null,
 };
 
 const baseResponse: AdminAccountUpdateResponseData = {

@@ -67,6 +67,11 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
           jobCode: null,
           appointmentDate: null,
           ordDetailNode: null,
+          jikjong: null,
+          workEmail: null,
+          phone: null,
+          age: null,
+          yearsOfService: null,
         },
       ]);
       setAccountOptions([

@@ -5,6 +5,7 @@ import com.otoki.powersales.auth.entity.AppAuthority
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import java.time.LocalDate
 
 /**
  * User Entity 테스트
@@ -168,5 +169,74 @@ class EmployeeTest {
         assertThat(leader.role).isEqualTo(AppAuthority.LEADER)
         assertThat(branchManager.role).isEqualTo(AppAuthority.BRANCH_MANAGER)
         assertThat(unknown.role).isEqualTo(null)
+    }
+
+    // --- 만나이 (SF Age__c 계산식 정합) ---
+
+    @Test
+    @DisplayName("만나이 - FLOOR((TODAY - birthDate)/365.2425) + '살' (SF Age__c 정합)")
+    fun calculateAge_matchesSfFormula() {
+        // given: 1978-11-27 출생, 기준일 2026-05-30 → 경과 17_351일 / 365.2425 = 47.5... → FLOOR 47
+        val employee = createTestEmployee()
+        employee.birthDate = "1978-11-27"
+
+        // when
+        val age = employee.calculateAge(LocalDate.of(2026, 5, 30))
+
+        // then
+        assertThat(age).isEqualTo("47살")
+    }
+
+    @Test
+    @DisplayName("만나이 - 생일 전날과 당일의 경계 (만 47세 직전/직후)")
+    fun calculateAge_birthdayBoundary() {
+        val employee = createTestEmployee()
+        employee.birthDate = "1978-11-27"
+
+        // 47번째 생일 직전 (2025-11-26) → 아직 46살 구간
+        assertThat(employee.calculateAge(LocalDate.of(2025, 11, 26))).isEqualTo("46살")
+    }
+
+    @Test
+    @DisplayName("만나이 - birthDate 가 null 이면 null")
+    fun calculateAge_nullBirthDate() {
+        val employee = createTestEmployee()
+        employee.birthDate = null
+
+        assertThat(employee.calculateAge(LocalDate.of(2026, 5, 30))).isNull()
+    }
+
+    @Test
+    @DisplayName("만나이 - birthDate 가 파싱 불가 포맷이면 null (방어)")
+    fun calculateAge_unparsableBirthDate() {
+        val employee = createTestEmployee()
+        employee.birthDate = "19781127"
+
+        assertThat(employee.calculateAge(LocalDate.of(2026, 5, 30))).isNull()
+    }
+
+    // --- 근속년수 (SF yearsOfService__c 계산식 정합) ---
+
+    @Test
+    @DisplayName("근속년수 - FLOOR((TODAY - startDate)/365) + '년' (SF yearsOfService__c 정합, 365 고정)")
+    fun calculateYearsOfService_matchesSfFormula() {
+        // given: 2020-03-15 입사, 기준일 2026-05-30 → 경과 2_267일 / 365 = 6.2... → FLOOR 6
+        val employee = createTestEmployee()
+        employee.startDate = LocalDate.of(2020, 3, 15)
+
+        // when
+        val years = employee.calculateYearsOfService(LocalDate.of(2026, 5, 30))
+
+        // then
+        assertThat(years).isEqualTo("6년")
+    }
+
+    @Test
+    @DisplayName("근속년수 - startDate 가 null 이면 null")
+    fun calculateYearsOfService_nullStartDate() {
+        val employee = createTestEmployee()
+        employee.startDate = null
+
+        assertThat(employee.calculateYearsOfService(LocalDate.of(2026, 5, 30))).isNull()
     }
 }

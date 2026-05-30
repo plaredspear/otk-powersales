@@ -34,7 +34,8 @@ describe('AttendInfoDeleteConfirmModal', () => {
     expect(screen.getByText('AI0001')).toBeInTheDocument();
     expect(screen.getByText(/홍길동/)).toBeInTheDocument();
     expect(screen.getByText(/20120253/)).toBeInTheDocument();
-    expect(screen.getByText(/연차/)).toBeInTheDocument();
+    // 근태유형 항목: attendTypeName(연차) + attendType(14) 형태로 렌더 — cascade 안내문의 "연차" 와 구분
+    expect(screen.getByText(/연차 \(14\)/)).toBeInTheDocument();
     expect(screen.getByText(/2026-05-18 ~ 2026-05-22/)).toBeInTheDocument();
     expect(screen.getByText('삭제 시 다음이 함께 처리됩니다')).toBeInTheDocument();
     expect(

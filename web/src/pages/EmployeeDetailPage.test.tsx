@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import EmployeeDetailPage from './EmployeeDetailPage';
 import { useAuthStore } from '@/stores/authStore';
+import { entityPermissionKey, systemPermissionKey } from '@/hooks/usePermission';
 import type { EmployeeDetail } from '@/api/employee';
 
 const sapEmployee: EmployeeDetail = {
@@ -92,7 +93,11 @@ describe('EmployeeDetailPage', () => {
         employeeId: 1,
         employeeCode: 'ADMIN-001',
         name: '관리자',
-        permissions: ['EMPLOYEE_READ', 'EMPLOYEE_WRITE', 'EMPLOYEE_RESET_CREDENTIALS'],
+        permissions: [
+          entityPermissionKey('employee', 'READ'),
+          entityPermissionKey('employee', 'EDIT'),
+          systemPermissionKey('MANAGE_USERS'),
+        ],
       } as never,
     });
   });

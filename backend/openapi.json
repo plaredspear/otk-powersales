@@ -9806,6 +9806,9 @@
       },
       "EmployeeListItem" : {
         "properties" : {
+          "age" : {
+            "type" : [ "string", "null" ]
+          },
           "appLoginActive" : {
             "type" : [ "boolean", "null" ]
           },
@@ -9834,6 +9837,9 @@
           "jikgub" : {
             "type" : [ "string", "null" ]
           },
+          "jikjong" : {
+            "type" : [ "string", "null" ]
+          },
           "jikwee" : {
             "type" : [ "string", "null" ]
           },
@@ -9849,6 +9855,9 @@
           "orgName" : {
             "type" : [ "string", "null" ]
           },
+          "phone" : {
+            "type" : [ "string", "null" ]
+          },
           "role" : {
             "type" : [ "string", "null" ]
           },
@@ -9858,7 +9867,13 @@
           "status" : {
             "type" : [ "string", "null" ]
           },
+          "workEmail" : {
+            "type" : [ "string", "null" ]
+          },
           "workPhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "yearsOfService" : {
             "type" : [ "string", "null" ]
           }
         },
