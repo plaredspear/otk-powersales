@@ -54,7 +54,11 @@ describe('WorkHistorySection', () => {
     expect(screen.getByText('2026-05-20')).toBeInTheDocument();
     expect(screen.getByText('근무')).toBeInTheDocument();
     expect(screen.getByText('거래처A (A001)')).toBeInTheDocument();
-    expect(screen.getByText('출근')).toBeInTheDocument();
+    // '출근' 은 컬럼 헤더 + 출근 Tag 양쪽에 노출되므로 헤더(columnheader) 를 제외한 Tag 셀만 검증
+    const clockInTags = screen
+      .getAllByText('출근')
+      .filter((el) => el.closest('th') === null);
+    expect(clockInTags.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('미출근')).toBeInTheDocument();
   });
 });

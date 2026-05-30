@@ -8,6 +8,7 @@ import com.otoki.powersales.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import java.time.LocalDate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -47,8 +48,10 @@ class AdminEmployeeService(
         val pageable = PageRequest.of(page, size, Sort.by("name").ascending())
         val userPage = employeeRepository.findEmployees(status, branchFilter, keyword, role, pageable)
 
+        // 만나이 / 근속년수 계산 기준일 — 페이지 전체에 동일 적용
+        val today = LocalDate.now()
         return EmployeeListResponse(
-            content = userPage.content.map { EmployeeListItem.from(it) },
+            content = userPage.content.map { EmployeeListItem.from(it, today) },
             page = page,
             size = size,
             totalElements = userPage.totalElements,

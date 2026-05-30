@@ -34,6 +34,11 @@ const employee: Employee = {
   jobCode: null,
   appointmentDate: null,
   ordDetailNode: null,
+  jikjong: null,
+  workEmail: null,
+  phone: null,
+  age: null,
+  yearsOfService: null,
 };
 
 function renderModal() {

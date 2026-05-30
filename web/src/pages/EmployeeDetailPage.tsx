@@ -39,6 +39,12 @@ function toEmployeeListItem(detail: EmployeeDetail): Employee {
     jobCode: detail.jobCode,
     appointmentDate: detail.appointmentDate,
     ordDetailNode: detail.ordDetailNode,
+    jikjong: detail.jikjong,
+    workEmail: detail.workEmail,
+    phone: detail.phone,
+    // 만나이 / 근속년수는 목록 응답 전용 계산 필드 — 상세 응답에는 없음
+    age: null,
+    yearsOfService: null,
   };
 }
 

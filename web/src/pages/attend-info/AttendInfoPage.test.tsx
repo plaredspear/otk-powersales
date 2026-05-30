@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AttendInfoPage from './AttendInfoPage';
 import * as api from '@/api/attendInfo';
 import { useAuthStore } from '@/stores/authStore';
+import { entityPermissionKey } from '@/hooks/usePermission';
 
 vi.mock('@/api/attendInfo', async () => {
   const actual = await vi.importActual<typeof import('@/api/attendInfo')>('@/api/attendInfo');
@@ -38,7 +39,11 @@ describe('AttendInfoPage', () => {
         orgName: null,
         role: null,
         costCenterCode: null,
-        permissions: ['ATTEND_INFO_READ', 'ATTEND_INFO_WRITE', 'ATTEND_INFO_DELETE'],
+        permissions: [
+          entityPermissionKey('attend_info', 'READ'),
+          entityPermissionKey('attend_info', 'EDIT'),
+          entityPermissionKey('attend_info', 'DELETE'),
+        ],
       },
       accessToken: 'test-token',
       isAuthenticated: true,
@@ -81,7 +86,7 @@ describe('AttendInfoPage', () => {
         orgName: null,
         role: null,
         costCenterCode: null,
-        permissions: ['ATTEND_INFO_READ'],
+        permissions: [entityPermissionKey('attend_info', 'READ')],
       },
       accessToken: 'test-token',
       isAuthenticated: true,

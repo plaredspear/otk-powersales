@@ -86,7 +86,12 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
                         jikgub = null,
                         jobCode = null,
                         appointmentDate = null,
-                        ordDetailNode = null
+                        ordDetailNode = null,
+                        jikjong = null,
+                        workEmail = null,
+                        phone = null,
+                        age = null,
+                        yearsOfService = null
                     )
                 ),
                 page = 0,

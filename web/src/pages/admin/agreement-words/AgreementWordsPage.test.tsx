@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AgreementWordsPage from './AgreementWordsPage';
 import { fetchActiveAgreementWord } from '@/api/agreementWord';
 import { useAuthStore } from '@/stores/authStore';
+import { entityPermissionKey } from '@/hooks/usePermission';
 
 vi.mock('@/api/agreementWord', async () => {
   const actual = await vi.importActual<typeof import('@/api/agreementWord')>('@/api/agreementWord');
@@ -59,7 +60,10 @@ describe('AgreementWordsPage (Spec #658 P2-W)', () => {
       activeDate: '2025-11-01',
       afterActiveDate: '2026-11-01',
     });
-    setPermissions(['AGREEMENT_READ', 'AGREEMENT_WRITE']);
+    setPermissions([
+      entityPermissionKey('agreement_word', 'READ'),
+      entityPermissionKey('agreement_word', 'EDIT'),
+    ]);
 
     renderPage();
 
@@ -72,7 +76,10 @@ describe('AgreementWordsPage (Spec #658 P2-W)', () => {
 
   it('W2 활성 약관 부재 (null) → 안내 문구 표시', async () => {
     mockedFetchActive.mockResolvedValue(null);
-    setPermissions(['AGREEMENT_READ', 'AGREEMENT_WRITE']);
+    setPermissions([
+      entityPermissionKey('agreement_word', 'READ'),
+      entityPermissionKey('agreement_word', 'EDIT'),
+    ]);
 
     renderPage();
 
@@ -83,7 +90,10 @@ describe('AgreementWordsPage (Spec #658 P2-W)', () => {
 
   it('W3 신규 등록 버튼 클릭 → Modal 열림', async () => {
     mockedFetchActive.mockResolvedValue(null);
-    setPermissions(['AGREEMENT_READ', 'AGREEMENT_WRITE']);
+    setPermissions([
+      entityPermissionKey('agreement_word', 'READ'),
+      entityPermissionKey('agreement_word', 'EDIT'),
+    ]);
 
     renderPage();
 
@@ -97,7 +107,7 @@ describe('AgreementWordsPage (Spec #658 P2-W)', () => {
 
   it('W10 AGREEMENT_WRITE 미보유 → 등록 버튼 disabled', async () => {
     mockedFetchActive.mockResolvedValue(null);
-    setPermissions(['AGREEMENT_READ']); // WRITE 미보유
+    setPermissions([entityPermissionKey('agreement_word', 'READ')]); // EDIT 미보유
 
     renderPage();
 

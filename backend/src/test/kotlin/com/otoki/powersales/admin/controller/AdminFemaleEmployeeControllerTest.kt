@@ -67,6 +67,11 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
                     jobCode = null,
                     appointmentDate = null,
                     ordDetailNode = null,
+                    jikjong = "OSPM",
+                    workEmail = "kim@otoki.com",
+                    phone = "01012345678",
+                    age = "45살",
+                    yearsOfService = "5년",
                 ),
             ),
             page = 0,
@@ -82,6 +87,11 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.content[0].role").value("여사원"))
+            .andExpect(jsonPath("$.data.content[0].jikjong").value("OSPM"))
+            .andExpect(jsonPath("$.data.content[0].workEmail").value("kim@otoki.com"))
+            .andExpect(jsonPath("$.data.content[0].phone").value("01012345678"))
+            .andExpect(jsonPath("$.data.content[0].age").value("45살"))
+            .andExpect(jsonPath("$.data.content[0].yearsOfService").value("5년"))
 
         verify(exactly = 1) {
             adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(AppAuthority.WOMAN), any(), any())
