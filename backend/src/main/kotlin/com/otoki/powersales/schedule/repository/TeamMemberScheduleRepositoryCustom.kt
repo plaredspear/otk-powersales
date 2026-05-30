@@ -78,4 +78,18 @@ interface TeamMemberScheduleRepositoryCustom {
         limit: Int,
         offset: Int
     ): List<AttendanceSapPayloadRow>
+
+    /**
+     * 여사원 배치 점검 조회 (Spec #839 — SF Report `InternalSalesReportFolder/new_report_4Ic` 이식).
+     * `team_member_schedule` ⋈ employee ⋈ account.
+     * 필터: workingDate ∈ [from, to], workingType='근무', employee.role ∈ {여사원, 조장},
+     *       employee.name 더미(테스트용/관리자/파워세일즈) 제외, employee.isDeleted=false (퇴직 status 는 포함 — 퇴직자 포함),
+     *       branchCodes 비어있지 않으면 account.branchCode ∈ branchCodes.
+     */
+    fun findPlacementCheck(
+        from: LocalDate,
+        to: LocalDate,
+        roles: List<String>,
+        branchCodes: List<String>,
+    ): List<TeamMemberSchedule>
 }

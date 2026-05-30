@@ -49,6 +49,7 @@ const AttendInfoPage = lazy(() => import('@/pages/attend-info/AttendInfoPage'));
 const MonthlyIntegrationSchedulePage = lazy(() => import('@/pages/schedules/MonthlyIntegrationSchedulePage'));
 const CategorySchedulePage = lazy(() => import('@/pages/schedules/CategorySchedulePage'));
 const MonthlyInputAdequacyPage = lazy(() => import('@/pages/MonthlyInputAdequacyPage'));
+const FemaleEmployeePlacementCheckPage = lazy(() => import('@/pages/FemaleEmployeePlacementCheckPage'));
 const PPTMasterPage = lazy(() => import('@/pages/promotion/PPTMasterPage'));
 const PPTHistoryPage = lazy(() => import('@/pages/promotion/PPTHistoryPage'));
 const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
@@ -232,6 +233,7 @@ export const router = createBrowserRouter(
               element: <PermissionRoute entity="team_member_schedule" operation="READ" />,
               children: [
                 { path: '/safety-check', element: <LazyWrapper><SafetyCheckPage /></LazyWrapper> },
+                { path: '/female-employee-placement-check', element: <LazyWrapper><FemaleEmployeePlacementCheckPage /></LazyWrapper> },
               ],
             },
             {

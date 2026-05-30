@@ -11,6 +11,7 @@ import {
   ToolOutlined,
   MobileOutlined,
   ReadOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import type { SfEntityOperation, SfSystemPermission } from '@/hooks/usePermission';
 
@@ -101,6 +102,18 @@ export const menuRoute: MenuRoute = {
         { path: '/sales/electronic', name: '전산실적' },
         { path: '/sales/pos', name: 'POS매출' },
         { path: '/report', name: '보고서' },
+      ],
+    },
+    {
+      name: '보고서',
+      icon: <FileTextOutlined />,
+      children: [
+        {
+          path: '/female-employee-placement-check',
+          name: '여사원 배치 점검',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
       ],
     },
     {

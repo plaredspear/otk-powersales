@@ -314,6 +314,36 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findPlacementCheck(
+        from: LocalDate,
+        to: LocalDate,
+        roles: List<String>,
+        branchCodes: List<String>,
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .join(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .where(
+                teamMemberSchedule.workingDate.between(from, to),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
+                employee.role.`in`(roles),
+                employee.name.notLike("%테스트용%"),
+                employee.name.notLike("%관리자%"),
+                employee.name.notLike("%파워세일즈%"),
+                // 퇴직자 포함 (status 필터 없음) — soft-delete 사원만 제외 (Spec #839 Q2)
+                employee.isDeleted.isNull.or(employee.isDeleted.eq(false)),
+                accountBranchCodeIn(branchCodes),
+                isNotDeleted(),
+            )
+            .fetch()
+    }
+
+    private fun accountBranchCodeIn(branchCodes: List<String>): BooleanExpression? {
+        return if (branchCodes.isEmpty()) null
+        else teamMemberSchedule.account.branchCode.`in`(branchCodes)
+    }
+
     private fun isNotDeleted(): BooleanExpression {
         return teamMemberSchedule.isDeleted.isNull.or(teamMemberSchedule.isDeleted.eq(false))
     }
