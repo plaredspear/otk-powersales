@@ -257,6 +257,8 @@ export const menuRoute: MenuRoute = {
         { path: '/admin/docs', name: '시스템 안내 홈', allowedProfileNames: ['시스템 관리자'] },
         { path: '/admin/docs/overview', name: '시스템 개요', allowedProfileNames: ['시스템 관리자'] },
         { path: '/admin/docs/domains', name: '도메인/모듈 맵', allowedProfileNames: ['시스템 관리자'] },
+        { path: '/admin/docs/api', name: 'API 카탈로그', allowedProfileNames: ['시스템 관리자'] },
+        { path: '/admin/docs/flows', name: '데이터 흐름(DFD)', allowedProfileNames: ['시스템 관리자'] },
       ],
     },
   ],

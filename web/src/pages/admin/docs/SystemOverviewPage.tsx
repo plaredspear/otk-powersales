@@ -281,8 +281,9 @@ export default function SystemOverviewPage() {
 
           <Divider />
           <Paragraph type="secondary" style={{ fontSize: 12 }}>
-            도메인별 상세(어떤 기능이 어느 코드에 있는지)는 <Text strong>도메인/모듈 맵</Text> 페이지를
-            참고하세요. API 카탈로그, 데이터 흐름도(DFD)는 후속 페이지로 추가될 예정입니다.
+            더 깊이 보려면 — 도메인별 상세는 <Text strong>도메인/모듈 맵</Text>, 엔드포인트 계약은{' '}
+            <Text strong>API 카탈로그</Text>, 데이터가 흐르는 경로는 <Text strong>데이터 흐름(DFD)</Text>{' '}
+            페이지를 참고하세요.
           </Paragraph>
         </Typography>
       </Col>

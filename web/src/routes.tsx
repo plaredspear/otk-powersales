@@ -76,6 +76,8 @@ const UserRoleTreePage = lazy(() => import('@/pages/admin/user-roles/UserRoleTre
 const SystemDocsHomePage = lazy(() => import('@/pages/admin/docs/SystemDocsHomePage'));
 const SystemOverviewPage = lazy(() => import('@/pages/admin/docs/SystemOverviewPage'));
 const DomainMapPage = lazy(() => import('@/pages/admin/docs/DomainMapPage'));
+const ApiCatalogPage = lazy(() => import('@/pages/admin/docs/ApiCatalogPage'));
+const DataFlowPage = lazy(() => import('@/pages/admin/docs/DataFlowPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -320,6 +322,8 @@ export const router = createBrowserRouter(
                 { path: '/admin/docs', element: <LazyWrapper><SystemDocsHomePage /></LazyWrapper> },
                 { path: '/admin/docs/overview', element: <LazyWrapper><SystemOverviewPage /></LazyWrapper> },
                 { path: '/admin/docs/domains', element: <LazyWrapper><DomainMapPage /></LazyWrapper> },
+                { path: '/admin/docs/api', element: <LazyWrapper><ApiCatalogPage /></LazyWrapper> },
+                { path: '/admin/docs/flows', element: <LazyWrapper><DataFlowPage /></LazyWrapper> },
               ],
             },
             { path: '*', element: <Navigate to="/" replace /> },
