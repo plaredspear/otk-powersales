@@ -9,7 +9,7 @@ import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { NoticeSummary } from '@/api/notice';
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
-  COMPANY: { color: 'blue', label: '전체공지' },
+  COMPANY: { color: 'blue', label: '회사공지' },
   BRANCH: { color: 'green', label: '지점공지' },
 };
 

@@ -8,6 +8,9 @@ data class NoticeCreateRequest(
     @field:Size(max = 200, message = "제목은 200자 이하여야 합니다")
     val title: String,
 
+    @field:NotBlank(message = "공개범위는 필수입니다")
+    val scope: String,
+
     @field:NotBlank(message = "카테고리는 필수입니다")
     val category: String,
 

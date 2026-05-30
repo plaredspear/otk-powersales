@@ -14,7 +14,7 @@
 # 예:
 #   scripts/sf-data-migration/count-rows.sh
 #   scripts/sf-data-migration/count-rows.sh --org otoki-prod
-#   scripts/sf-data-migration/count-rows.sh --target=MonthlySalesHistory,AttendanceLog
+#   scripts/sf-data-migration/count-rows.sh --target=InspectionTheme,AttendanceLog
 #
 set -euo pipefail
 

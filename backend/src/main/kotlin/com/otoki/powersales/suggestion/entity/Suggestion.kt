@@ -155,6 +155,7 @@ class Suggestion(
     @Column(name = "duplicate_proposal_num", length = 255)
     var duplicateProposalNum: String? = null,
 
+    @SFField("IsDeleted")
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 

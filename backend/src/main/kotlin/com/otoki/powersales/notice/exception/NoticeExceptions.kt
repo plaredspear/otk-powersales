@@ -14,6 +14,15 @@ class InvalidNoticeCategoryException : BusinessException(
 )
 
 /**
+ * 유효하지 않은 공지사항 공개범위
+ */
+class InvalidNoticeScopeException : BusinessException(
+    errorCode = "INVALID_SCOPE",
+    message = "유효하지 않은 공개범위입니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
  * 공지사항 게시물을 찾을 수 없음
  */
 class NoticePostNotFoundException : BusinessException(

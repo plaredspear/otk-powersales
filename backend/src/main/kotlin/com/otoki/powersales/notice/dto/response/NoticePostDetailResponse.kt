@@ -7,6 +7,7 @@ import java.time.LocalDateTime
  */
 data class NoticePostDetailResponse(
     val id: Long,
+    val scope: String?,
     val category: String,
     val categoryName: String,
     val title: String,

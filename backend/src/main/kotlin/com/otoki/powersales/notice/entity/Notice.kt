@@ -42,7 +42,7 @@ class Notice(
     @SFField("DKRetail__Scope__c")
     @Column(name = "scope", length = 255)
     @Convert(converter = NoticeScopeConverter::class)
-    val scope: NoticeScope? = null,
+    var scope: NoticeScope? = null,
 
     @SFField("DKRetail__Category__c")
     @Column(name = "category", length = 255)

@@ -129,6 +129,7 @@ class NoticeControllerTest : MobileControllerTestSupport() {
             // 분기 명세: images 배열 보유 시 url + sortOrder 매핑
             val response = NoticePostDetailResponse(
                 id = 42L,
+                scope = "영업사원",
                 category = "COMPANY",
                 categoryName = "회사공지",
                 title = "테스트 공지",
@@ -155,6 +156,7 @@ class NoticeControllerTest : MobileControllerTestSupport() {
         fun getNoticeDetail_noImages() {
             val response = NoticePostDetailResponse(
                 id = 10L,
+                scope = "현장여사원",
                 category = "BRANCH",
                 categoryName = "지점공지",
                 title = "지점 안내",

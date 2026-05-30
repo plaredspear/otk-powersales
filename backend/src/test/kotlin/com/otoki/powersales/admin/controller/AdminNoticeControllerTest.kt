@@ -7,6 +7,7 @@ import com.otoki.powersales.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.notice.dto.response.BranchOption
 import com.otoki.powersales.notice.dto.response.CategoryOption
 import com.otoki.powersales.notice.dto.response.NoticeFormMetaResponse
+import com.otoki.powersales.notice.dto.response.ScopeOption
 import com.otoki.powersales.notice.dto.response.NoticeMutationResponse
 import com.otoki.powersales.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.notice.dto.response.NoticeImageResponse
@@ -91,6 +92,10 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 카테고리 + 지점 목록 반환")
         fun getNoticeFormMeta_success() {
             val response = NoticeFormMetaResponse(
+                scopes = listOf(
+                    ScopeOption("영업사원", "영업사원"),
+                    ScopeOption("현장여사원", "현장여사원")
+                ),
                 categories = listOf(
                     CategoryOption("COMPANY", "회사공지"),
                     CategoryOption("BRANCH", "지점공지"),
@@ -124,6 +129,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
         fun getNoticeDetail_success() {
             val response = NoticePostDetailResponse(
                 id = 1L,
+                scope = "영업사원",
                 category = "COMPANY",
                 categoryName = "회사공지",
                 title = "공지 제목",
@@ -170,6 +176,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
 
             val request = NoticeCreateRequest(
                 title = "새 공지",
+                scope = "영업사원",
                 category = "COMPANY",
                 content = "<p>내용</p>"
             )
@@ -212,6 +219,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
 
             val request = NoticeCreateRequest(
                 title = "공지",
+                scope = "영업사원",
                 category = category,
                 content = "<p>내용</p>"
             )
@@ -247,6 +255,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
 
             val request = NoticeUpdateRequest(
                 title = "수정된 제목",
+                scope = "영업사원",
                 category = "COMPANY",
                 content = "<p>수정 내용</p>"
             )
@@ -267,6 +276,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
 
             val request = NoticeUpdateRequest(
                 title = "제목",
+                scope = "영업사원",
                 category = "COMPANY",
                 content = "내용"
             )
