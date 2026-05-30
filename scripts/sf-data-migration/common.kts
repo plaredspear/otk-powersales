@@ -876,6 +876,43 @@ val INSPECTION_THEME_METADATA = EntityMetadata(
     )
 )
 
+// 현장점검(결과) DKRetail__SiteAcitivity__c — InspectionTheme(Theme__c) 의 자식.
+// Formula 4개 (ThemeName/EmployeeOrgName/BranchName/OrgName) 는 calculated 라 제외.
+val SITE_ACTIVITY_METADATA = EntityMetadata(
+    targetName = "SiteActivity",
+    sObjectName = "DKRetail__SiteAcitivity__c",
+    tableName = "site_activity",
+    pkColumn = "site_activity_id",
+    conflictKey = "sfid",
+    fields = listOf(
+        FieldMapping("Id", "sfid", nullable = false),
+        FieldMapping("Name", "name"),
+        FieldMapping("DKRetail__ActivityDate__c", "activity_date", isString = false),
+        FieldMapping("DKRetail__Category__c", "category"),
+        FieldMapping("DKRetail__ProductType__c", "product_type"),
+        FieldMapping("DKRetail__Description__c", "description"),
+        FieldMapping("DKRetail__Title__c", "title"),
+        FieldMapping("DKRetail__SAPAccountCode__c", "sap_account_code"),
+        FieldMapping("CostCenterCode__c", "cost_center_code"),
+        FieldMapping("DKRetail__CompetitorName__c", "competitor_name"),
+        FieldMapping("DKRetail__CompetitorProductName__c", "competitor_product_name"),
+        FieldMapping("DKRetail__CompetitorActivityDescription__c", "competitor_activity_description"),
+        FieldMapping("DKRetail__CompetitorProudctPrice__c", "competitor_proudct_price", isString = false),
+        FieldMapping("DKRetail__SampleTastFlag__c", "sample_tast_flag"),
+        FieldMapping("DKRetail__SalesQuantity__c", "sales_quantity", isString = false),
+        FieldMapping("IsDeleted", "is_deleted", isString = false),
+        FieldMapping("DKRetail__AccountId__c", "account_sfid"),
+        FieldMapping("DKRetail__EmployeeId__c", "employee_sfid"),
+        FieldMapping("DKRetail__ProductId__c", "product_sfid"),
+        FieldMapping("ThemeId__c", "theme_sfid"),
+        FieldMapping("OwnerId", "owner_sfid"),
+        FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedById", "last_modified_by_sfid")
+    )
+)
+
 val MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA = EntityMetadata(
     targetName = "MonthlyFemaleEmployeeIntegrationSchedule",
     sObjectName = "MonthlyFemaleEmployeeIntegrationSchedule__c",
@@ -1599,6 +1636,7 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "ErpOrderProduct" to TargetSpec(ERP_ORDER_PRODUCT_METADATA, "ERP_OrderProduct__c", "erp_order_products.csv", "order/entity/ErpOrderProduct"),
     "HolidayMaster" to TargetSpec(HOLIDAY_MASTER_METADATA, "HolidayMaster__c", "holiday_masters.csv", "leave/entity/HolidayMaster"),
     "InspectionTheme" to TargetSpec(INSPECTION_THEME_METADATA, "Theme__c", "inspection_themes.csv", "inspection/entity/InspectionTheme"),
+    "SiteActivity" to TargetSpec(SITE_ACTIVITY_METADATA, "DKRetail__SiteAcitivity__c", "site_activities.csv", "inspection/entity/SiteActivity"),
     "MonthlyFemaleEmployeeIntegrationSchedule" to TargetSpec(MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA, "MonthlyFemaleEmployeeIntegrationSchedule__c", "monthly_female_employee_integration_schedules.csv", "schedule/entity/MonthlyFemaleEmployeeIntegrationSchedule"),
     "NewProduct" to TargetSpec(NEW_PRODUCT_METADATA, "NewProduct__c", "new_products.csv", "product/entity/NewProduct"),
     "OrderRequest" to TargetSpec(ORDER_REQUEST_METADATA, "DKRetail__OrderRequest__c", "order_requests.csv", "order/entity/OrderRequest"),
@@ -1644,6 +1682,7 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "ErpOrderProduct",
     "HolidayMaster",
     "InspectionTheme",
+    "SiteActivity",
     "MonthlyFemaleEmployeeIntegrationSchedule",
     "NewProduct",
     "OrderRequest",
@@ -1667,7 +1706,7 @@ val SUPPORTED_TARGETS = setOf(
     "Employee", "User", "Notice", "Permission", "AccountCategoryMaster",
     "AgreementHistory", "AgreementWord", "AlternativeHoliday", "Appointment", "AttendanceLog",
     "AttendInfo", "Claim", "DisplayWorkSchedule", "EmployeeInputCriteriaMaster",
-    "ErpOrder", "ErpOrderProduct", "HolidayMaster", "InspectionTheme",
+    "ErpOrder", "ErpOrderProduct", "HolidayMaster", "InspectionTheme", "SiteActivity",
     "MonthlyFemaleEmployeeIntegrationSchedule", "NewProduct", "OrderRequest", "OrderRequestProduct",
     "ProductBarcode", "ProfessionalPromotionTeamHistory", "ProfessionalPromotionTeamMaster", "PromotionEmployee", "PushMessage",
     "PushMessageReceiver", "TeamMemberSchedule", "UploadFile", "Suggestion",
