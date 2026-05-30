@@ -10,7 +10,7 @@ import '../../mock/education_mock_data.dart';
 class EducationMockRepository implements EducationRepository {
   /// Mock 데이터 커스텀 (테스트용)
   Map<EducationCategory, List<EducationPost>>? customPosts;
-  Map<int, EducationPostDetail>? customPostDetails;
+  Map<String, EducationPostDetail>? customPostDetails;
   Exception? exceptionToThrow;
 
   Future<void> _simulateDelay() async {
@@ -73,7 +73,7 @@ class EducationMockRepository implements EducationRepository {
   }
 
   @override
-  Future<EducationPostDetail> getPostDetail(int postId) async {
+  Future<EducationPostDetail> getPostDetail(String postId) async {
     await _simulateDelay();
 
     if (exceptionToThrow != null) {

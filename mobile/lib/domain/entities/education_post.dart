@@ -2,7 +2,7 @@
 ///
 /// 교육 목록 화면에 표시되는 게시물 정보.
 class EducationPost {
-  final int id;
+  final String id;
   final String title;
   final DateTime createdAt;
 
@@ -13,7 +13,7 @@ class EducationPost {
   });
 
   EducationPost copyWith({
-    int? id,
+    String? id,
     String? title,
     DateTime? createdAt,
   }) {
@@ -34,7 +34,7 @@ class EducationPost {
 
   factory EducationPost.fromJson(Map<String, dynamic> json) {
     return EducationPost(
-      id: json['id'] as int,
+      id: json['id'] as String,
       title: json['title'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
