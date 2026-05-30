@@ -234,7 +234,6 @@ export const menuRoute: MenuRoute = {
         { path: '/admin/permissions/matrix', name: '권한 매트릭스', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/permissions/page-access-guide', name: '페이지별 필요 권한', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/user-roles', name: '역할 (조직 계층)', entity: 'user_role', operation: 'READ' },
-        { path: '/admin/permissions/guide', name: '권한 사용 가이드', allowedProfileNames: ['시스템 관리자'] },
       ],
     },
     {
@@ -248,6 +247,7 @@ export const menuRoute: MenuRoute = {
         { path: '/admin/tools/sf-migration-stage1', name: 'SF Migration — Stage 1 적재', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/tools/sf-migration', name: 'SF Migration — Stage 2 FK', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/tools/cache', name: 'Redis 캐시 관리', systemPermission: 'MODIFY_ALL_DATA' },
+        { path: '/admin/permissions/guide', name: '권한 사용 가이드', allowedProfileNames: ['시스템 관리자'] },
       ],
     },
     {
