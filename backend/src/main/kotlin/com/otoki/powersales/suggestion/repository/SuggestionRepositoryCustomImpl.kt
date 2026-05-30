@@ -6,12 +6,15 @@ import com.otoki.powersales.product.entity.QProduct.Companion.product
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionFilter
 import com.otoki.powersales.suggestion.entity.QSuggestion.Companion.suggestion
 import com.otoki.powersales.suggestion.entity.Suggestion
+import com.otoki.powersales.suggestion.entity.SuggestionCategory
+import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.support.PageableExecutionUtils
+import java.time.LocalDate
 
 /**
  * 제안 Querydsl Impl (Spec #830 P1-B §2.4).
@@ -69,6 +72,29 @@ class SuggestionRepositoryCustomImpl(
             .from(suggestion)
             .where(where)
             .fetchFirst() != null
+    }
+
+    override fun findLogisticsClaimReport(
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): List<Suggestion> {
+        return queryFactory
+            .selectFrom(suggestion)
+            .leftJoin(suggestion.employee, employee).fetchJoin()
+            .leftJoin(suggestion.account, account).fetchJoin()
+            .leftJoin(suggestion.product, product).fetchJoin()
+            // CUST_NAME 컬럼 — SF Report 의사 컬럼 = 레코드 Owner. ownerUser 조인.
+            .leftJoin(suggestion.ownerUser, user).fetchJoin()
+            .where(
+                // 물류 클레임 분류만 (SF Category__c = '물류 클레임')
+                suggestion.category.eq(SuggestionCategory.LOGISTICS_CLAIM),
+                suggestion.claimDate.between(startDate, endDate),
+                suggestion.isDeleted.eq(false),
+                // SF WERK1_TX/WERK3_TX 'contains 빈값' 은 no-op (항상 참) — 미구현
+                // 전사 고정 — SF scope=organization (지점 스코프 없음)
+            )
+            .orderBy(suggestion.claimDate.desc())
+            .fetch()
     }
 
     private fun categoryEq(filter: AdminSuggestionFilter): Predicate? =

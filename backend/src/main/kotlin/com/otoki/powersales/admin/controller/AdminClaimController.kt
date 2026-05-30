@@ -6,16 +6,23 @@ import com.otoki.powersales.claim.dto.request.AdminClaimCreateRequest
 import com.otoki.powersales.claim.dto.response.AdminClaimCreateResponse
 import com.otoki.powersales.claim.dto.response.AdminClaimDetailResponse
 import com.otoki.powersales.claim.dto.response.AdminClaimListResponse
+import com.otoki.powersales.claim.dto.response.ClaimPeriodReportResponse
 import com.otoki.powersales.claim.service.AdminClaimCreateService
+import com.otoki.powersales.claim.service.AdminClaimPeriodReportService
 import com.otoki.powersales.claim.service.AdminClaimResendService
 import com.otoki.powersales.claim.service.AdminClaimService
+import com.otoki.powersales.claim.service.ClaimPeriodReportType
 import com.otoki.powersales.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 
 @RestController
@@ -24,6 +31,7 @@ class AdminClaimController(
     private val adminClaimService: AdminClaimService,
     private val adminClaimCreateService: AdminClaimCreateService,
     private val adminClaimResendService: AdminClaimResendService,
+    private val adminClaimPeriodReportService: AdminClaimPeriodReportService,
 ) {
 
     @GetMapping
@@ -86,5 +94,38 @@ class AdminClaimController(
             else -> "SF 재전송에 실패했습니다"
         }
         return ResponseEntity.ok(ApiResponse.success(response, message))
+    }
+
+    /**
+     * 기간별 클레임 보고서 조회 (Spec #843). type=PACKAGING(포장불량만)/ALL(모든 클레임). 전사.
+     * 기간 미지정 시 당월 1일~오늘.
+     */
+    @GetMapping("/period-report")
+    @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.READ)
+    fun getPeriodReport(
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
+        @RequestParam(required = false, defaultValue = "ALL") type: ClaimPeriodReportType,
+    ): ResponseEntity<ApiResponse<ClaimPeriodReportResponse>> {
+        val response = adminClaimPeriodReportService.getReport(startDate, endDate, type)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 기간별 클레임 보고서 엑셀 다운로드. */
+    @GetMapping("/period-report/export")
+    @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.READ)
+    fun exportPeriodReport(
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
+        @RequestParam(required = false, defaultValue = "ALL") type: ClaimPeriodReportType,
+    ): ResponseEntity<ByteArray> {
+        val result = adminClaimPeriodReportService.exportReport(startDate, endDate, type)
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
+        return ResponseEntity.ok().headers(headers).body(result.bytes)
     }
 }

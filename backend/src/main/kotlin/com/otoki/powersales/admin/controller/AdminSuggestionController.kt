@@ -10,15 +10,20 @@ import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionCreateRequest
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionDetailResponse
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionListResponse
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionUpdateRequest
+import com.otoki.powersales.suggestion.dto.response.LogisticsClaimReportResponse
 import com.otoki.powersales.suggestion.dto.response.SuggestionAttachment
 import com.otoki.powersales.suggestion.dto.response.SuggestionCreateResponse
 import com.otoki.powersales.suggestion.entity.SuggestionActionStatus
 import com.otoki.powersales.suggestion.entity.SuggestionCategory
+import com.otoki.powersales.suggestion.service.AdminLogisticsClaimReportService
 import com.otoki.powersales.suggestion.service.AdminSuggestionFilterParams
 import com.otoki.powersales.suggestion.service.AdminSuggestionService
+import com.otoki.powersales.suggestion.service.LogisticsClaimReportPeriod
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -32,6 +37,8 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 
 /**
@@ -43,7 +50,8 @@ import java.time.LocalDate
 @RestController
 @RequestMapping("/api/v1/admin/suggestions")
 class AdminSuggestionController(
-    private val adminSuggestionService: AdminSuggestionService
+    private val adminSuggestionService: AdminSuggestionService,
+    private val logisticsClaimReportService: AdminLogisticsClaimReportService,
 ) {
 
     @GetMapping
@@ -147,5 +155,38 @@ class AdminSuggestionController(
     ): ResponseEntity<ApiResponse<Unit>> {
         adminSuggestionService.deletePhoto(scope, suggestionId, photoId)
         return ResponseEntity.ok(ApiResponse.success(Unit, "사진이 삭제되었습니다"))
+    }
+
+    /**
+     * (영업본부) 물류 클레임 보고서 조회 (Spec #844). period=THIS_MONTH/LAST_MONTH/CUSTOM. 전사.
+     * CUSTOM 이면 startDate/endDate 필수.
+     */
+    @GetMapping("/logistics-claim-report")
+    @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
+    fun getLogisticsClaimReport(
+        @RequestParam(required = false, defaultValue = "THIS_MONTH") period: LogisticsClaimReportPeriod,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
+    ): ResponseEntity<ApiResponse<LogisticsClaimReportResponse>> {
+        val response = logisticsClaimReportService.getReport(period, startDate, endDate)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 물류 클레임 보고서 엑셀 다운로드. */
+    @GetMapping("/logistics-claim-report/export")
+    @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
+    fun exportLogisticsClaimReport(
+        @RequestParam(required = false, defaultValue = "THIS_MONTH") period: LogisticsClaimReportPeriod,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
+    ): ResponseEntity<ByteArray> {
+        val result = logisticsClaimReportService.exportReport(period, startDate, endDate)
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
+        return ResponseEntity.ok().headers(headers).body(result.bytes)
     }
 }

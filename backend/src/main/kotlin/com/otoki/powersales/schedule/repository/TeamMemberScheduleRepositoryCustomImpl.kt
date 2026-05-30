@@ -9,6 +9,7 @@ import com.otoki.powersales.schedule.entity.QAttendanceLog.Companion.attendanceL
 import com.otoki.powersales.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.sap.AttendanceSapPayloadRow
+import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -374,6 +375,28 @@ open class TeamMemberScheduleRepositoryCustomImpl(
                 // 점검 응답 존재 = 점검 완료 (레거시 Yes_ChkCnt != 빈값)
                 teamMemberSchedule.yesChkCnt.isNotNull,
                 costCenterCodeIn(branchCodes),
+                isNotDeleted(),
+            )
+            .orderBy(teamMemberSchedule.workingCategory1.asc())
+            .fetch()
+    }
+
+    override fun findSafetyCheckReportRpa(
+        date: LocalDate,
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .join(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            // CUST_NAME 컬럼 — SF Report 의사 컬럼 = 레코드 Owner. ownerUser 조인.
+            .leftJoin(teamMemberSchedule.ownerUser, user).fetchJoin()
+            .where(
+                teamMemberSchedule.workingDate.eq(date),
+                // 순회/점검 대상 (레거시 TraversalFlag = ',O')
+                teamMemberSchedule.traversalFlag.eq("O"),
+                // 점검 응답 존재 = 점검 완료 (레거시 Yes_ChkCnt != 빈값)
+                teamMemberSchedule.yesChkCnt.isNotNull,
+                // 전사 고정 — SF scope=organization (지점 스코프 없음)
                 isNotDeleted(),
             )
             .orderBy(teamMemberSchedule.workingCategory1.asc())

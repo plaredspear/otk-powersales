@@ -126,6 +126,42 @@ export const menuRoute: MenuRoute = {
           entity: 'team_member_schedule',
           operation: 'READ',
         },
+        {
+          path: '/female-employee-safety-check-report-rpa',
+          name: '판매여사원 안전점검 현황 (RPA)',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
+        {
+          path: '/claim-period-report-packaging',
+          name: '기간별 클레임 (포장불량)',
+          entity: 'claim',
+          operation: 'READ',
+        },
+        {
+          path: '/claim-period-report-all',
+          name: '기간별 클레임 (모든 클레임)',
+          entity: 'claim',
+          operation: 'READ',
+        },
+        {
+          path: '/logistics-claim-report-period',
+          name: '물류 클레임 (기간별)',
+          entity: 'suggestion',
+          operation: 'READ',
+        },
+        {
+          path: '/logistics-claim-report-this-month',
+          name: '물류 클레임 (당월)',
+          entity: 'suggestion',
+          operation: 'READ',
+        },
+        {
+          path: '/logistics-claim-report-last-month',
+          name: '물류 클레임 (전월)',
+          entity: 'suggestion',
+          operation: 'READ',
+        },
       ],
     },
     {
