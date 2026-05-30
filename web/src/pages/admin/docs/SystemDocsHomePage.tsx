@@ -48,11 +48,11 @@ const SECTIONS: DocSection[] = [
       },
       {
         key: 'domains',
-        to: '/admin/docs/overview',
+        to: '/admin/docs/domains',
         title: '도메인 / 모듈 맵',
-        desc: '어떤 기능이 어느 코드(도메인 패키지)에 있는지, 담당 화면과 함께 매핑. (준비 중)',
+        desc: '어떤 기능이 어느 코드(도메인 패키지)에 있는지, 담당 화면과 함께 매핑.',
         icon: <ApartmentOutlined />,
-        status: 'planned',
+        status: 'ready',
       },
       {
         key: 'flows',

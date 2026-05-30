@@ -75,6 +75,7 @@ const PermissionGuidePage = lazy(() => import('@/pages/admin/permissions/Permiss
 const UserRoleTreePage = lazy(() => import('@/pages/admin/user-roles/UserRoleTreePage'));
 const SystemDocsHomePage = lazy(() => import('@/pages/admin/docs/SystemDocsHomePage'));
 const SystemOverviewPage = lazy(() => import('@/pages/admin/docs/SystemOverviewPage'));
+const DomainMapPage = lazy(() => import('@/pages/admin/docs/DomainMapPage'));
 
 // eslint-disable-next-line react-refresh/only-export-components
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -317,6 +318,7 @@ export const router = createBrowserRouter(
                 { path: '/admin/permissions/guide', element: <LazyWrapper><PermissionGuidePage /></LazyWrapper> },
                 { path: '/admin/docs', element: <LazyWrapper><SystemDocsHomePage /></LazyWrapper> },
                 { path: '/admin/docs/overview', element: <LazyWrapper><SystemOverviewPage /></LazyWrapper> },
+                { path: '/admin/docs/domains', element: <LazyWrapper><DomainMapPage /></LazyWrapper> },
               ],
             },
             { path: '*', element: <Navigate to="/" replace /> },
