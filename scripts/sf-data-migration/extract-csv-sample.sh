@@ -422,6 +422,22 @@ WHERE IsDeleted = FALSE
 EOF
 )
 
+# Formula 필드 (ThemeName__c / EmployeeOrgName__c / BranchName__c / OrgName__c) 제외.
+SITE_ACTIVITY_SOQL=$(cat <<'EOF'
+SELECT
+    Id, Name, DKRetail__ActivityDate__c, DKRetail__Category__c,
+    DKRetail__ProductType__c, DKRetail__Description__c, DKRetail__Title__c,
+    DKRetail__SAPAccountCode__c, CostCenterCode__c,
+    DKRetail__CompetitorName__c, DKRetail__CompetitorProductName__c,
+    DKRetail__CompetitorActivityDescription__c, DKRetail__CompetitorProudctPrice__c,
+    DKRetail__SampleTastFlag__c, DKRetail__SalesQuantity__c, IsDeleted,
+    DKRetail__AccountId__c, DKRetail__EmployeeId__c, DKRetail__ProductId__c, ThemeId__c,
+    OwnerId, CreatedById, CreatedDate, LastModifiedDate, LastModifiedById
+FROM DKRetail__SiteAcitivity__c
+WHERE IsDeleted = FALSE
+EOF
+)
+
 MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, ExternalKey__c, Year__c, Month__c, Account__c, FullName__c,
@@ -653,6 +669,7 @@ for target in "${TARGET_ARR[@]}"; do
         ErpOrderProduct) run_query "ErpOrderProduct" "$ERP_ORDER_PRODUCT_SOQL" "$OUT_DIR/erp_order_products.csv" ;;
         HolidayMaster) run_query "HolidayMaster" "$HOLIDAY_MASTER_SOQL" "$OUT_DIR/holiday_masters.csv" ;;
         InspectionTheme) run_query "InspectionTheme" "$INSPECTION_THEME_SOQL" "$OUT_DIR/inspection_themes.csv" ;;
+        SiteActivity) run_query "SiteActivity" "$SITE_ACTIVITY_SOQL" "$OUT_DIR/site_activities.csv" ;;
         MonthlyFemaleEmployeeIntegrationSchedule) run_query "MonthlyFemaleEmployeeIntegrationSchedule" "$MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_SOQL" "$OUT_DIR/monthly_female_employee_integration_schedules.csv" ;;
         NewProduct) run_query "NewProduct" "$NEW_PRODUCT_SOQL" "$OUT_DIR/new_products.csv" ;;
         OrderRequest) run_query "OrderRequest" "$ORDER_REQUEST_SOQL" "$OUT_DIR/order_requests.csv" ;;

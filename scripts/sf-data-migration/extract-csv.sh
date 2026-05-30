@@ -558,6 +558,23 @@ WHERE IsDeleted = FALSE
 EOF
 )
 
+# Formula 필드 (ThemeName__c / EmployeeOrgName__c / BranchName__c / OrgName__c) 는
+# DB 컬럼 미적재 대상이라 SELECT 에서 제외.
+SITE_ACTIVITY_SOQL=$(cat <<'EOF'
+SELECT
+    Id, Name, DKRetail__ActivityDate__c, DKRetail__Category__c,
+    DKRetail__ProductType__c, DKRetail__Description__c, DKRetail__Title__c,
+    DKRetail__SAPAccountCode__c, CostCenterCode__c,
+    DKRetail__CompetitorName__c, DKRetail__CompetitorProductName__c,
+    DKRetail__CompetitorActivityDescription__c, DKRetail__CompetitorProudctPrice__c,
+    DKRetail__SampleTastFlag__c, DKRetail__SalesQuantity__c, IsDeleted,
+    DKRetail__AccountId__c, DKRetail__EmployeeId__c, DKRetail__ProductId__c, ThemeId__c,
+    OwnerId, CreatedById, CreatedDate, LastModifiedDate, LastModifiedById
+FROM DKRetail__SiteAcitivity__c
+WHERE IsDeleted = FALSE
+EOF
+)
+
 MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, ExternalKey__c, Year__c, Month__c, Account__c, FullName__c,
@@ -1090,6 +1107,10 @@ fi
 
 if contains_target "InspectionTheme"; then
     run_query "InspectionTheme (Theme__c)" "$INSPECTION_THEME_SOQL" "$OUT_DIR/inspection_themes.csv"
+fi
+
+if contains_target "SiteActivity"; then
+    run_query "SiteActivity (DKRetail__SiteAcitivity__c)" "$SITE_ACTIVITY_SOQL" "$OUT_DIR/site_activities.csv"
 fi
 
 if contains_target "MonthlyFemaleEmployeeIntegrationSchedule"; then
