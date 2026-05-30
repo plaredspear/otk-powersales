@@ -7,7 +7,7 @@ import { useDeleteNotice } from '@/hooks/notice/useNoticeMutation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
-  COMPANY: { color: 'blue', label: '전체공지' },
+  COMPANY: { color: 'blue', label: '회사공지' },
   BRANCH: { color: 'green', label: '지점공지' },
 };
 
