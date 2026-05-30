@@ -12,6 +12,7 @@ import com.otoki.powersales.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.notice.dto.response.NoticeImageResponse
 import com.otoki.powersales.notice.dto.response.BranchOption
 import com.otoki.powersales.notice.dto.response.CategoryOption
+import com.otoki.powersales.notice.dto.response.ScopeOption
 import com.otoki.powersales.notice.dto.response.NoticeFormMetaResponse
 import com.otoki.powersales.notice.dto.response.NoticeMutationResponse
 import com.otoki.powersales.notice.dto.response.NoticePostDetailResponse
@@ -19,10 +20,12 @@ import com.otoki.powersales.notice.dto.response.NoticePostListResponse
 import com.otoki.powersales.notice.dto.response.NoticePostSummaryResponse
 import com.otoki.powersales.notice.entity.Notice
 import com.otoki.powersales.notice.enums.NoticeCategory
+import com.otoki.powersales.notice.enums.NoticeScope
 import com.otoki.powersales.notice.exception.BranchRequiredException
 import com.otoki.powersales.notice.exception.InvalidImageIdException
 import com.otoki.powersales.notice.exception.InvalidNoticeCategoryException
 import com.otoki.powersales.notice.exception.InvalidNoticeIdException
+import com.otoki.powersales.notice.exception.InvalidNoticeScopeException
 import com.otoki.powersales.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.notice.repository.NoticeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
@@ -63,6 +66,7 @@ class NoticeService(
 
         return NoticePostDetailResponse(
             id = notice.id,
+            scope = notice.scope?.displayName,
             category = notice.category?.apiCode ?: "",
             categoryName = notice.category?.displayName ?: "",
             title = notice.name ?: "",
@@ -136,10 +140,12 @@ class NoticeService(
     @Transactional
     fun createNotice(request: NoticeCreateRequest, creatorId: Long): NoticeMutationResponse {
         val cat = parseCategory(request.category)
+        val noticeScope = parseScope(request.scope)
         validateBranch(cat, request.branch, request.branchCode)
 
         val notice = Notice(
             name = request.title,
+            scope = noticeScope,
             category = cat,
             contents = request.content,
             branch = if (cat == NoticeCategory.BRANCH) request.branch else null,
@@ -156,9 +162,11 @@ class NoticeService(
         val notice = findActiveNotice(noticeId)
 
         val cat = parseCategory(request.category)
+        val noticeScope = parseScope(request.scope)
         validateBranch(cat, request.branch, request.branchCode)
 
         notice.name = request.title
+        notice.scope = noticeScope
         notice.category = cat
         notice.contents = request.content
         notice.branch = if (cat == NoticeCategory.BRANCH) request.branch else null
@@ -256,6 +264,10 @@ class NoticeService(
     }
 
     fun getNoticeFormMeta(): NoticeFormMetaResponse {
+        val scopes = NoticeScope.entries.map {
+            ScopeOption(code = it.displayName, name = it.displayName)
+        }
+
         val categories = NoticeCategory.entries.map {
             CategoryOption(code = it.apiCode, name = it.displayName)
         }
@@ -278,7 +290,7 @@ class NoticeService(
             .distinctBy { it.branchCode }
             .sortedBy { it.branchName }
 
-        return NoticeFormMetaResponse(categories = categories, branches = branches)
+        return NoticeFormMetaResponse(scopes = scopes, categories = categories, branches = branches)
     }
 
     private fun findActiveNotice(noticeId: Long): Notice {
@@ -294,6 +306,10 @@ class NoticeService(
         } catch (_: IllegalArgumentException) {
             throw InvalidNoticeCategoryException()
         }
+    }
+
+    private fun parseScope(scope: String): NoticeScope {
+        return NoticeScope.fromDisplayNameOrNull(scope) ?: throw InvalidNoticeScopeException()
     }
 
     private fun validateBranch(category: NoticeCategory, branch: String?, branchCode: String?) {

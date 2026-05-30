@@ -3011,6 +3011,9 @@
             },
             "type" : "array"
           },
+          "scope" : {
+            "type" : [ "string", "null" ]
+          },
           "title" : {
             "type" : "string"
           }

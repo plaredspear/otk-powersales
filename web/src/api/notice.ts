@@ -31,6 +31,7 @@ export interface NoticeListData {
 
 export interface NoticeDetail {
   id: number;
+  scope: string | null;
   category: string;
   categoryName: string;
   title: string;
@@ -49,6 +50,7 @@ export interface NoticeImage {
 
 export interface NoticeFormData {
   title: string;
+  scope: string;
   category: string;
   content: string;
   branch: string | null;
@@ -56,8 +58,14 @@ export interface NoticeFormData {
 }
 
 export interface NoticeFormMeta {
+  scopes: ScopeOption[];
   categories: CategoryOption[];
   branches: BranchOption[];
+}
+
+export interface ScopeOption {
+  code: string;
+  name: string;
 }
 
 export interface CategoryOption {

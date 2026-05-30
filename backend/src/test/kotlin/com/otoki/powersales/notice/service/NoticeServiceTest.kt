@@ -367,6 +367,7 @@ class NoticeServiceTest {
         fun createNotice_company_success() {
             val request = NoticeCreateRequest(
                 title = "테스트 공지",
+                scope = "영업사원",
                 category = "COMPANY",
                 content = "<p>내용</p>"
             )
@@ -386,6 +387,7 @@ class NoticeServiceTest {
         fun createNotice_branch_success() {
             val request = NoticeCreateRequest(
                 title = "지점 공지",
+                scope = "영업사원",
                 category = "BRANCH",
                 content = "<p>지점 내용</p>",
                 branch = "서울1지점",
@@ -406,6 +408,7 @@ class NoticeServiceTest {
         fun createNotice_education_success() {
             val request = NoticeCreateRequest(
                 title = "교육 공지",
+                scope = "영업사원",
                 category = "EDUCATION",
                 content = "<p>교육 내용</p>"
             )
@@ -424,6 +427,7 @@ class NoticeServiceTest {
         fun createNotice_company_ignoresBranch() {
             val request = NoticeCreateRequest(
                 title = "전체 공지",
+                scope = "영업사원",
                 category = "COMPANY",
                 content = "<p>내용</p>",
                 branch = "잘못된지점",
@@ -440,7 +444,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("잘못된 카테고리 -> InvalidNoticeCategoryException")
         fun createNotice_invalidCategory() {
-            val request = NoticeCreateRequest(title = "공지", category = "UNKNOWN", content = "내용")
+            val request = NoticeCreateRequest(title = "공지", scope = "영업사원", category = "UNKNOWN", content = "내용")
 
             assertThatThrownBy { noticeService.createNotice(request, 1L) }
                 .isInstanceOf(InvalidNoticeCategoryException::class.java)
@@ -451,6 +455,7 @@ class NoticeServiceTest {
         fun createNotice_branchRequired() {
             val request = NoticeCreateRequest(
                 title = "지점 공지",
+                scope = "영업사원",
                 category = "BRANCH",
                 content = "<p>내용</p>",
                 branch = null,
@@ -475,6 +480,7 @@ class NoticeServiceTest {
 
             val request = NoticeUpdateRequest(
                 title = "수정된 제목",
+                scope = "영업사원",
                 category = "COMPANY",
                 content = "<p>수정 내용</p>"
             )
@@ -494,6 +500,7 @@ class NoticeServiceTest {
 
             val request = NoticeUpdateRequest(
                 title = "지점 공지로 변경",
+                scope = "영업사원",
                 category = "BRANCH",
                 content = "<p>내용</p>",
                 branch = "서울1지점",
@@ -510,7 +517,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("0 이하 ID -> InvalidNoticeIdException")
         fun updateNotice_invalidId() {
-            val request = NoticeUpdateRequest(title = "제목", category = "COMPANY", content = "내용")
+            val request = NoticeUpdateRequest(title = "제목", scope = "영업사원", category = "COMPANY", content = "내용")
 
             assertThatThrownBy { noticeService.updateNotice(0L, request) }
                 .isInstanceOf(InvalidNoticeIdException::class.java)
@@ -520,7 +527,7 @@ class NoticeServiceTest {
         @DisplayName("존재하지 않는 공지 -> NoticePostNotFoundException")
         fun updateNotice_notFound() {
             every { noticeRepository.findById(999L) } returns Optional.empty()
-            val request = NoticeUpdateRequest(title = "제목", category = "COMPANY", content = "내용")
+            val request = NoticeUpdateRequest(title = "제목", scope = "영업사원", category = "COMPANY", content = "내용")
 
             assertThatThrownBy { noticeService.updateNotice(999L, request) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
@@ -531,7 +538,7 @@ class NoticeServiceTest {
         fun updateNotice_deleted() {
             val existing = createNotice(id = 10L, isDeleted = true)
             every { noticeRepository.findById(10L) } returns Optional.of(existing)
-            val request = NoticeUpdateRequest(title = "제목", category = "COMPANY", content = "내용")
+            val request = NoticeUpdateRequest(title = "제목", scope = "영업사원", category = "COMPANY", content = "내용")
 
             assertThatThrownBy { noticeService.updateNotice(10L, request) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)

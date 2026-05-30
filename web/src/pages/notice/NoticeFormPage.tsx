@@ -20,6 +20,7 @@ const QUILL_MODULES = {
 
 interface FormValues {
   title: string;
+  scope: string;
   category: string;
   branch?: { value: string; label: string };
   content: string;
@@ -80,6 +81,7 @@ export default function NoticeFormPage() {
     if (isEdit && notice) {
       form.setFieldsValue({
         title: notice.title,
+        scope: notice.scope ?? undefined,
         category: notice.category,
         content: notice.content,
         branch: notice.branchCode
@@ -92,6 +94,7 @@ export default function NoticeFormPage() {
   const handleSubmit = async (values: FormValues) => {
     const payload = {
       title: values.title,
+      scope: values.scope,
       category: values.category,
       content: values.content,
       branch: values.category === 'BRANCH' && values.branch ? values.branch.label : null,
@@ -129,9 +132,20 @@ export default function NoticeFormPage() {
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        initialValues={{ category: 'COMPANY' }}
+        initialValues={{ scope: '현장여사원', category: 'COMPANY' }}
       >
         <Row gutter={24}>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name="scope"
+              label="공개범위"
+              rules={[{ required: true, message: '공개범위를 선택해주세요' }]}
+            >
+              <Select
+                options={formMeta?.scopes.map((s) => ({ value: s.code, label: s.name }))}
+              />
+            </Form.Item>
+          </Col>
           <Col xs={24} sm={12}>
             <Form.Item
               name="category"
@@ -144,6 +158,10 @@ export default function NoticeFormPage() {
               />
             </Form.Item>
           </Col>
+        </Row>
+
+        <Row gutter={24}>
+          <Col xs={24} sm={12} />
           <Col xs={24} sm={12}>
             <BranchField form={form} branches={formMeta?.branches ?? []} />
           </Col>

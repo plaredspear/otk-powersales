@@ -9336,13 +9336,17 @@
             "minLength" : 1,
             "type" : "string"
           },
+          "scope" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
           "title" : {
             "maxLength" : 200,
             "minLength" : 0,
             "type" : "string"
           }
         },
-        "required" : [ "category", "content", "title" ],
+        "required" : [ "category", "content", "scope", "title" ],
         "type" : "object"
       },
       "NoticeFormMetaResponse" : {
@@ -9356,6 +9360,12 @@
           "categories" : {
             "items" : {
               "$ref" : "#/components/schemas/CategoryOption"
+            },
+            "type" : "array"
+          },
+          "scopes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ScopeOption"
             },
             "type" : "array"
           }
@@ -9440,6 +9450,9 @@
             },
             "type" : "array"
           },
+          "scope" : {
+            "type" : [ "string", "null" ]
+          },
           "title" : {
             "type" : "string"
           }
@@ -9523,13 +9536,17 @@
             "minLength" : 1,
             "type" : "string"
           },
+          "scope" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
           "title" : {
             "maxLength" : 200,
             "minLength" : 0,
             "type" : "string"
           }
         },
-        "required" : [ "category", "content", "title" ],
+        "required" : [ "category", "content", "scope", "title" ],
         "type" : "object"
       },
       "ObjectPermissionRow" : {
@@ -12986,6 +13003,17 @@
           },
           "windowTo" : {
             "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ScopeOption" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
             "type" : "string"
           }
         },
