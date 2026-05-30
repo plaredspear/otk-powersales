@@ -84,12 +84,25 @@ interface TeamMemberScheduleRepositoryCustom {
      * `team_member_schedule` ⋈ employee ⋈ account.
      * 필터: workingDate ∈ [from, to], workingType='근무', employee.role ∈ {여사원, 조장},
      *       employee.name 더미(테스트용/관리자/파워세일즈) 제외, employee.isDeleted=false (퇴직 status 는 포함 — 퇴직자 포함),
-     *       branchCodes 비어있지 않으면 account.branchCode ∈ branchCodes.
+     *       branchCodes 비어있지 않으면 teamMemberSchedule.costCenterCode ∈ branchCodes (사원 소속 지점 — SF 정합).
      */
     fun findPlacementCheck(
         from: LocalDate,
         to: LocalDate,
         roles: List<String>,
+        branchCodes: List<String>,
+    ): List<TeamMemberSchedule>
+
+    /**
+     * 여사원 개인별 근무내역 조회 (Spec #840 — SF Report `InternalSalesReportFolder/new_report_nEX` 이식).
+     * `team_member_schedule` ⋈ employee ⋈ account.
+     * 필터: employee.employeeCode = employeeCode, workingDate ∈ [from, to],
+     *       branchCodes 비어있지 않으면 teamMemberSchedule.costCenterCode ∈ branchCodes (사원 소속 지점 — SF 정합).
+     */
+    fun findWorkHistory(
+        employeeCode: String,
+        from: LocalDate,
+        to: LocalDate,
         branchCodes: List<String>,
     ): List<TeamMemberSchedule>
 }

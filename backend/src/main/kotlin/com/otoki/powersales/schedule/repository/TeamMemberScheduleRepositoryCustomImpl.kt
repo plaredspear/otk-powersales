@@ -333,15 +333,40 @@ open class TeamMemberScheduleRepositoryCustomImpl(
                 employee.name.notLike("%파워세일즈%"),
                 // 퇴직자 포함 (status 필터 없음) — soft-delete 사원만 제외 (Spec #839 Q2)
                 employee.isDeleted.isNull.or(employee.isDeleted.eq(false)),
-                accountBranchCodeIn(branchCodes),
+                costCenterCodeIn(branchCodes),
                 isNotDeleted(),
             )
             .fetch()
     }
 
-    private fun accountBranchCodeIn(branchCodes: List<String>): BooleanExpression? {
+    override fun findWorkHistory(
+        employeeCode: String,
+        from: LocalDate,
+        to: LocalDate,
+        branchCodes: List<String>,
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .join(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .where(
+                employee.employeeCode.eq(employeeCode),
+                teamMemberSchedule.workingDate.between(from, to),
+                costCenterCodeIn(branchCodes),
+                isNotDeleted(),
+            )
+            .orderBy(teamMemberSchedule.workingDate.asc())
+            .fetch()
+    }
+
+    /**
+     * DataScope 지점 스코프 — 사원 소속 지점(costCenterCode) 기준 (Spec #839/#840 Q3).
+     * SF `CurrentUserBranchNameList` + 여사원 일정관리(`ScheduleSearchByTeamMemberController`) 정합 —
+     * 거래처 소재 지점(account.branchCode) 이 아니라 일정의 costCenterCode 로 필터.
+     */
+    private fun costCenterCodeIn(branchCodes: List<String>): BooleanExpression? {
         return if (branchCodes.isEmpty()) null
-        else teamMemberSchedule.account.branchCode.`in`(branchCodes)
+        else teamMemberSchedule.costCenterCode.`in`(branchCodes)
     }
 
     private fun isNotDeleted(): BooleanExpression {

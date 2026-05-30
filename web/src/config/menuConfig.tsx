@@ -114,6 +114,12 @@ export const menuRoute: MenuRoute = {
           entity: 'team_member_schedule',
           operation: 'READ',
         },
+        {
+          path: '/female-employee-work-history',
+          name: '여사원 근무내역',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
       ],
     },
     {
