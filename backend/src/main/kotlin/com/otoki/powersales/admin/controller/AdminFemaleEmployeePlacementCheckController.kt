@@ -6,9 +6,14 @@ import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeePlacementCheckResponse
+import com.otoki.powersales.schedule.dto.response.FemaleEmployeeSafetyCheckReportResponse
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeeWorkHistoryResponse
 import com.otoki.powersales.schedule.service.AdminFemaleEmployeePlacementCheckService
+import com.otoki.powersales.schedule.service.AdminFemaleEmployeeSafetyCheckReportService
 import com.otoki.powersales.schedule.service.AdminFemaleEmployeeWorkHistoryService
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -31,6 +36,7 @@ import java.nio.charset.StandardCharsets
 class AdminFemaleEmployeePlacementCheckController(
     private val service: AdminFemaleEmployeePlacementCheckService,
     private val workHistoryService: AdminFemaleEmployeeWorkHistoryService,
+    private val safetyCheckReportService: AdminFemaleEmployeeSafetyCheckReportService,
 ) {
 
     /** 월간 배치 점검 조회 (퇴직자 포함 · 여사원/조장). */
@@ -95,5 +101,43 @@ class AdminFemaleEmployeePlacementCheckController(
         val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
         headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
         return ResponseEntity.ok().headers(headers).body(result.bytes)
+    }
+
+    /** 일일 안전점검 현황 조회 (Spec #841). date 미지정 시 어제. */
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/safety-check-report")
+    fun getSafetyCheckReport(
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) date: String?,
+    ): ResponseEntity<ApiResponse<FemaleEmployeeSafetyCheckReportResponse>> {
+        val response = safetyCheckReportService.getReport(scope, parseDate(date))
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 일일 안전점검 현황 엑셀 다운로드. */
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/safety-check-report/export")
+    fun exportSafetyCheckReport(
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) date: String?,
+    ): ResponseEntity<ByteArray> {
+        val result = safetyCheckReportService.exportReport(scope, parseDate(date))
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
+        return ResponseEntity.ok().headers(headers).body(result.bytes)
+    }
+
+    /** date 파라미터 (ISO_LOCAL_DATE) 파싱. null/blank → null (서비스에서 어제로 처리). 형식 오류 → 400. */
+    private fun parseDate(date: String?): LocalDate? {
+        if (date.isNullOrBlank()) return null
+        return try {
+            LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
+        } catch (_: DateTimeParseException) {
+            throw com.otoki.powersales.schedule.service.InvalidParameterException("date 형식이 올바르지 않습니다 (yyyy-MM-dd)")
+        }
     }
 }

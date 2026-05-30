@@ -359,6 +359,27 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findSafetyCheckReport(
+        date: LocalDate,
+        branchCodes: List<String>,
+    ): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .join(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .where(
+                teamMemberSchedule.workingDate.eq(date),
+                // 순회/점검 대상 (레거시 TraversalFlag = ',O')
+                teamMemberSchedule.traversalFlag.eq("O"),
+                // 점검 응답 존재 = 점검 완료 (레거시 Yes_ChkCnt != 빈값)
+                teamMemberSchedule.yesChkCnt.isNotNull,
+                costCenterCodeIn(branchCodes),
+                isNotDeleted(),
+            )
+            .orderBy(teamMemberSchedule.workingCategory1.asc())
+            .fetch()
+    }
+
     /**
      * DataScope 지점 스코프 — 사원 소속 지점(costCenterCode) 기준 (Spec #839/#840 Q3).
      * SF `CurrentUserBranchNameList` + 여사원 일정관리(`ScheduleSearchByTeamMemberController`) 정합 —

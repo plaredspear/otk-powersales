@@ -120,6 +120,12 @@ export const menuRoute: MenuRoute = {
           entity: 'team_member_schedule',
           operation: 'READ',
         },
+        {
+          path: '/female-employee-safety-check-report',
+          name: '판매여사원 안전점검 현황',
+          entity: 'team_member_schedule',
+          operation: 'READ',
+        },
       ],
     },
     {

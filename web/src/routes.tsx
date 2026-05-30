@@ -51,6 +51,7 @@ const CategorySchedulePage = lazy(() => import('@/pages/schedules/CategorySchedu
 const MonthlyInputAdequacyPage = lazy(() => import('@/pages/MonthlyInputAdequacyPage'));
 const FemaleEmployeePlacementCheckPage = lazy(() => import('@/pages/FemaleEmployeePlacementCheckPage'));
 const FemaleEmployeeWorkHistoryPage = lazy(() => import('@/pages/FemaleEmployeeWorkHistoryPage'));
+const FemaleEmployeeSafetyCheckReportPage = lazy(() => import('@/pages/FemaleEmployeeSafetyCheckReportPage'));
 const PPTMasterPage = lazy(() => import('@/pages/promotion/PPTMasterPage'));
 const PPTHistoryPage = lazy(() => import('@/pages/promotion/PPTHistoryPage'));
 const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
@@ -236,6 +237,7 @@ export const router = createBrowserRouter(
                 { path: '/safety-check', element: <LazyWrapper><SafetyCheckPage /></LazyWrapper> },
                 { path: '/female-employee-placement-check', element: <LazyWrapper><FemaleEmployeePlacementCheckPage /></LazyWrapper> },
                 { path: '/female-employee-work-history', element: <LazyWrapper><FemaleEmployeeWorkHistoryPage /></LazyWrapper> },
+                { path: '/female-employee-safety-check-report', element: <LazyWrapper><FemaleEmployeeSafetyCheckReportPage /></LazyWrapper> },
               ],
             },
             {
