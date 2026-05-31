@@ -5822,6 +5822,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseProfileFlagsMutationResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ProfileFlagsMutationResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePromotionConfirmResponse" : {
         "properties" : {
           "data" : {
@@ -11447,6 +11476,54 @@
         },
         "type" : "object"
       },
+      "ProfileFlagsMutationResponse" : {
+        "properties" : {
+          "apiEnabled" : {
+            "type" : "boolean"
+          },
+          "customPermissions" : {
+            "additionalProperties" : {
+              "additionalProperties" : {
+                "type" : "boolean"
+              },
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "locallyModified" : {
+            "type" : "boolean"
+          },
+          "manageUsers" : {
+            "type" : "boolean"
+          },
+          "modifyAllData" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "objectPermissions" : {
+            "additionalProperties" : {
+              "additionalProperties" : {
+                "type" : "boolean"
+              },
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "profileId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "viewAllData" : {
+            "type" : "boolean"
+          },
+          "viewAllUsers" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "ProfileFlagsSnapshot" : {
         "properties" : {
           "apiEnabled" : {
@@ -11514,6 +11591,44 @@
           },
           "userType" : {
             "type" : [ "string", "null" ]
+          },
+          "viewAllData" : {
+            "type" : "boolean"
+          },
+          "viewAllUsers" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "ProfileUpdateFlagsRequest" : {
+        "properties" : {
+          "apiEnabled" : {
+            "type" : "boolean"
+          },
+          "customPermissions" : {
+            "additionalProperties" : {
+              "additionalProperties" : {
+                "type" : "boolean"
+              },
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "manageUsers" : {
+            "type" : "boolean"
+          },
+          "modifyAllData" : {
+            "type" : "boolean"
+          },
+          "objectPermissions" : {
+            "additionalProperties" : {
+              "additionalProperties" : {
+                "type" : "boolean"
+              },
+              "type" : "object"
+            },
+            "type" : "object"
           },
           "viewAllData" : {
             "type" : "boolean"
@@ -18575,6 +18690,43 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseProfileDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-permission-controller" ]
+      }
+    },
+    "/api/v1/admin/permissions/profiles/{profileId}/flags" : {
+      "put" : {
+        "operationId" : "updateProfileFlags",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "profileId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProfileUpdateFlagsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProfileFlagsMutationResponse"
                 }
               }
             },

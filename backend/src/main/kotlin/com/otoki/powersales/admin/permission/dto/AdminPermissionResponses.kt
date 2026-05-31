@@ -27,6 +27,25 @@ data class ProfileFlagsSummary(
     val apiEnabled: Boolean,
 )
 
+/**
+ * Profile 권한 비트 편집 (PUT /profiles/{id}/flags) 응답.
+ *
+ * system 비트 5종 + 객체/가상자원 권한 + dirty 플래그. PermissionSet 과 달리 Profile 은 SF 출처만 존재
+ * (신규 Profile 생성 기능 없음) 하므로 sfOrigin 미노출 — isLocallyModified 로 신규 수정 여부만 표시.
+ */
+data class ProfileFlagsMutationResponse(
+    val profileId: Long,
+    val name: String,
+    val viewAllData: Boolean,
+    val modifyAllData: Boolean,
+    val viewAllUsers: Boolean,
+    val manageUsers: Boolean,
+    val apiEnabled: Boolean,
+    val objectPermissions: Map<String, Map<String, Boolean>>,
+    val customPermissions: Map<String, Map<String, Boolean>>,
+    val isLocallyModified: Boolean,
+)
+
 data class ProfileDetail(
     val profileId: Long,
     val name: String,

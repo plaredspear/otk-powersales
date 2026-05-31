@@ -47,3 +47,20 @@ data class PermissionSetUpdateFlagsRequest(
     val objectPermissions: Map<String, Map<String, Boolean>> = emptyMap(),
     val customPermissions: Map<String, Map<String, Boolean>> = emptyMap(),
 )
+
+/**
+ * Profile 권한 비트 전체 교체 request — PUT /api/v1/admin/permissions/profiles/{id}/flags.
+ *
+ * SF 레거시 정합 — Profile 도 객체권한을 보유 (발령 시 직책 → Profile 로 화면권한 자동 전파).
+ * PermissionSet 과 달리 Profile 은 system 비트 5종 전부 (viewAllUsers / manageUsers / apiEnabled 포함) 를 다룬다.
+ * 전체 교체 방식 — 누락 키는 "권한 없음" 으로 해석.
+ */
+data class ProfileUpdateFlagsRequest(
+    val viewAllData: Boolean = false,
+    val modifyAllData: Boolean = false,
+    val viewAllUsers: Boolean = false,
+    val manageUsers: Boolean = false,
+    val apiEnabled: Boolean = false,
+    val objectPermissions: Map<String, Map<String, Boolean>> = emptyMap(),
+    val customPermissions: Map<String, Map<String, Boolean>> = emptyMap(),
+)

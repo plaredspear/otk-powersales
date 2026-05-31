@@ -41,6 +41,9 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
     private lateinit var mutationService: AdminPermissionSetMutationService
 
     @MockkBean
+    private lateinit var profileFlagsMutationService: AdminProfileFlagsMutationService
+
+    @MockkBean
     private lateinit var entitySfNameRegistry: com.otoki.powersales.auth.permission.EntitySfNameRegistry
 
     @BeforeEach

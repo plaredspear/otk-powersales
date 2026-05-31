@@ -11,6 +11,8 @@ import com.otoki.powersales.admin.permission.dto.PermissionSetSummary
 import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateFlagsRequest
 import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateMetaRequest
 import com.otoki.powersales.admin.permission.dto.ProfileDetail
+import com.otoki.powersales.admin.permission.dto.ProfileFlagsMutationResponse
+import com.otoki.powersales.admin.permission.dto.ProfileUpdateFlagsRequest
 import com.otoki.powersales.admin.permission.dto.ProfileSummary
 import com.otoki.powersales.admin.permission.dto.SfObjectResource
 import com.otoki.powersales.admin.permission.exception.PermissionSetNotFoundException
@@ -43,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController
 class AdminPermissionController(
     private val inspectionService: AdminPermissionInspectionService,
     private val mutationService: AdminPermissionSetMutationService,
+    private val profileFlagsMutationService: AdminProfileFlagsMutationService,
     private val entitySfNameRegistry: EntitySfNameRegistry,
 ) {
 
@@ -63,6 +66,23 @@ class AdminPermissionController(
         val detail = inspectionService.getProfile(profileId, userPage, userSize, userKeyword)
             ?: throw ProfileNotFoundException(profileId)
         return ResponseEntity.ok(ApiResponse.success(detail))
+    }
+
+    /**
+     * Profile 권한 비트 편집 — system 5종 + object/custom 권한 전체 교체.
+     *
+     * SF 정합 — 직책별 Profile 에 객체권한 (예: monthly_sales_history Read) 을 박으면 발령으로 해당
+     * 직책이 된 사원에게 화면 권한이 자동 전파된다. 편집 시 is_locally_modified set (SF 재적재 보호).
+     */
+    @PutMapping("/profiles/{profileId}/flags")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MANAGE_USERS)
+    fun updateProfileFlags(
+        @PathVariable profileId: Long,
+        @Valid @RequestBody request: ProfileUpdateFlagsRequest,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<ProfileFlagsMutationResponse>> {
+        val response = profileFlagsMutationService.updateFlags(profileId, request, principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @GetMapping("/permission-sets")

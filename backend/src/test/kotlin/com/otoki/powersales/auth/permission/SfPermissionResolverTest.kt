@@ -33,6 +33,39 @@ class SfPermissionResolverTest {
     )
 
     @Test
+    @DisplayName("Profile 의 object_permissions 평탄화 — SF 정합 직책 자동권한")
+    fun profileObjectPermissionsParsed() {
+        val user = userWithProfile(profileId = 1L)
+        val profileFlags = ProfileFlags(
+            profileId = 1L,
+            objectPermissions = """{"MonthlySalesHistory__c": {"allowRead": true}}""",
+        )
+        every { profileFlagsRepository.findByProfileId(1L) } returns profileFlags
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns emptyList()
+        every { entitySfNameRegistry.toEntityTableName("MonthlySalesHistory__c") } returns "monthly_sales_history"
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("monthly_sales_history:R")
+    }
+
+    @Test
+    @DisplayName("Profile 의 custom_permissions 평탄화")
+    fun profileCustomPermissionsParsed() {
+        val user = userWithProfile(profileId = 1L)
+        val profileFlags = ProfileFlags(
+            profileId = 1L,
+            customPermissions = """{"dashboard": {"allowRead": true}}""",
+        )
+        every { profileFlagsRepository.findByProfileId(1L) } returns profileFlags
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns emptyList()
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("dashboard:R")
+    }
+
+    @Test
     @DisplayName("custom_permissions JSON — 가상 자원 권한 키 산출 (spec #808)")
     fun customPermissionsParsed() {
         val user = userWithProfile(profileId = null)
