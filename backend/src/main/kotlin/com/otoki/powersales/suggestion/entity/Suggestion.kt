@@ -101,6 +101,11 @@ class Suggestion(
     @Column(name = "org_cost_center_code", length = 100)
     var orgCostCenterCode: String? = null,
 
+    /** SF CostCenterCode__c (라벨 "조직유형") — 등록 사원 소속 코스트센터코드 원본. 데이터 보존용 (신규 조회 권한 필터엔 미사용). */
+    @SFField("CostCenterCode__c")
+    @Column(name = "cost_center_code", length = 255)
+    var costCenterCode: String? = null,
+
     @SFField("CarNumber__c")
     @Column(name = "car_number", length = 255)
     var carNumber: String? = null,

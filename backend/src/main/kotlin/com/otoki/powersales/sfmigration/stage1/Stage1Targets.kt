@@ -1160,6 +1160,8 @@ object Stage1Targets {
             FieldMapping("DKRetail__ProductId__c", "product_sfid"),
             FieldMapping("ProductCode__c", "product_code"),
             FieldMapping("OrgCostCenterCode__c", "org_cost_center_code"),
+            // SF CostCenterCode__c (라벨 "조직유형") — 사원 소속 코스트센터코드 원본. 데이터 보존용.
+            FieldMapping("CostCenterCode__c", "cost_center_code"),
             FieldMapping("CarNumber__c", "car_number"),
             FieldMapping("ClaimDate__c", "claim_date"),
             FieldMapping("ClaimType__c", "claim_type"),
@@ -1169,6 +1171,10 @@ object Stage1Targets {
             FieldMapping("WERK3_TEXT2__c", "responsible_logistics_center"),
             FieldMapping("ActionStatus__c", "action_status"),
             FieldMapping("DuplicateProposalNum__c", "duplicate_proposal_num"),
+            // Spec #833 sf-align-suggestion-action-fields — SF describe 정합 도입. common.kts 정합.
+            FieldMapping("ActionContent__c", "action_content"),
+            FieldMapping("ActionManager__c", "action_manager"),
+            FieldMapping("ActionNum__c", "action_num", nullable = false),
             FieldMapping("IsDeleted", "is_deleted", nullable = false),
             FieldMapping("OwnerId", "owner_sfid"),
             FieldMapping("CreatedById", "created_by_sfid"),

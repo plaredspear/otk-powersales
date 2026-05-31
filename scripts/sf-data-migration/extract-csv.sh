@@ -400,7 +400,7 @@ SELECT
     AccountId__c, DKRetail__SAPAccountCode__c,
     DKRetail__EmployeeId__c,
     DKRetail__ProductId__c, ProductCode__c,
-    OrgCostCenterCode__c,
+    OrgCostCenterCode__c, CostCenterCode__c,
     CarNumber__c, ClaimDate__c, ClaimType__c, ClaimTypeMeasures__c,
     LogisticsResponsibility__c, WERK1_TEXT2__c, WERK3_TEXT2__c,
     ActionStatus__c, DuplicateProposalNum__c,

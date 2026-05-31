@@ -429,6 +429,8 @@ val SUGGESTION_METADATA = EntityMetadata(
         FieldMapping("DKRetail__ProductId__c", "product_sfid"),
         FieldMapping("ProductCode__c", "product_code"),
         FieldMapping("OrgCostCenterCode__c", "org_cost_center_code"),
+        // SF CostCenterCode__c (라벨 "조직유형") — 사원 소속 코스트센터코드 원본. 데이터 보존용.
+        FieldMapping("CostCenterCode__c", "cost_center_code"),
         FieldMapping("CarNumber__c", "car_number"),
         FieldMapping("ClaimDate__c", "claim_date", isString = false),
         FieldMapping("ClaimType__c", "claim_type"),
@@ -1122,6 +1124,29 @@ val PROFESSIONAL_PROMOTION_TEAM_MASTER_METADATA = EntityMetadata(
     )
 )
 
+// PromotionProduct SObject 는 master-detail child (부모 Promotion 의 owner 따름) 라
+// SF 에 OwnerId 컬럼이 없음 → owner_sfid 매핑 제외. backend Stage1Targets.PROMOTION_PRODUCT 정합.
+val PROMOTION_PRODUCT_METADATA = EntityMetadata(
+    targetName = "PromotionProduct",
+    sObjectName = "DKRetail__PromotionProduct__c",
+    tableName = "promotion_product",
+    pkColumn = "promotion_product_id",
+    conflictKey = "sfid",
+    fields = listOf(
+        FieldMapping("Id", "sfid", nullable = false),
+        FieldMapping("Name", "name"),
+        FieldMapping("DKRetail__PromotionId__c", "promotion_sfid"),
+        FieldMapping("DKRetail__ProductId__c", "product_sfid"),
+        FieldMapping("DKRetail__Price__c", "price", isString = false),
+        FieldMapping("PromotionIdExt__c", "promotion_id_ext"),
+        FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+        FieldMapping("IsDeleted", "is_deleted", nullable = false, isString = false)
+    )
+)
+
 // PromotionEmployee SObject 는 master-detail child (부모 Promotion 의 owner 따름) 라
 // SF 에 OwnerId 컬럼이 없음 — backend Entity 의 @SFField("OwnerId") 는 잘못된 정의 (별도 정정 필요).
 // 본 ETL 에서는 SOQL 호환 위해 OwnerId 매핑 제외 → backend 의 owner_sfid 컬럼은 NULL 로 적재.
@@ -1645,6 +1670,7 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "ProfessionalPromotionTeamHistory" to TargetSpec(PROFESSIONAL_PROMOTION_TEAM_HISTORY_METADATA, "ProfessionalPromotionTeamHistory__c", "professional_promotion_team_historys.csv", "promotion/entity/ProfessionalPromotionTeamHistory"),
     "ProfessionalPromotionTeamMaster" to TargetSpec(PROFESSIONAL_PROMOTION_TEAM_MASTER_METADATA, "ProfessionalPromotionTeamMaster__c", "professional_promotion_team_masters.csv", "promotion/entity/ProfessionalPromotionTeamMaster"),
     "PromotionEmployee" to TargetSpec(PROMOTION_EMPLOYEE_METADATA, "DKRetail__PromotionEmployee__c", "promotion_employees.csv", "promotion/entity/PromotionEmployee"),
+    "PromotionProduct" to TargetSpec(PROMOTION_PRODUCT_METADATA, "DKRetail__PromotionProduct__c", "promotion_products.csv", "promotion/entity/PromotionProduct"),
     "PushMessage" to TargetSpec(PUSH_MESSAGE_METADATA, "PushMessage__c", "push_messages.csv", "common/entity/PushMessage"),
     "PushMessageReceiver" to TargetSpec(PUSH_MESSAGE_RECEIVER_METADATA, "PushMessageReceiver__c", "push_message_receivers.csv", "common/entity/PushMessageReceiver"),
     "TeamMemberSchedule" to TargetSpec(TEAM_MEMBER_SCHEDULE_METADATA, "DKRetail__TeamMemberSchedule__c", "team_member_schedules.csv", "schedule/entity/TeamMemberSchedule"),
@@ -1691,6 +1717,7 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "ProfessionalPromotionTeamHistory",
     "ProfessionalPromotionTeamMaster",
     "PromotionEmployee",
+    "PromotionProduct",
     "PushMessage",
     "PushMessageReceiver",
     "TeamMemberSchedule",

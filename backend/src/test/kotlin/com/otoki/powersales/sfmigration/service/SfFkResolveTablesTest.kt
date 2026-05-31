@@ -121,6 +121,15 @@ class SfFkResolveTablesTest {
             assertThat(spec.refTable).isEqualTo("inspection_theme")
             assertThat(spec.refIdColumn).isEqualTo("inspection_theme_id")
         }
+
+        @Test
+        @DisplayName("product_code_sfid → product_code_id, ref product.product_id (NewProduct.Product_Code__c = reference/18)")
+        fun productCodeAlias() {
+            val spec = deriveFkResolveSpec("product_code_sfid")!!
+            assertThat(spec.idColumn).isEqualTo("product_code_id")
+            assertThat(spec.refTable).isEqualTo("product")
+            assertThat(spec.refIdColumn).isEqualTo("product_id")
+        }
     }
 
     @Nested
@@ -143,8 +152,8 @@ class SfFkResolveTablesTest {
         @Test
         @DisplayName("SKIP_FK_PREFIXES 에 등록된 prefix 는 null")
         fun skipPrefixes() {
-            assertThat(deriveFkResolveSpec("product_code_sfid")).isNull()
-            // spec #796 — record_type 은 SKIP 에서 FK_PREFIX_MAPPING 으로 이동 — record_type_sfid 는 더 이상 null 아님
+            // record_type 은 SKIP 에서 FK_PREFIX_MAPPING 으로 이동 — record_type_sfid 는 더 이상 null 아님
+            // product_code 도 SF reference/18 정상 lookup 임이 확인돼 SKIP 에서 제거 — productCodeAlias() 로 별도 검증
             assertThat(deriveFkResolveSpec("related_sfid")).isNull()
         }
 
@@ -185,6 +194,33 @@ class SfFkResolveTablesTest {
             // SF DKRetail__SiteAcitivity__c.OwnerId.referenceTo = [Group, User].
             // 미등록 시 owner_group_id (00G owner) 가 NULL 로 남는다.
             assertThat(POLYMORPHIC_OWNER_TABLES).contains("site_activity")
+        }
+
+        @Test
+        @DisplayName("owner_user_id + owner_group_id + XOR 를 가진 16개 entity 가 모두 POLYMORPHIC_OWNER_TABLES 에 등록")
+        fun polymorphicOwnerSixteenTables() {
+            // 각 전용 SF align 마이그레이션(V112~V146)으로 owner_group_id ADD 확정.
+            // 미등록 시 Group(00G) 소유 row 의 owner_user_id/owner_group_id 가 둘 다 NULL.
+            // account(OwnerId=User 단독) / group(=[Organization,User]) 은 polymorphic XOR 대상 아님 — 미포함.
+            assertThat(POLYMORPHIC_OWNER_TABLES).contains(
+                "account_category_master",
+                "agreement_history",
+                "agreement_word",
+                "alternative_holiday",
+                "appointment",
+                "attend_info",
+                "attendance_log",
+                "claim",
+                "display_work_schedule",
+                "employee",
+                "employee_input_criteria_master",
+                "erp_order_product",
+                "monthly_female_employee_integration_schedule",
+                "notice",
+                "product",
+                "team_member_schedule",
+            )
+            assertThat(POLYMORPHIC_OWNER_TABLES).doesNotContain("account", "group")
         }
     }
 

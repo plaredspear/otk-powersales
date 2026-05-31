@@ -37,6 +37,26 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
     // SF DKRetail__SiteAcitivity__c.OwnerId.referenceTo = [Group, User] polymorphic.
     // site_activity.owner_sfid → owner_user_id (005) / owner_group_id (00G) 분기.
     "site_activity",
+    // owner_user_id + owner_group_id + XOR CHECK 를 가졌으나 누락돼 있던 16개 entity.
+    // 각 전용 SF align 마이그레이션(V112~V146)으로 owner_group_id ADD 확정. 미등록 시
+    // Group(00G) 소유 row 의 owner_user_id/owner_group_id 가 둘 다 NULL 로 남던 문제.
+    // (account / group 은 OwnerId.referenceTo 가 User 단독 / [Organization,User] 라 polymorphic XOR 대상 아님 — 제외)
+    "account_category_master",
+    "agreement_history",
+    "agreement_word",
+    "alternative_holiday",
+    "appointment",
+    "attend_info",
+    "attendance_log",
+    "claim",
+    "display_work_schedule",
+    "employee",
+    "employee_input_criteria_master",
+    "erp_order_product",
+    "monthly_female_employee_integration_schedule",
+    "notice",
+    "product",
+    "team_member_schedule",
 )
 
 /**
@@ -179,6 +199,9 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
     "account" to ("account" to "account_id"),
     "employee" to ("employee" to "employee_id"),
     "product" to ("product" to "product_id"),
+    // NewProduct__c.Product_Code__c → DKRetail__Product__c lookup (product_code_sfid → product_code_id).
+    // idColumn 은 자동추론 ${prefix}_id = product_code_id 로 정확.
+    "product_code" to ("product" to "product_id"),
     "promotion" to ("promotion" to "promotion_id"),
     "promotion_employee" to ("promotion_employee" to "promotion_employee_id"),
     "team_member_schedule" to ("team_member_schedule" to "team_member_schedule_id"),
@@ -213,16 +236,19 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
 /**
  * FK 처리 제외 prefix.
  *
- * - product_code : code 기반 lookup (sfid 아님)
  * - related      : Group.related polymorphic — 별도 처리
  * - user_or_group : group_member 의 polymorphic — POLYMORPHIC_USER_OR_GROUP_TABLES 가 별도 처리
  * - target       : sharing_rule_target.target_sfid 는 SF retrieve XML 출처에서 부재 (SF
  *                  자체가 sharedTo 본문 element 의 DeveloperName 으로만 식별).
  *                  target_id 채움은 NaturalKey FK Service 의 sharing_rule_target 전용 분기
  *                  (target_developer_name + target_type) 가 처리. sfid prefix 경로 skip.
+ *
+ * 비고: product_code 는 과거 "code 기반 lookup(sfid 아님)" 으로 오분류돼 여기 있었으나,
+ *      SF NewProduct__c.Product_Code__c describe = reference/18 → DKRetail__Product__c
+ *      (relationshipName Product_Code__r) 인 정상 sfid lookup 이라 제외에서 풀고
+ *      FK_PREFIX_MAPPING 에 ("product","product_id") 로 등록.
  */
 internal val SKIP_FK_PREFIXES: Set<String> = setOf(
-    "product_code",
     "related",
     "user_or_group",
     "target",
