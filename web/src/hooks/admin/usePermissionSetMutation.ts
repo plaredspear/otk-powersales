@@ -5,9 +5,11 @@ import {
   fetchAvailablePermissionResources,
   updatePermissionSetFlags,
   updatePermissionSetMeta,
+  updateProfileFlags,
   type PermissionSetCreateRequest,
   type PermissionSetUpdateFlagsRequest,
   type PermissionSetUpdateMetaRequest,
+  type ProfileUpdateFlagsRequest,
 } from '@/api/admin/permission';
 
 const KEY_BASE = ['admin', 'permissions'] as const;
@@ -66,6 +68,15 @@ export function useDeletePermissionSet() {
   const invalidate = useInvalidatePermissionSets();
   return useMutation({
     mutationFn: (permissionSetId: number) => deletePermissionSet(permissionSetId),
+    onSuccess: () => invalidate(),
+  });
+}
+
+/** Profile 권한 비트 전체 교체 mutation. 편집 시 backend 가 dirty 플래그 set + 권한 캐시 무효화. */
+export function useUpdateProfileFlags(profileId: number) {
+  const invalidate = useInvalidatePermissionSets();
+  return useMutation({
+    mutationFn: (req: ProfileUpdateFlagsRequest) => updateProfileFlags(profileId, req),
     onSuccess: () => invalidate(),
   });
 }

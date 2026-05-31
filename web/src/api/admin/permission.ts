@@ -47,6 +47,12 @@ export interface ProfileDetail {
   userType: string | null;
   description: string | null;
   flags: ProfileFlagsSummary;
+  /** SF 객체권한 (편집 화면 현재값). PermissionSetDetail 과 동일 행 형식. */
+  objectPermissions: ObjectPermissionRow[];
+  /** @PermissionResource 가상 자원 권한. */
+  customPermissions: CustomPermissionRow[];
+  /** Web admin 에서 Profile 권한이 수정되었는지 (dirty). */
+  isLocallyModified: boolean;
   assignedUsers: PaginatedUserList;
 }
 
@@ -434,6 +440,50 @@ export async function fetchPermissionSetChangeLog(
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '변경 이력 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * Profile 권한 비트 전체 교체 요청 — PUT /profiles/{id}/flags.
+ *
+ * SF 정합 — 직책별 Profile 에 객체권한을 박으면 발령으로 해당 직책이 된 사원에게 화면 권한 자동 전파.
+ * PermissionSet 과 달리 system 비트 5종 전부 (viewAllUsers/manageUsers/apiEnabled 포함) 를 다룬다.
+ */
+export interface ProfileUpdateFlagsRequest {
+  viewAllData: boolean;
+  modifyAllData: boolean;
+  viewAllUsers: boolean;
+  manageUsers: boolean;
+  apiEnabled: boolean;
+  objectPermissions: Record<string, Record<string, boolean>>;
+  customPermissions: Record<string, Record<string, boolean>>;
+}
+
+export interface ProfileFlagsMutationResponse {
+  profileId: number;
+  name: string;
+  viewAllData: boolean;
+  modifyAllData: boolean;
+  viewAllUsers: boolean;
+  manageUsers: boolean;
+  apiEnabled: boolean;
+  objectPermissions: Record<string, Record<string, boolean>>;
+  customPermissions: Record<string, Record<string, boolean>>;
+  isLocallyModified: boolean;
+}
+
+/** Profile 권한 비트 전체 교체. 편집 시 backend 가 isLocallyModified=true 로 set. */
+export async function updateProfileFlags(
+  profileId: number,
+  req: ProfileUpdateFlagsRequest,
+): Promise<ProfileFlagsMutationResponse> {
+  const res = await client.put<ApiResponse<ProfileFlagsMutationResponse>>(
+    `/api/v1/admin/permissions/profiles/${profileId}/flags`,
+    req,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'Profile 권한 비트 수정에 실패했습니다');
   }
   return res.data.data;
 }
