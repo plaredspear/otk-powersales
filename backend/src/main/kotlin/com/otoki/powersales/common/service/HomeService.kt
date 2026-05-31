@@ -67,37 +67,44 @@ class HomeService(
 
         val today = LocalDate.now()
 
-        // 역할별 스케줄 조회
+        // 역할별 TMS 조회 (행사 일정 집계 + 진열 출근여부 조회용)
         val (teamMemberSchedules, employeeMap) = fetchSchedulesByRole(employee, today)
 
-        // 확정 진열마스터 조회 (TMS에 없는 거래처만 추가)
+        // 행사 일정: TMS 중 workingCategory1 = 행사 만 집계.
+        // 레거시 `selectHomeSchedulePromote` 의 `workingcategory1__c = '행사'` 하드 필터 정합 —
+        // 레거시는 진열 TMS 행을 홈 일정으로 카운트하지 않는다 (진열은 아래 확정 마스터에서만).
+        val eventSchedules = teamMemberSchedules.filter { it.workingCategory1 == WorkingCategory1.EVENT }
+
+        // 진열 출근여부 조회용: TMS 중 workingCategory1 = 진열 → (employeeId, accountId) 매핑.
+        // 레거시 `selectHomeScheduleDisplay` 의 dtc2 LEFT JOIN(workingcategory1='진열') 정합 —
+        // 진열 일정 존재 판정은 확정 마스터로, 출근여부(commutelogid)는 진열 TMS 에서 읽는다.
+        val displayTmsByKey = teamMemberSchedules
+            .filter { it.workingCategory1 == WorkingCategory1.DISPLAY }
+            .mapNotNull { tms ->
+                val empId = tms.employee?.id
+                val accId = tms.account?.id
+                if (empId != null && accId != null) Pair(empId, accId) to tms else null
+            }
+            .toMap()
+
+        // 진열 일정: 확정 진열마스터 (레거시 `selectHomeScheduleDisplay` 의 `confirmed__c is true` 정합)
         val displayWorkSchedules = fetchDisplaySchedulesByRole(employee, employeeMap, today)
-        val tmsAccountKeys = teamMemberSchedules.mapNotNull { tms ->
-            val empId = tms.employee?.id
-            val accId = tms.account?.id
-            if (empId != null && accId != null) Pair(empId, accId) else null
-        }.toSet()
-        val additionalDisplaySchedules = displayWorkSchedules.filter { dws ->
-            val empId = dws.employee?.id
-            val accId = dws.account?.id
-            empId != null && accId != null && Pair(empId, accId) !in tmsAccountKeys
-        }
 
         // 스케줄 → 거래처명 매핑 (batch fetch)
-        val accountMap = fetchAccountMap(teamMemberSchedules, additionalDisplaySchedules)
+        val accountMap = fetchAccountMap(eventSchedules, displayWorkSchedules)
 
-        // TMS 정렬 + 중복 제거 + DTO 변환
-        val tmsInfos = teamMemberSchedules
+        // 행사 TMS 정렬 + 중복 제거 + DTO 변환
+        val eventInfos = eventSchedules
             .sortedBy { sortPriority(it) }
             .distinctBy { it.id }
             .map { tms -> toTeamMemberScheduleInfo(tms, employeeMap, accountMap) }
 
-        // DWS → DTO 변환 (진열, 미출근 → 항상 마지막 정렬)
-        val dwsInfos = additionalDisplaySchedules.map { dws ->
-            toDisplayWorkScheduleInfo(dws, employeeMap, accountMap)
+        // 확정 진열마스터 → DTO 변환 (출근여부는 매칭되는 진열 TMS 에서 읽음, 진열 → 항상 마지막 정렬)
+        val displayInfos = displayWorkSchedules.map { dws ->
+            toDisplayWorkScheduleInfo(dws, employeeMap, accountMap, displayTmsByKey)
         }
 
-        val todaySchedules = tmsInfos + dwsInfos
+        val todaySchedules = eventInfos + displayInfos
 
         // 출근 현황 집계
         val attendanceSummary = HomeResponse.AttendanceSummaryInfo(
@@ -223,14 +230,20 @@ class HomeService(
 
     /**
      * DisplayWorkSchedule entity → TeamMemberScheduleInfo DTO 변환
-     * 레거시 동작: 확정 진열마스터가 홈화면 스케줄에 포함되어 출근 등록 가능
+     * 레거시 동작: 확정 진열마스터가 홈화면 스케줄에 포함되어 출근 등록 가능.
+     * 출근여부는 매칭되는 진열 TMS([displayTmsByKey])에서 읽는다
+     * (레거시 `selectHomeScheduleDisplay` 의 dtc2 LEFT JOIN 정합).
      */
     private fun toDisplayWorkScheduleInfo(
         displayWorkSchedule: DisplayWorkSchedule,
         employeeMap: Map<Long, Employee>,
-        accountMap: Map<Int, String>
+        accountMap: Map<Int, String>,
+        displayTmsByKey: Map<Pair<Long, Int>, TeamMemberSchedule>
     ): HomeResponse.TeamMemberScheduleInfo {
         val matchedEmployee = displayWorkSchedule.employee?.id?.let { employeeMap[it] }
+        val empId = displayWorkSchedule.employee?.id
+        val accId = displayWorkSchedule.account?.id
+        val matchedTms = if (empId != null && accId != null) displayTmsByKey[Pair(empId, accId)] else null
         return HomeResponse.TeamMemberScheduleInfo(
             scheduleId = 0,
             displayWorkScheduleId = displayWorkSchedule.id,
@@ -240,8 +253,8 @@ class HomeService(
             accountId = displayWorkSchedule.account?.id,
             workCategory = displayWorkSchedule.typeOfWork1?.displayName ?: "진열",
             workType = displayWorkSchedule.typeOfWork3?.displayName,
-            isCommuteRegistered = false,
-            commuteRegisteredAt = null
+            isCommuteRegistered = matchedTms?.attendanceLog != null,
+            commuteRegisteredAt = matchedTms?.commuteReportDatetime
         )
     }
 }

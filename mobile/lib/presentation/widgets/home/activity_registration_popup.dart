@@ -26,8 +26,9 @@ class ActivityMenuItem {
 /// 활동등록 팝업 위젯
 ///
 /// 영업사원이 현장 활동을 등록하기 위한 진입점.
-/// 4개의 메뉴(유통기한 관리, 현장점검, 클레임 등록, 제안하기)를
-/// BottomSheet 형태로 제공하며, 각 메뉴 선택 시 해당 화면으로 이동한다.
+/// 6개의 메뉴(유통기한 관리, 현장 점검, 제안하기, 클레임 등록,
+/// 내 클레임 조회, 내 물류클레임 조회)를 BottomSheet 형태로 제공하며,
+/// 각 메뉴 선택 시 해당 화면으로 이동한다. (레거시 GNB "활동 등록" 정합)
 class ActivityRegistrationPopup extends StatelessWidget {
   /// 메뉴 아이템 탭 콜백
   final void Function(ActivityMenuItem item)? onMenuTap;
@@ -37,27 +38,37 @@ class ActivityRegistrationPopup extends StatelessWidget {
     this.onMenuTap,
   });
 
-  /// 기본 메뉴 목록 (4개)
+  /// 기본 메뉴 목록 (6개, 레거시 GNB "활동 등록" 순서 정합)
   static const List<ActivityMenuItem> defaultMenuItems = [
     ActivityMenuItem(
-      icon: Icons.access_time,
+      icon: Icons.notifications_none,
       label: '유통기한 관리',
       route: AppRouter.productExpiration,
     ),
     ActivityMenuItem(
-      icon: Icons.fact_check_outlined,
-      label: '현장점검',
+      icon: Icons.assignment_ind_outlined,
+      label: '현장 점검',
       route: AppRouter.inspectionRegister,
     ),
     ActivityMenuItem(
-      icon: Icons.report_problem_outlined,
+      icon: Icons.campaign_outlined,
+      label: '제안하기(물류클레임, 신제품 제안 등)',
+      route: AppRouter.suggestionRegister,
+    ),
+    ActivityMenuItem(
+      icon: Icons.chat_bubble_outline,
       label: '클레임 등록',
       route: AppRouter.claimRegister,
     ),
     ActivityMenuItem(
-      icon: Icons.lightbulb_outline,
-      label: '제안하기',
-      route: AppRouter.suggestionRegister,
+      icon: Icons.receipt_long_outlined,
+      label: '내 클레임 조회',
+      route: AppRouter.claimList,
+    ),
+    ActivityMenuItem(
+      icon: Icons.receipt_long_outlined,
+      label: '내 물류클레임 조회',
+      route: AppRouter.suggestionList,
     ),
   ];
 

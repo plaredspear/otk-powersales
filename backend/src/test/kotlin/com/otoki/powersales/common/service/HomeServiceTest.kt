@@ -84,7 +84,7 @@ class HomeServiceTest {
             val account = createAccount(id = 8938, name = "이마트 부산점")
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(id = 1L, employeeId = userId, accountId = 8938, workingCategory1 = WorkingCategory1.DISPLAY),
+                createTeamMemberSchedule(id = 1L, employeeId = userId, accountId = 8938, workingCategory1 = WorkingCategory1.EVENT),
                 createTeamMemberSchedule(id = 2L, employeeId = userId, accountId = 8938, workingCategory1 = WorkingCategory1.EVENT)
             )
 
@@ -122,9 +122,9 @@ class HomeServiceTest {
             val teamEmployees = listOf(leader, member1, member2)
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(id = 1L, employeeId = member1Id, accountId = 8938, workingCategory1 = WorkingCategory1.DISPLAY),
+                createTeamMemberSchedule(id = 1L, employeeId = member1Id, accountId = 8938, workingCategory1 = WorkingCategory1.EVENT),
                 createTeamMemberSchedule(id = 2L, employeeId = member2Id, accountId = 8939, workingCategory1 = WorkingCategory1.EVENT),
-                createTeamMemberSchedule(id = 3L, employeeId = userId, accountId = 8938, workingCategory1 = WorkingCategory1.DISPLAY)
+                createTeamMemberSchedule(id = 3L, employeeId = userId, accountId = 8938, workingCategory1 = WorkingCategory1.EVENT)
             )
 
             val accounts = listOf(
@@ -306,22 +306,14 @@ class HomeServiceTest {
         // ========== 정렬 ==========
 
         @Test
-        @DisplayName("3단계 정렬 - 출근완료(0) -> 행사(1) -> 진열(2) 순서로 정렬")
+        @DisplayName("정렬 - 출근완료 행사 -> 미출근 행사 -> 진열(마스터) 순서로 정렬")
         fun schedules_sortedByPriority() {
             // Given
             val userId = 1L
             val employee = createEmployee(id = userId, role = null)
+            val account = createAccount(id = 8940, name = "진열 거래처")
 
-            // 진열 (priority 2)
-            val displaySchedule = createTeamMemberSchedule(
-                id = 3L,
-                employeeId = userId,
-                accountId = 8938,
-                workingCategory1 = WorkingCategory1.DISPLAY,
-                workingCategory2 = null,
-                commuteLogSfid = null
-            )
-            // 행사 (priority 1)
+            // 미출근 행사 (priority 1)
             val eventSchedule = createTeamMemberSchedule(
                 id = 2L,
                 employeeId = userId,
@@ -330,23 +322,26 @@ class HomeServiceTest {
                 workingCategory2 = null,
                 commuteLogSfid = null
             )
-            // 출근완료 (priority 0)
+            // 출근완료 행사 (priority 0)
             val commuteSchedule = createTeamMemberSchedule(
                 id = 1L,
                 employeeId = userId,
                 accountId = 8941,
-                workingCategory1 = WorkingCategory1.DISPLAY,
+                workingCategory1 = WorkingCategory1.EVENT,
                 workingCategory2 = null,
                 commuteLogSfid = "CLG001"
             )
 
-            // 의도적으로 역순 전달 (진열 -> 행사 -> 출근완료)
-            val teamMemberSchedules = listOf(displaySchedule, eventSchedule, commuteSchedule)
+            // 진열: 확정 마스터로만 집계 (레거시 정합) — 항상 행사 뒤에 정렬
+            val displayMaster = createDisplayWorkSchedule(id = 300L, employeeId = userId, accountId = 8940)
+
+            // 의도적으로 역순 전달 (미출근 행사 -> 출근완료 행사)
+            val teamMemberSchedules = listOf(eventSchedule, commuteSchedule)
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns teamMemberSchedules
-            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
-            every { accountRepository.findByIdIn(any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(displayMaster)
+            every { accountRepository.findByIdIn(any()) } returns listOf(account)
             every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
             every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
@@ -355,9 +350,9 @@ class HomeServiceTest {
 
             // Then
             assertThat(result.todaySchedules).hasSize(3)
-            assertThat(result.todaySchedules[0].scheduleId).isEqualTo(1L)
-            assertThat(result.todaySchedules[1].scheduleId).isEqualTo(2L)
-            assertThat(result.todaySchedules[2].scheduleId).isEqualTo(3L)
+            assertThat(result.todaySchedules[0].scheduleId).isEqualTo(1L) // 출근완료 행사
+            assertThat(result.todaySchedules[1].scheduleId).isEqualTo(2L) // 미출근 행사
+            assertThat(result.todaySchedules[2].displayWorkScheduleId).isEqualTo(300L) // 진열 마스터
         }
 
         // ========== 중복 제거 ==========
@@ -369,12 +364,12 @@ class HomeServiceTest {
             val userId = 1L
             val employee = createEmployee(id = userId, role = null)
 
-            // 같은 id로 진열(priority 3)과 행사(priority 2) 스케줄 존재
+            // 같은 id로 행사 스케줄 2건(중복) + 다른 id 행사 1건
             val displaySchedule = createTeamMemberSchedule(
                 id = 1L,
                 employeeId = userId,
                 accountId = 8938,
-                workingCategory1 = WorkingCategory1.DISPLAY,
+                workingCategory1 = WorkingCategory1.EVENT,
                 commuteLogSfid = null
             )
             val eventSchedule = createTeamMemberSchedule(
@@ -388,7 +383,7 @@ class HomeServiceTest {
                 id = 2L,
                 employeeId = userId,
                 accountId = 8940,
-                workingCategory1 = WorkingCategory1.DISPLAY,
+                workingCategory1 = WorkingCategory1.EVENT,
                 commuteLogSfid = null
             )
 
@@ -420,9 +415,9 @@ class HomeServiceTest {
             val employee = createEmployee(id = userId, role = null)
 
             val teamMemberSchedules = listOf(
-                createTeamMemberSchedule(id = 1L, employeeId = userId, accountId = 8938, commuteLogSfid = "CLG001"),
-                createTeamMemberSchedule(id = 2L, employeeId = userId, accountId = 8939, commuteLogSfid = "CLG002"),
-                createTeamMemberSchedule(id = 3L, employeeId = userId, accountId = 8940, commuteLogSfid = null)
+                createTeamMemberSchedule(id = 1L, employeeId = userId, accountId = 8938, workingCategory1 = WorkingCategory1.EVENT, commuteLogSfid = "CLG001"),
+                createTeamMemberSchedule(id = 2L, employeeId = userId, accountId = 8939, workingCategory1 = WorkingCategory1.EVENT, commuteLogSfid = "CLG002"),
+                createTeamMemberSchedule(id = 3L, employeeId = userId, accountId = 8940, workingCategory1 = WorkingCategory1.EVENT, commuteLogSfid = null)
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
@@ -482,15 +477,17 @@ class HomeServiceTest {
         }
 
         @Test
-        @DisplayName("TMS + DWS 중복 거래처 - 같은 사원+거래처에 TMS와 DWS 모두 존재 -> DWS 제외, TMS만 반환")
-        fun displayWorkSchedule_excludedWhenTmsExists() {
+        @DisplayName("진열 TMS + 확정 마스터 동일 거래처 - 마스터로 1건, 출근여부는 진열 TMS 에서 읽음 (레거시 dtc2 조인 정합)")
+        fun displaySchedule_fromMaster_commuteFromTms() {
             // Given
             val userId = 1L
             val employee = createEmployee(id = userId, role = null)
             val account = createAccount(id = 742, name = "테스트 거래처")
 
+            // 진열 TMS (출근완료) — 일정 집계엔 쓰이지 않고 출근여부 조회용으로만 사용
             val teamMemberSchedule = createTeamMemberSchedule(
-                id = 1L, employeeId = userId, accountId = 742, workingCategory1 = WorkingCategory1.DISPLAY
+                id = 1L, employeeId = userId, accountId = 742,
+                workingCategory1 = WorkingCategory1.DISPLAY, commuteLogSfid = "CLG001"
             )
             val displayWorkSchedule = createDisplayWorkSchedule(
                 id = 100L, employeeId = userId, accountId = 742
@@ -506,10 +503,43 @@ class HomeServiceTest {
             // When
             val result = homeService.getHomeData(userId)
 
-            // Then
+            // Then — 진열 TMS 단독은 일정으로 카운트되지 않고, 확정 마스터 1건만 반환
             assertThat(result.todaySchedules).hasSize(1)
-            assertThat(result.todaySchedules[0].scheduleId).isEqualTo(1L)
-            assertThat(result.todaySchedules[0].displayWorkScheduleId).isNull()
+            assertThat(result.todaySchedules[0].displayWorkScheduleId).isEqualTo(100L)
+            assertThat(result.todaySchedules[0].scheduleId).isEqualTo(0L)
+            // 출근여부는 매칭되는 진열 TMS 에서 읽는다
+            assertThat(result.todaySchedules[0].isCommuteRegistered).isTrue()
+            assertThat(result.attendanceSummary.registeredCount).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("진열 TMS 만 존재(확정 마스터 없음) - 홈 일정 0건 (레거시 정합: 진열은 확정 마스터로만 집계, phantom 등록버튼 방지)")
+        fun displayTmsWithoutMaster_notCounted() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, role = null)
+            val account = createAccount(id = 742, name = "테스트 거래처")
+
+            // 확정 진열마스터 backing 없는 진열 TMS 1건만 존재
+            val displayTms = createTeamMemberSchedule(
+                id = 1L, employeeId = userId, accountId = 742,
+                workingCategory1 = WorkingCategory1.DISPLAY, commuteLogSfid = null
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns listOf(displayTms)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { accountRepository.findByIdIn(any()) } returns listOf(account)
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = false)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then — 레거시는 진열 TMS 행 단독을 홈 일정으로 카운트하지 않음
+            assertThat(result.todaySchedules).isEmpty()
+            assertThat(result.attendanceSummary.totalCount).isEqualTo(0)
+            assertThat(result.attendanceSummary.registeredCount).isEqualTo(0)
         }
 
         // ========== 에러 케이스 ==========
