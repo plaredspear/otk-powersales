@@ -121,6 +121,10 @@ export default function SchedulePage() {
   // 사용자가 직접 조회를 수행한 후에는 그 조회 결과 (schedules + dailySummary) 가 우선.
   const summaries = data?.dailySummary ?? form?.dailySummary ?? [];
 
+  // 요약 fetch 완료 여부 — form/조회 중 하나라도 응답이 도착해야 셀에 0 값 배지를 그린다.
+  // (초기 로딩 중 전 셀에 0/0 이 깜빡이는 것 방지)
+  const summariesReady = form !== undefined || data !== undefined;
+
   // staging 이 applied 와 동일해도 "조회" 클릭 시 항상 강제 재요청 — react-query 가 동일 queryKey 일 때
   // cache 즉시 반환만 하고 background refetch 안 하므로 명시 refetch 필요.
   // 잦은 클릭으로 인한 서버 부하 방지 — 1.5초 cooldown.
@@ -233,6 +237,7 @@ export default function SchedulePage() {
             onListRangeChange={setListRange}
             schedules={schedules}
             summaries={summaries}
+            summariesReady={summariesReady}
             onDateClick={handleDateClick}
             onEventClick={handleEventClick}
             isLoading={schedulesLoading}

@@ -2,6 +2,8 @@ import type { DailySummary } from '@/api/team-schedule';
 
 interface DaySummaryBannerProps {
   summary: DailySummary | undefined;
+  // 요약 데이터 fetch 완료 여부. 미완료(초기 로딩 중) 면 0 값 배지조차 그리지 않는다.
+  ready: boolean;
 }
 
 // SF 레거시 정합 (FullCalendarComponentHelper.js)
@@ -9,8 +11,11 @@ const COLOR_MATCH = '#069740';     // 진열/행사 양쪽 정확 일치 시 —
 const COLOR_MISMATCH = '#b2272d';  // 미달 또는 초과 (정확히 일치하지 않음) — 빨강 배경
 const COLOR_LEAVE = '#9CAB98';     // 연차 — 회녹색 배경
 
-export function DaySummaryBanner({ summary }: DaySummaryBannerProps) {
-  // entry 가 없는 날도 0 값 칩 (진열: 0/0 | 행사: 0/0, 연차 : 0) 을 항상 표시.
+export function DaySummaryBanner({ summary, ready }: DaySummaryBannerProps) {
+  // fetch 완료 전에는 0 값 배지를 보여주지 않는다 (초기 로딩 중 0/0 깜빡임 방지).
+  if (!ready) return null;
+
+  // fetch 완료 후에는 entry 가 없는 날도 0 값 칩 (진열: 0/0 | 행사: 0/0, 연차 : 0) 을 항상 표시.
   // backend 는 데이터 없는 날의 분모(기대 건수)를 내려주지 않으므로 분자/분모 모두 0 으로 fallback.
   const {
     displayExpected = 0,

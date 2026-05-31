@@ -22,6 +22,8 @@ interface ScheduleCalendarProps {
   onListRangeChange: (range: [Dayjs, Dayjs]) => void;
   schedules: TeamSchedule[];
   summaries: DailySummary[];
+  // 요약(summaries) fetch 가 한 번이라도 완료됐는지. false 면 셀에 요약 배지를 그리지 않는다.
+  summariesReady: boolean;
   onDateClick: (date: string) => void;
   onEventClick: (schedule: TeamSchedule) => void;
   isLoading: boolean;
@@ -43,6 +45,7 @@ export function ScheduleCalendar({
   onListRangeChange,
   schedules,
   summaries,
+  summariesReady,
   onDateClick,
   onEventClick,
 }: ScheduleCalendarProps) {
@@ -131,11 +134,11 @@ export function ScheduleCalendar({
           }}
         >
           <div style={{ fontWeight: 500, marginBottom: 2 }}>{arg.dayNumberText}</div>
-          <DaySummaryBanner summary={summary} />
+          <DaySummaryBanner summary={summary} ready={summariesReady} />
         </div>
       );
     },
-    [summaryMap, onDateClick],
+    [summaryMap, summariesReady, onDateClick],
   );
 
   const renderEventContent = useCallback(
