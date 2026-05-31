@@ -1,8 +1,21 @@
 import { useState } from 'react';
-import { Button, DatePicker, Descriptions, Drawer, Image, Input, Select, Space, Table, Tag } from 'antd';
+import {
+  App,
+  Button,
+  DatePicker,
+  Descriptions,
+  Drawer,
+  Image,
+  Input,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tag,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useInspections } from '@/hooks/inspections/useInspections';
+import { useInspections, useDeleteInspection } from '@/hooks/inspections/useInspections';
 import { useInspectionDetail } from '@/hooks/inspections/useInspectionDetail';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { usePermission } from '@/hooks/usePermission';
@@ -46,9 +59,14 @@ export default function FieldInspectionPage() {
   const [page, setPage] = useState(0);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
+  const { message } = App.useApp();
   const { hasEntityPermission } = usePermission();
   const canCreate = hasEntityPermission('site_activity', 'CREATE');
+  const canEdit = hasEntityPermission('site_activity', 'EDIT');
+  const canDelete = hasEntityPermission('site_activity', 'DELETE');
+  const deleteMutation = useDeleteInspection();
 
   const [searchParams, setSearchParams] = useState<InspectionListParams>({
     startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
@@ -87,6 +105,17 @@ export default function FieldInspectionPage() {
     const zeroIndexedPage = newPage - 1;
     setPage(zeroIndexedPage);
     setSearchParams((prev) => ({ ...prev, page: zeroIndexedPage }));
+  };
+
+  const handleDelete = async () => {
+    if (detailId == null) return;
+    try {
+      await deleteMutation.mutateAsync(detailId);
+      message.success('현장점검이 삭제되었습니다');
+      setDetailId(null);
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : '삭제에 실패했습니다');
+    }
   };
 
   const dash = (val: string | null) => val ?? '-';
@@ -215,6 +244,25 @@ export default function FieldInspectionPage() {
         open={detailId != null}
         onClose={() => setDetailId(null)}
         loading={detailLoading}
+        extra={
+          detail && (
+            <Space>
+              {canEdit && (
+                <Button onClick={() => setEditOpen(true)}>수정</Button>
+              )}
+              {canDelete && (
+                <Popconfirm
+                  title="이 현장점검을 삭제하시겠습니까?"
+                  onConfirm={handleDelete}
+                  okText="삭제"
+                  cancelText="취소"
+                >
+                  <Button danger>삭제</Button>
+                </Popconfirm>
+              )}
+            </Space>
+          )
+        }
       >
         {detail && (
           <Descriptions column={1} bordered size="small">
@@ -268,6 +316,11 @@ export default function FieldInspectionPage() {
       </Drawer>
 
       <InspectionCreateModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <InspectionCreateModal
+        open={editOpen}
+        editDetail={detail ?? null}
+        onClose={() => setEditOpen(false)}
+      />
     </div>
   );
 }

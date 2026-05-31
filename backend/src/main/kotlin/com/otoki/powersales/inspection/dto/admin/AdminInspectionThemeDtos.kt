@@ -71,7 +71,29 @@ data class AdminCreateSiteActivityRequest(
     val competitorSalesQuantity: Int? = null,
 )
 
-/** admin 현장점검 결과 등록 응답. */
+/**
+ * admin 현장점검 결과(SiteActivity) 수정 요청.
+ *
+ * 등록과 동일 필드 셋. SF 표준 Edit 폼 동등 (SiteActivity trigger 는 insert 전용 — 수정 부수효과 없음).
+ */
+data class AdminUpdateSiteActivityRequest(
+    val themeId: Long,
+    val accountId: Int,
+    val employeeId: Long,
+    val inspectionDate: String,
+    val category: String,
+    val fieldTypeCode: String,
+    val description: String? = null,
+    val productCode: String? = null,
+    val competitorName: String? = null,
+    val competitorActivity: String? = null,
+    val competitorTasting: Boolean? = null,
+    val competitorProductName: String? = null,
+    val competitorProductPrice: Int? = null,
+    val competitorSalesQuantity: Int? = null,
+)
+
+/** admin 현장점검 결과 등록/수정 응답. */
 data class AdminSiteActivityMutationResponse(
     val id: Long,
     val name: String?,
