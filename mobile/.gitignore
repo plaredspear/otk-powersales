@@ -51,3 +51,6 @@ test/temp/
 # Environment config files
 config/*
 !config/*.example
+
+# FVM Version Cache
+.fvm/

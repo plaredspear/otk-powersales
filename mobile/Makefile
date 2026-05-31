@@ -4,6 +4,9 @@
 STAGE ?= local
 CONFIG := config/$(STAGE).json
 
+## Flutter 실행기 (기본 fvm). fvm 미사용 시: make run FLUTTER=flutter
+FLUTTER ?= fvm flutter
+
 ## 초기 설정: config/<stage>.json 생성 (최초 1회)
 setup:
 	@for stage in local dev prod; do \
@@ -12,33 +15,33 @@ setup:
 			echo "config/$$stage.json created from template"; \
 		fi; \
 	done
-	flutter pub get
+	$(FLUTTER) pub get
 
 ## 앱 실행 (자동 디바이스 선택). 예: make run STAGE=dev
 run: setup
-	flutter run --dart-define-from-file=$(CONFIG)
+	$(FLUTTER) run --dart-define-from-file=$(CONFIG)
 
 ## iOS 시뮬레이터에서 실행. 예: make run-ios STAGE=local
 run-ios: setup
-	flutter run -d iPhone --dart-define-from-file=$(CONFIG)
+	$(FLUTTER) run -d iPhone --dart-define-from-file=$(CONFIG)
 
 ## Android 에뮬레이터에서 실행. 예: make run-android STAGE=dev
 run-android: setup
-	flutter run -d android --dart-define-from-file=$(CONFIG)
+	$(FLUTTER) run -d android --dart-define-from-file=$(CONFIG)
 
 ## APK 빌드 (release). 예: make build-apk STAGE=prod
 build-apk: setup
-	flutter build apk --release --dart-define-from-file=$(CONFIG)
+	$(FLUTTER) build apk --release --dart-define-from-file=$(CONFIG)
 
 ## iOS 빌드 (release). 예: make build-ios STAGE=prod
 build-ios: setup
-	flutter build ios --release --dart-define-from-file=$(CONFIG)
+	$(FLUTTER) build ios --release --dart-define-from-file=$(CONFIG)
 
 ## 테스트 실행
 test:
-	flutter test --reporter compact
+	$(FLUTTER) test --reporter compact
 
 ## 빌드 캐시 정리
 clean:
-	flutter clean
+	$(FLUTTER) clean
 	rm -rf .dart_tool build
