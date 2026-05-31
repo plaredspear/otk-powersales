@@ -53,11 +53,11 @@ class SFSchemaUtilsTest {
         }
 
         @Test
-        @DisplayName("TeamMemberSchedule 엔티티 - 47개 SF Field 매핑 반환 (Spec #762: Formula 컬럼 7건 제거)")
+        @DisplayName("TeamMemberSchedule 엔티티 - 48개 SF Field 매핑 반환 (Spec #762: Formula 7건 제거 + Spec #849: DKRetail__AccountId__c 부활 1건)")
         fun getSFMapping_teamMemberSchedule() {
             val mapping = SFSchemaUtils.getSFMapping(TeamMemberSchedule::class.java)
 
-            assertThat(mapping).hasSize(47)
+            assertThat(mapping).hasSize(48)
             assertThat(mapping["DisplayWorkScheduleMaster__c"]).isEqualTo("display_work_schedule_sfid")
             assertThat(mapping["DKRetail__EmployeeId__c"]).isEqualTo("employee_sfid")
             assertThat(mapping["Name"]).isEqualTo("name")

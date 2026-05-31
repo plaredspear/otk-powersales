@@ -47,6 +47,14 @@ class Promotion(
     @Column(name = "account_sfid", length = 18)
     var accountSfid: String? = null,
 
+    // -- Spec #849: deprecated SF lookup `DKRetail__AccId__c` (운영라벨 "사용안함") 부활 (raw FK id 컬럼만, @ManyToOne 미도입) --
+    @SFField("DKRetail__AccId__c")
+    @Column(name = "dk_account_sfid", length = 18)
+    var dkAccountSfid: String? = null,
+
+    @Column(name = "dk_account_id")
+    var dkAccountId: Long? = null,
+
     @SFField("DKRetail__StartDate__c")
     @Column(name = "start_date", nullable = false)
     var startDate: LocalDate,

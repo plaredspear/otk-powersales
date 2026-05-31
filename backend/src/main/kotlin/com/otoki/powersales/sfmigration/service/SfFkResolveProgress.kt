@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference
 @Component
 class SfFkResolveProgress {
 
-    enum class Status { IDLE, RUNNING, COMPLETED, FAILED }
+    enum class Status { IDLE, RUNNING, COMPLETED, COMPLETED_WITH_WARNINGS, FAILED }
 
     @Volatile var status: Status = Status.IDLE
         internal set
@@ -88,7 +88,9 @@ class SfFkResolveProgress {
     fun finishOk() {
         this.finishedAt = Instant.now()
         this.currentTable = null
-        this.status = if (errors.isEmpty()) Status.COMPLETED else Status.COMPLETED
+        // errors (FK 컬럼 매핑 실패 / chunk 실패 / dangling 잔존) 가 있으면 COMPLETED 가 아니라
+        // COMPLETED_WITH_WARNINGS — status 만 보고 누락을 놓치지 않도록 (errors 별도 확인 유도).
+        this.status = if (errors.isEmpty()) Status.COMPLETED else Status.COMPLETED_WITH_WARNINGS
     }
 
     fun finishWithFailure(message: String) {

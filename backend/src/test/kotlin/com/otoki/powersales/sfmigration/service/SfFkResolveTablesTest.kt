@@ -94,6 +94,16 @@ class SfFkResolveTablesTest {
         }
 
         @Test
+        @DisplayName("Spec #849 — dk_account_sfid → dk_account_id, ref account.account_id (deprecated lookup 부활)")
+        fun dkAccountAlias() {
+            val spec = deriveFkResolveSpec("dk_account_sfid", "promotion")!!
+            assertThat(spec.idColumn).isEqualTo("dk_account_id")
+            assertThat(spec.refTable).isEqualTo("account")
+            assertThat(spec.refIdColumn).isEqualTo("account_id")
+            assertThat(classifyFkResolution("dk_account_sfid")).isEqualTo(FkResolutionKind.MAPPED)
+        }
+
+        @Test
         @DisplayName("category_sfid → category_id, ref account_category_master.account_category_master_id")
         fun categoryAlias() {
             val spec = deriveFkResolveSpec("category_sfid")!!

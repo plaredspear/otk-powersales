@@ -53,7 +53,10 @@ class Notice(
     @Column(name = "contents", columnDefinition = "TEXT")
     var contents: String? = null,
 
-    // DKRetail__EduCategory__c (Label="사용안함") — Spec #745 Q2: E분류(사용안함) 컬럼 제거. 분석: 36 sobject 정합 분석 2026-05-13
+    // DKRetail__EduCategory__c (Label="교육 카테고리(사용안함)") — Spec #849 부활: SF 메타 존재 non-calculated 필드는 데이터 무관 마이그레이션 대상. plain String 원본 보존 (enum 변환 없음). (과거 Spec #745 Q2 V100 DROP 부활)
+    @SFField("DKRetail__EduCategory__c")
+    @Column(name = "edu_category", length = 255)
+    var eduCategory: String? = null,
 
     @SFField("DKRetail__Jeejum__c")
     @Column(name = "branch", length = 255)

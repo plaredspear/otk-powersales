@@ -42,6 +42,7 @@ class SfMigrationStage2FkService(
 
         // 2. 테이블 단위 처리.
         var totalUpdated = 0
+        var totalDangling = 0
         try {
             for ((tableName, plan) in plansByTable) {
                 val updated = applyOneTableFkResolve(tableName, plan, errors)
@@ -55,6 +56,11 @@ class SfMigrationStage2FkService(
                 )
                 results += result
                 progress.finishTable(result)
+
+                // dangling 측정 — resolve 후에도 *_id 가 NULL 인데 *_sfid 는 NOT NULL 인 row.
+                // (부모 row 미적재 / 부모가 export 대상 아님 / sfid prefix 가 예상 범위 밖 등)
+                // 자연 키 substep 과 동일하게 잔존 건수를 측정해 가시성 확보.
+                totalDangling += reportDangling(tableName, plan, results, errors)
             }
 
             if (errors.isNotEmpty()) {
@@ -62,7 +68,10 @@ class SfMigrationStage2FkService(
                 results += SubstepResult(label = "WARNINGS", rowsAffected = errors.size)
             }
 
-            log.info("[fk] done — total {} rows updated across {} tables", totalUpdated, plansByTable.size)
+            log.info(
+                "[fk] done — total {} rows updated across {} tables ({} dangling unresolved)",
+                totalUpdated, plansByTable.size, totalDangling,
+            )
             progress.finishOk()
         } catch (e: Exception) {
             log.error("[fk] aborted with unhandled exception", e)
@@ -203,6 +212,80 @@ class SfMigrationStage2FkService(
         }
 
         return totalUpdated
+    }
+
+    /**
+     * resolve 후 dangling (미해소) FK 잔존 건수를 측정해 WARN 로그 + results 에 노출.
+     *
+     * 일반 FK: `*_id IS NULL AND *_sfid IS NOT NULL` 건수.
+     * polymorphic owner: `owner_user_id IS NULL AND owner_group_id IS NULL AND owner_sfid IS NOT NULL` 건수
+     *   (005/00G 어느 prefix 에도 매칭 안 된 row 포함 — 예상 prefix 밖도 흡수).
+     * polymorphic related: `related_user_id IS NULL AND related_user_role_id IS NULL AND related_sfid IS NOT NULL`.
+     *
+     * dangling 0 이면 로그/results 에 추가하지 않음 (정상). 0 초과만 WARN.
+     *
+     * @return 이 테이블의 dangling 총합.
+     */
+    private fun reportDangling(
+        tableName: String,
+        plan: TablePlan,
+        results: MutableList<SubstepResult>,
+        errors: MutableList<String>,
+    ): Int {
+        var tableDangling = 0
+
+        for (col in plan.columns) {
+            if (plan.polymorphicOwner && col.sfidColumn == "owner_sfid") continue
+            if (plan.polymorphicRelated && col.sfidColumn == "related_sfid") continue
+            val n = countDangling(tableName, "${col.spec.idColumn} IS NULL AND ${col.sfidColumn} IS NOT NULL")
+            if (n > 0) {
+                tableDangling += n
+                val message = "[$tableName] ${col.sfidColumn} → ${col.spec.idColumn} 미해소 $n 건 " +
+                    "(${col.spec.refTable} lookup 실패 — 부모 미적재 / export 대상 외 / prefix 불일치)"
+                errors.add(message)
+                progress.addError(message)
+                results += SubstepResult(label = "DANGLING $tableName.${col.spec.idColumn}", rowsAffected = n)
+            }
+        }
+
+        if (plan.polymorphicOwner) {
+            val n = countDangling(
+                tableName,
+                "owner_user_id IS NULL AND owner_group_id IS NULL AND owner_sfid IS NOT NULL",
+            )
+            if (n > 0) {
+                tableDangling += n
+                val message = "[$tableName] owner_sfid → owner_user_id/owner_group_id 미해소 $n 건 " +
+                    "(005/00G prefix 미매칭 또는 부모 미적재)"
+                errors.add(message)
+                progress.addError(message)
+                results += SubstepResult(label = "DANGLING $tableName.owner", rowsAffected = n)
+            }
+        }
+
+        if (plan.polymorphicRelated) {
+            val n = countDangling(
+                tableName,
+                "related_user_id IS NULL AND related_user_role_id IS NULL AND related_sfid IS NOT NULL",
+            )
+            if (n > 0) {
+                tableDangling += n
+                val message = "[$tableName] related_sfid → related_user_id/related_user_role_id 미해소 $n 건 " +
+                    "(005/00E prefix 미매칭 또는 부모 미적재)"
+                errors.add(message)
+                progress.addError(message)
+                results += SubstepResult(label = "DANGLING $tableName.related", rowsAffected = n)
+            }
+        }
+
+        return tableDangling
+    }
+
+    private fun countDangling(tableName: String, whereClause: String): Int {
+        val quotedTable = quoteIdent(tableName)
+        val sql = "SELECT COUNT(*) FROM $schemaName.$quotedTable WHERE $whereClause"
+        val result = em.createNativeQuery(sql).singleResult ?: return 0
+        return (result as Number).toInt()
     }
 
     /**

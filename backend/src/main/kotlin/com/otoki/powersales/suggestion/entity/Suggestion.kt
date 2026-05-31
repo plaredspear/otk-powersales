@@ -65,6 +65,11 @@ class Suggestion(
     @Column(name = "category", nullable = false, length = 255)
     var category: SuggestionCategory,
 
+    // -- Spec #849: deprecated SF Text(40) `DKRetail__Category__c` (제안구분 구버전 텍스트) 부활. plain String 원본 보존. --
+    @SFField("DKRetail__Category__c")
+    @Column(name = "dk_category", length = 40)
+    var dkCategory: String? = null,
+
     @SFField("Category1__c")
     @Column(name = "category1", length = 255)
     var category1: String? = null,

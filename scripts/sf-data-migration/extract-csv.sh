@@ -54,7 +54,7 @@ set -euo pipefail
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,MonthlyFemaleEmployeeIntegrationSchedule,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,SiteActivity,MonthlyFemaleEmployeeIntegrationSchedule,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
 SKIP_GROUP_MEMBERS=0
 SKIP_VERIFY=0
 # spec #790 Q4 채택 — XML 메타 (extract-sharing-meta.sh) 자동 포함, --skip-sharing-meta 로 제외 가능
@@ -369,7 +369,7 @@ EOF
 
 PROMOTION_SOQL=$(cat <<'EOF'
 SELECT
-    Id, Name, DKRetail__PromotionType__c, AccId__c,
+    Id, Name, DKRetail__PromotionType__c, AccId__c, DKRetail__AccId__c,
     DKRetail__StartDate__c, DKRetail__EndDate__c,
     DKRetail__PrimaryProductId__c, DKRetail__OtherProduct__c,
     DKRetail__Message__c, DKRetail__StandLocation__c,
@@ -385,6 +385,7 @@ NOTICE_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, Title__c, EmployeeId__c,
     DKRetail__Scope__c, DKRetail__Category__c, DKRetail__Contents__c,
+    DKRetail__EduCategory__c,
     DKRetail__Jeejum__c, DKRetail__JeejumCode__c,
     IsDeleted, OwnerId, CreatedDate, LastModifiedDate,
     CreatedById, LastModifiedById
@@ -396,7 +397,7 @@ SUGGESTION_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name,
     DKRetail__Title__c, DKRetail__Description__c,
-    Category__c, Category1__c, Category2__c, Category3__c,
+    Category__c, DKRetail__Category__c, Category1__c, Category2__c, Category3__c,
     AccountId__c, DKRetail__SAPAccountCode__c,
     DKRetail__EmployeeId__c,
     DKRetail__ProductId__c, ProductCode__c,
@@ -725,7 +726,7 @@ SELECT
     Id, Name, DKRetail__EmployeeId__c, DKRetail__WorkingDate__c,
     DKRetail__WorkingType__c, DKRetail__WorkingCategory1__c,
     DKRetail__WorkingCategory2__c, DKRetail__WorkingCategory3__c,
-    WorkingCategory4__c, AccountId__c, teamleadersfid__c,
+    WorkingCategory4__c, AccountId__c, DKRetail__AccountId__c, teamleadersfid__c,
     DKRetail__AltHolidayId__c, DKRetail__CommuteLogId__c,
     DKRetail__PromotionEmpId__c, DisplayWorkScheduleMaster__c,
     CommuteReportDateTime__c, ID__c, TraversalFlag__c, Equipment1__c,
