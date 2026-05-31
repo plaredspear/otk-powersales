@@ -3,6 +3,7 @@ package com.otoki.powersales.sales.controller
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
+import com.otoki.powersales.sales.service.LogisticsSalesService
 import com.otoki.powersales.sales.service.MonthlySalesService
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -25,6 +26,10 @@ class MonthlySalesControllerTest : MobileControllerTestSupport() {
 
     @MockkBean
     private lateinit var monthlySalesService: MonthlySalesService
+
+    // MonthlySalesController 가 생성자 주입받는 의존성 — @WebMvcTest 컨텍스트 로딩에 필요.
+    @MockkBean
+    private lateinit var logisticsSalesService: LogisticsSalesService
 
     // ========== getMonthlySales Tests ==========
 

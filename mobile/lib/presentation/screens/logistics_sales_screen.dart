@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../core/utils/throttled_tap_mixin.dart';
 import '../../domain/entities/logistics_sales.dart';
+import '../../domain/entities/my_account.dart';
 import '../providers/logistics_sales_provider.dart';
+import '../providers/logistics_sales_state.dart';
+import '../providers/my_accounts_provider.dart';
 import '../widgets/common/loading_indicator.dart';
 import '../widgets/common/error_view.dart';
 import '../widgets/logistics/logistics_sales_table.dart';
 import '../widgets/common/sales_chart_widget.dart';
 
 /// 물류매출 조회 화면
+///
+/// 거래처(매장) 1곳 + 연월을 선택해 온도대별(상온/라면/냉동·냉장) 물류마감실적을 조회한다.
+/// 데이터 source: ORORA `ShipClosingAmount` (백엔드 `/mobile/sales/logistics`).
 class LogisticsSalesScreen extends ConsumerStatefulWidget {
   const LogisticsSalesScreen({super.key});
 
@@ -18,9 +25,11 @@ class LogisticsSalesScreen extends ConsumerStatefulWidget {
 }
 
 class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, ThrottledTapMixin {
   late TabController _tabController;
   String? _yearMonth;
+  int? _selectedCustomerId;
+  String? _selectedCustomerName;
 
   // 카테고리 탭 목록
   final List<LogisticsCategory> _categories = [
@@ -34,16 +43,9 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
     super.initState();
     _tabController = TabController(length: _categories.length, vsync: this);
 
-    // 탭 변경 리스너
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        _onTabChanged(_tabController.index);
-      }
-    });
-
-    // 화면 로드 시 전체 카테고리 조회
+    // 거래처 선택기를 채울 내 거래처 목록 로딩
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchSales();
+      ref.read(myAccountsProvider.notifier).loadAccounts();
     });
   }
 
@@ -53,27 +55,32 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
     super.dispose();
   }
 
-  /// 물류매출 조회
-  void _fetchSales({LogisticsCategory? category}) {
-    ref.read(logisticsSalesProvider.notifier).fetchSales(
-          yearMonth: _yearMonth,
-          category: category,
+  /// 물류매출 조회 (거래처 선택 필수).
+  Future<void> _fetchSales() async {
+    final customerId = _selectedCustomerId;
+    final customerName = _selectedCustomerName;
+    if (customerId == null || customerName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('거래처를 먼저 선택하세요')),
+      );
+      return;
+    }
+    await ref.read(logisticsSalesProvider.notifier).fetchSales(
+          customerId: customerId,
+          customerName: customerName,
+          yearMonth: _yearMonth ?? ref.read(logisticsSalesProvider).filter.yearMonth,
         );
   }
 
-  /// 탭 변경 시 카테고리별 조회
-  void _onTabChanged(int index) {
-    final category = _categories[index];
-    _fetchSales(category: category);
-  }
-
-  /// 필터 초기화
+  /// 필터 초기화 (local 선택값 + provider 조회 결과 모두 초기화)
   void _resetFilter() {
     setState(() {
       _yearMonth = null;
+      _selectedCustomerId = null;
+      _selectedCustomerName = null;
     });
-    _tabController.index = 0; // 첫 번째 탭으로 이동
-    ref.read(logisticsSalesProvider.notifier).resetFilter();
+    _tabController.index = 0;
+    ref.read(logisticsSalesProvider.notifier).reset();
   }
 
   @override
@@ -143,6 +150,11 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // 거래처 선택기
+          _buildCustomerPicker(),
+
+          const SizedBox(height: 12),
+
           // 년월 선택기
           _buildYearMonthPicker(),
 
@@ -155,9 +167,7 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
 
           // 조회 버튼
           ElevatedButton.icon(
-            onPressed: () => _fetchSales(
-              category: _categories[_tabController.index],
-            ),
+            onPressed: () => throttledTapAsync(_fetchSales),
             icon: const Icon(Icons.search),
             label: const Text('조회'),
             style: ElevatedButton.styleFrom(
@@ -166,6 +176,74 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
           ),
         ],
       ),
+    );
+  }
+
+  /// 거래처 선택기 (내 거래처 목록 드롭다운)
+  Widget _buildCustomerPicker() {
+    final accountsState = ref.watch(myAccountsProvider);
+    final accounts = accountsState.accounts;
+
+    return Row(
+      children: [
+        const Icon(Icons.store, size: 20),
+        const SizedBox(width: 8),
+        const Text('거래처', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(width: 16),
+        Expanded(
+          child: accountsState.isLoading
+              ? const SizedBox(
+                  height: 24,
+                  child: Center(
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                )
+              : accountsState.errorMessage != null
+              ? Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        '거래처 목록을 불러오지 못했습니다.',
+                        style: TextStyle(fontSize: 13, color: Colors.red),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => throttledTap(
+                        () => ref.read(myAccountsProvider.notifier).loadAccounts(),
+                      ),
+                      child: const Text('재시도'),
+                    ),
+                  ],
+                )
+              : DropdownButton<int>(
+                  isExpanded: true,
+                  value: _selectedCustomerId,
+                  hint: const Text('거래처 선택'),
+                  items: accounts.map((MyAccount account) {
+                    return DropdownMenuItem<int>(
+                      value: account.accountId,
+                      child: Text(
+                        account.accountName,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    final selected =
+                        accounts.firstWhere((a) => a.accountId == value);
+                    setState(() {
+                      _selectedCustomerId = selected.accountId;
+                      _selectedCustomerName = selected.accountName;
+                    });
+                  },
+                ),
+        ),
+      ],
     );
   }
 
@@ -185,7 +263,7 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
         const SizedBox(width: 16),
         Expanded(
           child: InkWell(
-            onTap: () => _selectYearMonth(context),
+            onTap: () => throttledTap(() => _selectYearMonth(context)),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
@@ -237,7 +315,7 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
   }
 
   /// 당월/이전월 상태 표시
-  Widget _buildMonthTypeIndicator(dynamic state) {
+  Widget _buildMonthTypeIndicator(LogisticsSalesState state) {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -256,7 +334,7 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
           ),
           const SizedBox(width: 8),
           Text(
-            state.isCurrentMonth ? '당월 물류예상실적' : '이전월 ABC물류배부 마감실적',
+            state.isCurrentMonth ? '당월 물류배부 실적' : '이전월 ABC물류배부 마감실적',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -269,7 +347,17 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
   }
 
   /// 카테고리별 탭 내용
-  Widget _buildCategoryTab(dynamic state, LogisticsCategory category) {
+  Widget _buildCategoryTab(LogisticsSalesState state, LogisticsCategory category) {
+    // 거래처 미선택 (최초 진입)
+    if (state.selectedCustomerId == null && !state.isLoading) {
+      return const Center(
+        child: Text(
+          '거래처와 년월을 선택한 뒤 조회하세요.',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
     // 로딩 중
     if (state.isLoading) {
       return const Center(child: LoadingIndicator());
@@ -279,7 +367,7 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
     if (state.errorMessage != null) {
       return ErrorView(
         message: state.errorMessage!,
-        onRetry: () => _fetchSales(category: category),
+        onRetry: () => throttledTapAsync(_fetchSales),
       );
     }
 
@@ -319,14 +407,8 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
 
           const Divider(height: 1),
 
-          // 물류매출 테이블
-          LogisticsSalesTable(
-            salesList: categorySales,
-            onTap: (sales) {
-              // 향후 상세 화면으로 이동 가능
-              debugPrint('Tapped: ${sales.category.displayName} ${sales.yearMonth}');
-            },
-          ),
+          // 물류매출 테이블 (상세 화면 미구현 — 행 탭 비활성)
+          LogisticsSalesTable(salesList: categorySales),
         ],
       ),
     );
