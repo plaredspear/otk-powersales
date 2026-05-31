@@ -7,6 +7,7 @@ import 'presentation/pages/claim_detail_page.dart';
 import 'presentation/pages/claim_list_page.dart';
 import 'presentation/pages/claim_register_page.dart';
 import 'presentation/pages/client_order_detail_page.dart';
+import 'presentation/pages/education_detail_page.dart';
 import 'presentation/pages/education_list_page.dart';
 import 'presentation/pages/education_main_page.dart';
 import 'presentation/pages/inspection_detail_page.dart';
@@ -79,6 +80,7 @@ class AppRouter {
   static const String suggestionRegister = '/suggestion/register';
   static const String education = '/education';
   static const String educationList = '/education/list';
+  static const String educationDetail = '/education/detail';
   static const String notices = '/notices';
   static const String noticeDetail = '/notices/detail';
   static const String salesOverview = '/sales-overview';
@@ -161,6 +163,10 @@ class AppRouter {
           final category =
               ModalRoute.of(context)?.settings.arguments as EducationCategory?;
           return EducationListPage(category: category);
+        },
+        educationDetail: (context) {
+          final postId = ModalRoute.of(context)!.settings.arguments as String;
+          return EducationDetailPage(postId: postId);
         },
         notices: (context) => const NoticeListPage(),
         noticeDetail: (context) {

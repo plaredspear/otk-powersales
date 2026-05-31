@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/app_router.dart';
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/utils/throttled_tap_mixin.dart';
 import 'package:mobile/core/theme/app_spacing.dart';
 import 'package:mobile/core/theme/app_typography.dart';
 import 'package:mobile/domain/entities/education_category.dart';
@@ -29,7 +31,8 @@ class EducationListPage extends ConsumerStatefulWidget {
   ConsumerState<EducationListPage> createState() => _EducationListPageState();
 }
 
-class _EducationListPageState extends ConsumerState<EducationListPage> {
+class _EducationListPageState extends ConsumerState<EducationListPage>
+    with ThrottledTapMixin {
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -58,9 +61,9 @@ class _EducationListPageState extends ConsumerState<EducationListPage> {
 
   /// 게시물 탭 핸들러
   void _onPostTap(String postId) {
-    // TODO: Router 연동 시 게시물 상세 화면으로 이동
-    // context.push('/education/detail/$postId');
-    debugPrint('Post tapped: $postId');
+    throttledTap(() {
+      AppRouter.navigateTo(context, AppRouter.educationDetail, arguments: postId);
+    });
   }
 
   /// Pull-to-refresh 핸들러

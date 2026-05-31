@@ -25,6 +25,12 @@ class EducationPostDetail {
     required this.attachments,
   });
 
+  /// 등록일 보유 여부
+  ///
+  /// 백엔드 createdAt 이 null 이면 Model 변환 시 epoch(1970-01-01) 센티넬로
+  /// 치환되므로, 그 값을 UI 에 그대로 노출하지 않도록 판별한다.
+  bool get hasCreatedAt => createdAt.millisecondsSinceEpoch != 0;
+
   /// 이미지 존재 여부
   bool get hasImages => images.isNotEmpty;
 
