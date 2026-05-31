@@ -180,7 +180,17 @@ class AppRouter {
           final claimId = ModalRoute.of(context)!.settings.arguments as int;
           return ClaimDetailPage(claimId: claimId);
         },
-        claimRegister: (context) => const ClaimRegisterPage(),
+        claimRegister: (context) {
+          // 제품검색 결과에서 제품 정보를 전달받아 진입할 수 있음
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is ({String productCode, String productName})) {
+            return ClaimRegisterPage(
+              presetProductCode: args.productCode,
+              presetProductName: args.productName,
+            );
+          }
+          return const ClaimRegisterPage();
+        },
         suggestionRegister: (context) => const SuggestionRegisterPage(),
         suggestionList: (context) => const SuggestionListPage(),
         suggestionDetail: (context) {

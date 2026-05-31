@@ -8,6 +8,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/utils/throttled_tap_mixin.dart';
 import '../providers/product_search_provider.dart';
 import '../providers/product_search_state.dart';
+import '../widgets/menu/full_menu_drawer.dart';
 import '../widgets/product_search/empty_search_guide.dart';
 import '../widgets/product_search/product_card.dart';
 
@@ -27,6 +28,7 @@ class ProductSearchResultPage extends ConsumerStatefulWidget {
 class _ProductSearchResultPageState
     extends ConsumerState<ProductSearchResultPage> with ThrottledTapMixin {
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -54,6 +56,8 @@ class _ProductSearchResultPageState
     final state = ref.watch(productSearchProvider);
 
     return Scaffold(
+      key: _scaffoldKey,
+      endDrawer: const FullMenuDrawer(),
       appBar: AppBar(
         backgroundColor: AppColors.white,
         foregroundColor: AppColors.textPrimary,
@@ -126,17 +130,16 @@ class _ProductSearchResultPageState
               arguments: product.productCode,
             ),
           ),
-          onClaimTap: () {
-            // TODO: 클레임 등록 화면으로 이동 (제품 정보 전달)
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '클레임 등록: ${product.productName} (추후 구현)',
-                ),
-                duration: const Duration(seconds: 2),
+          onClaimTap: () => throttledTap(
+            () => AppRouter.navigateTo(
+              context,
+              AppRouter.claimRegister,
+              arguments: (
+                productCode: product.productCode,
+                productName: product.productName,
               ),
-            );
-          },
+            ),
+          ),
           onOrderTap: () {
             // TODO: 주문서 작성 화면으로 이동 (제품 정보 전달)
             ScaffoldMessenger.of(context).showSnackBar(
@@ -227,9 +230,7 @@ class _ProductSearchResultPageState
             // 전체메뉴 버튼
             Expanded(
               child: InkWell(
-                onTap: () {
-                  // TODO: 전체메뉴 화면으로 이동
-                },
+                onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: AppSpacing.sm,
