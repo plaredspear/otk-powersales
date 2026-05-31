@@ -190,7 +190,9 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                     workStatus = "근무",
                     workType3 = "고정",
                     targetAmount = 1000000L,
-                    actualAmount = 800000L
+                    actualAmount = 800000L,
+                    isMine = true,
+                    isClosed = false
                 ),
                 MobilePromotionEmployeeItem(
                     id = 11L,
@@ -199,7 +201,9 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                     workStatus = "근무",
                     workType3 = "순회",
                     targetAmount = 500000L,
-                    actualAmount = null
+                    actualAmount = null,
+                    isMine = false,
+                    isClosed = false
                 )
             )
             val detail = MobilePromotionDetailResponse(
