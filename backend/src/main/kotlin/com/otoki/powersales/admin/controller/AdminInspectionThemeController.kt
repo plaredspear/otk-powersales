@@ -45,10 +45,14 @@ class AdminInspectionThemeController(
     @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.READ)
     fun getThemes(
         @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false) department: String?,
+        @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int,
     ): ResponseEntity<ApiResponse<AdminThemeListResponse>> {
-        return ResponseEntity.ok(ApiResponse.success(themeService.search(keyword, page, size)))
+        return ResponseEntity.ok(
+            ApiResponse.success(themeService.search(keyword, department, branchCode, page, size))
+        )
     }
 
     @GetMapping("/{id}")

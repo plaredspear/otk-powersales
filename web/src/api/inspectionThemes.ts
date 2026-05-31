@@ -7,6 +7,10 @@ import type { ApiResponse } from './types';
 
 export interface ThemeListParams {
   keyword?: string;
+  /** 부서 부분일치 필터 */
+  department?: string;
+  /** 지점코드 정확일치 필터 */
+  branchCode?: string;
   page?: number;
   size?: number;
 }
