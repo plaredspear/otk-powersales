@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/monthly_sales_provider.dart';
+import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/sales/monthly_sales_chart_widget.dart';
 
 /// 월매출 탭 페이지
@@ -17,12 +18,31 @@ class MonthlySalesTabPage extends ConsumerStatefulWidget {
 }
 
 class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
+  /// 선택된 거래처명 (필터 표시용, 미선택 시 전체).
+  String? _selectedAccountName;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(monthlySalesProvider.notifier).initialize();
     });
+  }
+
+  /// 거래처 선택 — 내 거래처 선택 바텀시트에서 고른 거래처로 필터링
+  Future<void> _selectAccount() async {
+    final account = await AccountSelectorSheet.show(context);
+    if (account == null || !mounted) return;
+    setState(() => _selectedAccountName = account.accountName);
+    await ref
+        .read(monthlySalesProvider.notifier)
+        .setCustomer(account.accountId.toString());
+  }
+
+  /// 거래처 필터 초기화 (전체)
+  void _clearAccount() {
+    setState(() => _selectedAccountName = null);
+    ref.read(monthlySalesProvider.notifier).clearCustomerFilter();
   }
 
   @override
@@ -63,10 +83,36 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
       onRefresh: () => notifier.refresh(),
       child: ListView(
         children: [
-          // 거래처 선택 (TODO: 구현 필요)
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: const Text('거래처 선택 (TODO)'),
+          // 거래처 선택 필터
+          InkWell(
+            onTap: _selectAccount,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(Icons.store_outlined, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _selectedAccountName ?? '전체 거래처',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  if (_selectedAccountName != null)
+                    IconButton(
+                      onPressed: _clearAccount,
+                      icon: const Icon(Icons.close, size: 18),
+                      visualDensity: VisualDensity.compact,
+                      tooltip: '전체 보기',
+                    )
+                  else
+                    const Icon(Icons.chevron_right, size: 20),
+                ],
+              ),
+            ),
           ),
 
           const Divider(height: 1),
