@@ -278,6 +278,33 @@ internal val TABLE_SCOPED_FK_OVERRIDE: Map<Pair<String, String>, Pair<String, St
  * @param sourceTable sfid 컬럼이 속한 테이블명. 같은 prefix 가 테이블별로 다른 entity 를
  *   참조하는 케이스 (manager 등) override 에 사용. null 이면 prefix 전역 매핑만 적용.
  */
+/**
+ * sfid 컬럼이 어느 규칙으로 ref table 을 결정하는지 분류 (deriveFkResolveSpec 와 동일 우선순위).
+ *
+ * - SKIP          : 처리 제외 (`sfid` 단독 / `*_sfid` 아님 / SKIP_FK_PREFIXES)
+ * - TABLE_SCOPED  : (sourceTable, prefix) override 로 해소
+ * - MAPPED        : FK_PREFIX_MAPPING 명시 매핑으로 해소 (audit / alias / 도메인 FK 포함)
+ * - AUTO_INFERRED : 어느 명시 표에도 없어 `(prefix, prefix_id)` 자동 추론 (prefix == table 가정).
+ *   → 새 `*_sfid` 컬럼이 매핑 없이 추가됐을 때의 silent-miss 위험 신호. 회귀 테스트가 감시.
+ *
+ * 비고: AUTO_INFERRED 자체가 곧 오류는 아니다 (prefix == table 명인 도메인 FK 는 추론이 정확).
+ * 회귀 테스트 [SfFkResolveInventoryTest] 가 "알려진 컬럼 인벤토리의 분류/ref 가 고정값과 일치" 를
+ * 검증하여, 신규 컬럼 추가 / 매핑 변경 시 인벤토리 갱신을 강제한다.
+ */
+enum class FkResolutionKind { SKIP, TABLE_SCOPED, MAPPED, AUTO_INFERRED }
+
+fun classifyFkResolution(sfidColumn: String, sourceTable: String? = null): FkResolutionKind {
+    if (sfidColumn == "sfid") return FkResolutionKind.SKIP
+    if (!sfidColumn.endsWith("_sfid")) return FkResolutionKind.SKIP
+    val prefix = sfidColumn.removeSuffix("_sfid")
+    if (prefix in SKIP_FK_PREFIXES) return FkResolutionKind.SKIP
+    if (sourceTable != null && TABLE_SCOPED_FK_OVERRIDE.containsKey(sourceTable to prefix)) {
+        return FkResolutionKind.TABLE_SCOPED
+    }
+    if (FK_PREFIX_MAPPING.containsKey(prefix)) return FkResolutionKind.MAPPED
+    return FkResolutionKind.AUTO_INFERRED
+}
+
 internal fun deriveFkResolveSpec(sfidColumn: String, sourceTable: String? = null): FkResolveSpec? {
     if (sfidColumn == "sfid") return null
     if (!sfidColumn.endsWith("_sfid")) return null

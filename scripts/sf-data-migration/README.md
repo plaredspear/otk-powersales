@@ -184,6 +184,22 @@ cd scripts/sf-data-migration
 kotlin verify-metadata.main.kts
 ```
 
+**SF describe 대조 (선택)**: `--describe-dir=<path>` 인자를 주면 거울 검증(entity ↔ common.kts)에
+더해 SF describe 산출물 (`<describe-dir>/<SObject>.md` — `sf sobject describe` 의 markdown 표,
+컬럼 `API Name / Type / … / Calc`)와도 대조합니다. 거울 검증이 못 잡는 사각지대를 보고합니다:
+- **STALE** — common.kts/entity 가 매핑한 SF field 가 describe 에 없음 (오타 / SF 측 rename·삭제)
+- **CALC** — calculated(✓) 필드를 매핑 (SOQL 적재 불가)
+- **MISSING** — SF 에만 있는 비-calculated·비-시스템 필드 수 (INFO 카운트)
+
+```bash
+# describe 산출물 경로는 호출자가 전달 (소스에 docs 경로 비고정).
+# 예: sf-object-meta 분석 산출물의 prod 디렉토리 (<SObject>.md 모음).
+kotlin verify-metadata.main.kts --describe-dir=<sf-object-meta>/prod
+```
+
+STALE/CALC 는 종료 코드를 바꾸지 않습니다 (describe dump 자체가 stale 일 수 있어 hard fail 회피 —
+리포트로만 노출하여 수기 확인 유도).
+
 산출: `input/` 디렉토리에 CSV 파일들.
 
 ### 2단계 — Stage 1 적용 (JDBC INSERT)
