@@ -14,6 +14,8 @@ import com.otoki.powersales.inspection.dto.admin.UpdateThemeRequest
 import com.otoki.powersales.inspection.entity.InspectionTheme
 import com.otoki.powersales.inspection.repository.InspectionThemeRepository
 import com.otoki.powersales.inspection.repository.SiteActivityRepository
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
 import java.time.LocalDate
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
@@ -40,6 +42,7 @@ class AdminInspectionThemeService(
     private val inspectionThemeRepository: InspectionThemeRepository,
     private val siteActivityRepository: SiteActivityRepository,
     private val employeeRepository: EmployeeRepository,
+    private val userRepository: UserRepository,
     private val uploadFileRepository: UploadFileRepository,
     @Value("\${app.aws.s3.bucket:otoki-bucket}")
     private val s3BucketName: String,
@@ -69,6 +72,7 @@ class AdminInspectionThemeService(
                 branchCode = theme.branchCode,
                 startDate = theme.startDate?.toString(),
                 endDate = theme.endDate?.toString(),
+                ownerUserId = theme.ownerUser?.id,
                 ownerName = theme.ownerUser?.name,
                 siteActivityCount = counts[theme.id] ?: 0L,
                 createdAt = theme.createdAt.toString(),
@@ -107,6 +111,7 @@ class AdminInspectionThemeService(
             branchCode = theme.branchCode,
             startDate = theme.startDate?.toString(),
             endDate = theme.endDate?.toString(),
+            ownerUserId = theme.ownerUser?.id,
             ownerName = theme.ownerUser?.name,
             createdAt = theme.createdAt.toString(),
             updatedAt = theme.updatedAt.toString(),
@@ -144,6 +149,20 @@ class AdminInspectionThemeService(
     @Transactional
     fun update(id: Long, request: UpdateThemeRequest): ThemeMutationResponse {
         val theme = findActiveTheme(id)
+
+        // 소유권 이전 — ownerUserId 가 현재 소유자와 다르면 새 소유자로 변경 + 부서 갱신.
+        // 레거시 ThemeTriggerHandler.beforeUpdateTheme 동등: 새 소유자 Employee 의 orgName 으로
+        // department 갱신, BranchCode 는 불변(최초 생성자 기준 유지).
+        val ownerChanged = request.ownerUserId != null && request.ownerUserId != theme.ownerUser?.id
+        val newOwner: User? = if (ownerChanged) {
+            userRepository.findById(request.ownerUserId!!).orElseThrow {
+                IllegalArgumentException("소유자로 지정할 사용자를 찾을 수 없습니다 (userId=${request.ownerUserId})")
+            }
+        } else {
+            null
+        }
+        val newDepartment = if (newOwner != null) resolveDepartment(newOwner) ?: theme.department else theme.department
+
         val updated = InspectionTheme(
             id = theme.id,
             sfid = theme.sfid,
@@ -151,20 +170,26 @@ class AdminInspectionThemeService(
             title = request.title,
             startDate = request.startDate?.let { LocalDate.parse(it) },
             endDate = request.endDate?.let { LocalDate.parse(it) },
-            department = theme.department,
+            department = newDepartment,
             branchCode = theme.branchCode,
             publicFlag = theme.publicFlag,
             isDeleted = theme.isDeleted,
-            ownerSfid = theme.ownerSfid,
+            ownerSfid = if (newOwner != null) null else theme.ownerSfid,
             createdBySfid = theme.createdBySfid,
             lastModifiedBySfid = theme.lastModifiedBySfid,
-            ownerUser = theme.ownerUser,
-            ownerGroup = theme.ownerGroup,
+            ownerUser = newOwner ?: theme.ownerUser,
+            ownerGroup = if (newOwner != null) null else theme.ownerGroup,
             createdBy = theme.createdBy,
             lastModifiedBy = theme.lastModifiedBy,
         ).also { it.createdAt = theme.createdAt }
         val saved = inspectionThemeRepository.save(updated)
         return ThemeMutationResponse.from(saved)
+    }
+
+    /** 소유자(User) 의 매칭 Employee 소속(orgName) 해석 — User.employeeCode == Employee.employeeCode. */
+    private fun resolveDepartment(owner: User): String? {
+        val code = owner.employeeCode ?: return null
+        return employeeRepository.findByEmployeeCode(code).orElse(null)?.orgName
     }
 
     /** 테마 삭제 — soft delete. */

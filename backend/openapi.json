@@ -2254,6 +2254,10 @@
           "ownerName" : {
             "type" : [ "string", "null" ]
           },
+          "ownerUserId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "siteActivities" : {
             "items" : {
               "$ref" : "#/components/schemas/AdminThemeSiteActivityItem"
@@ -2295,6 +2299,10 @@
           },
           "ownerName" : {
             "type" : [ "string", "null" ]
+          },
+          "ownerUserId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "siteActivityCount" : {
             "format" : "int64",
@@ -19090,6 +19098,10 @@
         "properties" : {
           "endDate" : {
             "type" : [ "string", "null" ]
+          },
+          "ownerUserId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "startDate" : {
             "type" : [ "string", "null" ]

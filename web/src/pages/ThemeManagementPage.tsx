@@ -9,6 +9,7 @@ import {
   Input,
   Modal,
   Popconfirm,
+  Select,
   Space,
   Table,
 } from 'antd';
@@ -22,6 +23,7 @@ import {
   useThemes,
   useUpdateTheme,
 } from '@/hooks/inspections/useThemes';
+import { useUsers } from '@/hooks/user/useUsers';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { usePermission } from '@/hooks/usePermission';
 
@@ -30,6 +32,7 @@ const PAGE_SIZE = 20;
 interface ThemeFormValues {
   title: string;
   period?: [Dayjs, Dayjs] | null;
+  ownerUserId?: number;
 }
 
 export default function ThemeManagementPage() {
@@ -45,13 +48,34 @@ export default function ThemeManagementPage() {
   const [detailId, setDetailId] = useState<number | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [ownerKeyword, setOwnerKeyword] = useState('');
+  const [ownerOptionPatch, setOwnerOptionPatch] = useState<{ value: number; label: string }[]>([]);
   const [form] = Form.useForm<ThemeFormValues>();
 
   const { data, isLoading } = useThemes(searchParams);
   const { data: detail, isLoading: detailLoading } = useThemeDetail(detailId);
+  const { data: ownerCandidates } = useUsers({
+    keyword: ownerKeyword || undefined,
+    isActive: true,
+    page: 0,
+    size: 20,
+  });
   const createMutation = useCreateTheme();
   const updateMutation = useUpdateTheme();
   const deleteMutation = useDeleteTheme();
+
+  // 소유자 Select 옵션 — 검색 결과 + 현재 소유자(검색 밖일 수 있어 patch 로 보존).
+  const ownerOptions = (() => {
+    const fromSearch = (ownerCandidates?.content ?? []).map((u) => ({
+      value: u.id,
+      label: `${u.name ?? u.username} (${u.employeeCode})`,
+    }));
+    const merged = [...ownerOptionPatch];
+    for (const opt of fromSearch) {
+      if (!merged.some((m) => m.value === opt.value)) merged.push(opt);
+    }
+    return merged;
+  })();
 
   const openDetail = useThrottleClick((id: number) => setDetailId(id));
 
@@ -68,18 +92,28 @@ export default function ThemeManagementPage() {
 
   const openCreate = () => {
     setEditId(null);
+    setOwnerKeyword('');
+    setOwnerOptionPatch([]);
     form.resetFields();
     setModalOpen(true);
   };
 
   const openEdit = (item: ThemeListItem) => {
     setEditId(item.id);
+    setOwnerKeyword('');
+    // 현재 소유자를 옵션에 보존 (검색 결과 밖일 수 있음).
+    setOwnerOptionPatch(
+      item.ownerUserId != null && item.ownerName
+        ? [{ value: item.ownerUserId, label: item.ownerName }]
+        : [],
+    );
     form.setFieldsValue({
       title: item.title ?? '',
       period:
         item.startDate && item.endDate
           ? [dayjs(item.startDate), dayjs(item.endDate)]
           : undefined,
+      ownerUserId: item.ownerUserId ?? undefined,
     });
     setModalOpen(true);
   };
@@ -90,6 +124,8 @@ export default function ThemeManagementPage() {
       title: values.title,
       startDate: values.period?.[0]?.format('YYYY-MM-DD') ?? null,
       endDate: values.period?.[1]?.format('YYYY-MM-DD') ?? null,
+      // 소유권 이전은 수정 시에만. 생성 시 owner 는 서버가 생성자로 자동 설정.
+      ...(editId != null ? { ownerUserId: values.ownerUserId ?? null } : {}),
     };
     try {
       if (editId != null) {
@@ -233,6 +269,22 @@ export default function ThemeManagementPage() {
           <Form.Item label="점검 기간" name="period">
             <DatePicker.RangePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
           </Form.Item>
+          {editId != null && (
+            <Form.Item
+              label="소유자"
+              name="ownerUserId"
+              tooltip="소유자를 변경하면 부서가 새 소유자 소속으로 갱신됩니다 (지점코드는 유지)"
+            >
+              <Select
+                showSearch
+                allowClear
+                placeholder="소유자 검색 (이름/사번)"
+                filterOption={false}
+                onSearch={setOwnerKeyword}
+                options={ownerOptions}
+              />
+            </Form.Item>
+          )}
         </Form>
       </Modal>
 

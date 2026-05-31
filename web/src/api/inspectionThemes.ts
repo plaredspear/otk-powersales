@@ -19,6 +19,7 @@ export interface ThemeListItem {
   branchCode: string | null;
   startDate: string | null;
   endDate: string | null;
+  ownerUserId: number | null;
   ownerName: string | null;
   siteActivityCount: number;
   createdAt: string | null;
@@ -52,6 +53,7 @@ export interface ThemeDetail {
   branchCode: string | null;
   startDate: string | null;
   endDate: string | null;
+  ownerUserId: number | null;
   ownerName: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -62,6 +64,8 @@ export interface ThemeMutationRequest {
   title: string;
   startDate: string | null;
   endDate: string | null;
+  /** 소유권 이전 — 수정 시에만 사용. 미지정(null/undefined)이면 소유자 미변경. */
+  ownerUserId?: number | null;
 }
 
 export interface ThemeMutationResult {
