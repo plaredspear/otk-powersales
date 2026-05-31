@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Button, DatePicker, Segmented } from 'antd';
+import { useCallback, useMemo, useRef } from 'react';
+import { Button, Segmented } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -18,8 +18,6 @@ interface ScheduleCalendarProps {
   onDateChange: (d: Dayjs) => void;
   viewType: CalendarView;
   onViewTypeChange: (v: CalendarView) => void;
-  listRange: [Dayjs, Dayjs];
-  onListRangeChange: (range: [Dayjs, Dayjs]) => void;
   schedules: TeamSchedule[];
   summaries: DailySummary[];
   // 요약(summaries) fetch 가 한 번이라도 완료됐는지. false 면 셀에 요약 배지를 그리지 않는다.
@@ -41,8 +39,6 @@ export function ScheduleCalendar({
   onDateChange,
   viewType,
   onViewTypeChange,
-  listRange,
-  onListRangeChange,
   schedules,
   summaries,
   summariesReady,
@@ -102,24 +98,14 @@ export function ScheduleCalendar({
     (value: string | number) => {
       const view = value as CalendarView;
       onViewTypeChange(view);
+      // 월간/목록 모두 currentDate 의 월 단위로 동작 — 탭 전환 시 조회 범위(from/to)가 동일해
+      // 재fetch 없이 같은 데이터를 공유한다.
       calendarRef.current?.getApi().changeView(view);
       const calDate = currentDate.format('YYYY-MM-DD');
       calendarRef.current?.getApi().gotoDate(calDate);
     },
     [currentDate, onViewTypeChange],
   );
-
-  // 목록 뷰의 임의 기간 표시 — FullCalendar visibleRange 동적 적용
-  useEffect(() => {
-    if (viewType !== 'listMonth') return;
-    const api = calendarRef.current?.getApi();
-    if (!api) return;
-    // visibleRange.end 는 exclusive 이므로 +1일
-    api.changeView('listMonth', {
-      start: listRange[0].format('YYYY-MM-DD'),
-      end: listRange[1].add(1, 'day').format('YYYY-MM-DD'),
-    });
-  }, [viewType, listRange]);
 
   const renderDayCellContent = useCallback(
     (arg: DayCellContentArg) => {
@@ -188,37 +174,15 @@ export function ScheduleCalendar({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {isListView ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <DatePicker.RangePicker
-                size="small"
-                value={listRange}
-                onChange={(range) => {
-                  if (range && range[0] && range[1]) {
-                    onListRangeChange([range[0], range[1]]);
-                  }
-                }}
-                allowClear={false}
-                disabledDate={(current, info) => {
-                  if (!info.from) return false;
-                  // info.from 기준 ±91일 초과면 disable → 최대 92일 (시작일 포함)
-                  return Math.abs(current.diff(info.from, 'day')) > 91;
-                }}
-              />
-              <span style={{ fontSize: 12, color: '#8c8c8c' }}>최대 92일</span>
-            </div>
-          ) : (
-            <>
-              <Button icon={<LeftOutlined />} size="small" onClick={handlePrev} />
-              <span style={{ fontSize: 18, fontWeight: 600, minWidth: 140, textAlign: 'center' }}>
-                {currentDate.year()}년 {currentDate.month() + 1}월
-              </span>
-              <Button icon={<RightOutlined />} size="small" onClick={handleNext} />
-              <Button size="small" onClick={handleToday} style={{ marginLeft: 8 }}>
-                오늘
-              </Button>
-            </>
-          )}
+          {/* 월간/목록 공통 월 네비게이션 — 탭 전환 시에도 동일 헤더 유지 */}
+          <Button icon={<LeftOutlined />} size="small" onClick={handlePrev} />
+          <span style={{ fontSize: 18, fontWeight: 600, minWidth: 140, textAlign: 'center' }}>
+            {currentDate.year()}년 {currentDate.month() + 1}월
+          </span>
+          <Button icon={<RightOutlined />} size="small" onClick={handleNext} />
+          <Button size="small" onClick={handleToday} style={{ marginLeft: 8 }}>
+            오늘
+          </Button>
         </div>
         <Segmented
           size="small"

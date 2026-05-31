@@ -20,10 +20,6 @@ export default function SchedulePage() {
   const canWrite = hasEntityPermission('team_member_schedule', 'EDIT');
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [viewType, setViewType] = useState<CalendarView>('dayGridMonth');
-  const [listRange, setListRange] = useState<[Dayjs, Dayjs]>(() => [
-    dayjs().startOf('month'),
-    dayjs().endOf('month'),
-  ]);
   const [filterTab, setFilterTab] = useState<FilterTab>('account');
 
   // staging: 사용자 체크박스 선택 (UI 즉시 반영). applied: 조회 버튼 클릭 시 commit (fetch trigger).
@@ -78,18 +74,12 @@ export default function SchedulePage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editSchedule, setEditSchedule] = useState<TeamSchedule | null>(null);
 
+  // 월간/목록 뷰 모두 currentDate 의 월 단위 범위를 조회 — viewType 변경(탭 전환)이 from/to 에
+  // 영향을 주지 않아 queryKey 가 동일하게 유지되고, 캘린더와 목록이 동일 데이터를 공유한다.
   const queryParams = useMemo(() => {
-    const from =
-      viewType === 'listMonth'
-        ? listRange[0].format(DATE_FMT)
-        : currentDate.startOf('month').format(DATE_FMT);
-    const to =
-      viewType === 'listMonth'
-        ? listRange[1].format(DATE_FMT)
-        : currentDate.endOf('month').format(DATE_FMT);
     return {
-      from,
-      to,
+      from: currentDate.startOf('month').format(DATE_FMT),
+      to: currentDate.endOf('month').format(DATE_FMT),
       employeeIds: filterTab === 'member' ? appliedEmployeeIds : [],
       accountIds: filterTab === 'account' ? appliedAccountIds : [],
       promotionTeams: appliedPromotionTeams,
@@ -99,8 +89,6 @@ export default function SchedulePage() {
     };
   }, [
     currentDate,
-    viewType,
-    listRange,
     filterTab,
     appliedEmployeeIds,
     appliedAccountIds,
@@ -239,8 +227,6 @@ export default function SchedulePage() {
             onDateChange={setCurrentDate}
             viewType={viewType}
             onViewTypeChange={setViewType}
-            listRange={listRange}
-            onListRangeChange={setListRange}
             schedules={schedules}
             summaries={summaries}
             summariesReady={summariesReady}
