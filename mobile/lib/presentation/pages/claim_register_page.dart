@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_router.dart';
+import '../widgets/account/account_selector_sheet.dart';
 import '../../domain/entities/claim_category.dart';
 import '../../domain/entities/claim_code.dart';
 import '../../domain/entities/product.dart';
@@ -267,16 +268,13 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
     );
   }
 
-  /// 거래처 선택 다이얼로그
-  void _showAccountSelector(BuildContext context) {
-    // TODO: 실제 거래처 목록 조회 및 선택
-    // 임시로 샘플 데이터 사용
-    final notifier = ref.read(claimRegisterProvider.notifier);
-    notifier.selectAccount(1, '샘플 거래처');
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('거래처 선택 기능은 추후 구현 예정입니다')),
-    );
+  /// 거래처 선택 — 내 거래처 선택 바텀시트에서 고른 거래처를 폼에 반영
+  Future<void> _showAccountSelector(BuildContext context) async {
+    final account = await AccountSelectorSheet.show(context);
+    if (account == null || !mounted) return;
+    ref
+        .read(claimRegisterProvider.notifier)
+        .selectAccount(account.accountId, account.accountName);
   }
 
   /// 제품 선택 — 제품검색(선택 모드)으로 이동 후 고른 제품을 폼에 반영
