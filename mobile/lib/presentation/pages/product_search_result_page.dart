@@ -18,7 +18,11 @@ import '../widgets/product_search/product_card.dart';
 /// 무한 스크롤로 추가 결과를 로드하고,
 /// 각 제품 카드에서 클레임/주문서 등록으로 이동할 수 있습니다.
 class ProductSearchResultPage extends ConsumerStatefulWidget {
-  const ProductSearchResultPage({super.key});
+  /// 제품 선택 모드 — 카드 탭 시 선택한 제품을 호출부로 반환(pop)한다.
+  /// 클레임/점검 등록 폼의 "제품 선택"에서 진입한 경우 true.
+  final bool selectionMode;
+
+  const ProductSearchResultPage({super.key, this.selectionMode = false});
 
   @override
   ConsumerState<ProductSearchResultPage> createState() =>
@@ -26,7 +30,8 @@ class ProductSearchResultPage extends ConsumerStatefulWidget {
 }
 
 class _ProductSearchResultPageState
-    extends ConsumerState<ProductSearchResultPage> with ThrottledTapMixin {
+    extends ConsumerState<ProductSearchResultPage>
+    with ThrottledTapMixin {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -66,10 +71,7 @@ class _ProductSearchResultPageState
           icon: const Icon(Icons.arrow_back_ios, size: 20),
           onPressed: () => AppRouter.goBack(context),
         ),
-        title: Text(
-          state.query,
-          style: AppTypography.headlineMedium,
-        ),
+        title: Text(state.query, style: AppTypography.headlineMedium),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,9 +94,7 @@ class _ProductSearchResultPageState
           const Divider(height: 1, color: AppColors.divider),
 
           // 결과 리스트
-          Expanded(
-            child: _buildBody(state),
-          ),
+          Expanded(child: _buildBody(state)),
         ],
       ),
       // 하단 네비게이션 버튼
@@ -123,34 +123,42 @@ class _ProductSearchResultPageState
         final product = state.products[index];
         return ProductCard(
           product: product,
-          onTap: () => throttledTap(
-            () => AppRouter.navigateTo(
+          showActions: !widget.selectionMode,
+          onTap: () => throttledTap(() {
+            // 선택 모드: 고른 제품을 호출부로 반환
+            if (widget.selectionMode) {
+              Navigator.of(context).pop(product);
+              return;
+            }
+            AppRouter.navigateTo(
               context,
               AppRouter.productDetail,
               arguments: product.productCode,
-            ),
-          ),
-          onClaimTap: () => throttledTap(
-            () => AppRouter.navigateTo(
-              context,
-              AppRouter.claimRegister,
-              arguments: (
-                productCode: product.productCode,
-                productName: product.productName,
-              ),
-            ),
-          ),
-          onOrderTap: () {
-            // TODO: 주문서 작성 화면으로 이동 (제품 정보 전달)
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '주문서 등록: ${product.productName} (추후 구현)',
-                ),
-                duration: const Duration(seconds: 2),
-              ),
             );
-          },
+          }),
+          onClaimTap: widget.selectionMode
+              ? null
+              : () => throttledTap(
+                  () => AppRouter.navigateTo(
+                    context,
+                    AppRouter.claimRegister,
+                    arguments: (
+                      productCode: product.productCode,
+                      productName: product.productName,
+                    ),
+                  ),
+                ),
+          onOrderTap: widget.selectionMode
+              ? null
+              : () {
+                  // TODO: 주문서 작성 화면으로 이동 (제품 정보 전달)
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('주문서 등록: ${product.productName} (추후 구현)'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
         );
       },
     );
@@ -161,9 +169,7 @@ class _ProductSearchResultPageState
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.white,
-        border: Border(
-          top: BorderSide(color: AppColors.divider, width: 1),
-        ),
+        border: Border(top: BorderSide(color: AppColors.divider, width: 1)),
       ),
       child: SafeArea(
         child: Row(
@@ -173,9 +179,7 @@ class _ProductSearchResultPageState
               child: InkWell(
                 onTap: () => AppRouter.goBack(context),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppSpacing.sm,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -199,14 +203,10 @@ class _ProductSearchResultPageState
             // 홈으로 버튼
             Expanded(
               child: InkWell(
-                onTap: () => AppRouter.navigateToAndRemoveAll(
-                  context,
-                  AppRouter.main,
-                ),
+                onTap: () =>
+                    AppRouter.navigateToAndRemoveAll(context, AppRouter.main),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppSpacing.sm,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -232,9 +232,7 @@ class _ProductSearchResultPageState
               child: InkWell(
                 onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppSpacing.sm,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

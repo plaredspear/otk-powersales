@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_router.dart';
+import '../../domain/entities/product.dart';
 import '../providers/product_search_provider.dart';
 import '../widgets/product_search/empty_search_guide.dart';
 import '../widgets/product_search/product_search_app_bar.dart';
@@ -11,7 +12,10 @@ import '../widgets/product_search/product_search_app_bar.dart';
 /// 검색어를 입력하고 검색을 실행하는 화면입니다.
 /// 검색 결과가 있으면 결과 화면으로 이동합니다.
 class ProductSearchPage extends ConsumerStatefulWidget {
-  const ProductSearchPage({super.key});
+  /// 제품 선택 모드 — 결과 화면에서 고른 제품을 호출부로 반환(pop)한다.
+  final bool selectionMode;
+
+  const ProductSearchPage({super.key, this.selectionMode = false});
 
   @override
   ConsumerState<ProductSearchPage> createState() => _ProductSearchPageState();
@@ -38,14 +42,26 @@ class _ProductSearchPageState extends ConsumerState<ProductSearchPage> {
     super.dispose();
   }
 
-  void _onSearch() {
+  Future<void> _onSearch() async {
     final notifier = ref.read(productSearchProvider.notifier);
-    notifier.search().then((_) {
-      final state = ref.read(productSearchProvider);
-      if (state.hasSearched && !state.isLoading && state.errorMessage == null) {
-        AppRouter.navigateTo(context, AppRouter.productSearchResult);
-      }
-    });
+    await notifier.search();
+    if (!mounted) return;
+
+    final state = ref.read(productSearchProvider);
+    if (!state.hasSearched || state.isLoading || state.errorMessage != null) {
+      return;
+    }
+
+    // 결과 화면으로 이동 (선택 모드 전달)
+    final selected = await AppRouter.navigateTo<Product>(
+      context,
+      AppRouter.productSearchResult,
+      arguments: widget.selectionMode,
+    );
+    // 선택 모드: 결과에서 고른 제품을 다시 호출부로 반환
+    if (widget.selectionMode && selected != null && mounted) {
+      Navigator.of(context).pop(selected);
+    }
   }
 
   void _onBarcodeTap() {
@@ -91,10 +107,7 @@ class _ProductSearchPageState extends ConsumerState<ProductSearchPage> {
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : EmptySearchGuide(
-              hasSearched: false,
-              onBarcodeTap: _onBarcodeTap,
-            ),
+          : EmptySearchGuide(hasSearched: false, onBarcodeTap: _onBarcodeTap),
     );
   }
 }
