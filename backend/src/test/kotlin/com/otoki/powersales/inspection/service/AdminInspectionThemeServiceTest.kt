@@ -61,16 +61,30 @@ class AdminInspectionThemeServiceTest {
     inner class Search {
         @Test
         fun `검색 결과를 목록 항목으로 변환하고 하위 점검결과 수를 채운다`() {
-            every { inspectionThemeRepository.searchForAdmin(any(), any()) } returns
+            every { inspectionThemeRepository.searchForAdmin(any(), any(), any(), any()) } returns
                 PageImpl(listOf(theme()), Pageable.ofSize(20), 1)
             every { inspectionThemeRepository.countSiteActivitiesByThemeIds(listOf(1L)) } returns
                 mapOf(1L to 3L)
 
-            val response = service.search(keyword = null, page = 0, size = 20)
+            val response = service.search(keyword = null, department = null, branchCode = null, page = 0, size = 20)
 
             assertThat(response.totalElements).isEqualTo(1)
             assertThat(response.content[0].name).isEqualTo("TM00000001")
             assertThat(response.content[0].siteActivityCount).isEqualTo(3L)
+        }
+
+        @Test
+        fun `부서·지점코드 필터를 repository 에 그대로 전달한다`() {
+            every {
+                inspectionThemeRepository.searchForAdmin(any(), "영업1팀", "B001", any())
+            } returns PageImpl(emptyList(), Pageable.ofSize(20), 0)
+            every { inspectionThemeRepository.countSiteActivitiesByThemeIds(emptyList()) } returns emptyMap()
+
+            service.search(keyword = null, department = "영업1팀", branchCode = "B001", page = 0, size = 20)
+
+            verify {
+                inspectionThemeRepository.searchForAdmin(null, "영업1팀", "B001", any())
+            }
         }
     }
 

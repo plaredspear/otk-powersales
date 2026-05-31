@@ -26,7 +26,12 @@ class InspectionThemeRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun searchForAdmin(keyword: String?, pageable: Pageable): Page<InspectionTheme> {
+    override fun searchForAdmin(
+        keyword: String?,
+        department: String?,
+        branchCode: String?,
+        pageable: Pageable,
+    ): Page<InspectionTheme> {
         val where = BooleanBuilder()
         where.and(notDeleted())
         if (!keyword.isNullOrBlank()) {
@@ -35,6 +40,13 @@ class InspectionThemeRepositoryCustomImpl(
                     .or(inspectionTheme.department.containsIgnoreCase(keyword))
                     .or(inspectionTheme.name.containsIgnoreCase(keyword))
             )
+        }
+        // 부서 부분일치 / 지점코드 정확일치 — trigger 자동주입 값 기준 필터.
+        if (!department.isNullOrBlank()) {
+            where.and(inspectionTheme.department.containsIgnoreCase(department))
+        }
+        if (!branchCode.isNullOrBlank()) {
+            where.and(inspectionTheme.branchCode.eq(branchCode))
         }
 
         val content = queryFactory

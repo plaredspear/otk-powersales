@@ -43,6 +43,8 @@ export default function ThemeManagementPage() {
   const canDelete = hasEntityPermission('inspection_theme', 'DELETE');
 
   const [keyword, setKeyword] = useState('');
+  const [department, setDepartment] = useState('');
+  const [branchCode, setBranchCode] = useState('');
   const [page, setPage] = useState(0);
   const [searchParams, setSearchParams] = useState<ThemeListParams>({ page: 0, size: PAGE_SIZE });
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -81,7 +83,21 @@ export default function ThemeManagementPage() {
 
   const handleSearch = () => {
     setPage(0);
-    setSearchParams({ keyword: keyword || undefined, page: 0, size: PAGE_SIZE });
+    setSearchParams({
+      keyword: keyword || undefined,
+      department: department || undefined,
+      branchCode: branchCode || undefined,
+      page: 0,
+      size: PAGE_SIZE,
+    });
+  };
+
+  const handleReset = () => {
+    setKeyword('');
+    setDepartment('');
+    setBranchCode('');
+    setPage(0);
+    setSearchParams({ page: 0, size: PAGE_SIZE });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -211,19 +227,36 @@ export default function ThemeManagementPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Space>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 8 }}>
+        <Space wrap>
           <Input
             placeholder="테마번호 / 테마이름 / 부서"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onPressEnter={handleSearch}
-            style={{ width: 260 }}
+            style={{ width: 240 }}
+            allowClear
+          />
+          <Input
+            placeholder="부서"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            onPressEnter={handleSearch}
+            style={{ width: 140 }}
+            allowClear
+          />
+          <Input
+            placeholder="지점코드"
+            value={branchCode}
+            onChange={(e) => setBranchCode(e.target.value)}
+            onPressEnter={handleSearch}
+            style={{ width: 120 }}
             allowClear
           />
           <Button type="primary" onClick={handleSearch}>
             검색
           </Button>
+          <Button onClick={handleReset}>초기화</Button>
         </Space>
         {canCreate && (
           <Button type="primary" onClick={openCreate}>

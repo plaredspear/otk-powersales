@@ -13,7 +13,7 @@ const THEME_KEY = ['admin', 'inspection-themes'] as const;
 
 export function useThemes(params: ThemeListParams) {
   return useQuery({
-    queryKey: [...THEME_KEY, params.keyword, params.page, params.size],
+    queryKey: [...THEME_KEY, params.keyword, params.department, params.branchCode, params.page, params.size],
     queryFn: () => fetchThemes(params),
   });
 }

@@ -56,11 +56,17 @@ class AdminInspectionThemeService(
         private const val THEME_NUMBER_DIGITS = 8
     }
 
-    /** 테마 목록 — 테마이름/부서/테마번호 검색 + 페이징 + 하위 점검결과 수. */
-    fun search(keyword: String?, page: Int, size: Int): AdminThemeListResponse {
+    /** 테마 목록 — 키워드(테마번호/이름/부서) + 부서/지점코드 필터 + 페이징 + 하위 점검결과 수. */
+    fun search(
+        keyword: String?,
+        department: String?,
+        branchCode: String?,
+        page: Int,
+        size: Int,
+    ): AdminThemeListResponse {
         val pageSize = size.coerceIn(1, MAX_PAGE_SIZE)
         val pageable = PageRequest.of(page.coerceAtLeast(0), pageSize)
-        val result = inspectionThemeRepository.searchForAdmin(keyword, pageable)
+        val result = inspectionThemeRepository.searchForAdmin(keyword, department, branchCode, pageable)
 
         val counts = inspectionThemeRepository.countSiteActivitiesByThemeIds(result.content.map { it.id })
         val items = result.content.map { theme ->
