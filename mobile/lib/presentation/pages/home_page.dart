@@ -212,7 +212,8 @@ class _HomePageState extends ConsumerState<HomePage>
                       padding: horizontalGutter,
                       child: ProductSearchBar(
                         onTap: () {
-                          // TODO: 제품 검색 화면으로 이동 (후속 작업)
+                          AppRouter.navigateTo(
+                              context, AppRouter.productSearch);
                         },
                       ),
                     ),
