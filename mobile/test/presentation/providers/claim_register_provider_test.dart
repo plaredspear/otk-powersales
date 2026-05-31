@@ -123,26 +123,26 @@ void main() {
         final notifier = container.read(claimRegisterProvider.notifier);
 
         // Given: 종류2 먼저 설정
-        notifier.selectSubcategory(101, '벌레');
+        notifier.selectSubcategory('AA', '벌레');
 
         // When: 종류1 변경
-        notifier.selectCategory(1, '이물');
+        notifier.selectCategory('A', '이물');
 
         // Then: 종류2 초기화됨
         final state = container.read(claimRegisterProvider);
-        expect(state.form!.categoryId, 1);
+        expect(state.form!.categoryId, 'A');
         expect(state.form!.categoryName, '이물');
-        expect(state.form!.subcategoryId, 0);
+        expect(state.form!.subcategoryId, '');
         expect(state.form!.subcategoryName, '');
       });
 
       test('클레임 종류2를 선택한다', () {
         final notifier = container.read(claimRegisterProvider.notifier);
 
-        notifier.selectSubcategory(101, '벌레');
+        notifier.selectSubcategory('AA', '벌레');
 
         final state = container.read(claimRegisterProvider);
-        expect(state.form!.subcategoryId, 101);
+        expect(state.form!.subcategoryId, 'AA');
         expect(state.form!.subcategoryName, '벌레');
       });
 
@@ -236,8 +236,8 @@ void main() {
         notifier.selectProduct('12345678', '맛있는부대찌개라양념140G');
         notifier.selectDateType(ClaimDateType.expiryDate);
         notifier.selectDate(DateTime(2026, 2, 20));
-        notifier.selectCategory(1, '이물');
-        notifier.selectSubcategory(101, '벌레');
+        notifier.selectCategory('A', '이물');
+        notifier.selectSubcategory('AA', '벌레');
         notifier.updateDefectDescription('제품에서 벌레가 발견되었습니다');
         notifier.updateDefectQuantity(1);
         notifier.attachDefectPhoto(File('test_defect.jpg'));
@@ -296,8 +296,8 @@ void main() {
         notifier.selectProduct('12345678', '맛있는부대찌개라양념140G');
         notifier.selectDateType(ClaimDateType.expiryDate);
         notifier.selectDate(DateTime(2026, 2, 20));
-        notifier.selectCategory(1, '이물');
-        notifier.selectSubcategory(101, '벌레');
+        notifier.selectCategory('A', '이물');
+        notifier.selectSubcategory('AA', '벌레');
         notifier.updateDefectDescription('제품에서 벌레가 발견되었습니다');
         notifier.updateDefectQuantity(1);
         notifier.attachDefectPhoto(File('test_defect.jpg'));
@@ -388,18 +388,18 @@ class FakeClaimRepository implements ClaimRepository {
 final _sampleFormData = ClaimFormData(
   categories: [
     ClaimCategory(
-      id: 1,
+      id: 'A',
       name: '이물',
       subcategories: [
-        const ClaimSubcategory(id: 101, name: '벌레'),
-        const ClaimSubcategory(id: 102, name: '금속'),
+        const ClaimSubcategory(id: 'AA', name: '벌레'),
+        const ClaimSubcategory(id: 'AB', name: '금속'),
       ],
     ),
     ClaimCategory(
-      id: 2,
+      id: 'B',
       name: '변질/변패',
       subcategories: [
-        const ClaimSubcategory(id: 201, name: '맛 변질'),
+        const ClaimSubcategory(id: 'BA', name: '맛 변질'),
       ],
     ),
   ],

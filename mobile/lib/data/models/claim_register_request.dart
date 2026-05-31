@@ -28,8 +28,11 @@ class ClaimRegisterRequest {
   final String productCode;
   final String dateType;
   final String date;
-  final int categoryId;
-  final int subcategoryId;
+  /// 백엔드 ClaimCreateRequest.claimType1 (SF picklist value, 예: "A").
+  final String categoryId;
+
+  /// 백엔드 ClaimCreateRequest.claimType2 (SF picklist value, 예: "AA").
+  final String subcategoryId;
   final String defectDescription;
   final int defectQuantity;
   final File defectPhoto;
@@ -66,8 +69,9 @@ class ClaimRegisterRequest {
       'productCode': productCode,
       'dateType': dateType,
       'date': date,
-      'categoryId': categoryId.toString(),
-      'subcategoryId': subcategoryId.toString(),
+      // 백엔드 ClaimCreateRequest 는 SF picklist value 를 claimType1/claimType2 로 받는다
+      'claimType1': categoryId,
+      'claimType2': subcategoryId,
       'defectDescription': defectDescription,
       'defectQuantity': defectQuantity.toString(),
     };
