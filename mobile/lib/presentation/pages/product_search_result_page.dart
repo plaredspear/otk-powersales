@@ -150,15 +150,13 @@ class _ProductSearchResultPageState
                 ),
           onOrderTap: widget.selectionMode
               ? null
-              : () {
-                  // TODO: 주문서 작성 화면으로 이동 (제품 정보 전달)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('주문서 등록: ${product.productName} (추후 구현)'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                },
+              : () => throttledTap(
+                  () => AppRouter.navigateTo(
+                    context,
+                    AppRouter.orderForm,
+                    arguments: product.productCode,
+                  ),
+                ),
         );
       },
     );

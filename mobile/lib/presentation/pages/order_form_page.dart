@@ -21,7 +21,10 @@ import '../widgets/order_form/add_product_bottom_sheet.dart';
 class OrderFormPage extends ConsumerStatefulWidget {
   final int? orderId; // null = new order, non-null = edit mode
 
-  const OrderFormPage({super.key, this.orderId});
+  /// 제품검색 "주문서 등록"에서 진입 시 미리 담을 제품코드 (신규 주문 전용).
+  final String? initialProductCode;
+
+  const OrderFormPage({super.key, this.orderId, this.initialProductCode});
 
   @override
   ConsumerState<OrderFormPage> createState() => _OrderFormPageState();
@@ -36,8 +39,14 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     super.initState();
     _scrollController = ScrollController();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(orderFormProvider.notifier).initialize(orderId: widget.orderId);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final notifier = ref.read(orderFormProvider.notifier);
+      await notifier.initialize(orderId: widget.orderId);
+      // 제품검색에서 전달된 제품이 있으면 주문 라인에 미리 추가
+      final code = widget.initialProductCode;
+      if (code != null && code.isNotEmpty) {
+        await notifier.preloadProductByCode(code);
+      }
     });
   }
 
