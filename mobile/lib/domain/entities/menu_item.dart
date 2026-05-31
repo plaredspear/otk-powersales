@@ -55,10 +55,14 @@ class MenuItem {
   /// 이동할 라우트 경로 (null이면 미구현)
   final String? route;
 
+  /// 라우트 이동 시 전달할 인자 (예: 탭 화면의 초기 탭 인덱스)
+  final Object? arguments;
+
   const MenuItem({
     required this.id,
     required this.label,
     this.route,
+    this.arguments,
   });
 
   /// 구현 여부
@@ -68,14 +72,18 @@ class MenuItem {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! MenuItem) return false;
-    return other.id == id && other.label == label && other.route == route;
+    return other.id == id &&
+        other.label == label &&
+        other.route == route &&
+        other.arguments == arguments;
   }
 
   @override
-  int get hashCode => Object.hash(id, label, route);
+  int get hashCode => Object.hash(id, label, route, arguments);
 
   @override
-  String toString() => 'MenuItem(id: $id, label: $label, route: $route)';
+  String toString() =>
+      'MenuItem(id: $id, label: $label, route: $route, arguments: $arguments)';
 }
 
 /// List equality helper

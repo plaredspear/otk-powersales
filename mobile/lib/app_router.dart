@@ -132,7 +132,11 @@ class AppRouter {
               ModalRoute.of(context)!.settings.arguments as String;
           return ProductDetailPage(productCode: productCode);
         },
-        orderList: (context) => const OrderListPage(),
+        orderList: (context) {
+          final initialTabIndex =
+              ModalRoute.of(context)?.settings.arguments as int?;
+          return OrderListPage(initialTabIndex: initialTabIndex ?? 0);
+        },
         orderDetail: (context) {
           final orderId = ModalRoute.of(context)!.settings.arguments as int;
           return OrderDetailPage(orderId: orderId);

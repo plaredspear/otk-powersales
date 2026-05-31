@@ -110,7 +110,7 @@ void main() {
       expect(routes.containsKey(AppRouter.safetyCheckStatus), true);
       expect(routes.containsKey(AppRouter.altHolidayRequest), true);
       expect(routes.containsKey(AppRouter.altHolidayHistory), true);
-      expect(routes.length, 39);
+      expect(routes.length, 50);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {

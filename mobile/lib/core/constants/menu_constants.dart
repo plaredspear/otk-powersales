@@ -23,8 +23,13 @@ abstract final class MenuConstants {
       icon: Icons.shopping_cart,
       label: '주문',
       items: [
-        MenuItem(id: 'orders', label: '내 주문 현황'),
-        MenuItem(id: 'orders-by-account', label: '거래처별 주문 현황'),
+        MenuItem(id: 'orders', label: '내 주문 현황', route: '/order-list'),
+        MenuItem(
+          id: 'orders-by-account',
+          label: '거래처별 주문 현황',
+          route: '/order-list',
+          arguments: 1, // 거래처별 주문 탭 (index 1)
+        ),
       ],
     ),
     // 3. 제품
@@ -42,8 +47,18 @@ abstract final class MenuConstants {
       icon: Icons.monetization_on,
       label: '매출 현황',
       items: [
-        MenuItem(id: 'pos-sales', label: '행사 매출', route: '/pos-sales'),
-        MenuItem(id: 'monthly-sales', label: '월 매출'),
+        MenuItem(
+          id: 'event-sales',
+          label: '행사 매출',
+          route: '/sales-overview',
+          arguments: 0, // 매출 현황 허브 - 행사 매출 탭 (index 0)
+        ),
+        MenuItem(
+          id: 'monthly-sales',
+          label: '월 매출',
+          route: '/sales-overview',
+          arguments: 1, // 매출 현황 허브 - 월 매출 탭 (index 1)
+        ),
         MenuItem(id: 'logistics-sales', label: '물류 매출', route: '/logistics-sales'),
       ],
     ),
@@ -53,9 +68,9 @@ abstract final class MenuConstants {
       icon: Icons.assignment,
       label: '현장톡',
       items: [
-        MenuItem(id: 'field-check', label: '현장 점검'),
+        MenuItem(id: 'field-check', label: '현장 점검', route: '/inspection-list'),
         MenuItem(id: 'claim-list', label: '클레임 현황', route: '/claim/list'),
-        MenuItem(id: 'claims', label: '클레임 등록'),
+        MenuItem(id: 'claims', label: '클레임 등록', route: '/claim/register'),
         MenuItem(
           id: 'suggestions',
           label: '제안하기',
@@ -74,7 +89,7 @@ abstract final class MenuConstants {
       icon: Icons.campaign,
       label: '커뮤니티',
       items: [
-        MenuItem(id: 'education', label: '교육'),
+        MenuItem(id: 'education', label: '교육', route: '/education'),
         MenuItem(id: 'notices', label: '공지사항', route: '/notices'),
       ],
     ),
