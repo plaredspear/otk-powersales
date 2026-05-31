@@ -109,6 +109,7 @@ export async function fetchTeamSchedules(params: {
   employeeIds: number[];
   accountIds: number[];
   promotionTeams?: string[];
+  branchCode?: string;
 }): Promise<MonthlyScheduleWithSummary> {
   const res = await client.get<ApiResponse<MonthlyScheduleWithSummary>>(
     '/api/v1/admin/team-schedule',
@@ -121,6 +122,7 @@ export async function fetchTeamSchedules(params: {
         ...(params.promotionTeams && params.promotionTeams.length > 0
           ? { promotionTeams: params.promotionTeams.join(',') }
           : {}),
+        ...(params.branchCode ? { branchCode: params.branchCode } : {}),
       },
     },
   );

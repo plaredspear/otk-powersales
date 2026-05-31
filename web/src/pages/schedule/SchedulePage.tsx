@@ -93,6 +93,9 @@ export default function SchedulePage() {
       employeeIds: filterTab === 'member' ? appliedEmployeeIds : [],
       accountIds: filterTab === 'account' ? appliedAccountIds : [],
       promotionTeams: appliedPromotionTeams,
+      // 무필터(거래처/여사원 미선택) 호출 시 backend 가 지점 거래처 전체 기준 요약을 산출하도록 전달.
+      // 단일지점 사용자는 빈 문자열이라 backend 가 본인 지점을 자동 사용.
+      branchCode: selectedBranchCode || undefined,
     };
   }, [
     currentDate,
@@ -102,9 +105,12 @@ export default function SchedulePage() {
     appliedEmployeeIds,
     appliedAccountIds,
     appliedPromotionTeams,
+    selectedBranchCode,
   ]);
 
-  const { data, isLoading: schedulesLoading, refetch: refetchSchedules } = useTeamSchedules(queryParams);
+  // enabled 가드 제거로 필터 없이도 항상 조회 — 월/지점 변경 시 queryKey 변화로 자동 refetch.
+  const { data, isLoading: schedulesLoading, isFetching: schedulesFetching, refetch: refetchSchedules } =
+    useTeamSchedules(queryParams);
   const schedules = data?.schedules ?? [];
 
   // 화면 초기 로드 — branches/members/professional-promotion-teams/accounts/dailySummary 통합 fetch.
@@ -117,13 +123,13 @@ export default function SchedulePage() {
   const promotionTeams = form?.professionalPromotionTeams ?? [];
   const accounts = form?.accounts ?? [];
 
-  // SF 정합 — 캘린더 요약은 form 응답 (선택 지점 거래처 전체 기준) 으로 즉시 표시.
-  // 사용자가 직접 조회를 수행한 후에는 그 조회 결과 (schedules + dailySummary) 가 우선.
+  // 캘린더 요약은 월/지점 단위 조회 결과 (data.dailySummary) 를 우선 사용.
+  // 첫 응답 도착 전(data 없음)에는 form 의 현재 월 요약을 fallback 으로 표시.
   const summaries = data?.dailySummary ?? form?.dailySummary ?? [];
 
-  // 요약 fetch 완료 여부 — form/조회 중 하나라도 응답이 도착해야 셀에 0 값 배지를 그린다.
-  // (초기 로딩 중 전 셀에 0/0 이 깜빡이는 것 방지)
-  const summariesReady = form !== undefined || data !== undefined;
+  // 요약 배지 표시 가능 여부 — 현재 조회(월/지점)의 fetch 가 진행 중이면 false.
+  // 월 변경 시 새 fetch 가 시작되는 동안 이전 달 배지를 모두 숨겼다가, 완료 후 다시 표시.
+  const summariesReady = !schedulesFetching && data !== undefined;
 
   // staging 이 applied 와 동일해도 "조회" 클릭 시 항상 강제 재요청 — react-query 가 동일 queryKey 일 때
   // cache 즉시 반환만 하고 background refetch 안 하므로 명시 refetch 필요.

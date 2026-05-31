@@ -151,13 +151,11 @@ class AdminTeamScheduleService(
             val today = LocalDate.now()
             val monthStart = today.withDayOfMonth(1)
             val monthEnd = today.withDayOfMonth(today.lengthOfMonth())
-            getSchedulesWithSummary(
-                from = monthStart,
-                to = monthEnd,
-                employeeIds = null,
-                accountIds = accounts.map { it.accountId },
-                promotionTeams = null
-            ).dailySummary
+            buildDailySummary(
+                teamMemberScheduleRepository
+                    .findMonthlyByAccountIds(accounts.map { it.accountId }, monthStart, monthEnd, null)
+                    .distinctBy { it.id }
+            )
         } else {
             emptyList()
         }
@@ -187,7 +185,9 @@ class AdminTeamScheduleService(
         to: LocalDate,
         employeeIds: List<Long>?,
         accountIds: List<Int>?,
-        promotionTeams: List<String>? = null
+        promotionTeams: List<String>? = null,
+        principal: WebUserPrincipal? = null,
+        branchCode: String? = null
     ): MonthlyScheduleWithSummaryDto {
         if (from.isAfter(to)) throw TeamScheduleInvalidRangeException()
         if (java.time.temporal.ChronoUnit.DAYS.between(from, to) > MAX_RANGE_DAYS) {
@@ -197,8 +197,24 @@ class AdminTeamScheduleService(
         val hasEmployeeFilter = !employeeIds.isNullOrEmpty()
         val hasAccountFilter = !accountIds.isNullOrEmpty()
 
+        // 무필터(거래처/여사원 미선택) 요청 — 월 변경 시에도 캘린더 요약이 항상 표시되도록
+        // principal 의 거래처 전체 기준 요약을 산출한다. 일정 개별 칩(schedules)은 과중하므로 비우고
+        // dailySummary 만 반환 (form 응답의 요약 정책과 동일).
         if (!hasEmployeeFilter && !hasAccountFilter) {
-            return MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
+            if (principal == null) {
+                return MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
+            }
+            val accountIdsForSummary = getAccounts(principal, branchCode).map { it.accountId }
+            if (accountIdsForSummary.isEmpty()) {
+                return MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
+            }
+            val summarySchedules = teamMemberScheduleRepository
+                .findMonthlyByAccountIds(accountIdsForSummary, from, to, null)
+                .distinctBy { it.id }
+            return MonthlyScheduleWithSummaryDto(
+                schedules = emptyList(),
+                dailySummary = buildDailySummary(summarySchedules)
+            )
         }
 
         val effectivePromotionTeams = promotionTeams?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }
@@ -215,7 +231,22 @@ class AdminTeamScheduleService(
 
         val scheduleDtos = uniqueSchedules.map { TeamScheduleDto.from(it) }
 
-        val dailySummaryDtos = uniqueSchedules
+        return MonthlyScheduleWithSummaryDto(
+            schedules = scheduleDtos,
+            dailySummary = buildDailySummary(uniqueSchedules)
+        )
+    }
+
+    /**
+     * 일정 목록을 일자별로 그룹화하여 요약(진열/행사 expected·actual + 연차/대휴) 으로 환산.
+     * 무필터 거래처 전체 요약과 필터 조회 요약이 동일 산식을 쓰도록 공유.
+     *
+     * - 진열: WORK 이며 행사(EVENT) 가 아닌 일정. expected = 건수, actual = 출근로그 있는 건수.
+     * - 행사: WORK 이며 행사(EVENT) 인 일정. 동일 산식.
+     * - 연차/대휴: 해당 workingType 건수.
+     */
+    private fun buildDailySummary(schedules: List<TeamMemberSchedule>): List<DailySummaryDto> {
+        return schedules
             .groupBy { it.workingDate }
             .map { (date, daySchedules) ->
                 val displaySchedules = daySchedules.filter { it.workingType == WorkingType.WORK && it.workingCategory1 != WorkingCategory1.EVENT }
@@ -232,8 +263,6 @@ class AdminTeamScheduleService(
                 )
             }
             .sortedBy { it.date }
-
-        return MonthlyScheduleWithSummaryDto(schedules = scheduleDtos, dailySummary = dailySummaryDtos)
     }
 
     @Transactional

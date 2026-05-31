@@ -58,13 +58,14 @@ class AdminTeamScheduleController(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate,
         @RequestParam(required = false) employeeIds: String?,
         @RequestParam(required = false) accountIds: String?,
-        @RequestParam(required = false) promotionTeams: String?
+        @RequestParam(required = false) promotionTeams: String?,
+        @RequestParam(required = false) branchCode: String?
     ): ResponseEntity<ApiResponse<MonthlyScheduleWithSummaryDto>> {
         val employeeIdList = employeeIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toLong() }
         val accountIdList = accountIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toInt() }
         val promotionTeamList = promotionTeams?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
         val result = adminTeamScheduleService.getSchedulesWithSummary(
-            from, to, employeeIdList, accountIdList, promotionTeamList
+            from, to, employeeIdList, accountIdList, promotionTeamList, principal, branchCode
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }
