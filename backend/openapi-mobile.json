@@ -353,6 +353,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseClaimFormDataResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ClaimFormDataResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseClientOrderDetailResponse" : {
         "properties" : {
           "data" : {
@@ -2120,6 +2149,29 @@
         },
         "type" : "object"
       },
+      "ClaimFormDataResponse" : {
+        "properties" : {
+          "categories" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryInfo"
+            },
+            "type" : "array"
+          },
+          "purchaseMethods" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CodeNameInfo"
+            },
+            "type" : "array"
+          },
+          "requestTypes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CodeNameInfo"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "ClaimListItemResponse" : {
         "properties" : {
           "accountName" : {
@@ -2269,6 +2321,17 @@
           },
           "productName" : {
             "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "CodeNameInfo" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -5075,6 +5138,24 @@
           }
         },
         "tags" : [ "claim-controller" ]
+      }
+    },
+    "/api/v1/mobile/claims/form-data" : {
+      "get" : {
+        "operationId" : "getClaimFormData",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseClaimFormDataResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "claim-query-controller" ]
       }
     },
     "/api/v1/mobile/claims/{claimId}" : {
