@@ -5,30 +5,38 @@ import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.inspection.dto.admin.AdminCreateSiteActivityRequest
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityDetailResponse
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityListResponse
+import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityMutationResponse
 import com.otoki.powersales.inspection.enums.InspectionCategory
 import com.otoki.powersales.inspection.enums.InspectionFieldType
+import com.otoki.powersales.inspection.service.AdminSiteActivityMutationService
 import com.otoki.powersales.inspection.service.AdminSiteActivityService
 import java.time.LocalDate
 import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.multipart.MultipartFile
 
 /**
  * admin 현장점검 조회 API.
  *
- * 2 endpoint — 목록 / 상세 (조회 전용). SF Permission `site_activity` entity READ 기반 권한 평가 +
- * SharingRule 데이터 가시 범위 적용. 레거시 SF `현장점검(등록)` Theme 페이지의 SiteActivity 관리 관점.
+ * 목록 / 상세 (조회) + 등록. SF Permission `site_activity` READ/CREATE 권한 평가 + 조회는 SharingRule
+ * 데이터 가시 범위 적용. 레거시 SF `DKRetail__SiteAcitivity__c` 표준 페이지(목록/상세/New) 동등.
  */
 @RestController
 @RequestMapping("/api/v1/admin/inspections")
 class AdminInspectionController(
-    private val adminSiteActivityService: AdminSiteActivityService
+    private val adminSiteActivityService: AdminSiteActivityService,
+    private val adminSiteActivityMutationService: AdminSiteActivityMutationService,
 ) {
 
     @GetMapping
@@ -66,5 +74,21 @@ class AdminInspectionController(
     ): ResponseEntity<ApiResponse<AdminSiteActivityDetailResponse>> {
         val response = adminSiteActivityService.getDetail(scope, id)
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 현장점검 결과 등록 — SF `DKRetail__SiteAcitivity__c` New 폼 동등.
+     *
+     * 관리자가 점검 사원(employeeId)을 지정해 결과를 수동 등록/보정. category=OWN 이면 productCode 사용,
+     * COMPETITOR 면 경쟁사 필드 사용. photos 는 최대 10건.
+     */
+    @PostMapping(consumes = ["multipart/form-data"])
+    @RequiresSfPermission(entity = "site_activity", operation = SfPermissionOperation.CREATE)
+    fun createInspection(
+        @RequestPart("request") request: AdminCreateSiteActivityRequest,
+        @RequestPart(required = false) photos: List<MultipartFile>?
+    ): ResponseEntity<ApiResponse<AdminSiteActivityMutationResponse>> {
+        val response = adminSiteActivityMutationService.create(request, photos)
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 }

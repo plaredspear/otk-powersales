@@ -1126,6 +1126,58 @@
         },
         "type" : "object"
       },
+      "AdminCreateSiteActivityRequest" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "competitorActivity" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductPrice" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorSalesQuantity" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorTasting" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "fieldTypeCode" : {
+            "type" : "string"
+          },
+          "inspectionDate" : {
+            "type" : "string"
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "themeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "AdminEducationListResponse" : {
         "properties" : {
           "content" : {
@@ -1849,6 +1901,18 @@
           "totalPages" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminSiteActivityMutationResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -3152,6 +3216,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminSiteActivityListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminSiteActivityMutationResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminSiteActivityMutationResponse"
             }, {
               "type" : "null"
             } ]
@@ -17535,6 +17628,44 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAdminSiteActivityListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-controller" ]
+      },
+      "post" : {
+        "operationId" : "createInspection",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "photos" : {
+                    "items" : {
+                      "format" : "binary",
+                      "type" : "string"
+                    },
+                    "type" : "array"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/AdminCreateSiteActivityRequest"
+                  }
+                },
+                "required" : [ "request" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminSiteActivityMutationResponse"
                 }
               }
             },

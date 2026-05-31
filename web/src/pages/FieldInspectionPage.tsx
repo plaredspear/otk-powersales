@@ -5,6 +5,8 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useInspections } from '@/hooks/inspections/useInspections';
 import { useInspectionDetail } from '@/hooks/inspections/useInspectionDetail';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
+import { usePermission } from '@/hooks/usePermission';
+import InspectionCreateModal from '@/pages/inspection/InspectionCreateModal';
 import type {
   InspectionCategory,
   InspectionFieldTypeCode,
@@ -43,6 +45,10 @@ export default function FieldInspectionPage() {
   const [accountCode, setAccountCode] = useState('');
   const [page, setPage] = useState(0);
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const { hasEntityPermission } = usePermission();
+  const canCreate = hasEntityPermission('site_activity', 'CREATE');
 
   const [searchParams, setSearchParams] = useState<InspectionListParams>({
     startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
@@ -146,7 +152,16 @@ export default function FieldInspectionPage() {
           />
         </Space>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 8,
+          marginBottom: 16,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
         <Space wrap>
           <span>점검사원명:</span>
           <Input
@@ -167,6 +182,11 @@ export default function FieldInspectionPage() {
           <Button type="primary" onClick={handleSearch}>검색</Button>
           <Button onClick={handleReset}>초기화</Button>
         </Space>
+        {canCreate && (
+          <Button type="primary" onClick={() => setCreateOpen(true)}>
+            현장점검 등록
+          </Button>
+        )}
       </div>
 
       <Table
@@ -246,6 +266,8 @@ export default function FieldInspectionPage() {
           </Descriptions>
         )}
       </Drawer>
+
+      <InspectionCreateModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }

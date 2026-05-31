@@ -92,3 +92,50 @@ export async function fetchInspectionDetail(id: number): Promise<InspectionDetai
   }
   return res.data.data;
 }
+
+// ─────────────────────────────────────────────────────
+// 등록 (admin 수동 등록 — SF SiteActivity New 폼 동등)
+// ─────────────────────────────────────────────────────
+
+export interface CreateInspectionRequest {
+  themeId: number;
+  accountId: number;
+  employeeId: number;
+  inspectionDate: string;
+  category: InspectionCategory;
+  fieldTypeCode: InspectionFieldTypeCode;
+  description?: string | null;
+  productCode?: string | null;
+  competitorName?: string | null;
+  competitorActivity?: string | null;
+  competitorTasting?: boolean | null;
+  competitorProductName?: string | null;
+  competitorProductPrice?: number | null;
+  competitorSalesQuantity?: number | null;
+}
+
+export interface InspectionMutationResult {
+  id: number;
+  name: string | null;
+}
+
+export async function createInspection(
+  request: CreateInspectionRequest,
+  photos: File[],
+): Promise<InspectionMutationResult> {
+  const formData = new FormData();
+  formData.append(
+    'request',
+    new Blob([JSON.stringify(request)], { type: 'application/json' }),
+  );
+  photos.forEach((file) => formData.append('photos', file));
+  const res = await client.post<ApiResponse<InspectionMutationResult>>(
+    '/api/v1/admin/inspections',
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '현장점검 등록에 실패했습니다');
+  }
+  return res.data.data;
+}
