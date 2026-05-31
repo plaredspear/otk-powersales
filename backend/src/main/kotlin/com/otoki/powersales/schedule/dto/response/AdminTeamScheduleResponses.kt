@@ -45,6 +45,11 @@ data class TeamScheduleDto(
     val accountId: Int?,
     val accountName: String?,
     val accountExternalKey: String?,
+    // SF 목록(FullCalendarComponentController.fetchAllShcedule) title 정합 — 거래처 유형/지점명.
+    // accountType: SF `AccountType__c = TEXT(AccountId__r.Type)` 대응 (account.accountType).
+    // accountBranchName: SF `AccountId__r.BranchName__c` 대응.
+    val accountType: String?,
+    val accountBranchName: String?,
     val isClockIn: Boolean,
     val promotionId: Long?
 ) {
@@ -62,6 +67,8 @@ data class TeamScheduleDto(
                 accountId = schedule.account?.id,
                 accountName = schedule.account?.name,
                 accountExternalKey = schedule.account?.externalKey,
+                accountType = schedule.account?.accountType?.displayName,
+                accountBranchName = schedule.account?.branchName,
                 isClockIn = schedule.attendanceLog != null,
                 promotionId = schedule.promotionEmployee?.promotionId
             )

@@ -19566,6 +19566,9 @@
       },
       "TeamScheduleDto" : {
         "properties" : {
+          "accountBranchName" : {
+            "type" : [ "string", "null" ]
+          },
           "accountExternalKey" : {
             "type" : [ "string", "null" ]
           },
@@ -19574,6 +19577,9 @@
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
             "type" : [ "string", "null" ]
           },
           "clockIn" : {
@@ -29099,6 +29105,13 @@
         }, {
           "in" : "query",
           "name" : "promotionTeams",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
           "required" : false,
           "schema" : {
             "type" : "string"

@@ -138,6 +138,8 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
                         accountId = 1001,
                         accountName = "이마트 강남점",
                         accountExternalKey = "EXT001",
+                        accountType = "수퍼",
+                        accountBranchName = "원주1지점",
                         isClockIn = true,
                         promotionId = null
                     )

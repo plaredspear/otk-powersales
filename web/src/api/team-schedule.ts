@@ -31,6 +31,8 @@ export interface TeamSchedule {
   accountId: number | null;
   accountName: string | null;
   accountExternalKey: string | null;
+  accountType: string | null;
+  accountBranchName: string | null;
   isClockIn: boolean;
   promotionId: number | null;
 }
