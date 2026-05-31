@@ -76,6 +76,7 @@ const UserListPage = lazy(() => import('@/pages/users/UserListPage'));
 const UserDetailPage = lazy(() => import('@/pages/users/UserDetailPage'));
 const ProfileListPage = lazy(() => import('@/pages/admin/permissions/ProfileListPage'));
 const ProfileDetailPage = lazy(() => import('@/pages/admin/permissions/ProfileDetailPage'));
+const ProfileEditPage = lazy(() => import('@/pages/admin/permissions/ProfileEditPage'));
 const PermissionSetListPage = lazy(() => import('@/pages/admin/permissions/PermissionSetListPage'));
 const PermissionSetDetailPage = lazy(() => import('@/pages/admin/permissions/PermissionSetDetailPage'));
 const PermissionSetCreatePage = lazy(() => import('@/pages/admin/permissions/PermissionSetCreatePage'));
@@ -351,6 +352,7 @@ export const router = createBrowserRouter(
               children: [
                 { path: '/admin/permissions/permission-sets/new', element: <LazyWrapper><PermissionSetCreatePage /></LazyWrapper> },
                 { path: '/admin/permissions/permission-sets/:permissionSetId/edit', element: <LazyWrapper><PermissionSetEditPage /></LazyWrapper> },
+                { path: '/admin/permissions/profiles/:profileId/edit', element: <LazyWrapper><ProfileEditPage /></LazyWrapper> },
               ],
             },
             {

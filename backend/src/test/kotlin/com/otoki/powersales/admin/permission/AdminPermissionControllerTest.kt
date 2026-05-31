@@ -88,6 +88,14 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
             flags = ProfileFlagsSummary(
                 viewAllData = true, modifyAllData = true, viewAllUsers = true, manageUsers = true, apiEnabled = true,
             ),
+            objectPermissions = listOf(
+                ObjectPermissionRow(
+                    sfApiName = "MonthlySalesHistory__c", entity = "monthly_sales_history",
+                    canRead = true, canCreate = false, canEdit = false, canDelete = false,
+                ),
+            ),
+            customPermissions = emptyList(),
+            isLocallyModified = true,
             assignedUsers = PaginatedUserList(
                 totalElements = 1, totalPages = 1, number = 0, size = 20,
                 content = listOf(AssignedUserSummary(userId = 100, username = "u@x", employeeCode = "S001", employeeName = "홍관리")),
@@ -98,6 +106,9 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.profileId").value(1))
             .andExpect(jsonPath("$.data.flags.modifyAllData").value(true))
+            .andExpect(jsonPath("$.data.objectPermissions[0].entity").value("monthly_sales_history"))
+            .andExpect(jsonPath("$.data.objectPermissions[0].canRead").value(true))
+            .andExpect(jsonPath("$.data.isLocallyModified").value(true))
             .andExpect(jsonPath("$.data.assignedUsers.content[0].employeeName").value("홍관리"))
     }
 

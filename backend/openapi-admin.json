@@ -11457,14 +11457,29 @@
           "assignedUsers" : {
             "$ref" : "#/components/schemas/PaginatedUserList"
           },
+          "customPermissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CustomPermissionRow"
+            },
+            "type" : "array"
+          },
           "description" : {
             "type" : [ "string", "null" ]
           },
           "flags" : {
             "$ref" : "#/components/schemas/ProfileFlagsSummary"
           },
+          "locallyModified" : {
+            "type" : "boolean"
+          },
           "name" : {
             "type" : "string"
+          },
+          "objectPermissions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ObjectPermissionRow"
+            },
+            "type" : "array"
           },
           "profileId" : {
             "format" : "int64",
