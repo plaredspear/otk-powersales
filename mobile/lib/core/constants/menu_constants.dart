@@ -3,7 +3,7 @@ import '../../domain/entities/menu_item.dart';
 
 /// 전체메뉴 상수 데이터
 ///
-/// 7개 그룹, 14개 메뉴 아이템으로 구성.
+/// 7개 그룹, 15개 메뉴 아이템으로 구성.
 /// route가 null인 항목은 미구현 상태(탭 시 "준비 중입니다" 안내).
 abstract final class MenuConstants {
   /// 전체 메뉴 그룹 목록
@@ -55,7 +55,16 @@ abstract final class MenuConstants {
         MenuItem(id: 'field-check', label: '현장 점검'),
         MenuItem(id: 'claim-list', label: '클레임 현황', route: '/claim/list'),
         MenuItem(id: 'claims', label: '클레임 등록'),
-        MenuItem(id: 'suggestions', label: '제안하기'),
+        MenuItem(
+          id: 'suggestions',
+          label: '제안하기',
+          route: '/suggestion/register',
+        ),
+        MenuItem(
+          id: 'suggestion-list',
+          label: '내 제안/물류클레임',
+          route: '/suggestion/list',
+        ),
       ],
     ),
     // 6. 커뮤니티

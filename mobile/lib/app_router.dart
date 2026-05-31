@@ -25,6 +25,8 @@ import 'presentation/pages/product_search_page.dart';
 import 'presentation/pages/my_accounts_page.dart';
 import 'presentation/pages/product_search_result_page.dart';
 import 'presentation/pages/product_expiration_list_page.dart';
+import 'presentation/pages/suggestion_detail_page.dart';
+import 'presentation/pages/suggestion_list_page.dart';
 import 'presentation/pages/suggestion_register_page.dart';
 import 'presentation/pages/product_expiration_delete_page.dart';
 import 'presentation/pages/product_expiration_register_page.dart';
@@ -81,6 +83,8 @@ class AppRouter {
   static const String claimDetail = '/claim/detail';
   static const String claimRegister = '/claim/register';
   static const String suggestionRegister = '/suggestion/register';
+  static const String suggestionList = '/suggestion/list'; // 내 제안/물류클레임 목록
+  static const String suggestionDetail = '/suggestion/detail'; // 제안/물류클레임 상세
   static const String education = '/education';
   static const String educationList = '/education/list';
   static const String educationDetail = '/education/detail';
@@ -167,6 +171,12 @@ class AppRouter {
         },
         claimRegister: (context) => const ClaimRegisterPage(),
         suggestionRegister: (context) => const SuggestionRegisterPage(),
+        suggestionList: (context) => const SuggestionListPage(),
+        suggestionDetail: (context) {
+          final suggestionId =
+              ModalRoute.of(context)!.settings.arguments as int;
+          return SuggestionDetailPage(suggestionId: suggestionId);
+        },
         education: (context) => const EducationMainPage(),
         educationList: (context) {
           final category =
