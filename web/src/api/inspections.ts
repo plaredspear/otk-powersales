@@ -55,6 +55,7 @@ export interface InspectionDetail {
   accountId: number;
   themeName: string;
   themeId: number;
+  employeeId: number;
   employeeName: string;
   employeeOrgName: string | null;
   inspectionDate: string;
@@ -138,4 +139,28 @@ export async function createInspection(
     throw new Error(res.data.message || '현장점검 등록에 실패했습니다');
   }
   return res.data.data;
+}
+
+/** 수정 요청 — 등록과 동일 필드 셋 (사진 변경은 미지원, 본문 수정만). */
+export type UpdateInspectionRequest = CreateInspectionRequest;
+
+export async function updateInspection(
+  id: number,
+  request: UpdateInspectionRequest,
+): Promise<InspectionMutationResult> {
+  const res = await client.put<ApiResponse<InspectionMutationResult>>(
+    `/api/v1/admin/inspections/${id}`,
+    request,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '현장점검 수정에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function deleteInspection(id: number): Promise<void> {
+  const res = await client.delete<ApiResponse<unknown>>(`/api/v1/admin/inspections/${id}`);
+  if (!res.data.success) {
+    throw new Error(res.data.message || '현장점검 삭제에 실패했습니다');
+  }
 }

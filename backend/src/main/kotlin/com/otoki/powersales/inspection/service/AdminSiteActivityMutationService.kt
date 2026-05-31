@@ -8,6 +8,7 @@ import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.admin.AdminCreateSiteActivityRequest
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityMutationResponse
+import com.otoki.powersales.inspection.dto.admin.AdminUpdateSiteActivityRequest
 import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.enums.InspectionCategory
 import com.otoki.powersales.inspection.enums.InspectionFieldType
@@ -118,6 +119,116 @@ class AdminSiteActivityMutationService(
         }
 
         return AdminSiteActivityMutationResponse(id = saved.id, name = saved.name)
+    }
+
+    /**
+     * 현장점검 결과 수정 — SF 표준 Edit 폼 동등.
+     *
+     * 본문 필드 + lookup(거래처/사원/제품/테마) 재설정. 기존 sfid/name/owner/audit 보존.
+     * SiteActivity trigger 는 insert 전용이라 수정 부수효과 없음 — costCenterCode 는 사원 기준 재계산.
+     */
+    @Transactional
+    fun update(id: Long, request: AdminUpdateSiteActivityRequest): AdminSiteActivityMutationResponse {
+        val existing = siteActivityRepository.findByIdAndIsDeletedFalse(id)
+            ?: throw IllegalArgumentException("현장점검을 찾을 수 없습니다")
+
+        val category = InspectionCategory.fromJson(request.category)
+        val fieldType = InspectionFieldType.fromCode(request.fieldTypeCode)
+            ?: throw IllegalArgumentException("유효하지 않은 fieldTypeCode: ${request.fieldTypeCode}")
+        val activityDate = LocalDate.parse(request.inspectionDate)
+
+        val employee = employeeRepository.findById(request.employeeId)
+            .orElseThrow { IllegalArgumentException("점검 사원을 찾을 수 없습니다") }
+        val account = accountRepository.findById(request.accountId)
+            .orElseThrow { IllegalArgumentException("거래처를 찾을 수 없습니다") }
+        val theme = inspectionThemeRepository.findById(request.themeId)
+            .orElseThrow { IllegalArgumentException("테마를 찾을 수 없습니다") }
+
+        val product = request.productCode
+            ?.takeIf { category == InspectionCategory.OWN && it.isNotBlank() }
+            ?.let { productRepository.findByProductCode(it) }
+        if (category == InspectionCategory.OWN && product == null && !request.productCode.isNullOrBlank()) {
+            throw IllegalArgumentException("제품을 찾을 수 없습니다: ${request.productCode}")
+        }
+
+        val updated = SiteActivity(
+            id = existing.id,
+            sfid = existing.sfid,
+            name = existing.name,
+            activityDate = activityDate,
+            category = fieldType.displayName,
+            productType = category.storedValue,
+            description = request.description,
+            sapAccountCode = account.externalKey,
+            costCenterCode = employee.costCenterCode,
+            competitorName = request.competitorName,
+            competitorProductName = request.competitorProductName,
+            competitorActivityDescription = request.competitorActivity,
+            competitorProudctPrice = request.competitorProductPrice?.let { BigDecimal.valueOf(it.toLong()) },
+            sampleTastFlag = booleanToSampleTastFlag(request.competitorTasting),
+            salesQuantity = request.competitorSalesQuantity?.let { BigDecimal.valueOf(it.toLong()) },
+            isDeleted = false,
+            accountSfid = existing.accountSfid,
+            employeeSfid = existing.employeeSfid,
+            productSfid = existing.productSfid,
+            themeSfid = existing.themeSfid,
+            ownerSfid = existing.ownerSfid,
+            createdBySfid = existing.createdBySfid,
+            lastModifiedBySfid = existing.lastModifiedBySfid,
+            account = account,
+            employee = employee,
+            product = product,
+            inspectionTheme = theme,
+            ownerUser = existing.ownerUser,
+            ownerGroup = existing.ownerGroup,
+            createdBy = existing.createdBy,
+            lastModifiedBy = existing.lastModifiedBy,
+        ).also { it.createdAt = existing.createdAt }
+
+        val saved = siteActivityRepository.save(updated)
+        return AdminSiteActivityMutationResponse(id = saved.id, name = saved.name)
+    }
+
+    /** 현장점검 결과 삭제 — soft delete (Theme 와 동일 패턴, 운영 안전성). */
+    @Transactional
+    fun delete(id: Long) {
+        val existing = siteActivityRepository.findByIdAndIsDeletedFalse(id)
+            ?: throw IllegalArgumentException("현장점검을 찾을 수 없습니다")
+        val deleted = SiteActivity(
+            id = existing.id,
+            sfid = existing.sfid,
+            name = existing.name,
+            activityDate = existing.activityDate,
+            category = existing.category,
+            productType = existing.productType,
+            description = existing.description,
+            title = existing.title,
+            sapAccountCode = existing.sapAccountCode,
+            costCenterCode = existing.costCenterCode,
+            competitorName = existing.competitorName,
+            competitorProductName = existing.competitorProductName,
+            competitorActivityDescription = existing.competitorActivityDescription,
+            competitorProudctPrice = existing.competitorProudctPrice,
+            sampleTastFlag = existing.sampleTastFlag,
+            salesQuantity = existing.salesQuantity,
+            isDeleted = true,
+            accountSfid = existing.accountSfid,
+            employeeSfid = existing.employeeSfid,
+            productSfid = existing.productSfid,
+            themeSfid = existing.themeSfid,
+            ownerSfid = existing.ownerSfid,
+            createdBySfid = existing.createdBySfid,
+            lastModifiedBySfid = existing.lastModifiedBySfid,
+            account = existing.account,
+            employee = existing.employee,
+            product = existing.product,
+            inspectionTheme = existing.inspectionTheme,
+            ownerUser = existing.ownerUser,
+            ownerGroup = existing.ownerGroup,
+            createdBy = existing.createdBy,
+            lastModifiedBy = existing.lastModifiedBy,
+        ).also { it.createdAt = existing.createdAt }
+        siteActivityRepository.save(deleted)
     }
 
     private fun booleanToSampleTastFlag(value: Boolean?): String? =

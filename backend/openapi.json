@@ -1860,6 +1860,10 @@
           "description" : {
             "type" : [ "string", "null" ]
           },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "employeeName" : {
             "type" : "string"
           },
@@ -2437,6 +2441,58 @@
           },
           "productName" : {
             "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "AdminUpdateSiteActivityRequest" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "competitorActivity" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductPrice" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorSalesQuantity" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorTasting" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "fieldTypeCode" : {
+            "type" : "string"
+          },
+          "inspectionDate" : {
+            "type" : "string"
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "themeId" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -22705,6 +22761,31 @@
       }
     },
     "/api/v1/admin/inspections/{id}" : {
+      "delete" : {
+        "operationId" : "deleteInspection",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-controller" ]
+      },
       "get" : {
         "operationId" : "getInspectionDetail",
         "parameters" : [ {
@@ -22729,6 +22810,41 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAdminSiteActivityDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateInspection",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminUpdateSiteActivityRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminSiteActivityMutationResponse"
                 }
               }
             },

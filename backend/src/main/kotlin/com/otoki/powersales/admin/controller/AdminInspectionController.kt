@@ -9,6 +9,7 @@ import com.otoki.powersales.inspection.dto.admin.AdminCreateSiteActivityRequest
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityDetailResponse
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityListResponse
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityMutationResponse
+import com.otoki.powersales.inspection.dto.admin.AdminUpdateSiteActivityRequest
 import com.otoki.powersales.inspection.enums.InspectionCategory
 import com.otoki.powersales.inspection.enums.InspectionFieldType
 import com.otoki.powersales.inspection.service.AdminSiteActivityMutationService
@@ -17,9 +18,12 @@ import java.time.LocalDate
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
@@ -90,5 +94,26 @@ class AdminInspectionController(
     ): ResponseEntity<ApiResponse<AdminSiteActivityMutationResponse>> {
         val response = adminSiteActivityMutationService.create(request, photos)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
+    }
+
+    /** 현장점검 결과 수정 — SF 표준 Edit 폼 동등 (본문 필드 + lookup 재설정). */
+    @PutMapping("/{id}")
+    @RequiresSfPermission(entity = "site_activity", operation = SfPermissionOperation.EDIT)
+    fun updateInspection(
+        @PathVariable id: Long,
+        @RequestBody request: AdminUpdateSiteActivityRequest
+    ): ResponseEntity<ApiResponse<AdminSiteActivityMutationResponse>> {
+        val response = adminSiteActivityMutationService.update(id, request)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 현장점검 결과 삭제 — soft delete. */
+    @DeleteMapping("/{id}")
+    @RequiresSfPermission(entity = "site_activity", operation = SfPermissionOperation.DELETE)
+    fun deleteInspection(
+        @PathVariable id: Long
+    ): ResponseEntity<ApiResponse<Any?>> {
+        adminSiteActivityMutationService.delete(id)
+        return ResponseEntity.ok(ApiResponse.success(null as Any?, "현장점검이 삭제되었습니다"))
     }
 }

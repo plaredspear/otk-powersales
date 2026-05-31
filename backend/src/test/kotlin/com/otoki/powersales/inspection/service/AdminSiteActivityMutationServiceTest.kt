@@ -7,6 +7,7 @@ import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.admin.AdminCreateSiteActivityRequest
+import com.otoki.powersales.inspection.dto.admin.AdminUpdateSiteActivityRequest
 import com.otoki.powersales.inspection.entity.InspectionTheme
 import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.repository.InspectionThemeRepository
@@ -112,5 +113,60 @@ class AdminSiteActivityMutationServiceTest {
 
         assertThatThrownBy { service.create(request(), null) }
             .isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    private fun updateRequest() = AdminUpdateSiteActivityRequest(
+        themeId = 10L,
+        accountId = 1,
+        employeeId = 100L,
+        inspectionDate = "2026-05-02",
+        category = "OWN",
+        fieldTypeCode = "EVENT_SHELF",
+        description = "수정된 설명",
+        productCode = "P001",
+    )
+
+    @Test
+    fun `수정 시 기존 sfid·name 보존 + 본문·lookup 재설정`() {
+        val existing = SiteActivity(id = 7L, sfid = "a0X000", name = "SA00000007", isDeleted = false)
+        every { siteActivityRepository.findByIdAndIsDeletedFalse(7L) } returns existing
+        every { employeeRepository.findById(100L) } returns Optional.of(employee())
+        every { accountRepository.findById(1) } returns Optional.of(account())
+        every { inspectionThemeRepository.findById(10L) } returns Optional.of(theme())
+        every { productRepository.findByProductCode("P001") } returns Product(id = 5, name = "제품A", productCode = "P001")
+        val saved = slot<SiteActivity>()
+        every { siteActivityRepository.save(capture(saved)) } answers { saved.captured }
+
+        service.update(7L, updateRequest())
+
+        val c = saved.captured
+        assertThat(c.id).isEqualTo(7L)
+        assertThat(c.sfid).isEqualTo("a0X000")
+        assertThat(c.name).isEqualTo("SA00000007")
+        assertThat(c.category).isEqualTo("행사매대")
+        assertThat(c.description).isEqualTo("수정된 설명")
+        assertThat(c.costCenterCode).isEqualTo("CC1")
+        assertThat(c.isDeleted).isFalse()
+    }
+
+    @Test
+    fun `수정 대상이 없으면 예외`() {
+        every { siteActivityRepository.findByIdAndIsDeletedFalse(404L) } returns null
+
+        assertThatThrownBy { service.update(404L, updateRequest()) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `삭제 시 soft delete 로 isDeleted true 저장`() {
+        val existing = SiteActivity(id = 7L, name = "SA00000007", isDeleted = false)
+        every { siteActivityRepository.findByIdAndIsDeletedFalse(7L) } returns existing
+        val saved = slot<SiteActivity>()
+        every { siteActivityRepository.save(capture(saved)) } answers { saved.captured }
+
+        service.delete(7L)
+
+        assertThat(saved.captured.id).isEqualTo(7L)
+        assertThat(saved.captured.isDeleted).isTrue()
     }
 }

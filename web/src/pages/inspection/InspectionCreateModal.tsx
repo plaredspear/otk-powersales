@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   App,
   DatePicker,
@@ -11,18 +11,24 @@ import {
   Upload,
 } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
-import type { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAccounts } from '@/api/account';
 import { fetchProducts } from '@/api/product';
 import { fetchThemes } from '@/api/inspectionThemes';
 import { fetchUsers } from '@/api/user';
-import { useCreateInspection } from '@/hooks/inspections/useInspections';
-import type { InspectionCategory, InspectionFieldTypeCode } from '@/api/inspections';
+import { useCreateInspection, useUpdateInspection } from '@/hooks/inspections/useInspections';
+import type {
+  InspectionCategory,
+  InspectionDetail,
+  InspectionFieldTypeCode,
+} from '@/api/inspections';
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  /** 지정 시 수정 모드 — 상세 데이터로 초기값 채움. null/undefined 면 등록 모드. */
+  editDetail?: InspectionDetail | null;
 }
 
 interface FormValues {
@@ -51,16 +57,56 @@ const FIELD_TYPE_OPTIONS = [
 
 const MAX_PHOTO = 10;
 
-export default function InspectionCreateModal({ open, onClose }: Props) {
+interface Option {
+  value: number | string;
+  label: string;
+}
+
+export default function InspectionCreateModal({ open, onClose, editDetail }: Props) {
   const { message } = App.useApp();
   const [form] = Form.useForm<FormValues>();
   const category = Form.useWatch('category', form);
   const createMutation = useCreateInspection();
+  const updateMutation = useUpdateInspection();
+  const isEdit = editDetail != null;
 
   const [accountKeyword, setAccountKeyword] = useState('');
   const [productKeyword, setProductKeyword] = useState('');
   const [employeeKeyword, setEmployeeKeyword] = useState('');
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  // 수정 진입 시 현재 선택값을 옵션에 보존(검색 결과 밖일 수 있음).
+  const [accountPatch, setAccountPatch] = useState<Option[]>([]);
+  const [productPatch, setProductPatch] = useState<Option[]>([]);
+  const [employeePatch, setEmployeePatch] = useState<Option[]>([]);
+
+  // 수정 모드 진입 시 상세 데이터로 폼 + 보존 옵션 채움.
+  useEffect(() => {
+    if (open && editDetail) {
+      form.setFieldsValue({
+        category: editDetail.category as InspectionCategory,
+        themeId: editDetail.themeId,
+        accountId: editDetail.accountId,
+        employeeId: editDetail.employeeId,
+        inspectionDate: dayjs(editDetail.inspectionDate),
+        fieldTypeCode: editDetail.fieldTypeCode as InspectionFieldTypeCode,
+        description: editDetail.description ?? undefined,
+        productCode: editDetail.productCode ?? undefined,
+        competitorName: editDetail.competitorName ?? undefined,
+        competitorActivity: editDetail.competitorActivity ?? undefined,
+        competitorTasting: editDetail.competitorTasting ?? undefined,
+        competitorProductName: editDetail.competitorProductName ?? undefined,
+        competitorProductPrice: editDetail.competitorProductPrice ?? undefined,
+        competitorSalesQuantity: editDetail.competitorSalesQuantity ?? undefined,
+      });
+      setAccountPatch([{ value: editDetail.accountId, label: editDetail.accountName }]);
+      setEmployeePatch([{ value: editDetail.employeeId, label: editDetail.employeeName }]);
+      setProductPatch(
+        editDetail.productCode
+          ? [{ value: editDetail.productCode, label: editDetail.productName ?? editDetail.productCode }]
+          : [],
+      );
+    }
+  }, [open, editDetail, form]);
 
   const { data: themes } = useQuery({
     queryKey: ['inspection-create', 'themes'],
@@ -83,52 +129,95 @@ export default function InspectionCreateModal({ open, onClose }: Props) {
     enabled: open,
   });
 
+  const mergeOptions = (patch: Option[], fromSearch: Option[]): Option[] => {
+    const merged = [...patch];
+    for (const opt of fromSearch) {
+      if (!merged.some((m) => m.value === opt.value)) merged.push(opt);
+    }
+    return merged;
+  };
+
+  const themeOptions = (themes?.content ?? []).map((t) => ({
+    value: t.id,
+    label: `${t.name ?? ''} ${t.title ?? ''}`.trim(),
+  }));
+  const accountOptions = mergeOptions(
+    accountPatch,
+    (accounts?.content ?? []).map((a) => ({
+      value: a.id,
+      label: `${a.name ?? ''}${a.externalKey ? ` (${a.externalKey})` : ''}`,
+    })),
+  );
+  const productOptions = mergeOptions(
+    productPatch,
+    (products?.content ?? []).map((p) => ({
+      value: p.productCode ?? '',
+      label: `${p.name ?? ''}${p.productCode ? ` (${p.productCode})` : ''}`,
+    })),
+  );
+  const employeeOptions = mergeOptions(
+    employeePatch,
+    (employees?.content ?? []).map((u) => ({
+      value: u.id,
+      label: `${u.name ?? u.username} (${u.employeeCode})`,
+    })),
+  );
+
   const close = () => {
     form.resetFields();
     setFileList([]);
     setAccountKeyword('');
     setProductKeyword('');
     setEmployeeKeyword('');
+    setAccountPatch([]);
+    setProductPatch([]);
+    setEmployeePatch([]);
     onClose();
   };
 
   const handleSubmit = async () => {
     const v = await form.validateFields();
+    const request = {
+      themeId: v.themeId,
+      accountId: v.accountId,
+      employeeId: v.employeeId,
+      inspectionDate: v.inspectionDate.format('YYYY-MM-DD'),
+      category: v.category,
+      fieldTypeCode: v.fieldTypeCode,
+      description: v.description ?? null,
+      productCode: v.category === 'OWN' ? v.productCode ?? null : null,
+      competitorName: v.category === 'COMPETITOR' ? v.competitorName ?? null : null,
+      competitorActivity: v.category === 'COMPETITOR' ? v.competitorActivity ?? null : null,
+      competitorTasting: v.category === 'COMPETITOR' ? v.competitorTasting ?? null : null,
+      competitorProductName: v.category === 'COMPETITOR' ? v.competitorProductName ?? null : null,
+      competitorProductPrice: v.category === 'COMPETITOR' ? v.competitorProductPrice ?? null : null,
+      competitorSalesQuantity: v.category === 'COMPETITOR' ? v.competitorSalesQuantity ?? null : null,
+    };
     try {
-      await createMutation.mutateAsync({
-        request: {
-          themeId: v.themeId,
-          accountId: v.accountId,
-          employeeId: v.employeeId,
-          inspectionDate: v.inspectionDate.format('YYYY-MM-DD'),
-          category: v.category,
-          fieldTypeCode: v.fieldTypeCode,
-          description: v.description ?? null,
-          productCode: v.category === 'OWN' ? v.productCode ?? null : null,
-          competitorName: v.category === 'COMPETITOR' ? v.competitorName ?? null : null,
-          competitorActivity: v.category === 'COMPETITOR' ? v.competitorActivity ?? null : null,
-          competitorTasting: v.category === 'COMPETITOR' ? v.competitorTasting ?? null : null,
-          competitorProductName: v.category === 'COMPETITOR' ? v.competitorProductName ?? null : null,
-          competitorProductPrice: v.category === 'COMPETITOR' ? v.competitorProductPrice ?? null : null,
-          competitorSalesQuantity: v.category === 'COMPETITOR' ? v.competitorSalesQuantity ?? null : null,
-        },
-        photos: fileList.map((f) => f.originFileObj as File).filter(Boolean),
-      });
-      message.success('현장점검이 등록되었습니다');
+      if (isEdit && editDetail) {
+        await updateMutation.mutateAsync({ id: editDetail.id, request });
+        message.success('현장점검이 수정되었습니다');
+      } else {
+        await createMutation.mutateAsync({
+          request,
+          photos: fileList.map((f) => f.originFileObj as File).filter(Boolean),
+        });
+        message.success('현장점검이 등록되었습니다');
+      }
       close();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '등록에 실패했습니다');
+      message.error(e instanceof Error ? e.message : '저장에 실패했습니다');
     }
   };
 
   return (
     <Modal
-      title="현장점검 등록"
+      title={isEdit ? '현장점검 수정' : '현장점검 등록'}
       open={open}
       onOk={handleSubmit}
       onCancel={close}
-      confirmLoading={createMutation.isPending}
-      okText="등록"
+      confirmLoading={createMutation.isPending || updateMutation.isPending}
+      okText={isEdit ? '수정' : '등록'}
       cancelText="취소"
       width={560}
       destroyOnClose
@@ -143,15 +232,7 @@ export default function InspectionCreateModal({ open, onClose }: Props) {
           />
         </Form.Item>
         <Form.Item label="테마" name="themeId" rules={[{ required: true, message: '테마를 선택하세요' }]}>
-          <Select
-            showSearch
-            placeholder="테마 선택"
-            optionFilterProp="label"
-            options={(themes?.content ?? []).map((t) => ({
-              value: t.id,
-              label: `${t.name ?? ''} ${t.title ?? ''}`.trim(),
-            }))}
-          />
+          <Select showSearch placeholder="테마 선택" optionFilterProp="label" options={themeOptions} />
         </Form.Item>
         <Form.Item label="거래처" name="accountId" rules={[{ required: true, message: '거래처를 선택하세요' }]}>
           <Select
@@ -159,10 +240,7 @@ export default function InspectionCreateModal({ open, onClose }: Props) {
             placeholder="거래처 검색"
             filterOption={false}
             onSearch={setAccountKeyword}
-            options={(accounts?.content ?? []).map((a) => ({
-              value: a.id,
-              label: `${a.name ?? ''}${a.externalKey ? ` (${a.externalKey})` : ''}`,
-            }))}
+            options={accountOptions}
           />
         </Form.Item>
         <Form.Item label="점검사원" name="employeeId" rules={[{ required: true, message: '점검사원을 선택하세요' }]}>
@@ -171,10 +249,7 @@ export default function InspectionCreateModal({ open, onClose }: Props) {
             placeholder="점검사원 검색 (이름/사번)"
             filterOption={false}
             onSearch={setEmployeeKeyword}
-            options={(employees?.content ?? []).map((u) => ({
-              value: u.id,
-              label: `${u.name ?? u.username} (${u.employeeCode})`,
-            }))}
+            options={employeeOptions}
           />
         </Form.Item>
         <Form.Item label="점검일" name="inspectionDate" rules={[{ required: true, message: '점검일을 선택하세요' }]}>
@@ -193,10 +268,7 @@ export default function InspectionCreateModal({ open, onClose }: Props) {
                 placeholder="제품 검색"
                 filterOption={false}
                 onSearch={setProductKeyword}
-                options={(products?.content ?? []).map((p) => ({
-                  value: p.productCode ?? '',
-                  label: `${p.name ?? ''}${p.productCode ? ` (${p.productCode})` : ''}`,
-                }))}
+                options={productOptions}
               />
             </Form.Item>
             <Form.Item label="설명" name="description">
@@ -228,18 +300,20 @@ export default function InspectionCreateModal({ open, onClose }: Props) {
           </>
         )}
 
-        <Form.Item label={`사진 (최대 ${MAX_PHOTO}건)`}>
-          <Upload
-            listType="picture-card"
-            fileList={fileList}
-            beforeUpload={() => false}
-            onChange={({ fileList: fl }) => setFileList(fl.slice(0, MAX_PHOTO))}
-            accept="image/*"
-            multiple
-          >
-            {fileList.length < MAX_PHOTO && <div>+ 업로드</div>}
-          </Upload>
-        </Form.Item>
+        {!isEdit && (
+          <Form.Item label={`사진 (최대 ${MAX_PHOTO}건)`}>
+            <Upload
+              listType="picture-card"
+              fileList={fileList}
+              beforeUpload={() => false}
+              onChange={({ fileList: fl }) => setFileList(fl.slice(0, MAX_PHOTO))}
+              accept="image/*"
+              multiple
+            >
+              {fileList.length < MAX_PHOTO && <div>+ 업로드</div>}
+            </Upload>
+          </Form.Item>
+        )}
       </Form>
     </Modal>
   );
