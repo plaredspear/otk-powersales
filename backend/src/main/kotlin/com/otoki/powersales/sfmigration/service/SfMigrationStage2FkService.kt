@@ -108,7 +108,7 @@ class SfMigrationStage2FkService(
             }
 
             val columns = cols.mapNotNull { sfidColumn ->
-                val spec = deriveFkResolveSpec(sfidColumn) ?: return@mapNotNull null
+                val spec = deriveFkResolveSpec(sfidColumn, tableName) ?: return@mapNotNull null
                 if (!columnExists(tableName, spec.idColumn)) {
                     errors.add("[$tableName] $sfidColumn 존재하나 짝의 ${spec.idColumn} FK 컬럼 부재")
                     return@mapNotNull null

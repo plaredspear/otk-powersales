@@ -34,6 +34,9 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
     "product_barcode",
     "push_message",
     "upload_file",
+    // SF DKRetail__SiteAcitivity__c.OwnerId.referenceTo = [Group, User] polymorphic.
+    // site_activity.owner_sfid → owner_user_id (005) / owner_group_id (00G) 분기.
+    "site_activity",
 )
 
 /**
@@ -193,7 +196,10 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
     "employee_input_criteria_master" to (
         "employee_input_criteria_master" to "employee_input_criteria_master_id"
     ),
-    "category" to ("employee_input_criteria_master" to "employee_input_criteria_master_id"),
+    // EmployeeInputCriteriaMaster.Category__c → account_category_master 참조 (category_sfid → category_id).
+    // 짝 FK 컬럼은 category_id, 참조 대상은 employee_input_criteria_master 가 아니라 account_category_master.
+    // Flyway backfill(V202605262256__backfill_..._category_id) 과 동일한 lookup — 이중 안전망(idempotent).
+    "category" to ("account_category_master" to "account_category_master_id"),
     // Spec #780 — Profile / UserRole entity 신규 시스템 편입.
     "profile" to ("profile" to "profile_id"),
     "user_role" to ("user_role" to "user_role_id"),
@@ -223,15 +229,30 @@ internal val SKIP_FK_PREFIXES: Set<String> = setOf(
 )
 
 /**
+ * 같은 prefix 라도 source 테이블에 따라 ref 대상이 갈리는 override 표.
+ *
+ * `manager_sfid` 는 두 테이블이 서로 다른 entity 를 self/cross reference:
+ *   - employee.manager_sfid  → employee.employee_id (Employee self-reference, FK_PREFIX_MAPPING 기본값)
+ *   - user.manager_sfid      → user.user_id          (User self-reference, SF User.ManagerId)
+ * 단일 prefix 매핑으로는 동시 표현 불가 → (sourceTable, prefix) → (refTable, refIdColumn) override.
+ */
+internal val TABLE_SCOPED_FK_OVERRIDE: Map<Pair<String, String>, Pair<String, String>> = mapOf(
+    ("user" to "manager") to ("user" to "user_id"),
+)
+
+/**
  * sfid 컬럼명에서 FK resolve spec derive.
  *
  *   - `*_sfid` 컬럼만 대상 (단독 `sfid` 는 entity 자신의 PK lookup 용이라 제외)
  *   - prefix = sfid 컬럼명 - `_sfid`
  *   - SKIP_FK_PREFIXES 에 있으면 null
  *   - id 컬럼명: `owner` prefix → `owner_user_id` (polymorphic), 그 외 → `<prefix>_id`
- *   - 대상 table: FK_PREFIX_MAPPING 우선, 없으면 prefix 자체를 테이블명 + `<prefix>_id` 로 추론
+ *   - 대상 table: TABLE_SCOPED_FK_OVERRIDE (sourceTable 별) → FK_PREFIX_MAPPING → prefix 자체 추론 순
+ *
+ * @param sourceTable sfid 컬럼이 속한 테이블명. 같은 prefix 가 테이블별로 다른 entity 를
+ *   참조하는 케이스 (manager 등) override 에 사용. null 이면 prefix 전역 매핑만 적용.
  */
-internal fun deriveFkResolveSpec(sfidColumn: String): FkResolveSpec? {
+internal fun deriveFkResolveSpec(sfidColumn: String, sourceTable: String? = null): FkResolveSpec? {
     if (sfidColumn == "sfid") return null
     if (!sfidColumn.endsWith("_sfid")) return null
     val prefix = sfidColumn.removeSuffix("_sfid")
@@ -244,7 +265,8 @@ internal fun deriveFkResolveSpec(sfidColumn: String): FkResolveSpec? {
         "theme" -> "inspection_theme_id" // SiteActivity.ThemeId__c → inspection_theme 참조 (site_activity.theme_sfid → inspection_theme_id)
         else -> "${prefix}_id"
     }
-    val (refTable, refIdColumn) = FK_PREFIX_MAPPING[prefix]
+    val (refTable, refIdColumn) = sourceTable?.let { TABLE_SCOPED_FK_OVERRIDE[it to prefix] }
+        ?: FK_PREFIX_MAPPING[prefix]
         ?: (prefix to "${prefix}_id")
 
     return FkResolveSpec(sfidColumn, idColumn, refTable, refIdColumn)

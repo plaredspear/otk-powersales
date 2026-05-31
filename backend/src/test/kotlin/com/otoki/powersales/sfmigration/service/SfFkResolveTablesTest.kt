@@ -60,12 +60,30 @@ class SfFkResolveTablesTest {
     inner class AliasPrefix {
 
         @Test
-        @DisplayName("manager_sfid → manager_id, ref employee.employee_id")
+        @DisplayName("manager_sfid (sourceTable 없음) → manager_id, ref employee.employee_id (기본값)")
         fun managerAlias() {
             val spec = deriveFkResolveSpec("manager_sfid")!!
             assertThat(spec.idColumn).isEqualTo("manager_id")
             assertThat(spec.refTable).isEqualTo("employee")
             assertThat(spec.refIdColumn).isEqualTo("employee_id")
+        }
+
+        @Test
+        @DisplayName("employee.manager_sfid → manager_id, ref employee.employee_id (Employee self-reference)")
+        fun managerAliasEmployeeScoped() {
+            val spec = deriveFkResolveSpec("manager_sfid", "employee")!!
+            assertThat(spec.idColumn).isEqualTo("manager_id")
+            assertThat(spec.refTable).isEqualTo("employee")
+            assertThat(spec.refIdColumn).isEqualTo("employee_id")
+        }
+
+        @Test
+        @DisplayName("user.manager_sfid → manager_id, ref user.user_id (User self-reference override)")
+        fun managerAliasUserScoped() {
+            val spec = deriveFkResolveSpec("manager_sfid", "user")!!
+            assertThat(spec.idColumn).isEqualTo("manager_id")
+            assertThat(spec.refTable).isEqualTo("user")
+            assertThat(spec.refIdColumn).isEqualTo("user_id")
         }
 
         @Test
@@ -76,10 +94,12 @@ class SfFkResolveTablesTest {
         }
 
         @Test
-        @DisplayName("category_sfid → category_id, ref employee_input_criteria_master")
+        @DisplayName("category_sfid → category_id, ref account_category_master.account_category_master_id")
         fun categoryAlias() {
             val spec = deriveFkResolveSpec("category_sfid")!!
-            assertThat(spec.refTable).isEqualTo("employee_input_criteria_master")
+            assertThat(spec.idColumn).isEqualTo("category_id")
+            assertThat(spec.refTable).isEqualTo("account_category_master")
+            assertThat(spec.refIdColumn).isEqualTo("account_category_master_id")
         }
 
         @Test
@@ -157,6 +177,14 @@ class SfFkResolveTablesTest {
             // spec #790 은 user_or_group 만 추가 — 기존 owner/related 표는 그대로
             assertThat(POLYMORPHIC_OWNER_TABLES).contains("organization", "order_request")
             assertThat(POLYMORPHIC_RELATED_TABLES).contains("group")
+        }
+
+        @Test
+        @DisplayName("site_activity 는 POLYMORPHIC_OWNER_TABLES 에 포함 — owner_sfid 의 005/00G 분기 처리")
+        fun siteActivityPolymorphicOwner() {
+            // SF DKRetail__SiteAcitivity__c.OwnerId.referenceTo = [Group, User].
+            // 미등록 시 owner_group_id (00G owner) 가 NULL 로 남는다.
+            assertThat(POLYMORPHIC_OWNER_TABLES).contains("site_activity")
         }
     }
 
