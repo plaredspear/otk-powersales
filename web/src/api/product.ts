@@ -51,6 +51,15 @@ export interface ProductDetail {
   claimManagement: string | null;
   createdAt: string;
   lastModifiedAt: string;
+  barcodes: ProductBarcodeItem[];
+}
+
+export interface ProductBarcodeItem {
+  id: number;
+  barcode: string | null;
+  unit: string | null;
+  sortOrder: string | null;
+  productName: string | null;
 }
 
 export interface InventorySearchRequest {

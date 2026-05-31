@@ -15356,6 +15356,27 @@
         },
         "type" : "object"
       },
+      "ProductBarcodeItem" : {
+        "properties" : {
+          "barcode" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "sortOrder" : {
+            "type" : [ "string", "null" ]
+          },
+          "unit" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "ProductDetail" : {
         "properties" : {
           "allergen" : {
@@ -15363,6 +15384,12 @@
           },
           "barcode" : {
             "type" : [ "string", "null" ]
+          },
+          "barcodes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProductBarcodeItem"
+            },
+            "type" : "array"
           },
           "boxReceivingQuantity" : {
             "type" : [ "number", "null" ]

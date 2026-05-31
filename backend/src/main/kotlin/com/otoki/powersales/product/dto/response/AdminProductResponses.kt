@@ -1,6 +1,7 @@
 package com.otoki.powersales.product.dto.response
 
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.entity.ProductBarcode
 
 data class ProductListResponse(
     val content: List<ProductListItem>,
@@ -112,7 +113,8 @@ data class ProductDetail(
     val manufactureDetail: String?,
     val claimManagement: String?,
     val createdAt: String,
-    val lastModifiedAt: String
+    val lastModifiedAt: String,
+    val barcodes: List<ProductBarcodeItem>
 ) {
     companion object {
         // SF 레거시 수식 `IMAGE(ImgRefPathTXT__c + ImgRefPath_*__c)` 와 동등.
@@ -123,7 +125,7 @@ data class ProductDetail(
             return baseUrl.trimEnd('/') + "/" + encodedPath.trimStart('/')
         }
 
-        fun from(product: Product): ProductDetail = ProductDetail(
+        fun from(product: Product, barcodes: List<ProductBarcode> = emptyList()): ProductDetail = ProductDetail(
             id = product.id,
             productCode = product.productCode,
             name = product.name,
@@ -161,7 +163,32 @@ data class ProductDetail(
             manufactureDetail = product.manufactureDetail,
             claimManagement = product.claimManagement,
             createdAt = product.createdAt.toString(),
-            lastModifiedAt = product.updatedAt.toString()
+            lastModifiedAt = product.updatedAt.toString(),
+            barcodes = barcodes
+                .filter { it.isDeleted != true }
+                .sortedBy { it.sortOrder }
+                .map { ProductBarcodeItem.from(it) }
+        )
+    }
+}
+
+/**
+ * 제품 바코드 항목 (SF ProductBarcode__c related list 동등)
+ */
+data class ProductBarcodeItem(
+    val id: Int,
+    val barcode: String?,
+    val unit: String?,
+    val sortOrder: String?,
+    val productName: String?
+) {
+    companion object {
+        fun from(entity: ProductBarcode): ProductBarcodeItem = ProductBarcodeItem(
+            id = entity.id,
+            barcode = entity.barcode,
+            unit = entity.unit,
+            sortOrder = entity.sortOrder,
+            productName = entity.productName
         )
     }
 }
