@@ -10,8 +10,11 @@
  *      → input/sharing-rule-target.csv
  *   2) roles/<role>.role-meta.xml
  *      → input/user-role-hierarchy.csv (DeveloperName + parentRole DeveloperName)
- *   3) profiles/<profile>.profile-meta.xml
- *      → input/profile-flags.csv (Profile Name + 5 권한 비트)
+ *   3) profiles/<profile>.profile-meta.xml + (선택) profile_object_permissions.csv
+ *      → input/profile-flags.csv (Profile Name + 5 권한 비트 + object_permissions JSON)
+ *      objectPermissions 는 Profile XML 에 비어 내려오므로 (SF retrieve 가 SObject 동반 없이는
+ *      채우지 않음), extract-csv.sh 의 ObjectPermissions SOQL 결과 (profile_object_permissions.csv) 를
+ *      Profile 별로 묶어 JSON 컬럼으로 합친다. CSV 부재 시 빈 JSON (XML-only 동작 하위호환).
  *   4) permissionsets/<set>.permissionset-meta.xml
  *      → input/permission-set-flags.csv (PermissionSet Name + 시스템 권한 비트 + object_permissions JSON)
  *
@@ -29,6 +32,7 @@
 
 @file:DependsOn("com.opencsv:opencsv:5.9")
 
+import com.opencsv.CSVReader
 import com.opencsv.CSVWriter
 import org.w3c.dom.Element
 import org.w3c.dom.Node
@@ -91,6 +95,22 @@ fun Element.childElements(name: String): Sequence<Element> =
 
 fun Element.childText(name: String): String? =
     childElements(name).firstOrNull()?.textContent?.takeIf { it.isNotBlank() }
+
+// =============================================================================
+// 자연 키 디코딩
+// =============================================================================
+
+// SF retrieve 는 메타데이터 파일명의 특수문자를 URL 인코딩한다 (예: '6.조장' → '6%2E조장',
+// '마케팅(super)' → '마케팅%28super%29', 'A + B' → 'A %2B B'). 파일명에서 추출한 자연 키
+// (profileName / permissionSetName 등) 는 디코딩해야 SOQL 출처의 평문 Name (profile.name,
+// permission_set.name) 과 Stage2 fk resolve 에서 정확 일치 매칭된다. 디코딩 누락 시 '.' 등 특수문자
+// 포함 Profile (1.본부장 ~ 12.마케팅, 6.조장 등) 의 profile_id resolve 가 전량 실패한다.
+fun decodeMetaName(fileBaseName: String): String =
+    try {
+        java.net.URLDecoder.decode(fileBaseName, "UTF-8")
+    } catch (_: Exception) {
+        fileBaseName
+    }
 
 // =============================================================================
 // 1) sharingRules — sharing-rule.csv + sharing-rule-condition.csv + sharing-rule-target.csv
@@ -211,6 +231,71 @@ val PROFILE_PERMISSIONS_OF_INTEREST = listOf(
     "ViewAllData", "ModifyAllData", "ViewAllUsers", "ManageUsers", "ApiEnabled",
 )
 
+// profile_object_permissions.csv (extract-csv.sh ObjectPermissions SOQL 출력) 를 Profile 이름별로 묶는다.
+// 헤더: Parent.Profile.Name, SobjectType, PermissionsRead, PermissionsCreate, PermissionsEdit,
+//       PermissionsDelete, PermissionsViewAllRecords, PermissionsModifyAllRecords.
+// 결과: profileName → objectPermissions JSON (PermissionSet XML 직렬화와 동일 구조/키).
+// CSV 부재 시 빈 맵 — XML-only 하위호환 (모든 Profile 의 object_permissions 가 "{}").
+fun loadProfileObjectPermissions(): Map<String, String> {
+    val csv = out.resolve("profile_object_permissions.csv")
+    if (!csv.isFile) {
+        println("[profile-flags] profile_object_permissions.csv 부재 — object_permissions 는 빈 JSON 으로 적재")
+        return emptyMap()
+    }
+    // profileName → (SobjectType → 6 비트 맵)
+    val byProfile = LinkedHashMap<String, LinkedHashMap<String, Map<String, Boolean>>>()
+    CSVReader(csv.reader()).use { r ->
+        val header = r.readNext() ?: return emptyMap()
+        val col = header.withIndex().associate { (i, h) -> h.trim() to i }
+        fun idx(vararg names: String): Int = names.firstNotNullOfOrNull { col[it] } ?: -1
+        val cProfile = idx("Parent.Profile.Name", "Profile.Name")
+        val cObject = idx("SobjectType")
+        val cRead = idx("PermissionsRead")
+        val cCreate = idx("PermissionsCreate")
+        val cEdit = idx("PermissionsEdit")
+        val cDelete = idx("PermissionsDelete")
+        val cViewAll = idx("PermissionsViewAllRecords")
+        val cModifyAll = idx("PermissionsModifyAllRecords")
+        require(cProfile >= 0 && cObject >= 0) {
+            "profile_object_permissions.csv 헤더에 Parent.Profile.Name / SobjectType 부재: ${header.toList()}"
+        }
+        fun cell(row: Array<String>, i: Int): Boolean =
+            i >= 0 && i < row.size && row[i].trim().equals("true", ignoreCase = true)
+        var row = r.readNext()
+        while (row != null) {
+            val profileName = row.getOrNull(cProfile)?.trim().orEmpty()
+            val sobject = row.getOrNull(cObject)?.trim().orEmpty()
+            if (profileName.isNotEmpty() && sobject.isNotEmpty()) {
+                byProfile.getOrPut(profileName) { LinkedHashMap() }[sobject] = linkedMapOf(
+                    "viewAllRecords" to cell(row, cViewAll),
+                    "modifyAllRecords" to cell(row, cModifyAll),
+                    "allowRead" to cell(row, cRead),
+                    "allowCreate" to cell(row, cCreate),
+                    "allowEdit" to cell(row, cEdit),
+                    "allowDelete" to cell(row, cDelete),
+                )
+            }
+            row = r.readNext()
+        }
+    }
+    // SObject → 6비트 맵을 JSON 으로 직렬화 (PermissionSet 블록과 동일 형식).
+    return byProfile.mapValues { (_, objects) ->
+        val sb = StringBuilder("{")
+        objects.entries.forEachIndexed { oi, (obj, perms) ->
+            if (oi > 0) sb.append(",")
+            sb.append("\"").append(obj).append("\":{")
+            perms.entries.forEachIndexed { pi, (k, v) ->
+                if (pi > 0) sb.append(",")
+                sb.append("\"").append(k).append("\":").append(v)
+            }
+            sb.append("}")
+        }
+        sb.append("}")
+        sb.toString()
+    }
+}
+
+val profileObjectPermissions = loadProfileObjectPermissions()
 var profileCount = 0
 
 CSVWriter(PrintWriter(profileFlagsCsv)).use { w ->
@@ -218,11 +303,12 @@ CSVWriter(PrintWriter(profileFlagsCsv)).use { w ->
         "profileName",
         "permissionsViewAllData", "permissionsModifyAllData", "permissionsViewAllUsers",
         "permissionsManageUsers", "permissionsApiEnabled",
+        "objectPermissionsJson",
     ))
 
     if (profilesDir.isDirectory) {
         profilesDir.listFiles { f -> f.name.endsWith(".profile-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
-            val profileName = file.name.removeSuffix(".profile-meta.xml")
+            val profileName = decodeMetaName(file.name.removeSuffix(".profile-meta.xml"))
             val root = parseXml(file)
 
             val flags = PROFILE_PERMISSIONS_OF_INTEREST.map { permName -> permName to false }.toMap().toMutableMap()
@@ -239,13 +325,15 @@ CSVWriter(PrintWriter(profileFlagsCsv)).use { w ->
                 flags["ViewAllUsers"].toString(),
                 flags["ManageUsers"].toString(),
                 flags["ApiEnabled"].toString(),
+                profileObjectPermissions[profileName] ?: "{}",
             ))
             profileCount++
         }
     }
 }
 
-println("[profile-flags] $profileCount 건 → $profileFlagsCsv")
+val profileObjPermCount = profileObjectPermissions.size
+println("[profile-flags] $profileCount 건 → $profileFlagsCsv (object_permissions 보유 Profile $profileObjPermCount 건)")
 
 // =============================================================================
 // 4) permissionsets — permission-set-flags.csv (시스템 권한 비트 + object_permissions JSON)
@@ -263,7 +351,7 @@ CSVWriter(PrintWriter(permsetFlagsCsv)).use { w ->
 
     if (permsetsDir.isDirectory) {
         permsetsDir.listFiles { f -> f.name.endsWith(".permissionset-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
-            val permsetName = file.name.removeSuffix(".permissionset-meta.xml")
+            val permsetName = decodeMetaName(file.name.removeSuffix(".permissionset-meta.xml"))
             val root = parseXml(file)
 
             var viewAllData = false
@@ -462,7 +550,7 @@ CSVWriter(PrintWriter(profileRecordTypeCsv)).use { w ->
 
     if (profilesDir.isDirectory) {
         profilesDir.listFiles { f -> f.name.endsWith(".profile-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
-            val profileName = file.name.removeSuffix(".profile-meta.xml")
+            val profileName = decodeMetaName(file.name.removeSuffix(".profile-meta.xml"))
             try {
                 val root = parseXml(file)
                 root.childElements("recordTypeVisibilities").forEach { rtv ->
@@ -497,7 +585,7 @@ CSVWriter(PrintWriter(permSetRecordTypeCsv)).use { w ->
 
     if (permsetsDir.isDirectory) {
         permsetsDir.listFiles { f -> f.name.endsWith(".permissionset-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
-            val permsetName = file.name.removeSuffix(".permissionset-meta.xml")
+            val permsetName = decodeMetaName(file.name.removeSuffix(".permissionset-meta.xml"))
             try {
                 val root = parseXml(file)
                 root.childElements("recordTypeVisibilities").forEach { rtv ->
@@ -534,7 +622,7 @@ CSVWriter(PrintWriter(profileFieldPermissionCsv)).use { w ->
 
     if (profilesDir.isDirectory) {
         profilesDir.listFiles { f -> f.name.endsWith(".profile-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
-            val profileName = file.name.removeSuffix(".profile-meta.xml")
+            val profileName = decodeMetaName(file.name.removeSuffix(".profile-meta.xml"))
             try {
                 val root = parseXml(file)
                 root.childElements("fieldPermissions").forEach { fp ->
@@ -569,7 +657,7 @@ CSVWriter(PrintWriter(permSetFieldPermissionCsv)).use { w ->
 
     if (permsetsDir.isDirectory) {
         permsetsDir.listFiles { f -> f.name.endsWith(".permissionset-meta.xml") }?.sortedBy { it.name }?.forEach { file ->
-            val permsetName = file.name.removeSuffix(".permissionset-meta.xml")
+            val permsetName = decodeMetaName(file.name.removeSuffix(".permissionset-meta.xml"))
             try {
                 val root = parseXml(file)
                 root.childElements("fieldPermissions").forEach { fp ->

@@ -299,6 +299,22 @@ WHERE IsCustom = TRUE
 EOF
 )
 
+# Profile 객체권한 — ObjectPermissions 는 Profile 에 1:1 매핑된 hidden PermissionSet
+# (Parent.IsOwnedByProfile = TRUE) 에 저장된다. Profile retrieve XML 에는 objectPermissions 블록이
+# 비어 내려오므로 (동일 retrieve 호출에 SObject 가 없으면 SF 가 채우지 않음), 운영 실측은 본 SOQL 로 확보.
+# extract-sharing-meta.main.kts 가 본 CSV 를 Profile 별로 그룹핑하여 profile-flags.csv 의
+# objectPermissionsJson 컬럼을 채운다 (PermissionSet 은 XML 출처 유지 — 본 갭은 Profile 한정).
+PROFILE_OBJECT_PERMISSIONS_SOQL=$(cat <<'EOF'
+SELECT
+    Parent.Profile.Name,
+    SobjectType,
+    PermissionsRead, PermissionsCreate, PermissionsEdit, PermissionsDelete,
+    PermissionsViewAllRecords, PermissionsModifyAllRecords
+FROM ObjectPermissions
+WHERE Parent.IsOwnedByProfile = TRUE
+EOF
+)
+
 ACCOUNT_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, Phone, MobilePhone__c,
@@ -1171,6 +1187,9 @@ fi
 
 if contains_target "Profile"; then
     run_query "Profile" "$PROFILE_SOQL" "$OUT_DIR/profiles.csv"
+
+    # Profile 객체권한 — extract-sharing-meta.main.kts 가 본 CSV 를 Profile 별로 묶어 profile-flags.csv 에 반영.
+    run_query "ObjectPermissions (Profile-owned)" "$PROFILE_OBJECT_PERMISSIONS_SOQL" "$OUT_DIR/profile_object_permissions.csv"
 fi
 
 if contains_target "Permission"; then

@@ -1298,6 +1298,9 @@ object Stage1Targets {
             FieldMapping("permissionsViewAllUsers", "permissions_view_all_users", nullable = false, nullPlaceholder = "false"),
             FieldMapping("permissionsManageUsers", "permissions_manage_users", nullable = false, nullPlaceholder = "false"),
             FieldMapping("permissionsApiEnabled", "permissions_api_enabled", nullable = false, nullPlaceholder = "false"),
+            // Profile 객체권한 JSON — ObjectPermissions SOQL (Parent.IsOwnedByProfile=TRUE) 출처.
+            // extract-sharing-meta.main.kts 가 Profile 별로 묶어 채움. PermissionSetFlags 와 동일 구조.
+            FieldMapping("objectPermissionsJson", "object_permissions"),
         ),
     )
 

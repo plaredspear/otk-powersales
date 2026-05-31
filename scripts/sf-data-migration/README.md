@@ -63,7 +63,7 @@ backend 의 `@SFObject` 어노테이션이 붙은 모든 entity + Permission sta
 | `SharingRuleCondition` | (XML 메타) | (위 동일) — spec #790 |
 | `SharingRuleTarget` | (XML 메타) | (위 동일) — spec #790 |
 | `UserRoleHierarchySnapshot` | (XML 메타) | `POST /stage2/user-role-hierarchy` (신규 — depth/all_subordinate_ids/ancestor_path 재계산) — spec #790 |
-| `ProfileFlags` | (XML 메타) | `POST /stage2/fk` (profile FK) — spec #790 |
+| `ProfileFlags` | (XML 메타 + ObjectPermissions SOQL) | `POST /stage2/fk` (profile FK) — spec #790. system 비트 5종은 profile XML, object_permissions 는 `ObjectPermissions` SOQL (`Parent.IsOwnedByProfile=TRUE`) 출처 — profile XML 은 objectPermissions 가 비어 내려오므로 SOQL 로 보강. 자연 키 profile_name 은 파일명 URL 디코딩 (`6%2E조장`→`6.조장`) 후 profile.name 평문 매칭 |
 | `PermissionSet` | `PermissionSet` | Stage 1 raw 적재 (Id/Name/Label) — spec #796. `permission_set_flags.permission_set_id` 자연 키 lookup ref. |
 | `PermissionSetFlags` | (XML 메타) | `POST /stage2/fk` (permission_set FK) — spec #790 |
 | `GroupMember` | `GroupMember` | `POST /stage2/fk` (group / user_or_group polymorphic FK) — spec #790 |

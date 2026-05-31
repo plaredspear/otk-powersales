@@ -94,7 +94,7 @@ class Stage1TargetsTest {
         }
 
         @Test
-        @DisplayName("ProfileFlags — profileName 자연 키 + 5 boolean flag")
+        @DisplayName("ProfileFlags — profileName 자연 키 + 5 boolean flag + objectPermissionsJson")
         fun profileFlagsHeaders() {
             val meta = Stage1Targets.get("ProfileFlags")!!
             val headers = meta.fields.map { it.sfFieldName }
@@ -105,6 +105,7 @@ class Stage1TargetsTest {
                 "permissionsViewAllUsers",
                 "permissionsManageUsers",
                 "permissionsApiEnabled",
+                "objectPermissionsJson",
             )
         }
 
@@ -388,6 +389,14 @@ class Stage1TargetsTest {
         private val extractSharingMetaKts = scriptsDir.resolve("extract-sharing-meta.main.kts")
 
         /**
+         * Stage1 적재 대상이 아닌 중간 산출물 CSV — extract-csv.sh 가 SOQL 로 추출하지만 직접 DB 적재되지
+         * 않고 extract-sharing-meta.main.kts 가 읽어 다른 CSV (profile-flags.csv) 로 가공/병합하는 입력.
+         *   - profile_object_permissions.csv: ObjectPermissions SOQL (Parent.IsOwnedByProfile=TRUE) 결과.
+         *     Profile 별로 묶여 profile-flags.csv 의 objectPermissionsJson 컬럼이 됨.
+         */
+        private val INTERMEDIATE_CSV_NAMES = setOf("profile_object_permissions.csv")
+
+        /**
          * extract-csv.sh + extract-sharing-meta.main.kts 가 출력하는 모든 CSV 파일명 수집.
          *
          * - extract-csv.sh: `$OUT_DIR/<file>.csv` 패턴
@@ -414,7 +423,8 @@ class Stage1TargetsTest {
                     litPattern.findAll(line).forEach { result += it.groupValues[1] }
                 }
             }
-            return result
+            // 중간 산출물 (profile-flags.csv 로 병합되는 SOQL 입력) 은 Stage1 적재 대상이 아니므로 제외.
+            return result - INTERMEDIATE_CSV_NAMES
         }
 
         private fun collectRegisteredCsvNames(): Set<String> =
