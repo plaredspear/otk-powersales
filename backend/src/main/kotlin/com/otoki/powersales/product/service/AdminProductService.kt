@@ -6,6 +6,7 @@ import com.otoki.powersales.product.dto.response.ProductDetail
 import com.otoki.powersales.product.dto.response.ProductListItem
 import com.otoki.powersales.product.dto.response.ProductListResponse
 import com.otoki.powersales.product.exception.ProductNotFoundException
+import com.otoki.powersales.product.repository.ProductBarcodeRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -15,7 +16,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class AdminProductService(
-    private val productRepository: ProductRepository
+    private val productRepository: ProductRepository,
+    private val productBarcodeRepository: ProductBarcodeRepository
 ) {
 
     fun getProducts(
@@ -49,7 +51,8 @@ class AdminProductService(
     fun getProductDetail(productCode: String): ProductDetail {
         val product = productRepository.findByProductCode(productCode)
             ?: throw ProductNotFoundException(productCode)
-        return ProductDetail.from(product)
+        val barcodes = productBarcodeRepository.findByProductId(product.id)
+        return ProductDetail.from(product, barcodes)
     }
 
     fun getCategories(): List<CategoryTree> {

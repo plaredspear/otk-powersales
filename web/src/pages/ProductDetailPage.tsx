@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Alert, Button, Card, Col, Descriptions, Image, Row, Skeleton, Space, Tag } from 'antd';
+import { Alert, Button, Card, Col, Descriptions, Image, Row, Skeleton, Space, Table, Tag } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import type { ProductBarcodeItem } from '@/api/product';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useProductDetail } from '@/hooks/product/useProducts';
 import { useProductInventorySearchStore } from '@/stores/productInventorySearchStore';
@@ -10,6 +12,12 @@ const STATUS_TAG: Record<string, string> = {
   단종: 'red',
   출고중지: 'red',
 };
+
+const BARCODE_COLUMNS: ColumnsType<ProductBarcodeItem> = [
+  { title: '바코드', dataIndex: 'barcode', render: (v: string | null) => v ?? '-' },
+  { title: '단위', dataIndex: 'unit', width: 120, render: (v: string | null) => v ?? '-' },
+  { title: '시퀀스', dataIndex: 'sortOrder', width: 120, render: (v: string | null) => v ?? '-' },
+];
 
 /**
  * UC-02 제품 상세 페이지 + UC-04 Quick Action 진입점.
@@ -174,6 +182,17 @@ export default function ProductDetailPage() {
           <Descriptions.Item label="중분류 코드">{data.categoryCode2 ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="소분류 코드">{data.categoryCode3 ?? '-'}</Descriptions.Item>
         </Descriptions>
+      </Card>
+
+      <Card title={`제품 바코드 (${data.barcodes.length})`} style={{ marginBottom: 16 }}>
+        <Table
+          rowKey="id"
+          columns={BARCODE_COLUMNS}
+          dataSource={data.barcodes}
+          pagination={false}
+          size="small"
+          locale={{ emptyText: '등록된 바코드가 없습니다' }}
+        />
       </Card>
 
       <Card title="마케팅 정보" style={{ marginBottom: 16 }}>

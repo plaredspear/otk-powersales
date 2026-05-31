@@ -5,6 +5,8 @@ import com.otoki.powersales.product.enums.ProductStatus
 import com.otoki.powersales.product.enums.StorageCondition
 import com.otoki.powersales.product.exception.ProductNotFoundException
 import com.otoki.powersales.product.repository.CategoryRow
+import com.otoki.powersales.product.entity.ProductBarcode
+import com.otoki.powersales.product.repository.ProductBarcodeRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -21,9 +23,11 @@ import org.springframework.data.domain.Sort
 class AdminProductServiceTest {
 
     private val productRepository: ProductRepository = mockk()
+    private val productBarcodeRepository: ProductBarcodeRepository = mockk()
 
     private val adminProductService = AdminProductService(
         productRepository,
+        productBarcodeRepository,
     )
 
     @Nested
@@ -160,11 +164,16 @@ class AdminProductServiceTest {
         fun getProductDetail_success() {
             val product = createProduct(id = 10L, productCode = "P100", name = "꿀배청 680G")
             every { productRepository.findByProductCode("P100") } returns product
+            every { productBarcodeRepository.findByProductId(10L) } returns listOf(
+                ProductBarcode(id = 1, productId = 10L, barcode = "8801234567890", unit = "EA", sortOrder = "1")
+            )
 
             val result = adminProductService.getProductDetail("P100")
 
             assertThat(result.productCode).isEqualTo("P100")
             assertThat(result.name).isEqualTo("꿀배청 680G")
+            assertThat(result.barcodes).hasSize(1)
+            assertThat(result.barcodes[0].barcode).isEqualTo("8801234567890")
         }
 
         @Test

@@ -179,7 +179,8 @@ class AdminProductControllerTest : AdminControllerTestSupport() {
                 pallet = null, manufacture = null, manufactureDetail = null,
                 claimManagement = null,
                 createdAt = "2026-01-01T00:00:00",
-                lastModifiedAt = "2026-05-01T00:00:00"
+                lastModifiedAt = "2026-05-01T00:00:00",
+                barcodes = emptyList()
             )
             every { adminProductService.getProductDetail(eq("P001")) } returns detail
 
