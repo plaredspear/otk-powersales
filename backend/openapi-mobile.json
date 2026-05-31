@@ -556,6 +556,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseElectronicSalesResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ElectronicSalesResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseGpsConsentRecordResponse" : {
         "properties" : {
           "data" : {
@@ -1103,6 +1132,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/LoginResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseLogisticsSalesResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LogisticsSalesResponse"
             }, {
               "type" : "null"
             } ]
@@ -2091,6 +2149,30 @@
         },
         "type" : "object"
       },
+      "CategorySales" : {
+        "properties" : {
+          "category" : {
+            "type" : "string"
+          },
+          "currentAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "difference" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "growthRate" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "previousYearAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "CategorySalesInfo" : {
         "properties" : {
           "achievedAmount" : {
@@ -2756,6 +2838,45 @@
         },
         "type" : "object"
       },
+      "ElectronicSalesRequest" : {
+        "properties" : {
+          "customerId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "yearMonth" : {
+            "minLength" : 1,
+            "pattern" : "^\\d{6}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "customerId", "yearMonth" ],
+        "type" : "object"
+      },
+      "ElectronicSalesResponse" : {
+        "properties" : {
+          "customerId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProductSales"
+            },
+            "type" : "array"
+          },
+          "sapAccountCode" : {
+            "type" : "string"
+          },
+          "yearMonth" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "EquipmentAnswer" : {
         "properties" : {
           "answer" : {
@@ -3374,6 +3495,48 @@
           },
           "user" : {
             "$ref" : "#/components/schemas/UserInfo"
+          }
+        },
+        "type" : "object"
+      },
+      "LogisticsSalesRequest" : {
+        "properties" : {
+          "customerId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "yearMonth" : {
+            "minLength" : 1,
+            "pattern" : "^\\d{6}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "customerId", "yearMonth" ],
+        "type" : "object"
+      },
+      "LogisticsSalesResponse" : {
+        "properties" : {
+          "categories" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CategorySales"
+            },
+            "type" : "array"
+          },
+          "currentMonth" : {
+            "type" : "boolean"
+          },
+          "customerId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "sapAccountCode" : {
+            "type" : "string"
+          },
+          "yearMonth" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -4742,6 +4905,25 @@
           }
         },
         "required" : [ "alarmDate", "expirationDate" ],
+        "type" : "object"
+      },
+      "ProductSales" : {
+        "properties" : {
+          "amount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : "string"
+          },
+          "quantity" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
         "type" : "object"
       },
       "RefreshTokenRequest" : {
@@ -7219,6 +7401,58 @@
           }
         },
         "tags" : [ "safety-check-controller" ]
+      }
+    },
+    "/api/v1/mobile/sales/electronic" : {
+      "get" : {
+        "operationId" : "getElectronicSales",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/ElectronicSalesRequest"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseElectronicSalesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "monthly-sales-controller" ]
+      }
+    },
+    "/api/v1/mobile/sales/logistics" : {
+      "get" : {
+        "operationId" : "getLogisticsSales",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/LogisticsSalesRequest"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLogisticsSalesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "monthly-sales-controller" ]
       }
     },
     "/api/v1/mobile/sales/monthly" : {
