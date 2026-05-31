@@ -46,6 +46,7 @@ import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/gps_consent_screen.dart';
 import 'presentation/screens/leader_schedule/leader_daily_status_screen.dart';
 import 'presentation/screens/leader_schedule/leader_team_members_screen.dart';
+import 'presentation/screens/logistics_sales_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
 import 'presentation/screens/pos_sales_screen.dart';
@@ -63,6 +64,7 @@ class AppRouter {
   static const String gpsConsent = '/gps-consent'; // F62: GPS 사용 동의
   static const String main = '/';
   static const String posSales = '/pos-sales';
+  static const String logisticsSales = '/logistics-sales';
   static const String attendance = '/attendance';
   static const String attendanceComplete = '/attendance/complete';
   static const String myAccounts = '/my-accounts';
@@ -119,6 +121,7 @@ class AppRouter {
         },
         main: (context) => const MainScreen(),
         posSales: (context) => const PosSalesScreen(),
+        logisticsSales: (context) => const LogisticsSalesScreen(),
         attendance: (context) => const AttendancePage(),
         attendanceComplete: (context) => const AttendanceCompletePage(),
         myAccounts: (context) => const MyAccountsPage(),

@@ -76,6 +76,12 @@ class LogisticsSalesState {
   /// 현재 년월 (당월/이전월 판단용)
   final String currentYearMonth;
 
+  /// 선택된 거래처 ID (없으면 미조회 상태)
+  final int? selectedCustomerId;
+
+  /// 선택된 거래처명
+  final String? selectedCustomerName;
+
   /// 당월 여부
   final bool isCurrentMonth;
 
@@ -101,6 +107,8 @@ class LogisticsSalesState {
     required this.sales,
     required this.filter,
     required this.currentYearMonth,
+    this.selectedCustomerId,
+    this.selectedCustomerName,
     this.isLoading = false,
     this.errorMessage,
     this.isCurrentMonth = false,
@@ -129,6 +137,8 @@ class LogisticsSalesState {
     List<LogisticsSales>? sales,
     LogisticsSalesFilter? filter,
     String? currentYearMonth,
+    int? selectedCustomerId,
+    String? selectedCustomerName,
     bool? isLoading,
     String? errorMessage,
     bool clearErrorMessage = false,
@@ -145,6 +155,8 @@ class LogisticsSalesState {
       sales: sales ?? this.sales,
       filter: filter ?? this.filter,
       currentYearMonth: currentYearMonth ?? this.currentYearMonth,
+      selectedCustomerId: selectedCustomerId ?? this.selectedCustomerId,
+      selectedCustomerName: selectedCustomerName ?? this.selectedCustomerName,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       isCurrentMonth: isCurrentMonth ?? this.isCurrentMonth,
