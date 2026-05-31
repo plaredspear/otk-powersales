@@ -172,9 +172,11 @@ export function ScheduleCalendar({
   const renderEventContent = useCallback(
     (arg: EventContentArg) => {
       const schedule = scheduleMap.get(arg.event.id);
-      // 요약 이벤트(summary-*)는 scheduleMap 에 없음 — undefined 를 반환해 FullCalendar 기본
-      // title 렌더(목록 뷰의 "진열: a/b | 행사: c/d", "연차 : n")를 그대로 사용한다.
-      if (!schedule) return undefined;
+      // 요약 이벤트(summary-*)는 scheduleMap 에 없음 — title("진열: a/b | 행사: c/d", "연차 : n")을
+      // 직접 렌더한다. (undefined 반환 시 list 뷰에서 title 셀이 비어 수치가 사라짐)
+      if (!schedule) {
+        return <span style={{ fontSize: 13 }}>{arg.event.title}</span>;
+      }
       const variant = arg.view.type === 'listMonth' ? 'list' : 'month';
       return <ScheduleEventCard schedule={schedule} variant={variant} />;
     },
@@ -253,8 +255,9 @@ export function ScheduleCalendar({
           width: 100% !important;
         }
       `}</style>
-      {/* FullCalendar — SF 레거시 정합: 캘린더 전체가 한 화면에 보이도록 height=100% 컨테이너 채움 + 셀별 +N 개 popover */}
-      <div style={{ flex: 1, minHeight: 0 }}>
+      {/* FullCalendar — SF 레거시 정합: 캘린더 전체가 한 화면에 보이도록 height=100% 컨테이너 채움 + 셀별 +N 개 popover.
+          목록 뷰는 행 수가 많아 부모 높이를 넘기므로 컨테이너에 세로 스크롤을 부여한다. */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: isListView ? 'auto' : 'visible' }}>
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, listPlugin]}
