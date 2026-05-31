@@ -368,6 +368,39 @@ class LeaderDailyStatusNotifier extends StateNotifier<LeaderDailyStatusState> {
     state = state.copyWith(searchKeyword: keyword);
   }
 
+  /// 진열 일정 거래처 변경(P7) 후 재조회. 성공 시 true, 실패 시 errorMessage 설정 후 false.
+  /// 진행 중(isLoading)이면 재진입을 차단한다.
+  Future<bool> updateScheduleAccount(int scheduleId, int accountId) async {
+    if (state.isLoading) return false;
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.updateScheduleAccount(
+        scheduleId: scheduleId,
+        accountId: accountId,
+      );
+      await load(); // load 가 isLoading 정리 + 재조회
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: extractErrorMessage(e));
+      return false;
+    }
+  }
+
+  /// 진열 일정 삭제(P7) 후 재조회. 성공 시 true, 실패 시 errorMessage 설정 후 false.
+  /// 진행 중(isLoading)이면 재진입을 차단한다.
+  Future<bool> deleteSchedule(int scheduleId) async {
+    if (state.isLoading) return false;
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.deleteSchedule(scheduleId);
+      await load(); // load 가 isLoading 정리 + 재조회
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: extractErrorMessage(e));
+      return false;
+    }
+  }
+
   /// 에러 메시지 1회성 소비(SnackBar 표시 후 호출).
   void clearError() => state = state.copyWith(clearError: true);
 }

@@ -11,18 +11,24 @@ import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
+import com.otoki.powersales.schedule.dto.request.LeaderScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
 import com.otoki.powersales.schedule.dto.response.LeaderDailyEmployeeItem
 import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusResponse
 import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusSummary
 import com.otoki.powersales.schedule.dto.response.LeaderDailyWorkerItem
 import com.otoki.powersales.schedule.dto.response.LeaderScheduleCreateResponse
+import com.otoki.powersales.schedule.dto.response.LeaderScheduleUpdateResponse
 import com.otoki.powersales.schedule.dto.response.LeaderTeamMemberListResponse
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.exception.LeaderScheduleAccountRequiredException
+import com.otoki.powersales.schedule.exception.LeaderScheduleAlreadyAttendedException
+import com.otoki.powersales.schedule.exception.LeaderScheduleDisplayMasterLinkedException
 import com.otoki.powersales.schedule.exception.LeaderScheduleInvalidWorkCategory2Exception
 import com.otoki.powersales.schedule.exception.LeaderScheduleInvalidWorkingTypeException
 import com.otoki.powersales.schedule.exception.LeaderScheduleMissingWorkCategory3Exception
+import com.otoki.powersales.schedule.exception.LeaderScheduleNotDisplayScheduleException
+import com.otoki.powersales.schedule.exception.LeaderScheduleNotFoundException
 import com.otoki.powersales.schedule.exception.LeaderScheduleNotLeaderAccountException
 import com.otoki.powersales.schedule.exception.LeaderScheduleNotLeaderException
 import com.otoki.powersales.schedule.exception.LeaderScheduleNotTeamMemberException
@@ -128,6 +134,92 @@ class LeaderScheduleService(
         // step 11: 저장 + 응답
         val saved = teamMemberScheduleRepository.save(newSchedule)
         return LeaderScheduleCreateResponse.from(saved)
+    }
+
+    /**
+     * 조장 진열 일정 수정 (P7 — 레거시 `changeProc` InterfaceType=M 동등, 거래처 변경만).
+     *
+     * 가드: 본인 팀원의 진열 일정 + 진열마스터 미연결 + 출근 미등록. 새 거래처는 본인 담당 거래처.
+     * 충돌 검증은 자기 자신을 제외하고 기존 [ScheduleConflictValidator] 규칙을 재사용한다(근무유형3 불변).
+     *
+     * **신규 차이(MFEIS)**: 레거시는 트리거로 N/M/D 시 `MonthlyFemaleEmployeeIntegrationSchedule` 를
+     * 재집계했으나, 신규는 #554 create 와 동일하게 batch 재집계 모델을 따라 호출하지 않는다.
+     * 본 수정은 거래처만 바꾸고 월/직원/근무유형 집계 키는 불변이라 MFEIS 영향이 없다.
+     */
+    @Transactional
+    fun updateTeamMemberSchedule(
+        registrantId: Long,
+        scheduleId: Long,
+        request: LeaderScheduleUpdateRequest
+    ): LeaderScheduleUpdateResponse {
+        val registrant = findRegistrant(registrantId)
+        requireLeader(registrant)
+
+        val schedule = teamMemberScheduleRepository.findById(scheduleId)
+            .orElseThrow { LeaderScheduleNotFoundException() }
+        requireEditableDisplaySchedule(schedule, registrant)
+
+        val accountId = request.accountId ?: throw LeaderScheduleAccountRequiredException()
+        val account = accountRepository.findById(accountId)
+            .orElseThrow { LeaderScheduleNotLeaderAccountException() }
+        if (!isLeaderAccount(account, registrant)) {
+            throw LeaderScheduleNotLeaderAccountException()
+        }
+
+        // 충돌 검증 — 근무유형3 은 변경하지 않으므로 기존 값 유지, 자기 자신 제외.
+        val employeeId = schedule.employee?.id ?: throw LeaderScheduleNotTeamMemberException()
+        val workingDate = schedule.workingDate ?: throw LeaderScheduleNotFoundException()
+        scheduleConflictValidator.validateConflicts(
+            employeeId = employeeId,
+            workingDate = workingDate,
+            workingType = WORKING_TYPE_WORK,
+            accountId = account.id,
+            workingCategory3 = schedule.workingCategory3,
+            excludeScheduleId = schedule.id
+        )
+
+        // 영속 entity — dirty checking 으로 commit 시 자동 UPDATE (명시 save 불요).
+        schedule.account = account
+        return LeaderScheduleUpdateResponse.from(schedule)
+    }
+
+    /**
+     * 조장 진열 일정 삭제 (P7 — 레거시 `changeProc` InterfaceType=D 동등).
+     *
+     * 가드: 본인 팀원의 진열 일정 + 진열마스터 미연결 + 출근 미등록.
+     *
+     * **신규 차이(MFEIS)**: 레거시 트리거의 `MonthlyFemaleEmployeeIntegrationSchedule` 재집계는
+     * 신규 batch 모델로 대체 — 삭제분은 차기 batch 까지 MFEIS 집계에 지연 반영될 수 있다(허용).
+     */
+    @Transactional
+    fun deleteTeamMemberSchedule(registrantId: Long, scheduleId: Long) {
+        val registrant = findRegistrant(registrantId)
+        requireLeader(registrant)
+
+        val schedule = teamMemberScheduleRepository.findById(scheduleId)
+            .orElseThrow { LeaderScheduleNotFoundException() }
+        requireEditableDisplaySchedule(schedule, registrant)
+
+        teamMemberScheduleRepository.delete(schedule)
+    }
+
+    /**
+     * 진열 일정 수정/삭제 공통 가드.
+     * - 본인 팀원(cost_center_code 일치) 일정
+     * - 진열 일정(`WORK && cat1 != EVENT`) — 행사/연차는 불가 (행사는 admin promotion 도메인 소유)
+     * - 진열마스터 미연결 (레거시 `checkDisplayMaster`)
+     * - 출근 미등록 (레거시 `deleteblock`)
+     */
+    private fun requireEditableDisplaySchedule(schedule: TeamMemberSchedule, registrant: Employee) {
+        val employee = schedule.employee ?: throw LeaderScheduleNotTeamMemberException()
+        if (employee.costCenterCode != registrant.costCenterCode) {
+            throw LeaderScheduleNotTeamMemberException()
+        }
+        val isDisplay = schedule.workingType == WorkingType.WORK &&
+            schedule.workingCategory1 != WorkingCategory1.EVENT
+        if (!isDisplay) throw LeaderScheduleNotDisplayScheduleException()
+        if (schedule.displayWorkSchedule != null) throw LeaderScheduleDisplayMasterLinkedException()
+        if (schedule.attendanceLog != null) throw LeaderScheduleAlreadyAttendedException()
     }
 
     fun getTeamMembers(registrantId: Long): List<LeaderTeamMemberListResponse> {

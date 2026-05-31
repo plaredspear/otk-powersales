@@ -88,3 +88,38 @@ class LeaderScheduleCategory3ConflictException : BusinessException(
     message = "동일 날짜와 직원으로 다른 유형의 일정이 존재합니다.",
     httpStatus = HttpStatus.CONFLICT
 )
+
+// ===== 일정 수정/삭제 (P7 진열 일정변경) =====
+
+class LeaderScheduleNotFoundException : BusinessException(
+    errorCode = "SCHEDULE_NOT_FOUND",
+    message = "일정을 찾을 수 없습니다.",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+/**
+ * 진열 일정만 조장이 수정/삭제 가능 (행사 일정은 admin promotion 도메인 소유 — spec #679/#571).
+ */
+class LeaderScheduleNotDisplayScheduleException : BusinessException(
+    errorCode = "NOT_DISPLAY_SCHEDULE",
+    message = "진열 일정만 수정/삭제할 수 있습니다.",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 진열마스터(`display_work_schedule`)와 연결된 일정은 수정/삭제 불가 (레거시 `checkDisplayMaster` 동등).
+ */
+class LeaderScheduleDisplayMasterLinkedException : BusinessException(
+    errorCode = "DISPLAY_MASTER_LINKED",
+    message = "진열마스터가 존재하여 수정/삭제할 수 없습니다.",
+    httpStatus = HttpStatus.CONFLICT
+)
+
+/**
+ * 출근 등록된 일정은 수정/삭제 불가 (레거시 `deleteblock` 동등 — 출근 보고 완료 일정 보호).
+ */
+class LeaderScheduleAlreadyAttendedException : BusinessException(
+    errorCode = "SCHEDULE_ALREADY_ATTENDED",
+    message = "출근 등록된 일정은 수정/삭제할 수 없습니다.",
+    httpStatus = HttpStatus.CONFLICT
+)

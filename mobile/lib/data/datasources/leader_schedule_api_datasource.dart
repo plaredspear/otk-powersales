@@ -62,4 +62,17 @@ class LeaderScheduleApiDataSource {
       response.data['data'] as Map<String, dynamic>,
     );
   }
+
+  /// 진열 일정 수정 — 거래처 변경 (P7).
+  Future<void> updateTeamMemberSchedule(int scheduleId, int accountId) async {
+    await _dio.put(
+      '/api/v1/mobile/leader/team-member-schedule/$scheduleId',
+      data: {'accountId': accountId},
+    );
+  }
+
+  /// 진열 일정 삭제 (P7).
+  Future<void> deleteTeamMemberSchedule(int scheduleId) async {
+    await _dio.delete('/api/v1/mobile/leader/team-member-schedule/$scheduleId');
+  }
 }
