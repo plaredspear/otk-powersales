@@ -1,6 +1,8 @@
 package com.otoki.powersales.schedule.repository
 
+import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.schedule.entity.AttendanceLog
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
@@ -302,6 +304,105 @@ class TeamMemberScheduleRepositoryTest {
 
             assertThat(result).hasSize(1)
             assertThat(result[0].employee?.id).isEqualTo(testEmployee.id)
+        }
+    }
+
+    @Nested
+    @DisplayName("aggregateDailySummaryByEmployeeIds - 무필터 일별 요약 DB 집계")
+    inner class AggregateDailySummaryByEmployeeIds {
+
+        @Test
+        @DisplayName("날짜별로 진열/행사 expected·actual + 연차/대휴를 집계한다")
+        fun aggregates_per_date() {
+            val date = LocalDate.of(2026, 4, 1)
+            val attendance = testEntityManager.persistAndFlush(AttendanceLog())
+
+            // 진열(WORK, 비행사) 2건 — 그중 1건 출근
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = date, workingType = WorkingType.WORK, workingCategory1 = WorkingCategory1.DISPLAY, attendanceLog = attendance)
+            )
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = date, workingType = WorkingType.WORK, workingCategory1 = WorkingCategory1.DISPLAY)
+            )
+            // 행사(WORK, EVENT) 1건 — 출근 없음
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = date, workingType = WorkingType.WORK, workingCategory1 = WorkingCategory1.EVENT)
+            )
+            // 연차 1건, 대휴 1건
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = date, workingType = WorkingType.ANNUAL_LEAVE)
+            )
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = date, workingType = WorkingType.ALT_HOLIDAY)
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .aggregateDailySummaryByEmployeeIds(listOf(testEmployee.id), date, date)
+
+            assertThat(result).hasSize(1)
+            val summary = result[0]
+            // 날짜는 ISO(YYYY-MM-DD) 문자열로 내려와야 한다 (프론트 정합).
+            assertThat(summary.date).isEqualTo("2026-04-01")
+            assertThat(summary.displayExpected).isEqualTo(2)
+            assertThat(summary.displayActual).isEqualTo(1)
+            assertThat(summary.promotionExpected).isEqualTo(1)
+            assertThat(summary.promotionActual).isEqualTo(0)
+            assertThat(summary.annualLeave).isEqualTo(1)
+            assertThat(summary.compensatoryLeave).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("category1 이 null 인 WORK 는 진열(expected)로 집계된다")
+        fun null_category_counts_as_display() {
+            val date = LocalDate.of(2026, 4, 2)
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = date, workingType = WorkingType.WORK, workingCategory1 = null)
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .aggregateDailySummaryByEmployeeIds(listOf(testEmployee.id), date, date)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].displayExpected).isEqualTo(1)
+            assertThat(result[0].promotionExpected).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("기간 밖 / 다른 사원 일정은 집계에서 제외된다")
+        fun excludes_out_of_range_and_other_employee() {
+            val other = testEntityManager.persistAndFlush(Employee(employeeCode = "EMP_X", name = "타사원"))
+            val from = LocalDate.of(2026, 4, 1)
+            val to = LocalDate.of(2026, 4, 30)
+            // 기간 안, 본인
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = LocalDate.of(2026, 4, 15), workingType = WorkingType.WORK, workingCategory1 = WorkingCategory1.DISPLAY)
+            )
+            // 기간 밖
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = testEmployee, workingDate = LocalDate.of(2026, 5, 1), workingType = WorkingType.WORK, workingCategory1 = WorkingCategory1.DISPLAY)
+            )
+            // 다른 사원
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(employee = other, workingDate = LocalDate.of(2026, 4, 16), workingType = WorkingType.WORK, workingCategory1 = WorkingCategory1.DISPLAY)
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .aggregateDailySummaryByEmployeeIds(listOf(testEmployee.id), from, to)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].date).isEqualTo("2026-04-15")
+            assertThat(result[0].displayExpected).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("employeeIds 가 비어 있으면 빈 결과를 반환한다")
+        fun empty_employee_ids() {
+            val result = teamMemberScheduleRepository
+                .aggregateDailySummaryByEmployeeIds(emptyList(), LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30))
+            assertThat(result).isEmpty()
         }
     }
 }

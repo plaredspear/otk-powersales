@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.repository
 
+import com.otoki.powersales.schedule.dto.response.DailySummaryDto
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.sap.AttendanceSapPayloadRow
 import java.time.LocalDate
@@ -56,6 +57,19 @@ interface TeamMemberScheduleRepositoryCustom {
         to: LocalDate,
         promotionTeams: List<String>? = null
     ): List<TeamMemberSchedule>
+
+    /**
+     * 여사원 일정관리 무필터 조회용 일별 요약 집계 (SF `FullCalendarComponentController.fetchScheduleSummary` 정합).
+     *
+     * 개별 일정 row 를 fetch 하지 않고 DB GROUP BY 로 날짜별 COUNT 만 산출 — 거래처/여사원 미선택 시
+     * 캘린더/목록 요약 배지에만 쓰이는 집계를 가볍게 조회한다. `employeeIds` (본인/특수사번 costCenterCode
+     * 기준 active 여사원) 와 기간으로만 필터하며 account JOIN 을 타지 않는다.
+     */
+    fun aggregateDailySummaryByEmployeeIds(
+        employeeIds: List<Long>,
+        from: LocalDate,
+        to: LocalDate
+    ): List<DailySummaryDto>
 
     fun findActiveByEmployeeIdAndDate(employeeId: Long, workingDate: LocalDate): List<TeamMemberSchedule>
 

@@ -197,23 +197,21 @@ class AdminTeamScheduleService(
         val hasEmployeeFilter = !employeeIds.isNullOrEmpty()
         val hasAccountFilter = !accountIds.isNullOrEmpty()
 
-        // 무필터(거래처/여사원 미선택) 요청 — 월 변경 시에도 캘린더 요약이 항상 표시되도록
-        // principal 의 거래처 전체 기준 요약을 산출한다. 일정 개별 칩(schedules)은 과중하므로 비우고
-        // dailySummary 만 반환 (form 응답의 요약 정책과 동일).
+        // 무필터(거래처/여사원 미선택) 요청 — 개별 일정 row 는 끌어오지 않고 일별 요약만 조회한다.
+        // SF `FullCalendarComponentController.fetchScheduleSummary` 정합: 본인/특수사번 costCenterCode 기준
+        // active 여사원 employeeId 집합으로 DB GROUP BY 집계 (account JOIN·전체 컬럼 fetch 회피).
         if (!hasEmployeeFilter && !hasAccountFilter) {
             if (principal == null) {
                 return MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
             }
-            val accountIdsForSummary = getAccounts(principal, branchCode).map { it.accountId }
-            if (accountIdsForSummary.isEmpty()) {
+            val summaryEmployeeIds = getMembers(principal).map { it.employeeId }
+            if (summaryEmployeeIds.isEmpty()) {
                 return MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
             }
-            val summarySchedules = teamMemberScheduleRepository
-                .findMonthlyByAccountIds(accountIdsForSummary, from, to, null)
-                .distinctBy { it.id }
             return MonthlyScheduleWithSummaryDto(
                 schedules = emptyList(),
-                dailySummary = buildDailySummary(summarySchedules)
+                dailySummary = teamMemberScheduleRepository
+                    .aggregateDailySummaryByEmployeeIds(summaryEmployeeIds, from, to)
             )
         }
 

@@ -1,7 +1,9 @@
 package com.otoki.powersales.schedule.repository
 
 import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.schedule.dto.response.DailySummaryDto
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.employee.entity.QEmployeeInfo.Companion.employeeInfo
 import com.otoki.powersales.schedule.enums.AttendanceType
@@ -12,6 +14,8 @@ import com.otoki.powersales.schedule.sap.AttendanceSapPayloadRow
 import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
+import com.querydsl.core.types.dsl.CaseBuilder
+import com.querydsl.core.types.dsl.NumberExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -148,6 +152,60 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     private fun professionalPromotionTeamIn(teams: List<String>?): BooleanExpression? {
         return if (teams.isNullOrEmpty()) null
         else teamMemberSchedule.professionalPromotionTeam.`in`(teams)
+    }
+
+    override fun aggregateDailySummaryByEmployeeIds(
+        employeeIds: List<Long>,
+        from: LocalDate,
+        to: LocalDate
+    ): List<DailySummaryDto> {
+        if (employeeIds.isEmpty()) return emptyList()
+
+        // buildDailySummary 의 JVM 산식과 동일한 분류 — 조건별 1/0 케이스를 SUM 하여 DB 에서 집계.
+        val isWork = teamMemberSchedule.workingType.eq(WorkingType.WORK)
+        val isEvent = teamMemberSchedule.workingCategory1.eq(WorkingCategory1.EVENT)
+        val hasAttendance = teamMemberSchedule.attendanceLog.isNotNull
+
+        val displayExpected = countWhere(isWork.and(isEvent.not().or(teamMemberSchedule.workingCategory1.isNull)))
+        val displayActual = countWhere(
+            isWork.and(isEvent.not().or(teamMemberSchedule.workingCategory1.isNull)).and(hasAttendance)
+        )
+        val promotionExpected = countWhere(isWork.and(isEvent))
+        val promotionActual = countWhere(isWork.and(isEvent).and(hasAttendance))
+        val annualLeave = countWhere(teamMemberSchedule.workingType.eq(WorkingType.ANNUAL_LEAVE))
+        val compensatoryLeave = countWhere(teamMemberSchedule.workingType.eq(WorkingType.ALT_HOLIDAY))
+
+        return queryFactory
+            .select(
+                Projections.constructor(
+                    DailySummaryDto::class.java,
+                    teamMemberSchedule.workingDate.stringValue(),
+                    displayExpected,
+                    displayActual,
+                    promotionExpected,
+                    promotionActual,
+                    annualLeave,
+                    compensatoryLeave
+                )
+            )
+            .from(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.employee.id.`in`(employeeIds),
+                teamMemberSchedule.workingDate.between(from, to),
+                isNotDeleted()
+            )
+            .groupBy(teamMemberSchedule.workingDate)
+            .orderBy(teamMemberSchedule.workingDate.asc())
+            .fetch()
+    }
+
+    // 조건 충족 행을 1, 그 외 0 으로 환산한 뒤 합산 — 조건부 COUNT 를 Integer 합으로 표현.
+    // then(Int)/otherwise(Int) 오버로드가 NumberExpression<Int> 를 반환해야 public sum() 이 적용된다.
+    private fun countWhere(condition: BooleanExpression): NumberExpression<Int> {
+        val oneIfMatched: NumberExpression<Int> = CaseBuilder()
+            .`when`(condition).then(1)
+            .otherwise(0)
+        return oneIfMatched.sumAggregate()
     }
 
     override fun findActiveByEmployeeIdAndDate(

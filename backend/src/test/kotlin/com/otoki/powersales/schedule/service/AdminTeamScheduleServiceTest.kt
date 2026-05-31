@@ -525,13 +525,56 @@ class AdminTeamScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("필터 없이 조회 - 빈 배열 반환")
+        @DisplayName("필터 없이 조회 + principal 없음 - 빈 배열 반환")
         fun getSchedulesWithSummary_noFilter_returnsEmpty() {
             val result = service.getSchedulesWithSummary(LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), null, null)
 
             assertThat(result.schedules).isEmpty()
             assertThat(result.dailySummary).isEmpty()
             verify { teamMemberScheduleRepository wasNot Called }
+        }
+
+        @Test
+        @DisplayName("필터 없이 조회 + principal 있음 - schedules 비우고 여사원 기준 일별 요약만 집계 (SF 정합)")
+        fun getSchedulesWithSummary_noFilter_aggregatesSummaryByMembers() {
+            val from = LocalDate.of(2026, 4, 1)
+            val to = LocalDate.of(2026, 4, 30)
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "1234", role = AppAuthority.LEADER)
+            val m1 = createEmployee(id = 2L, employeeCode = "20030002", role = AppAuthority.WOMAN)
+            val m2 = createEmployee(id = 3L, employeeCode = "20030003", role = AppAuthority.WOMAN)
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")) } returns listOf(m1, m2)
+
+            val summary = com.otoki.powersales.schedule.dto.response.DailySummaryDto(
+                date = "2026-04-15", displayExpected = 3, displayActual = 2,
+                promotionExpected = 1, promotionActual = 1, annualLeave = 0, compensatoryLeave = 0
+            )
+            every {
+                teamMemberScheduleRepository.aggregateDailySummaryByEmployeeIds(listOf(2L, 3L), from, to)
+            } returns listOf(summary)
+
+            val result = service.getSchedulesWithSummary(from, to, null, null, null, principalOf(leader), null)
+
+            assertThat(result.schedules).isEmpty()
+            assertThat(result.dailySummary).containsExactly(summary)
+            // 개별 일정 fetch (account/employee 월간 조회) 는 호출되지 않아야 한다.
+            verify(exactly = 0) { teamMemberScheduleRepository.findMonthlyByAccountIds(any(), any(), any(), any()) }
+            verify(exactly = 0) { teamMemberScheduleRepository.findMonthlyByEmployeeIds(any(), any(), any(), any()) }
+            verify { teamMemberScheduleRepository.aggregateDailySummaryByEmployeeIds(listOf(2L, 3L), from, to) }
+        }
+
+        @Test
+        @DisplayName("필터 없이 조회 + 대상 여사원 없음 - 빈 결과 (집계 미호출)")
+        fun getSchedulesWithSummary_noFilter_noMembers_returnsEmpty() {
+            val from = LocalDate.of(2026, 4, 1)
+            val to = LocalDate.of(2026, 4, 30)
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "1234", role = AppAuthority.LEADER)
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")) } returns emptyList()
+
+            val result = service.getSchedulesWithSummary(from, to, null, null, null, principalOf(leader), null)
+
+            assertThat(result.schedules).isEmpty()
+            assertThat(result.dailySummary).isEmpty()
+            verify(exactly = 0) { teamMemberScheduleRepository.aggregateDailySummaryByEmployeeIds(any(), any(), any()) }
         }
 
         @Test
