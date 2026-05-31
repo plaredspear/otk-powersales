@@ -43,6 +43,7 @@ import 'presentation/pages/safety_check_page.dart';
 import 'presentation/pages/safety_check_status_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/gps_consent_screen.dart';
+import 'presentation/screens/leader_schedule/leader_daily_status_screen.dart';
 import 'presentation/screens/leader_schedule/leader_team_members_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
@@ -100,6 +101,7 @@ class AppRouter {
   static const String altHolidayRequest = '/alt-holiday/request'; // #285: 대체휴무 신청
   static const String altHolidayHistory = '/alt-holiday/history'; // #285: 대체휴무 이력
   static const String leaderTeamMembers = '/leader/team-members'; // #554: 조장 — 팀원 일정 관리
+  static const String leaderDailyStatus = '/leader/daily-status'; // P6: 조장 — 여사원 일별현황(조회 전용)
   static const String appInfo = '/app-info'; // 앱 정보 / 오픈소스 라이선스
 
   /// 라우트 맵
@@ -208,6 +210,7 @@ class AppRouter {
         altHolidayRequest: (context) => const AltHolidayRequestPage(), // #285: 대체휴무 신청
         altHolidayHistory: (context) => const AltHolidayHistoryPage(), // #285: 대체휴무 이력
         leaderTeamMembers: (context) => const LeaderTeamMembersScreen(), // #554: 조장 팀원 일정 관리
+        leaderDailyStatus: (context) => const LeaderDailyStatusScreen(), // P6: 여사원 일별현황(조회 전용)
         appInfo: (context) => const AppInfoPage(),
         myScheduleCalendar: (context) => const MyScheduleCalendarPage(), // F56: 일정 캘린더
         myScheduleDetail: (context) {

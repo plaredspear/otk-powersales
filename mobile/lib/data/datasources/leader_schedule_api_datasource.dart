@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../models/leader_account_model.dart';
+import '../models/leader_daily_status_model.dart';
 import '../models/leader_schedule_create_request_model.dart';
 import '../models/leader_schedule_create_response_model.dart';
 import '../models/leader_team_member_model.dart';
@@ -36,6 +37,17 @@ class LeaderScheduleApiDataSource {
         .map((json) =>
             LeaderAccountModel.fromJson(json as Map<String, dynamic>))
         .toList();
+  }
+
+  /// 여사원 일별 현황 조회 ([date]: YYYY-MM-DD).
+  Future<LeaderDailyStatusModel> getDailyStatus(String date) async {
+    final response = await _dio.get(
+      '/api/v1/mobile/leader/daily-status',
+      queryParameters: {'date': date},
+    );
+    return LeaderDailyStatusModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
   }
 
   /// 팀원 일정 대리 등록.

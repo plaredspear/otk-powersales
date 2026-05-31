@@ -122,6 +122,11 @@ abstract final class MenuConstants {
         label: '팀원 일정 관리',
         route: '/leader/team-members',
       ),
+      MenuItem(
+        id: 'team-daily-status',
+        label: '여사원 일별현황',
+        route: '/leader/daily-status',
+      ),
     ],
   );
 

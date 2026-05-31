@@ -12,6 +12,10 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
+import com.otoki.powersales.schedule.dto.response.LeaderDailyEmployeeItem
+import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusResponse
+import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusSummary
+import com.otoki.powersales.schedule.dto.response.LeaderDailyWorkerItem
 import com.otoki.powersales.schedule.dto.response.LeaderScheduleCreateResponse
 import com.otoki.powersales.schedule.dto.response.LeaderTeamMemberListResponse
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
@@ -55,6 +59,10 @@ class LeaderScheduleService(
         private val WORKING_CATEGORY2_DEDICATED = WorkingCategory2.DEDICATED
         private val WORKING_CATEGORY3_ALLOWED = setOf("고정", "격고", "순회")
         private val LEADER_ACCOUNT_GROUPS = listOf("1000", "1010")
+
+        /** 일별 현황 정렬 — 출근 완료자 우선(레거시 mngDaily 병합 순서 동등), 그 다음 이름순. */
+        private val WORKER_ORDER: Comparator<LeaderDailyWorkerItem> =
+            compareByDescending<LeaderDailyWorkerItem> { it.attended }.thenBy { it.employeeName }
     }
 
     @Transactional
@@ -135,6 +143,67 @@ class LeaderScheduleService(
             .map { LeaderTeamMemberListResponse.from(it) }
     }
 
+    /**
+     * 조장 여사원 일별 현황 조회 (레거시 `employee/mngDaily.jsp` — 조회 전용).
+     *
+     * **레거시 매핑**: SF/JSP `employee/mngDaily.jsp` + `EmployeeController.mgnDaily`.
+     * 조장이 특정 날짜의 팀 여사원 진열/행사/연차 근무 현황 + 거래처별 출근 등록 현황을 조회.
+     * 레거시의 "일정변경"(mutation) 은 본 작업 범위 외 — P7 / spec #679 로 분리.
+     *
+     * **동작**: 본인 팀(cost_center_code) 여사원의 [date] 일정을 fetchJoin 단건 조회 후
+     * 진열/행사 근무자 + 연차자로 분류하고 출근 등록 여부(attendance_log FK)를 함께 반환.
+     *
+     * **분류 정합**: 진열/행사/연차 분류·출근 판정은 [FemaleEmployeeScheduleQueryService.aggregateSummary]
+     * 와 동일 기준 — 진열=`WORK && cat1 != EVENT`(cat1=null 포함), 행사=`WORK && cat1 == EVENT`,
+     * 연차=`ANNUAL_LEAVE`, 출근=`attendanceLog != null`.
+     */
+    fun getDailyStatus(registrantId: Long, date: LocalDate): LeaderDailyStatusResponse {
+        val registrant = findRegistrant(registrantId)
+        requireLeader(registrant)
+
+        val costCenterCode = registrant.costCenterCode
+            ?: return emptyDailyStatus(date)
+
+        val teamMembers = employeeRepository.findByCostCenterCodeAndRole(costCenterCode, AppAuthority.WOMAN)
+        if (teamMembers.isEmpty()) return emptyDailyStatus(date)
+
+        val employeeIds = teamMembers.mapNotNull { it.id.takeIf { v -> v != 0L } }
+        val schedules = teamMemberScheduleRepository.findDailyStatusByEmployeeIds(date, employeeIds)
+
+        // 진열/행사/연차 분류 — aggregateSummary 정합 (진열은 cat1 != EVENT 로 null 포함).
+        val displaySchedules = schedules.filter {
+            it.workingType == WorkingType.WORK && it.workingCategory1 != WorkingCategory1.EVENT
+        }
+        val eventSchedules = schedules.filter {
+            it.workingType == WorkingType.WORK && it.workingCategory1 == WorkingCategory1.EVENT
+        }
+        val annualLeaveSchedules = schedules.filter { it.workingType == WorkingType.ANNUAL_LEAVE }
+
+        val displayWorkers = displaySchedules.map { it.toWorkerItem() }.sortedWith(WORKER_ORDER)
+        val eventWorkers = eventSchedules.map { it.toWorkerItem() }.sortedWith(WORKER_ORDER)
+        val annualLeaveWorkers = annualLeaveSchedules
+            .mapNotNull { it.employee }
+            .distinctBy { it.id }
+            .sortedBy { it.name }
+            .map { LeaderDailyEmployeeItem(employeeId = it.id, employeeName = it.name, employeeCode = it.employeeCode) }
+
+        val summary = LeaderDailyStatusSummary(
+            displayTotal = displaySchedules.size,
+            displayAttended = displaySchedules.count { it.attendanceLog != null },
+            eventTotal = eventSchedules.size,
+            eventAttended = eventSchedules.count { it.attendanceLog != null },
+            annualLeaveCount = annualLeaveWorkers.size,
+        )
+
+        return LeaderDailyStatusResponse(
+            date = date.toString(),
+            summary = summary,
+            displayWorkers = displayWorkers,
+            eventWorkers = eventWorkers,
+            annualLeaveWorkers = annualLeaveWorkers,
+        )
+    }
+
     fun getAccounts(registrantId: Long, keyword: String?): List<LeaderAccountListResponse> {
         val registrant = findRegistrant(registrantId)
         requireLeader(registrant)
@@ -194,4 +263,27 @@ class LeaderScheduleService(
         if (account.accountGroup !in LEADER_ACCOUNT_GROUPS) return false
         return true
     }
+
+    private fun emptyDailyStatus(date: LocalDate): LeaderDailyStatusResponse =
+        LeaderDailyStatusResponse(
+            date = date.toString(),
+            summary = LeaderDailyStatusSummary(0, 0, 0, 0, 0),
+            displayWorkers = emptyList(),
+            eventWorkers = emptyList(),
+            annualLeaveWorkers = emptyList(),
+        )
+
+    private fun TeamMemberSchedule.toWorkerItem(): LeaderDailyWorkerItem =
+        LeaderDailyWorkerItem(
+            scheduleId = id,
+            employeeId = employee?.id,
+            employeeName = employee?.name.orEmpty(),
+            employeeCode = employee?.employeeCode.orEmpty(),
+            accountName = account?.name.orEmpty(),
+            accountCode = account?.externalKey.orEmpty(),
+            workingCategory1 = workingCategory1?.displayName,
+            workingCategory2 = workingCategory2?.displayName,
+            workingCategory3 = workingCategory3?.displayName,
+            attended = attendanceLog != null,
+        )
 }

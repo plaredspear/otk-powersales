@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/leader_account.dart';
+import 'package:mobile/domain/entities/leader_daily_status.dart';
 import 'package:mobile/domain/entities/leader_schedule_created.dart';
 import 'package:mobile/domain/entities/leader_team_member.dart';
 import 'package:mobile/domain/repositories/leader_schedule_repository.dart';
@@ -32,6 +33,11 @@ class FakeLeaderScheduleRepository implements LeaderScheduleRepository {
     lastKeyword = keyword;
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return accounts;
+  }
+
+  @override
+  Future<LeaderDailyStatus> getDailyStatus(DateTime date) async {
+    throw UnimplementedError();
   }
 
   @override

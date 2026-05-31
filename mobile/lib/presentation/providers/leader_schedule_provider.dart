@@ -5,6 +5,7 @@ import '../../core/utils/error_utils.dart';
 import '../../data/datasources/leader_schedule_api_datasource.dart';
 import '../../data/repositories/leader_schedule_repository_impl.dart';
 import '../../domain/entities/leader_account.dart';
+import '../../domain/entities/leader_daily_status.dart';
 import '../../domain/entities/leader_team_member.dart';
 import '../../domain/repositories/leader_schedule_repository.dart';
 import '../../domain/usecases/create_team_member_schedule_usecase.dart';
@@ -260,3 +261,121 @@ final leaderScheduleCreateProvider = StateNotifierProvider.autoDispose
     targetEmployeeId: targetEmployeeId,
   );
 });
+
+// ============================================
+// 4. 여사원 일별 현황 State + Notifier (조회 전용)
+// ============================================
+
+/// 여사원 일별 현황 화면 상태. 검색은 로드된 데이터에 대해 클라이언트 측 필터링.
+class LeaderDailyStatusState {
+  final DateTime selectedDate;
+  final bool isLoading;
+  final String? errorMessage;
+  final LeaderDailyStatus? data;
+  final String searchKeyword;
+  final bool hasLoaded;
+
+  const LeaderDailyStatusState({
+    required this.selectedDate,
+    this.isLoading = false,
+    this.errorMessage,
+    this.data,
+    this.searchKeyword = '',
+    this.hasLoaded = false,
+  });
+
+  bool _matches(String name, String code, String account) {
+    if (searchKeyword.isEmpty) return true;
+    final needle = searchKeyword.toLowerCase();
+    return name.toLowerCase().contains(needle) ||
+        code.toLowerCase().contains(needle) ||
+        account.toLowerCase().contains(needle);
+  }
+
+  List<LeaderDailyWorker> get filteredDisplayWorkers =>
+      (data?.displayWorkers ?? const [])
+          .where((w) => _matches(w.employeeName, w.employeeCode, w.accountName))
+          .toList();
+
+  List<LeaderDailyWorker> get filteredEventWorkers =>
+      (data?.eventWorkers ?? const [])
+          .where((w) => _matches(w.employeeName, w.employeeCode, w.accountName))
+          .toList();
+
+  List<LeaderDailyEmployee> get filteredAnnualLeaveWorkers =>
+      (data?.annualLeaveWorkers ?? const [])
+          .where((e) => _matches(e.employeeName, e.employeeCode, ''))
+          .toList();
+
+  LeaderDailyStatusState copyWith({
+    DateTime? selectedDate,
+    bool? isLoading,
+    String? errorMessage,
+    bool clearError = false,
+    LeaderDailyStatus? data,
+    String? searchKeyword,
+    bool? hasLoaded,
+  }) {
+    return LeaderDailyStatusState(
+      selectedDate: selectedDate ?? this.selectedDate,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      data: data ?? this.data,
+      searchKeyword: searchKeyword ?? this.searchKeyword,
+      hasLoaded: hasLoaded ?? this.hasLoaded,
+    );
+  }
+}
+
+class LeaderDailyStatusNotifier extends StateNotifier<LeaderDailyStatusState> {
+  final LeaderScheduleRepository _repository;
+
+  LeaderDailyStatusNotifier(this._repository)
+      : super(LeaderDailyStatusState(selectedDate: _today()));
+
+  static DateTime _today() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  /// 선택 날짜 기준 일별 현황 조회. 실패 시 errorMessage 설정, 항상 hasLoaded=true.
+  Future<void> load() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final data = await _repository.getDailyStatus(state.selectedDate);
+      state = state.copyWith(
+        isLoading: false,
+        data: data,
+        hasLoaded: true,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: extractErrorMessage(e),
+        hasLoaded: true,
+      );
+    }
+  }
+
+  /// 날짜 변경 후 재조회.
+  Future<void> changeDate(DateTime date) async {
+    state = state.copyWith(selectedDate: date);
+    await load();
+  }
+
+  /// 검색어 설정 — 로드된 데이터에 대한 클라이언트 측 필터에만 사용(재조회 없음).
+  void setSearchKeyword(String keyword) {
+    state = state.copyWith(searchKeyword: keyword);
+  }
+
+  /// 에러 메시지 1회성 소비(SnackBar 표시 후 호출).
+  void clearError() => state = state.copyWith(clearError: true);
+}
+
+/// 여사원 일별 현황 Provider — 진입 시 오늘 날짜로 초기화.
+final leaderDailyStatusProvider = StateNotifierProvider.autoDispose<
+    LeaderDailyStatusNotifier, LeaderDailyStatusState>(
+  (ref) => LeaderDailyStatusNotifier(
+    ref.watch(leaderScheduleRepositoryProvider),
+  ),
+);

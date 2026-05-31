@@ -4,6 +4,7 @@ import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
+import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusResponse
 import com.otoki.powersales.schedule.dto.response.LeaderScheduleCreateResponse
 import com.otoki.powersales.schedule.dto.response.LeaderTeamMemberListResponse
 import com.otoki.powersales.schedule.service.LeaderScheduleService
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDate
 
 /**
  * 조장 대리 일정 등록 API Controller (Spec #554 P1-B).
@@ -64,5 +66,25 @@ class LeaderScheduleController(
     ): ResponseEntity<ApiResponse<List<LeaderAccountListResponse>>> {
         val response = leaderScheduleService.getAccounts(principal.userId, keyword)
         return ResponseEntity.ok(ApiResponse.success(response, "거래처 목록 조회 성공"))
+    }
+
+    /**
+     * 여사원 일별 현황 조회 (레거시 `employee/mngDaily.jsp` — 조회 전용)
+     * GET /api/v1/mobile/leader/daily-status?date=YYYY-MM-DD
+     *
+     * 본인 팀 여사원의 해당 날짜 진열/행사/연차 근무 현황 + 거래처별 출근 등록 현황.
+     */
+    @GetMapping("/daily-status")
+    fun getDailyStatus(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestParam date: String
+    ): ResponseEntity<ApiResponse<LeaderDailyStatusResponse>> {
+        val localDate = try {
+            LocalDate.parse(date)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("날짜 형식을 확인해주세요")
+        }
+        val response = leaderScheduleService.getDailyStatus(principal.userId, localDate)
+        return ResponseEntity.ok(ApiResponse.success(response, "여사원 일별 현황 조회 성공"))
     }
 }

@@ -1,4 +1,5 @@
 import '../../domain/entities/leader_account.dart';
+import '../../domain/entities/leader_daily_status.dart';
 import '../../domain/entities/leader_schedule_created.dart';
 import '../../domain/entities/leader_team_member.dart';
 import '../../domain/repositories/leader_schedule_repository.dart';
@@ -18,6 +19,12 @@ class LeaderScheduleRepositoryImpl implements LeaderScheduleRepository {
   Future<List<LeaderTeamMember>> getTeamMembers() async {
     final models = await _dataSource.getTeamMembers();
     return models.map((m) => m.toEntity()).toList();
+  }
+
+  @override
+  Future<LeaderDailyStatus> getDailyStatus(DateTime date) async {
+    final model = await _dataSource.getDailyStatus(_formatDate(date));
+    return model.toEntity();
   }
 
   @override
