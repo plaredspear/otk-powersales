@@ -396,8 +396,8 @@ export const menuRoute: MenuRoute = {
         { path: '/admin/tools/scheduled-jobs', name: '스케줄 잡 실행 이력', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/tools/sap-inbound', name: 'SAP Inbound', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/tools/sap-outbound', name: 'SAP Outbound', systemPermission: 'VIEW_ALL_DATA' },
-        { path: '/admin/tools/sf-migration-stage1', name: 'SF Migration — Stage 1 적재', systemPermission: 'MODIFY_ALL_DATA' },
-        { path: '/admin/tools/sf-migration', name: 'SF Migration — Stage 2 FK', systemPermission: 'MODIFY_ALL_DATA' },
+        // SF Migration Stage 1/2 는 런칭 전 일회성 운영 도구 — 권한 부트스트랩 닭-달걀 회피 위해
+        // 사이드 메뉴에서 제외하고 URL 직접 진입으로만 노출 (라우트 가드도 제거, backend 는 로그인만 요구).
         { path: '/admin/tools/cache', name: 'Redis 캐시 관리', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/permissions/guide', name: '권한 사용 가이드', allowedProfileNames: ['시스템 관리자'] },
       ],

@@ -314,11 +314,14 @@ export const router = createBrowserRouter(
             {
               element: <PermissionRoute systemPermission="MODIFY_ALL_DATA" />,
               children: [
-                { path: '/admin/tools/sf-migration', element: <LazyWrapper><SfMigrationPage /></LazyWrapper> },
-                { path: '/admin/tools/sf-migration-stage1', element: <LazyWrapper><SfMigrationStage1Page /></LazyWrapper> },
                 { path: '/admin/tools/cache', element: <LazyWrapper><CacheManagementPage /></LazyWrapper> },
               ],
             },
+            // SF Migration Stage 1/2 — 런칭 전 일회성 운영 도구. 권한 부트스트랩 닭-달걀 회피 위해
+            // PermissionRoute 가드 없이 ProtectedRoute(로그인) 아래 직접 배치 — 사이드 메뉴에서도 제외.
+            // backend 도 @RequiresSfPermission 제거 (authenticated() 만 유지). 마이그레이션 완료 후 가드 복원 권장.
+            { path: '/admin/tools/sf-migration', element: <LazyWrapper><SfMigrationPage /></LazyWrapper> },
+            { path: '/admin/tools/sf-migration-stage1', element: <LazyWrapper><SfMigrationStage1Page /></LazyWrapper> },
             {
               element: <PermissionRoute entity="agreement_word" operation="READ" />,
               children: [

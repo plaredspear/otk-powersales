@@ -1,8 +1,5 @@
 package com.otoki.powersales.sfmigration.stage1
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.auth.permission.SfSystemPermission
 import com.otoki.powersales.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -30,6 +27,9 @@ import java.util.concurrent.Executors
  * 진입점 2개:
  *  - POST /copy-from-s3       : 단건 (target 1개) 실행
  *  - POST /copy-all-from-s3   : 일괄 (등록된 모든 entity) 실행 — 의존성 순서, 1개 실패 시 즉시 중단
+ *
+ * 권한: 로그인(authenticated)만 요구 — @RequiresSfPermission 제거. 권한 데이터 적재 단계라
+ * MODIFY_ALL_DATA 부트스트랩 닭-달걀 회피. web 사이드 메뉴 제외 + URL 직접 진입. 완료 후 가드 복원 권장.
  */
 // Stage1S3CopyService 와 동일하게 dev/prod 에서만 활성화 (S3Client 의존 + 운영 도구 성격).
 @RestController
@@ -47,7 +47,6 @@ class Stage1CopyController(
     }
 
     @PostMapping("/api/v1/admin/sf-migration/stage1/copy-from-s3")
-    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun copyFromS3(
         @Valid @RequestBody req: Stage1CopyRequest,
     ): ResponseEntity<ApiResponse<Stage1CopyProgressResponse>> {
@@ -67,7 +66,6 @@ class Stage1CopyController(
     }
 
     @PostMapping("/api/v1/admin/sf-migration/stage1/copy-all-from-s3")
-    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun copyAllFromS3(
         @Valid @RequestBody req: Stage1CopyAllRequest,
     ): ResponseEntity<ApiResponse<Stage1CopyProgressResponse>> {
@@ -87,13 +85,11 @@ class Stage1CopyController(
     }
 
     @GetMapping("/api/v1/admin/sf-migration/stage1/copy-from-s3/progress")
-    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun getProgress(): ResponseEntity<ApiResponse<Stage1CopyProgressResponse>> {
         return ResponseEntity.ok(ApiResponse.success(progress.toResponse()))
     }
 
     @GetMapping("/api/v1/admin/sf-migration/stage1/targets")
-    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun listTargets(): ResponseEntity<ApiResponse<List<String>>> {
         return ResponseEntity.ok(ApiResponse.success(Stage1Targets.list()))
     }
