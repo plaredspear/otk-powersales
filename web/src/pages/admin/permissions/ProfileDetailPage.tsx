@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Alert, Button, Card, Descriptions, Input, Space, Spin, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useProfile } from '@/hooks/admin/useAdminPermission';
-import type { AssignedUserSummary } from '@/api/admin/permission';
+import { usePermission } from '@/hooks/usePermission';
+import type { AssignedUserSummary, ObjectPermissionRow, CustomPermissionRow } from '@/api/admin/permission';
 
 const { Title } = Typography;
 
