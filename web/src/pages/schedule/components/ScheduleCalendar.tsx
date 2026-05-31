@@ -13,6 +13,11 @@ import { ScheduleEventCard } from './ScheduleEventCard';
 
 export type CalendarView = 'dayGridMonth' | 'listMonth';
 
+// SF 레거시 정합 (FullCalendarComponentHelper.js) — 목록 뷰 요약 칩 색상
+const SUMMARY_COLOR_MATCH = '#069740'; // 진열/행사 양쪽 정확 일치 — 녹색
+const SUMMARY_COLOR_MISMATCH = '#b2272d'; // 미달/초과 — 빨강
+const SUMMARY_COLOR_LEAVE = '#9CAB98'; // 연차 — 회녹색
+
 interface ScheduleCalendarProps {
   currentDate: Dayjs;
   onDateChange: (d: Dayjs) => void;
@@ -59,22 +64,59 @@ export function ScheduleCalendar({
     return map;
   }, [schedules]);
 
-  const events: EventInput[] = useMemo(
-    () =>
-      schedules.map((s) => {
-        const color = getEventColor(s);
-        return {
-          id: String(s.id),
-          title: s.employeeName,
-          date: s.workingDate,
-          backgroundColor: color,
-          borderColor: color,
-          textColor: '#fff',
-          extendedProps: { dotColor: color },
-        };
-      }),
-    [schedules],
-  );
+  const isListView = viewType === 'listMonth';
+
+  const events: EventInput[] = useMemo(() => {
+    const scheduleEvents: EventInput[] = schedules.map((s) => {
+      const color = getEventColor(s);
+      return {
+        id: String(s.id),
+        title: s.employeeName,
+        date: s.workingDate,
+        backgroundColor: color,
+        borderColor: color,
+        textColor: '#fff',
+        extendedProps: { dotColor: color },
+      };
+    });
+
+    // 목록(listMonth) 뷰에서는 SF 레거시(FullCalendarComponentHelper.js drawSchedule) 정합으로
+    // 일별 요약을 종일 이벤트 2건(진열/행사 칩 + 연차 칩)으로 추가한다. 월간 뷰는 셀 배지
+    // (dayCellContent) 가 동일 정보를 그리므로 요약 이벤트를 넣지 않아 중복을 피한다.
+    if (!isListView) return scheduleEvents;
+
+    const summaryEvents: EventInput[] = [];
+    summaries.forEach((s) => {
+      const workMatch =
+        s.displayActual === s.displayExpected && s.promotionActual === s.promotionExpected;
+      const workColor = workMatch ? SUMMARY_COLOR_MATCH : SUMMARY_COLOR_MISMATCH;
+      summaryEvents.push({
+        id: `summary-work-${s.date}`,
+        title: `진열: ${s.displayActual}/${s.displayExpected} | 행사: ${s.promotionActual}/${s.promotionExpected}`,
+        date: s.date,
+        allDay: true,
+        backgroundColor: workColor,
+        borderColor: workColor,
+        textColor: '#fff',
+        extendedProps: { sortOrder: 1 },
+      });
+      summaryEvents.push({
+        id: `summary-leave-${s.date}`,
+        title: `연차 : ${s.annualLeave}`,
+        date: s.date,
+        allDay: true,
+        backgroundColor: SUMMARY_COLOR_LEAVE,
+        borderColor: SUMMARY_COLOR_LEAVE,
+        textColor: '#fff',
+        extendedProps: { sortOrder: 2 },
+      });
+    });
+    // 일반 일정은 요약(1,2) 뒤에 오도록 sortOrder=3 (SF order 1,2 → 3 정합). eventOrder 로 정렬.
+    scheduleEvents.forEach((e) => {
+      e.extendedProps = { ...(e.extendedProps ?? {}), sortOrder: 3 };
+    });
+    return [...summaryEvents, ...scheduleEvents];
+  }, [schedules, summaries, isListView]);
 
   const handlePrev = useCallback(() => {
     const newDate = currentDate.subtract(1, 'month');
@@ -130,7 +172,9 @@ export function ScheduleCalendar({
   const renderEventContent = useCallback(
     (arg: EventContentArg) => {
       const schedule = scheduleMap.get(arg.event.id);
-      if (!schedule) return null;
+      // 요약 이벤트(summary-*)는 scheduleMap 에 없음 — undefined 를 반환해 FullCalendar 기본
+      // title 렌더(목록 뷰의 "진열: a/b | 행사: c/d", "연차 : n")를 그대로 사용한다.
+      if (!schedule) return undefined;
       const variant = arg.view.type === 'listMonth' ? 'list' : 'month';
       return <ScheduleEventCard schedule={schedule} variant={variant} />;
     },
@@ -146,8 +190,6 @@ export function ScheduleCalendar({
     },
     [scheduleMap, onEventClick],
   );
-
-  const isListView = viewType === 'listMonth';
 
   return (
     <div
@@ -226,6 +268,7 @@ export function ScheduleCalendar({
           dayMaxEventRows={true}
           moreLinkText={(num) => `+${num} 개`}
           events={events}
+          eventOrder="sortOrder"
           dayCellContent={renderDayCellContent}
           eventContent={renderEventContent}
           eventClick={handleEventClick}
