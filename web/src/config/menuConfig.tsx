@@ -259,6 +259,7 @@ export const menuRoute: MenuRoute = {
       icon: <SearchOutlined />,
       children: [
         { path: '/field-inspection', name: '현장점검', entity: 'site_activity', operation: 'READ' },
+        { path: '/inspection-themes', name: '현장점검 등록', entity: 'inspection_theme', operation: 'READ' },
         { path: '/safety-check', name: '안전점검', entity: 'team_member_schedule', operation: 'READ' },
         { path: '/product-expiration', name: '유통기한 관리', entity: 'product', operation: 'READ' },
         {

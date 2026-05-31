@@ -2230,6 +2230,145 @@
         "required" : [ "category", "content", "title" ],
         "type" : "object"
       },
+      "AdminThemeDetailResponse" : {
+        "properties" : {
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : [ "string", "null" ]
+          },
+          "department" : {
+            "type" : [ "string", "null" ]
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "ownerName" : {
+            "type" : [ "string", "null" ]
+          },
+          "siteActivities" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AdminThemeSiteActivityItem"
+            },
+            "type" : "array"
+          },
+          "startDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "updatedAt" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "AdminThemeListItem" : {
+        "properties" : {
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : [ "string", "null" ]
+          },
+          "department" : {
+            "type" : [ "string", "null" ]
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "ownerName" : {
+            "type" : [ "string", "null" ]
+          },
+          "siteActivityCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "startDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "AdminThemeListResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AdminThemeListItem"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminThemeSiteActivityItem" : {
+        "properties" : {
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "activityDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "AdminUserDetailResponse" : {
         "properties" : {
           "active" : {
@@ -3203,6 +3342,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseAdminThemeDetailResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminThemeDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminThemeListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminThemeListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseAdminUserDetailResponse" : {
         "properties" : {
           "data" : {
@@ -3701,6 +3898,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/ClaimDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseClaimFormDataResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ClaimFormDataResponse"
             }, {
               "type" : "null"
             } ]
@@ -8040,6 +8266,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseThemeMutationResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ThemeMutationResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseTokenResponse" : {
         "properties" : {
           "data" : {
@@ -9357,6 +9612,29 @@
         },
         "type" : "object"
       },
+      "ClaimFormDataResponse" : {
+        "properties" : {
+          "categories" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryInfo"
+            },
+            "type" : "array"
+          },
+          "purchaseMethods" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CodeNameInfo"
+            },
+            "type" : "array"
+          },
+          "requestTypes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CodeNameInfo"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "ClaimListItemResponse" : {
         "properties" : {
           "accountName" : {
@@ -9750,6 +10028,17 @@
         },
         "type" : "object"
       },
+      "CodeNameInfo" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ConditionSnapshot" : {
         "properties" : {
           "conditionOrder" : {
@@ -9853,6 +10142,20 @@
           },
           "yearMonth" : {
             "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "CreateThemeRequest" : {
+        "properties" : {
+          "endDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -18690,6 +18993,18 @@
         "required" : [ "workingDate", "workingType" ],
         "type" : "object"
       },
+      "ThemeMutationResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "ThemeResponse" : {
         "properties" : {
           "endDate" : {
@@ -18767,6 +19082,20 @@
           "onLeave" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "UpdateThemeRequest" : {
+        "properties" : {
+          "endDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -21941,6 +22270,191 @@
           }
         },
         "tags" : [ "admin-holiday-master-controller" ]
+      }
+    },
+    "/api/v1/admin/inspection-themes" : {
+      "get" : {
+        "operationId" : "getThemes",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminThemeListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-theme-controller" ]
+      },
+      "post" : {
+        "operationId" : "createTheme",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateThemeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseThemeMutationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-theme-controller" ]
+      }
+    },
+    "/api/v1/admin/inspection-themes/{id}" : {
+      "delete" : {
+        "operationId" : "deleteTheme",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-theme-controller" ]
+      },
+      "get" : {
+        "operationId" : "getThemeDetail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminThemeDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-theme-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateTheme",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateThemeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseThemeMutationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-theme-controller" ]
+      }
+    },
+    "/api/v1/admin/inspection-themes/{id}/export" : {
+      "get" : {
+        "operationId" : "exportTheme",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-theme-controller" ]
       }
     },
     "/api/v1/admin/inspections" : {
@@ -28497,6 +29011,24 @@
         "tags" : [ "claim-controller" ]
       }
     },
+    "/api/v1/mobile/claims/form-data" : {
+      "get" : {
+        "operationId" : "getClaimFormData",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseClaimFormDataResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "claim-query-controller" ]
+      }
+    },
     "/api/v1/mobile/claims/{claimId}" : {
       "delete" : {
         "operationId" : "deleteClaim",
@@ -28902,7 +29434,7 @@
     },
     "/api/v1/mobile/inspections/themes" : {
       "get" : {
-        "operationId" : "getThemes",
+        "operationId" : "getThemes_1",
         "responses" : {
           "200" : {
             "content" : {

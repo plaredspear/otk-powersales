@@ -85,6 +85,20 @@ class SiteActivityRepositoryCustomImpl(
         }
     }
 
+    override fun findByInspectionThemeIdForAdmin(themeId: Long): List<SiteActivity> {
+        return queryFactory
+            .selectFrom(siteActivity)
+            .leftJoin(siteActivity.employee, employee).fetchJoin()
+            .leftJoin(siteActivity.account, account).fetchJoin()
+            .leftJoin(siteActivity.product, product).fetchJoin()
+            .where(
+                siteActivity.inspectionTheme.id.eq(themeId),
+                siteActivity.isDeleted.isNull.or(siteActivity.isDeleted.isFalse)
+            )
+            .orderBy(siteActivity.activityDate.desc(), siteActivity.id.desc())
+            .fetch()
+    }
+
     override fun existsVisibleById(policyPredicate: Predicate, id: Long): Boolean {
         val where = BooleanBuilder()
             .and(policyPredicate)

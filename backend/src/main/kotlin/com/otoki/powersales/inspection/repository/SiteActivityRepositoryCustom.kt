@@ -36,4 +36,10 @@ interface SiteActivityRepositoryCustom {
      * 가시 범위(policyPredicate) 내에 해당 id 의 미삭제 현장점검이 존재하는지.
      */
     fun existsVisibleById(policyPredicate: Predicate, id: Long): Boolean
+
+    /**
+     * 테마(InspectionTheme) 하위 현장점검 결과 목록 — 미삭제 + account/employee/product fetch join.
+     * 테마 상세 관련목록 + 엑셀 export 공용. activityDate DESC, id DESC 정렬.
+     */
+    fun findByInspectionThemeIdForAdmin(themeId: Long): List<SiteActivity>
 }
