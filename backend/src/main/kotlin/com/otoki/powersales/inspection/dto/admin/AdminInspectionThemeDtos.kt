@@ -47,6 +47,36 @@ data class AdminThemeDetailResponse(
     val siteActivities: List<AdminThemeSiteActivityItem>,
 )
 
+/**
+ * admin 현장점검 결과(SiteActivity) 등록 요청.
+ *
+ * 레거시 SF `DKRetail__SiteAcitivity__c` 표준 New 폼 + `IF_REST_MOBILE_SiteActivityRegist` 매핑 동등.
+ * mobile 등록과 달리 점검 사원(`employeeId`)을 관리자가 명시 지정 (다른 사원 대신 보정 입력).
+ * category=OWN(자사) 면 productCode 필수, COMPETITOR(경쟁사) 면 경쟁사 필드 사용.
+ */
+data class AdminCreateSiteActivityRequest(
+    val themeId: Long,
+    val accountId: Int,
+    val employeeId: Long,
+    val inspectionDate: String,
+    val category: String,
+    val fieldTypeCode: String,
+    val description: String? = null,
+    val productCode: String? = null,
+    val competitorName: String? = null,
+    val competitorActivity: String? = null,
+    val competitorTasting: Boolean? = null,
+    val competitorProductName: String? = null,
+    val competitorProductPrice: Int? = null,
+    val competitorSalesQuantity: Int? = null,
+)
+
+/** admin 현장점검 결과 등록 응답. */
+data class AdminSiteActivityMutationResponse(
+    val id: Long,
+    val name: String?,
+)
+
 /** 테마 상세 하단 관련목록 (SF Theme 레이아웃의 SiteActivity__r related list 컬럼 대응). */
 data class AdminThemeSiteActivityItem(
     val id: Long,
