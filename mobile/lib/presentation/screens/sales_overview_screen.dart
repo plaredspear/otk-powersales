@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../pages/event_sales_tab_page.dart';
 import '../pages/monthly_sales_tab_page.dart';
+import '../widgets/promotion/promotion_list_view.dart';
 
 /// 매출 현황 메인 화면
 ///
-/// 행사매출/월매출 탭을 포함하는 메인 화면입니다.
+/// 행사매출(실 API promotion 흐름)/월매출 탭을 포함하는 메인 화면입니다.
 class SalesOverviewScreen extends StatefulWidget {
   final int? initialTabIndex;
 
@@ -52,7 +52,7 @@ class _SalesOverviewScreenState extends State<SalesOverviewScreen>
       body: TabBarView(
         controller: _tabController,
         children: const [
-          EventSalesTabPage(),
+          PromotionListView(),
           MonthlySalesTabPage(),
         ],
       ),
