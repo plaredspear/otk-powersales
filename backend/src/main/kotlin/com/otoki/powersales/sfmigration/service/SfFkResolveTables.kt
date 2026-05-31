@@ -197,6 +197,9 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
     "theme" to ("inspection_theme" to "inspection_theme_id"),
     // 도메인 FK — prefix 가 곧 table 명인 케이스
     "account" to ("account" to "account_id"),
+    // Spec #849 — deprecated SF lookup 부활 (TeamMemberSchedule.DKRetail__AccountId__c / Promotion.DKRetail__AccId__c).
+    // dk_account_sfid → dk_account_id (자동추론), ref account.account_id.
+    "dk_account" to ("account" to "account_id"),
     "employee" to ("employee" to "employee_id"),
     "product" to ("product" to "product_id"),
     // NewProduct__c.Product_Code__c → DKRetail__Product__c lookup (product_code_sfid → product_code_id).

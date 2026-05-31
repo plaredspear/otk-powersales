@@ -84,6 +84,14 @@ class TeamMemberSchedule(
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
+    // -- Spec #849: deprecated SF lookup `DKRetail__AccountId__c` 부활 (raw FK id 컬럼만, @ManyToOne 미도입) --
+    @SFField("DKRetail__AccountId__c")
+    @Column(name = "dk_account_sfid", length = 18)
+    val dkAccountSfid: String? = null,
+
+    @Column(name = "dk_account_id")
+    val dkAccountId: Long? = null,
+
     /**
      * 조장(팀리더) sfid sync buffer.
      * SF prod 메타가 `type=string(100)` 자유 텍스트로 정의되어 있으므로 SF 라이브 권위 정합 (§6.8) 으로 entity length=100 적용 — 절단 위험 회피.

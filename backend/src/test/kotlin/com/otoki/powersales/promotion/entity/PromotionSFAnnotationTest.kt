@@ -30,10 +30,10 @@ class PromotionSFAnnotationTest {
         }
 
         @Test
-        @DisplayName("매핑 키 수 = 20 (도메인 12 + Q3 Formula 잔존 2 + SF 표준 시스템 3 + IsDeleted 1 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 21 (도메인 12 + Spec #849 DKRetail__AccId__c 부활 1 + Q3 Formula 잔존 2 + SF 표준 시스템 3 + IsDeleted 1 + BaseEntity 2)")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(Promotion::class.java)
-            assertThat(mapping).hasSize(20)
+            assertThat(mapping).hasSize(21)
         }
     }
 
@@ -78,8 +78,8 @@ class PromotionSFAnnotationTest {
             assertThat(mapping["DKRetail__Remark__c"]).isEqualTo("remark")
             assertThat(mapping["DKRetail__ProductType__c"]).isEqualTo("product_type")
 
-            // Q5 (sf-meta-diff): DKRetail__AccId__c (Label="사용안함", E 분류) 매핑 제거
-            assertThat(mapping).doesNotContainKey("DKRetail__AccId__c")
+            // Spec #849: DKRetail__AccId__c (Label="사용안함") 부활 — SF 메타 존재 non-calculated 필드는 마이그레이션 대상
+            assertThat(mapping["DKRetail__AccId__c"]).isEqualTo("dk_account_sfid")
 
             // Category1__c 는 SF formula (`DKRetail__PrimaryProductId__r.StoreCondition__c`) — derived property 로 전환되어 매핑 제외
             assertThat(mapping).doesNotContainKey("Category1__c")

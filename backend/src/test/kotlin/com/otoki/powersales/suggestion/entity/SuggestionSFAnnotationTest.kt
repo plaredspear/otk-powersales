@@ -99,6 +99,12 @@ class SuggestionSFAnnotationTest {
         }
 
         @Test
+        @DisplayName("Spec #849 — dk_category ↔ DKRetail__Category__c (deprecated Text 40 부활)")
+        fun dkCategoryRevived() {
+            assertThat(sfFieldOf("dkCategory")).isEqualTo("DKRetail__Category__c")
+        }
+
+        @Test
         @DisplayName("claim_type / claim_type_measures 양쪽 보존 (Q9 옵션 1)")
         fun claimTypeAndMeasures() {
             assertThat(sfFieldOf("claimType")).isEqualTo("ClaimType__c")

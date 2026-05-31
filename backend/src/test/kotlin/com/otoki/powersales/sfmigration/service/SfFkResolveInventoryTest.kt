@@ -37,6 +37,8 @@ class SfFkResolveInventoryTest {
     private val expected: Map<String, Expectation> = mapOf(
         // ── 도메인 FK (FK_PREFIX_MAPPING 명시 또는 prefix==table 자동추론) ──
         "account_sfid" to Expectation(FkResolutionKind.MAPPED, "account"),
+        // Spec #849 — deprecated SF lookup 부활 (team_member_schedule / promotion). FK_PREFIX_MAPPING 명시.
+        "dk_account_sfid" to Expectation(FkResolutionKind.MAPPED, "account"),
         "employee_sfid" to Expectation(FkResolutionKind.MAPPED, "employee"),
         "product_sfid" to Expectation(FkResolutionKind.MAPPED, "product"),
         "product_code_sfid" to Expectation(FkResolutionKind.MAPPED, "product"),
@@ -94,11 +96,11 @@ class SfFkResolveInventoryTest {
     )
 
     @Test
-    @DisplayName("인벤토리 크기 = 38 (backend entity 의 @Column(name=..._sfid) 전수, 2026-05-31 기준)")
+    @DisplayName("인벤토리 크기 = 39 (backend entity 의 @Column(name=..._sfid) 전수, Spec #849 dk_account_sfid 추가)")
     fun inventorySizeTripwire() {
         // 신규 *_sfid 컬럼 추가 시 이 숫자가 어긋나 사람이 EXPECTED 를 갱신하도록 강제.
-        // 갱신 명령은 클래스 KDoc 참조. 38 = 권위 목록 (sfid 단독 PK 컬럼은 제외).
-        assertThat(expected).hasSize(38)
+        // 갱신 명령은 클래스 KDoc 참조. 39 = 권위 목록 (sfid 단독 PK 컬럼은 제외).
+        assertThat(expected).hasSize(39)
     }
 
     @Test
