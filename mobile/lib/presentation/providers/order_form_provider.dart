@@ -16,6 +16,8 @@ import '../../domain/usecases/order_form/get_loan_inquiry.dart';
 import '../../domain/usecases/order_form/get_order_draft.dart';
 import '../../domain/usecases/order_form/save_order_draft.dart';
 import '../../domain/usecases/order_form/submit_order_request.dart';
+import '../../domain/usecases/search_products_for_order_usecase.dart';
+import 'add_product_provider.dart';
 import 'order_form_state.dart';
 
 // --- Spec #598 P1-M: 신규 백엔드 연결 Provider ──────────────────────
@@ -71,6 +73,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   final SaveOrderDraft _saveOrderDraft;
   final DeleteOrderDraft _deleteOrderDraft;
   final SubmitOrderRequest _submitOrderRequest;
+  final SearchProductsForOrder _searchProductsForOrder;
   final Uuid _uuid;
 
   OrderFormNotifier({
@@ -79,12 +82,14 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     required SaveOrderDraft saveOrderDraft,
     required DeleteOrderDraft deleteOrderDraft,
     required SubmitOrderRequest submitOrderRequest,
+    required SearchProductsForOrder searchProductsForOrder,
     Uuid? uuid,
   })  : _getLoanInquiry = getLoanInquiry,
         _getOrderDraft = getOrderDraft,
         _saveOrderDraft = saveOrderDraft,
         _deleteOrderDraft = deleteOrderDraft,
         _submitOrderRequest = submitOrderRequest,
+        _searchProductsForOrder = searchProductsForOrder,
         _uuid = uuid ?? const Uuid(),
         super(OrderFormState.initial());
 
@@ -306,6 +311,27 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       ),
     );
     return true;
+  }
+
+  /// 제품검색 결과의 "주문서 등록"에서 진입 시, 제품코드로 제품을 찾아
+  /// 주문 라인에 미리 추가한다 (레거시 `/order/write?productcode=` 정합).
+  /// 검색 실패/미일치는 조용히 무시하고 빈 주문서로 진입한다.
+  Future<void> preloadProductByCode(String productCode) async {
+    try {
+      final results = await _searchProductsForOrder.call(query: productCode);
+      ProductForOrder? match;
+      for (final p in results) {
+        if (p.productCode == productCode) {
+          match = p;
+          break;
+        }
+      }
+      if (match != null) {
+        addProductLine(match);
+      }
+    } catch (_) {
+      // 프리필 실패는 무시 (빈 주문서로 진입)
+    }
   }
 
   /// 제품 추가 (Legacy — OrderDraftItem 직접 전달, 회귀 호환).
@@ -711,5 +737,6 @@ final orderFormProvider =
     saveOrderDraft: ref.watch(saveOrderDraftUseCaseProvider),
     deleteOrderDraft: ref.watch(deleteOrderDraftUseCaseProvider),
     submitOrderRequest: ref.watch(submitOrderRequestUseCaseProvider),
+    searchProductsForOrder: ref.watch(searchProductsForOrderUseCaseProvider),
   );
 });

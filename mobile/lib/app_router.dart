@@ -155,9 +155,12 @@ class AppRouter {
           return OrderCancelPage(args: args);
         },
         orderForm: (context) {
-          final orderId =
-              ModalRoute.of(context)?.settings.arguments as int?;
-          return OrderFormPage(orderId: orderId);
+          final args = ModalRoute.of(context)?.settings.arguments;
+          // int = 수정 모드(orderId), String = 제품검색에서 전달된 제품코드(신규)
+          if (args is String) {
+            return OrderFormPage(initialProductCode: args);
+          }
+          return OrderFormPage(orderId: args as int?);
         },
         clientOrderDetail: (context) {
           final sapOrderNumber =

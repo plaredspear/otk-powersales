@@ -8,11 +8,13 @@ import 'package:mobile/domain/usecases/order_form/get_loan_inquiry.dart';
 import 'package:mobile/domain/usecases/order_form/get_order_draft.dart';
 import 'package:mobile/domain/usecases/order_form/save_order_draft.dart';
 import 'package:mobile/domain/usecases/order_form/submit_order_request.dart';
+import 'package:mobile/domain/usecases/search_products_for_order_usecase.dart';
 import 'package:mobile/presentation/providers/order_form_provider.dart';
 import 'package:uuid/data.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../helpers/fake_order_form_repository.dart';
+import '../../helpers/fake_order_request_repository.dart';
 
 /// 고정 UUID 발급 (테스트 결정성).
 class _FixedUuid extends Uuid {
@@ -35,6 +37,8 @@ void main() {
         saveOrderDraft: SaveOrderDraft(formRepo),
         deleteOrderDraft: DeleteOrderDraft(formRepo),
         submitOrderRequest: SubmitOrderRequest(formRepo),
+        searchProductsForOrder:
+            SearchProductsForOrder(FakeOrderRequestRepository()),
         uuid: _FixedUuid('11111111-1111-4111-8111-111111111111'),
       );
     }
@@ -42,6 +46,22 @@ void main() {
     setUp(() {
       formRepo = FakeOrderFormRepository();
       notifier = createNotifier();
+    });
+
+    group('preloadProductByCode (제품검색 → 주문서 프리필)', () {
+      test('제품코드로 검색해 주문 라인에 미리 추가한다', () async {
+        await notifier.preloadProductByCode('01101123');
+
+        final items = notifier.state.orderDraft.items;
+        expect(items, hasLength(1));
+        expect(items.first.productCode, '01101123');
+      });
+
+      test('일치하는 제품이 없으면 라인을 추가하지 않는다', () async {
+        await notifier.preloadProductByCode('NONEXISTENT_CODE');
+
+        expect(notifier.state.orderDraft.items, isEmpty);
+      });
     });
 
     group('initialize (#598 P2-M §2.1)', () {
