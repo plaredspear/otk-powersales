@@ -19,11 +19,15 @@ class ProductCard extends StatelessWidget {
   /// 주문서 등록 버튼 탭 콜백
   final VoidCallback? onOrderTap;
 
+  /// 카드 본문(제품 정보 영역) 탭 콜백 — 제품 상세로 이동
+  final VoidCallback? onTap;
+
   const ProductCard({
     super.key,
     required this.product,
     this.onClaimTap,
     this.onOrderTap,
+    this.onTap,
   });
 
   @override
@@ -41,35 +45,41 @@ class ProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 제품 정보 영역
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 제품명
-                Text(
-                  product.productName,
-                  style: AppTypography.headlineSmall,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppSpacing.xs),
+          // 제품 정보 영역 (탭 시 제품 상세로 이동)
+          InkWell(
+            onTap: onTap,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSpacing.radiusMd),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 제품명
+                  Text(
+                    product.productName,
+                    style: AppTypography.headlineSmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
 
-                // 제품코드
-                _buildInfoRow('제품코드', product.productCode),
-                const SizedBox(height: AppSpacing.xxs),
+                  // 제품코드
+                  _buildInfoRow('제품코드', product.productCode),
+                  const SizedBox(height: AppSpacing.xxs),
 
-                // 바코드
-                _buildInfoRow('바코드', product.barcode),
-                const SizedBox(height: AppSpacing.xxs),
+                  // 바코드
+                  _buildInfoRow('바코드', product.barcode),
+                  const SizedBox(height: AppSpacing.xxs),
 
-                // 보관조건 | 유통기한
-                _buildInfoRow(
-                  '보관',
-                  '${product.storageType} | ${product.shelfLife}',
-                ),
-              ],
+                  // 보관조건 | 유통기한
+                  _buildInfoRow(
+                    '보관',
+                    '${product.storageType} | ${product.shelfLife}',
+                  ),
+                ],
+              ),
             ),
           ),
 

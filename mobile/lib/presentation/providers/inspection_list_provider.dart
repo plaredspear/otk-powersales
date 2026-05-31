@@ -1,21 +1,24 @@
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock/my_account_mock_repository.dart';
+import '../../core/network/dio_provider.dart';
+import '../../data/datasources/inspection_api_datasource.dart';
+import '../../data/repositories/inspection_repository_impl.dart';
 import '../../domain/entities/inspection_list_item.dart';
 import '../../domain/repositories/inspection_repository.dart';
 import '../../domain/usecases/get_inspection_list_usecase.dart';
+import '../../domain/usecases/get_my_accounts.dart';
 import 'inspection_list_state.dart';
+import 'my_accounts_provider.dart';
 
 // ============================================
-// 1. Mock Repository Provider (임시)
+// 1. Repository Provider
 // ============================================
 
-/// Inspection Repository Provider (Mock)
-/// TODO: 실제 API 구현 후 InspectionRepositoryImpl로 교체
+/// Inspection Repository Provider (실 API)
 final inspectionRepositoryProvider = Provider<InspectionRepository>((ref) {
-  // Mock implementation will be provided later
-  throw UnimplementedError('InspectionRepository not implemented yet');
+  final dataSource = InspectionApiDataSource(ref.watch(dioProvider));
+  return InspectionRepositoryImpl(dataSource);
 });
 
 /// GetInspectionList UseCase Provider
@@ -31,22 +34,28 @@ final getInspectionListUseCaseProvider = Provider<GetInspectionListUseCase>((ref
 /// 현장점검 목록 화면 상태 관리 Notifier
 class InspectionListNotifier extends StateNotifier<InspectionListState> {
   final GetInspectionListUseCase _getInspectionList;
+  final GetMyAccounts _getMyAccounts;
 
   InspectionListNotifier({
     required GetInspectionListUseCase getInspectionList,
+    required GetMyAccounts getMyAccounts,
   })  : _getInspectionList = getInspectionList,
+        _getMyAccounts = getMyAccounts,
         super(InspectionListState.initial());
 
   /// 초기 데이터 로딩 (거래처 목록 + 자동 검색)
   Future<void> initialize() async {
-    // 거래처 목록 로드
-    final mockAccountRepo = MyAccountMockRepository();
-    final accountResult = await mockAccountRepo.getMyAccounts();
-    final accountsMap = <int, String>{};
-    for (final account in accountResult.accounts) {
-      accountsMap[account.accountId] = account.accountName;
+    // 거래처 목록 로드 (필터용 보조 데이터 — 실패해도 점검 목록 조회는 진행한다)
+    try {
+      final accountResult = await _getMyAccounts.call();
+      final accountsMap = <int, String>{};
+      for (final account in accountResult.accounts) {
+        accountsMap[account.accountId] = account.accountName;
+      }
+      state = state.copyWith(accounts: accountsMap);
+    } catch (_) {
+      // 거래처 목록 로딩 실패는 무시하고(필터만 비활성) 본문 검색을 계속한다.
     }
-    state = state.copyWith(accounts: accountsMap);
 
     // 기본 필터로 자동 검색
     await searchInspections();
@@ -127,5 +136,6 @@ final inspectionListProvider =
 
   return InspectionListNotifier(
     getInspectionList: useCase,
+    getMyAccounts: ref.watch(getMyAccountsUseCaseProvider),
   );
 });

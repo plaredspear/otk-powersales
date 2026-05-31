@@ -193,3 +193,23 @@ class PromotionProductNotFoundException : BusinessException(
     message = "상세 POS품목을 찾을 수 없습니다",
     httpStatus = HttpStatus.NOT_FOUND
 )
+
+// --- P4 일매출 마감(여사원) 예외 ---
+
+class DailySalesAlreadyClosedException : BusinessException(
+    errorCode = "DAILY_SALES_ALREADY_CLOSED",
+    message = "이미 마감된 일매출입니다",
+    httpStatus = HttpStatus.CONFLICT
+)
+
+class DailySalesProductRequiredException : BusinessException(
+    errorCode = "DAILY_SALES_PRODUCT_REQUIRED",
+    message = "대표상품 또는 기타상품 매출 중 최소 하나를 입력해야 합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class DailySalesPhotoRequiredException : BusinessException(
+    errorCode = "DAILY_SALES_PHOTO_REQUIRED",
+    message = "일매출 마감에는 사진이 필요합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

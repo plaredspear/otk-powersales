@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'domain/entities/education_category.dart';
 import 'domain/entities/product_expiration_item.dart';
+import 'presentation/pages/app_info_page.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
 import 'presentation/pages/claim_detail_page.dart';
 import 'presentation/pages/claim_list_page.dart';
 import 'presentation/pages/claim_register_page.dart';
 import 'presentation/pages/client_order_detail_page.dart';
+import 'presentation/pages/education_detail_page.dart';
 import 'presentation/pages/education_list_page.dart';
 import 'presentation/pages/education_main_page.dart';
 import 'presentation/pages/inspection_detail_page.dart';
@@ -18,10 +20,13 @@ import 'presentation/pages/order_cancel_page.dart';
 import 'presentation/pages/order_detail_page.dart';
 import 'presentation/pages/order_list_page.dart';
 import 'presentation/pages/order_form_page.dart';
+import 'presentation/pages/product_detail_page.dart';
 import 'presentation/pages/product_search_page.dart';
 import 'presentation/pages/my_accounts_page.dart';
 import 'presentation/pages/product_search_result_page.dart';
 import 'presentation/pages/product_expiration_list_page.dart';
+import 'presentation/pages/suggestion_detail_page.dart';
+import 'presentation/pages/suggestion_list_page.dart';
 import 'presentation/pages/suggestion_register_page.dart';
 import 'presentation/pages/product_expiration_delete_page.dart';
 import 'presentation/pages/product_expiration_register_page.dart';
@@ -34,10 +39,12 @@ import 'presentation/pages/my_schedule_calendar_page.dart';
 import 'presentation/pages/my_schedule_detail_page.dart';
 import 'presentation/pages/promotion_list_page.dart';
 import 'presentation/pages/promotion_detail_page.dart';
+import 'presentation/pages/promotion_daily_sales_page.dart';
 import 'presentation/pages/safety_check_page.dart';
 import 'presentation/pages/safety_check_status_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/gps_consent_screen.dart';
+import 'presentation/screens/leader_schedule/leader_daily_status_screen.dart';
 import 'presentation/screens/leader_schedule/leader_team_members_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
@@ -61,6 +68,7 @@ class AppRouter {
   static const String myAccounts = '/my-accounts';
   static const String productSearch = '/product-search';
   static const String productSearchResult = '/product-search/result';
+  static const String productDetail = '/product/detail';
   static const String orderList = '/order-list';
   static const String orderDetail = '/order-detail';
   static const String orderCancel = '/order-cancel';
@@ -77,20 +85,26 @@ class AppRouter {
   static const String claimDetail = '/claim/detail';
   static const String claimRegister = '/claim/register';
   static const String suggestionRegister = '/suggestion/register';
+  static const String suggestionList = '/suggestion/list'; // 내 제안/물류클레임 목록
+  static const String suggestionDetail = '/suggestion/detail'; // 제안/물류클레임 상세
   static const String education = '/education';
   static const String educationList = '/education/list';
+  static const String educationDetail = '/education/detail';
   static const String notices = '/notices';
   static const String noticeDetail = '/notices/detail';
   static const String salesOverview = '/sales-overview';
   static const String safetyCheck = '/safety-check';
   static const String promotionList = '/promotions';
   static const String promotionDetail = '/promotions/detail';
+  static const String promotionDailySales = '/promotions/daily-sales'; // P4: 여사원 일매출 마감
   static const String safetyCheckStatus = '/safety-check-status'; // #278: 안전점검 현황
   static const String myScheduleCalendar = '/my-schedule'; // F56: 마이페이지 일정 캘린더
   static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
   static const String altHolidayRequest = '/alt-holiday/request'; // #285: 대체휴무 신청
   static const String altHolidayHistory = '/alt-holiday/history'; // #285: 대체휴무 이력
   static const String leaderTeamMembers = '/leader/team-members'; // #554: 조장 — 팀원 일정 관리
+  static const String leaderDailyStatus = '/leader/daily-status'; // P6: 조장 — 여사원 일별현황(조회 전용)
+  static const String appInfo = '/app-info'; // 앱 정보 / 오픈소스 라이선스
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -110,6 +124,11 @@ class AppRouter {
         myAccounts: (context) => const MyAccountsPage(),
         productSearch: (context) => const ProductSearchPage(),
         productSearchResult: (context) => const ProductSearchResultPage(),
+        productDetail: (context) {
+          final productCode =
+              ModalRoute.of(context)!.settings.arguments as String;
+          return ProductDetailPage(productCode: productCode);
+        },
         orderList: (context) => const OrderListPage(),
         orderDetail: (context) {
           final orderId = ModalRoute.of(context)!.settings.arguments as int;
@@ -156,11 +175,21 @@ class AppRouter {
         },
         claimRegister: (context) => const ClaimRegisterPage(),
         suggestionRegister: (context) => const SuggestionRegisterPage(),
+        suggestionList: (context) => const SuggestionListPage(),
+        suggestionDetail: (context) {
+          final suggestionId =
+              ModalRoute.of(context)!.settings.arguments as int;
+          return SuggestionDetailPage(suggestionId: suggestionId);
+        },
         education: (context) => const EducationMainPage(),
         educationList: (context) {
           final category =
               ModalRoute.of(context)?.settings.arguments as EducationCategory?;
           return EducationListPage(category: category);
+        },
+        educationDetail: (context) {
+          final postId = ModalRoute.of(context)!.settings.arguments as String;
+          return EducationDetailPage(postId: postId);
         },
         notices: (context) => const NoticeListPage(),
         noticeDetail: (context) {
@@ -180,9 +209,17 @@ class AppRouter {
               ModalRoute.of(context)!.settings.arguments as int;
           return PromotionDetailPage(promotionId: promotionId);
         },
+        promotionDailySales: (context) {
+          final promotionEmployeeId =
+              ModalRoute.of(context)!.settings.arguments as int;
+          return PromotionDailySalesPage(
+              promotionEmployeeId: promotionEmployeeId);
+        },
         altHolidayRequest: (context) => const AltHolidayRequestPage(), // #285: 대체휴무 신청
         altHolidayHistory: (context) => const AltHolidayHistoryPage(), // #285: 대체휴무 이력
         leaderTeamMembers: (context) => const LeaderTeamMembersScreen(), // #554: 조장 팀원 일정 관리
+        leaderDailyStatus: (context) => const LeaderDailyStatusScreen(), // P6: 여사원 일별현황(조회 전용)
+        appInfo: (context) => const AppInfoPage(),
         myScheduleCalendar: (context) => const MyScheduleCalendarPage(), // F56: 일정 캘린더
         myScheduleDetail: (context) {
           // F56: 일정 상세

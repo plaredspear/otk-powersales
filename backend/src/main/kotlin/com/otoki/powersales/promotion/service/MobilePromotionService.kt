@@ -111,7 +111,7 @@ class MobilePromotionService(
         val employees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
 
         val employeeItems = employees.map { emp ->
-            MobilePromotionEmployeeItem.from(emp, emp.employee?.name)
+            MobilePromotionEmployeeItem.from(emp, emp.employee?.name, employee.id)
         }
 
         return MobilePromotionDetailResponse.from(

@@ -3,20 +3,27 @@ package com.otoki.powersales.schedule.controller
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
+import com.otoki.powersales.schedule.dto.request.LeaderScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
+import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusResponse
 import com.otoki.powersales.schedule.dto.response.LeaderScheduleCreateResponse
+import com.otoki.powersales.schedule.dto.response.LeaderScheduleUpdateResponse
 import com.otoki.powersales.schedule.dto.response.LeaderTeamMemberListResponse
 import com.otoki.powersales.schedule.service.LeaderScheduleService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDate
 
 /**
  * 조장 대리 일정 등록 API Controller (Spec #554 P1-B).
@@ -54,6 +61,34 @@ class LeaderScheduleController(
     }
 
     /**
+     * 조장 진열 일정 수정 (P7 — 거래처 변경)
+     * PUT /api/v1/mobile/leader/team-member-schedule/{scheduleId}
+     */
+    @PutMapping("/team-member-schedule/{scheduleId}")
+    fun updateTeamMemberSchedule(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable scheduleId: Long,
+        @Valid @RequestBody request: LeaderScheduleUpdateRequest
+    ): ResponseEntity<ApiResponse<LeaderScheduleUpdateResponse>> {
+        val response =
+            leaderScheduleService.updateTeamMemberSchedule(principal.userId, scheduleId, request)
+        return ResponseEntity.ok(ApiResponse.success(response, "팀원 일정이 수정되었습니다"))
+    }
+
+    /**
+     * 조장 진열 일정 삭제 (P7)
+     * DELETE /api/v1/mobile/leader/team-member-schedule/{scheduleId}
+     */
+    @DeleteMapping("/team-member-schedule/{scheduleId}")
+    fun deleteTeamMemberSchedule(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable scheduleId: Long
+    ): ResponseEntity<ApiResponse<Unit>> {
+        leaderScheduleService.deleteTeamMemberSchedule(principal.userId, scheduleId)
+        return ResponseEntity.ok(ApiResponse.success(Unit, "팀원 일정이 삭제되었습니다"))
+    }
+
+    /**
      * 본인 거래처 목록 조회
      * GET /api/v1/mobile/leader/accounts
      */
@@ -64,5 +99,25 @@ class LeaderScheduleController(
     ): ResponseEntity<ApiResponse<List<LeaderAccountListResponse>>> {
         val response = leaderScheduleService.getAccounts(principal.userId, keyword)
         return ResponseEntity.ok(ApiResponse.success(response, "거래처 목록 조회 성공"))
+    }
+
+    /**
+     * 여사원 일별 현황 조회 (레거시 `employee/mngDaily.jsp` — 조회 전용)
+     * GET /api/v1/mobile/leader/daily-status?date=YYYY-MM-DD
+     *
+     * 본인 팀 여사원의 해당 날짜 진열/행사/연차 근무 현황 + 거래처별 출근 등록 현황.
+     */
+    @GetMapping("/daily-status")
+    fun getDailyStatus(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestParam date: String
+    ): ResponseEntity<ApiResponse<LeaderDailyStatusResponse>> {
+        val localDate = try {
+            LocalDate.parse(date)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("날짜 형식을 확인해주세요")
+        }
+        val response = leaderScheduleService.getDailyStatus(principal.userId, localDate)
+        return ResponseEntity.ok(ApiResponse.success(response, "여사원 일별 현황 조회 성공"))
     }
 }

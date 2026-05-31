@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../../../domain/entities/product.dart';
+import '../../../domain/entities/product_detail.dart';
 import '../../../domain/repositories/product_repository.dart';
 
 /// 제품검색 Mock Repository
@@ -320,6 +321,26 @@ class MockProductRepository implements ProductRepository {
       pageSize: size,
       isFirst: page == 0,
       isLast: page >= totalPages - 1 || totalPages == 0,
+    );
+  }
+
+  @override
+  Future<ProductDetail> getProductDetail(String productCode) async {
+    await _simulateDelay();
+
+    final product = _mockProducts.firstWhere(
+      (p) => p.productCode == productCode,
+      orElse: () => throw ArgumentError('제품을 찾을 수 없습니다: $productCode'),
+    );
+
+    return ProductDetail(
+      productCode: product.productCode,
+      productName: product.productName,
+      category2: product.categoryMid,
+      category3: product.categorySub,
+      storageCondition: product.storageType,
+      shelfLife: product.shelfLife,
+      barcode: product.barcode,
     );
   }
 }

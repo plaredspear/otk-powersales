@@ -40,15 +40,19 @@ class ScheduleConflictValidator(
      * @throws LeaderScheduleDuplicateWorkException §1.4.1 #2
      * @throws LeaderScheduleCategory3LimitExceededException §1.4.1 #3, #4
      * @throws LeaderScheduleCategory3ConflictException §1.4.1 #5, #6, #7
+     *
+     * @param excludeScheduleId 수정(P7) 시 자기 자신 일정을 충돌 후보에서 제외한다 (등록 시 null).
      */
     fun validateConflicts(
         employeeId: Long,
         workingDate: LocalDate,
         workingType: WorkingType,
         accountId: Int?,
-        workingCategory3: WorkingCategory3?
+        workingCategory3: WorkingCategory3?,
+        excludeScheduleId: Long? = null
     ) {
         val existing = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employeeId, workingDate)
+            .filter { excludeScheduleId == null || it.id != excludeScheduleId }
         if (existing.isEmpty()) return
 
         if (workingType != WORKING_TYPE_WORK) {

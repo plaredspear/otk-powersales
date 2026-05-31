@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import '../models/suggestion_detail_model.dart';
+import '../models/suggestion_list_item_model.dart';
 import '../models/suggestion_register_request.dart';
 import '../models/suggestion_register_result_model.dart';
 import 'suggestion_remote_datasource.dart';
@@ -26,6 +28,31 @@ class SuggestionApiDataSource implements SuggestionRemoteDataSource {
     );
 
     return SuggestionRegisterResultModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
+  }
+
+  @override
+  Future<SuggestionListPageModel> getSuggestions({
+    int page = 0,
+    int size = 20,
+  }) async {
+    final response = await _dio.get(
+      '/api/v1/mobile/suggestions',
+      queryParameters: {'page': page, 'size': size},
+    );
+
+    return SuggestionListPageModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
+  }
+
+  @override
+  Future<SuggestionDetailModel> getSuggestionDetail(int suggestionId) async {
+    final response =
+        await _dio.get('/api/v1/mobile/suggestions/$suggestionId');
+
+    return SuggestionDetailModel.fromJson(
       response.data['data'] as Map<String, dynamic>,
     );
   }

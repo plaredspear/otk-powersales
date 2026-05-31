@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../models/leader_account_model.dart';
+import '../models/leader_daily_status_model.dart';
 import '../models/leader_schedule_create_request_model.dart';
 import '../models/leader_schedule_create_response_model.dart';
 import '../models/leader_team_member_model.dart';
@@ -38,6 +39,17 @@ class LeaderScheduleApiDataSource {
         .toList();
   }
 
+  /// 여사원 일별 현황 조회 ([date]: YYYY-MM-DD).
+  Future<LeaderDailyStatusModel> getDailyStatus(String date) async {
+    final response = await _dio.get(
+      '/api/v1/mobile/leader/daily-status',
+      queryParameters: {'date': date},
+    );
+    return LeaderDailyStatusModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
+  }
+
   /// 팀원 일정 대리 등록.
   Future<LeaderScheduleCreateResponseModel> createTeamMemberSchedule(
     LeaderScheduleCreateRequestModel request,
@@ -49,5 +61,18 @@ class LeaderScheduleApiDataSource {
     return LeaderScheduleCreateResponseModel.fromJson(
       response.data['data'] as Map<String, dynamic>,
     );
+  }
+
+  /// 진열 일정 수정 — 거래처 변경 (P7).
+  Future<void> updateTeamMemberSchedule(int scheduleId, int accountId) async {
+    await _dio.put(
+      '/api/v1/mobile/leader/team-member-schedule/$scheduleId',
+      data: {'accountId': accountId},
+    );
+  }
+
+  /// 진열 일정 삭제 (P7).
+  Future<void> deleteTeamMemberSchedule(int scheduleId) async {
+    await _dio.delete('/api/v1/mobile/leader/team-member-schedule/$scheduleId');
   }
 }

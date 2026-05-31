@@ -87,6 +87,24 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findDailyStatusByEmployeeIds(
+        date: LocalDate,
+        employeeIds: List<Long>
+    ): List<TeamMemberSchedule> {
+        if (employeeIds.isEmpty()) return emptyList()
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog).fetchJoin()
+            .where(
+                teamMemberSchedule.workingDate.eq(date),
+                employee.id.`in`(employeeIds),
+                isNotDeleted()
+            )
+            .fetch()
+    }
+
     override fun findMonthlyByEmployeeIds(
         employeeIds: List<Long>,
         from: LocalDate,

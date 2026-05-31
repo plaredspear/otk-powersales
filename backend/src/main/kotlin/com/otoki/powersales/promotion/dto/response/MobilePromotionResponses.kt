@@ -92,10 +92,18 @@ data class MobilePromotionEmployeeItem(
     val workStatus: String?,
     val workType3: String?,
     val targetAmount: Long?,
-    val actualAmount: Long?
+    val actualAmount: Long?,
+    /** 조회 사용자 본인에게 배정된 행 여부 (일매출 등록 진입점 노출용). */
+    val isMine: Boolean,
+    /** 여사원 일매출 마감 완료 여부 (promoCloseByTm). */
+    val isClosed: Boolean
 ) {
     companion object {
-        fun from(entity: PromotionEmployee, employeeName: String?): MobilePromotionEmployeeItem =
+        fun from(
+            entity: PromotionEmployee,
+            employeeName: String?,
+            currentEmployeeId: Long?
+        ): MobilePromotionEmployeeItem =
             MobilePromotionEmployeeItem(
                 id = entity.id,
                 employeeName = employeeName,
@@ -103,7 +111,9 @@ data class MobilePromotionEmployeeItem(
                 workStatus = entity.workStatus?.displayName,
                 workType3 = entity.workType3?.displayName,
                 targetAmount = entity.targetAmount,
-                actualAmount = entity.actualAmount
+                actualAmount = entity.actualAmount,
+                isMine = currentEmployeeId != null && entity.employeeId == currentEmployeeId,
+                isClosed = entity.promoCloseByTm
             )
     }
 }

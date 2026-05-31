@@ -5,6 +5,7 @@ import '../../core/network/dio_provider.dart';
 import '../../data/datasources/product_api_datasource.dart';
 import '../../data/datasources/product_remote_datasource.dart';
 import '../../data/repositories/product_repository_impl.dart';
+import '../../domain/entities/product_detail.dart';
 import '../../domain/repositories/product_repository.dart';
 import 'product_search_state.dart';
 
@@ -135,4 +136,13 @@ final productSearchProvider =
   return ProductSearchNotifier(
     repository: ref.watch(productRepositoryProvider),
   );
+});
+
+/// 제품 상세 Provider (Family)
+///
+/// 제품코드를 받아 해당 제품의 상세 정보를 조회한다.
+final productDetailProvider =
+    FutureProvider.family<ProductDetail, String>((ref, productCode) async {
+  final repository = ref.watch(productRepositoryProvider);
+  return repository.getProductDetail(productCode);
 });

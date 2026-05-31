@@ -35,6 +35,14 @@ interface TeamMemberScheduleRepositoryCustom {
 
     fun findByEmployeeIdAndWorkingDate(employeeId: Long, workingDate: LocalDate): List<TeamMemberSchedule>
 
+    /**
+     * 조장 여사원 일별 현황 조회 (레거시 `employee/mngDaily.jsp` — 조회 전용).
+     * `team_member_schedule` ⋈ employee ⋈ account ⋈ attendance_log fetchJoin 으로
+     * 분류(진열/행사/연차)·출근 판정에 필요한 LAZY 연관을 한 번에 로드 (N+1 회피).
+     * 필터: workingDate = date, employee.id ∈ employeeIds.
+     */
+    fun findDailyStatusByEmployeeIds(date: LocalDate, employeeIds: List<Long>): List<TeamMemberSchedule>
+
     fun findMonthlyByEmployeeIds(
         employeeIds: List<Long>,
         from: LocalDate,

@@ -1,8 +1,10 @@
 package com.otoki.powersales.product.service
 
+import com.otoki.powersales.product.dto.response.ProductDetail
 import com.otoki.powersales.product.dto.response.ProductDto
 import com.otoki.powersales.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.product.exception.InvalidSearchTypeException
+import com.otoki.powersales.product.exception.ProductNotFoundException
 import com.otoki.powersales.product.repository.ProductRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -69,6 +71,21 @@ class ProductService(
         }
 
         return productPage.map { ProductDto.from(it) }
+    }
+
+    /**
+     * 제품 상세 조회 (제품코드 단건).
+     *
+     * 레거시 `product/search/detail.jsp` 대응. 검색 결과보다 많은 필드를 반환한다.
+     *
+     * @param productCode 제품코드
+     * @return 제품 상세 (검증된 이미지 URL 결합 로직을 갖춘 공용 ProductDetail DTO 재사용)
+     * @throws ProductNotFoundException 제품코드에 해당하는 제품이 없을 때
+     */
+    fun getProductDetail(productCode: String): ProductDetail {
+        val product = productRepository.findByProductCode(productCode)
+            ?: throw ProductNotFoundException(productCode)
+        return ProductDetail.from(product)
     }
 
     private fun validateSearchType(type: String) {

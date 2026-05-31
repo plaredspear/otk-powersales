@@ -11,7 +11,9 @@ import '../../domain/usecases/get_field_types_usecase.dart';
 import '../../domain/usecases/get_my_accounts.dart';
 import '../../domain/usecases/get_themes_usecase.dart';
 import '../../domain/usecases/register_inspection_usecase.dart';
+import 'inspection_list_provider.dart';
 import 'inspection_register_state.dart';
+import 'my_accounts_provider.dart';
 
 /// 현장 점검 등록 Provider
 class InspectionRegisterNotifier
@@ -242,12 +244,29 @@ class InspectionRegisterNotifier
   }
 }
 
+/// GetThemes UseCase Provider
+final getThemesUseCaseProvider = Provider<GetThemesUseCase>((ref) {
+  return GetThemesUseCase(ref.watch(inspectionRepositoryProvider));
+});
+
+/// GetFieldTypes UseCase Provider
+final getFieldTypesUseCaseProvider = Provider<GetFieldTypesUseCase>((ref) {
+  return GetFieldTypesUseCase(ref.watch(inspectionRepositoryProvider));
+});
+
+/// RegisterInspection UseCase Provider
+final registerInspectionUseCaseProvider =
+    Provider<RegisterInspectionUseCase>((ref) {
+  return RegisterInspectionUseCase(ref.watch(inspectionRepositoryProvider));
+});
+
 /// InspectionRegisterProvider
 final inspectionRegisterProvider = StateNotifierProvider<
     InspectionRegisterNotifier, InspectionRegisterState>((ref) {
-  // UseCase providers (이미 다른 곳에서 정의되어 있다고 가정)
-  // 실제 구현 시 해당 provider를 import하여 사용
-  throw UnimplementedError(
-    'inspectionRegisterProvider는 실제 UseCase provider와 연결되어야 합니다',
+  return InspectionRegisterNotifier(
+    getThemes: ref.watch(getThemesUseCaseProvider),
+    getFieldTypes: ref.watch(getFieldTypesUseCaseProvider),
+    getMyAccounts: ref.watch(getMyAccountsUseCaseProvider),
+    registerInspection: ref.watch(registerInspectionUseCaseProvider),
   );
 });

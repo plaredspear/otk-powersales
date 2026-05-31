@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../models/product_detail_model.dart';
 import '../models/product_model.dart';
 import 'product_remote_datasource.dart';
 
@@ -29,6 +30,15 @@ class ProductApiDataSource implements ProductRemoteDataSource {
     );
 
     return ProductPageModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
+  }
+
+  @override
+  Future<ProductDetailModel> getProductDetail(String productCode) async {
+    final response = await _dio.get('/api/v1/mobile/products/$productCode');
+
+    return ProductDetailModel.fromJson(
       response.data['data'] as Map<String, dynamic>,
     );
   }

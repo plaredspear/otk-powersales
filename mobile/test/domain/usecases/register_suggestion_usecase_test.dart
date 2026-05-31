@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/domain/entities/suggestion_detail.dart';
 import 'package:mobile/domain/entities/suggestion_form.dart';
 import 'package:mobile/domain/entities/suggestion_result.dart';
 import 'package:mobile/domain/repositories/suggestion_repository.dart';
@@ -15,6 +16,16 @@ class _MockSuggestionRepository implements SuggestionRepository {
       SuggestionRegisterForm form) async {
     if (error != null) throw error!;
     return result!;
+  }
+
+  @override
+  Future<SuggestionListPage> getSuggestions({int page = 0, int size = 20}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<SuggestionDetail> getSuggestionDetail(int suggestionId) {
+    throw UnimplementedError();
   }
 }
 

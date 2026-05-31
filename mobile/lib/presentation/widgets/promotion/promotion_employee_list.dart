@@ -10,7 +10,14 @@ import 'promotion_amount_text.dart';
 class PromotionEmployeeList extends StatelessWidget {
   final List<PromotionEmployee> employees;
 
-  const PromotionEmployeeList({super.key, required this.employees});
+  /// 본인 행에서 일매출 마감 진입 시 호출 (null 이면 진입점 미노출).
+  final void Function(PromotionEmployee employee)? onDailySalesTap;
+
+  const PromotionEmployeeList({
+    super.key,
+    required this.employees,
+    this.onDailySalesTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +107,20 @@ class PromotionEmployeeList extends StatelessWidget {
               PromotionAmountText(amount: emp.actualAmount),
             ],
           ),
+          if (emp.isMine && onDailySalesTap != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () => onDailySalesTap!(emp),
+                icon: Icon(
+                  emp.isClosed ? Icons.visibility_outlined : Icons.edit_outlined,
+                  size: 16,
+                ),
+                label: Text(emp.isClosed ? '일매출 보기' : '일매출 마감'),
+              ),
+            ),
+          ],
         ],
       ),
     );
