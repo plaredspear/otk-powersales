@@ -9,7 +9,8 @@ class ClaimSubcategory {
     required this.name,
   });
 
-  final int id;
+  /// 백엔드 ClaimType2.value (예: "AA") — SF picklist value 문자열.
+  final String id;
   final String name;
 
   /// JSON 직렬화
@@ -23,14 +24,14 @@ class ClaimSubcategory {
   /// JSON 역직렬화
   factory ClaimSubcategory.fromJson(Map<String, dynamic> json) {
     return ClaimSubcategory(
-      id: json['id'] as int,
+      id: json['id'] as String,
       name: json['name'] as String,
     );
   }
 
   /// copyWith
   ClaimSubcategory copyWith({
-    int? id,
+    String? id,
     String? name,
   }) {
     return ClaimSubcategory(
@@ -60,7 +61,8 @@ class ClaimCategory {
     required this.subcategories,
   });
 
-  final int id;
+  /// 백엔드 ClaimType1.value (예: "A") — SF picklist value 문자열.
+  final String id;
   final String name;
   final List<ClaimSubcategory> subcategories;
 
@@ -76,7 +78,7 @@ class ClaimCategory {
   /// JSON 역직렬화
   factory ClaimCategory.fromJson(Map<String, dynamic> json) {
     return ClaimCategory(
-      id: json['id'] as int,
+      id: json['id'] as String,
       name: json['name'] as String,
       subcategories: (json['subcategories'] as List)
           .map((s) => ClaimSubcategory.fromJson(s as Map<String, dynamic>))
@@ -86,7 +88,7 @@ class ClaimCategory {
 
   /// copyWith
   ClaimCategory copyWith({
-    int? id,
+    String? id,
     String? name,
     List<ClaimSubcategory>? subcategories,
   }) {

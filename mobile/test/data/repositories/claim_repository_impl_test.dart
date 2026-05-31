@@ -35,9 +35,9 @@ void main() {
           productName: '맛있는부대찌개라양념140G',
           dateType: ClaimDateType.expiryDate,
           date: DateTime(2026, 2, 20),
-          categoryId: 1,
+          categoryId: 'A',
           categoryName: '이물',
-          subcategoryId: 101,
+          subcategoryId: 'AA',
           subcategoryName: '벌레',
           defectDescription: '제품에서 벌레가 발견되었습니다',
           defectQuantity: 1,
@@ -77,9 +77,9 @@ void main() {
           productName: '맛있는부대찌개라양념140G',
           dateType: ClaimDateType.manufactureDate,
           date: DateTime(2026, 1, 15),
-          categoryId: 2,
+          categoryId: 'B',
           categoryName: '변질/변패',
-          subcategoryId: 201,
+          subcategoryId: 'BA',
           subcategoryName: '맛 변질',
           defectDescription: '맛이 이상합니다',
           defectQuantity: 5,
@@ -111,8 +111,8 @@ void main() {
         expect(captured.productCode, '12345678');
         expect(captured.dateType, 'MANUFACTURE_DATE');
         expect(captured.date, '2026-01-15');
-        expect(captured.categoryId, 2);
-        expect(captured.subcategoryId, 201);
+        expect(captured.categoryId, 'B');
+        expect(captured.subcategoryId, 'BA');
         expect(captured.defectDescription, '맛이 이상합니다');
         expect(captured.defectQuantity, 5);
         expect(captured.purchaseAmount, 5000);
@@ -127,18 +127,18 @@ void main() {
         fakeDataSource.formDataToReturn = ClaimFormDataModel(
           categories: [
             ClaimCategoryModel(
-              id: 1,
+              id: 'A',
               name: '이물',
               subcategories: [
-                const ClaimSubcategoryModel(id: 101, name: '벌레'),
-                const ClaimSubcategoryModel(id: 102, name: '금속'),
+                const ClaimSubcategoryModel(id: 'AA', name: '벌레'),
+                const ClaimSubcategoryModel(id: 'AB', name: '금속'),
               ],
             ),
             ClaimCategoryModel(
-              id: 2,
+              id: 'B',
               name: '변질/변패',
               subcategories: [
-                const ClaimSubcategoryModel(id: 201, name: '맛 변질'),
+                const ClaimSubcategoryModel(id: 'BA', name: '맛 변질'),
               ],
             ),
           ],

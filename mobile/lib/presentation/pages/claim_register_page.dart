@@ -314,7 +314,7 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
   /// 선택된 카테고리 찾기
   ClaimCategory? _findSelectedCategory(state) {
     final categoryId = state.form?.categoryId;
-    if (categoryId == null || categoryId <= 0) return null;
+    if (categoryId == null || categoryId.isEmpty) return null;
 
     final categories = state.formData?.categories ?? [];
     try {
@@ -327,7 +327,7 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
   /// 선택된 서브카테고리 찾기
   ClaimSubcategory? _findSelectedSubcategory(state) {
     final subcategoryId = state.form?.subcategoryId;
-    if (subcategoryId == null || subcategoryId <= 0) return null;
+    if (subcategoryId == null || subcategoryId.isEmpty) return null;
 
     final category = _findSelectedCategory(state);
     if (category == null) return null;
