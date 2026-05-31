@@ -29,7 +29,17 @@ import '../widgets/claim/claim_request_type_field.dart';
 /// - 요청사항 선택 (선택)
 /// - 임시저장 / 전송
 class ClaimRegisterPage extends ConsumerStatefulWidget {
-  const ClaimRegisterPage({super.key});
+  /// 진입 시 미리 선택해 둘 제품 코드 (제품검색 결과에서 진입한 경우).
+  final String? presetProductCode;
+
+  /// 진입 시 미리 선택해 둘 제품명.
+  final String? presetProductName;
+
+  const ClaimRegisterPage({
+    super.key,
+    this.presetProductCode,
+    this.presetProductName,
+  });
 
   @override
   ConsumerState<ClaimRegisterPage> createState() =>
@@ -42,7 +52,14 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
     super.initState();
     // 페이지 로드 시 폼 데이터 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(claimRegisterProvider.notifier).loadFormData();
+      final notifier = ref.read(claimRegisterProvider.notifier);
+      notifier.loadFormData();
+      // 제품검색 결과에서 전달된 제품이 있으면 미리 선택
+      final code = widget.presetProductCode;
+      final name = widget.presetProductName;
+      if (code != null && name != null) {
+        notifier.selectProduct(code, name);
+      }
     });
   }
 
