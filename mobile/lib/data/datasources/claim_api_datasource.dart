@@ -15,12 +15,24 @@ class ClaimApiDataSource implements ClaimRemoteDataSource {
   @override
   Future<ClaimRegisterResultModel> registerClaim(
       ClaimRegisterRequest request) async {
-    throw UnimplementedError('클레임 등록 API 미구현');
+    final formData = await request.toFormData();
+    final response = await _dio.post(
+      '/api/v1/mobile/claims',
+      data: formData,
+    );
+
+    return ClaimRegisterResultModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
   }
 
   @override
   Future<ClaimFormDataModel> getFormData() async {
-    throw UnimplementedError('폼 데이터 조회 API 미구현');
+    final response = await _dio.get('/api/v1/mobile/claims/form-data');
+
+    return ClaimFormDataModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
   }
 
   @override

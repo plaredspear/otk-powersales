@@ -7,13 +7,13 @@ class ClaimSubcategoryModel {
     required this.name,
   });
 
-  final int id;
+  final String id;
   final String name;
 
   /// JSON 역직렬화
   factory ClaimSubcategoryModel.fromJson(Map<String, dynamic> json) {
     return ClaimSubcategoryModel(
-      id: json['id'] as int,
+      id: json['id'] as String,
       name: json['name'] as String,
     );
   }
@@ -51,14 +51,14 @@ class ClaimCategoryModel {
     required this.subcategories,
   });
 
-  final int id;
+  final String id;
   final String name;
   final List<ClaimSubcategoryModel> subcategories;
 
   /// JSON 역직렬화 (중첩 구조 포함)
   factory ClaimCategoryModel.fromJson(Map<String, dynamic> json) {
     return ClaimCategoryModel(
-      id: json['id'] as int,
+      id: json['id'] as String,
       name: json['name'] as String,
       subcategories: (json['subcategories'] as List)
           .map((s) => ClaimSubcategoryModel.fromJson(s as Map<String, dynamic>))

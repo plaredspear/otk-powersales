@@ -21,12 +21,13 @@ class ClaimRegisterResultModel {
   /// JSON 역직렬화
   factory ClaimRegisterResultModel.fromJson(Map<String, dynamic> json) {
     return ClaimRegisterResultModel(
-      id: json['id'] as int,
-      accountName: json['accountName'] as String,
-      accountId: json['accountId'] as int,
-      productName: json['productName'] as String,
-      productCode: json['productCode'] as String,
-      createdAt: json['createdAt'] as String,
+      // 백엔드 ClaimCreateResponse 의 account/product 필드는 nullable 이므로 방어적으로 파싱한다.
+      id: (json['id'] as num).toInt(),
+      accountName: json['accountName'] as String? ?? '',
+      accountId: (json['accountId'] as num?)?.toInt() ?? 0,
+      productName: json['productName'] as String? ?? '',
+      productCode: json['productCode'] as String? ?? '',
+      createdAt: json['createdAt'] as String? ?? '',
     );
   }
 
@@ -38,7 +39,8 @@ class ClaimRegisterResultModel {
       accountId: accountId,
       productName: productName,
       productCode: productCode,
-      createdAt: DateTime.parse(createdAt),
+      createdAt: DateTime.tryParse(createdAt) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 }

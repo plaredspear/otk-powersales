@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/network/dio_provider.dart';
+import '../../data/datasources/claim_api_datasource.dart';
 import '../../data/repositories/claim_repository_impl.dart';
 import '../../data/datasources/claim_remote_datasource.dart';
 import '../../domain/entities/claim_code.dart';
@@ -12,13 +14,12 @@ import '../../domain/usecases/register_claim_usecase.dart';
 import 'claim_register_state.dart';
 
 // ============================================
-// 1. Dependency Providers (Mock for now)
+// 1. Dependency Providers (실 API)
 // ============================================
 
-/// ClaimRemoteDataSource Provider (Mock)
+/// ClaimRemoteDataSource Provider (실 API — ClaimController/ClaimQueryController)
 final claimRemoteDataSourceProvider = Provider<ClaimRemoteDataSource>((ref) {
-  // TODO: Replace with real implementation when backend is ready
-  throw UnimplementedError('ClaimRemoteDataSource not implemented yet');
+  return ClaimApiDataSource(ref.watch(dioProvider));
 });
 
 /// ClaimRepository Provider
@@ -119,20 +120,20 @@ class ClaimRegisterNotifier extends StateNotifier<ClaimRegisterState> {
   }
 
   /// 클레임 종류1 선택 (종류2 초기화)
-  void selectCategory(int categoryId, String categoryName) {
+  void selectCategory(String categoryId, String categoryName) {
     final currentForm = state.form ?? _createInitialForm();
     state = state.copyWith(
       form: currentForm.copyWith(
         categoryId: categoryId,
         categoryName: categoryName,
-        subcategoryId: 0, // 종류2 초기화
+        subcategoryId: '', // 종류2 초기화
         subcategoryName: '',
       ),
     );
   }
 
   /// 클레임 종류2 선택
-  void selectSubcategory(int subcategoryId, String subcategoryName) {
+  void selectSubcategory(String subcategoryId, String subcategoryName) {
     final currentForm = state.form ?? _createInitialForm();
     state = state.copyWith(
       form: currentForm.copyWith(
@@ -294,9 +295,9 @@ class ClaimRegisterNotifier extends StateNotifier<ClaimRegisterState> {
       productName: '',
       dateType: ClaimDateType.expiryDate,
       date: DateTime.now(),
-      categoryId: 0,
+      categoryId: '',
       categoryName: '',
-      subcategoryId: 0,
+      subcategoryId: '',
       subcategoryName: '',
       defectDescription: '',
       defectQuantity: 0,

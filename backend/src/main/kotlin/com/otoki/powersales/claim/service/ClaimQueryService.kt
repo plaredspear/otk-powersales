@@ -2,6 +2,7 @@ package com.otoki.powersales.claim.service
 
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.claim.dto.response.ClaimDetailResponse
+import com.otoki.powersales.claim.dto.response.ClaimFormDataResponse
 import com.otoki.powersales.claim.dto.response.ClaimListItemResponse
 import com.otoki.powersales.claim.exception.ClaimInvalidParameterException
 import com.otoki.powersales.claim.exception.ClaimNotFoundException
@@ -30,6 +31,12 @@ class ClaimQueryService(
 ) {
 
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+    /**
+     * 클레임 등록 폼 초기화 데이터(종류1/2, 구매 방법, 요청사항)를 enum 으로부터 구성한다.
+     * 사용자/거래처에 무관한 정적 picklist 이므로 별도 조회 없이 즉시 반환.
+     */
+    fun getClaimFormData(): ClaimFormDataResponse = ClaimFormDataResponse.build()
 
     fun getClaims(userId: Long, startDateStr: String?, endDateStr: String?): List<ClaimListItemResponse> {
         val today = LocalDate.now()

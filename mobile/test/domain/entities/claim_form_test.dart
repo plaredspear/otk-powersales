@@ -17,9 +17,9 @@ void main() {
       String? productName,
       ClaimDateType? dateType,
       DateTime? date,
-      int? categoryId,
+      String? categoryId,
       String? categoryName,
-      int? subcategoryId,
+      String? subcategoryId,
       String? subcategoryName,
       String? defectDescription,
       int? defectQuantity,
@@ -39,9 +39,9 @@ void main() {
         productName: productName ?? '맛있는부대찌개라양념140G',
         dateType: dateType ?? ClaimDateType.expiryDate,
         date: date ?? DateTime(2026, 2, 20),
-        categoryId: categoryId ?? 1,
+        categoryId: categoryId ?? 'A',
         categoryName: categoryName ?? '이물',
-        subcategoryId: subcategoryId ?? 101,
+        subcategoryId: subcategoryId ?? 'AA',
         subcategoryName: subcategoryName ?? '벌레',
         defectDescription: defectDescription ?? '제품에서 벌레가 발견되었습니다',
         defectQuantity: defectQuantity ?? 1,
@@ -68,8 +68,8 @@ void main() {
         expect(form.productName, '맛있는부대찌개라양념140G');
         expect(form.dateType, ClaimDateType.expiryDate);
         expect(form.date, DateTime(2026, 2, 20));
-        expect(form.categoryId, 1);
-        expect(form.subcategoryId, 101);
+        expect(form.categoryId, 'A');
+        expect(form.subcategoryId, 'AA');
         expect(form.defectDescription, '제품에서 벌레가 발견되었습니다');
         expect(form.defectQuantity, 1);
       });
@@ -140,18 +140,18 @@ void main() {
         expect(form.validate(), contains('제품을 선택해주세요'));
       });
 
-      test('categoryId가 0 이하면 유효하지 않다', () {
+      test('categoryId가 비어있으면 유효하지 않다', () {
         // Given
-        final form = createValidForm(categoryId: 0);
+        final form = createValidForm(categoryId: '');
 
         // Then
         expect(form.isValid, false);
         expect(form.validate(), contains('클레임 종류를 선택해주세요'));
       });
 
-      test('subcategoryId가 0 이하면 유효하지 않다', () {
+      test('subcategoryId가 비어있으면 유효하지 않다', () {
         // Given
-        final form = createValidForm(subcategoryId: 0);
+        final form = createValidForm(subcategoryId: '');
 
         // Then
         expect(form.isValid, false);

@@ -35,9 +35,12 @@ class ClaimRegisterForm {
   final String productName;
   final ClaimDateType dateType;
   final DateTime date;
-  final int categoryId;
+  /// 백엔드 ClaimType1.value (예: "A") — 등록 시 claimType1 으로 전송.
+  final String categoryId;
   final String categoryName;
-  final int subcategoryId;
+
+  /// 백엔드 ClaimType2.value (예: "AA") — 등록 시 claimType2 으로 전송.
+  final String subcategoryId;
   final String subcategoryName;
   final String defectDescription;
   final int defectQuantity;
@@ -78,13 +81,13 @@ class ClaimRegisterForm {
     if (productName.isEmpty) {
       errors.add('제품명이 비어있습니다');
     }
-    if (categoryId <= 0) {
+    if (categoryId.isEmpty) {
       errors.add('클레임 종류를 선택해주세요');
     }
     if (categoryName.isEmpty) {
       errors.add('클레임 종류명이 비어있습니다');
     }
-    if (subcategoryId <= 0) {
+    if (subcategoryId.isEmpty) {
       errors.add('클레임 세부 종류를 선택해주세요');
     }
     if (subcategoryName.isEmpty) {
@@ -124,9 +127,9 @@ class ClaimRegisterForm {
     String? productName,
     ClaimDateType? dateType,
     DateTime? date,
-    int? categoryId,
+    String? categoryId,
     String? categoryName,
-    int? subcategoryId,
+    String? subcategoryId,
     String? subcategoryName,
     String? defectDescription,
     int? defectQuantity,
