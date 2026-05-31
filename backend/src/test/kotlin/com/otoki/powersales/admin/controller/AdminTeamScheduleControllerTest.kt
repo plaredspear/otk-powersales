@@ -160,6 +160,8 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
                     eq(java.time.LocalDate.of(2026, 3, 31)),
                     null,
                     null,
+                    null,
+                    any(),
                     null
                 )
             } returns response
@@ -187,6 +189,8 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
                     eq(java.time.LocalDate.of(2026, 3, 31)),
                     null,
                     null,
+                    null,
+                    any(),
                     null
                 )
             } returns response
