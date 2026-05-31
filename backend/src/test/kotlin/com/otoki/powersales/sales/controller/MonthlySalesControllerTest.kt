@@ -2,7 +2,9 @@ package com.otoki.powersales.sales.controller
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.sales.dto.response.ElectronicSalesResponse
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
+import com.otoki.powersales.sales.service.ElectronicSalesService
 import com.otoki.powersales.sales.service.LogisticsSalesService
 import com.otoki.powersales.sales.service.MonthlySalesService
 import com.ninjasquad.springmockk.MockkBean
@@ -30,6 +32,9 @@ class MonthlySalesControllerTest : MobileControllerTestSupport() {
     // MonthlySalesController 가 생성자 주입받는 의존성 — @WebMvcTest 컨텍스트 로딩에 필요.
     @MockkBean
     private lateinit var logisticsSalesService: LogisticsSalesService
+
+    @MockkBean
+    private lateinit var electronicSalesService: ElectronicSalesService
 
     // ========== getMonthlySales Tests ==========
 
@@ -108,6 +113,55 @@ class MonthlySalesControllerTest : MobileControllerTestSupport() {
         // When & Then
         mockMvc.perform(
             get("/api/v1/mobile/sales/monthly")
+                .param("yearMonth", "2026-02")
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    // ========== getElectronicSales Tests ==========
+
+    @Test
+    @DisplayName("전산매출 조회 - 200 OK (제품별 실적)")
+    fun getElectronicSales_success() {
+        val mockResponse = ElectronicSalesResponse(
+            customerId = 1,
+            customerName = "사과마을",
+            sapAccountCode = "12345",
+            yearMonth = "202602",
+            items = listOf(
+                ElectronicSalesResponse.ProductSales(
+                    productCode = "01101123",
+                    productName = "갈릭 아이올리소스 240g",
+                    amount = 3500,
+                    quantity = 10,
+                ),
+            ),
+        )
+
+        every { electronicSalesService.getElectronicSales(1, "202602") } returns mockResponse
+
+        mockMvc.perform(
+            get("/api/v1/mobile/sales/electronic")
+                .param("customerId", "1")
+                .param("yearMonth", "202602")
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.customerId").value(1))
+            .andExpect(jsonPath("$.data.sapAccountCode").value("12345"))
+            .andExpect(jsonPath("$.data.items[0].productCode").value("01101123"))
+            .andExpect(jsonPath("$.data.items[0].amount").value(3500))
+            .andExpect(jsonPath("$.data.items[0].quantity").value(10))
+    }
+
+    @Test
+    @DisplayName("전산매출 조회 - 잘못된 yearMonth 형식 시 400 BAD REQUEST")
+    fun getElectronicSales_invalidYearMonth() {
+        mockMvc.perform(
+            get("/api/v1/mobile/sales/electronic")
+                .param("customerId", "1")
                 .param("yearMonth", "2026-02")
                 .contentType(MediaType.APPLICATION_JSON)
         )
