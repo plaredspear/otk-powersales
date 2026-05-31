@@ -1,3 +1,4 @@
+import '../../domain/entities/product_detail.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/product_remote_datasource.dart';
 
@@ -28,5 +29,11 @@ class ProductRepositoryImpl implements ProductRepository {
     );
 
     return pageModel.toEntity();
+  }
+
+  @override
+  Future<ProductDetail> getProductDetail(String productCode) async {
+    final model = await _remoteDataSource.getProductDetail(productCode);
+    return model.toEntity();
   }
 }

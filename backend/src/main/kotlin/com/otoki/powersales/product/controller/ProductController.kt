@@ -1,6 +1,7 @@
 package com.otoki.powersales.product.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.product.dto.response.ProductDetail
 import com.otoki.powersales.product.dto.response.ProductDto
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.product.service.ProductService
@@ -8,6 +9,7 @@ import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -39,6 +41,21 @@ class ProductController(
         @RequestParam(defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<Page<ProductDto>>> {
         val result = productService.searchProducts(query, type, page, size)
+        return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
+    }
+
+    /**
+     * 제품 상세 조회
+     * GET /api/v1/mobile/products/{productCode}
+     *
+     * @param productCode 제품코드
+     */
+    @GetMapping("/{productCode}")
+    fun getProductDetail(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable productCode: String
+    ): ResponseEntity<ApiResponse<ProductDetail>> {
+        val result = productService.getProductDetail(productCode)
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 }

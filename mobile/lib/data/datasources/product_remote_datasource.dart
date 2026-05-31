@@ -1,3 +1,4 @@
+import '../models/product_detail_model.dart';
 import '../models/product_model.dart';
 
 /// 제품검색 원격 데이터소스 인터페이스
@@ -18,4 +19,11 @@ abstract class ProductRemoteDataSource {
     int page = 0,
     int size = 20,
   });
+
+  /// 제품 상세 조회 API 호출
+  ///
+  /// GET /api/v1/mobile/products/{productCode}
+  ///
+  /// [productCode]: 제품코드
+  Future<ProductDetailModel> getProductDetail(String productCode);
 }

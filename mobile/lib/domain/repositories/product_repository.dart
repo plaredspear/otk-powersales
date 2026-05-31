@@ -1,4 +1,5 @@
 import '../entities/product.dart';
+import '../entities/product_detail.dart';
 
 /// 제품검색 결과 값 객체
 ///
@@ -96,4 +97,11 @@ abstract class ProductRepository {
     int page = 0,
     int size = 20,
   });
+
+  /// 제품 상세 조회
+  ///
+  /// [productCode]: 제품코드
+  ///
+  /// Returns: 제품 상세 정보
+  Future<ProductDetail> getProductDetail(String productCode);
 }

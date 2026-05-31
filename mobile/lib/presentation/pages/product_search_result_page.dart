@@ -5,7 +5,9 @@ import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/throttled_tap_mixin.dart';
 import '../providers/product_search_provider.dart';
+import '../providers/product_search_state.dart';
 import '../widgets/product_search/empty_search_guide.dart';
 import '../widgets/product_search/product_card.dart';
 
@@ -23,7 +25,7 @@ class ProductSearchResultPage extends ConsumerStatefulWidget {
 }
 
 class _ProductSearchResultPageState
-    extends ConsumerState<ProductSearchResultPage> {
+    extends ConsumerState<ProductSearchResultPage> with ThrottledTapMixin {
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -96,7 +98,7 @@ class _ProductSearchResultPageState
     );
   }
 
-  Widget _buildBody(state) {
+  Widget _buildBody(ProductSearchState state) {
     if (state.isEmpty) {
       return const EmptySearchGuide(hasSearched: true);
     }
@@ -117,6 +119,13 @@ class _ProductSearchResultPageState
         final product = state.products[index];
         return ProductCard(
           product: product,
+          onTap: () => throttledTap(
+            () => AppRouter.navigateTo(
+              context,
+              AppRouter.productDetail,
+              arguments: product.productCode,
+            ),
+          ),
           onClaimTap: () {
             // TODO: 클레임 등록 화면으로 이동 (제품 정보 전달)
             ScaffoldMessenger.of(context).showSnackBar(
