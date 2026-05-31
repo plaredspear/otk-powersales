@@ -132,8 +132,8 @@ class FullMenuDrawer extends ConsumerWidget {
 
   /// 메뉴 아이템 탭 핸들러
   void _handleMenuItemTap(BuildContext context, domain.MenuItem item) {
-    if (item.isImplemented) {
-      _navigateToRoute(context, item.route!);
+    if (item.isImplemented && AppRouter.routes.containsKey(item.route)) {
+      AppRouter.navigateTo(context, item.route!, arguments: item.arguments);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

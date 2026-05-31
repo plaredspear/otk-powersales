@@ -24,7 +24,10 @@ import '../widgets/order/page_navigator.dart';
 /// 이 스펙에서는 "내 주문" 탭만 구현하며,
 /// 필터(거래처/상태/납기일), 정렬, 무한 스크롤 페이지네이션을 지원합니다.
 class OrderListPage extends ConsumerStatefulWidget {
-  const OrderListPage({super.key});
+  /// 초기 선택 탭 인덱스 (0: 내 주문, 1: 거래처별 주문)
+  final int initialTabIndex;
+
+  const OrderListPage({super.key, this.initialTabIndex = 0});
 
   @override
   ConsumerState<OrderListPage> createState() => _OrderListPageState();
@@ -37,7 +40,11 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTabIndex,
+    );
 
     // 페이지 진입 시 초기 데이터 로딩
     WidgetsBinding.instance.addPostFrameCallback((_) {
