@@ -9,6 +9,8 @@ import com.otoki.powersales.inspection.dto.admin.UpdateThemeRequest
 import com.otoki.powersales.inspection.entity.InspectionTheme
 import com.otoki.powersales.inspection.repository.InspectionThemeRepository
 import com.otoki.powersales.inspection.repository.SiteActivityRepository
+import com.otoki.powersales.user.entity.User
+import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -29,12 +31,14 @@ class AdminInspectionThemeServiceTest {
     private val inspectionThemeRepository: InspectionThemeRepository = mockk()
     private val siteActivityRepository: SiteActivityRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
+    private val userRepository: UserRepository = mockk()
     private val uploadFileRepository: UploadFileRepository = mockk()
 
     private val service = AdminInspectionThemeService(
         inspectionThemeRepository = inspectionThemeRepository,
         siteActivityRepository = siteActivityRepository,
         employeeRepository = employeeRepository,
+        userRepository = userRepository,
         uploadFileRepository = uploadFileRepository,
         s3BucketName = "otoki-bucket",
         s3Region = "ap-northeast-2",
@@ -114,6 +118,29 @@ class AdminInspectionThemeServiceTest {
             assertThat(saved.captured.branchCode).isEqualTo("B001")
             assertThat(saved.captured.title).isEqualTo("수정된 테마")
             assertThat(saved.captured.startDate).isEqualTo(LocalDate.of(2026, 2, 1))
+        }
+
+        @Test
+        fun `소유권 이전 시 새 소유자 소속으로 부서를 갱신하고 지점은 보존한다`() {
+            every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme())
+            every { userRepository.findById(200L) } returns Optional.of(
+                User(id = 200L, username = "newowner", employeeCode = "E200", password = "x")
+            )
+            every { employeeRepository.findByEmployeeCode("E200") } returns Optional.of(
+                Employee(id = 200L, employeeCode = "E200", name = "신소유자", orgName = "영업5팀", costCenterCode = "B005")
+            )
+            val saved = slot<InspectionTheme>()
+            every { inspectionThemeRepository.save(capture(saved)) } answers { saved.captured }
+
+            service.update(
+                1L,
+                UpdateThemeRequest(title = "1분기 점검", startDate = "2026-01-01", endDate = "2026-03-31", ownerUserId = 200L),
+            )
+
+            assertThat(saved.captured.ownerUser?.id).isEqualTo(200L)
+            assertThat(saved.captured.department).isEqualTo("영업5팀")
+            assertThat(saved.captured.branchCode).isEqualTo("B001")
+            assertThat(saved.captured.ownerGroup).isNull()
         }
     }
 

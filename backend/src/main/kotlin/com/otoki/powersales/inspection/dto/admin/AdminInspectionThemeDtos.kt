@@ -17,6 +17,7 @@ data class AdminThemeListItem(
     val branchCode: String?,
     val startDate: String?,
     val endDate: String?,
+    val ownerUserId: Long?,
     val ownerName: String?,
     val siteActivityCount: Long,
     val createdAt: String?,
@@ -39,6 +40,7 @@ data class AdminThemeDetailResponse(
     val branchCode: String?,
     val startDate: String?,
     val endDate: String?,
+    val ownerUserId: Long?,
     val ownerName: String?,
     val createdAt: String?,
     val updatedAt: String?,
@@ -65,11 +67,17 @@ data class CreateThemeRequest(
     val endDate: String?,
 )
 
-/** 테마 수정 요청. */
+/**
+ * 테마 수정 요청.
+ *
+ * `ownerUserId` 가 현재 소유자와 다르면 소유권 이전 — 레거시 `ThemeTriggerHandler.beforeUpdateTheme`
+ * 동등으로 새 소유자 소속(부서)으로 `department` 갱신 (지점코드는 불변). null 이면 소유자 미변경.
+ */
 data class UpdateThemeRequest(
     val title: String,
     val startDate: String?,
     val endDate: String?,
+    val ownerUserId: Long? = null,
 )
 
 /** 테마 생성/수정 응답. */
