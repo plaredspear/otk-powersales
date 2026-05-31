@@ -171,6 +171,7 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
     "alt_holiday" to ("alternative_holiday" to "alternative_holiday_id"),
     "postponed_appointment" to ("appointment" to "appointment_id"),
     "commute_log" to ("attendance_log" to "attendance_log_id"),
+    "theme" to ("inspection_theme" to "inspection_theme_id"),
     // 도메인 FK — prefix 가 곧 table 명인 케이스
     "account" to ("account" to "account_id"),
     "employee" to ("employee" to "employee_id"),
@@ -240,6 +241,7 @@ internal fun deriveFkResolveSpec(sfidColumn: String): FkResolveSpec? {
         "owner" -> "owner_user_id"
         "commute_log" -> "attendance_log_id" // Spec #789 — legacy DKRetail__CommuteLogId__c lookup 의 신규 entity 명 = AttendanceLog
         "full_name" -> "employee_id" // ProfessionalPromotionTeamMaster.FullName__c → employee_id 단일 컬럼으로 통합 (full_name_id 폐기)
+        "theme" -> "inspection_theme_id" // SiteActivity.ThemeId__c → inspection_theme 참조 (site_activity.theme_sfid → inspection_theme_id)
         else -> "${prefix}_id"
     }
     val (refTable, refIdColumn) = FK_PREFIX_MAPPING[prefix]

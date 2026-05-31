@@ -91,6 +91,16 @@ class SfFkResolveTablesTest {
             assertThat(spec.refTable).isEqualTo("attendance_log")
             assertThat(spec.refIdColumn).isEqualTo("attendance_log_id")
         }
+
+        @Test
+        @DisplayName("theme_sfid → inspection_theme_id (SiteActivity.ThemeId__c alias), ref inspection_theme.inspection_theme_id")
+        fun themeAlias() {
+            val spec = deriveFkResolveSpec("theme_sfid")!!
+            assertThat(spec.sfidColumn).isEqualTo("theme_sfid")
+            assertThat(spec.idColumn).isEqualTo("inspection_theme_id")
+            assertThat(spec.refTable).isEqualTo("inspection_theme")
+            assertThat(spec.refIdColumn).isEqualTo("inspection_theme_id")
+        }
     }
 
     @Nested
