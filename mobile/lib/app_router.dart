@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'domain/entities/education_category.dart';
 import 'domain/entities/product_expiration_item.dart';
+import 'presentation/pages/app_info_page.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
 import 'presentation/pages/claim_detail_page.dart';
@@ -93,6 +94,7 @@ class AppRouter {
   static const String altHolidayRequest = '/alt-holiday/request'; // #285: 대체휴무 신청
   static const String altHolidayHistory = '/alt-holiday/history'; // #285: 대체휴무 이력
   static const String leaderTeamMembers = '/leader/team-members'; // #554: 조장 — 팀원 일정 관리
+  static const String appInfo = '/app-info'; // 앱 정보 / 오픈소스 라이선스
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -189,6 +191,7 @@ class AppRouter {
         altHolidayRequest: (context) => const AltHolidayRequestPage(), // #285: 대체휴무 신청
         altHolidayHistory: (context) => const AltHolidayHistoryPage(), // #285: 대체휴무 이력
         leaderTeamMembers: (context) => const LeaderTeamMembersScreen(), // #554: 조장 팀원 일정 관리
+        appInfo: (context) => const AppInfoPage(),
         myScheduleCalendar: (context) => const MyScheduleCalendarPage(), // F56: 일정 캘린더
         myScheduleDetail: (context) {
           // F56: 일정 상세

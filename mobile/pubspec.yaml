@@ -61,6 +61,9 @@ dependencies:
   # Device Info
   device_info_plus: ^11.0.0
 
+  # App Info (버전/빌드넘버 — 앱 정보 화면)
+  package_info_plus: ^8.0.0
+
   # HTML Rendering
   flutter_widget_from_html_core: ^0.15.2
 

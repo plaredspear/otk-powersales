@@ -3,7 +3,7 @@ import '../../domain/entities/menu_item.dart';
 
 /// 전체메뉴 상수 데이터
 ///
-/// 7개 그룹, 13개 메뉴 아이템으로 구성.
+/// 7개 그룹, 14개 메뉴 아이템으로 구성.
 /// route가 null인 항목은 미구현 상태(탭 시 "준비 중입니다" 안내).
 abstract final class MenuConstants {
   /// 전체 메뉴 그룹 목록
@@ -89,6 +89,11 @@ abstract final class MenuConstants {
           id: 'change-password',
           label: '비밀번호 변경',
           route: '/verify-password',
+        ),
+        MenuItem(
+          id: 'app-info',
+          label: '앱 정보',
+          route: '/app-info',
         ),
       ],
     ),
