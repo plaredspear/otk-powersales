@@ -131,14 +131,14 @@ class PhotoPickerWidget extends StatelessWidget {
             children: [
               // 카메라 버튼
               ElevatedButton.icon(
-                onPressed: () => _pickImage(ImageSource.camera),
+                onPressed: () => _pickImage(context, ImageSource.camera),
                 icon: const Icon(Icons.camera_alt),
                 label: const Text('촬영'),
               ),
               const SizedBox(width: 12),
               // 갤러리 버튼
               ElevatedButton.icon(
-                onPressed: () => _pickImage(ImageSource.gallery),
+                onPressed: () => _pickImage(context, ImageSource.gallery),
                 icon: const Icon(Icons.photo_library),
                 label: const Text('갤러리'),
               ),
@@ -153,7 +153,7 @@ class PhotoPickerWidget extends StatelessWidget {
   void _showImageSourceDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('사진 선택'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -162,16 +162,16 @@ class PhotoPickerWidget extends StatelessWidget {
               leading: const Icon(Icons.camera_alt),
               title: const Text('카메라로 촬영'),
               onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
+                Navigator.pop(dialogContext);
+                _pickImage(context, ImageSource.camera);
               },
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
               title: const Text('갤러리에서 선택'),
               onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
+                Navigator.pop(dialogContext);
+                _pickImage(context, ImageSource.gallery);
               },
             ),
           ],
@@ -181,7 +181,7 @@ class PhotoPickerWidget extends StatelessWidget {
   }
 
   /// 이미지 선택 처리
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickImage(BuildContext context, ImageSource source) async {
     try {
       final picker = imagePicker ?? ImagePicker();
       final XFile? pickedFile = await picker.pickImage(
@@ -195,9 +195,13 @@ class PhotoPickerWidget extends StatelessWidget {
         onPhotoChanged(File(pickedFile.path));
       }
     } catch (e) {
-      // 에러 처리 (권한 거부, 취소 등)
-      // TODO: 에러 메시지 표시 (SnackBar 등)
+      // 에러 처리 (권한 거부 등)
       debugPrint('Image picker error: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('사진을 불러오지 못했습니다')),
+        );
+      }
     }
   }
 }

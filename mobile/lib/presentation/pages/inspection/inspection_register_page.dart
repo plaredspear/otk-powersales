@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_router.dart';
+import '../../../core/utils/image_picker_helper.dart';
 import '../../../domain/entities/inspection_field_type.dart';
 import '../../../domain/entities/inspection_list_item.dart';
 import '../../../domain/entities/product.dart';
@@ -309,13 +308,11 @@ class _InspectionRegisterPageState
         .selectProduct('P002', '진라면 매운맛');
   }
 
-  /// 사진 추가 (임시 구현)
-  void _handleAddPhoto() {
-    // TODO: ImagePicker로 카메라/갤러리 선택
-    // 임시로 더미 파일 추가
-    ref
-        .read(inspectionRegisterProvider.notifier)
-        .addPhoto(File('test_photo.jpg'));
+  /// 사진 추가 — 카메라/갤러리에서 선택한 이미지를 첨부
+  Future<void> _handleAddPhoto() async {
+    final file = await pickImageWithSourceSheet(context);
+    if (file == null || !mounted) return;
+    ref.read(inspectionRegisterProvider.notifier).addPhoto(file);
   }
 
   /// 임시 저장
