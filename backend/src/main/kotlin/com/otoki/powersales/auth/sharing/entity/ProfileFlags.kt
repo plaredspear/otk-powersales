@@ -8,6 +8,8 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 
 /**
  * SF Profile 의 system 권한 비트 + 객체/가상자원 권한 (spec #782 P1-B).
@@ -50,11 +52,13 @@ class ProfileFlags(
     var permissionsApiEnabled: Boolean = false,
 
     // SF API name → {allowRead, allowCreate, allowEdit, allowDelete} JSON. PermissionSetFlags 와 동일 구조.
-    @Column(name = "object_permissions")
+    @Column(name = "object_permissions", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     var objectPermissions: String? = null,
 
     // 가상 자원 (@PermissionResource) → 동일 4비트 JSON. SF API name 아님.
-    @Column(name = "custom_permissions")
+    @Column(name = "custom_permissions", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     var customPermissions: String? = null,
 
     // Web admin 에서 권한 비트를 편집하면 set. Stage2 재적재 시 dirty row 는 skip (SF 덮어쓰기 보호).
