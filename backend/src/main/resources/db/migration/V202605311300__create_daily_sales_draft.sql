@@ -15,10 +15,9 @@ CREATE TABLE powersales.daily_sales_draft (
     other_sales_amount        NUMERIC,
     description               VARCHAR(50),
     s3_image_unique_key       VARCHAR(255),
-    -- BaseEntity (LocalDateTime ↔ TIMESTAMP WITHOUT TIME ZONE: 기존 전 마이그레이션/BaseEntity 매핑과 정합,
-    --             ddl-auto=validate 통과 위해 timestamptz 사용하지 않음)
-    created_at                TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
-    updated_at                TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    -- BaseEntity (V165 timestamptz 전환 이후 신규 테이블 표준 — V202605310100__create_site_activity 정합)
+    created_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uk_daily_sales_draft_promotion_employee UNIQUE (promotion_employee_id),
     CONSTRAINT fk_daily_sales_draft_promotion_employee
         FOREIGN KEY (promotion_employee_id) REFERENCES powersales.promotion_employee (promotion_employee_id)
