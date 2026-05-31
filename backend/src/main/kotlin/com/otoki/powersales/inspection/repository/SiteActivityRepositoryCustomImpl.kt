@@ -1,11 +1,20 @@
 package com.otoki.powersales.inspection.repository
 
+import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityFilter
+import com.otoki.powersales.inspection.entity.QInspectionTheme.Companion.inspectionTheme
 import com.otoki.powersales.inspection.entity.QSiteActivity.Companion.siteActivity
 import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.enums.InspectionCategory
+import com.otoki.powersales.product.entity.QProduct.Companion.product
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.impl.JPAQueryFactory
 import java.time.LocalDate
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.support.PageableExecutionUtils
 
 class SiteActivityRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
@@ -32,5 +41,62 @@ class SiteActivityRepositoryCustomImpl(
             .where(where)
             .orderBy(siteActivity.activityDate.desc(), siteActivity.id.desc())
             .fetch()
+    }
+
+    override fun searchForAdmin(
+        policyPredicate: Predicate,
+        filter: AdminSiteActivityFilter,
+        pageable: Pageable
+    ): Page<SiteActivity> {
+        val where = BooleanBuilder()
+            .and(policyPredicate)
+            .and(siteActivity.isDeleted.isNull.or(siteActivity.isDeleted.isFalse))
+            .and(siteActivity.activityDate.goe(filter.startDate))
+            .and(siteActivity.activityDate.loe(filter.endDate))
+
+        filter.category?.let { where.and(siteActivity.productType.eq(it.storedValue)) }
+        filter.fieldType?.let { where.and(siteActivity.category.eq(it.displayName)) }
+        filter.employeeName?.takeIf { it.isNotBlank() }
+            ?.let { where.and(siteActivity.employee.name.containsIgnoreCase(it)) }
+        filter.accountCode?.takeIf { it.isNotBlank() }
+            ?.let { where.and(siteActivity.account.externalKey.eq(it)) }
+
+        val content = queryFactory
+            .selectFrom(siteActivity)
+            .leftJoin(siteActivity.employee, employee).fetchJoin()
+            .leftJoin(siteActivity.account, account).fetchJoin()
+            .leftJoin(siteActivity.product, product).fetchJoin()
+            .leftJoin(siteActivity.inspectionTheme, inspectionTheme).fetchJoin()
+            .where(where)
+            .orderBy(siteActivity.activityDate.desc(), siteActivity.id.desc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+
+        val countQuery = queryFactory
+            .select(siteActivity.count())
+            .from(siteActivity)
+            .leftJoin(siteActivity.employee, employee)
+            .leftJoin(siteActivity.account, account)
+            .where(where)
+
+        return PageableExecutionUtils.getPage(content, pageable) {
+            countQuery.fetchOne() ?: 0L
+        }
+    }
+
+    override fun existsVisibleById(policyPredicate: Predicate, id: Long): Boolean {
+        val where = BooleanBuilder()
+            .and(policyPredicate)
+            .and(siteActivity.id.eq(id))
+            .and(siteActivity.isDeleted.isNull.or(siteActivity.isDeleted.isFalse))
+
+        return queryFactory
+            .selectOne()
+            .from(siteActivity)
+            .leftJoin(siteActivity.employee, employee)
+            .leftJoin(siteActivity.account, account)
+            .where(where)
+            .fetchFirst() != null
     }
 }
