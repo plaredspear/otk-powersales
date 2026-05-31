@@ -62,7 +62,7 @@ class InspectionRegisterRequest {
 
   /// Multipart form fields (JSON 부분) 생성
   ///
-  /// Retrofit에서 @Part("data")로 전송할 JSON 데이터
+  /// 백엔드의 multipart `request` 파트(application/json)로 전송할 JSON 데이터.
   Map<String, dynamic> toFormData() {
     return {
       'themeId': themeId,
