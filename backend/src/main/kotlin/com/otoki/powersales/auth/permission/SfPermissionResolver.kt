@@ -79,25 +79,31 @@ class SfPermissionResolver(
         if (flags.permissionsViewAllUsers) result.add(systemKey(SfSystemPermission.VIEW_ALL_USERS))
         if (flags.permissionsManageUsers) result.add(systemKey(SfSystemPermission.MANAGE_USERS))
         if (flags.permissionsApiEnabled) result.add(systemKey(SfSystemPermission.API_ENABLED))
+
+        // SF 레거시 정합 — Profile 도 객체/가상자원 권한을 보유 (발령 시 직책 → Profile 로 화면권한 자동 전파).
+        applyObjectPermissionsJson(flags.objectPermissions, flags.id, result)
+        applyCustomPermissionsJson(flags.customPermissions, flags.id, result)
     }
 
     private fun applyPermissionSetFlags(flags: PermissionSetFlags, result: MutableSet<String>) {
         if (flags.permissionsViewAllData) result.add(systemKey(SfSystemPermission.VIEW_ALL_DATA))
         if (flags.permissionsModifyAllData) result.add(systemKey(SfSystemPermission.MODIFY_ALL_DATA))
 
-        applyObjectPermissionsJson(flags, result)
-        applyCustomPermissionsJson(flags, result)
+        applyObjectPermissionsJson(flags.objectPermissions, flags.id, result)
+        applyCustomPermissionsJson(flags.customPermissions, flags.id, result)
     }
 
     /**
      * `object_permissions` JSON — SF API name 키 → entity table name 으로 변환 후 권한 key 산출.
+     *
+     * ProfileFlags / PermissionSetFlags 공용 (양쪽 모두 동일 JSON 구조). flagsId 는 파싱 실패 로깅용.
      */
-    private fun applyObjectPermissionsJson(flags: PermissionSetFlags, result: MutableSet<String>) {
-        val json = flags.objectPermissions?.takeIf { it.isNotBlank() } ?: return
+    private fun applyObjectPermissionsJson(objectPermissions: String?, flagsId: Long, result: MutableSet<String>) {
+        val json = objectPermissions?.takeIf { it.isNotBlank() } ?: return
         val parsed = try {
             objectMapper.readValue(json, Map::class.java) as? Map<*, *> ?: return
         } catch (e: Exception) {
-            log.warn("[SfPermissionResolver] PermissionSetFlags id={} object_permissions JSON 파싱 실패: {}", flags.id, e.message)
+            log.warn("[SfPermissionResolver] flags id={} object_permissions JSON 파싱 실패: {}", flagsId, e.message)
             return
         }
 
@@ -111,13 +117,15 @@ class SfPermissionResolver(
 
     /**
      * `custom_permissions` JSON — 자원 이름 키 (JPA entity 없는 가상 자원) 그대로 권한 key 산출. (spec #808)
+     *
+     * ProfileFlags / PermissionSetFlags 공용. flagsId 는 파싱 실패 로깅용.
      */
-    private fun applyCustomPermissionsJson(flags: PermissionSetFlags, result: MutableSet<String>) {
-        val json = flags.customPermissions?.takeIf { it.isNotBlank() } ?: return
+    private fun applyCustomPermissionsJson(customPermissions: String?, flagsId: Long, result: MutableSet<String>) {
+        val json = customPermissions?.takeIf { it.isNotBlank() } ?: return
         val parsed = try {
             objectMapper.readValue(json, Map::class.java) as? Map<*, *> ?: return
         } catch (e: Exception) {
-            log.warn("[SfPermissionResolver] PermissionSetFlags id={} custom_permissions JSON 파싱 실패: {}", flags.id, e.message)
+            log.warn("[SfPermissionResolver] flags id={} custom_permissions JSON 파싱 실패: {}", flagsId, e.message)
             return
         }
 
