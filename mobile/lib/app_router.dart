@@ -125,8 +125,16 @@ class AppRouter {
         attendance: (context) => const AttendancePage(),
         attendanceComplete: (context) => const AttendanceCompletePage(),
         myAccounts: (context) => const MyAccountsPage(),
-        productSearch: (context) => const ProductSearchPage(),
-        productSearchResult: (context) => const ProductSearchResultPage(),
+        productSearch: (context) {
+          final selectionMode =
+              ModalRoute.of(context)?.settings.arguments as bool? ?? false;
+          return ProductSearchPage(selectionMode: selectionMode);
+        },
+        productSearchResult: (context) {
+          final selectionMode =
+              ModalRoute.of(context)?.settings.arguments as bool? ?? false;
+          return ProductSearchResultPage(selectionMode: selectionMode);
+        },
         productDetail: (context) {
           final productCode =
               ModalRoute.of(context)!.settings.arguments as String;

@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app_router.dart';
 import '../../domain/entities/claim_category.dart';
 import '../../domain/entities/claim_code.dart';
+import '../../domain/entities/product.dart';
 import '../providers/claim_register_provider.dart';
 import '../widgets/claim/claim_category_selector.dart';
 import '../widgets/claim/claim_date_field.dart';
@@ -277,16 +279,17 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
     );
   }
 
-  /// 제품 선택 다이얼로그
-  void _showProductSelector(BuildContext context) {
-    // TODO: 제품 검색 화면으로 이동
-    // 임시로 샘플 제품 선택
-    final notifier = ref.read(claimRegisterProvider.notifier);
-    notifier.selectProduct('P001', '진라면');
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('제품 선택 기능은 추후 구현 예정입니다')),
+  /// 제품 선택 — 제품검색(선택 모드)으로 이동 후 고른 제품을 폼에 반영
+  Future<void> _showProductSelector(BuildContext context) async {
+    final selected = await AppRouter.navigateTo<Product>(
+      context,
+      AppRouter.productSearch,
+      arguments: true,
     );
+    if (selected == null || !mounted) return;
+    ref
+        .read(claimRegisterProvider.notifier)
+        .selectProduct(selected.productCode, selected.productName);
   }
 
   /// 바코드 스캔

@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app_router.dart';
 import '../../../domain/entities/inspection_field_type.dart';
 import '../../../domain/entities/inspection_list_item.dart';
+import '../../../domain/entities/product.dart';
 import '../../../domain/entities/inspection_theme.dart';
 import '../../providers/inspection_register_provider.dart';
 import '../../providers/inspection_register_state.dart';
@@ -285,13 +287,17 @@ class _InspectionRegisterPageState
     );
   }
 
-  /// 제품 선택 (임시 구현)
-  void _showProductSelector(BuildContext context) {
-    // TODO: 제품 검색 화면으로 이동
-    // 임시로 샘플 제품 선택
+  /// 제품 선택 — 제품검색(선택 모드)으로 이동 후 고른 제품을 폼에 반영
+  Future<void> _showProductSelector(BuildContext context) async {
+    final selected = await AppRouter.navigateTo<Product>(
+      context,
+      AppRouter.productSearch,
+      arguments: true,
+    );
+    if (selected == null || !mounted) return;
     ref
         .read(inspectionRegisterProvider.notifier)
-        .selectProduct('P001', '진라면');
+        .selectProduct(selected.productCode, selected.productName);
   }
 
   /// 바코드 스캔 (임시 구현)
