@@ -4224,6 +4224,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseDailySalesFormResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DailySalesFormResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseDailySalesResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DailySalesResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseDailyScheduleResponse" : {
         "properties" : {
           "data" : {
@@ -4920,11 +4978,69 @@
         },
         "type" : "object"
       },
+      "ApiResponseLeaderDailyStatusResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LeaderDailyStatusResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseLeaderScheduleCreateResponse" : {
         "properties" : {
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/LeaderScheduleCreateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseLeaderScheduleUpdateResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LeaderScheduleUpdateResponse"
             }, {
               "type" : "null"
             } ]
@@ -10366,6 +10482,115 @@
         },
         "type" : "object"
       },
+      "DailySalesCloseRequest" : {
+        "properties" : {
+          "basePrice" : {
+            "type" : [ "number", "null" ]
+          },
+          "description" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "otherSalesAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "otherSalesQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "primaryProductAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "primarySalesPrice" : {
+            "type" : [ "number", "null" ]
+          },
+          "primarySalesQuantity" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "DailySalesDraftRequest" : {
+        "properties" : {
+          "basePrice" : {
+            "type" : [ "number", "null" ]
+          },
+          "description" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "otherSalesAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "otherSalesQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "primaryProductAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "primarySalesPrice" : {
+            "type" : [ "number", "null" ]
+          },
+          "primarySalesQuantity" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "DailySalesFormResponse" : {
+        "properties" : {
+          "basePrice" : {
+            "type" : [ "number", "null" ]
+          },
+          "closed" : {
+            "type" : "boolean"
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "editable" : {
+            "type" : "boolean"
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "hasDraft" : {
+            "type" : "boolean"
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "otherSalesAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "otherSalesQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "primaryProductAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "primarySalesPrice" : {
+            "type" : [ "number", "null" ]
+          },
+          "primarySalesQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "promotionEmployeeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "promotionId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "scheduleDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "DailySalesHistoryRequest" : {
         "properties" : {
           "reqItemList" : {
@@ -10406,6 +10631,25 @@
           },
           "SalesDate" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DailySalesResult" : {
+        "properties" : {
+          "actualAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "closed" : {
+            "type" : "boolean"
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "promotionEmployeeId" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -12467,6 +12711,112 @@
         },
         "type" : "object"
       },
+      "LeaderDailyEmployeeItem" : {
+        "properties" : {
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "employeeName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "LeaderDailyStatusResponse" : {
+        "properties" : {
+          "annualLeaveWorkers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LeaderDailyEmployeeItem"
+            },
+            "type" : "array"
+          },
+          "date" : {
+            "type" : "string"
+          },
+          "displayWorkers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LeaderDailyWorkerItem"
+            },
+            "type" : "array"
+          },
+          "eventWorkers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LeaderDailyWorkerItem"
+            },
+            "type" : "array"
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/LeaderDailyStatusSummary"
+          }
+        },
+        "type" : "object"
+      },
+      "LeaderDailyStatusSummary" : {
+        "properties" : {
+          "annualLeaveCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "displayAttended" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "displayTotal" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "eventAttended" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "eventTotal" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "LeaderDailyWorkerItem" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : "string"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "attended" : {
+            "type" : "boolean"
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "scheduleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory2" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "LeaderScheduleCreateRequest" : {
         "properties" : {
           "accountId" : {
@@ -12521,6 +12871,42 @@
             "type" : "string"
           },
           "workingType" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "LeaderScheduleUpdateRequest" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "accountId" ],
+        "type" : "object"
+      },
+      "LeaderScheduleUpdateResponse" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "scheduleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "targetEmployeeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingDate" : {
             "type" : "string"
           }
         },
@@ -12841,12 +13227,18 @@
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
+          "closed" : {
+            "type" : "boolean"
+          },
           "employeeName" : {
             "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "mine" : {
+            "type" : "boolean"
           },
           "scheduleDate" : {
             "format" : "date",
@@ -24786,7 +25178,7 @@
     },
     "/api/v1/admin/products/{productCode}" : {
       "get" : {
-        "operationId" : "getProductDetail",
+        "operationId" : "getProductDetail_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "productCode",
@@ -28773,7 +29165,7 @@
     },
     "/api/v1/admin/team-schedule/form" : {
       "get" : {
-        "operationId" : "getForm",
+        "operationId" : "getForm_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "branchCode",
@@ -29970,6 +30362,32 @@
         "tags" : [ "leader-schedule-controller" ]
       }
     },
+    "/api/v1/mobile/leader/daily-status" : {
+      "get" : {
+        "operationId" : "getDailyStatus",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "date",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLeaderDailyStatusResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      }
+    },
     "/api/v1/mobile/leader/team-member-schedule" : {
       "post" : {
         "operationId" : "createTeamMemberSchedule",
@@ -29989,6 +30407,68 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseLeaderScheduleCreateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      }
+    },
+    "/api/v1/mobile/leader/team-member-schedule/{scheduleId}" : {
+      "delete" : {
+        "operationId" : "deleteTeamMemberSchedule",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "scheduleId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateTeamMemberSchedule",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "scheduleId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LeaderScheduleUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLeaderScheduleUpdateResponse"
                 }
               }
             },
@@ -30577,6 +31057,154 @@
           }
         },
         "tags" : [ "product-controller" ]
+      }
+    },
+    "/api/v1/mobile/products/{productCode}" : {
+      "get" : {
+        "operationId" : "getProductDetail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "productCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProductDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "product-controller" ]
+      }
+    },
+    "/api/v1/mobile/promotion-employees/{promotionEmployeeId}/daily-sales" : {
+      "get" : {
+        "operationId" : "getForm",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "promotionEmployeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDailySalesFormResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-daily-sales-controller" ]
+      },
+      "post" : {
+        "operationId" : "close",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "promotionEmployeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DailySalesCloseRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDailySalesResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-daily-sales-controller" ]
+      }
+    },
+    "/api/v1/mobile/promotion-employees/{promotionEmployeeId}/daily-sales/draft" : {
+      "delete" : {
+        "operationId" : "deleteDraft",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "promotionEmployeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-daily-sales-controller" ]
+      },
+      "post" : {
+        "operationId" : "saveDraft",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "promotionEmployeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DailySalesDraftRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDailySalesFormResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-daily-sales-controller" ]
       }
     },
     "/api/v1/mobile/promotions" : {
