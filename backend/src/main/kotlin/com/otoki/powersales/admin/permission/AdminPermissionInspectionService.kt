@@ -87,6 +87,32 @@ class AdminPermissionInspectionService(
             pageable = PageRequest.of(userPage, userSize),
         )
 
+        // PermissionSet 상세와 동일 — object/custom 권한 JSON 을 행 형식으로 파싱 (편집 화면 현재값 표시용).
+        val objectPermissions = parseObjectPermissions(flags?.objectPermissions)
+            .map { (sfApiName, perms) ->
+                ObjectPermissionRow(
+                    sfApiName = sfApiName,
+                    entity = entitySfNameRegistry.toEntityTableName(sfApiName),
+                    canRead = perms["allowRead"] == true,
+                    canCreate = perms["allowCreate"] == true,
+                    canEdit = perms["allowEdit"] == true,
+                    canDelete = perms["allowDelete"] == true,
+                )
+            }
+            .sortedBy { it.entity ?: it.sfApiName }
+
+        val customPermissions = parsePermissionsJson(flags?.customPermissions, "custom_permissions")
+            .map { (resourceName, perms) ->
+                CustomPermissionRow(
+                    resource = resourceName,
+                    canRead = perms["allowRead"] == true,
+                    canCreate = perms["allowCreate"] == true,
+                    canEdit = perms["allowEdit"] == true,
+                    canDelete = perms["allowDelete"] == true,
+                )
+            }
+            .sortedBy { it.resource }
+
         return ProfileDetail(
             profileId = profile.id,
             name = profile.name,
@@ -100,6 +126,9 @@ class AdminPermissionInspectionService(
                 manageUsers = flags?.permissionsManageUsers ?: false,
                 apiEnabled = flags?.permissionsApiEnabled ?: false,
             ),
+            objectPermissions = objectPermissions,
+            customPermissions = customPermissions,
+            isLocallyModified = flags?.isLocallyModified ?: false,
             assignedUsers = usersPage.toPaginatedUserList(),
         )
     }

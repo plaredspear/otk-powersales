@@ -52,6 +52,12 @@ data class ProfileDetail(
     val userType: String?,
     val description: String?,
     val flags: ProfileFlagsSummary,
+    /** SF 객체권한 (PermissionSetDetail 과 동일 행 형식). 편집 화면의 현재값 표시용. */
+    val objectPermissions: List<ObjectPermissionRow>,
+    /** @PermissionResource 가상 자원 권한. */
+    val customPermissions: List<CustomPermissionRow>,
+    /** Web admin 에서 Profile 권한이 수정되었는지 (dirty). */
+    val isLocallyModified: Boolean,
     val assignedUsers: PaginatedUserList,
 )
 
