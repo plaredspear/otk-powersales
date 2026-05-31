@@ -1711,6 +1711,148 @@
         "required" : [ "accountCode", "employeeCode", "startDate", "typeOfWork3", "typeOfWork4", "typeOfWork5" ],
         "type" : "object"
       },
+      "AdminSiteActivityDetailResponse" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "accountName" : {
+            "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "competitorActivity" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductPrice" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorSalesQuantity" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorTasting" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "employeeOrgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "fieldType" : {
+            "type" : "string"
+          },
+          "fieldTypeCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "inspectionDate" : {
+            "type" : "string"
+          },
+          "photos" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InspectionPhotoResponse"
+            },
+            "type" : "array"
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "themeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "themeName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminSiteActivityListItem" : {
+        "properties" : {
+          "accountName" : {
+            "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "employeeOrgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "fieldType" : {
+            "type" : "string"
+          },
+          "fieldTypeCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "inspectionDate" : {
+            "type" : "string"
+          },
+          "themeName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminSiteActivityListResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AdminSiteActivityListItem"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "AdminSuggestionCreateRequest" : {
         "properties" : {
           "accountId" : {
@@ -2805,6 +2947,64 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminProductExpirationSummaryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminSiteActivityDetailResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminSiteActivityDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminSiteActivityListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminSiteActivityListResponse"
             }, {
               "type" : "null"
             } ]
@@ -8706,6 +8906,18 @@
           }
         },
         "required" : [ "holidayDate", "name", "type" ],
+        "type" : "object"
+      },
+      "InspectionPhotoResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "url" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "InventorySearchRequest" : {
@@ -16763,6 +16975,130 @@
           }
         },
         "tags" : [ "admin-holiday-master-controller" ]
+      }
+    },
+    "/api/v1/admin/inspections" : {
+      "get" : {
+        "operationId" : "getInspections",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "OWN", "COMPETITOR" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "fieldType",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "MAIN_SHELF", "EVENT_SHELF", "TASTING", "ETC" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminSiteActivityListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-controller" ]
+      }
+    },
+    "/api/v1/admin/inspections/{id}" : {
+      "get" : {
+        "operationId" : "getInspectionDetail",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminSiteActivityDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-controller" ]
       }
     },
     "/api/v1/admin/naver-geocode/test" : {

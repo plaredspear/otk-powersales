@@ -28,6 +28,7 @@ const EmployeePage = lazy(() => import('@/pages/EmployeePage'));
 const EmployeeListPage = lazy(() => import('@/pages/settings/EmployeeListPage'));
 const EmployeeDetailPage = lazy(() => import('@/pages/EmployeeDetailPage'));
 const FieldInspectionPage = lazy(() => import('@/pages/FieldInspectionPage'));
+const ThemeManagementPage = lazy(() => import('@/pages/ThemeManagementPage'));
 const ReportPage = lazy(() => import('@/pages/ReportPage'));
 const NoticeListPage = lazy(() => import('@/pages/notice/NoticeListPage'));
 const NoticeDetailPage = lazy(() => import('@/pages/notice/NoticeDetailPage'));
@@ -153,6 +154,7 @@ export const router = createBrowserRouter(
             { path: '/product', element: <LazyWrapper><ProductPage /></LazyWrapper> },
             { path: '/product/:productCode', element: <LazyWrapper><ProductDetailPage /></LazyWrapper> },
             { path: '/field-inspection', element: <LazyWrapper><FieldInspectionPage /></LazyWrapper> },
+            { path: '/inspection-themes', element: <LazyWrapper><ThemeManagementPage /></LazyWrapper> },
             { path: '/report', element: <LazyWrapper><ReportPage /></LazyWrapper> },
             {
               element: <PermissionRoute entity="notice" operation="READ" />,
