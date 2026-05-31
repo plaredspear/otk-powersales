@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/image_picker_helper.dart';
+
 /// 클레임 사진 첨부 필드
 class ClaimPhotoField extends StatelessWidget {
   const ClaimPhotoField({
@@ -72,13 +74,10 @@ class _PhotoPickerButton extends StatelessWidget {
   }
 
   Future<void> _showImageSourceSelector(BuildContext context) async {
-    await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => const _ImageSourceSheet(),
-    );
-
-    // TODO: Implement actual image picker when image_picker package is added
-    // For now, this is just UI structure
+    final file = await pickImageWithSourceSheet(context);
+    if (file != null) {
+      onPhotoSelected(file);
+    }
   }
 }
 
@@ -127,31 +126,6 @@ class _PhotoPreview extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// 이미지 소스 선택 바텀시트 (카메라/갤러리)
-class _ImageSourceSheet extends StatelessWidget {
-  const _ImageSourceSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Wrap(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.camera_alt),
-            title: const Text('카메라로 촬영'),
-            onTap: () => Navigator.pop(context, 'camera'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.photo_library),
-            title: const Text('갤러리에서 선택'),
-            onTap: () => Navigator.pop(context, 'gallery'),
-          ),
-        ],
-      ),
     );
   }
 }
