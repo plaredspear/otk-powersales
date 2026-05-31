@@ -86,11 +86,3 @@ class InvalidCustomPermissionKeyException(resourceName: String) : BusinessExcept
     message = "등록되지 않은 custom resource name 입니다 (resourceName=$resourceName)",
     httpStatus = HttpStatus.BAD_REQUEST,
 )
-
-// ── Profile 권한 비트 편집 예외 ──────────────────────────────────────────
-
-class ProfileFlagsNotFoundException(profileId: Long) : BusinessException(
-    errorCode = "PROFILE_FLAGS_NOT_FOUND",
-    message = "Profile($profileId) 의 권한 비트 행을 찾을 수 없습니다",
-    httpStatus = HttpStatus.NOT_FOUND,
-)

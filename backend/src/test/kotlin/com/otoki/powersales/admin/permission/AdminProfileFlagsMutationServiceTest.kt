@@ -3,7 +3,6 @@ package com.otoki.powersales.admin.permission
 import com.otoki.powersales.admin.permission.dto.ProfileUpdateFlagsRequest
 import com.otoki.powersales.admin.permission.exception.InvalidCustomPermissionKeyException
 import com.otoki.powersales.admin.permission.exception.InvalidObjectPermissionKeyException
-import com.otoki.powersales.admin.permission.exception.ProfileFlagsNotFoundException
 import com.otoki.powersales.admin.permission.exception.ProfileNotFoundException
 import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.auth.entity.Profile
@@ -14,6 +13,7 @@ import com.otoki.powersales.auth.sharing.entity.ProfileFlags
 import com.otoki.powersales.auth.sharing.repository.ProfileFlagsRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -100,12 +100,24 @@ class AdminProfileFlagsMutationServiceTest {
     }
 
     @Test
-    fun `updateFlags — flags 행이 없으면 ProfileFlagsNotFoundException`() {
+    fun `updateFlags — flags 행이 없으면 신규 생성 후 편집분 저장 (upsert)`() {
+        val saved = slot<ProfileFlags>()
         every { profileRepository.findById(10L) } returns Optional.of(profile())
         every { profileFlagsRepository.findByProfileId(10L) } returns null
+        every { profileFlagsRepository.save(capture(saved)) } returnsArgument 0
+        every { entitySfNameRegistry.snapshot() } returns mapOf("monthly_sales_history" to "MonthlySalesHistory__c")
 
-        assertThatThrownBy { service.updateFlags(10L, ProfileUpdateFlagsRequest(), 1L) }
-            .isInstanceOf(ProfileFlagsNotFoundException::class.java)
+        val request = ProfileUpdateFlagsRequest(
+            manageUsers = true,
+            objectPermissions = mapOf("MonthlySalesHistory__c" to mapOf("allowRead" to true)),
+        )
+        val response = service.updateFlags(10L, request, principalUserId = 1L)
+
+        assertThat(saved.captured.profileId).isEqualTo(10L)
+        assertThat(saved.captured.isLocallyModified).isTrue()
+        assertThat(response.manageUsers).isTrue()
+        assertThat(response.objectPermissions).containsKey("MonthlySalesHistory__c")
+        assertThat(response.isLocallyModified).isTrue()
     }
 
     @Test

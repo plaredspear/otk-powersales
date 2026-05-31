@@ -4,7 +4,6 @@ import com.otoki.powersales.admin.permission.dto.ProfileFlagsMutationResponse
 import com.otoki.powersales.admin.permission.dto.ProfileUpdateFlagsRequest
 import com.otoki.powersales.admin.permission.exception.InvalidCustomPermissionKeyException
 import com.otoki.powersales.admin.permission.exception.InvalidObjectPermissionKeyException
-import com.otoki.powersales.admin.permission.exception.ProfileFlagsNotFoundException
 import com.otoki.powersales.admin.permission.exception.ProfileNotFoundException
 import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.auth.permission.AdminPermissionCache
@@ -35,6 +34,8 @@ import tools.jackson.databind.ObjectMapper
  *   skip 하여 신규 시스템 변경분을 SF retrieve 재적재로부터 보호 ([ProfileFlagsEvaluator] / Stage2 loader).
  *   PermissionSetFlags 의 동일 정책과 정합 — 단 Profile 은 신규 생성 기능이 없어 항상 SF 출처라
  *   조건 없이 set (PS 는 sfid != null 일 때만 set).
+ * - upsert: ProfileFlags 행은 일부 Profile 에만 존재하므로 (로컬 '시스템 관리자' 1건 시드 / dev·prod 는
+ *   SF systemPermissions 정의 Profile 만 Stage1 적재), 행이 없으면 기본값(전부 false) 신규 생성 후 편집분 교체
  * - 권한 비트 키 검증: EntitySfNameRegistry snapshot()/allResources() 기준 — 미등록 키 400
  * - 전체 교체 방식: 누락 키는 "권한 없음" 으로 해석 (부분 patch 아님)
  * - 캐시: 편집 후 CACHE_PERMISSION_MATRIX evict + CACHE_PROFILE_FLAGS (Profile 보유 user 전원 영향) clear
@@ -73,8 +74,11 @@ class AdminProfileFlagsMutationService(
         val profile = profileRepository.findById(profileId).orElseThrow {
             ProfileNotFoundException(profileId)
         }
+        // ProfileFlags 행은 일부 Profile 에만 존재한다 (로컬은 '시스템 관리자' 1건만 시드,
+        // dev/prod 는 SF systemPermissions 가 정의된 Profile 만 Stage1 적재). 행이 없는 Profile 도
+        // 편집 가능해야 하므로 upsert — 없으면 기본값(전부 false) 신규 생성 후 편집분으로 교체.
         val flags = profileFlagsRepository.findByProfileId(profileId)
-            ?: throw ProfileFlagsNotFoundException(profileId)
+            ?: ProfileFlags(profileId = profileId)
 
         validateObjectPermissionKeys(request.objectPermissions)
         validateCustomPermissionKeys(request.customPermissions)
