@@ -234,6 +234,34 @@ app:
         auto-commit: true
         initialization-fail-timeout: -1
 
+    # -------------------------------------------------------------------------
+    # POS 외부 PostgreSQL DB 직결 DataSource (전산매출 = 레거시 live_tot_sales_dh)
+    #  - 레거시 Heroku `PosMapper.xml`(datasource=pos) 가 쓰던 별도 POS DB.
+    #  - 메인 RDS 와 분리된 read-only 직결. ORORA datasource 와 동일한 fail-tolerant 정책
+    #    (initialization-fail-timeout=-1) — POS DB 도달 불가 시에도 메인 기동 무영향.
+    #  - 접속정보는 배포 환경 변수(POS_DB_*)로 주입. 미설정(local/test) 시 빈은 등록되나
+    #    호출 site 가 없으면 connection acquire 자체가 발생하지 않음.
+    # -------------------------------------------------------------------------
+    pos:
+      host: ${POS_DB_HOST:}
+      port: ${POS_DB_PORT:5432}
+      database: ${POS_DB_NAME:}
+      username: ${POS_DB_USER:}
+      password: ${POS_DB_PASSWORD:}
+      hikari:
+        pool-name: posHikariPool
+        maximum-pool-size: 5
+        minimum-idle: 1
+        idle-timeout: 600000
+        max-lifetime: 1500000
+        keepalive-time: 120000
+        connection-test-query: "SELECT 1"
+        connection-timeout: 5000
+        validation-timeout: 3000
+        read-only: true
+        auto-commit: true
+        initialization-fail-timeout: -1
+
   # ---------------------------------------------------------------------------
   # SAP outbound — 출근/진열 마스터 daily batch
   # cron 표현식과 page-size 는 Part 별로 독립. 인증/baseUrl/timeout 은 위

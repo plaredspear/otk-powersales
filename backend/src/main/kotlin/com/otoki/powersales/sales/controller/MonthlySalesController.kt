@@ -1,10 +1,13 @@
 package com.otoki.powersales.sales.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.sales.dto.request.ElectronicSalesRequest
 import com.otoki.powersales.sales.dto.request.LogisticsSalesRequest
 import com.otoki.powersales.sales.dto.request.MonthlySalesRequest
+import com.otoki.powersales.sales.dto.response.ElectronicSalesResponse
 import com.otoki.powersales.sales.dto.response.LogisticsSalesResponse
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
+import com.otoki.powersales.sales.service.ElectronicSalesService
 import com.otoki.powersales.sales.service.LogisticsSalesService
 import com.otoki.powersales.sales.service.MonthlySalesService
 import jakarta.validation.Valid
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.*
 class MonthlySalesController(
     private val monthlySalesService: MonthlySalesService,
     private val logisticsSalesService: LogisticsSalesService,
+    private val electronicSalesService: ElectronicSalesService,
 ) {
 
     /**
@@ -42,6 +46,18 @@ class MonthlySalesController(
         @Valid request: LogisticsSalesRequest
     ): ResponseEntity<ApiResponse<LogisticsSalesResponse>> {
         val response = logisticsSalesService.getLogisticsSales(request.customerId, request.yearMonth)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 전산매출(ABC) 조회 (거래처 1곳 + 연월, 제품별 실적)
+     * GET /api/v1/mobile/sales/electronic
+     */
+    @GetMapping("/electronic")
+    fun getElectronicSales(
+        @Valid request: ElectronicSalesRequest
+    ): ResponseEntity<ApiResponse<ElectronicSalesResponse>> {
+        val response = electronicSalesService.getElectronicSales(request.customerId, request.yearMonth)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 }
