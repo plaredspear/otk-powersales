@@ -23,6 +23,20 @@ const STATUS_OPTIONS = [
 const PAGE_SIZE = 20;
 const INVENTORY_SEARCH_MAX = 50;
 
+// SF ShelfLifeFull__c formula 동등 — 유통기한 단위 한글 접미사 변환 (월→개월, 일자→일, 연도→년)
+function shelfLifeUnitLabel(unit: string | null): string {
+  switch (unit) {
+    case '월':
+      return '개월';
+    case '일자':
+      return '일';
+    case '연도':
+      return '년';
+    default:
+      return unit ?? '';
+  }
+}
+
 export default function ProductPage() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState<string | undefined>();
@@ -178,9 +192,9 @@ export default function ProductPage() {
           '-'
         ),
     },
-    { title: '카테고리1', dataIndex: 'category1', width: 100, render: (val: string | null) => val ?? '-' },
-    { title: '카테고리2', dataIndex: 'category2', width: 100, render: (val: string | null) => val ?? '-' },
-    { title: '카테고리3', dataIndex: 'category3', width: 100, render: (val: string | null) => val ?? '-' },
+    { title: '대분류', dataIndex: 'category1', width: 100, render: (val: string | null) => val ?? '-' },
+    { title: '중분류', dataIndex: 'category2', width: 100, render: (val: string | null) => val ?? '-' },
+    { title: '소분류', dataIndex: 'category3', width: 100, render: (val: string | null) => val ?? '-' },
     {
       title: '보관방법',
       dataIndex: 'storageCondition',
@@ -195,7 +209,7 @@ export default function ProductPage() {
       render: (val: string | null) => val ?? '-',
     },
     {
-      title: '표준가(원)',
+      title: '표준출고가(원)',
       dataIndex: 'standardUnitPrice',
       width: 100,
       align: 'right',
@@ -206,16 +220,16 @@ export default function ProductPage() {
       dataIndex: 'superTax',
       width: 80,
       align: 'right',
-      render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
+      render: (val: number | null) => (val != null ? `₩${val.toLocaleString()}` : '-'),
     },
     {
       title: '유통기한',
       width: 110,
       render: (_: unknown, record) =>
-        record.shelfLife ? `${record.shelfLife}${record.shelfLifeUnit ?? ''}` : '-',
+        record.shelfLife ? `${record.shelfLife}${shelfLifeUnitLabel(record.shelfLifeUnit)}` : '-',
     },
     {
-      title: '상태',
+      title: '제품상태',
       dataIndex: 'productStatus',
       width: 80,
       align: 'center',
@@ -223,7 +237,7 @@ export default function ProductPage() {
         val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
     },
     {
-      title: '증정/시식',
+      title: '증정/시식 구분',
       dataIndex: 'tasteGift',
       width: 80,
       align: 'center',
@@ -234,7 +248,7 @@ export default function ProductPage() {
       },
     },
     {
-      title: '최종수정',
+      title: '최종 수정 일자',
       dataIndex: 'lastModifiedAt',
       width: 160,
       render: (val: string | null) => (val ? val.replace('T', ' ').slice(0, 19) : '-'),
