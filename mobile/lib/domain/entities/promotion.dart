@@ -142,6 +142,12 @@ class PromotionEmployee {
   final int? targetAmount;
   final int? actualAmount;
 
+  /// 조회 사용자 본인에게 배정된 행 여부 (일매출 마감 진입점 노출용).
+  final bool isMine;
+
+  /// 여사원 일매출 마감 완료 여부.
+  final bool isClosed;
+
   const PromotionEmployee({
     required this.id,
     this.employeeName,
@@ -151,6 +157,8 @@ class PromotionEmployee {
     this.professionalPromotionTeam,
     this.targetAmount,
     this.actualAmount,
+    this.isMine = false,
+    this.isClosed = false,
   });
 
   factory PromotionEmployee.fromJson(Map<String, dynamic> json) {
@@ -164,6 +172,8 @@ class PromotionEmployee {
           json['professionalPromotionTeam'] as String?,
       targetAmount: json['targetAmount'] as int?,
       actualAmount: json['actualAmount'] as int?,
+      isMine: json['isMine'] as bool? ?? false,
+      isClosed: json['isClosed'] as bool? ?? false,
     );
   }
 }

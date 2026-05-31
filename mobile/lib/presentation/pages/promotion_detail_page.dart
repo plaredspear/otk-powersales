@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/throttled_tap_mixin.dart';
 import '../../domain/entities/promotion.dart';
 import '../providers/promotion_detail_provider.dart';
 import '../widgets/common/loading_indicator.dart';
@@ -21,7 +23,8 @@ class PromotionDetailPage extends ConsumerStatefulWidget {
       _PromotionDetailPageState();
 }
 
-class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage> {
+class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
+    with ThrottledTapMixin {
   @override
   void initState() {
     super.initState();
@@ -54,6 +57,17 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage> {
       appBar: AppBar(title: const Text('행사 상세')),
       body: _buildBody(state),
     );
+  }
+
+  Future<void> _openDailySales(PromotionEmployee employee) async {
+    final result = await AppRouter.navigateTo<bool>(
+      context,
+      AppRouter.promotionDailySales,
+      arguments: employee.id,
+    );
+    if (result == true && mounted) {
+      ref.read(promotionDetailProvider.notifier).loadPromotion(widget.promotionId);
+    }
   }
 
   Widget _buildBody(PromotionDetailState state) {
@@ -102,7 +116,11 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage> {
           _buildAchievementCard(detail),
           const SizedBox(height: AppSpacing.xl),
           if (detail.employees.isNotEmpty)
-            PromotionEmployeeList(employees: detail.employees),
+            PromotionEmployeeList(
+              employees: detail.employees,
+              onDailySalesTap: (emp) =>
+                  throttledTapAsync(() => _openDailySales(emp)),
+            ),
         ],
       ),
     );
