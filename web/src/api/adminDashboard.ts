@@ -1,5 +1,6 @@
 import client from './client';
 import type { ApiResponse } from './types';
+import type { Branch } from './team-schedule';
 
 /**
  * 투입현황 대시보드 (Spec 850) — Backend `DashboardResponse` 미러.
@@ -115,6 +116,20 @@ export async function fetchDashboard(
   });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message ?? res.data.message ?? '대시보드 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 대시보드 지점 셀렉터 옵션 조회.
+ *
+ * 여사원일정 `/team-schedule/branches` 와 동일 산출 로직이나 권한 가드 없는 대시보드 전용 endpoint.
+ * (대시보드는 인증된 모든 admin 사용자에게 열려있어 `team_member_schedule:R` 미보유자도 접근 가능)
+ */
+export async function fetchDashboardBranches(): Promise<Branch[]> {
+  const res = await client.get<ApiResponse<Branch[]>>('/api/v1/admin/dashboard/branches');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message ?? res.data.message ?? '지점 목록 조회에 실패했습니다');
   }
   return res.data.data;
 }

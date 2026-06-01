@@ -26,7 +26,7 @@ import {
   type SalesComparisonMiddleItem,
   type SalesComparisonDetailItem,
 } from '@/api/salesComparison';
-import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
+import { useDashboardBranches } from '@/hooks/dashboard/useDashboardBranches';
 import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Text } = Typography;
@@ -102,7 +102,7 @@ export default function DeploymentPage() {
   const [clickedAccountIds, setClickedAccountIds] = useState<number[]>([]);
   const [clickedAccountForDetail, setClickedAccountForDetail] = useState<number | null>(null);
 
-  const { data: branches = [] } = useTeamScheduleBranches();
+  const { data: branches = [] } = useDashboardBranches();
 
   const { data: categoryOptions = [] } = useQuery({
     queryKey: ['salesComparison', 'categories'],

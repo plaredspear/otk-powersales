@@ -12,7 +12,9 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.service.AdminDashboardService
+import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.schedule.service.AdminTeamScheduleService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -34,6 +36,9 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
 
     @MockkBean
     private lateinit var adminDashboardService: AdminDashboardService
+
+    @MockkBean
+    private lateinit var adminTeamScheduleService: AdminTeamScheduleService
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
@@ -163,6 +168,28 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/dashboard/branches - 대시보드 지점 셀렉터")
+    inner class GetBranches {
+
+        @Test
+        @DisplayName("성공 - 200 OK + 지점 목록 반환")
+        fun getBranches_success() {
+            val branches = listOf(
+                BranchResponse(branchCode = "1234", branchName = "서울지점"),
+                BranchResponse(branchCode = "5678", branchName = "부산지점")
+            )
+            every { adminTeamScheduleService.getBranches(any()) } returns branches
+
+            mockMvc.perform(get("/api/v1/admin/dashboard/branches"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].branchCode").value("1234"))
+                .andExpect(jsonPath("$.data[0].branchName").value("서울지점"))
         }
     }
 }

@@ -21877,6 +21877,24 @@
         "tags" : [ "admin-dashboard-controller" ]
       }
     },
+    "/api/v1/admin/dashboard/branches" : {
+      "get" : {
+        "operationId" : "getBranches_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-dashboard-controller" ]
+      }
+    },
     "/api/v1/admin/education/categories" : {
       "get" : {
         "operationId" : "getCategories_1",
