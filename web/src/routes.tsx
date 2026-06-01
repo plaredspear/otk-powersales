@@ -7,7 +7,9 @@ import RoleRoute from '@/components/RoleRoute';
 import AdminLayout from '@/layouts/AdminLayout';
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
-const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
+// 홈 대시보드는 작업 중 — 플레이스홀더로 교체. 완료 후 아래를 DashboardPage 로 되돌리고 `/` 라우트 복원.
+// const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
+const DashboardPlaceholderPage = lazy(() => import('@/pages/DashboardPlaceholderPage'));
 const SalesQueryPage = lazy(() => import('@/pages/SalesQueryPage'));
 const MonthlySalesDashboardPage = lazy(() => import('@/pages/MonthlySalesDashboardPage'));
 const ElectronicSalesDashboardPage = lazy(() => import('@/pages/ElectronicSalesDashboardPage'));
@@ -123,7 +125,7 @@ export const router = createBrowserRouter(
         {
           element: <AdminLayout />,
           children: [
-            { path: '/', element: <LazyWrapper><DashboardPage /></LazyWrapper> },
+            { path: '/', element: <LazyWrapper><DashboardPlaceholderPage /></LazyWrapper> },
             {
               element: <PermissionRoute entity="monthly_sales_history" operation="READ" />,
               children: [
