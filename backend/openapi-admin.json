@@ -7178,6 +7178,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseWebImpersonationStartResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/WebImpersonationStartResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseWebImpersonationStopResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/WebImpersonationStopResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseWebLoginResponse" : {
         "properties" : {
           "data" : {
@@ -14780,6 +14838,83 @@
         },
         "type" : "object"
       },
+      "WebImpersonationMeta" : {
+        "properties" : {
+          "impersonatedByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "impersonatedByUserId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "startedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "targetName" : {
+            "type" : [ "string", "null" ]
+          },
+          "targetUserId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "WebImpersonationStartRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "targetUserId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "targetUserId" ],
+        "type" : "object"
+      },
+      "WebImpersonationStartResponse" : {
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "impersonation" : {
+            "$ref" : "#/components/schemas/WebImpersonationMeta"
+          },
+          "refreshToken" : {
+            "type" : "string"
+          },
+          "user" : {
+            "$ref" : "#/components/schemas/WebUserSummary"
+          }
+        },
+        "type" : "object"
+      },
+      "WebImpersonationStopResponse" : {
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "refreshToken" : {
+            "type" : "string"
+          },
+          "user" : {
+            "$ref" : "#/components/schemas/WebUserSummary"
+          }
+        },
+        "type" : "object"
+      },
       "WebLoginRequest" : {
         "properties" : {
           "password" : {
@@ -17794,6 +17929,52 @@
           }
         },
         "tags" : [ "admin-holiday-master-controller" ]
+      }
+    },
+    "/api/v1/admin/impersonation/start" : {
+      "post" : {
+        "operationId" : "start",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WebImpersonationStartRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseWebImpersonationStartResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "web-impersonation-controller" ]
+      }
+    },
+    "/api/v1/admin/impersonation/stop" : {
+      "post" : {
+        "operationId" : "stop",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseWebImpersonationStopResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "web-impersonation-controller" ]
       }
     },
     "/api/v1/admin/inspection-themes" : {

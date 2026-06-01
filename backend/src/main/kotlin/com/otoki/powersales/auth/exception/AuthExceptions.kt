@@ -142,3 +142,71 @@ class UserInactiveException : BusinessException(
     message = "비활성화된 계정입니다. 관리자에게 문의하세요",
     httpStatus = HttpStatus.FORBIDDEN
 )
+
+// ===== 대행 로그인 (Impersonation, Spec #851) =====
+//
+// 권한 미보유 거부는 별도 예외 없이 @RequiresSfPermission 표준 가드(WebAdminContextFilter)가
+// PERMISSION_DENIED(403) 로 처리한다.
+
+/**
+ * 이미 대행 중인 토큰으로 대행 재시작 시도 (중첩 대행 금지).
+ */
+class ImpersonationAlreadyActiveException : BusinessException(
+    errorCode = "IMPERSONATION_ALREADY_ACTIVE",
+    message = "이미 다른 사용자를 대행 중입니다. 먼저 대행을 종료해주세요",
+    httpStatus = HttpStatus.CONFLICT
+)
+
+/**
+ * 대행 대상 User 없음.
+ */
+class ImpersonationTargetNotFoundException : BusinessException(
+    errorCode = "IMPERSONATION_TARGET_NOT_FOUND",
+    message = "대행 대상 사용자를 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+/**
+ * 대행 대상이 비활성 계정 (is_active == false).
+ */
+class ImpersonationTargetInactiveException : BusinessException(
+    errorCode = "IMPERSONATION_TARGET_INACTIVE",
+    message = "비활성화된 사용자는 대행할 수 없습니다",
+    httpStatus = HttpStatus.CONFLICT
+)
+
+/**
+ * 자기 자신을 대행 대상으로 지정.
+ */
+class ImpersonationSelfNotAllowedException : BusinessException(
+    errorCode = "IMPERSONATION_SELF_NOT_ALLOWED",
+    message = "본인 계정은 대행할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 대행 중이 아닌 토큰으로 대행 종료 시도.
+ */
+class ImpersonationNotActiveException : BusinessException(
+    errorCode = "IMPERSONATION_NOT_ACTIVE",
+    message = "대행 중인 세션이 아닙니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 대행 종료 시 복귀 대상 관리자 User 가 조회되지 않음 (삭제/소실).
+ */
+class ImpersonationAdminNotFoundException : BusinessException(
+    errorCode = "IMPERSONATION_ADMIN_NOT_FOUND",
+    message = "복귀할 관리자 계정을 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+/**
+ * 대행 중 대상 사용자 비밀번호 변경 시도 차단.
+ */
+class ImpersonationPasswordChangeBlockedException : BusinessException(
+    errorCode = "IMPERSONATION_PASSWORD_CHANGE_BLOCKED",
+    message = "대행 중에는 비밀번호를 변경할 수 없습니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)

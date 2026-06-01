@@ -9,6 +9,7 @@ import { menuRoute, type MenuItem } from '@/config/menuConfig';
 import queryClient from '@/lib/queryClient';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import AppBreadcrumb from '@/components/AppBreadcrumb';
+import ImpersonationBanner from '@/components/ImpersonationBanner';
 import { usePermission } from '@/hooks/usePermission';
 
 const { Text } = Typography;
@@ -133,6 +134,7 @@ export default function AdminLayout() {
             </a>
           </Dropdown>
         </div>
+        <ImpersonationBanner />
         <AppBreadcrumb />
         <div style={{ padding: 24 }}>
           <Outlet />

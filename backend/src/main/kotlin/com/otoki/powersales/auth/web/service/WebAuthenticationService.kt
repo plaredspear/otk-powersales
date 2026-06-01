@@ -2,6 +2,7 @@ package com.otoki.powersales.auth.web.service
 
 import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.auth.exception.CurrentPasswordRequiredException
+import com.otoki.powersales.auth.exception.ImpersonationPasswordChangeBlockedException
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
 import com.otoki.powersales.auth.exception.InvalidTokenException
@@ -142,6 +143,10 @@ class WebAuthenticationService(
             throw TokenReuseDetectedException()
         }
 
+        // 대행 토큰이면 impersonated_by claim 을 새 토큰에 보존 (§851 Q1) — 대행 세션을 refresh 만료까지 유지.
+        // user_id claim 이 대상 사용자 PK 이므로 아래 findById 가 그대로 대상 권한을 재산출 (§851 §2.0/§2.4).
+        val impersonatedBy: Long? = webJwtService.getImpersonatedByFromToken(token)
+
         webRefreshTokenStore.delete(tokenId)
 
         val user = userRepository.findById(userId).orElseThrow { InvalidTokenException() }
@@ -151,12 +156,13 @@ class WebAuthenticationService(
         val summary = summaryFor(user, employee, permissions)
 
         val newTokenId = UUID.randomUUID().toString()
-        val newAccessToken = webJwtService.createAccessToken(principal, summary.role)
+        val newAccessToken = webJwtService.createAccessToken(principal, summary.role, impersonatedBy)
         val newRefreshToken = webJwtService.createRefreshToken(
             username = user.username,
             userId = user.id,
             familyId = familyId,
-            tokenId = newTokenId
+            tokenId = newTokenId,
+            impersonatedBy = impersonatedBy
         )
         webRefreshTokenStore.store(newTokenId, user.id, familyId, webJwtService.getRefreshExpirationMillis())
 
@@ -182,6 +188,11 @@ class WebAuthenticationService(
         principal: WebUserPrincipal,
         request: WebChangePasswordRequest
     ): WebChangePasswordResponse {
+        // 대행 중에는 대상 사용자 비밀번호를 변경할 수 없다 (§851 §2.5).
+        if (principal.impersonatedBy != null) {
+            throw ImpersonationPasswordChangeBlockedException()
+        }
+
         val user = userRepository.findById(principal.userId).orElseThrow { InvalidCredentialsException() }
 
         if (!principal.passwordChangeRequired) {
@@ -223,6 +234,39 @@ class WebAuthenticationService(
         )
     }
 
+    /**
+     * 지정 User 기준으로 새 토큰 쌍 + summary 를 발급하고 Redis 에 refresh 메타를 저장한다 (Spec #851 재사용).
+     *
+     * `impersonatedBy != null` 이면 대행 토큰 — access/refresh 모두 `impersonated_by` claim 을 담는다.
+     * subject/user_id 는 항상 인자 `user` 기준이므로, 대행 시 대상 사용자를 넘기면 권한 평가가 대상 기준이 된다 (§851 §2.0).
+     */
+    @Transactional
+    fun issueTokensFor(user: User, impersonatedBy: Long? = null): IssuedWebTokens {
+        val employee: Employee? = user.employeeCode?.let { employeeRepository.findByEmployeeCode(it).orElse(null) }
+        val permissions: Set<String> = sfPermissionResolver.resolveForUser(user)
+        val principal = principalFor(user, employee, permissions)
+        val summary = summaryFor(user, employee, permissions)
+        val familyId = UUID.randomUUID().toString()
+        val tokenId = UUID.randomUUID().toString()
+
+        val accessToken = webJwtService.createAccessToken(principal, summary.role, impersonatedBy)
+        val refreshToken = webJwtService.createRefreshToken(
+            username = user.username,
+            userId = user.id,
+            familyId = familyId,
+            tokenId = tokenId,
+            impersonatedBy = impersonatedBy
+        )
+        webRefreshTokenStore.store(tokenId, user.id, familyId, webJwtService.getRefreshExpirationMillis())
+
+        return IssuedWebTokens(
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            expiresIn = webJwtService.getAccessTokenExpirationSeconds(),
+            summary = summary
+        )
+    }
+
     private fun principalFor(user: User, employee: Employee?, permissions: Set<String>): WebUserPrincipal {
         val profileName: String? = user.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
         return WebUserPrincipal(
@@ -243,3 +287,13 @@ class WebAuthenticationService(
         )
     }
 }
+
+/**
+ * 토큰 발급 결과 홀더 ([WebAuthenticationService.issueTokensFor] 반환, Spec #851).
+ */
+data class IssuedWebTokens(
+    val accessToken: String,
+    val refreshToken: String,
+    val expiresIn: Int,
+    val summary: WebUserSummary,
+)

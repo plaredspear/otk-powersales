@@ -2,6 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { notification } from 'antd';
 import { refreshToken } from './auth';
 import queryClient from '@/lib/queryClient';
+import { IMPERSONATION_STORAGE_KEY } from '@/constants/storageKeys';
 
 const client = axios.create({
   baseURL: '',
@@ -136,6 +137,7 @@ function handleLogout() {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
+  localStorage.removeItem(IMPERSONATION_STORAGE_KEY); // Spec #851: 대행 키 잔존 방지 (배너 오인 표시)
   window.location.href = '/login';
 }
 

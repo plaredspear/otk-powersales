@@ -2,6 +2,7 @@ package com.otoki.powersales.auth.web.service
 
 import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.auth.exception.CurrentPasswordRequiredException
+import com.otoki.powersales.auth.exception.ImpersonationPasswordChangeBlockedException
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
 import com.otoki.powersales.auth.exception.InvalidTokenException
@@ -151,6 +152,7 @@ class WebAuthenticationServiceTest {
             every { webJwtService.getUserIdFromToken("rt") } returns 1L
             every { webRefreshTokenStore.isFamilyRevoked("fam-1") } returns false
             every { webRefreshTokenStore.exists("tok-1") } returns true
+            every { webJwtService.getImpersonatedByFromToken("rt") } returns null
             every { userRepository.findById(1L) } returns Optional.of(user)
             every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
             every { webJwtService.createAccessToken(any(), any()) } returns "new-access"
@@ -274,6 +276,20 @@ class WebAuthenticationServiceTest {
                     WebChangePasswordRequest(currentPassword = "wrong", newPassword = "newpw123")
                 )
             }.isInstanceOf(InvalidCurrentPasswordException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - 대행 중 비밀번호 변경 → IMPERSONATION_PASSWORD_CHANGE_BLOCKED")
+        fun changePassword_impersonating_blocked() {
+            val user = createUser(passwordChangeRequired = false)
+            val principal = principalFor(user).copy(impersonatedBy = 7L)
+
+            assertThatThrownBy {
+                service.changePassword(
+                    principal,
+                    WebChangePasswordRequest(currentPassword = "oldpw", newPassword = "newpw123")
+                )
+            }.isInstanceOf(ImpersonationPasswordChangeBlockedException::class.java)
         }
     }
 

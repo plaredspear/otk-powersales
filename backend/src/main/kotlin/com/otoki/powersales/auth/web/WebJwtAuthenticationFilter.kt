@@ -45,6 +45,7 @@ class WebJwtAuthenticationFilter(
                     val isSalesSupport = webJwtService.getIsSalesSupportFromToken(token)
                     val passwordChangeRequired = webJwtService.getPasswordChangeRequiredFromToken(token)
                     val role: String? = webJwtService.getRoleFromToken(token)
+                    val impersonatedBy: Long? = webJwtService.getImpersonatedByFromToken(token)
 
                     val authorities = WebUserDetailsService.resolveAuthoritiesByProfileName(profileName, isSalesSupport)
                     val principal = WebUserPrincipal(
@@ -59,6 +60,7 @@ class WebJwtAuthenticationFilter(
                         isSalesSupport = isSalesSupport,
                         passwordChangeRequired = passwordChangeRequired,
                         permissions = emptySet(),
+                        impersonatedBy = impersonatedBy,
                         encodedPassword = "",
                         grantedAuthorities = authorities,
                         active = true
