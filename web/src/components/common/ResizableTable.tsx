@@ -193,9 +193,21 @@ export default function ResizableTable<T extends object>({
     } as ColumnType<T>;
   });
 
-  // 컬럼 폭을 넓혔을 때 테이블이 잘리지 않도록 가로 스크롤 기본 활성화.
+  // scroll.x 를 'max-content'(내용 기준) 로 두면 antd 가 각 컬럼을 셀 내용의 자연 폭 이상으로
+  // 유지해, 지정 width 보다 좁혀도 내용 폭까지만 줄고 ellipsis 가 발동하지 않는다.
+  // 대신 모든 컬럼 width 의 합(고정 px) 을 scroll.x 로 주면 antd 가 table-layout: fixed 로 전환되어
+  // 각 컬럼이 지정 width 를 그대로 따르고, 내용이 넘치면 "..." 로 축약된다 (드래그로 줄인 폭도 반영).
+  // width 미지정 컬럼이 섞이면 합산이 부정확하므로, 그런 경우엔 'max-content' 로 안전하게 폴백.
+  const totalWidth = resizableColumns.reduce(
+    (sum, col) => {
+      if (sum === null) return null;
+      const w = (col as ColumnType<T>).width;
+      return typeof w === 'number' ? sum + w : null;
+    },
+    0 as number | null,
+  );
   // 호출부에서 scroll 을 지정하면 그 값을 우선.
-  const scroll = rest.scroll ?? { x: 'max-content' };
+  const scroll = rest.scroll ?? { x: totalWidth ?? 'max-content' };
 
   return (
     <div className="resizable-table" ref={containerRef}>
