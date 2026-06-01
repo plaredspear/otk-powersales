@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, DatePicker, Modal, Select, Space, Table, Tag, message } from 'antd';
+import { Alert, Button, DatePicker, Modal, Select, Space, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 import dayjs, { Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAccountsForProductLookup } from '@/api/account';
@@ -149,7 +150,7 @@ export default function InventorySearchModal({ open, onClose }: Props) {
         message={`선택한 제품 ${targets.length}건 (최대 50건)`}
       />
 
-      <Table
+      <ResizableTable
         rowKey="productCode"
         size="small"
         columns={targetColumns}
@@ -182,7 +183,7 @@ export default function InventorySearchModal({ open, onClose }: Props) {
       </Space>
 
       {results && (
-        <Table
+        <ResizableTable
           rowKey="productCode"
           size="small"
           columns={resultColumns}

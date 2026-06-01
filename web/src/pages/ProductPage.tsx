@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Input, Select, Space, Table, Tag, message } from 'antd';
+import { Alert, Button, Input, Select, Space, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { useProducts, useProductCategories } from '@/hooks/product/useProducts';
@@ -7,6 +7,7 @@ import { downloadProductsExcel, type Product } from '@/api/product';
 import { useProductInventorySearchStore } from '@/stores/productInventorySearchStore';
 import InventorySearchModal from '@/components/product/InventorySearchModal';
 import SelectedProductsCompareModal from '@/components/product/SelectedProductsCompareModal';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const STATUS_TAG: Record<string, string> = {
   판매중: 'green',
@@ -328,7 +329,7 @@ export default function ProductPage() {
         </Button>
       </Space>
 
-      <Table
+      <ResizableTable
         rowKey="productCode"
         columns={columns}
         dataSource={data?.content}

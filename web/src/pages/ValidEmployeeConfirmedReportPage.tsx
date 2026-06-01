@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Space, Spin, Table, Typography, message } from 'antd';
+import { Alert, Button, Space, Spin, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -7,6 +7,7 @@ import {
   exportSelectedSchedules,
   type ScheduleListItem,
 } from '@/api/schedule';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
 
@@ -95,7 +96,7 @@ export default function ValidEmployeeConfirmedReportPage() {
           <Spin size="large" />
         </div>
       ) : (
-        <Table
+        <ResizableTable
           rowKey="id"
           size="small"
           columns={columns}

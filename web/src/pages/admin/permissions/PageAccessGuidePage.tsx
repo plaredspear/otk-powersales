@@ -8,7 +8,6 @@ import {
   Segmented,
   Space,
   Spin,
-  Table,
   Tag,
   Typography,
 } from 'antd';
@@ -21,6 +20,7 @@ import {
 } from '@/hooks/admin/useAdminPermission';
 import { menuRoute } from '@/config/menuConfig';
 import { buildRows, type PageAccessGuideRow, type RequirementKind } from './pageAccessGuide';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -154,7 +154,7 @@ export default function PageAccessGuidePage() {
             />
             <Text type="secondary">총 {filteredRows.length}개 페이지</Text>
           </Space>
-          <Table<PageAccessGuideRow>
+          <ResizableTable<PageAccessGuideRow>
             rowKey="key"
             dataSource={filteredRows}
             columns={columns}

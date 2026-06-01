@@ -1,7 +1,8 @@
-import { Dropdown, Pagination, Space, Table, Tag } from 'antd';
+import { Dropdown, Pagination, Space, Tag } from 'antd';
 import { MoreOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { AttendInfoListItem } from '@/api/attendInfo';
+import ResizableTable from '@/components/common/ResizableTable';
 
 interface AttendInfoListProps {
   items: AttendInfoListItem[];
@@ -132,7 +133,7 @@ export default function AttendInfoList({
 
   return (
     <>
-      <Table
+      <ResizableTable
         rowKey="id"
         size="middle"
         loading={loading}

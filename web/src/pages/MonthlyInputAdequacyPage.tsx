@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Radio, Space, Spin, Table, Typography, message } from 'antd';
+import { Alert, Radio, Space, Spin, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -8,6 +8,7 @@ import {
   type MonthlyInputAdequacyItem,
 } from '@/api/monthlyInputAdequacy';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
 
@@ -149,7 +150,7 @@ export default function MonthlyInputAdequacyPage() {
           <Spin size="large" />
         </div>
       ) : (
-        <Table
+        <ResizableTable
           rowKey={(r) => `${r.employeeCode}-${r.accountCode}-${r.workingCategory3 ?? ''}`}
           size="small"
           columns={columns}

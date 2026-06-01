@@ -1,5 +1,6 @@
-import { Modal, Table, Tag } from 'antd';
+import { Modal, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 import type { Product } from '@/api/product';
 
 interface Props {
@@ -60,7 +61,7 @@ export default function SelectedProductsCompareModal({ open, onClose, products }
       onCancel={onClose}
       footer={null}
     >
-      <Table
+      <ResizableTable
         rowKey="productCode"
         size="small"
         columns={columns}

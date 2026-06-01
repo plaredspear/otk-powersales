@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, DatePicker, Input, Select, Space, Table, Tag } from 'antd';
+import { Button, DatePicker, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useClaims } from '@/hooks/claims/useClaims';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { ClaimListItem } from '@/api/claims';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { RangePicker } = DatePicker;
 
@@ -190,7 +191,7 @@ export default function ClaimListPage() {
         </Space>
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="claimId"
         columns={columns}
         dataSource={data?.content}

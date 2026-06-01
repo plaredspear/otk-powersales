@@ -10,7 +10,6 @@ import {
   Popconfirm,
   Select,
   Space,
-  Table,
   Tag,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -26,6 +25,7 @@ import type {
   InspectionListItem,
   InspectionListParams,
 } from '@/api/inspections';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { RangePicker } = DatePicker;
 
@@ -218,7 +218,7 @@ export default function FieldInspectionPage() {
         )}
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data?.content}

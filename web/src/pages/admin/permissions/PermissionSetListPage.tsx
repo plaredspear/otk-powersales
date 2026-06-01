@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Card, Space, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Space, Spin, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { usePermissionSets } from '@/hooks/admin/useAdminPermission';
 import { usePermission } from '@/hooks/usePermission';
 import type { PermissionSetSummary } from '@/api/admin/permission';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title } = Typography;
 
@@ -89,7 +90,7 @@ export default function PermissionSetListPage() {
         )}
       </Space>
       <Card>
-        <Table<PermissionSetSummary>
+        <ResizableTable<PermissionSetSummary>
           dataSource={data ?? []}
           rowKey="permissionSetId"
           columns={columns}

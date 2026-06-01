@@ -1,5 +1,6 @@
-import { Button, Modal, Space, Table, Tag, Typography, message } from 'antd';
+import { Button, Modal, Space, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   evictCache,
@@ -110,7 +111,7 @@ export default function CacheManagementPage() {
         </Button>
       </Space>
 
-      <Table<CacheInfo>
+      <ResizableTable<CacheInfo>
         rowKey="name"
         dataSource={caches}
         columns={columns}

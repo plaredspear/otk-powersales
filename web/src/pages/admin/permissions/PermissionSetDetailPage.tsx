@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Alert, Button, Card, Descriptions, Input, Space, Spin, Table, Tabs, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Card, Descriptions, Input, Space, Spin, Tabs, Tag, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { usePermissionSet } from '@/hooks/admin/useAdminPermission';
 import { usePermission } from '@/hooks/usePermission';
@@ -14,6 +14,7 @@ import AddUserToPermissionSetModal from './components/AddUserToPermissionSetModa
 import PermissionSetChangeLogTab from './components/PermissionSetChangeLogTab';
 import PermissionSetDeleteConfirmModal from './components/PermissionSetDeleteConfirmModal';
 import RevokeAssignmentConfirmModal from './components/RevokeAssignmentConfirmModal';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title } = Typography;
 
@@ -180,7 +181,7 @@ export default function PermissionSetDetailPage() {
       </Card>
 
       <Card title={`Entity × CRUD 매트릭스 (${data.objectPermissions.length} entity)`} style={{ marginBottom: 12 }}>
-        <Table<ObjectPermissionRow>
+        <ResizableTable<ObjectPermissionRow>
           dataSource={data.objectPermissions}
           rowKey="sfApiName"
           columns={objectColumns}
@@ -191,7 +192,7 @@ export default function PermissionSetDetailPage() {
 
       {data.customPermissions.length > 0 && (
         <Card title={`Custom Permissions (${data.customPermissions.length} 자원)`} style={{ marginBottom: 12 }}>
-          <Table<CustomPermissionRow>
+          <ResizableTable<CustomPermissionRow>
             dataSource={data.customPermissions}
             rowKey="resource"
             columns={customColumns}
@@ -225,7 +226,7 @@ export default function PermissionSetDetailPage() {
                     </Button>
                   )}
                 </Space>
-                <Table<AssignedPermissionSetUserSummary>
+                <ResizableTable<AssignedPermissionSetUserSummary>
                   dataSource={data.assignedUsers.content}
                   rowKey="assignmentId"
                   columns={userColumns}

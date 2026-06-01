@@ -12,7 +12,6 @@ import {
   Select,
   Space,
   Statistic,
-  Table,
   Tag,
   Typography,
 } from 'antd';
@@ -31,6 +30,7 @@ import {
   type Stage1EntityStatus,
   type Stage1Status,
 } from '@/api/admin/sfMigrationStage1';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -478,7 +478,7 @@ export default function SfMigrationStage1Page() {
 
           {isBatch && progress.entityResults.length > 0 && (
             <Card title={`Entity 별 결과 (${progress.entityResults.length})`} style={{ marginBottom: 16 }}>
-              <Table<Stage1EntityResult>
+              <ResizableTable<Stage1EntityResult>
                 rowKey="targetName"
                 dataSource={progress.entityResults}
                 columns={entityColumns}

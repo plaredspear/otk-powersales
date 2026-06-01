@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button, Card, DatePicker, Empty, Grid, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, DatePicker, Empty, Grid, Spin, Tag, Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -8,6 +8,7 @@ import {
   fetchSafetyCheckStatus,
   type MemberStatus,
 } from '@/api/safetyCheck';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -175,7 +176,7 @@ export default function SafetyCheckPage() {
             <MemberCardList members={data?.members ?? []} equipmentLabels={equipmentLabels} />
           )
         ) : (
-          <Table
+          <ResizableTable
             rowKey="id"
             columns={columns}
             dataSource={data?.members}

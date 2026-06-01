@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DatePicker, Form, Input, Modal, Popconfirm, Select, Table, message } from 'antd';
+import { Button, DatePicker, Form, Input, Modal, Popconfirm, Select, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -10,6 +10,7 @@ import {
   useDeleteHolidayMaster,
 } from '@/hooks/holiday/useHolidayMasterMutation';
 import type { HolidayMaster } from '@/api/holidayMaster';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const HOLIDAY_TYPES = ['법정공휴일', '대체공휴일', '임시공휴일'];
 
@@ -145,7 +146,7 @@ export default function HolidayMasterListPage() {
         </Button>
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={holidays}

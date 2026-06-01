@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Alert, Button, Card, Descriptions, Input, Space, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Descriptions, Input, Space, Spin, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useProfile } from '@/hooks/admin/useAdminPermission';
 import { usePermission } from '@/hooks/usePermission';
 import type { AssignedUserSummary, ObjectPermissionRow, CustomPermissionRow } from '@/api/admin/permission';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title } = Typography;
 
@@ -119,7 +120,7 @@ export default function ProfileDetailPage() {
       </Card>
 
       <Card title={`Object Permissions (${data.objectPermissions.length})`} style={{ marginBottom: 12 }}>
-        <Table<ObjectPermissionRow>
+        <ResizableTable<ObjectPermissionRow>
           dataSource={data.objectPermissions}
           rowKey="sfApiName"
           columns={objectColumns}
@@ -131,7 +132,7 @@ export default function ProfileDetailPage() {
 
       {data.customPermissions.length > 0 && (
         <Card title={`Custom Permissions (${data.customPermissions.length})`} style={{ marginBottom: 12 }}>
-          <Table<CustomPermissionRow>
+          <ResizableTable<CustomPermissionRow>
             dataSource={data.customPermissions}
             rowKey="resource"
             columns={customColumns}
@@ -153,7 +154,7 @@ export default function ProfileDetailPage() {
             style={{ width: 240 }}
           />
         </Space>
-        <Table<AssignedUserSummary>
+        <ResizableTable<AssignedUserSummary>
           dataSource={data.assignedUsers.content}
           rowKey="userId"
           columns={userColumns}

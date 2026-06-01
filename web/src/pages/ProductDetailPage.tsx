@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Alert, Button, Card, Col, Descriptions, Image, Row, Skeleton, Space, Table, Tag } from 'antd';
+import { Alert, Button, Card, Col, Descriptions, Image, Row, Skeleton, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { ProductBarcodeItem } from '@/api/product';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useProductDetail } from '@/hooks/product/useProducts';
 import { useProductInventorySearchStore } from '@/stores/productInventorySearchStore';
 import InventorySearchModal from '@/components/product/InventorySearchModal';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const STATUS_TAG: Record<string, string> = {
   판매중: 'green',
@@ -185,7 +186,7 @@ export default function ProductDetailPage() {
       </Card>
 
       <Card title={`제품 바코드 (${data.barcodes.length})`} style={{ marginBottom: 16 }}>
-        <Table
+        <ResizableTable
           rowKey="id"
           columns={BARCODE_COLUMNS}
           dataSource={data.barcodes}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, DatePicker, Divider, Space, Spin, Table, Typography, message } from 'antd';
+import { Alert, Button, DatePicker, Divider, Space, Spin, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -9,6 +9,7 @@ import {
   type ConvertedHeadcountReportRow,
   type ConvertedHeadcountReportVariant,
 } from '@/api/convertedHeadcountReport';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
 
@@ -137,7 +138,7 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
               <Text type="secondary" style={{ marginLeft: 12 }}>
                 소계 — 환산인원 {group.subtotalHeadcount.toLocaleString()}
               </Text>
-              <Table
+              <ResizableTable
                 rowKey={(r, idx) =>
                   `${r.workingCategory1 ?? ''}-${r.workingCategory3 ?? ''}-${r.branchName ?? ''}-${r.yearMonth ?? ''}-${idx}`
                 }
@@ -155,7 +156,7 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
           <Text strong>합계 — 환산인원 {data.totalHeadcount.toLocaleString()}</Text>
         </>
       ) : (
-        <Table
+        <ResizableTable
           columns={columns}
           dataSource={[]}
           pagination={false}

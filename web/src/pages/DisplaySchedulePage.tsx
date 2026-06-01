@@ -5,7 +5,6 @@ import {
   Card,
   message,
   Space,
-  Table,
   Typography,
   Upload,
   Alert,
@@ -29,6 +28,7 @@ import { downloadScheduleTemplate, exportSelectedSchedules } from '@/api/schedul
 import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, SchedulePreset } from '@/api/schedule';
 import { PresetFilterSelect, type PresetOption } from '@/components/common/PresetFilterSelect';
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
+import ResizableTable from '@/components/common/ResizableTable';
 
 /**
  * 레거시 SF List View 10개 매핑 — `docs/plan/legacy-pages/진열사원스케줄마스터/UC-01.md` 참조.
@@ -412,7 +412,7 @@ export default function DisplaySchedulePage() {
                 message={`오류 목록 (${uploadResult.errorRows}건)`}
                 style={{ marginBottom: 8 }}
               />
-              <Table
+              <ResizableTable
                 columns={errorColumns}
                 dataSource={uploadResult.errors}
                 rowKey={(r) => `${r.row}-${r.column}`}
@@ -432,7 +432,7 @@ export default function DisplaySchedulePage() {
                 message={`성공 목록 (${uploadResult.successRows}건)`}
                 style={{ marginBottom: 8 }}
               />
-              <Table
+              <ResizableTable
                 columns={previewColumns}
                 dataSource={uploadResult.previews}
                 rowKey="row"
@@ -579,7 +579,7 @@ export default function DisplaySchedulePage() {
           </Button>
         </Space>
 
-        <Table
+        <ResizableTable
           columns={listColumns}
           dataSource={scheduleListQuery.data?.content}
           rowKey="id"

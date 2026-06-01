@@ -122,7 +122,7 @@ export interface ResizableTableProps<T> extends Omit<TableProps<T>, 'columns'> {
  *
  * 사용처는 antd Table 을 그대로 ResizableTable 로 치환하면 된다 (props 호환).
  */
-export default function ResizableTable<T extends object>({
+function ResizableTable<T extends object>({
   columns,
   minColumnWidth = 60,
   components,
@@ -230,3 +230,19 @@ export default function ResizableTable<T extends object>({
     </div>
   );
 }
+
+// antd Table 의 정적 서브컴포넌트(Summary / Column / ColumnGroup) 를 그대로 노출하여,
+// 기존 `Table.Summary` 등을 쓰던 사용처를 `ResizableTable.Summary` 로 그대로 치환할 수 있게 한다.
+// generic 함수 컴포넌트에 정적 프로퍼티를 부착하므로 타입을 명시적으로 합성한다.
+type ResizableTableComponent = typeof ResizableTable & {
+  Summary: typeof Table.Summary;
+  Column: typeof Table.Column;
+  ColumnGroup: typeof Table.ColumnGroup;
+};
+
+const ResizableTableWithStatics = ResizableTable as ResizableTableComponent;
+ResizableTableWithStatics.Summary = Table.Summary;
+ResizableTableWithStatics.Column = Table.Column;
+ResizableTableWithStatics.ColumnGroup = Table.ColumnGroup;
+
+export default ResizableTableWithStatics;

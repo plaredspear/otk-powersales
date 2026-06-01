@@ -10,7 +10,6 @@ import {
   Select,
   Space,
   Steps,
-  Table,
   Tag,
   Typography,
 } from 'antd';
@@ -24,6 +23,7 @@ import {
   QuestionCircleOutlined,
 } from '@ant-design/icons';
 import { ENTITY_LABELS, OPERATION_LABELS } from '@/constants/permissionLabels';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -745,7 +745,7 @@ function SalesforceMapping({ title = 'Salesforce 대응', intro, rows, extra }: 
         </Tag>
       </Space>
       {intro && <Paragraph style={{ marginBottom: 12 }}>{intro}</Paragraph>}
-      <Table
+      <ResizableTable
         size="small"
         pagination={false}
         rowKey={(_r, i) => String(i)}
@@ -911,7 +911,7 @@ function PermissionSimulator() {
 
         <div>
           <Text strong>평가 근거 ({result.reasons.length}건)</Text>
-          <Table
+          <ResizableTable
             size="small"
             pagination={false}
             rowKey={(_r, i) => String(i)}
@@ -1015,7 +1015,7 @@ export default function PermissionGuidePage() {
         </Paragraph>
 
         <Title level={5}>예시</Title>
-        <Table
+        <ResizableTable
           size="small"
           pagination={false}
           dataSource={[
@@ -1071,7 +1071,7 @@ export default function PermissionGuidePage() {
           프로파일과 권한 세트 모두 동일한 <Text strong>5개 시스템 권한 비트</Text> 를 가집니다. 이 비트는 엔티티 (테이블) 단위가 아니라
           <Text strong> 시스템 전체 권한</Text> 입니다.
         </Paragraph>
-        <Table
+        <ResizableTable
           size="small"
           pagination={false}
           rowKey="bitEn"
@@ -1133,7 +1133,7 @@ export default function PermissionGuidePage() {
         <Paragraph>
           시스템 권한 비트와 별도로, <Text strong>각 엔티티 (테이블)</Text> 마다 4가지 작업 권한 (조회 / 생성 / 수정 / 삭제) 을 개별 부여합니다.
         </Paragraph>
-        <Table
+        <ResizableTable
           size="small"
           pagination={false}
           rowKey="opEn"
@@ -1194,7 +1194,7 @@ export default function PermissionGuidePage() {
           description="신규 사용자에게 어떤 프로파일을 줄지 결정할 때 본 표에서 직무에 맞는 기본 권한을 1개만 선택하세요. 모든 직급은 숫자 (1~12) + 직무명 형태로 운영에 들어있습니다."
           style={{ marginBottom: 16 }}
         />
-        <Table
+        <ResizableTable
           size="small"
           pagination={false}
           rowKey={(r: LegacyProfileRow) => `${r.num}-${r.name}`}
@@ -1246,7 +1246,7 @@ export default function PermissionGuidePage() {
           description="대부분의 권한 세트는 'XXX 전체 조회' 패턴으로 '담당자 범위(소유자) 를 넘어서 전체를 보고 싶다' 는 요구에 대응합니다. 수정/삭제 권한 세트는 신중히 부여하세요."
           style={{ marginBottom: 16 }}
         />
-        <Table
+        <ResizableTable
           size="small"
           pagination={false}
           rowKey="ps"
@@ -1287,7 +1287,7 @@ export default function PermissionGuidePage() {
           description="(1) 프로파일 단독 충족 / (2) 프로파일 + 1개 가산 / (3) 프로파일 + 다중 가산 / (4) 한시적 가산 / (5) 가산 금지 정책 — 5가지 유형을 모두 포함합니다."
           style={{ marginBottom: 16 }}
         />
-        <Table
+        <ResizableTable
           size="small"
           pagination={false}
           rowKey="user"
@@ -1415,7 +1415,7 @@ export default function PermissionGuidePage() {
       </Card>
 
       <Card id="scenarios" title="9. 시나리오별 빠른 참조" style={{ marginBottom: 16 }}>
-        <Table
+        <ResizableTable
           size="small"
           pagination={false}
           rowKey="who"

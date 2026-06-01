@@ -1,5 +1,6 @@
-import { Alert, Button, Card, Col, Divider, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Col, Divider, Row, Space, Statistic, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 import { ApiOutlined, ExportOutlined } from '@ant-design/icons';
 
 const { Title, Paragraph, Text } = Typography;
@@ -155,7 +156,7 @@ export default function ApiCatalogPage() {
       <Paragraph type="secondary">
         Swagger UI 우상단의 그룹 선택 박스로도 전환할 수 있습니다. 아래 "열기" 는 해당 그룹을 바로 엽니다.
       </Paragraph>
-      <Table rowKey="key" columns={COLUMNS} dataSource={GROUPS} pagination={false} size="small" />
+      <ResizableTable rowKey="key" columns={COLUMNS} dataSource={GROUPS} pagination={false} size="small" />
 
       <Paragraph type="secondary" style={{ marginTop: 12 }}>
         그룹에 포함되지 않는 엔드포인트로 Salesforce 연동 {SF_COUNT}개(<Text code>/api/*/sf/**</Text>),

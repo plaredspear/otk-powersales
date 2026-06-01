@@ -4,7 +4,6 @@ import {
   DatePicker,
   Select,
   Space,
-  Table,
   Tabs,
   Tag,
   Tooltip,
@@ -21,6 +20,7 @@ import type {
   SapInboundCatalogItem,
 } from '@/api/admin/sapIntegration';
 import SapInboundAuditDetailModal from './SapInboundAuditDetailModal';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -280,7 +280,7 @@ export default function SapInboundPage() {
                   </Space>
                 </Card>
 
-                <Table<SapInboundAuditRow>
+                <ResizableTable<SapInboundAuditRow>
                   rowKey="id"
                   loading={auditsQuery.isLoading}
                   dataSource={auditsQuery.data?.items ?? []}
@@ -305,7 +305,7 @@ export default function SapInboundPage() {
             key: 'catalog',
             label: 'API 목록',
             children: (
-              <Table<SapInboundCatalogItem>
+              <ResizableTable<SapInboundCatalogItem>
                 rowKey="endpointPath"
                 loading={catalogQuery.isLoading}
                 dataSource={catalogQuery.data ?? []}

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Alert, Button, Input, Select, Table } from 'antd';
+import { Alert, Button, Input, Select } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useOrganizations } from '@/hooks/organization/useOrganizations';
 import type { Organization } from '@/api/organization';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const LEVEL_OPTIONS = [
   { value: '', label: '레벨 전체' },
@@ -62,7 +63,7 @@ export default function OrganizationPage() {
         />
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data}

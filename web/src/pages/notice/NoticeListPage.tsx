@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, Select, Table, Tag } from 'antd';
+import { Button, Input, Select, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { useNotices } from '@/hooks/notice/useNotices';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { NoticeSummary } from '@/api/notice';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   COMPANY: { color: 'blue', label: '회사공지' },
@@ -109,7 +110,7 @@ export default function NoticeListPage() {
         />
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data?.content}

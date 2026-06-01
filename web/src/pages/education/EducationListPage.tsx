@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, Select, Table, Tag } from 'antd';
+import { Button, Input, Select, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { useEducationPosts } from '@/hooks/education/useEducationPosts';
 import { useEducationCategories } from '@/hooks/education/useEducationCategories';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { EducationSummary } from '@/api/education';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   c00001: { color: 'orange', label: '시식매뉴얼' },
@@ -94,7 +95,7 @@ export default function EducationListPage() {
         />
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="eduId"
         columns={columns}
         dataSource={data?.content}

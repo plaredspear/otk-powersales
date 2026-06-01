@@ -10,7 +10,6 @@ import {
   Radio,
   Select,
   Space,
-  Table,
   Tag,
   Typography,
   message,
@@ -33,6 +32,7 @@ import type {
   TypeOfWork1,
   ValidStatusFilter,
 } from '@/api/employeeInputCriteriaMaster';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Text } = Typography;
 
@@ -333,7 +333,7 @@ export default function EmployeeInputCriteriaMasterListPage() {
         </Space>
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={items}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, DatePicker, Input, Select, Space, Table, Tag } from 'antd';
+import { Button, DatePicker, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useSuggestions } from '@/hooks/suggestions/useSuggestions';
@@ -10,6 +10,7 @@ import type {
   SuggestionListItem,
   SuggestionListParams,
 } from '@/api/suggestions';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { RangePicker } = DatePicker;
 
@@ -234,7 +235,7 @@ export default function SuggestionListPage() {
         </Space>
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data?.content}

@@ -8,7 +8,6 @@ import {
   Radio,
   Space,
   Spin,
-  Table,
   Typography,
   message,
 } from 'antd';
@@ -28,6 +27,7 @@ import {
   type SalesComparisonDetailItem,
 } from '@/api/salesComparison';
 import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Text } = Typography;
 
@@ -508,7 +508,7 @@ export default function DeploymentPage() {
             {summaryQuery.isLoading && <Spin />}
             {summaryQuery.isError && <Alert type="error" message={(summaryQuery.error as Error)?.message ?? '조회 실패'} />}
             {summaryQuery.data && (
-              <Table
+              <ResizableTable
                 rowKey="suitability"
                 size="small"
                 columns={summaryColumns}
@@ -529,7 +529,7 @@ export default function DeploymentPage() {
                 {middleQuery.isLoading && <Spin />}
                 {middleQuery.isError && <Alert type="error" message={(middleQuery.error as Error)?.message ?? '조회 실패'} />}
                 {middleQuery.data && (
-                  <Table
+                  <ResizableTable
                     rowKey="accountId"
                     size="small"
                     columns={middleColumns}
@@ -538,26 +538,26 @@ export default function DeploymentPage() {
                     scroll={{ x: 'max-content' }}
                     summary={() =>
                       middleQuery.data ? (
-                        <Table.Summary fixed>
+                        <ResizableTable.Summary fixed>
                           {middleQuery.data.subtotals.map((sub) => (
-                            <Table.Summary.Row key={`sub-${sub.suitability}`}>
-                              <Table.Summary.Cell index={0} colSpan={6}>
+                            <ResizableTable.Summary.Row key={`sub-${sub.suitability}`}>
+                              <ResizableTable.Summary.Cell index={0} colSpan={6}>
                                 <span style={{ ...suitabilityCellStyle('소계'), padding: '4px 8px' }}>{`${sub.suitability} 소계`}</span>
-                              </Table.Summary.Cell>
-                              <Table.Summary.Cell index={6} colSpan={9} align="right">
+                              </ResizableTable.Summary.Cell>
+                              <ResizableTable.Summary.Cell index={6} colSpan={9} align="right">
                                 {`거래처 ${sub.accountCount}개`}
-                              </Table.Summary.Cell>
-                            </Table.Summary.Row>
+                              </ResizableTable.Summary.Cell>
+                            </ResizableTable.Summary.Row>
                           ))}
-                          <Table.Summary.Row>
-                            <Table.Summary.Cell index={0} colSpan={6}>
+                          <ResizableTable.Summary.Row>
+                            <ResizableTable.Summary.Cell index={0} colSpan={6}>
                               <span style={{ ...suitabilityCellStyle('총계'), padding: '4px 8px' }}>총계</span>
-                            </Table.Summary.Cell>
-                            <Table.Summary.Cell index={6} colSpan={9} align="right">
+                            </ResizableTable.Summary.Cell>
+                            <ResizableTable.Summary.Cell index={6} colSpan={9} align="right">
                               {`거래처 ${middleQuery.data.total.accountCount}개`}
-                            </Table.Summary.Cell>
-                          </Table.Summary.Row>
-                        </Table.Summary>
+                            </ResizableTable.Summary.Cell>
+                          </ResizableTable.Summary.Row>
+                        </ResizableTable.Summary>
                       ) : null
                     }
                   />
@@ -576,7 +576,7 @@ export default function DeploymentPage() {
                 {detailQuery.isLoading && <Spin />}
                 {detailQuery.isError && <Alert type="error" message={(detailQuery.error as Error)?.message ?? '조회 실패'} />}
                 {detailQuery.data && (
-                  <Table
+                  <ResizableTable
                     rowKey={(r) => `${r.accountId}-${r.employeeCode}`}
                     size="small"
                     columns={detailColumns}
@@ -601,7 +601,7 @@ export default function DeploymentPage() {
             {detailQuery.isLoading && <Spin />}
             {detailQuery.isError && <Alert type="error" message={(detailQuery.error as Error)?.message ?? '조회 실패'} />}
             {detailQuery.data && (
-              <Table
+              <ResizableTable
                 rowKey={(r) => `${r.accountId}-${r.employeeCode}`}
                 size="small"
                 columns={detailColumns}

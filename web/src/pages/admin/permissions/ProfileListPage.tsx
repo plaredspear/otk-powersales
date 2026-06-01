@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { Alert, Card, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, Card, Spin, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useProfiles } from '@/hooks/admin/useAdminPermission';
 import type { ProfileSummary } from '@/api/admin/permission';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title } = Typography;
 
@@ -57,7 +58,7 @@ export default function ProfileListPage() {
     <div style={{ padding: 16 }}>
       <Title level={4}>Profile 관리</Title>
       <Card>
-        <Table<ProfileSummary>
+        <ResizableTable<ProfileSummary>
           dataSource={data ?? []}
           rowKey="profileId"
           columns={columns}

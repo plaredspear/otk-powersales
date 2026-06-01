@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Checkbox, Input, Popconfirm, Select, Space, Table, Tag, message } from 'antd';
+import { Button, Card, Checkbox, Input, Popconfirm, Select, Space, Tag, message } from 'antd';
 import { PlusOutlined, DownloadOutlined, UploadOutlined, CheckOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -16,6 +16,7 @@ import {
   PPT_TEAM_TYPE_OPTIONS,
   getPPTTeamTypeColor,
 } from '@/constants/pptTeamType';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const TEAM_TYPE_FILTER_OPTIONS = [{ value: '', label: '전체' }, ...PPT_TEAM_TYPE_OPTIONS];
 
@@ -284,7 +285,7 @@ export default function PPTMasterPage() {
         </Space>
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data?.content}

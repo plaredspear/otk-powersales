@@ -1,7 +1,8 @@
-import { Alert, Card, Empty, Spin, Table, Tag } from 'antd';
+import { Alert, Card, Empty, Spin, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { EmployeeWorkHistoryItem } from '@/api/employee';
 import { useEmployeeWorkHistory } from '@/hooks/employee/useEmployeeWorkHistory';
+import ResizableTable from '@/components/common/ResizableTable';
 
 interface Props {
   employeeId: number;
@@ -68,7 +69,7 @@ export default function WorkHistorySection({ employeeId, limit = 10 }: Props) {
         />
       )}
       {!isLoading && !isError && (
-        <Table
+        <ResizableTable
           rowKey="id"
           size="small"
           columns={COLUMNS}

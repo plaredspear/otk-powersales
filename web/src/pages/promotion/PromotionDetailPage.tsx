@@ -11,7 +11,6 @@ import {
   Select,
   Space,
   Spin,
-  Table,
   Tag,
   Tooltip,
   Typography,
@@ -53,6 +52,7 @@ import PromotionProductSection, {
 import PromotionPosProductSection from './sections/PromotionPosProductSection';
 import PromotionScheduleSection from './components/PromotionScheduleSection';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title } = Typography;
 
@@ -1281,7 +1281,7 @@ export default function PromotionDetailPage() {
         </div>
 
         {empEditMode ? (
-          <Table<EditableRow>
+          <ResizableTable<EditableRow>
             className="promo-emp-table"
             columns={editColumns}
             dataSource={editRows}
@@ -1316,7 +1316,7 @@ export default function PromotionDetailPage() {
             scroll={{ x: 2100 }}
           />
         ) : (
-          <Table<PromotionEmployee>
+          <ResizableTable<PromotionEmployee>
             className="promo-emp-table"
             columns={readColumns}
             dataSource={employees ?? []}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Alert, Button, Spin, Table, Tag } from 'antd';
+import { Alert, Button, Spin, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 import { usePermissionSetChangeLog } from '@/hooks/admin/usePermissionSetChangeLog';
 import type { PermissionSetChangeLogEntry } from '@/api/admin/permission';
 import PermissionSetChangeLogDiffModal from './PermissionSetChangeLogDiffModal';
@@ -67,7 +68,7 @@ export default function PermissionSetChangeLogTab({ permissionSetId }: Props) {
 
   return (
     <>
-      <Table<PermissionSetChangeLogEntry>
+      <ResizableTable<PermissionSetChangeLogEntry>
         dataSource={data?.content ?? []}
         rowKey="changeLogId"
         columns={columns}

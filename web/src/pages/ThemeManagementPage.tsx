@@ -11,7 +11,6 @@ import {
   Popconfirm,
   Select,
   Space,
-  Table,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -26,6 +25,7 @@ import {
 import { useUsers } from '@/hooks/user/useUsers';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { usePermission } from '@/hooks/usePermission';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const PAGE_SIZE = 20;
 
@@ -265,7 +265,7 @@ export default function ThemeManagementPage() {
         )}
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data?.content}
@@ -341,7 +341,7 @@ export default function ThemeManagementPage() {
             </Descriptions>
 
             <h4 style={{ margin: '20px 0 8px' }}>현장점검 결과 ({detail.siteActivities.length}건)</h4>
-            <Table
+            <ResizableTable
               rowKey="id"
               size="small"
               dataSource={detail.siteActivities}

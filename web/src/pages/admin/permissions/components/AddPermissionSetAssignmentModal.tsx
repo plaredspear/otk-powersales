@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { App, Input, Modal, Spin, Table, Typography } from 'antd';
+import { App, Input, Modal, Spin, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 import { useCreateAssignment, usePermissionSets } from '@/hooks/admin/useAdminPermission';
 import type { PermissionSetSummary } from '@/api/admin/permission';
 import type { AxiosError } from 'axios';
@@ -88,7 +89,7 @@ export default function AddPermissionSetAssignmentModal({ open, userId, userLabe
       {isLoading ? (
         <Spin />
       ) : (
-        <Table<PermissionSetSummary>
+        <ResizableTable<PermissionSetSummary>
           dataSource={filtered}
           rowKey={(r) => r.permissionSetFlagsId ?? r.permissionSetId}
           columns={columns}

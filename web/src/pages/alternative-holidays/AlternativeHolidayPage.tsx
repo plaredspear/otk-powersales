@@ -7,7 +7,6 @@ import {
   Modal,
   Select,
   Space,
-  Table,
   Tag,
   message,
 } from 'antd';
@@ -22,6 +21,7 @@ import {
   useRejectAlternativeHoliday,
 } from '@/hooks/alternative-holiday/useAlternativeHolidayMutation';
 import type { AlternativeHolidayItem } from '@/api/alternativeHoliday';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const STATUS_OPTIONS = [
   { label: '전체', value: '' },
@@ -229,7 +229,7 @@ export default function AlternativeHolidayPage() {
       </div>
 
       {/* Table */}
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data}

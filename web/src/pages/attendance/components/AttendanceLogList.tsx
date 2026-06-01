@@ -1,7 +1,8 @@
-import { Pagination, Space, Table, Tag } from 'antd';
+import { Pagination, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import type { AttendanceLogListItem, AttendanceTypeCode } from '@/api/attendanceLog';
+import ResizableTable from '@/components/common/ResizableTable';
 
 interface AttendanceLogListProps {
   items: AttendanceLogListItem[];
@@ -117,7 +118,7 @@ export default function AttendanceLogList({
 
   return (
     <>
-      <Table
+      <ResizableTable
         rowKey="id"
         size="middle"
         loading={loading}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { App, Input, Modal, Spin, Table, Tag, Typography } from 'antd';
+import { App, Input, Modal, Spin, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 import { useQuery } from '@tanstack/react-query';
 import { fetchUsers, type UserSummary } from '@/api/user';
 import { useCreateAssignmentBatch } from '@/hooks/admin/useAdminPermission';
@@ -131,7 +132,7 @@ export default function AddUserToPermissionSetModal({
       {isLoading ? (
         <Spin />
       ) : (
-        <Table<UserSummary>
+        <ResizableTable<UserSummary>
           dataSource={data?.content ?? []}
           rowKey="id"
           columns={columns}

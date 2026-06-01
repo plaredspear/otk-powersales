@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Button, DatePicker, Space, Spin, Table, Tag, Tooltip, Typography } from 'antd';
+import { Button, DatePicker, Space, Spin, Tag, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
@@ -13,6 +13,7 @@ import type {
 } from '@/api/promotionSchedule';
 import PromotionScheduleBulkUpdateModal from './PromotionScheduleBulkUpdateModal';
 import PromotionScheduleBulkDeleteDialog from './PromotionScheduleBulkDeleteDialog';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title } = Typography;
 
@@ -203,7 +204,7 @@ export default function PromotionScheduleSection({
           <Spin />
         </div>
       ) : (
-        <Table<FlatRow>
+        <ResizableTable<FlatRow>
           columns={columns}
           dataSource={rows}
           rowKey="key"

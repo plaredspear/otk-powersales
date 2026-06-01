@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Input, Select, Table, Tag } from 'antd';
+import { Alert, Button, Input, Select, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useUsers } from '@/hooks/user/useUsers';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { UserSummary } from '@/api/user';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const PAGE_SIZE = 20;
 
@@ -88,7 +89,7 @@ export default function UserListPage() {
         />
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data?.content}

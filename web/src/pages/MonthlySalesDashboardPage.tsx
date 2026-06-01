@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Card, Col, Empty, Input, Row, Spin, Statistic, Table, Tag, Typography, message } from 'antd';
+import { Alert, Card, Col, Empty, Input, Row, Spin, Statistic, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -11,6 +11,7 @@ import {
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import MonthlyTrendChart from '@/components/charts/MonthlyTrendChart';
 import MonthlySalesDashboardDetailModal from './MonthlySalesDashboardDetailModal';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
 
@@ -277,7 +278,7 @@ export default function MonthlySalesDashboardPage() {
           <Spin size="large" />
         </div>
       ) : (
-        <Table
+        <ResizableTable
           rowKey={(r) => r.accountId}
           size="small"
           columns={columns}

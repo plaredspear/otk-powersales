@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Alert, Card, Input, Space, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, Card, Input, Space, Spin, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { usePermissionMatrix } from '@/hooks/admin/useAdminPermission';
 import type { EntityProfileRow } from '@/api/admin/permission';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title } = Typography;
 
@@ -100,7 +101,7 @@ export default function PermissionMatrixPage() {
             style={{ width: 240 }}
           />
         </Space>
-        <Table<EntityProfileRow>
+        <ResizableTable<EntityProfileRow>
           dataSource={filteredRows}
           rowKey="entity"
           columns={columns}

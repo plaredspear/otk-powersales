@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Card, DatePicker, Divider, Space, Spin, Table, Typography, message } from 'antd';
+import { Alert, Button, Card, DatePicker, Divider, Space, Spin, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import type { Dayjs } from 'dayjs';
@@ -9,6 +9,7 @@ import {
   type PromotionTargetActualReportRow,
 } from '@/api/promotionTargetActualReport';
 import PromotionActualDonutChart from '@/components/charts/PromotionActualDonutChart';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
 
@@ -135,7 +136,7 @@ export default function PromotionTargetActualReportPage() {
                 {group.subtotalPrimaryQuantity.toLocaleString()} / 기타수량{' '}
                 {group.subtotalOtherQuantity.toLocaleString()}
               </Text>
-              <Table
+              <ResizableTable
                 rowKey={(r, idx) => `${r.employeeCode ?? ''}-${r.scheduleDate ?? ''}-${idx}`}
                 size="small"
                 columns={columns}
@@ -156,7 +157,7 @@ export default function PromotionTargetActualReportPage() {
           </Text>
         </>
       ) : (
-        <Table
+        <ResizableTable
           columns={columns}
           dataSource={[]}
           pagination={false}

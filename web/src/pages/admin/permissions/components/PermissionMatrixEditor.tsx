@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Checkbox, Input, Table, Typography } from 'antd';
+import { Checkbox, Input, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
 
@@ -122,7 +123,7 @@ export default function PermissionMatrixEditor({ resources, bits, value, onChang
         onChange={(e) => setKeyword(e.target.value)}
         style={{ marginBottom: 12, maxWidth: 320 }}
       />
-      <Table<MatrixRow>
+      <ResizableTable<MatrixRow>
         dataSource={rows}
         columns={columns}
         size="small"

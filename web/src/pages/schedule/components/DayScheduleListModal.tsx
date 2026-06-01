@@ -1,8 +1,9 @@
-import { Modal, Table, Empty } from 'antd';
+import { Modal, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import type { TeamSchedule } from '@/api/team-schedule';
+import ResizableTable from '@/components/common/ResizableTable';
 
 interface DayScheduleListModalProps {
   open: boolean;
@@ -85,7 +86,7 @@ export function DayScheduleListModal({
       {daySchedules.length === 0 ? (
         <Empty description="등록된 일정이 없습니다" />
       ) : (
-        <Table<TeamSchedule>
+        <ResizableTable<TeamSchedule>
           columns={columns}
           dataSource={daySchedules}
           rowKey="id"

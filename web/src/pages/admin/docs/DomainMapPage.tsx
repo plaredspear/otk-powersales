@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Alert, Card, Col, Divider, Input, Row, Segmented, Space, Table, Tag, Typography } from 'antd';
+import { Alert, Card, Col, Divider, Input, Row, Segmented, Space, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -199,7 +200,7 @@ export default function DomainMapPage() {
         />
       </Space>
 
-      <Table
+      <ResizableTable
         rowKey="key"
         columns={COLUMNS}
         dataSource={rows}

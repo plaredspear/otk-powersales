@@ -7,7 +7,6 @@ import {
   Select,
   Space,
   Statistic,
-  Table,
   Tabs,
   Tag,
   Typography,
@@ -25,6 +24,7 @@ import type {
   ScheduledJobStatus,
 } from '@/api/admin/scheduledJob';
 import JobRunDetailModal from './JobRunDetailModal';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -227,7 +227,7 @@ export default function ScheduledJobsPage() {
                     }}
                   />
                 </Space>
-                <Table<ScheduledJobRun>
+                <ResizableTable<ScheduledJobRun>
                   rowKey="id"
                   loading={runsQuery.isLoading}
                   dataSource={runsQuery.data?.items ?? []}
@@ -251,7 +251,7 @@ export default function ScheduledJobsPage() {
             key: 'catalog',
             label: '등록된 작업',
             children: (
-              <Table<RegisteredScheduledJob>
+              <ResizableTable<RegisteredScheduledJob>
                 rowKey="jobName"
                 loading={catalogQuery.isLoading}
                 dataSource={catalogQuery.data ?? []}

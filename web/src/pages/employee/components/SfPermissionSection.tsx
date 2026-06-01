@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button, Card, Descriptions, Space, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Descriptions, Space, Spin, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import { fetchEmployeePermissions, type AssignedPermissionSet, type EntityPermissionRow } from '@/api/employee';
@@ -7,6 +7,7 @@ import { usePermission } from '@/hooks/usePermission';
 import { useAuthStore } from '@/stores/authStore';
 import AddPermissionSetAssignmentModal from '@/pages/admin/permissions/components/AddPermissionSetAssignmentModal';
 import RevokeAssignmentConfirmModal from '@/pages/admin/permissions/components/RevokeAssignmentConfirmModal';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
 
@@ -158,7 +159,7 @@ export default function SfPermissionSection({ employeeId }: Props) {
           부여된 PermissionSet 이 없습니다.
         </Text>
       ) : (
-        <Table<AssignedPermissionSet>
+        <ResizableTable<AssignedPermissionSet>
           dataSource={data.permissionSets}
           rowKey="assignmentId"
           pagination={false}
@@ -183,7 +184,7 @@ export default function SfPermissionSection({ employeeId }: Props) {
           부여된 entity 권한이 없습니다.
         </Text>
       ) : (
-        <Table<EntityPermissionRow>
+        <ResizableTable<EntityPermissionRow>
           dataSource={data.entityMatrix}
           rowKey="entity"
           pagination={false}

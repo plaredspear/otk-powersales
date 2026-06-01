@@ -49,17 +49,22 @@ describe('ResizableTable', () => {
     expect(() => fireEvent.click(handle!)).not.toThrow();
   });
 
-  it('드래그 중에는 핸들에 transform 가이드만 적용하고, 놓을 때 초기화한다', () => {
+  it('드래그 중에는 세로 가이드 라인을 표시하고, 놓을 때 숨긴다', () => {
     const { container } = renderTable();
     const handle = container.querySelector('.resizable-handle') as HTMLElement;
+    const guideLine = container.querySelector('.resizable-guide-line') as HTMLElement;
+    expect(guideLine).not.toBeNull();
 
-    // 드래그 시작 → 이동: 핸들에 translateX 가이드가 적용된다 (테이블 컬럼은 아직 미변경).
+    // 드래그 시작 → 이동: 가이드 라인이 보인다 (opacity 1). 테이블 컬럼은 아직 미변경.
     fireEvent.mouseDown(handle, { clientX: 120 });
     fireEvent.mouseMove(handle, { clientX: 180 });
-    expect(handle.style.transform).toContain('translateX');
+    expect(guideLine.style.opacity).toBe('1');
+    // 드래그 중 body 에 리사이즈 클래스가 부여되어 커서/선택을 고정한다.
+    expect(document.body.classList.contains('resizable-table-resizing')).toBe(true);
 
-    // 드래그 종료: 핸들 transform 가이드는 0 으로 초기화된다 (최종 width 는 컬럼 state 로 commit).
+    // 드래그 종료: 가이드 라인은 숨겨지고 (opacity 0), body 클래스도 해제된다.
     fireEvent.mouseUp(handle, { clientX: 180 });
-    expect(handle.style.transform).toBe('');
+    expect(guideLine.style.opacity).toBe('0');
+    expect(document.body.classList.contains('resizable-table-resizing')).toBe(false);
   });
 });

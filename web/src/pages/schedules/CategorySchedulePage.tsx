@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, message, Spin, Table } from 'antd';
+import { Alert, message, Spin } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useCategorySchedule } from '@/hooks/schedules/useCategorySchedule';
 import { useCategoryExport } from '@/hooks/schedules/useCategoryExport';
 import type { CategoryScheduleItem } from '@/api/monthlyIntegration';
+import ResizableTable from '@/components/common/ResizableTable';
 
 function formatDecimal1(value: number): string {
   return value.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -133,7 +134,7 @@ export default function CategorySchedulePage() {
           <Spin size="large" />
         </div>
       ) : (
-        <Table
+        <ResizableTable
           rowKey="branchName"
           columns={columns}
           dataSource={data?.items ?? []}

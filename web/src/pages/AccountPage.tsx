@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Alert, Button, Input, Select, Space, Table, Tag } from 'antd';
+import { Alert, Button, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 import { useAccounts } from '@/hooks/account/useAccounts';
 import { usePermission } from '@/hooks/usePermission';
 import type { Account } from '@/api/account';
@@ -153,7 +154,7 @@ export default function AccountPage() {
         )}
       </Space>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data?.content}

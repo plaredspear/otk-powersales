@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, DatePicker, Input, Select, Space, Table, Tag } from 'antd';
+import { Button, Card, DatePicker, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { usePPTHistories } from '@/hooks/promotion/usePPTHistories';
@@ -9,6 +9,7 @@ import {
   getPPTTeamTypeColor,
 } from '@/constants/pptTeamType';
 import PPTHistoryDetailModal from './components/PPTHistoryDetailModal';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const TEAM_TYPE_FILTER_OPTIONS = [
   { value: '', label: '전체' },
@@ -155,7 +156,7 @@ export default function PPTHistoryPage() {
         </Space>
       </Card>
 
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data?.content}

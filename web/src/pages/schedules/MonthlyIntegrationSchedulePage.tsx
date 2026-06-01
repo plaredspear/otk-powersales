@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Card, Empty, Grid, message, Space, Spin, Table, Typography } from 'antd';
+import { Alert, Card, Empty, Grid, message, Space, Spin, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useMonthlyIntegrationSchedule } from '@/hooks/schedules/useMonthlyIntegrationSchedule';
 import { useMonthlyIntegrationExport } from '@/hooks/schedules/useMonthlyIntegrationExport';
 import type { MonthlyIntegrationScheduleItem } from '@/api/monthlyIntegration';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -196,7 +197,7 @@ export default function MonthlyIntegrationSchedulePage() {
               총 {formatNumber(data.totalCount)}건
             </Text>
           )}
-          <Table
+          <ResizableTable
             rowKey={(record) => `${record.accountCode}-${record.employeeCode}`}
             columns={columns}
             dataSource={data?.items ?? []}

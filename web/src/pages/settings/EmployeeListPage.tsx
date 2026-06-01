@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Input, Select, Space, Table, Tag, Tooltip } from 'antd';
+import { Alert, Button, Input, Select, Space, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEmployees } from '@/hooks/employee/useEmployees';
 import type { Employee } from '@/api/employee';
@@ -9,6 +9,7 @@ import { usePermission } from '@/hooks/usePermission';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import EmployeeRegisterModal from '@/pages/employee/components/EmployeeRegisterModal';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const STATUS_TAG: Record<string, string> = {
   재직: 'green',
@@ -216,7 +217,7 @@ export default function EmployeeListPage() {
         </div>
       </div>
 
-      <Table
+      <ResizableTable
         rowKey="employeeCode"
         columns={columns}
         dataSource={data?.content}

@@ -8,7 +8,6 @@ import {
   Progress,
   Space,
   Statistic,
-  Table,
   Tag,
   Typography,
 } from 'antd';
@@ -28,6 +27,7 @@ import type {
   NaturalKeyFkSubstepResult,
   PicklistSubstepResult,
 } from '@/api/admin/sfMigration';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -228,7 +228,7 @@ export default function SfMigrationPage() {
           )}
 
           <Card title="테이블별 결과">
-            <Table<FkResolveTableResult>
+            <ResizableTable<FkResolveTableResult>
               size="small"
               rowKey="label"
               columns={tableColumns}
@@ -287,7 +287,7 @@ export default function SfMigrationPage() {
                 {naturalKeyResult.totalRowsAffected.toLocaleString()}
               </Descriptions.Item>
             </Descriptions>
-            <Table<NaturalKeyFkSubstepResult>
+            <ResizableTable<NaturalKeyFkSubstepResult>
               style={{ marginTop: 12 }}
               size="small"
               rowKey="label"
@@ -412,7 +412,7 @@ export default function SfMigrationPage() {
                 {picklistResult.totalRowsAffected.toLocaleString()}
               </Descriptions.Item>
             </Descriptions>
-            <Table<PicklistSubstepResult>
+            <ResizableTable<PicklistSubstepResult>
               style={{ marginTop: 12 }}
               size="small"
               rowKey="label"

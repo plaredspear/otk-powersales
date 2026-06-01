@@ -6,11 +6,11 @@ import {
   Descriptions,
   Divider,
   Row,
-  Table,
   Tag,
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -225,7 +225,7 @@ export default function SystemOverviewPage() {
           <Paragraph type="secondary">
             매출/목표/마스터 데이터는 대부분 외부에서 유입됩니다. 각 연동의 방향과 역할은 다음과 같습니다.
           </Paragraph>
-          <Table
+          <ResizableTable
             rowKey="key"
             columns={INTEGRATION_COLUMNS}
             dataSource={INTEGRATIONS}
@@ -240,17 +240,17 @@ export default function SystemOverviewPage() {
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col xs={24} lg={8}>
               <Card size="small" title="Backend">
-                <Table rowKey="layer" columns={STACK_COLUMNS} dataSource={STACK_BACKEND} pagination={false} size="small" showHeader={false} />
+                <ResizableTable rowKey="layer" columns={STACK_COLUMNS} dataSource={STACK_BACKEND} pagination={false} size="small" showHeader={false} />
               </Card>
             </Col>
             <Col xs={24} lg={8}>
               <Card size="small" title="Web (관리자)">
-                <Table rowKey="layer" columns={STACK_COLUMNS} dataSource={STACK_WEB} pagination={false} size="small" showHeader={false} />
+                <ResizableTable rowKey="layer" columns={STACK_COLUMNS} dataSource={STACK_WEB} pagination={false} size="small" showHeader={false} />
               </Card>
             </Col>
             <Col xs={24} lg={8}>
               <Card size="small" title="Mobile (영업)">
-                <Table rowKey="layer" columns={STACK_COLUMNS} dataSource={STACK_MOBILE} pagination={false} size="small" showHeader={false} />
+                <ResizableTable rowKey="layer" columns={STACK_COLUMNS} dataSource={STACK_MOBILE} pagination={false} size="small" showHeader={false} />
               </Card>
             </Col>
           </Row>

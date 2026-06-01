@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Upload, Table, Button, Alert, message, Tag } from 'antd';
+import { Modal, Upload, Button, Alert, message, Tag } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import * as XLSX from 'xlsx';
@@ -7,6 +7,7 @@ import { useValidatePPTMasterBulk, useConfirmPPTMasterBulk } from '@/hooks/promo
 import type { PPTMasterBulkItem, BulkValidationRow } from '@/api/pptMaster';
 import { downloadPPTMasterTemplate } from '@/api/pptMaster';
 import dayjs from 'dayjs';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Dragger } = Upload;
 const MAX_ROWS = 450;
@@ -223,7 +224,7 @@ export default function PPTMasterUploadModal({ open, onClose }: Props) {
               style={{ marginBottom: 16 }}
             />
           )}
-          <Table
+          <ResizableTable
             rowKey="_rowIndex"
             columns={columns}
             dataSource={parsedItems}

@@ -5,7 +5,6 @@ import {
   DatePicker,
   Select,
   Space,
-  Table,
   Tabs,
   Tag,
   Tooltip,
@@ -27,6 +26,7 @@ import type {
 } from '@/api/admin/sapIntegration';
 import SapOutboundLogDetailModal from './SapOutboundLogDetailModal';
 import SapOutboundTestTab from './SapOutboundTestTab';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -356,7 +356,7 @@ export default function SapOutboundPage() {
                   </Space>
                 </Card>
 
-                <Table<SapOutboundLogRow>
+                <ResizableTable<SapOutboundLogRow>
                   rowKey="id"
                   loading={logsQuery.isLoading}
                   dataSource={logsQuery.data?.items ?? []}
@@ -391,7 +391,7 @@ export default function SapOutboundPage() {
                   message="본 탭은 큐에 남아있는 항목입니다 (PENDING + RETRY)."
                   description="정상 발송된 항목은 호출 이력 탭에 표시됩니다. 30초마다 자동 새로고침됩니다."
                 />
-                <Table<SapOutboxPendingRow>
+                <ResizableTable<SapOutboxPendingRow>
                   rowKey="id"
                   loading={outboxQuery.isLoading}
                   dataSource={outboxQuery.data?.items ?? []}
@@ -412,7 +412,7 @@ export default function SapOutboundPage() {
             key: 'catalog',
             label: 'API 목록',
             children: (
-              <Table<SapOutboundCatalogItem>
+              <ResizableTable<SapOutboundCatalogItem>
                 rowKey="interfaceId"
                 loading={catalogQuery.isLoading}
                 dataSource={catalogQuery.data ?? []}

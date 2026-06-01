@@ -12,7 +12,6 @@ import {
   Select,
   Space,
   Statistic,
-  Table,
   Tag,
   Typography,
 } from 'antd';
@@ -32,6 +31,7 @@ import { fetchAccountsForProductLookup } from '@/api/account';
 import { fetchProducts } from '@/api/product';
 import type { ProductExpiration, CreateProductExpirationRequest, UpdateProductExpirationRequest } from '@/api/productExpiration';
 import { useAuthStore } from '@/stores/authStore';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { RangePicker } = DatePicker;
 
@@ -336,7 +336,7 @@ export default function ProductExpirationPage() {
       </Space>
 
       {/* Table */}
-      <Table<ProductExpiration>
+      <ResizableTable<ProductExpiration>
         rowKey="id"
         columns={columns}
         dataSource={data?.content}
