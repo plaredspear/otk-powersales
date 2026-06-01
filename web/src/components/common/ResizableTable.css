@@ -1,3 +1,8 @@
+/* 가이드 라인(absolute)의 위치 기준점을 만들기 위해 컨테이너를 relative 로 둔다. */
+.resizable-table {
+  position: relative;
+}
+
 /* 헤더 셀에 상대 위치를 부여하여 핸들(absolute)의 위치 기준점을 만든다.
    antd 헤더 th 는 기본 position 이 static 이므로 명시적으로 relative 지정. */
 .resizable-table .ant-table-thead > tr > th {
@@ -17,4 +22,45 @@
   /* 핸들 자체는 보이지 않게 두고, 커서로만 리사이즈 가능 영역을 안내 */
   background-color: transparent;
   touch-action: none;
+}
+
+/* hover 시 컬럼 경계(핸들 위치)에 세로 구분선을 노출하여 리사이즈 가능 지점을 안내.
+   핸들 폭(10px) 중앙에 1px 선을 그린다. */
+.resizable-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+  background-color: #1677ff;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.resizable-handle:hover::after {
+  opacity: 0.6;
+}
+
+/* 드래그 중 마우스를 따라 이동하는 테이블 전체 높이 세로 가이드 라인.
+   left/opacity 는 드래그 중 JS(ref)로 직접 조작한다 — 평상시 opacity 0 으로 숨김.
+   pointer-events:none 으로 드래그 입력을 가로채지 않는다. */
+.resizable-guide-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  z-index: 5;
+  background-color: #1677ff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 드래그 중 body 전역: 커서를 col-resize 로 고정하고 텍스트 선택을 막아
+   드래그 경험이 흔들리지 않게 한다. */
+body.resizable-table-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
