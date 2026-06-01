@@ -17,7 +17,7 @@ import { SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAccountsForProductLookup } from '@/api/account';
+import { fetchAccountsForPosSalesLookup } from '@/api/account';
 import { fetchPosSales, type PosSalesProduct } from '@/api/posSales';
 
 const { Text } = Typography;
@@ -40,9 +40,9 @@ export default function SalesQueryPage() {
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
 
   const accountQuery = useQuery({
-    queryKey: ['admin', 'accounts', 'product-lookup', accountKeyword],
+    queryKey: ['admin', 'accounts', 'pos-sales-lookup', accountKeyword],
     queryFn: () =>
-      fetchAccountsForProductLookup({ keyword: accountKeyword || undefined, page: 0, size: 50 }),
+      fetchAccountsForPosSalesLookup({ keyword: accountKeyword || undefined, page: 0, size: 50 }),
   });
 
   const posSalesQuery = useQuery({
