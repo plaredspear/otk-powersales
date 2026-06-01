@@ -177,6 +177,9 @@ export default function PromotionDetailPage() {
 
     if (keyword.length < 2) {
       setEmployeeOptions((prev) => { const next = new Map(prev); next.delete(rowId); return next; });
+      // 직전 입력(>=2글자)으로 켜진 로딩이 남지 않도록 함께 해제 — 타이머 만료 전 한 글자로 줄이면
+      // setTimeout 콜백의 finally 가 실행되지 않아 스피너가 영구히 도는 문제 방지.
+      setEmployeeSearchLoading((prev) => { const next = new Map(prev); next.delete(rowId); return next; });
       return;
     }
 
