@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import ReactECharts from 'echarts-for-react';
 import { fetchMonthlySales, type MonthlySales } from '@/api/sales';
+import DetailHeader from '@/components/DetailHeader';
 import { QueryBoundary } from '@/components/PageStates';
 import { formatWon } from '@/lib/format';
 
@@ -33,6 +34,7 @@ export default function MonthlySalesPage() {
 
   return (
     <div>
+      <DetailHeader title="월매출 현황" />
       <DatePicker
         picker="month"
         value={month}

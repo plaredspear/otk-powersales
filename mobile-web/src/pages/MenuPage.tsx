@@ -8,6 +8,9 @@ import {
   WarningOutlined,
   CarOutlined,
   FieldTimeOutlined,
+  SafetyOutlined,
+  ScheduleOutlined,
+  LockOutlined,
   SettingOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
@@ -22,14 +25,17 @@ interface MenuEntry {
 }
 
 const ENTRIES: MenuEntry[] = [
+  { to: '/mypage/schedule', label: '내 일정', icon: <ScheduleOutlined /> },
+  { to: '/safety-check', label: '안전점검', icon: <SafetyOutlined /> },
   { to: '/notices', label: '공지사항', icon: <SoundOutlined /> },
   { to: '/education', label: '교육자료', icon: <ReadOutlined /> },
   { to: '/accounts', label: '내 거래처', icon: <ShopOutlined /> },
-  { to: '/sales', label: '월매출 현황', icon: <BarChartOutlined /> },
+  { to: '/sales', label: '매출 현황', icon: <BarChartOutlined /> },
   { to: '/promotions', label: '행사매출', icon: <CalendarOutlined /> },
   { to: '/claims', label: '클레임', icon: <WarningOutlined /> },
   { to: '/logistics-claims', label: '물류클레임', icon: <CarOutlined /> },
   { to: '/product-expiration', label: '유통기한 관리', icon: <FieldTimeOutlined /> },
+  { to: '/password/verify', label: '비밀번호 변경', icon: <LockOutlined /> },
   { to: '/settings', label: '앱 정보 / 설정', icon: <SettingOutlined /> },
 ];
 

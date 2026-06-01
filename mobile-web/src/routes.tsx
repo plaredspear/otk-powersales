@@ -22,10 +22,17 @@ const ClaimListPage = lazy(() => import('@/pages/claim/ClaimListPage'));
 const ClaimDetailPage = lazy(() => import('@/pages/claim/ClaimDetailPage'));
 const LogisticsClaimListPage = lazy(() => import('@/pages/logistics/LogisticsClaimListPage'));
 const LogisticsClaimDetailPage = lazy(() => import('@/pages/logistics/LogisticsClaimDetailPage'));
+const SalesHubPage = lazy(() => import('@/pages/sales/SalesHubPage'));
 const MonthlySalesPage = lazy(() => import('@/pages/sales/MonthlySalesPage'));
 const PromotionListPage = lazy(() => import('@/pages/promotion/PromotionListPage'));
 const PromotionDetailPage = lazy(() => import('@/pages/promotion/PromotionDetailPage'));
 const SettingPage = lazy(() => import('@/pages/setting/SettingPage'));
+// Wave 2
+const VerifyPasswordPage = lazy(() => import('@/pages/mypage/VerifyPasswordPage'));
+const ChangePasswordPage = lazy(() => import('@/pages/mypage/ChangePasswordPage'));
+const SafetyCheckPage = lazy(() => import('@/pages/safetycheck/SafetyCheckPage'));
+const MyScheduleCalendarPage = lazy(() => import('@/pages/mypage/MyScheduleCalendarPage'));
+const MyDailySchedulePage = lazy(() => import('@/pages/mypage/MyDailySchedulePage'));
 
 export default function AppRoutes() {
   return (
@@ -39,7 +46,7 @@ export default function AppRoutes() {
             <Route element={<TabLayout />}>
               <Route path="/" element={<HomePage />} />
               <Route path="/notices" element={<NoticeListPage />} />
-              <Route path="/sales" element={<MonthlySalesPage />} />
+              <Route path="/sales" element={<SalesHubPage />} />
               <Route path="/claims" element={<ClaimListPage />} />
               <Route path="/menu" element={<MenuPage />} />
             </Route>
@@ -58,6 +65,12 @@ export default function AppRoutes() {
               <Route path="/logistics-claims/:id" element={<LogisticsClaimDetailPage />} />
               <Route path="/promotions" element={<PromotionListPage />} />
               <Route path="/promotions/:id" element={<PromotionDetailPage />} />
+              <Route path="/sales/monthly" element={<MonthlySalesPage />} />
+              <Route path="/safety-check" element={<SafetyCheckPage />} />
+              <Route path="/mypage/schedule" element={<MyScheduleCalendarPage />} />
+              <Route path="/mypage/daily/:date" element={<MyDailySchedulePage />} />
+              <Route path="/password/verify" element={<VerifyPasswordPage />} />
+              <Route path="/password/change" element={<ChangePasswordPage />} />
               <Route path="/settings" element={<SettingPage />} />
             </Route>
           </Route>

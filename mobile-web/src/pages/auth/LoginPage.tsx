@@ -18,7 +18,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(values.employeeCode.trim(), values.password);
-      navigate('/', { replace: true });
+      // 강제 비밀번호 변경 필요 시 변경 화면으로(레거시 resetPwd 흐름). AuthGuard 도 동일 가드.
+      // GPS 동의(requiresGpsConsent) 가드는 Wave 3(디바이스) 범위.
+      const dest = useAuthStore.getState().passwordChangeRequired ? '/password/change' : '/';
+      navigate(dest, { replace: true });
     } catch (e) {
       message.error(e instanceof Error ? e.message : '로그인에 실패했습니다');
     } finally {

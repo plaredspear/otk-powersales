@@ -18,6 +18,8 @@ interface AuthState {
   requiresGpsConsent: boolean;
   login: (employeeCode: string, password: string) => Promise<void>;
   logout: () => void;
+  /** 비밀번호 변경 성공 후 새 토큰 반영 + passwordChangeRequired 해제. */
+  applyTokens: (accessToken: string, refreshToken: string) => void;
   initialize: () => void;
 }
 
@@ -47,6 +49,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem(TOKEN_KEYS.refresh);
     localStorage.removeItem(TOKEN_KEYS.user);
     set({ user: null, accessToken: null, isAuthenticated: false });
+  },
+
+  applyTokens: (accessToken, refreshToken) => {
+    localStorage.setItem(TOKEN_KEYS.access, accessToken);
+    localStorage.setItem(TOKEN_KEYS.refresh, refreshToken);
+    set({ accessToken, passwordChangeRequired: false });
   },
 
   initialize: () => {
