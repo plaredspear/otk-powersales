@@ -8,7 +8,12 @@ import type { ApiResponse } from '../types';
  * (`SYSTEM_ADMIN` role 만 보유).
  */
 
-export type FkResolveStatus = 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type FkResolveStatus =
+  | 'IDLE'
+  | 'RUNNING'
+  | 'COMPLETED'
+  | 'COMPLETED_WITH_WARNINGS'
+  | 'FAILED';
 
 export interface FkResolveTableResult {
   label: string;

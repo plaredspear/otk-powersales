@@ -35,8 +35,11 @@ const STATUS_TAG: Record<FkResolveStatus, { color: string; label: string }> = {
   IDLE: { color: 'default', label: '대기' },
   RUNNING: { color: 'processing', label: '실행 중' },
   COMPLETED: { color: 'success', label: '완료' },
+  COMPLETED_WITH_WARNINGS: { color: 'warning', label: '완료 (경고 있음)' },
   FAILED: { color: 'error', label: '실패' },
 };
+
+const UNKNOWN_STATUS_TAG = { color: 'default', label: '알 수 없음' };
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return '-';
@@ -75,7 +78,9 @@ export default function SfMigrationPage() {
 
   const progress = progressQuery.data;
   const isRunning = progress?.status === 'RUNNING';
-  const statusTag = progress ? STATUS_TAG[progress.status] : STATUS_TAG.IDLE;
+  const statusTag = progress
+    ? (STATUS_TAG[progress.status] ?? UNKNOWN_STATUS_TAG)
+    : STATUS_TAG.IDLE;
 
   const picklistResult = runPicklistColumnMutation.data;
   const picklistError = runPicklistColumnMutation.error as Error | null;
@@ -189,6 +194,8 @@ export default function SfMigrationPage() {
                     ? 'exception'
                     : progress.status === 'COMPLETED'
                     ? 'success'
+                    : progress.status === 'COMPLETED_WITH_WARNINGS'
+                    ? 'normal'
                     : 'active'
                 }
               />
