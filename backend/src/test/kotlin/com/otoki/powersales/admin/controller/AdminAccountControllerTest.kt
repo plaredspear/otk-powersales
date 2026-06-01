@@ -330,7 +330,7 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("C1 성공 - 정상 삭제 (200 OK + camelCase 응답)")
         fun deleteAccount_success() {
-            every { accountDeleteService.delete(eq(1234)) } just Runs
+            every { accountDeleteService.delete(eq(1234), any()) } just Runs
 
             mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 1234))
                 .andExpect(status().isOk)
@@ -347,7 +347,7 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
             expectedStatus: Int,
             expectedCode: String
         ) {
-            every { accountDeleteService.delete(eq(1234)) } throws exception
+            every { accountDeleteService.delete(eq(1234), any()) } throws exception
 
             mockMvc.perform(delete("/api/v1/admin/accounts/{id}", 1234))
                 .andExpect(status().`is`(expectedStatus))

@@ -180,7 +180,7 @@ class AdminAccountController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Int
     ): ResponseEntity<ApiResponse<Any?>> {
-        accountDeleteService.delete(id)
+        accountDeleteService.delete(id, principal.userId)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "거래처 삭제 성공"))
     }
 }

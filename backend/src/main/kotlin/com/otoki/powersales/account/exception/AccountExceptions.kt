@@ -36,6 +36,20 @@ class AccountDeleteBlockedSapSyncedException : BusinessException(
     httpStatus = HttpStatus.CONFLICT
 )
 
+/**
+ * 거래처 소유자(owner)가 아닌 사용자의 삭제 시도 차단 예외 (#642 — SF owner 가드 동등).
+ *
+ * 레거시 SF `AccountTriggerHandler.AccountDeleteCheck` 의
+ * `OwnerId != UserInfo.getUserId()` → `addError('OwnerId', '자신의 신규 거래처만 삭제가 가능합니다.')`
+ * 와 동등. SF 는 삭제 trigger 에 Profile 예외가 없어 시스템 관리자도 동일하게 적용되므로,
+ * 신규도 권한 키와 무관하게 owner 본인만 native 거래처를 삭제할 수 있다.
+ */
+class AccountDeleteNotOwnerException : BusinessException(
+    errorCode = "ACCOUNT_DELETE_NOT_OWNER",
+    message = "자신의 신규 거래처만 삭제가 가능합니다.",
+    httpStatus = HttpStatus.FORBIDDEN
+)
+
 class AccountNamePrefixRequiredException(allowedPrefixList: String) : BusinessException(
     errorCode = "ACCOUNT_NAME_PREFIX_REQUIRED",
     message = "신규 거래처 등록은 ($allowedPrefixList) 중 1개를 필수로 입력하셔야 합니다.",
