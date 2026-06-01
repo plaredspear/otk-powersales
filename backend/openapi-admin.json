@@ -84,6 +84,9 @@
           "accountType" : {
             "type" : "string"
           },
+          "convertedHeadcount" : {
+            "type" : "number"
+          },
           "count" : {
             "format" : "int32",
             "type" : "integer"
@@ -7874,6 +7877,9 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "alternatingHeadcount" : {
+            "type" : "number"
+          },
           "channelName" : {
             "type" : "string"
           },
@@ -7881,9 +7887,15 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "fixedHeadcount" : {
+            "type" : "number"
+          },
           "visiting" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "visitingHeadcount" : {
+            "type" : "number"
           }
         },
         "type" : "object"
@@ -15018,6 +15030,9 @@
       },
       "WorkTypeCount" : {
         "properties" : {
+          "convertedHeadcount" : {
+            "type" : "number"
+          },
           "count" : {
             "format" : "int32",
             "type" : "integer"
@@ -16245,6 +16260,13 @@
       "get" : {
         "operationId" : "getDashboard",
         "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "in" : "query",
           "name" : "yearMonth",
           "required" : false,

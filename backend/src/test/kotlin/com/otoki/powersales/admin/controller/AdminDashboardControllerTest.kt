@@ -8,14 +8,19 @@ import com.otoki.powersales.admin.dto.response.StaffDeployment
 import com.otoki.powersales.admin.dto.response.StaffTypeCount
 import com.otoki.powersales.admin.dto.response.TotalByPosition
 import com.otoki.powersales.admin.dto.response.WorkTypeStats
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.service.AdminDashboardService
 import com.otoki.powersales.common.test.AdminControllerTestSupport
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import io.mockk.every
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
+import org.springframework.core.MethodParameter
 import org.springframework.http.MediaType
 import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -24,11 +29,24 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @WebMvcTest(AdminDashboardController::class)
 @AutoConfigureMockMvc(addFilters = false)
-@DisplayName("AdminDashboardController 테스트 (스텁 모드)")
+@DisplayName("AdminDashboardController 테스트")
 class AdminDashboardControllerTest : AdminControllerTestSupport() {
 
     @MockkBean
     private lateinit var adminDashboardService: AdminDashboardService
+
+    @MockkBean
+    private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
+
+    @BeforeEach
+    fun setUpArgResolver() {
+        every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
+            val parameter = firstArg<MethodParameter>()
+            parameter.hasParameterAnnotation(CurrentDataScope::class.java)
+        }
+        every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns
+            DataScope(branchCodes = emptyList(), isAllBranches = true)
+    }
 
     private fun emptyDashboardResponse(yearMonth: String): DashboardResponse = DashboardResponse(
         salesSummary = SalesSummary(
@@ -66,7 +84,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 200 OK + 응답 스키마 키 모두 존재")
         fun getDashboard_success_schemaKeysExist() {
-            every { adminDashboardService.getDashboard(any(), any()) } returns emptyDashboardResponse("2026-03")
+            every { adminDashboardService.getDashboard(any(), any(), any()) } returns emptyDashboardResponse("2026-03")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
@@ -112,7 +130,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - yearMonth 미입력 시 응답의 year_month가 YYYY-MM 패턴")
         fun getDashboard_success_noYearMonth() {
-            every { adminDashboardService.getDashboard(any(), any()) } returns emptyDashboardResponse("2026-05")
+            every { adminDashboardService.getDashboard(any(), any(), any()) } returns emptyDashboardResponse("2026-05")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")

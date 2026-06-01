@@ -463,6 +463,36 @@ class MonthlySalesAdminQueryService(
     }
 
     /**
+     * 여사원 투입 거래처의 ORORA 마감실적 합산 — 투입현황 대시보드 매출현황 탭 (Spec 850, 결정 D7).
+     *
+     * 입력 account 집합의 당월/전년 동월 `ShipClosing` 마감실적을 ORORA 1 trip 으로 일괄 합산.
+     * 목표(target)/진도율은 신규 시스템 데이터 부재로 제외 — 실적 + 전년 비교만 산출 (D7).
+     * ORORA 미도달(VPN 장애/local) 시 [OroraMonthlySalesHistoryQueryGateway] 가 흡수 → 0 반환.
+     * 부수 효과: 없음 (조회 전용).
+     */
+    fun sumInvestedAccountSales(accounts: List<Account>, year: Int, month: Int): InvestedAccountSales {
+        val accountSapCodes = accounts.mapNotNull { it.externalKey }
+        if (accountSapCodes.isEmpty()) {
+            return InvestedAccountSales(actualAmount = 0L, lastYearAmount = 0L)
+        }
+        val currentSalesDate = toOroraSalesDate(year, month)
+        val lastYearSalesDate = toOroraSalesDate(year - 1, month)
+        val oroByKey = ororaGateway
+            .findBySalesDates(listOf(currentSalesDate, lastYearSalesDate), accountSapCodes)
+            .associateBy { it.sapAccountCode to it.salesDate }
+
+        val actual = accounts.sumOf { shipClosingSum(oroByKey[it.externalKey to currentSalesDate]) }
+        val lastYear = accounts.sumOf { shipClosingSum(oroByKey[it.externalKey to lastYearSalesDate]) }
+        return InvestedAccountSales(actualAmount = actual, lastYearAmount = lastYear)
+    }
+
+    /** 투입 거래처 매출 실적 합산 결과 (당월/전년 동월). */
+    data class InvestedAccountSales(
+        val actualAmount: Long,
+        val lastYearAmount: Long,
+    )
+
+    /**
      * ORORA `SalesDate` 컬럼 형식 (`YYYYMM` 6자) 생성.
      *
      * SF Apex `Batch_OroraMonthlySalesHistory_M2.cls` 운영 실측 정합 — ORORA REST 요청/응답 본문의

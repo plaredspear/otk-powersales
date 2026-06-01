@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.dto.response
 
+import java.math.BigDecimal
+
 data class DashboardResponse(
     val salesSummary: SalesSummary,
     val staffDeployment: StaffDeployment,
@@ -36,19 +38,26 @@ data class StaffDeployment(
 
 data class AccountTypeCount(
     val accountType: String,
-    val count: Int
+    val count: Int,
+    // 환산인원 (소수) — SF `ConvertedHeadcount__c` 정합 (scale=4). 차트는 본 필드 사용 (결정 D5)
+    val convertedHeadcount: BigDecimal
 )
 
 data class WorkTypeCount(
     val workType: String,
-    val count: Int
+    val count: Int,
+    val convertedHeadcount: BigDecimal
 )
 
 data class ChannelWorkTypeItem(
     val channelName: String,
     val fixed: Int,
     val alternating: Int,
-    val visiting: Int
+    val visiting: Int,
+    // 근무형태(고정/격고/순회)별 환산인원 (소수, scale=4) — 결정 D5
+    val fixedHeadcount: BigDecimal,
+    val alternatingHeadcount: BigDecimal,
+    val visitingHeadcount: BigDecimal
 )
 
 data class PreviousMonthData(
