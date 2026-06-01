@@ -12,9 +12,10 @@ import './ResizableTable.css';
  * width 가 지정된 컬럼만 Resizable 로 감싸 좌우 드래그를 받는다. width 미지정 컬럼
  * (selection / expand 등 antd 내부 컬럼 포함) 은 그대로 <th> 렌더링하여 antd 자동 레이아웃을 유지.
  *
- * 성능: 드래그 중(onResize) 에는 부모 state 를 갱신하지 않는다 — 매 픽셀마다 테이블 전체가
- * 리렌더되는 것을 막기 위함. 드래그 중에는 핸들에 transform 가이드만 보여주고, 마우스를 놓는
- * 순간(onResizeStop) 에만 최종 width 를 부모로 1회 commit 한다.
+ * 성능: 드래그 중(onResize) 에는 React state 를 단 한 번도 갱신하지 않는다 — 매 mousemove 마다
+ * 리렌더가 일어나지 않도록, 드래그 중 시각 가이드(핸들 transform) 는 ref 로 잡은 핸들 DOM 에
+ * 직접 쓴다. width 는 마우스를 놓는 순간(onResizeStop) 에만 부모로 1회 commit 하여 테이블이
+ * 그때 단 1회만 리렌더된다.
  * 핸들 클릭은 정렬 등 헤더 onClick 으로 전파되지 않도록 stopPropagation.
  */
 function ResizableHeaderCell(
@@ -26,9 +27,26 @@ function ResizableHeaderCell(
 ) {
   const { width, minWidth = 60, onResizeStop, ...restProps } = props;
 
-  // 드래그 중 핸들에만 반영하는 임시 오프셋. 종료 시 0 으로 되돌리고 부모에 최종 width 를 commit.
-  const [dragOffset, setDragOffset] = useState(0);
+  // 드래그 중 시각 가이드를 직접 조작할 핸들 DOM 참조 + 드래그 진행 중 최종 width.
+  const handleRef = useRef<HTMLSpanElement>(null);
   const draggingWidthRef = useRef(width ?? 0);
+
+  // onResize: state 갱신 없이 핸들 DOM 의 transform 만 직접 갱신 → 드래그 중 리렌더 0회.
+  // (메모이제이션은 React Compiler 가 자동 처리하므로 useCallback 불필요)
+  const handleResize = (_e: React.SyntheticEvent, { size }: ResizeCallbackData) => {
+    draggingWidthRef.current = size.width;
+    if (handleRef.current && width) {
+      handleRef.current.style.transform = `translateX(${size.width - width}px)`;
+    }
+  };
+
+  // onResizeStop: 가이드 초기화 후 최종 width 를 부모로 1회 commit (테이블 리렌더 1회).
+  const handleResizeStop = () => {
+    if (handleRef.current) {
+      handleRef.current.style.transform = '';
+    }
+    onResizeStop?.(draggingWidthRef.current);
+  };
 
   if (!width) {
     return <th {...restProps} />;
@@ -40,23 +58,22 @@ function ResizableHeaderCell(
       height={0}
       axis="x"
       minConstraints={[minWidth, 0]}
-      handle={
+      // handle 을 함수로 제공해야 react-resizable 의 내부 ref(libRef, 드래그 계산용) 와
+      // 시각 가이드 조작용 handleRef 를 둘 다 연결할 수 있다. element 로 주면 라이브러리가
+      // cloneElement 로 자기 ref 만 덮어써 handleRef 가 무시된다.
+      handle={(_handleAxis, libRef) => (
         <span
+          ref={(node) => {
+            // 라이브러리 내부 ref(드래그 계산용) 와 가이드 조작용 handleRef 를 둘 다 채운다.
+            handleRef.current = node;
+            (libRef as React.MutableRefObject<HTMLSpanElement | null>).current = node;
+          }}
           className="resizable-handle"
-          // 드래그 중인 폭 변화량만큼 핸들을 따라 이동시켜 시각 가이드를 제공.
-          style={dragOffset ? { transform: `translateX(${dragOffset}px)` } : undefined}
           onClick={(e) => e.stopPropagation()}
         />
-      }
-      onResize={(_e: React.SyntheticEvent, { size }: ResizeCallbackData) => {
-        // 테이블 리렌더 없이 핸들 위치만 갱신 (가벼운 로컬 state).
-        draggingWidthRef.current = size.width;
-        setDragOffset(size.width - width);
-      }}
-      onResizeStop={() => {
-        setDragOffset(0);
-        onResizeStop?.(draggingWidthRef.current);
-      }}
+      )}
+      onResize={handleResize}
+      onResizeStop={handleResizeStop}
       draggableOpts={{ enableUserSelectHack: false }}
     >
       <th {...restProps} />
