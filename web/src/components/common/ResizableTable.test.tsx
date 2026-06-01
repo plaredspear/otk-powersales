@@ -48,4 +48,18 @@ describe('ResizableTable', () => {
     // 클릭 시 예외 없이 처리되어야 한다 (정렬 토글 등으로 전파 방지)
     expect(() => fireEvent.click(handle!)).not.toThrow();
   });
+
+  it('드래그 중에는 핸들에 transform 가이드만 적용하고, 놓을 때 초기화한다', () => {
+    const { container } = renderTable();
+    const handle = container.querySelector('.resizable-handle') as HTMLElement;
+
+    // 드래그 시작 → 이동: 핸들에 translateX 가이드가 적용된다 (테이블 컬럼은 아직 미변경).
+    fireEvent.mouseDown(handle, { clientX: 120 });
+    fireEvent.mouseMove(handle, { clientX: 180 });
+    expect(handle.style.transform).toContain('translateX');
+
+    // 드래그 종료: 핸들 transform 가이드는 0 으로 초기화된다 (최종 width 는 컬럼 state 로 commit).
+    fireEvent.mouseUp(handle, { clientX: 180 });
+    expect(handle.style.transform).toBe('');
+  });
 });
