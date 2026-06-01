@@ -5,8 +5,8 @@ import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
 import com.otoki.powersales.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.schedule.dto.response.TeamMemberScheduleSearchResult
-import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule.Companion.monthlyFemaleEmployeeIntegrationSchedule
+import com.querydsl.core.types.Projections
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -47,10 +47,10 @@ class TeamMemberScheduleSearchService(
             return TeamMemberScheduleSearchResult(resultCode = "S", resultMsg = "검색결과가 없습니다.", result = emptyList())
         }
 
-        val schedules = fetchMfeisOrdered(year, normMonth, expandedCodes)
-        val avgSalesByAccountId = computeSixMonthAverageSales(schedules, year, normMonth)
+        val rows = fetchMfeisOrdered(year, normMonth, expandedCodes)
+        val avgSalesByAccountId = computeSixMonthAverageSales(rows, year, normMonth)
 
-        val items = schedules.map { toResultItem(it, avgSalesByAccountId) }
+        val items = rows.map { toResultItem(it, avgSalesByAccountId) }
 
         return TeamMemberScheduleSearchResult(
             resultCode = "S",
@@ -67,10 +67,37 @@ class TeamMemberScheduleSearchService(
         year: String,
         month: String,
         costCenterCodes: Collection<String>,
-    ): List<MonthlyFemaleEmployeeIntegrationSchedule> {
+    ): List<TeamMemberScheduleRow> {
         val q = monthlyFemaleEmployeeIntegrationSchedule
+        // DTO projection — MFEIS + employee/account 의 필요 컬럼만 select.
+        // 엔티티(특히 Employee) 를 hydrate 하지 않으므로 Employee.employeeInfo @OneToOne 강제 로딩
+        // (N+1) 을 회피한다. 화면에 쓰는 컬럼은 orgName/employeeCode/jikwee/name(employee),
+        // id/externalKey/branchName/name(account) 뿐.
         return queryFactory
-            .selectFrom(q)
+            .select(
+                Projections.constructor(
+                    TeamMemberScheduleRow::class.java,
+                    q.year,
+                    q.month,
+                    q.name,
+                    q.account.id,
+                    q.account.externalKey,
+                    q.account.branchName,
+                    q.account.name,
+                    q.employee.orgName,
+                    q.employee.employeeCode,
+                    q.employee.jikwee,
+                    q.employee.name,
+                    q.workingCategory1,
+                    q.workingCategory3,
+                    q.workingCategory4,
+                    q.workingCategory5,
+                    q.numberOfInputs,
+                    q.equivalentNumberOfWorkingDays,
+                    q.convertedHeadcount,
+                )
+            )
+            .from(q)
             .where(
                 q.year.eq(year)
                     .and(q.month.eq(month))
@@ -98,15 +125,15 @@ class TeamMemberScheduleSearchService(
      * 평균 = 합산 / 데이터 존재 월 수 (divider, SF L164-181).
      */
     internal fun computeSixMonthAverageSales(
-        schedules: List<MonthlyFemaleEmployeeIntegrationSchedule>,
+        rows: List<TeamMemberScheduleRow>,
         year: String,
         month: String,
     ): Map<Long, BigDecimal> {
-        val accountByExternalKey: Map<String, Long> = schedules
-            .mapNotNull { sm ->
-                val acc = sm.account ?: return@mapNotNull null
-                val externalKey = acc.externalKey ?: return@mapNotNull null
-                externalKey to acc.id.toLong()
+        val accountByExternalKey: Map<String, Long> = rows
+            .mapNotNull { row ->
+                val accId = row.accountId ?: return@mapNotNull null
+                val externalKey = row.accountExternalKey ?: return@mapNotNull null
+                externalKey to accId.toLong()
             }
             .toMap()
         if (accountByExternalKey.isEmpty()) return emptyMap()
@@ -161,43 +188,67 @@ class TeamMemberScheduleSearchService(
     }
 
     /**
-     * MFEIS 1건 → ResultItem 변환 (SF `getItemList` cls:251-326).
+     * MFEIS projection row → ResultItem 변환 (SF `getItemList` cls:251-326).
      */
     private fun toResultItem(
-        sm: MonthlyFemaleEmployeeIntegrationSchedule,
+        row: TeamMemberScheduleRow,
         avgSalesByAccountId: Map<Long, BigDecimal>,
     ): TeamMemberScheduleResultItem {
-        val emp = sm.employee
-        val acc = sm.account
-        val accId = acc?.id?.toLong()
+        val accId = row.accountId?.toLong()
         val actualAmount = accId?.let { avgSalesByAccountId[it] } ?: BigDecimal.ZERO
 
         return TeamMemberScheduleResultItem(
-            year = sm.year,
-            month = sm.month,
-            name = sm.name,
+            year = row.year,
+            month = row.month,
+            name = row.name,
             // D4=(a): SF formula AccountBranchName__c = Account__r.BranchName__c
-            accountBranchName = acc?.branchName,
+            accountBranchName = row.accountBranchName,
             // SF Account__r.Name
-            accountName = acc?.name,
+            accountName = row.accountName,
             // D4=(a): SF formula AccountCode__c = Account__r.ExternalKey__c
-            accountCode = acc?.externalKey,
+            accountCode = row.accountExternalKey,
             // D4=(a): SF formula BranchName__c = FullName__r.DKRetail__OrgName__c
-            orgName = emp?.orgName,
+            orgName = row.employeeOrgName,
             // D4=(a): SF formula EmployeeNumber__c = FullName__r.DKRetail__EmpCode__c
-            employeeNumber = emp?.employeeCode,
+            employeeNumber = row.employeeCode,
             // D4=(a): SF formula Title__c = FullName__r.DKRetail__Jikwee__c
-            title = emp?.jikwee,
+            title = row.employeeJikwee,
             // SF FullName__r.Name
-            employeeName = emp?.name,
-            workingCategory1 = sm.workingCategory1,
-            workingCategory3 = sm.workingCategory3,
-            workingCategory4 = sm.workingCategory4,
-            workingCategory5 = sm.workingCategory5,
-            numberOfInputs = sm.numberOfInputs,
-            equivalentNumberOfWorkingDays = sm.equivalentNumberOfWorkingDays ?: BigDecimal.ZERO,
-            convertedHeadcount = sm.convertedHeadcount ?: BigDecimal.ZERO,
+            employeeName = row.employeeName,
+            workingCategory1 = row.workingCategory1,
+            workingCategory3 = row.workingCategory3,
+            workingCategory4 = row.workingCategory4,
+            workingCategory5 = row.workingCategory5,
+            numberOfInputs = row.numberOfInputs,
+            equivalentNumberOfWorkingDays = row.equivalentNumberOfWorkingDays ?: BigDecimal.ZERO,
+            convertedHeadcount = row.convertedHeadcount ?: BigDecimal.ZERO,
             actualAmount = actualAmount,
         )
     }
 }
+
+/**
+ * MFEIS 검색 projection row — 화면/계산에 필요한 컬럼만 보유.
+ * Employee 엔티티 통째 로딩 (→ employeeInfo @OneToOne 강제 SELECT N+1) 을 피하기 위한 DTO projection.
+ * 생성자 파라미터 순서 = QueryDSL `Projections.constructor` select 순서.
+ */
+data class TeamMemberScheduleRow(
+    val year: String?,
+    val month: String?,
+    val name: String?,
+    val accountId: Int?,
+    val accountExternalKey: String?,
+    val accountBranchName: String?,
+    val accountName: String?,
+    val employeeOrgName: String?,
+    val employeeCode: String?,
+    val employeeJikwee: String?,
+    val employeeName: String?,
+    val workingCategory1: String?,
+    val workingCategory3: String?,
+    val workingCategory4: String?,
+    val workingCategory5: String?,
+    val numberOfInputs: BigDecimal?,
+    val equivalentNumberOfWorkingDays: BigDecimal?,
+    val convertedHeadcount: BigDecimal?,
+)

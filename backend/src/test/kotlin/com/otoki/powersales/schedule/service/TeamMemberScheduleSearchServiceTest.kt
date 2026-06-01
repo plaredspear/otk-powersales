@@ -1,10 +1,8 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.orora.entity.OroraMonthlySalesHistory
-import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
-import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.querydsl.jpa.impl.JPAQueryFactory
 import io.mockk.every
 import io.mockk.mockk
@@ -24,16 +22,29 @@ class TeamMemberScheduleSearchServiceTest {
 
     private val service = TeamMemberScheduleSearchService(expander, queryFactory, ororaGateway)
 
-    private fun account(id: Int, externalKey: String?): Account = mockk {
-        every { this@mockk.id } returns id
-        every { this@mockk.externalKey } returns externalKey
-    }
+    private fun row(accountId: Int, externalKey: String?): TeamMemberScheduleRow =
+        TeamMemberScheduleRow(
+            year = null,
+            month = null,
+            name = null,
+            accountId = accountId,
+            accountExternalKey = externalKey,
+            accountBranchName = null,
+            accountName = null,
+            employeeOrgName = null,
+            employeeCode = null,
+            employeeJikwee = null,
+            employeeName = null,
+            workingCategory1 = null,
+            workingCategory3 = null,
+            workingCategory4 = null,
+            workingCategory5 = null,
+            numberOfInputs = null,
+            equivalentNumberOfWorkingDays = null,
+            convertedHeadcount = null,
+        )
 
-    private fun schedule(account: Account): MonthlyFemaleEmployeeIntegrationSchedule = mockk {
-        every { this@mockk.account } returns account
-    }
-
-    private fun row(sapCode: String, salesDate: String, abc1: Long = 0L, ship1: Long = 0L) =
+    private fun ororaRow(sapCode: String, salesDate: String, abc1: Long = 0L, ship1: Long = 0L) =
         OroraMonthlySalesHistory(
             sapAccountCode = sapCode,
             salesDate = salesDate,
@@ -62,14 +73,13 @@ class TeamMemberScheduleSearchServiceTest {
     @Test
     @DisplayName("6개월 평균 ClosingAmountSum 산출 — ABC+Ship 합산 / divider = 데이터 존재 월 수")
     fun computeAverageSumsAbcAndShipDividesByExistingMonths() {
-        val acc = account(1, "S001")
         every { ororaGateway.findBySalesDates(any(), any()) } returns listOf(
-            row("S001", "202510", abc1 = 100, ship1 = 200),  // sum 300
-            row("S001", "202511", abc1 = 500, ship1 = 100),  // sum 600
-            row("S001", "202512", abc1 = 0, ship1 = 900),    // sum 900
+            ororaRow("S001", "202510", abc1 = 100, ship1 = 200),  // sum 300
+            ororaRow("S001", "202511", abc1 = 500, ship1 = 100),  // sum 600
+            ororaRow("S001", "202512", abc1 = 0, ship1 = 900),    // sum 900
         )
 
-        val result = service.computeSixMonthAverageSales(listOf(schedule(acc)), "2026", "3")
+        val result = service.computeSixMonthAverageSales(listOf(row(1, "S001")), "2026", "3")
 
         // 3개월 합 (300 + 600 + 900) = 1800, divider = 3 → 600
         assertThat(result[1L]).isEqualByComparingTo(BigDecimal("600"))
@@ -78,8 +88,7 @@ class TeamMemberScheduleSearchServiceTest {
     @Test
     @DisplayName("externalKey null Account → ORORA 조회 안 함 + empty map")
     fun nullExternalKeyReturnsEmpty() {
-        val acc = account(1, externalKey = null)
-        val result = service.computeSixMonthAverageSales(listOf(schedule(acc)), "2026", "3")
+        val result = service.computeSixMonthAverageSales(listOf(row(1, externalKey = null)), "2026", "3")
         assertThat(result).isEmpty()
     }
 }
