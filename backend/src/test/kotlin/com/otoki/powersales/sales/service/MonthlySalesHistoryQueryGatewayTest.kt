@@ -72,6 +72,26 @@ class MonthlySalesHistoryQueryGatewayTest {
     }
 
     @Test
+    @DisplayName("salesDate(YYYYMM) 복원 + shipClosingAmount1~3 개별 노출 (물류매출 온도대별)")
+    fun salesDateAndShipColumnsExposed() {
+        every {
+            repository.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
+        } returns listOf(
+            row("SAP1", "2026", "05", ship1 = 10.0, ship2 = 20.0, ship3 = 30.0, ship4 = 40.0),
+        )
+
+        val result = gateway.findBySalesDates(listOf("202605"), listOf("SAP1"))
+
+        assertThat(result).hasSize(1)
+        val r = result.first()
+        assertThat(r.salesDate).isEqualTo("202605")
+        assertThat(r.shipClosingAmount1).isEqualByComparingTo(BigDecimal("10"))
+        assertThat(r.shipClosingAmount2).isEqualByComparingTo(BigDecimal("20"))
+        assertThat(r.shipClosingAmount3).isEqualByComparingTo(BigDecimal("30"))
+        // ship4(유지) 는 row 에 노출하지 않음 (물류매출 화면 온도대 3종 범위)
+    }
+
+    @Test
     @DisplayName("요청한 (년, 월) 쌍 밖의 cartesian 후보 row 는 제외")
     fun filtersCartesianNonMatchingPairs() {
         // 요청: 202605, 202604. Repository 는 (2026 IN) × (05, 04 IN) cartesian 후보를 반환할 수 있음.

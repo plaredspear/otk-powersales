@@ -47,6 +47,7 @@ class MfeisThisMonthRevenueBatchServiceTest {
     private fun row(sapCode: String, abc1: Long) =
         MonthlySalesRow(
             sapAccountCode = sapCode,
+            salesDate = "",
             closingAmountSum = BigDecimal(abc1),
             abcClosingAmount1 = BigDecimal(abc1),
         )

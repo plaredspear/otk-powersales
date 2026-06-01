@@ -1,6 +1,5 @@
 package com.otoki.powersales.sales.service
 
-import com.otoki.orora.entity.OroraMonthlySalesHistory
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.common.exception.BusinessException
 import com.otoki.powersales.sales.dto.response.LogisticsSalesResponse
@@ -26,10 +25,10 @@ import java.time.LocalDate
  * - 부수효과: 없음 (순수 조회)
  *
  * ## 데이터 source (신규)
- * [OroraMonthlySalesHistory] (ORORA view `ECRM_ABCCUST_MH_V`) 의 `ShipClosingAmount1~3`
- * (물류마감실적 — 상온/라면/냉장냉동) 실측만 사용. SF `MonthlySalesHistory__c` 레거시 동등물.
- * 거래처 코드는 [com.otoki.powersales.account.entity.Account.externalKey] 를 ORORA
- * `SAPAccountCode` 키로 그대로 사용 ([MonthlySalesAdminQueryService] 와 동일 — 000 정규화 불필요).
+ * RDS `MonthlySalesHistory` (SF `MonthlySalesHistory__c` 복제 적재) 의 `shipClosingAmount1~3`
+ * (물류마감실적 — 상온/라면/냉장냉동) 실측만 사용. [MonthlySalesHistoryQueryGateway] 경유.
+ * 거래처 코드는 [com.otoki.powersales.account.entity.Account.externalKey] 를
+ * `sapAccountCode` 키로 그대로 사용 ([MonthlySalesAdminQueryService] 와 동일 — 000 정규화 불필요).
  *
  * ## 응답 산출
  * - 온도대별 `currentAmount` = 조회월 ShipClosing, `previousYearAmount` = 전년 동월 ShipClosing
@@ -38,23 +37,23 @@ import java.time.LocalDate
  *
  * ## 신규 차이 (deviation)
  * - **목표/진도율 폐기**: `MonthlySalesHistory` 목표 테이블 드롭으로 영구 폐기 (월매출 조회와 동일 정책)
- * - **`ShipClosingAmount4`(유지) 미포함**: 모바일 물류매출 화면이 온도대 3종 탭(상온/라면/냉동·냉장)만
+ * - **`shipClosingAmount4`(유지) 미포함**: 모바일 물류매출 화면이 온도대 3종 탭(상온/라면/냉동·냉장)만
  *   보유 → 레거시 4종 중 유지류는 현 모바일 UI 범위 밖이라 반환 제외 ([LogisticsSalesResponse] 참조)
- * - **SF→ORORA 직조회**: 레거시 SF Apex 경유 대신 ORORA view 직접 SELECT
+ * - **SF→RDS 직조회**: 레거시 SF Apex 경유 대신 RDS `MonthlySalesHistory` 직접 SELECT
  */
 @Service
 @Transactional(readOnly = true)
 class LogisticsSalesService(
     private val accountRepository: AccountRepository,
-    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
 ) {
 
     /**
-     * 온도대 → ORORA ShipClosing 컬럼 매핑. 모바일 `LogisticsCategory` 코드와 정합.
+     * 온도대 → RDS ShipClosing 컬럼 매핑. 모바일 `LogisticsCategory` 코드와 정합.
      */
     private enum class LogisticsBand(
         val code: String,
-        val shipAmount: (OroraMonthlySalesHistory) -> BigDecimal?
+        val shipAmount: (MonthlySalesRow) -> BigDecimal?
     ) {
         NORMAL("NORMAL", { it.shipClosingAmount1 }),
         RAMEN("RAMEN", { it.shipClosingAmount2 }),
@@ -79,7 +78,7 @@ class LogisticsSalesService(
         val rowsByDate = if (sapCode.isNullOrBlank()) {
             emptyMap()
         } else {
-            ororaGateway
+            monthlySalesHistoryGateway
                 .findBySalesDates(listOf(currentSalesDate, previousSalesDate), listOf(sapCode))
                 .associateBy { it.salesDate }
         }
@@ -109,7 +108,7 @@ class LogisticsSalesService(
         )
     }
 
-    private fun shipAmountOf(row: OroraMonthlySalesHistory?, band: LogisticsBand): Long =
+    private fun shipAmountOf(row: MonthlySalesRow?, band: LogisticsBand): Long =
         if (row == null) 0L else (band.shipAmount(row) ?: BigDecimal.ZERO).toLong()
 
     private fun currentYearMonth(): String =

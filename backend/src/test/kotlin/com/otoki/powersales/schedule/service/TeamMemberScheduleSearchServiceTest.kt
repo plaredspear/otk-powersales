@@ -49,6 +49,7 @@ class TeamMemberScheduleSearchServiceTest {
     private fun salesRow(sapCode: String, abc1: Long = 0L, ship1: Long = 0L) =
         MonthlySalesRow(
             sapAccountCode = sapCode,
+            salesDate = "",
             closingAmountSum = BigDecimal(abc1 + ship1),
             abcClosingAmount1 = BigDecimal(abc1),
         )

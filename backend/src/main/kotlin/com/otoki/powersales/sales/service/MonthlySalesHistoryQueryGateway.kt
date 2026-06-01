@@ -66,8 +66,12 @@ class MonthlySalesHistoryQueryGateway(
                 val sapCode = row.sapAccountCode ?: return@mapNotNull null
                 MonthlySalesRow(
                     sapAccountCode = sapCode,
+                    salesDate = salesDateOf(row),
                     closingAmountSum = closingAmountSum(row),
                     abcClosingAmount1 = row.abcClosingAmount1?.let { BigDecimal.valueOf(it) },
+                    shipClosingAmount1 = row.shipClosingAmount1?.let { BigDecimal.valueOf(it) },
+                    shipClosingAmount2 = row.shipClosingAmount2?.let { BigDecimal.valueOf(it) },
+                    shipClosingAmount3 = row.shipClosingAmount3?.let { BigDecimal.valueOf(it) },
                 )
             }
             .toList()
@@ -90,6 +94,13 @@ class MonthlySalesHistoryQueryGateway(
     }
 
     /**
+     * row 의 (`salesYear`, `salesMonth`) picklist enum → `YYYYMM` 문자열 복원.
+     * 호출 측에서 조회월/전년월 구분 키로 사용. enum value 가 `YYYY` + `MM` 형식이라 단순 연결.
+     */
+    private fun salesDateOf(row: MonthlySalesHistory): String =
+        (row.salesYear?.value ?: "") + (row.salesMonth?.value ?: "")
+
+    /**
      * `YYYYMM` 6자 문자열 → (`SalesYear`, `SalesMonth`) 변환. picklist enum 범위 밖이면 null.
      */
     private fun toYearMonthPair(yyyymm: String): Pair<SalesYear, SalesMonth>? {
@@ -104,11 +115,19 @@ class MonthlySalesHistoryQueryGateway(
  * 월별 마감실적 조회 결과 row — 화면/계산에 필요한 컬럼만 보유.
  *
  * @property sapAccountCode 거래처 SAP 코드
+ * @property salesDate 매출 연월 `YYYYMM` (조회월/전년월 구분 키). 물류매출 화면에서 사용
  * @property closingAmountSum SF `ClosingAmountSum__c` formula 동등 합계 (ABC합 + Ship합)
  * @property abcClosingAmount1 전산마감실적_상온 (refresh/batch 의 양수 필터 평균 산출용). null 가능
+ * @property shipClosingAmount1 물류마감실적_상온 (물류매출 온도대별 표시용). null 가능
+ * @property shipClosingAmount2 물류마감실적_라면 (물류매출 온도대별 표시용). null 가능
+ * @property shipClosingAmount3 물류마감실적_냉장냉동 (물류매출 온도대별 표시용). null 가능
  */
 data class MonthlySalesRow(
     val sapAccountCode: String,
+    val salesDate: String,
     val closingAmountSum: BigDecimal,
     val abcClosingAmount1: BigDecimal?,
+    val shipClosingAmount1: BigDecimal? = null,
+    val shipClosingAmount2: BigDecimal? = null,
+    val shipClosingAmount3: BigDecimal? = null,
 )
