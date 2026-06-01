@@ -23,6 +23,12 @@ export default defineConfig({
       },
     },
   },
+  // react-resizable 이 의존하는 react-draggable 이 런타임에 process.env.DRAGGABLE_DEBUG
+  // 를 참조한다. Vite 브라우저 빌드에는 process 전역이 없어 "process is not defined"
+  // ReferenceError 가 발생하므로, 해당 디버그 플래그를 정적으로 false 치환한다.
+  define: {
+    'process.env.DRAGGABLE_DEBUG': 'false',
+  },
   build: {
     outDir: 'dist',
   },
