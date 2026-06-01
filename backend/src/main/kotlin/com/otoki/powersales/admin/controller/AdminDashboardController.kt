@@ -4,9 +4,6 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.response.DashboardResponse
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.service.AdminDashboardService
-import com.otoki.powersales.auth.permission.PermissionResource
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.admin.exception.InvalidYearMonthException
 
@@ -18,13 +15,16 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/admin/dashboard")
-@PermissionResource("dashboard")
 class AdminDashboardController(
     private val adminDashboardService: AdminDashboardService
 ) {
 
+    /**
+     * 투입현황 대시보드 조회. 별도 권한 가드 없이 인증된(로그인한) 모든 admin 사용자 접근 가능.
+     *
+     * 조회 데이터 범위는 [CurrentDataScope] 가 사용자 권한 (VIEW_ALL_DATA / 지점 스코프) 기준으로 제한한다.
+     */
     @GetMapping
-    @RequiresSfPermission(entity = "dashboard", operation = SfPermissionOperation.READ)
     fun getDashboard(
         @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) yearMonth: String?,
