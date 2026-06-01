@@ -35,7 +35,7 @@ interface SuggestionRepository : JpaRepository<Suggestion, Long>, SuggestionRepo
      * Service `create()` mapping step 에서 `'S-' + YYYYMMDD + '-' + LPAD(nextval, 6, '0')` 로 합성.
      */
     @Query(
-        value = "SELECT nextval('suggestion_proposal_number_seq')",
+        value = "SELECT nextval('powersales.suggestion_proposal_number_seq')",
         nativeQuery = true
     )
     fun nextProposalNumberSeqValue(): Long

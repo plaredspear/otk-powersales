@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.Query
 
 interface PromotionRepository : JpaRepository<Promotion, Long>, PromotionRepositoryCustom {
 
-    @Query(value = "SELECT nextval('promotion_number_seq')", nativeQuery = true)
+    @Query(value = "SELECT nextval('powersales.promotion_number_seq')", nativeQuery = true)
     fun getNextPromotionNumberSeq(): Long
 }
