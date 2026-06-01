@@ -174,9 +174,16 @@ export default function ResizableTable<T extends object>({
     const baseWidth =
       widthOverrides[index] ?? (typeof col.width === 'number' ? col.width : undefined);
 
+    // width 가 지정된 컬럼은 폭을 줄였을 때 셀 내용이 줄바꿈되지 않고 "..." 로 축약되도록
+    // ellipsis 를 기본 적용한다 (리사이즈로 폭을 넓혀 가린 내용을 확인하는 게 이 컴포넌트의 의도).
+    // 호출부가 ellipsis 를 명시한 경우 그 값을 우선한다.
+    const colType = col as ColumnType<T>;
+    const ellipsis = colType.ellipsis ?? (baseWidth !== undefined ? true : undefined);
+
     return {
       ...col,
       width: baseWidth,
+      ellipsis,
       onHeaderCell: (column) => ({
         width: (column as ColumnType<T>).width as number | undefined,
         minWidth: minColumnWidth,
