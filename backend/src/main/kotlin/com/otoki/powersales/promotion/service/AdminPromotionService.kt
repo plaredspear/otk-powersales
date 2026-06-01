@@ -123,7 +123,9 @@ class AdminPromotionService(
     fun getPosProducts(scope: DataScope, promotionId: Long): List<PromotionPosProductResponse> {
         if (promotionId <= 0) throw PromotionInvalidParameterException()
 
-        val promotion = findActivePromotion(promotionId)
+        // POS품목 응답에는 promotion 의 account/product 가 쓰이지 않으므로 join fetch 없는 단건 조회.
+        // (account/product 는 LAZY — findById 는 promotion 단일 row 만 SELECT)
+        val promotion = findActivePromotionWithoutRelations(promotionId)
         validateDataScope(scope, promotion)
 
         return promotionProductRepository
@@ -508,6 +510,17 @@ class AdminPromotionService(
 
     private fun findActivePromotion(id: Long): Promotion {
         val promotion = promotionRepository.findByIdWithRelations(id)
+            ?: throw PromotionNotFoundException()
+        if (promotion.isDeleted) throw PromotionNotFoundException()
+        return promotion
+    }
+
+    /**
+     * account/primaryProduct join fetch 없이 promotion 단건만 조회.
+     * 응답에 account/product 가 불필요한 경로(POS품목 일람 등)에서 사용 — 불필요한 2-table LEFT JOIN 제거.
+     */
+    private fun findActivePromotionWithoutRelations(id: Long): Promotion {
+        val promotion = promotionRepository.findById(id).orElse(null)
             ?: throw PromotionNotFoundException()
         if (promotion.isDeleted) throw PromotionNotFoundException()
         return promotion

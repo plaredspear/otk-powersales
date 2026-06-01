@@ -254,7 +254,7 @@ class AdminPromotionServiceTest {
                 price = java.math.BigDecimal("1200"),
             ).apply { this.product = product }
 
-            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionRepository.findById(1L) } returns Optional.of(promotion)
             every {
                 promotionProductRepository.findByPromotionIdAndIsDeletedFalseOrderByNameAsc(1L)
             } returns listOf(pp1, pp2)
@@ -271,7 +271,7 @@ class AdminPromotionServiceTest {
         @Test
         @DisplayName("미존재 행사 -> PromotionNotFoundException")
         fun getPosProducts_notFound() {
-            every { promotionRepository.findByIdWithRelations(999L) } returns null
+            every { promotionRepository.findById(999L) } returns Optional.empty()
 
             assertThatThrownBy { adminPromotionService.getPosProducts(scope, 999L) }
                 .isInstanceOf(PromotionNotFoundException::class.java)
@@ -282,7 +282,7 @@ class AdminPromotionServiceTest {
         fun getPosProducts_forbidden() {
             val limitedScope = DataScope(branchCodes = listOf("2202"), isAllBranches = false)
             val promotion = createPromotion(costCenterCode = "1101")
-            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            every { promotionRepository.findById(1L) } returns Optional.of(promotion)
             every { promotionRepository.existsVisibleById(1L, any()) } returns false
 
             assertThatThrownBy { adminPromotionService.getPosProducts(limitedScope, 1L) }
