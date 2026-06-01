@@ -11,6 +11,7 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.service.TeamMemberScheduleOwnerResolver
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -29,13 +30,19 @@ class AdminAlternativeHolidayServiceTest {
     private val employeeRepository: EmployeeRepository = mockk()
     private val validator: AlternativeHolidayValidator = mockk(relaxUnitFun = true)
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
 
     private val service = AdminAlternativeHolidayService(
         alternativeHolidayRepository,
         employeeRepository,
         validator,
         teamMemberScheduleRepository,
+        teamMemberScheduleOwnerResolver,
     )
+
+    init {
+        every { teamMemberScheduleOwnerResolver.resolveOwner(any()) } returns null
+    }
 
     // 2026-03-07 = 토요일, 2026-03-09 = 월요일, 2026-03-10 = 화요일
     private val saturday = LocalDate.of(2026, 3, 7)

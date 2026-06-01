@@ -42,12 +42,19 @@ class LeaderScheduleServiceTest {
 
     private val scheduleConflictValidator: ScheduleConflictValidator = mockk(relaxUnitFun = true)
 
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
+
     private val leaderScheduleService = LeaderScheduleService(
         employeeRepository,
         accountRepository,
         teamMemberScheduleRepository,
         scheduleConflictValidator,
+        teamMemberScheduleOwnerResolver,
     )
+
+    init {
+        every { teamMemberScheduleOwnerResolver.resolveOwner(any()) } returns null
+    }
 
     @Nested
     @DisplayName("createTeamMemberSchedule - 조장 대리 일정 등록")

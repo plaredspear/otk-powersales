@@ -46,6 +46,7 @@ class AttendanceService(
     private val ororaApiService: OroraApiService,
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
     private val attendanceProperties: AttendanceProperties,
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
     private val clock: Clock
 ) {
 
@@ -439,7 +440,9 @@ class AttendanceService(
         }
 
         // step 5: 새 TMS row INSERT — 마스터→TMS 메타 카피 (Spec #587 P1-B §1.3)
+        // owner 는 대상 직원의 소속 조장 User (레거시 TeamMemberScheduleTriggerHandler.insertOwner 동등).
         val teamLeader = findTeamLeader(employee.costCenterCode)
+        val ownerUser = teamMemberScheduleOwnerResolver.resolveOwner(employee)
         val newSchedule = TeamMemberSchedule(
             employee = employee,
             account = account,
@@ -449,6 +452,7 @@ class AttendanceService(
             workingCategory2 = WorkingCategory2.fromDisplayNameOrNull(mapTypeOfWork5ToCategory2(master.typeOfWork5?.displayName)),
             workingCategory3 = master.typeOfWork3?.displayName?.let { WorkingCategory3.fromDisplayNameOrNull(it) },
             teamLeader = teamLeader,
+            ownerUser = ownerUser,
             displayWorkSchedule = master,
         )
         val saved = teamMemberScheduleRepository.save(newSchedule)

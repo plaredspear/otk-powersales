@@ -7,6 +7,7 @@ import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.schedule.enums.AttendType
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.service.TeamMemberScheduleOwnerResolver
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
@@ -31,7 +32,8 @@ import java.time.format.DateTimeParseException
 @Service
 class AttendInfoToScheduleConverter(
     private val employeeRepository: EmployeeRepository,
-    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -58,6 +60,12 @@ class AttendInfoToScheduleConverter(
         val employeeCodes = targets.map { it.employeeCode }.distinct()
         val employeeMap = employeeRepository.findByEmployeeCodeIn(employeeCodes)
             .associateBy { it.employeeCode }
+
+        // owner = 대상 직원의 소속 조장 User (레거시 TeamMemberScheduleTriggerHandler.insertOwner 동등).
+        // 배치(인증 context 부재) 경로라 OwnerUserDefaultListener 의 생성자 채움이 동작하지 않으므로
+        // 명시 해소가 없으면 owner 가 null 로 남는다.
+        val ownerByCostCenterCode = teamMemberScheduleOwnerResolver
+            .resolveOwnersByCostCenterCode(employeeMap.values)
 
         var converted = 0
         var deleted = 0
@@ -99,7 +107,8 @@ class AttendInfoToScheduleConverter(
                             toSave += TeamMemberSchedule(
                                 employee = employee,
                                 workingDate = date,
-                                workingType = ANNUAL_LEAVE_TYPE
+                                workingType = ANNUAL_LEAVE_TYPE,
+                                ownerUser = employee.costCenterCode?.let { ownerByCostCenterCode[it] }
                             )
                         }
                         date = date.plusDays(1)
