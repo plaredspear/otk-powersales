@@ -36,6 +36,13 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     fun findByStatus(status: String): List<Employee>
 
     /**
+     * 지점 코드 목록으로 사원 조회 (관리자 대시보드 기본현황 — status 무관 전체)
+     *
+     * 재직/휴직/연령/판촉·OSC 집계를 한 번에 수행하기 위해 status 무관 전량 조회.
+     */
+    fun findByCostCenterCodeIn(costCenterCodes: List<String>): List<Employee>
+
+    /**
      * 진열스케줄 템플릿용 사원 조회
      * 조건: costCenterCode 일치, role 일치, appLoginActive=true, status 일치
      */

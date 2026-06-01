@@ -1,6 +1,8 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.response.DashboardResponse
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.service.AdminDashboardService
 import com.otoki.powersales.auth.permission.PermissionResource
 import com.otoki.powersales.auth.permission.RequiresSfPermission
@@ -8,9 +10,7 @@ import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.admin.exception.InvalidYearMonthException
 
-import com.otoki.powersales.auth.web.WebUserPrincipal
 import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -26,7 +26,7 @@ class AdminDashboardController(
     @GetMapping
     @RequiresSfPermission(entity = "dashboard", operation = SfPermissionOperation.READ)
     fun getDashboard(
-        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) yearMonth: String?,
         @RequestParam(required = false) branchCode: String?
     ): ResponseEntity<ApiResponse<DashboardResponse>> {
@@ -34,7 +34,7 @@ class AdminDashboardController(
             throw InvalidYearMonthException()
         }
 
-        val response = adminDashboardService.getDashboard(yearMonth, branchCode)
+        val response = adminDashboardService.getDashboard(scope, yearMonth, branchCode)
         return ResponseEntity.ok(ApiResponse.success(response, "대시보드 조회 성공"))
     }
 

@@ -85,4 +85,29 @@ class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
             .orderBy(account.accountType.asc(), mfeis.workingCategory1.asc())
             .fetch()
     }
+
+    override fun findDeploymentDashboardRows(
+        year: String,
+        month: String,
+        costCenterCodes: List<String>,
+    ): List<MonthlyFemaleEmployeeIntegrationSchedule> {
+        val mfeis = monthlyFemaleEmployeeIntegrationSchedule
+
+        val where = BooleanBuilder()
+            .and(mfeis.year.eq(year))
+            .and(mfeis.month.eq(month))
+            // soft delete 제외 (SF 자동 제외 정합)
+            .and(mfeis.isDeleted.isFalse.or(mfeis.isDeleted.isNull))
+
+        // 지점 스코프 — 빈 목록이면 전사 (필터 미적용)
+        if (costCenterCodes.isNotEmpty()) {
+            where.and(mfeis.costCenterCode.`in`(costCenterCodes))
+        }
+
+        return queryFactory
+            .selectFrom(mfeis)
+            .leftJoin(mfeis.account, account).fetchJoin()
+            .where(where)
+            .fetch()
+    }
 }

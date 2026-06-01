@@ -33,4 +33,20 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
         accountTypeNotIn: List<String>,
         excludeEmpBranchName: String?,
     ): List<MonthlyFemaleEmployeeIntegrationSchedule>
+
+    /**
+     * 투입현황 대시보드용 월별 투입 row 조회 (Spec 850 — 환산인원 차트 베이스).
+     *
+     * 연월 + 지점 스코프(costCenterCode IN) 필터 후 account fetch join. isDeleted 제외.
+     * 집계(거래처유형별/근무유형별 환산인원 SUM)는 service 단 메모리에서 수행.
+     *
+     * @param year             연도 (entity year 가 String — 문자열 비교)
+     * @param month            월 (entity month 가 String)
+     * @param costCenterCodes  지점 스코프 코스트센터 코드 목록. 빈 목록이면 전사 (전체 지점)
+     */
+    fun findDeploymentDashboardRows(
+        year: String,
+        month: String,
+        costCenterCodes: List<String>,
+    ): List<MonthlyFemaleEmployeeIntegrationSchedule>
 }
