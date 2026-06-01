@@ -44,10 +44,10 @@ class WebJwtService(
      * 로그인 응답 body 의 `user.permissions` (WebUserSummary) 는 web admin UI 의 메뉴 visibility
      * 결정에 사용되므로 유지 — 본 변경은 JWT claim 한 곳에서만 permissions 를 제거.
      */
-    fun createAccessToken(principal: WebUserPrincipal, role: String?): String {
+    fun createAccessToken(principal: WebUserPrincipal, role: String?, impersonatedBy: Long? = null): String {
         val now = Date()
         val expiry = Date(now.time + accessExpiration)
-        return Jwts.builder()
+        val builder = Jwts.builder()
             .subject(principal.username)
             .claim("type", "access")
             .claim("audience", JwtTokenProvider.AUDIENCE_WEB)
@@ -61,8 +61,11 @@ class WebJwtService(
             .claim("role", role)
             .issuedAt(now)
             .expiration(expiry)
-            .signWith(key)
-            .compact()
+        // 대행 토큰 — 실제 관리자 user_id. 일반 토큰은 claim 미부착 (§851 §2.0).
+        if (impersonatedBy != null) {
+            builder.claim("impersonated_by", impersonatedBy)
+        }
+        return builder.signWith(key).compact()
     }
 
     /**
@@ -71,10 +74,16 @@ class WebJwtService(
      * family_id: 최초 로그인 시 생성된 family UUID — 재발급 시 동일 유지
      * token_id: 매 갱신 시 새로 생성되는 개별 token UUID — 재사용 감지 키
      */
-    fun createRefreshToken(username: String, userId: Long, familyId: String, tokenId: String): String {
+    fun createRefreshToken(
+        username: String,
+        userId: Long,
+        familyId: String,
+        tokenId: String,
+        impersonatedBy: Long? = null,
+    ): String {
         val now = Date()
         val expiry = Date(now.time + refreshExpiration)
-        return Jwts.builder()
+        val builder = Jwts.builder()
             .subject(username)
             .claim("type", "refresh")
             .claim("audience", JwtTokenProvider.AUDIENCE_WEB)
@@ -83,8 +92,11 @@ class WebJwtService(
             .claim("token_id", tokenId)
             .issuedAt(now)
             .expiration(expiry)
-            .signWith(key)
-            .compact()
+        // 대행 refresh — claim 보존하여 access 만료 후에도 대행 세션 유지 (§851 Q1).
+        if (impersonatedBy != null) {
+            builder.claim("impersonated_by", impersonatedBy)
+        }
+        return builder.signWith(key).compact()
     }
 
     /**
@@ -172,6 +184,10 @@ class WebJwtService(
     /** token_id claim 추출 (refresh token rotation). */
     fun getTokenIdFromToken(token: String): String =
         parseClaims(token).get("token_id", String::class.java)
+
+    /** impersonated_by claim 추출 (대행 토큰의 실제 관리자 user_id) — 일반 토큰은 null. */
+    fun getImpersonatedByFromToken(token: String): Long? =
+        parseClaims(token).get("impersonated_by", java.lang.Long::class.java)?.toLong()
 
     /** access token 만료 시간 (초 단위). */
     fun getAccessTokenExpirationSeconds(): Int = (accessExpiration / 1000).toInt()

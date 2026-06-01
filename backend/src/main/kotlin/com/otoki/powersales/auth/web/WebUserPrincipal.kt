@@ -35,6 +35,8 @@ data class WebUserPrincipal(
     val isSalesSupport: Boolean,
     val passwordChangeRequired: Boolean,
     val permissions: Set<String>,
+    /** 대행 로그인 시 실제 관리자 User PK (Spec #851). null = 대행 아님. */
+    val impersonatedBy: Long? = null,
     private val encodedPassword: String,
     private val grantedAuthorities: Collection<GrantedAuthority>,
     private val active: Boolean

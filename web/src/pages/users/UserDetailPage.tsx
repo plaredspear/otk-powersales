@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Descriptions,
+  Input,
   Modal,
   Space,
   Spin,
@@ -18,6 +19,8 @@ import {
   useUpdateUserActiveStatus,
 } from '@/hooks/user/useUserMutation';
 import { useAuthStore } from '@/stores/authStore';
+import { usePermission } from '@/hooks/usePermission';
+import { useImpersonation } from '@/hooks/useImpersonation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const { Paragraph, Text } = Typography;
@@ -28,16 +31,20 @@ const SELF_DEACTIVATE_TOOLTIP = '자기 자신 계정은 비활성화할 수 없
 export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const userId = Number(id);
+  const userId = Number(id) || 0;
   const currentUserId = useAuthStore((state) => state.user?.id);
   const { setDynamicTitle } = useContext(BreadcrumbContext);
 
   const { data: user, isLoading, error } = useUserDetail(userId);
   const resetMutation = useResetUserPassword();
   const activeMutation = useUpdateUserActiveStatus();
+  const { hasSystemPermission } = usePermission();
+  const { startMutation: impersonateMutation } = useImpersonation();
 
   const [resetOpen, setResetOpen] = useState(false);
   const [activeOpen, setActiveOpen] = useState(false);
+  const [impersonateOpen, setImpersonateOpen] = useState(false);
+  const [impersonateReason, setImpersonateReason] = useState('');
 
   useEffect(() => {
     setDynamicTitle(user?.name ?? user?.username ?? null);
@@ -66,6 +73,21 @@ export default function UserDetailPage() {
   const isSelf = currentUserId === user.id;
   const nextActive = !user.isActive;
   const blockSelfDeactivate = isSelf && user.isActive;
+  // 대행 로그인 버튼 노출: MANAGE_USERS 보유 + 본인 아님 + 활성 사용자 (Spec #851)
+  const canImpersonate = hasSystemPermission('MANAGE_USERS') && !isSelf && user.isActive;
+
+  const handleImpersonateConfirm = async () => {
+    try {
+      await impersonateMutation.mutateAsync({
+        targetUserId: user.id,
+        reason: impersonateReason.trim() || undefined,
+      });
+      // navigate 는 훅 onSuccess 가 담당. 모달 닫기 책임은 페이지 (다른 모달과 패턴 통일).
+      setImpersonateOpen(false);
+    } catch {
+      // 실패 알림은 useImpersonation 훅 onError 가 담당.
+    }
+  };
 
   const handleResetConfirm = async () => {
     try {
@@ -113,6 +135,9 @@ export default function UserDetailPage() {
           ← 목록으로
         </Button>
         <Space>
+          {canImpersonate && (
+            <Button onClick={() => setImpersonateOpen(true)}>대행 로그인</Button>
+          )}
           <Button danger onClick={() => setResetOpen(true)}>
             비밀번호 초기화
           </Button>
@@ -222,6 +247,35 @@ export default function UserDetailPage() {
           <br />
           <Text strong>이름:</Text> {user.name ?? '-'}
         </Paragraph>
+      </Modal>
+
+      <Modal
+        title="대행 로그인 확인"
+        open={impersonateOpen}
+        onOk={handleImpersonateConfirm}
+        onCancel={() => setImpersonateOpen(false)}
+        okText="대행 시작"
+        cancelText="취소"
+        confirmLoading={impersonateMutation.isPending}
+        destroyOnHidden
+        afterClose={() => setImpersonateReason('')}
+      >
+        <Paragraph>
+          <Text strong>{user.name ?? user.username}</Text> 계정으로 대행 로그인합니다. 대행 중에는 해당
+          사용자의 권한으로 화면을 사용하게 되며, 상단 배너의 "관리자로 복귀" 로 종료할 수 있습니다.
+        </Paragraph>
+        <Paragraph>
+          <Text strong>username:</Text> {user.username}
+          <br />
+          <Text strong>이름:</Text> {user.name ?? '-'}
+        </Paragraph>
+        <Input.TextArea
+          placeholder="대행 사유 (선택, 최대 500자)"
+          maxLength={500}
+          rows={2}
+          value={impersonateReason}
+          onChange={(e) => setImpersonateReason(e.target.value)}
+        />
       </Modal>
     </div>
   );
