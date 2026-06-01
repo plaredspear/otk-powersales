@@ -1,6 +1,5 @@
 package com.otoki.powersales.sales.service
 
-import com.otoki.orora.entity.OroraMonthlySalesHistory
 import com.otoki.powersales.sales.dto.request.MonthlySalesRequest
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
 import org.springframework.stereotype.Service
@@ -11,12 +10,14 @@ import java.math.BigDecimal
  * 월매출 조회 service.
  *
  * ## 데이터 source
- * [OroraMonthlySalesHistory] (ORORA view `ECRM_ABCCUST_MH_V`) 의 실측 마감실적만 사용.
+ * RDS `MonthlySalesHistory` (SF `MonthlySalesHistory__c` 복제 적재) 의 실측 마감실적만 사용
+ * ([MonthlySalesHistoryQueryGateway] 경유). SF 레거시도 모바일 `IF_REST_MOBILE_MonthlySalesHistory.cls`
+ * 가 ORORA 직접이 아닌 `MonthlySalesHistory__c` SObject 를 조회한 것과 동등.
  * 목표 (`thisMonthTarget`) / 확정 상태 (`isConfirmed`) 는 폐기 — 응답 필드 호환성 유지를 위해
  * `targetAmount = 0`, `achievementRate = 0.0` 로 고정 반환.
  *
  * ## 응답 산출
- * - `achievedAmount` = 카테고리 4종 ABC + Ship 합산 ([OroraMonthlySalesHistory.closingAmountSum] 동등)
+ * - `achievedAmount` = 카테고리 4종 ABC + Ship 합산 ([MonthlySalesRow.closingAmountSum] 동등)
  * - `categorySales` = 카테고리별 ABC + Ship 합산 — SF Apex `IF_REST_MOBILE_MonthlySalesHistory.cls` 정합
  * - `yearComparison` = 당년 / 전년 동월 ABC+Ship 합산
  * - `monthlyAverage` = 1월~조회월 누적 ABC+Ship 합산 / 월수 (당년 / 전년)
@@ -24,7 +25,7 @@ import java.math.BigDecimal
 @Service
 @Transactional(readOnly = true)
 class MonthlySalesService(
-    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
 ) {
 
     fun getMonthlySales(request: MonthlySalesRequest): MonthlySalesResponse {
@@ -38,7 +39,7 @@ class MonthlySalesService(
 
         val currentRangeSalesDates = (1..month).map { toSalesDate(year, it) }
         val previousRangeSalesDates = (1..month).map { toSalesDate(year - 1, it) }
-        val rowsByDate = ororaGateway
+        val rowsByDate = monthlySalesHistoryGateway
             .findBySalesDates((currentRangeSalesDates + previousRangeSalesDates).distinct(), listOf(sapCode))
             .associateBy { it.salesDate }
 
@@ -84,7 +85,7 @@ class MonthlySalesService(
             monthlyAverage = MonthlySalesResponse.MonthlyAverageInfo(0L, 0L, 1, month),
         )
 
-    private fun buildCategorySales(oro: OroraMonthlySalesHistory?): List<MonthlySalesResponse.CategorySalesInfo> {
+    private fun buildCategorySales(oro: MonthlySalesRow?): List<MonthlySalesResponse.CategorySalesInfo> {
         if (oro == null) return emptyList()
         return SalesCategory.entries.map { category ->
             MonthlySalesResponse.CategorySalesInfo(
@@ -96,7 +97,7 @@ class MonthlySalesService(
         }
     }
 
-    private fun categoryAchieved(oro: OroraMonthlySalesHistory, category: SalesCategory): Long {
+    private fun categoryAchieved(oro: MonthlySalesRow, category: SalesCategory): Long {
         val abc = when (category) {
             SalesCategory.AMBIENT -> oro.abcClosingAmount1
             SalesCategory.NOODLE -> oro.abcClosingAmount2

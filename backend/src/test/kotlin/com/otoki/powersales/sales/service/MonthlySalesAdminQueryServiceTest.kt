@@ -1,6 +1,5 @@
 package com.otoki.powersales.sales.service
 
-import com.otoki.orora.entity.OroraMonthlySalesHistory
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
@@ -11,12 +10,12 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 
-@DisplayName("MonthlySalesAdminQueryService — orora 기반 응답 회귀 보호")
+@DisplayName("MonthlySalesAdminQueryService — RDS 기반 응답 회귀 보호")
 class MonthlySalesAdminQueryServiceTest {
 
     private val accountRepository: AccountRepository = mockk()
-    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway = mockk()
-    private val service = MonthlySalesAdminQueryService(accountRepository, ororaGateway)
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
+    private val service = MonthlySalesAdminQueryService(accountRepository, monthlySalesHistoryGateway)
 
     private val allBranchesScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -35,9 +34,11 @@ class MonthlySalesAdminQueryServiceTest {
         ship2: Long = 0L,
         ship3: Long = 0L,
         ship4: Long = 0L,
-    ) = OroraMonthlySalesHistory(
+    ) = MonthlySalesRow(
         sapAccountCode = sapCode,
         salesDate = salesDate,
+        closingAmountSum = BigDecimal(ship1 + ship2 + ship3 + ship4),
+        abcClosingAmount1 = null,
         shipClosingAmount1 = BigDecimal(ship1),
         shipClosingAmount2 = BigDecimal(ship2),
         shipClosingAmount3 = BigDecimal(ship3),
@@ -49,7 +50,7 @@ class MonthlySalesAdminQueryServiceTest {
     fun detailSumsShipFourCategories() {
         val acc = account(1, "S001")
         every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
-        every { ororaGateway.findBySalesDates(any(), any()) } returns listOf(
+        every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
             row("S001", "202604", ship1 = 100, ship2 = 200, ship3 = 300, ship4 = 400),
         )
 
@@ -61,11 +62,11 @@ class MonthlySalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getDetail — ORORA row 부재 → achievedAmount = 0")
+    @DisplayName("getDetail — RDS row 부재 → achievedAmount = 0")
     fun detailReturnsZeroWhenNoOroraRow() {
         val acc = account(1, "S001")
         every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
-        every { ororaGateway.findBySalesDates(any(), any()) } returns emptyList()
+        every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns emptyList()
 
         val result = service.getDetail(allBranchesScope, customerId = 1, year = 2026, month = 4)
 
@@ -73,11 +74,11 @@ class MonthlySalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getDetail — Account.externalKey null → ORORA gateway 호출 시 빈 리스트 전달")
+    @DisplayName("getDetail — Account.externalKey null → gateway 호출 시 빈 리스트 전달")
     fun detailHandlesNullExternalKey() {
         val acc = account(1, externalKey = null)
         every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
-        every { ororaGateway.findBySalesDates(any(), emptyList()) } returns emptyList()
+        every { monthlySalesHistoryGateway.findBySalesDates(any(), emptyList()) } returns emptyList()
 
         val result = service.getDetail(allBranchesScope, customerId = 1, year = 2026, month = 4)
 

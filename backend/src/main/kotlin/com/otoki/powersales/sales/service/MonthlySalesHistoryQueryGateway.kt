@@ -69,9 +69,13 @@ class MonthlySalesHistoryQueryGateway(
                     salesDate = salesDateOf(row),
                     closingAmountSum = closingAmountSum(row),
                     abcClosingAmount1 = row.abcClosingAmount1?.let { BigDecimal.valueOf(it) },
+                    abcClosingAmount2 = row.abcClosingAmount2?.let { BigDecimal.valueOf(it) },
+                    abcClosingAmount3 = row.abcClosingAmount3?.let { BigDecimal.valueOf(it) },
+                    abcClosingAmount4 = row.abcClosingAmount4?.let { BigDecimal.valueOf(it) },
                     shipClosingAmount1 = row.shipClosingAmount1?.let { BigDecimal.valueOf(it) },
                     shipClosingAmount2 = row.shipClosingAmount2?.let { BigDecimal.valueOf(it) },
                     shipClosingAmount3 = row.shipClosingAmount3?.let { BigDecimal.valueOf(it) },
+                    shipClosingAmount4 = row.shipClosingAmount4?.let { BigDecimal.valueOf(it) },
                 )
             }
             .toList()
@@ -117,17 +121,25 @@ class MonthlySalesHistoryQueryGateway(
  * @property sapAccountCode 거래처 SAP 코드
  * @property salesDate 매출 연월 `YYYYMM` (조회월/전년월 구분 키). 물류매출 화면에서 사용
  * @property closingAmountSum SF `ClosingAmountSum__c` formula 동등 합계 (ABC합 + Ship합)
- * @property abcClosingAmount1 전산마감실적_상온 (refresh/batch 의 양수 필터 평균 산출용). null 가능
- * @property shipClosingAmount1 물류마감실적_상온 (물류매출 온도대별 표시용). null 가능
- * @property shipClosingAmount2 물류마감실적_라면 (물류매출 온도대별 표시용). null 가능
- * @property shipClosingAmount3 물류마감실적_냉장냉동 (물류매출 온도대별 표시용). null 가능
+ * @property abcClosingAmount1 전산마감실적_상온 (refresh/batch 의 양수 필터 평균 산출용 + 카테고리별 합산). null 가능
+ * @property abcClosingAmount2 전산마감실적_라면 (카테고리별 합산용). null 가능
+ * @property abcClosingAmount3 전산마감실적_냉장냉동 (카테고리별 합산용). null 가능
+ * @property abcClosingAmount4 전산마감실적_유지 (카테고리별 합산용). null 가능
+ * @property shipClosingAmount1 물류마감실적_상온 (물류매출 온도대별 표시 + 카테고리별 합산용). null 가능
+ * @property shipClosingAmount2 물류마감실적_라면 (물류매출 온도대별 표시 + 카테고리별 합산용). null 가능
+ * @property shipClosingAmount3 물류마감실적_냉장냉동 (물류매출 온도대별 표시 + 카테고리별 합산용). null 가능
+ * @property shipClosingAmount4 물류마감실적_유지 (카테고리별 합산용). null 가능
  */
 data class MonthlySalesRow(
     val sapAccountCode: String,
     val salesDate: String,
     val closingAmountSum: BigDecimal,
     val abcClosingAmount1: BigDecimal?,
+    val abcClosingAmount2: BigDecimal? = null,
+    val abcClosingAmount3: BigDecimal? = null,
+    val abcClosingAmount4: BigDecimal? = null,
     val shipClosingAmount1: BigDecimal? = null,
     val shipClosingAmount2: BigDecimal? = null,
     val shipClosingAmount3: BigDecimal? = null,
+    val shipClosingAmount4: BigDecimal? = null,
 )

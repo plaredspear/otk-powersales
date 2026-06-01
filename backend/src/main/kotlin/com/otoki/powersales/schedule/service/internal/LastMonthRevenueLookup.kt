@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service.internal
 
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
+import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -13,9 +13,10 @@ import java.time.LocalDate
  * ## SF 레거시 정합 source
  *
  * SF `UpdateLastMonthRevenueBatch.cls:34, 58` 의 `MonthlySalesHistory__c.ClosingAmountSum__c`
- * (= formula `ABCClosingSumAmount__c + ShipClosingSumAmount__c`) 동등. 신규 시스템은 ORORA view
- * `ECRM_ABCCUST_MH_V` 의 `(abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)` 합산
- * ([com.otoki.orora.entity.OroraMonthlySalesHistory.closingAmountSum]) 으로 동등 산출.
+ * (= formula `ABCClosingSumAmount__c + ShipClosingSumAmount__c`) 동등. 신규 시스템은 SF 와 동일하게
+ * RDS `MonthlySalesHistory` (`MonthlySalesHistory__c` 복제 적재) 의
+ * `(abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)` 합산
+ * ([com.otoki.powersales.sales.service.MonthlySalesRow.closingAmountSum]) 으로 동등 산출.
  *
  * SF batch / Trigger 의 fallback 정합: row 부재 시 `0` ([UpdateLastMonthRevenueBatch.cls:56-60],
  * [DisplayWorkScheduleMasterTriggerHandler.setLastMonthRevenue:288-292]).
@@ -29,8 +30,8 @@ import java.time.LocalDate
  *
  * ## 변환 계층
  * - 입력: `List<Account>` (또는 단건 `Account?`) — `Account.externalKey` = SAP 거래처 코드
- * - 직전월 산출: `today.minusMonths(1)` → `"YYYYMM"` 6자 문자열 (ORORA `SalesDate` 원본 형식)
- * - 호출: [OroraMonthlySalesHistoryQueryGateway.findBySalesDate]
+ * - 직전월 산출: `today.minusMonths(1)` → `"YYYYMM"` 6자 문자열 (게이트웨이가 `SalesYear`/`SalesMonth` 로 변환)
+ * - 호출: [MonthlySalesHistoryQueryGateway.findBySalesDates]
  * - 결과 매핑: `sapAccountCode → Account.id` 재매핑 후 `Map<Int, BigDecimal>` 반환
  *
  * SF `LastMonthRevenue__c` 의 `Number(precision=18, scale=0)` 정합 보존 — `setScale(0, HALF_UP)`
@@ -38,7 +39,7 @@ import java.time.LocalDate
  */
 @Component
 class LastMonthRevenueLookup(
-    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
 ) {
 
     /**
@@ -57,8 +58,8 @@ class LastMonthRevenueLookup(
             .associate { it.externalKey!! to it.id }
         if (externalKeyToId.isEmpty()) return emptyMap()
         val salesDate = previousMonthYyyymm(today)
-        return ororaGateway
-            .findBySalesDate(salesDate, externalKeyToId.keys)
+        return monthlySalesHistoryGateway
+            .findBySalesDates(listOf(salesDate), externalKeyToId.keys)
             .mapNotNull { row ->
                 val accountId = externalKeyToId[row.sapAccountCode] ?: return@mapNotNull null
                 accountId to row.closingAmountSum.setScale(0, RoundingMode.HALF_UP)
@@ -78,8 +79,8 @@ class LastMonthRevenueLookup(
     ): BigDecimal? {
         val externalKey = account?.externalKey ?: return null
         val salesDate = previousMonthYyyymm(today)
-        return ororaGateway
-            .findBySalesDate(salesDate, listOf(externalKey))
+        return monthlySalesHistoryGateway
+            .findBySalesDates(listOf(salesDate), listOf(externalKey))
             .firstOrNull()
             ?.closingAmountSum
             ?.setScale(0, RoundingMode.HALF_UP)

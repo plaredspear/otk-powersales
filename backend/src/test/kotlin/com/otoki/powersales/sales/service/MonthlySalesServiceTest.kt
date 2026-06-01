@@ -11,17 +11,17 @@ import org.junit.jupiter.api.Test
 @DisplayName("MonthlySalesService 테스트")
 class MonthlySalesServiceTest {
 
-    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway = mockk()
-    private val service = MonthlySalesService(ororaGateway)
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
+    private val service = MonthlySalesService(monthlySalesHistoryGateway)
 
     @Nested
-    @DisplayName("getMonthlySales — ORORA 기반 응답")
+    @DisplayName("getMonthlySales — RDS 기반 응답")
     inner class GetMonthlySalesTests {
 
         @Test
         @DisplayName("customerId / yearMonth 가 응답에 그대로 전달된다")
         fun returnsRequestEcho() {
-            every { ororaGateway.findBySalesDates(any(), any()) } returns emptyList()
+            every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns emptyList()
 
             val result = service.getMonthlySales(
                 MonthlySalesRequest(customerId = "C001", yearMonth = "202602")
@@ -34,7 +34,7 @@ class MonthlySalesServiceTest {
         }
 
         @Test
-        @DisplayName("customerId 가 null 이면 ALL 로 응답 + ORORA 호출 안 함")
+        @DisplayName("customerId 가 null 이면 ALL 로 응답 + RDS 호출 안 함")
         fun nullCustomerIdReturnsAll() {
             val result = service.getMonthlySales(
                 MonthlySalesRequest(customerId = null, yearMonth = "202602")
