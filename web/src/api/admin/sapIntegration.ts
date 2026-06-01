@@ -34,7 +34,7 @@ export interface SapInboundAuditRow {
   createdAt: string;
 }
 
-export interface SapInboundAuditDetail extends SapInboundAuditRow {}
+export type SapInboundAuditDetail = SapInboundAuditRow;
 
 export interface SapInboundAuditListResponse {
   items: SapInboundAuditRow[];
