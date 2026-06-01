@@ -1,26 +1,25 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.orora.entity.OroraMonthlySalesHistory
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
+import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
+import com.otoki.powersales.sales.service.MonthlySalesRow
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.YearMonth
 
-@DisplayName("MfeisThisMonthRevenueBatchService — orora 기반 양수 평균 산출 회귀 보호")
+@DisplayName("MfeisThisMonthRevenueBatchService — RDS 기반 양수 평균 산출 회귀 보호")
 class MfeisThisMonthRevenueBatchServiceTest {
 
     private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository = mockk(relaxed = true)
-    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway = mockk()
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
 
     private lateinit var service: MfeisThisMonthRevenueBatchService
 
@@ -28,7 +27,7 @@ class MfeisThisMonthRevenueBatchServiceTest {
     fun setUp() {
         service = MfeisThisMonthRevenueBatchService(
             mfeisRepository = mfeisRepository,
-            ororaGateway = ororaGateway,
+            monthlySalesHistoryGateway = monthlySalesHistoryGateway,
             chunkSize = 200,
         )
     }
@@ -45,10 +44,10 @@ class MfeisThisMonthRevenueBatchServiceTest {
             every { this@mockk.thisMonthAmount } returns currentAmount
         }
 
-    private fun row(sapCode: String, salesDate: String, abc1: Long) =
-        OroraMonthlySalesHistory(
+    private fun row(sapCode: String, abc1: Long) =
+        MonthlySalesRow(
             sapAccountCode = sapCode,
-            salesDate = salesDate,
+            closingAmountSum = BigDecimal(abc1),
             abcClosingAmount1 = BigDecimal(abc1),
         )
 
@@ -62,13 +61,13 @@ class MfeisThisMonthRevenueBatchServiceTest {
         every {
             mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
         } returns listOf(mfeis)
-        every { ororaGateway.findBySalesDates(any(), any()) } returns listOf(
-            row("S001", "202511", 100_000),
-            row("S001", "202512", 200_000),
-            row("S001", "202601", 0),         // 제외
-            row("S001", "202602", -50_000),   // 제외
-            row("S001", "202603", 300_000),
-            row("S001", "202604", 400_000),
+        every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
+            row("S001", 100_000),
+            row("S001", 200_000),
+            row("S001", 0),         // 제외
+            row("S001", -50_000),   // 제외
+            row("S001", 300_000),
+            row("S001", 400_000),
         )
         val saved = slot<MonthlyFemaleEmployeeIntegrationSchedule>()
         every { mfeisRepository.save(capture(saved)) } answers { saved.captured }
@@ -80,7 +79,7 @@ class MfeisThisMonthRevenueBatchServiceTest {
     }
 
     @Test
-    @DisplayName("externalKey null Account 만 → skip + ORORA 호출 안 함")
+    @DisplayName("externalKey null Account 만 → skip + 게이트웨이 호출 안 함")
     fun nullExternalKeySkipsGatewayCall() {
         val targetYm = YearMonth.of(2026, 4)
         val mfeis = mfeisRow(100L, account(1, externalKey = null), BigDecimal.ZERO)
@@ -90,7 +89,7 @@ class MfeisThisMonthRevenueBatchServiceTest {
 
         service.runMonthly(targetYm)
 
-        verify(exactly = 0) { ororaGateway.findBySalesDates(any(), any()) }
+        verify(exactly = 0) { monthlySalesHistoryGateway.findBySalesDates(any(), any()) }
         verify(exactly = 0) { mfeisRepository.save(any()) }
     }
 
@@ -103,8 +102,8 @@ class MfeisThisMonthRevenueBatchServiceTest {
         every {
             mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
         } returns listOf(mfeis)
-        every { ororaGateway.findBySalesDates(any(), any()) } returns listOf(
-            row("S001", "202604", 100_000),
+        every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
+            row("S001", 100_000),
         )
 
         service.runMonthly(targetYm)

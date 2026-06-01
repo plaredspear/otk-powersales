@@ -1,8 +1,8 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.orora.entity.OroraMonthlySalesHistory
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
-import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
+import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
+import com.otoki.powersales.sales.service.MonthlySalesRow
 import com.querydsl.jpa.impl.JPAQueryFactory
 import io.mockk.every
 import io.mockk.mockk
@@ -18,9 +18,9 @@ class TeamMemberScheduleSearchServiceTest {
 
     private val expander: BranchCodeExpander = mockk()
     private val queryFactory: JPAQueryFactory = mockk()
-    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway = mockk()
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
 
-    private val service = TeamMemberScheduleSearchService(expander, queryFactory, ororaGateway)
+    private val service = TeamMemberScheduleSearchService(expander, queryFactory, monthlySalesHistoryGateway)
 
     private fun row(accountId: Int, externalKey: String?): TeamMemberScheduleRow =
         TeamMemberScheduleRow(
@@ -44,12 +44,13 @@ class TeamMemberScheduleSearchServiceTest {
             convertedHeadcount = null,
         )
 
-    private fun ororaRow(sapCode: String, salesDate: String, abc1: Long = 0L, ship1: Long = 0L) =
-        OroraMonthlySalesHistory(
+    // closingAmountSum = (abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4) 를 게이트웨이가 산출한 결과.
+    // 본 테스트는 합계만 검증하므로 abc1 + ship1 을 합계로 표현.
+    private fun salesRow(sapCode: String, abc1: Long = 0L, ship1: Long = 0L) =
+        MonthlySalesRow(
             sapAccountCode = sapCode,
-            salesDate = salesDate,
+            closingAmountSum = BigDecimal(abc1 + ship1),
             abcClosingAmount1 = BigDecimal(abc1),
-            shipClosingAmount1 = BigDecimal(ship1),
         )
 
     @Test
@@ -73,10 +74,10 @@ class TeamMemberScheduleSearchServiceTest {
     @Test
     @DisplayName("6개월 평균 ClosingAmountSum 산출 — ABC+Ship 합산 / divider = 데이터 존재 월 수")
     fun computeAverageSumsAbcAndShipDividesByExistingMonths() {
-        every { ororaGateway.findBySalesDates(any(), any()) } returns listOf(
-            ororaRow("S001", "202510", abc1 = 100, ship1 = 200),  // sum 300
-            ororaRow("S001", "202511", abc1 = 500, ship1 = 100),  // sum 600
-            ororaRow("S001", "202512", abc1 = 0, ship1 = 900),    // sum 900
+        every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
+            salesRow("S001", abc1 = 100, ship1 = 200),  // sum 300
+            salesRow("S001", abc1 = 500, ship1 = 100),  // sum 600
+            salesRow("S001", abc1 = 0, ship1 = 900),    // sum 900
         )
 
         val result = service.computeSixMonthAverageSales(listOf(row(1, "S001")), "2026", "3")

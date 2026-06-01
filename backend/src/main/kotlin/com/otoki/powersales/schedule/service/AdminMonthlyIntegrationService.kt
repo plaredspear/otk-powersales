@@ -8,7 +8,7 @@ import com.otoki.powersales.leave.repository.HolidayMasterRepository
 import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
+import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
@@ -42,7 +42,7 @@ class AdminMonthlyIntegrationService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val accountRepository: AccountRepository,
-    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
     private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
     private val holidayMasterRepository: HolidayMasterRepository,
     private val branchCodeExpander: BranchCodeExpander,
@@ -598,7 +598,7 @@ class AdminMonthlyIntegrationService(
             searchYm.minusMonths(5) to searchYm
         }
 
-        // ORORA `SalesDate` 원본 형식 ("YYYYMM" 6자 문자열) 리스트 생성
+        // 매출월 "YYYYMM" 6자 문자열 리스트 생성 (게이트웨이가 SalesYear/SalesMonth picklist 로 변환)
         val salesDates = mutableListOf<String>()
         var current = startYm
         while (!current.isAfter(endYm)) {
@@ -606,7 +606,7 @@ class AdminMonthlyIntegrationService(
             current = current.plusMonths(1)
         }
 
-        val histories = ororaGateway.findBySalesDates(salesDates, externalKeyToId.keys)
+        val histories = monthlySalesHistoryGateway.findBySalesDates(salesDates, externalKeyToId.keys)
 
         // Group by account ID and calculate average
         // spec #680 Q2 옵션 2 — legacy `UpdateThisMonthRevenueBatch.cls:execute` + `get6MonthsAvg` 동등.

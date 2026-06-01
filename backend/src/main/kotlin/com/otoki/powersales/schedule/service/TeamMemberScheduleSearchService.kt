@@ -1,8 +1,8 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.orora.entity.OroraMonthlySalesHistory
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
-import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
+import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
+import com.otoki.powersales.sales.service.MonthlySalesRow
 import com.otoki.powersales.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.schedule.dto.response.TeamMemberScheduleSearchResult
 import com.otoki.powersales.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule.Companion.monthlyFemaleEmployeeIntegrationSchedule
@@ -20,18 +20,18 @@ import java.time.YearMonth
  *
  * MFEIS 검색 결과 라인 + 거래처별 6개월 평균 ABC 마감실적 (ClosingAmountSum) 산출.
  *
- * D3=(a): SF `MonthlySalesHistory.ClosingAmountSum__c` (formula) = `abcClosingSumAmount + shipClosingSumAmount` 합산
+ * D3=(a): SF `MonthlySalesHistory.ClosingAmountSum__c` (formula) = `(abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)` 합산
  * D4=(a): SF `MFEIS.BranchName__c` (formula) = `mfeis.employee.orgName` lazy join
  *
- * 마감실적 source 는 ORORA view `ECRM_ABCCUST_MH_V` — SF formula `ClosingAmountSum__c` 동등 산출은
- * [OroraMonthlySalesHistory.closingAmountSum] 가 책임 (= (abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)).
+ * 마감실적 source 는 RDS `MonthlySalesHistory` (SF `MonthlySalesHistory__c` 복제 적재) — SF formula
+ * `ClosingAmountSum__c` 동등 산출은 [MonthlySalesHistoryQueryGateway] 가 책임 (개별 카테고리 컬럼 재합산).
  */
 @Service
 @Transactional(readOnly = true)
 class TeamMemberScheduleSearchService(
     private val expander: BranchCodeExpander,
     private val queryFactory: JPAQueryFactory,
-    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
 ) {
 
     /**
@@ -120,7 +120,7 @@ class TeamMemberScheduleSearchService(
      * - 선택 년월 == 당월: [선택월 -6, 선택월 -1]
      * - 그 외: [선택월 -5, 선택월]
      *
-     * ABC 마감실적 합계 = SF `ClosingAmountSum__c` formula (D3=a) = [OroraMonthlySalesHistory.closingAmountSum]
+     * ABC 마감실적 합계 = SF `ClosingAmountSum__c` formula (D3=a) = [MonthlySalesRow.closingAmountSum]
      *                  = (abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)
      * 평균 = 합산 / 데이터 존재 월 수 (divider, SF L164-181).
      */
@@ -142,7 +142,7 @@ class TeamMemberScheduleSearchService(
         val salesDates = enumerateMonths(startYm, endYm)
             .map { "%d%02d".format(it.year, it.monthValue) }
 
-        val rows: List<OroraMonthlySalesHistory> = ororaGateway.findBySalesDates(
+        val salesRows: List<MonthlySalesRow> = monthlySalesHistoryGateway.findBySalesDates(
             salesDates = salesDates,
             sapAccountCodes = accountByExternalKey.keys,
         )
@@ -150,7 +150,7 @@ class TeamMemberScheduleSearchService(
         // SF divider — 데이터 존재 월 수 (SF L164-181: avgAmount += closing; div++)
         val sumByAccount = mutableMapOf<Long, BigDecimal>()
         val countByAccount = mutableMapOf<Long, Int>()
-        for (row in rows) {
+        for (row in salesRows) {
             val accId = accountByExternalKey[row.sapAccountCode] ?: continue
             val closingSum = row.closingAmountSum
             sumByAccount.merge(accId, closingSum) { a, b -> a + b }

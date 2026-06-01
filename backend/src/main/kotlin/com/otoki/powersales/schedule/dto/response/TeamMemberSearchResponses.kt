@@ -51,7 +51,7 @@ data class TeamMemberScheduleSearchResult(
  * SF formula 필드 (BranchName/EmployeeNumber/Title/AccountBranchName/AccountCode) 는
  * backend MFEIS lazy join 으로 환원 (D4=a).
  *
- * ABC 마감실적 (actualAmount) = 6개월 평균 `ClosingAmountSum` = `abcClosingSumAmount + shipClosingSumAmount` (D3=a).
+ * ABC 마감실적 (actualAmount) = 6개월 평균 `ClosingAmountSum` = `(abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)` (D3=a).
  */
 data class TeamMemberScheduleResultItem(
     val year: String?,

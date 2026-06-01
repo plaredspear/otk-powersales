@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
-import com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway
+import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import org.slf4j.LoggerFactory
@@ -28,7 +28,7 @@ import java.time.YearMonth
 @Service
 class MfeisThisMonthRevenueBatchService(
     private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
-    private val ororaGateway: OroraMonthlySalesHistoryQueryGateway,
+    private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
     @Value("\${app.batch.mfeis.this-month-revenue.chunk-size:200}") private val chunkSize: Int,
 ) {
 
@@ -72,7 +72,7 @@ class MfeisThisMonthRevenueBatchService(
                 return@forEach
             }
 
-            val histories = ororaGateway.findBySalesDates(salesDates, externalKeyToId.keys)
+            val histories = monthlySalesHistoryGateway.findBySalesDates(salesDates, externalKeyToId.keys)
 
             // 거래처별 평균 — 양수 필터 + 양수 count divider (legacy 동등)
             val avgByAccountId: Map<Int, BigDecimal> = histories

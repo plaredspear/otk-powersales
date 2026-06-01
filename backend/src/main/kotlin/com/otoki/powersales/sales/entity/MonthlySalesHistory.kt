@@ -138,17 +138,9 @@ class MonthlySalesHistory(
     @Column(name = "ship_closing_amount4")
     var shipClosingAmount4: Double? = null,
 
-    @SFField("ShipClosingSumAmount__c")
-    @Column(name = "ship_closing_sum_amount")
-    var shipClosingSumAmount: Double? = null,
-
     @SFField("ABCClosingAmount4__c")
     @Column(name = "abc_closing_amount4")
     var abcClosingAmount4: Double? = null,
-
-    @SFField("ABCClosingSumAmount__c")
-    @Column(name = "abc_closing_sum_amount")
-    var abcClosingSumAmount: Double? = null,
 
     @SFField("LastMonthTargetByHand__c")
     @Column(name = "last_month_target_by_hand", precision = 18, scale = 0)
