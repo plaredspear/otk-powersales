@@ -193,6 +193,7 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
     "primary_product" to ("product" to "product_id"),
     "alt_holiday" to ("alternative_holiday" to "alternative_holiday_id"),
     "postponed_appointment" to ("appointment" to "appointment_id"),
+    "last_monthly_sales_history" to ("monthly_sales_history" to "monthly_sales_history_id"),
     "commute_log" to ("attendance_log" to "attendance_log_id"),
     "theme" to ("inspection_theme" to "inspection_theme_id"),
     // 도메인 FK — prefix 가 곧 table 명인 케이스

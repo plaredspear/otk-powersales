@@ -958,6 +958,53 @@ val MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA = EntityMetadata(
     useCopyStrategy = true
 )
 
+val MONTHLY_SALES_HISTORY_METADATA = EntityMetadata(
+    targetName = "MonthlySalesHistory",
+    sObjectName = "MonthlySalesHistory__c",
+    tableName = "monthly_sales_history",
+    pkColumn = "monthly_sales_history_id",
+    conflictKey = "sfid",
+    fields = listOf(
+        FieldMapping("Id", "sfid", nullable = false),
+        FieldMapping("Name", "name"),
+        FieldMapping("SalesYear__c", "sales_year"),
+        FieldMapping("SalesMonth__c", "sales_month"),
+        FieldMapping("LastMonthResults__c", "last_month_results", isString = false),
+        FieldMapping("ShipClosingAmount__c", "ship_closing_amount", isString = false),
+        FieldMapping("ABCClosingAmount1__c", "abc_closing_amount1", isString = false),
+        FieldMapping("ABCClosingAmount2__c", "abc_closing_amount2", isString = false),
+        FieldMapping("ABCClosingAmount3__c", "abc_closing_amount3", isString = false),
+        FieldMapping("AmbientPurpose__c", "ambient_purpose", isString = false),
+        FieldMapping("FridgePurpose__c", "fridge_purpose", isString = false),
+        FieldMapping("IsDeleted", "is_deleted", isString = false),
+        FieldMapping("Externalkey__c", "external_key"),
+        FieldMapping("TotalLedgerAmount__c", "total_ledger_amount", isString = false),
+        FieldMapping("AccountId__c", "account_sfid"),
+        FieldMapping("SAPAccountCode__c", "sap_account_code"),
+        FieldMapping("SalesDate__c", "sales_date", isString = false),
+        FieldMapping("LastMonthlySalesHistory__c", "last_monthly_sales_history_sfid"),
+        FieldMapping("Confirm__c", "is_confirmed", isString = false),
+        FieldMapping("Remark__c", "remark"),
+        FieldMapping("ShipClosingAmountNH__c", "ship_closing_amount_nh", isString = false),
+        FieldMapping("ShipClosingAmount1__c", "ship_closing_amount1", isString = false),
+        FieldMapping("ShipClosingAmount2__c", "ship_closing_amount2", isString = false),
+        FieldMapping("ShipClosingAmount3__c", "ship_closing_amount3", isString = false),
+        FieldMapping("ShipClosingAmount4__c", "ship_closing_amount4", isString = false),
+        FieldMapping("ShipClosingSumAmount__c", "ship_closing_sum_amount", isString = false),
+        FieldMapping("ABCClosingAmount4__c", "abc_closing_amount4", isString = false),
+        FieldMapping("ABCClosingSumAmount__c", "abc_closing_sum_amount", isString = false),
+        FieldMapping("LastMonthTargetByHand__c", "last_month_target_by_hand", isString = false),
+        FieldMapping("ThisMonthTarget__c", "this_month_target", isString = false),
+        FieldMapping("OwnerId", "owner_sfid"),
+        FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedById", "last_modified_by_sfid")
+    ),
+    // 50MB+ CSV — COPY FROM STDIN 전략으로 적재 속도 개선 (Stage 1 v12 일괄 적용).
+    useCopyStrategy = true
+)
+
 val NEW_PRODUCT_METADATA = EntityMetadata(
     targetName = "NewProduct",
     sObjectName = "NewProduct__c",
@@ -1667,6 +1714,7 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "InspectionTheme" to TargetSpec(INSPECTION_THEME_METADATA, "Theme__c", "inspection_themes.csv", "inspection/entity/InspectionTheme"),
     "SiteActivity" to TargetSpec(SITE_ACTIVITY_METADATA, "DKRetail__SiteAcitivity__c", "site_activities.csv", "inspection/entity/SiteActivity"),
     "MonthlyFemaleEmployeeIntegrationSchedule" to TargetSpec(MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA, "MonthlyFemaleEmployeeIntegrationSchedule__c", "monthly_female_employee_integration_schedules.csv", "schedule/entity/MonthlyFemaleEmployeeIntegrationSchedule"),
+    "MonthlySalesHistory" to TargetSpec(MONTHLY_SALES_HISTORY_METADATA, "MonthlySalesHistory__c", "monthly_sales_historys.csv", "sales/entity/MonthlySalesHistory"),
     "NewProduct" to TargetSpec(NEW_PRODUCT_METADATA, "NewProduct__c", "new_products.csv", "product/entity/NewProduct"),
     "OrderRequest" to TargetSpec(ORDER_REQUEST_METADATA, "DKRetail__OrderRequest__c", "order_requests.csv", "order/entity/OrderRequest"),
     "OrderRequestProduct" to TargetSpec(ORDER_REQUEST_PRODUCT_METADATA, "DKRetail__OrderRequestProduct__c", "order_request_products.csv", "order/entity/OrderRequestProduct"),
@@ -1714,6 +1762,7 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "InspectionTheme",
     "SiteActivity",
     "MonthlyFemaleEmployeeIntegrationSchedule",
+    "MonthlySalesHistory",
     "NewProduct",
     "OrderRequest",
     "OrderRequestProduct",
@@ -1738,7 +1787,7 @@ val SUPPORTED_TARGETS = setOf(
     "AgreementHistory", "AgreementWord", "AlternativeHoliday", "Appointment", "AttendanceLog",
     "AttendInfo", "Claim", "DisplayWorkSchedule", "EmployeeInputCriteriaMaster",
     "ErpOrder", "ErpOrderProduct", "HolidayMaster", "InspectionTheme", "SiteActivity",
-    "MonthlyFemaleEmployeeIntegrationSchedule", "NewProduct", "OrderRequest", "OrderRequestProduct",
+    "MonthlyFemaleEmployeeIntegrationSchedule", "MonthlySalesHistory", "NewProduct", "OrderRequest", "OrderRequestProduct",
     "ProductBarcode", "ProfessionalPromotionTeamHistory", "ProfessionalPromotionTeamMaster", "PromotionEmployee", "PushMessage",
     "PushMessageReceiver", "TeamMemberSchedule", "UploadFile", "Suggestion",
     "UserRole", "Profile"
