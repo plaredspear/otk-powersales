@@ -55,7 +55,8 @@ class LeaderScheduleService(
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val scheduleConflictValidator: ScheduleConflictValidator
+    private val scheduleConflictValidator: ScheduleConflictValidator,
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
 ) {
 
     companion object {
@@ -120,6 +121,9 @@ class LeaderScheduleService(
         )
 
         // step 10: 신규 엔티티 생성
+        // owner 는 대상 직원의 소속 조장 User (= 대리 등록 조장 registrant) — 레거시
+        // TeamMemberScheduleTriggerHandler.insertOwner 동등.
+        val ownerUser = teamMemberScheduleOwnerResolver.resolveOwner(targetEmployee)
         val newSchedule = TeamMemberSchedule(
             employee = targetEmployee,
             account = account,
@@ -128,7 +132,8 @@ class LeaderScheduleService(
             workingCategory1 = WorkingCategory1.fromDisplayNameOrNull(request.workingCategory1),
             workingCategory2 = WORKING_CATEGORY2_DEDICATED,
             workingCategory3 = WorkingCategory3.fromDisplayNameOrNull(request.workingCategory3),
-            proxyRegisteredBy = registrant.id
+            proxyRegisteredBy = registrant.id,
+            ownerUser = ownerUser
         )
 
         // step 11: 저장 + 응답

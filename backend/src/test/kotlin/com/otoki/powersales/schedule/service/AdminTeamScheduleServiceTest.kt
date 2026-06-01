@@ -47,6 +47,8 @@ class AdminTeamScheduleServiceTest {
 
     private val branchCodeExpander: BranchCodeExpander = mockk(relaxUnitFun = true)
 
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
+
     private lateinit var service: AdminTeamScheduleService
 
     @BeforeEach
@@ -62,8 +64,10 @@ class AdminTeamScheduleServiceTest {
             organizationRepository = organizationRepository,
             adminMonthlyIntegrationService = adminMonthlyIntegrationService,
             teamScheduleValidator = teamScheduleValidator,
-            branchCodeExpander = branchCodeExpander
+            branchCodeExpander = branchCodeExpander,
+            teamMemberScheduleOwnerResolver = teamMemberScheduleOwnerResolver
         )
+        every { teamMemberScheduleOwnerResolver.resolveOwner(any()) } returns null
         // BranchCodeExpander 는 SF Util.getIncludedBranchCode 정합 — 일반 cost center 는 입력=출력 (1:1).
         // 1:N 확장 케이스만 테스트하는 컨텍스트에서 개별 override.
         every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }

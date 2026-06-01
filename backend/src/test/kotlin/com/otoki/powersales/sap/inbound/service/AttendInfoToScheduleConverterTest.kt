@@ -7,6 +7,7 @@ import com.otoki.powersales.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.service.TeamMemberScheduleOwnerResolver
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -22,7 +23,16 @@ class AttendInfoToScheduleConverterTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
-    private val converter = AttendInfoToScheduleConverter(employeeRepository, teamMemberScheduleRepository)
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
+    private val converter = AttendInfoToScheduleConverter(
+        employeeRepository,
+        teamMemberScheduleRepository,
+        teamMemberScheduleOwnerResolver,
+    )
+
+    init {
+        every { teamMemberScheduleOwnerResolver.resolveOwnersByCostCenterCode(any()) } returns emptyMap()
+    }
 
     private fun attendInfo(
         id: Long = 0,

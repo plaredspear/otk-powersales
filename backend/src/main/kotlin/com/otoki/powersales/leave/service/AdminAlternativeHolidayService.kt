@@ -18,6 +18,7 @@ import com.otoki.powersales.leave.exception.EmployeeNotFoundException
 import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.service.TeamMemberScheduleOwnerResolver
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -28,7 +29,8 @@ class AdminAlternativeHolidayService(
     private val alternativeHolidayRepository: AlternativeHolidayRepository,
     private val employeeRepository: EmployeeRepository,
     private val validator: AlternativeHolidayValidator,
-    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
 ) {
 
     fun getAlternativeHolidays(
@@ -93,12 +95,15 @@ class AdminAlternativeHolidayService(
         val employee = employeeRepository.findById(altHoliday.employeeId!!)
             .orElseThrow { IllegalStateException("Employee not found: ${altHoliday.employeeId}") }
 
+        // owner = 대상 직원의 소속 조장 User (레거시 TeamMemberScheduleTriggerHandler.insertOwner 동등).
+        val ownerUser = teamMemberScheduleOwnerResolver.resolveOwner(employee)
         teamMemberScheduleRepository.save(
             TeamMemberSchedule(
                 employee = employee,
                 workingDate = confirmDate,
                 workingType = WorkingType.ALT_HOLIDAY,
-                altHoliday = altHoliday
+                altHoliday = altHoliday,
+                ownerUser = ownerUser
             )
         )
 

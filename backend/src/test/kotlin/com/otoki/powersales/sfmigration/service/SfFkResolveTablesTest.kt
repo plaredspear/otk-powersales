@@ -207,11 +207,12 @@ class SfFkResolveTablesTest {
         }
 
         @Test
-        @DisplayName("owner_user_id + owner_group_id + XOR 를 가진 16개 entity 가 모두 POLYMORPHIC_OWNER_TABLES 에 등록")
-        fun polymorphicOwnerSixteenTables() {
+        @DisplayName("owner_user_id + owner_group_id + XOR 를 가진 17개 entity 가 모두 POLYMORPHIC_OWNER_TABLES 에 등록")
+        fun polymorphicOwnerSeventeenTables() {
             // 각 전용 SF align 마이그레이션(V112~V146)으로 owner_group_id ADD 확정.
             // 미등록 시 Group(00G) 소유 row 의 owner_user_id/owner_group_id 가 둘 다 NULL.
             // account(OwnerId=User 단독) / group(=[Organization,User]) 은 polymorphic XOR 대상 아님 — 미포함.
+            // monthly_sales_history 는 복원(db841eb9) 시 화이트리스트 등록이 누락됐던 케이스 — 회귀 가드.
             assertThat(POLYMORPHIC_OWNER_TABLES).contains(
                 "account_category_master",
                 "agreement_history",
@@ -226,6 +227,7 @@ class SfFkResolveTablesTest {
                 "employee_input_criteria_master",
                 "erp_order_product",
                 "monthly_female_employee_integration_schedule",
+                "monthly_sales_history",
                 "notice",
                 "product",
                 "team_member_schedule",

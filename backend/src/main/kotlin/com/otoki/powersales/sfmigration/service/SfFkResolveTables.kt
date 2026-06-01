@@ -37,7 +37,7 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
     // SF DKRetail__SiteAcitivity__c.OwnerId.referenceTo = [Group, User] polymorphic.
     // site_activity.owner_sfid → owner_user_id (005) / owner_group_id (00G) 분기.
     "site_activity",
-    // owner_user_id + owner_group_id + XOR CHECK 를 가졌으나 누락돼 있던 16개 entity.
+    // owner_user_id + owner_group_id + XOR CHECK 를 가졌으나 누락돼 있던 17개 entity.
     // 각 전용 SF align 마이그레이션(V112~V146)으로 owner_group_id ADD 확정. 미등록 시
     // Group(00G) 소유 row 의 owner_user_id/owner_group_id 가 둘 다 NULL 로 남던 문제.
     // (account / group 은 OwnerId.referenceTo 가 User 단독 / [Organization,User] 라 polymorphic XOR 대상 아님 — 제외)
@@ -54,6 +54,9 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
     "employee_input_criteria_master",
     "erp_order_product",
     "monthly_female_employee_integration_schedule",
+    // V145 — owner polymorphic R-2 (referenceTo = [Group, User]). MonthlySalesHistory 복원
+    // (db841eb9) 시 owner_sfid/owner_user_id/owner_group_id/XOR 는 갖췄으나 화이트리스트 등록 누락.
+    "monthly_sales_history",
     "notice",
     "product",
     "team_member_schedule",

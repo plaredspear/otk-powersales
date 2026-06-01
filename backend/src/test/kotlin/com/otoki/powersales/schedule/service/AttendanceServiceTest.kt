@@ -69,6 +69,7 @@ class AttendanceServiceTest {
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService = mockk(relaxUnitFun = true)
     private val clock: Clock = mockk()
     private val attendanceProperties: AttendanceProperties = spyk(AttendanceProperties(gpsThresholdMeters = 500))
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
 
     private val attendanceService = AttendanceService(
         employeeRepository,
@@ -78,8 +79,13 @@ class AttendanceServiceTest {
         ororaApiService,
         adminMonthlyIntegrationService,
         attendanceProperties,
+        teamMemberScheduleOwnerResolver,
         clock,
     )
+
+    init {
+        every { teamMemberScheduleOwnerResolver.resolveOwner(any()) } returns null
+    }
 
     @BeforeEach
     fun setUpClock() {

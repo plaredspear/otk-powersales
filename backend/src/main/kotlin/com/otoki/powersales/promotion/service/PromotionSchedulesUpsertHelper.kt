@@ -11,6 +11,7 @@ import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.schedule.service.TeamMemberScheduleOwnerResolver
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -20,7 +21,8 @@ class PromotionSchedulesUpsertHelper(
     private val promotionRepository: PromotionRepository,
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository,
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
 ) {
 
     companion object {
@@ -72,6 +74,11 @@ class PromotionSchedulesUpsertHelper(
         validateDuplicateSchedule(employees, existingTeamMemberSchedules, promotion, peIds, userByIdMap)
         validateEmployeeStatus(employees, userByIdMap)
 
+        // owner = 대상 직원의 소속 조장 User (레거시 TeamMemberScheduleTriggerHandler.insertOwner 동등).
+        // 레거시는 insert(beforeInsert) 시점에만 owner 를 지정하므로 신규 row 에만 적용한다.
+        val ownerByCostCenterCode = teamMemberScheduleOwnerResolver
+            .resolveOwnersByCostCenterCode(userByIdMap.values)
+
         val teamMemberSchedulesToSave = mutableListOf<TeamMemberSchedule>()
         for (pe in employees) {
             val existing = existingTeamMemberSchedulesByPeId[pe.id]
@@ -98,7 +105,8 @@ class PromotionSchedulesUpsertHelper(
                     workingCategory1 = pe.workType1!!,
                     workingCategory3 = pe.workType3!!,
                     workingCategory4 = null,
-                    promotionEmployee = pe
+                    promotionEmployee = pe,
+                    ownerUser = empEntity.costCenterCode?.let { ownerByCostCenterCode[it] }
                 )
                 teamMemberSchedulesToSave.add(newTeamMemberSchedule)
             }

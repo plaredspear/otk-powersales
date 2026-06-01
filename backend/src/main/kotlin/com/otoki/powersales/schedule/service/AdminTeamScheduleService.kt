@@ -31,7 +31,8 @@ class AdminTeamScheduleService(
     private val organizationRepository: OrganizationRepository,
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
     private val teamScheduleValidator: TeamScheduleValidator,
-    private val branchCodeExpander: BranchCodeExpander
+    private val branchCodeExpander: BranchCodeExpander,
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
 ) {
 
     /**
@@ -288,6 +289,9 @@ class AdminTeamScheduleService(
         val teamLeader = employeeRepository.findById(principal.requireEmployeeId())
             .orElseThrow { TeamScheduleEmployeeNotFoundException() }
 
+        // owner 는 대상 직원의 소속 조장 User (레거시 TeamMemberScheduleTriggerHandler.insertOwner 동등).
+        // teamLeader(= 등록 관리자 principal)와는 별개의 필드.
+        val ownerUser = teamMemberScheduleOwnerResolver.resolveOwner(employee)
         val schedule = TeamMemberSchedule(
             employee = employee,
             workingDate = workingDate,
@@ -296,7 +300,8 @@ class AdminTeamScheduleService(
             workingCategory2 = request.workingCategory2,
             workingCategory3 = request.workingCategory3,
             account = account,
-            teamLeader = teamLeader
+            teamLeader = teamLeader,
+            ownerUser = ownerUser
         )
         val saved = teamMemberScheduleRepository.save(schedule)
 
