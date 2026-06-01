@@ -20,8 +20,8 @@ interface SalesEntry {
 const ENTRIES: SalesEntry[] = [
   { to: '/sales/monthly', label: '월매출', icon: <BarChartOutlined />, color: '#fa8c16' },
   { to: '/promotions', label: '행사매출', icon: <CalendarOutlined />, color: '#eb2f96' },
-  { label: '전산매출', icon: <DesktopOutlined />, color: '#13c2c2', limited: true },
-  { label: 'POS매출', icon: <ShoppingCartOutlined />, color: '#722ed1', limited: true },
+  { to: '/sales/electronic', label: '전산매출', icon: <DesktopOutlined />, color: '#13c2c2' },
+  { to: '/sales/pos', label: 'POS매출', icon: <ShoppingCartOutlined />, color: '#722ed1', limited: true },
 ];
 
 /** 매출 현황 허브 (레거시 promotion/month/main2). */
@@ -50,7 +50,7 @@ export default function SalesHubPage() {
         ))}
       </Row>
       <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 12 }}>
-        전산·POS 매출은 데이터 연동(거래처 레벨) 확정 후 제공됩니다.
+        전산매출은 거래처 레벨로 제공됩니다. POS매출은 데이터 연동 확정 후 제공 예정입니다.
       </Typography.Paragraph>
     </div>
   );

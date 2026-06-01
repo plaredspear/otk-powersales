@@ -51,6 +51,9 @@ const DailySalesPage = lazy(() => import('@/pages/dailysales/DailySalesPage'));
 const LeaderTeamMembersPage = lazy(() => import('@/pages/leader/LeaderTeamMembersPage'));
 const LeaderDailyStatusPage = lazy(() => import('@/pages/leader/LeaderDailyStatusPage'));
 const LeaderScheduleCreatePage = lazy(() => import('@/pages/leader/LeaderScheduleCreatePage'));
+// Wave 5 (전산·POS, 거래처 레벨)
+const ElectronicSalesPage = lazy(() => import('@/pages/sales/ElectronicSalesPage'));
+const PosSalesPage = lazy(() => import('@/pages/sales/PosSalesPage'));
 
 export default function AppRoutes() {
   return (
@@ -111,6 +114,10 @@ export default function AppRoutes() {
               <Route path="/leader/members" element={<LeaderTeamMembersPage />} />
               <Route path="/leader/daily-status" element={<LeaderDailyStatusPage />} />
               <Route path="/leader/schedule/new" element={<LeaderScheduleCreatePage />} />
+
+              {/* Wave 5 — 전산·POS (거래처 레벨) */}
+              <Route path="/sales/electronic" element={<ElectronicSalesPage />} />
+              <Route path="/sales/pos" element={<PosSalesPage />} />
             </Route>
           </Route>
 
