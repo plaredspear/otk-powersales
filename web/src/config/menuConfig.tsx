@@ -100,7 +100,7 @@ export const menuRoute: MenuRoute = {
       children: [
         { path: '/sales/monthly', name: '월 매출(물류배부)', entity: 'monthly_sales_history', operation: 'READ' },
         { path: '/sales/electronic', name: '월 매출(전산실적)' },
-        { path: '/sales/pos', name: 'POS매출' },
+        { path: '/sales/pos', name: 'POS매출', entity: 'monthly_sales_history', operation: 'READ' },
       ],
     },
     {
