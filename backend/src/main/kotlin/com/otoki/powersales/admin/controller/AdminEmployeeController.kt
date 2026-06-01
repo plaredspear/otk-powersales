@@ -12,6 +12,7 @@ import com.otoki.powersales.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.employee.dto.response.ResetDeviceResponse
 import com.otoki.powersales.employee.dto.response.ResetPasswordResponse
+import com.otoki.powersales.employee.enums.EmploymentStatus
 import com.otoki.powersales.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.employee.service.AdminEmployeeManualRegisterService
 import com.otoki.powersales.employee.service.AdminEmployeeService
@@ -73,20 +74,22 @@ class AdminEmployeeController(
      * SF 의 lookup search 는 Employee FLS/object access 와 무관하게 화면 권한 (Promotion CRUD) 으로
      * 작동 — 본 endpoint 는 SF 메커니즘 정합. 결과는 동일 [EmployeeListResponse] 재사용
      * (sharing rule 평가는 `adminEmployeeService.getEmployees` 가 그대로 적용).
+     *
+     * 검색 범위는 재직 사원 한정 — 레거시 SF SOQL (`DKRetail__Status__c = '재직'`) 이 서버에서 항상
+     * 강제하던 조건을 동일하게 서버에서 고정한다 (호출 측 status 파라미터에 의존하지 않음).
      */
     @GetMapping("/lookup")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun lookupEmployees(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
-        @RequestParam(required = false) status: String?,
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
         val response = adminEmployeeService.getEmployees(
             scope = scope,
-            status = status,
+            status = EmploymentStatus.ACTIVE.code,
             costCenterCode = null,
             keyword = keyword,
             role = null,

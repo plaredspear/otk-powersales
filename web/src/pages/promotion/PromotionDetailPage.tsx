@@ -187,7 +187,7 @@ export default function PromotionDetailPage() {
 
     const timer = setTimeout(async () => {
       try {
-        const result = await fetchEmployeesForPromotionLookup({ status: '재직', keyword, size: 5 });
+        const result = await fetchEmployeesForPromotionLookup({ keyword, size: 5 });
         setEmployeeOptions((prev) => new Map(prev).set(rowId, result.content));
       } catch {
         setEmployeeOptions((prev) => { const next = new Map(prev); next.delete(rowId); return next; });
