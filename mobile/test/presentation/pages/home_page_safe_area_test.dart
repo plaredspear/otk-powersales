@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/services/fcm_token_registrar.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/data/datasources/auth_local_datasource.dart';
 import 'package:mobile/domain/entities/attendance_summary.dart';
@@ -161,6 +162,7 @@ class _FakeAuthNotifier extends AuthNotifier {
           logoutUseCase: _FakeLogoutUseCase(),
           localDataSource: _FakeAuthLocalDataSource(),
           repository: _FakeAuthRepository(),
+          fcmTokenRegistrar: _FakeFcmTokenRegistrar(),
         ) {
     state = const AuthState(
       isLoading: false,
@@ -174,6 +176,11 @@ class _FakeAuthNotifier extends AuthNotifier {
       ),
     );
   }
+}
+
+class _FakeFcmTokenRegistrar implements FcmTokenRegistrar {
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeLoginUseCase implements LoginUseCase {

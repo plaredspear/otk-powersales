@@ -9,6 +9,12 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  # 빌드 산출물 제외 — firebase iOS SPM 체크아웃(build/ios/SourcePackages)의
+  # 예제 코드가 `flutter analyze` 결과를 오염시키는 것을 방지.
+  exclude:
+    - build/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

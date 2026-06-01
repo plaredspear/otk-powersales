@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -5,6 +9,8 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app_router.dart';
 import 'core/navigation/navigator_key.dart';
+import 'core/services/fcm_token_registrar.dart';
+import 'core/services/push_notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/auth_state.dart';
@@ -18,6 +24,16 @@ void main() async {
 
   // Hive 초기화
   await Hive.initFlutter();
+
+  // FCM 초기화. 네이티브 설정 파일(google-services.json / GoogleService-Info.plist)이
+  // 아직 없으면 초기화가 실패하므로, 그 경우 graceful 하게 skip 한다.
+  try {
+    await Firebase.initializeApp();
+    // 백그라운드/종료 상태 메시지 핸들러는 최상위 함수로 가능한 한 일찍 등록.
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  } catch (_) {
+    // 설정 파일 미존재 — 푸시 비활성 상태로 앱 구동.
+  }
 
   runApp(
     const ProviderScope(
@@ -35,6 +51,8 @@ class OtokiApp extends ConsumerStatefulWidget {
 
 class _OtokiAppState extends ConsumerState<OtokiApp>
     with WidgetsBindingObserver {
+  StreamSubscription<String>? _tokenRefreshSub;
+
   @override
   void initState() {
     super.initState();
@@ -42,11 +60,25 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     // 앱 시작 시 인증 초기화 (저장된 사번 로드 + 자동 로그인 시도)
     Future.microtask(() {
       ref.read(authProvider.notifier).initialize();
+
+      // FCM 권한 요청 + 토큰/리스너 등록 (설정 파일 없으면 내부에서 skip)
+      final push = ref.read(pushNotificationServiceProvider);
+      push.initialize();
+
+      // FCM 토큰 갱신 시 인증 상태면 서버에 재등록 (Firebase 초기화된 경우만 구독)
+      if (push.isAvailable) {
+        _tokenRefreshSub = push.onTokenRefresh.listen((token) {
+          if (ref.read(authProvider).isAuthenticated) {
+            ref.read(fcmTokenRegistrarProvider).registerToken(token);
+          }
+        });
+      }
     });
   }
 
   @override
   void dispose() {
+    _tokenRefreshSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
