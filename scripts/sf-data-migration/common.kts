@@ -1005,6 +1005,39 @@ val MONTHLY_SALES_HISTORY_METADATA = EntityMetadata(
     useCopyStrategy = true
 )
 
+val SALES_PROGRESS_RATE_MASTER_METADATA = EntityMetadata(
+    targetName = "SalesProgressRateMaster",
+    sObjectName = "SalesProgressRateMaster__c",
+    tableName = "sales_progress_rate_master",
+    pkColumn = "sales_progress_rate_master_id",
+    conflictKey = "sfid",
+    fields = listOf(
+        FieldMapping("Id", "sfid", nullable = false),
+        FieldMapping("Name", "name"),
+        FieldMapping("AccountCDUpl__c", "account_cd_upl"),
+        FieldMapping("BusinessRate__c", "business_rate", isString = false),
+        FieldMapping("CurrentMonthSalesAmount__c", "current_month_sales_amount", isString = false),
+        FieldMapping("ExternalKey__c", "external_key"),
+        FieldMapping("FOTartgetAmount__c", "fo_target_amount", isString = false),
+        FieldMapping("FRTargetAmount__c", "fr_target_amount", isString = false),
+        FieldMapping("PreviousMonthSalesAmount__c", "previous_month_sales_amount", isString = false),
+        FieldMapping("RMTartgetAmount__c", "rm_target_amount", isString = false),
+        FieldMapping("RTTargetAmount__c", "rt_target_amount", isString = false),
+        FieldMapping("TargetMonth__c", "target_month"),
+        FieldMapping("TargetSumAmount__c", "target_sum_amount", isString = false),
+        FieldMapping("TargetYear__c", "target_year"),
+        FieldMapping("accountbranchView__c", "account_branch_view"),
+        FieldMapping("AccountBranchCode__c", "account_branch_code"),
+        FieldMapping("IsDeleted", "is_deleted", isString = false),
+        FieldMapping("Account__c", "account_sfid"),
+        FieldMapping("OwnerId", "owner_sfid"),
+        FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedById", "last_modified_by_sfid")
+    )
+)
+
 val NEW_PRODUCT_METADATA = EntityMetadata(
     targetName = "NewProduct",
     sObjectName = "NewProduct__c",
@@ -1715,6 +1748,7 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "SiteActivity" to TargetSpec(SITE_ACTIVITY_METADATA, "DKRetail__SiteAcitivity__c", "site_activities.csv", "inspection/entity/SiteActivity"),
     "MonthlyFemaleEmployeeIntegrationSchedule" to TargetSpec(MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA, "MonthlyFemaleEmployeeIntegrationSchedule__c", "monthly_female_employee_integration_schedules.csv", "schedule/entity/MonthlyFemaleEmployeeIntegrationSchedule"),
     "MonthlySalesHistory" to TargetSpec(MONTHLY_SALES_HISTORY_METADATA, "MonthlySalesHistory__c", "monthly_sales_historys.csv", "sales/entity/MonthlySalesHistory"),
+    "SalesProgressRateMaster" to TargetSpec(SALES_PROGRESS_RATE_MASTER_METADATA, "SalesProgressRateMaster__c", "sales_progress_rate_masters.csv", "sales/entity/SalesProgressRateMaster"),
     "NewProduct" to TargetSpec(NEW_PRODUCT_METADATA, "NewProduct__c", "new_products.csv", "product/entity/NewProduct"),
     "OrderRequest" to TargetSpec(ORDER_REQUEST_METADATA, "DKRetail__OrderRequest__c", "order_requests.csv", "order/entity/OrderRequest"),
     "OrderRequestProduct" to TargetSpec(ORDER_REQUEST_PRODUCT_METADATA, "DKRetail__OrderRequestProduct__c", "order_request_products.csv", "order/entity/OrderRequestProduct"),
@@ -1763,6 +1797,7 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "SiteActivity",
     "MonthlyFemaleEmployeeIntegrationSchedule",
     "MonthlySalesHistory",
+    "SalesProgressRateMaster",
     "NewProduct",
     "OrderRequest",
     "OrderRequestProduct",
@@ -1787,7 +1822,7 @@ val SUPPORTED_TARGETS = setOf(
     "AgreementHistory", "AgreementWord", "AlternativeHoliday", "Appointment", "AttendanceLog",
     "AttendInfo", "Claim", "DisplayWorkSchedule", "EmployeeInputCriteriaMaster",
     "ErpOrder", "ErpOrderProduct", "HolidayMaster", "InspectionTheme", "SiteActivity",
-    "MonthlyFemaleEmployeeIntegrationSchedule", "MonthlySalesHistory", "NewProduct", "OrderRequest", "OrderRequestProduct",
+    "MonthlyFemaleEmployeeIntegrationSchedule", "MonthlySalesHistory", "SalesProgressRateMaster", "NewProduct", "OrderRequest", "OrderRequestProduct",
     "ProductBarcode", "ProfessionalPromotionTeamHistory", "ProfessionalPromotionTeamMaster", "PromotionEmployee", "PushMessage",
     "PushMessageReceiver", "TeamMemberSchedule", "UploadFile", "Suggestion",
     "UserRole", "Profile"
