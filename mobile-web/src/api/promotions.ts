@@ -23,8 +23,18 @@ export interface PromotionListData {
   totalPages: number;
 }
 
+/** backend `MobilePromotionEmployeeItem` */
 export interface PromotionEmployeeItem {
-  [key: string]: unknown;
+  id: number;
+  employeeName: string | null;
+  scheduleDate: string | null;
+  workStatus: string | null;
+  workType3: string | null;
+  targetAmount: number | null;
+  actualAmount: number | null;
+  /** 조회 사용자 본인 행 — 일매출 등록 진입점 노출용 */
+  isMine: boolean;
+  isClosed: boolean;
 }
 
 /** backend `MobilePromotionDetailResponse` */

@@ -1,13 +1,14 @@
-import { Card, Descriptions, Tag, Typography, Space } from 'antd';
+import { Button, Card, Descriptions, List, Tag, Typography, Space } from 'antd';
 import { useQuery } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { fetchPromotionDetail } from '@/api/promotions';
 import DetailHeader from '@/components/DetailHeader';
 import { QueryBoundary } from '@/components/PageStates';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatWon } from '@/lib/format';
 
 export default function PromotionDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const promotionId = Number(id);
 
   const query = useQuery({
@@ -46,9 +47,48 @@ export default function PromotionDetailPage() {
               {p.message && <Descriptions.Item label="메시지">{p.message}</Descriptions.Item>}
               {p.remark && <Descriptions.Item label="비고">{p.remark}</Descriptions.Item>}
             </Descriptions>
-            <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 12 }}>
-              투입 여사원 {p.employees?.length ?? 0}명 · 일매출 등록은 Wave 3(카메라 연동)에서 제공됩니다.
-            </Typography.Paragraph>
+            {p.employees?.length > 0 && (
+              <>
+                <Typography.Title level={5} style={{ marginTop: 16 }}>
+                  투입 여사원 ({p.employees.length})
+                </Typography.Title>
+                <List
+                  dataSource={p.employees}
+                  renderItem={(emp) => (
+                    <List.Item
+                      actions={
+                        emp.isMine
+                          ? [
+                              <Button
+                                key="ds"
+                                type="link"
+                                onClick={() => navigate(`/daily-sales/${emp.id}`)}
+                              >
+                                {emp.isClosed ? '일매출 보기' : '일매출 등록'}
+                              </Button>,
+                            ]
+                          : undefined
+                      }
+                    >
+                      <List.Item.Meta
+                        title={
+                          <span>
+                            {emp.employeeName ?? '-'}{' '}
+                            {emp.isMine && <Tag color="blue">본인</Tag>}
+                            {emp.isClosed && <Tag color="green">마감</Tag>}
+                          </span>
+                        }
+                        description={
+                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                            실적 {formatWon(emp.actualAmount)}
+                          </Typography.Text>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              </>
+            )}
           </Card>
         )}
       </QueryBoundary>

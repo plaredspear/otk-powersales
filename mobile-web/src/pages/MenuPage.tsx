@@ -13,6 +13,10 @@ import {
   LockOutlined,
   SettingOutlined,
   LogoutOutlined,
+  SearchOutlined,
+  FileDoneOutlined,
+  AuditOutlined,
+  BulbOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
@@ -27,6 +31,9 @@ interface MenuEntry {
 const ENTRIES: MenuEntry[] = [
   { to: '/mypage/schedule', label: '내 일정', icon: <ScheduleOutlined /> },
   { to: '/safety-check', label: '안전점검', icon: <SafetyOutlined /> },
+  { to: '/orders', label: '주문', icon: <FileDoneOutlined /> },
+  { to: '/products/search', label: '제품 검색', icon: <SearchOutlined /> },
+  { to: '/inspections', label: '현장 점검', icon: <AuditOutlined /> },
   { to: '/notices', label: '공지사항', icon: <SoundOutlined /> },
   { to: '/education', label: '교육자료', icon: <ReadOutlined /> },
   { to: '/accounts', label: '내 거래처', icon: <ShopOutlined /> },
@@ -34,6 +41,7 @@ const ENTRIES: MenuEntry[] = [
   { to: '/promotions', label: '행사매출', icon: <CalendarOutlined /> },
   { to: '/claims', label: '클레임', icon: <WarningOutlined /> },
   { to: '/logistics-claims', label: '물류클레임', icon: <CarOutlined /> },
+  { to: '/suggestions/new', label: '제안하기', icon: <BulbOutlined /> },
   { to: '/product-expiration', label: '유통기한 관리', icon: <FieldTimeOutlined /> },
   { to: '/password/verify', label: '비밀번호 변경', icon: <LockOutlined /> },
   { to: '/settings', label: '앱 정보 / 설정', icon: <SettingOutlined /> },

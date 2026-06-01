@@ -1,5 +1,29 @@
 import client from './client';
-import { unwrap, type ApiResponse } from './types';
+import { unwrap, type ApiResponse, type SpringPage } from './types';
+
+/** backend `ProductDto` (검색 결과 항목) */
+export interface ProductSearchItem {
+  productCode: string | null;
+  productName: string | null;
+  logisticsBarcode: string | null;
+  storageCondition: string | null;
+  shelfLife: string | null;
+  category1: string | null;
+  category2: string | null;
+}
+
+export async function searchProducts(
+  query: string,
+  type: 'text' | 'barcode' = 'text',
+  page = 0,
+  size = 20
+): Promise<SpringPage<ProductSearchItem>> {
+  const res = await client.get<ApiResponse<SpringPage<ProductSearchItem>>>(
+    '/api/v1/mobile/products/search',
+    { params: { query, type, page, size } }
+  );
+  return unwrap(res, '제품 검색에 실패했습니다');
+}
 
 /** backend `ProductBarcodeItem` (제품 상세 내) */
 export interface ProductBarcodeItem {

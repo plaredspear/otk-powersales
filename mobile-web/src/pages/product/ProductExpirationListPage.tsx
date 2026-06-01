@@ -1,8 +1,14 @@
 import { useState } from 'react';
-import { Card, DatePicker, List, Tag, Typography } from 'antd';
-import { useQuery } from '@tanstack/react-query';
+import { Button, Card, DatePicker, List, Tag, Typography, Popconfirm, App as AntdApp } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
-import { fetchProductExpirationList } from '@/api/productExpiration';
+import { useNavigate } from 'react-router-dom';
+import {
+  fetchProductExpirationList,
+  deleteProductExpiration,
+  type ProductExpirationItem,
+} from '@/api/productExpiration';
 import DetailHeader from '@/components/DetailHeader';
 import { QueryBoundary } from '@/components/PageStates';
 import { formatDate } from '@/lib/format';
@@ -16,6 +22,9 @@ function dDayTag(dDay: number, isExpired: boolean) {
 }
 
 export default function ProductExpirationListPage() {
+  const navigate = useNavigate();
+  const { message } = AntdApp.useApp();
+  const queryClient = useQueryClient();
   const [range, setRange] = useState<[Dayjs, Dayjs]>([dayjs(), dayjs().add(3, 'month')]);
 
   const fromDate = range[0].format('YYYY-MM-DD');
@@ -26,9 +35,32 @@ export default function ProductExpirationListPage() {
     queryFn: () => fetchProductExpirationList({ fromDate, toDate }),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (seq: number) => deleteProductExpiration(seq),
+    onSuccess: () => {
+      message.success('삭제되었습니다');
+      queryClient.invalidateQueries({ queryKey: ['product-expiration'] });
+    },
+    onError: (e) => message.error(e instanceof Error ? e.message : '삭제에 실패했습니다'),
+  });
+
+  const goEdit = (item: ProductExpirationItem) =>
+    navigate(`/product-expiration/${item.seq}/edit`, { state: item });
+
   return (
     <>
-      <DetailHeader title="유통기한 관리" />
+      <DetailHeader
+        title="유통기한 관리"
+        extra={
+          <Button
+            type="link"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/product-expiration/new')}
+          >
+            등록
+          </Button>
+        }
+      />
       <RangePicker
         value={range}
         allowClear={false}
@@ -61,7 +93,20 @@ export default function ProductExpirationListPage() {
                       유통기한 {formatDate(item.expirationDate)}
                     </div>
                   </div>
-                  <div>{dDayTag(item.dDay, item.isExpired)}</div>
+                  <div style={{ textAlign: 'right' }}>
+                    {dDayTag(item.dDay, item.isExpired)}
+                    <div style={{ marginTop: 6 }}>
+                      <Button type="text" size="small" icon={<EditOutlined />} onClick={() => goEdit(item)} />
+                      <Popconfirm
+                        title="삭제하시겠습니까?"
+                        okText="삭제"
+                        cancelText="취소"
+                        onConfirm={() => deleteMutation.mutate(item.seq)}
+                      >
+                        <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                      </Popconfirm>
+                    </div>
+                  </div>
                 </div>
               </Card>
             )}

@@ -1,4 +1,5 @@
-import { List, Tag, Typography, Card } from 'antd';
+import { List, Tag, Typography, Card, Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { fetchClaims } from '@/api/claims';
@@ -27,14 +28,24 @@ export default function ClaimListPage() {
   });
 
   return (
-    <QueryBoundary
-      isLoading={query.isLoading}
-      isError={query.isError}
-      data={query.data}
-      onRetry={query.refetch}
-      isEmpty={(d) => d.length === 0}
-      emptyDescription="등록된 클레임이 없습니다"
-    >
+    <>
+      <Button
+        type="primary"
+        block
+        icon={<PlusOutlined />}
+        style={{ marginBottom: 12 }}
+        onClick={() => navigate('/claims/new')}
+      >
+        클레임 등록
+      </Button>
+      <QueryBoundary
+        isLoading={query.isLoading}
+        isError={query.isError}
+        data={query.data}
+        onRetry={query.refetch}
+        isEmpty={(d) => d.length === 0}
+        emptyDescription="등록된 클레임이 없습니다"
+      >
       {(claims) => (
         <List
           dataSource={claims}
@@ -64,6 +75,7 @@ export default function ClaimListPage() {
           )}
         />
       )}
-    </QueryBoundary>
+      </QueryBoundary>
+    </>
   );
 }

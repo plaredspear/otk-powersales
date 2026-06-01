@@ -33,6 +33,20 @@ const ChangePasswordPage = lazy(() => import('@/pages/mypage/ChangePasswordPage'
 const SafetyCheckPage = lazy(() => import('@/pages/safetycheck/SafetyCheckPage'));
 const MyScheduleCalendarPage = lazy(() => import('@/pages/mypage/MyScheduleCalendarPage'));
 const MyDailySchedulePage = lazy(() => import('@/pages/mypage/MyDailySchedulePage'));
+// Wave 3 (device 의존)
+const GpsConsentPage = lazy(() => import('@/pages/gps/GpsConsentPage'));
+const ProductSearchPage = lazy(() => import('@/pages/product/ProductSearchPage'));
+const ProductExpirationWritePage = lazy(() => import('@/pages/product/ProductExpirationWritePage'));
+const OrderListPage = lazy(() => import('@/pages/order/OrderListPage'));
+const OrderDetailPage = lazy(() => import('@/pages/order/OrderDetailPage'));
+const OrderFormPage = lazy(() => import('@/pages/order/OrderFormPage'));
+const ClientOrderDetailPage = lazy(() => import('@/pages/order/ClientOrderDetailPage'));
+const ClaimRegisterPage = lazy(() => import('@/pages/claim/ClaimRegisterPage'));
+const InspectionListPage = lazy(() => import('@/pages/inspection/InspectionListPage'));
+const InspectionDetailPage = lazy(() => import('@/pages/inspection/InspectionDetailPage'));
+const InspectionRegisterPage = lazy(() => import('@/pages/inspection/InspectionRegisterPage'));
+const SuggestionRegisterPage = lazy(() => import('@/pages/suggestion/SuggestionRegisterPage'));
+const DailySalesPage = lazy(() => import('@/pages/dailysales/DailySalesPage'));
 
 export default function AppRoutes() {
   return (
@@ -72,6 +86,22 @@ export default function AppRoutes() {
               <Route path="/password/verify" element={<VerifyPasswordPage />} />
               <Route path="/password/change" element={<ChangePasswordPage />} />
               <Route path="/settings" element={<SettingPage />} />
+
+              {/* Wave 3 — device 의존 */}
+              <Route path="/gps-consent" element={<GpsConsentPage />} />
+              <Route path="/products/search" element={<ProductSearchPage />} />
+              <Route path="/product-expiration/new" element={<ProductExpirationWritePage />} />
+              <Route path="/product-expiration/:seq/edit" element={<ProductExpirationWritePage />} />
+              <Route path="/orders" element={<OrderListPage />} />
+              <Route path="/orders/new" element={<OrderFormPage />} />
+              <Route path="/orders/:id" element={<OrderDetailPage />} />
+              <Route path="/client-orders/:sapOrderNumber" element={<ClientOrderDetailPage />} />
+              <Route path="/claims/new" element={<ClaimRegisterPage />} />
+              <Route path="/inspections" element={<InspectionListPage />} />
+              <Route path="/inspections/new" element={<InspectionRegisterPage />} />
+              <Route path="/inspections/:id" element={<InspectionDetailPage />} />
+              <Route path="/suggestions/new" element={<SuggestionRegisterPage />} />
+              <Route path="/daily-sales/:promotionEmployeeId" element={<DailySalesPage />} />
             </Route>
           </Route>
 

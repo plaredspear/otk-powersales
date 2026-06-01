@@ -84,3 +84,30 @@ export async function fetchSuggestionDetail(suggestionId: number): Promise<Sugge
   );
   return unwrap(res, '상세 조회에 실패했습니다');
 }
+
+/** backend `SuggestionCreateRequest` (@RequestPart request JSON) */
+export interface SuggestionCreateRequest {
+  category?: string;
+  title?: string;
+  content?: string;
+  productCode?: string;
+  accountId?: number;
+  sapAccountCode?: string;
+  claimType?: string;
+  claimDate?: string;
+  carNumber?: string;
+  logisticsResponsibility?: string;
+  duplicateProposalNum?: string;
+  actionStatus?: string;
+}
+
+export async function createSuggestion(
+  request: SuggestionCreateRequest,
+  photos: File[]
+): Promise<{ id: number }> {
+  const form = new FormData();
+  form.append('request', new Blob([JSON.stringify(request)], { type: 'application/json' }));
+  photos.forEach((p) => form.append('photos', p));
+  const res = await client.post<ApiResponse<{ id: number }>>('/api/v1/mobile/suggestions', form);
+  return unwrap(res, '제안 등록에 실패했습니다');
+}

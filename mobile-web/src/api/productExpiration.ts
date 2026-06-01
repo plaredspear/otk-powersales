@@ -30,3 +30,48 @@ export async function fetchProductExpirationList(
   );
   return unwrap(res, '유통기한 목록 조회에 실패했습니다');
 }
+
+/** backend `ProductExpirationCreateRequest` */
+export interface ProductExpirationCreateRequest {
+  accountCode: string;
+  accountName: string;
+  productCode: string;
+  productName: string;
+  expirationDate: string; // YYYY-MM-DD
+  alarmDate: string; // YYYY-MM-DD
+  description?: string;
+}
+
+export interface ProductExpirationUpdateRequest {
+  expirationDate: string;
+  alarmDate: string;
+  description?: string;
+}
+
+export async function createProductExpiration(
+  request: ProductExpirationCreateRequest
+): Promise<ProductExpirationItem> {
+  const res = await client.post<ApiResponse<ProductExpirationItem>>(
+    '/api/v1/mobile/product-expiration',
+    request
+  );
+  return unwrap(res, '유통기한 등록에 실패했습니다');
+}
+
+export async function updateProductExpiration(
+  seq: number,
+  request: ProductExpirationUpdateRequest
+): Promise<ProductExpirationItem> {
+  const res = await client.put<ApiResponse<ProductExpirationItem>>(
+    `/api/v1/mobile/product-expiration/${seq}`,
+    request
+  );
+  return unwrap(res, '유통기한 수정에 실패했습니다');
+}
+
+export async function deleteProductExpiration(seq: number): Promise<void> {
+  const res = await client.delete<ApiResponse<unknown>>(
+    `/api/v1/mobile/product-expiration/${seq}`
+  );
+  if (!res.data.success) throw new Error(res.data.error?.message || '삭제에 실패했습니다');
+}
