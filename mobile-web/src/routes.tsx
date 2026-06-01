@@ -47,6 +47,10 @@ const InspectionDetailPage = lazy(() => import('@/pages/inspection/InspectionDet
 const InspectionRegisterPage = lazy(() => import('@/pages/inspection/InspectionRegisterPage'));
 const SuggestionRegisterPage = lazy(() => import('@/pages/suggestion/SuggestionRegisterPage'));
 const DailySalesPage = lazy(() => import('@/pages/dailysales/DailySalesPage'));
+// Wave 4 (조장)
+const LeaderTeamMembersPage = lazy(() => import('@/pages/leader/LeaderTeamMembersPage'));
+const LeaderDailyStatusPage = lazy(() => import('@/pages/leader/LeaderDailyStatusPage'));
+const LeaderScheduleCreatePage = lazy(() => import('@/pages/leader/LeaderScheduleCreatePage'));
 
 export default function AppRoutes() {
   return (
@@ -102,6 +106,11 @@ export default function AppRoutes() {
               <Route path="/inspections/:id" element={<InspectionDetailPage />} />
               <Route path="/suggestions/new" element={<SuggestionRegisterPage />} />
               <Route path="/daily-sales/:promotionEmployeeId" element={<DailySalesPage />} />
+
+              {/* Wave 4 — 조장 */}
+              <Route path="/leader/members" element={<LeaderTeamMembersPage />} />
+              <Route path="/leader/daily-status" element={<LeaderDailyStatusPage />} />
+              <Route path="/leader/schedule/new" element={<LeaderScheduleCreatePage />} />
             </Route>
           </Route>
 

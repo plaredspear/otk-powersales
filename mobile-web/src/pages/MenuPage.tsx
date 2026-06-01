@@ -17,6 +17,7 @@ import {
   FileDoneOutlined,
   AuditOutlined,
   BulbOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
@@ -30,6 +31,7 @@ interface MenuEntry {
 
 const ENTRIES: MenuEntry[] = [
   { to: '/mypage/schedule', label: '내 일정', icon: <ScheduleOutlined /> },
+  { to: '/leader/members', label: '여사원 관리(조장)', icon: <TeamOutlined /> },
   { to: '/safety-check', label: '안전점검', icon: <SafetyOutlined /> },
   { to: '/orders', label: '주문', icon: <FileDoneOutlined /> },
   { to: '/products/search', label: '제품 검색', icon: <SearchOutlined /> },
