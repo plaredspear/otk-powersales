@@ -209,6 +209,12 @@ WHERE IsDeleted = FALSE
 EOF
 )
 
+# Employee 는 WHERE 필터 없음 (의도) — agreement_history 등 이력성 entity 의 employee_sfid 는
+# 퇴직·휴직 사원을 대량 참조한다. Status='재직' 만 export 하면 Stage 2 FK resolve 에서
+# employee lookup 미해소(부모 부재)가 다수 발생. IsDeleted=FALSE 도 제거하여 soft-delete 된
+# 사원까지 전량 적재한다 (타 SObject 의 IsDeleted=FALSE 표준과 의도적으로 다름 — 이력 FK 완전 해소 우선).
+# 퇴직/휴직/삭제 사원은 employee.status 로 구분되어 backend 조회에서 status 필터로 걸러진다.
+# 주석은 heredoc 밖에 둔다 — build_count_soql 가 개행을 공백 치환하므로 SOQL 내 `--` 주석은 COUNT 쿼리를 깬다.
 EMPLOYEE_SOQL=$(cat <<'EOF'
 SELECT
     Id,
@@ -230,11 +236,14 @@ SELECT
     DKRetail__CRM_WorkType__c,
     OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM DKRetail__Employee__c
-WHERE IsDeleted = FALSE
-  AND DKRetail__Status__c = '재직'
 EOF
 )
 
+# User 는 IsActive 필터 없음 (의도) — account.OwnerId / CreatedById / LastModifiedById 등은
+# 퇴사·인사이동으로 비활성(IsActive=FALSE)된 User 를 대량 참조한다. 활성만 export 하면 Stage 2
+# FK resolve 에서 user lookup 미해소(부모 부재)가 다수 발생(특히 owner FK). 비활성 User 도 전량
+# 적재하되 user.is_active=FALSE 로 들어가 로그인/목록 노출에서 걸러진다. (단 Profile.Name NOT IN
+# 시스템 프로필 제외는 유지 — Admin/Integration 등 SF 시스템 계정은 적재 대상 아님.)
 USER_SOQL=$(cat <<'EOF'
 SELECT
     Id, Username, Email, IsActive,
@@ -247,8 +256,7 @@ SELECT
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
     Profile.Name
 FROM User
-WHERE IsActive = TRUE
-  AND Profile.Name NOT IN (
+WHERE Profile.Name NOT IN (
     'Admin', 'Standard', 'Read Only',
     'Analytics Cloud Integration User', 'Analytics Cloud Security User',
     'Anypoint Integration', 'Chatter External User', 'Chatter Free User',
@@ -800,6 +808,19 @@ WHERE Type IN ('Regular', 'Queue')
 EOF
 )
 
+# RecordType — 운영 실측 Id(sfid) 출처. 기존엔 XML 메타(recordType-meta.xml)로 record-type.csv 를
+# 만들었으나 XML 에는 18자리 RecordTypeId 가 없어 record_type.sfid 가 NULL → SObject row 의
+# record_type_sfid → record_type_id FK resolve(sfid 매칭) 가 전량 미해소였다. SOQL 단독 출처로
+# 전환해 Id 를 적재한다. (자연키 (SobjectType, DeveloperName) 는 XML 출처와 동일 — 기존 자연키 소비처
+# profile_record_type / permission_set_record_type 정합 유지.) Master RT 도 포함되나 무해
+# (record_type_id 매칭에만 쓰이고, Master 를 참조하는 row 가 없으면 미사용).
+RECORD_TYPE_SOQL=$(cat <<'EOF'
+SELECT
+    Id, SobjectType, DeveloperName, Name, Description, IsActive
+FROM RecordType
+EOF
+)
+
 # -----------------------------------------------------------------------------
 # 추출 함수
 # -----------------------------------------------------------------------------
@@ -1219,6 +1240,10 @@ if contains_target "Permission"; then
     run_query "PermissionSet" "$PS_SOQL" "$OUT_DIR/permission_sets.csv"
 
     run_query "PermissionSetAssignment" "$PSA_SOQL" "$OUT_DIR/permission_set_assignments.csv"
+
+    # RecordType — Id(sfid) 포함 SOQL 출처. record_type.sfid 를 채워 SObject row 의
+    # record_type_sfid → record_type_id FK resolve 가 매칭되도록 한다 (XML 출처는 Id 부재).
+    run_query "RecordType" "$RECORD_TYPE_SOQL" "$OUT_DIR/record-type.csv"
 
     if [[ "$SKIP_GROUP_MEMBERS" -eq 0 ]]; then
         run_query "GroupMember (PublicGroup)" "$GM_SOQL" "$OUT_DIR/group_members.csv"

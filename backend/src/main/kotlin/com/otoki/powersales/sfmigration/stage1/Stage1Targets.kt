@@ -1456,16 +1456,22 @@ object Stage1Targets {
     // ─────────────────────────────────────────────────────────
 
     private val RECORD_TYPE = EntityMetadata(
+        // SOQL 출처 (extract-csv.sh RECORD_TYPE_SOQL) — `SELECT Id, SobjectType, DeveloperName,
+        // Name, Description, IsActive FROM RecordType`. 기존 XML 출처는 18자리 RecordTypeId 가
+        // 없어 record_type.sfid 가 NULL → SObject row 의 record_type_sfid → record_type_id FK
+        // resolve(sfid 매칭)가 전량 미해소였다. Id 를 sfid 로 적재해 해소. CSV 헤더(SOQL 필드명)에
+        // FieldMapping.sfFieldName 을 정합시킨다. Master RT 도 포함되나 record_type_id 매칭 전용이라 무해.
         targetName = "RecordType",
-        sObjectName = null, // XML 메타 출처 — Master RT 적재 안 함 (Q4 옵션 1)
+        sObjectName = "RecordType",
         tableName = "record_type",
         csvFileName = "record-type.csv",
         fields = listOf(
-            FieldMapping("sObjectName", "sobject_name", nullable = false),
-            FieldMapping("developerName", "developer_name", nullable = false),
-            FieldMapping("label", "label", nullable = false),
-            FieldMapping("description", "description"),
-            FieldMapping("isActive", "is_active", nullable = false, nullPlaceholder = "true"),
+            FieldMapping("Id", "sfid", nullable = false),
+            FieldMapping("SobjectType", "sobject_name", nullable = false),
+            FieldMapping("DeveloperName", "developer_name", nullable = false),
+            FieldMapping("Name", "label", nullable = false),
+            FieldMapping("Description", "description"),
+            FieldMapping("IsActive", "is_active", nullable = false, nullPlaceholder = "true"),
         ),
     )
 

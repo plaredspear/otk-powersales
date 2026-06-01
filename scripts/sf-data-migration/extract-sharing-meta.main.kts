@@ -499,41 +499,16 @@ CSVWriter(PrintWriter(sObjectRelationCsv)).use { w ->
 println("[sobject-relation] $sObjectRelationCount 건 → $sObjectRelationCsv")
 
 // =============================================================================
-// 7) record-type — RecordType 정의 (spec #794)
+// 7) record-type — extract-csv.sh 의 RECORD_TYPE_SOQL 로 이관됨.
 //
-// XML 출처: objects/<SObject>/recordTypes/<DeveloperName>.recordType-meta.xml
-// Master RT 는 적재하지 않음 (Q4 옵션 1 — record_type_id IS NULL 이 곧 Master 의미)
+// 기존엔 XML 출처(objects/<SObject>/recordTypes/<DeveloperName>.recordType-meta.xml)로
+// record-type.csv 를 만들었으나 XML 에는 18자리 RecordTypeId 가 없어 record_type.sfid 가 NULL →
+// SObject row 의 record_type_sfid → record_type_id FK resolve(sfid 매칭)가 전량 미해소였다.
+// record-type.csv 는 이제 extract-csv.sh 가 `SELECT Id, SobjectType, DeveloperName, Name,
+// Description, IsActive FROM RecordType` 으로 생성한다 (Id=sfid 포함). 자연키 (SobjectType,
+// DeveloperName) 는 XML 출처와 동일해 아래 profile-record-type / permission-set-record-type 의
+// 자연키 join 정합은 유지된다. Master RT 도 SOQL 에 포함되나 record_type_id 매칭에만 쓰여 무해.
 // =============================================================================
-
-val recordTypeCsv = out.resolve("record-type.csv")
-var recordTypeCount = 0
-
-CSVWriter(PrintWriter(recordTypeCsv)).use { w ->
-    w.writeNext(arrayOf("sObjectName", "developerName", "label", "description", "isActive"))
-
-    if (objectsDir.isDirectory) {
-        objectsDir.listFiles { f -> f.isDirectory }?.sortedBy { it.name }?.forEach { dir ->
-            val sObjectName = dir.name
-            val recordTypesDir = dir.resolve("recordTypes")
-            if (recordTypesDir.isDirectory) {
-                recordTypesDir.listFiles { f -> f.name.endsWith(".recordType-meta.xml") }?.forEach { file ->
-                    try {
-                        val root = parseXml(file)
-                        val developerName = root.childText("fullName") ?: return@forEach
-                        val label = root.childText("label") ?: developerName
-                        val description = root.childText("description")
-                        val isActive = root.childText("active")?.toBoolean() ?: true
-                        w.writeNext(arrayOf(sObjectName, developerName, label, description ?: "", isActive.toString()))
-                        recordTypeCount++
-                    } catch (_: Exception) {
-                        // 깨진 파일 skip
-                    }
-                }
-            }
-        }
-    }
-}
-println("[record-type] $recordTypeCount 건 → $recordTypeCsv")
 
 // =============================================================================
 // 8) profile-record-type — Profile × RecordType visibility (spec #794)
@@ -693,7 +668,7 @@ println("  profile-flags.csv         : $profileCount 건")
 println("  permission-set-flags.csv  : $permsetCount 건")
 println("  sobject-setting.csv       : $sObjectSettingCount 건  [spec #791]")
 println("  sobject-relation.csv      : $sObjectRelationCount 건  [spec #791]")
-println("  record-type.csv           : $recordTypeCount 건  [spec #794]")
+println("  record-type.csv           : (extract-csv.sh RECORD_TYPE_SOQL 로 이관)  [spec #794]")
 println("  profile-record-type.csv   : $profileRecordTypeCount 건  [spec #794]")
 println("  permission-set-record-type.csv: $permSetRecordTypeCount 건  [spec #794]")
 println("  profile-field-permission.csv: $profileFieldPermissionCount 건  [spec #795]")

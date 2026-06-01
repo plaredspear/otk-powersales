@@ -220,17 +220,21 @@ class Stage1TargetsTest {
     inner class RecordTypeRegistration {
 
         @Test
-        @DisplayName("RecordType — sObjectName null + 5 fields")
+        @DisplayName("RecordType — SOQL 출처 (sObjectName = 'RecordType') + 6 fields (Id=sfid 포함)")
         fun recordType() {
             val meta = Stage1Targets.get("RecordType")
             assertThat(meta).isNotNull
-            assertThat(meta!!.sObjectName).isNull()
+            // SOQL 출처로 전환 — XML 메타엔 18자리 RecordTypeId 가 없어 record_type.sfid 가 NULL →
+            // record_type_sfid → record_type_id FK resolve(sfid 매칭) 전량 미해소였던 결손 해소.
+            assertThat(meta!!.sObjectName).isEqualTo("RecordType")
             assertThat(meta.tableName).isEqualTo("record_type")
             assertThat(meta.csvFileName).isEqualTo("record-type.csv")
             val headers = meta.fields.map { it.sfFieldName }
             assertThat(headers).containsExactly(
-                "sObjectName", "developerName", "label", "description", "isActive",
+                "Id", "SobjectType", "DeveloperName", "Name", "Description", "IsActive",
             )
+            // Id → sfid 매핑이 존재해야 record_type.sfid 가 채워진다.
+            assertThat(meta.fields.find { it.sfFieldName == "Id" }!!.dbColumnName).isEqualTo("sfid")
         }
 
         @Test
@@ -411,7 +415,8 @@ class Stage1TargetsTest {
                 "extract-sharing-meta.main.kts 미존재 (Docker 빌드 컨텍스트) — skip: ${extractSharingMetaKts.absolutePath}",
             )
             val result = mutableSetOf<String>()
-            val outDirPattern = Regex("""\${'$'}OUT_DIR/([a-z][a-z_]*\.csv)""")
+            // record-type.csv 처럼 하이픈을 쓰는 산출물(SOQL 출처로 이관)도 매칭하도록 `-` 포함.
+            val outDirPattern = Regex("""\${'$'}OUT_DIR/([a-z][a-z_-]*\.csv)""")
             val litPattern = Regex(""""([a-z][a-z-]*\.csv)"""")
             extractCsvSh.useLines { lines ->
                 lines.forEach { line ->

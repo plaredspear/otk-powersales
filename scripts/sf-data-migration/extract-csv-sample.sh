@@ -109,11 +109,12 @@ SELECT
     DKRetail__CRM_WorkType__c,
     OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM DKRetail__Employee__c
-WHERE IsDeleted = FALSE
-  AND DKRetail__Status__c = '재직'
 EOF
 )
 
+# IsActive 필터 없음 — 실 export(extract-csv.sh)와 SOQL 정합. 비활성 User 포함.
+# (주석은 heredoc 밖 — apply_sample_limit 가 SOQL 끝에 ORDER BY/LIMIT 를 한 줄로 append 하므로
+#  SOQL 내 `--` 주석은 LIMIT 를 무효화한다.)
 USER_SOQL=$(cat <<'EOF'
 SELECT
     Id, Username, Email, IsActive,
@@ -126,8 +127,7 @@ SELECT
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
     Profile.Name
 FROM User
-WHERE IsActive = TRUE
-  AND Profile.Name NOT IN (
+WHERE Profile.Name NOT IN (
     'Admin', 'Standard', 'Read Only',
     'Analytics Cloud Integration User', 'Analytics Cloud Security User',
     'Anypoint Integration', 'Chatter External User', 'Chatter Free User',
