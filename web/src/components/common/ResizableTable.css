@@ -1,0 +1,20 @@
+/* 헤더 셀에 상대 위치를 부여하여 핸들(absolute)의 위치 기준점을 만든다.
+   antd 헤더 th 는 기본 position 이 static 이므로 명시적으로 relative 지정. */
+.resizable-table .ant-table-thead > tr > th {
+  position: relative;
+}
+
+/* ResizableTable 헤더 셀 우측 드래그 핸들.
+   antd 헤더 <th> 안의 우측 경계에 얇은 영역을 배치하여 좌우 리사이즈 커서를 노출. */
+.resizable-handle {
+  position: absolute;
+  inset-inline-end: -5px;
+  bottom: 0;
+  z-index: 1;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  /* 핸들 자체는 보이지 않게 두고, 커서로만 리사이즈 가능 영역을 안내 */
+  background-color: transparent;
+  touch-action: none;
+}
