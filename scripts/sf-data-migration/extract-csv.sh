@@ -54,7 +54,7 @@ set -euo pipefail
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,SiteActivity,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,SiteActivity,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,SalesProgressRateMaster,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
 SKIP_GROUP_MEMBERS=0
 SKIP_VERIFY=0
 # spec #790 Q4 채택 — XML 메타 (extract-sharing-meta.sh) 자동 포함, --skip-sharing-meta 로 제외 가능
@@ -632,6 +632,19 @@ WHERE IsDeleted = FALSE
 EOF
 )
 
+SALES_PROGRESS_RATE_MASTER_SOQL=$(cat <<'EOF'
+SELECT
+    Id, Name, AccountCDUpl__c, BusinessRate__c, CurrentMonthSalesAmount__c,
+    ExternalKey__c, FOTartgetAmount__c, FRTargetAmount__c,
+    PreviousMonthSalesAmount__c, RMTartgetAmount__c, RTTargetAmount__c,
+    TargetMonth__c, TargetSumAmount__c, TargetYear__c, accountbranchView__c,
+    AccountBranchCode__c, IsDeleted, Account__c, OwnerId, CreatedById,
+    CreatedDate, LastModifiedDate, LastModifiedById
+FROM SalesProgressRateMaster__c
+WHERE IsDeleted = FALSE
+EOF
+)
+
 NEW_PRODUCT_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, Customer_Survey__c, Initiator__c, ManagementType__c,
@@ -1174,6 +1187,10 @@ fi
 
 if contains_target "MonthlySalesHistory"; then
     run_query "MonthlySalesHistory (MonthlySalesHistory__c)" "$MONTHLY_SALES_HISTORY_SOQL" "$OUT_DIR/monthly_sales_historys.csv"
+fi
+
+if contains_target "SalesProgressRateMaster"; then
+    run_query "SalesProgressRateMaster (SalesProgressRateMaster__c)" "$SALES_PROGRESS_RATE_MASTER_SOQL" "$OUT_DIR/sales_progress_rate_masters.csv"
 fi
 
 if contains_target "NewProduct"; then
