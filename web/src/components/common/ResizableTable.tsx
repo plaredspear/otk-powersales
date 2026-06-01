@@ -126,6 +126,7 @@ export default function ResizableTable<T extends object>({
   columns,
   minColumnWidth = 60,
   components,
+  size = 'small',
   ...rest
 }: ResizableTableProps<T>) {
   // 컬럼 인덱스별 width override. 사용자가 드래그를 마친 컬럼만 항목이 채워진다.
@@ -215,6 +216,7 @@ export default function ResizableTable<T extends object>({
       <div className="resizable-guide-line" ref={guideRef} aria-hidden="true" />
       <Table<T>
         {...rest}
+        size={size}
         scroll={scroll}
         columns={resizableColumns}
         components={{

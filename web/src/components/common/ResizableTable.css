@@ -3,6 +3,14 @@
   position: relative;
 }
 
+/* 셀 여백 최소화 — Salesforce 리스트뷰 수준의 컴팩트한 밀도.
+   antd size="small" 기본 패딩(8px)보다 상하를 더 줄여 한 화면에 더 많은 행을 노출한다.
+   헤더/바디 셀 모두에 적용. (헤더 우측 드래그 핸들 영역은 padding 과 무관하게 유지) */
+.resizable-table .ant-table-thead > tr > th,
+.resizable-table .ant-table-tbody > tr > td {
+  padding: 6px 8px;
+}
+
 /* 헤더 셀에 상대 위치를 부여하여 핸들(absolute)의 위치 기준점을 만든다.
    antd 헤더 th 는 기본 position 이 static 이므로 명시적으로 relative 지정. */
 .resizable-table .ant-table-thead > tr > th {
