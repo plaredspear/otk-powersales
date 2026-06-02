@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Table } from 'antd';
 import type { TableProps } from 'antd';
-import type { ColumnsType, ColumnType } from 'antd/es/table';
+import type { ColumnGroupType, ColumnsType, ColumnType } from 'antd/es/table';
 import { Resizable } from 'react-resizable';
 import type { ResizeCallbackData } from 'react-resizable';
 import './ResizableTable.css';
@@ -129,8 +129,9 @@ function ResizableTable<T extends object>({
   size = 'small',
   ...rest
 }: ResizableTableProps<T>) {
-  // 컬럼 인덱스별 width override. 사용자가 드래그를 마친 컬럼만 항목이 채워진다.
-  const [widthOverrides, setWidthOverrides] = useState<Record<number, number>>({});
+  // leaf 컬럼 경로 키별 width override. 사용자가 드래그를 마친 컬럼만 항목이 채워진다.
+  // 그룹 헤더(children) 구조에서도 충돌 없이 추적하도록 인덱스 대신 경로 문자열("0", "1.2" 등)을 키로 쓴다.
+  const [widthOverrides, setWidthOverrides] = useState<Record<string, number>>({});
 
   // 테이블 컨테이너 + 드래그 중 세로 가이드 라인 DOM 참조. 가이드는 드래그 중에만
   // ref 로 직접 조작하므로 state/리렌더가 일어나지 않는다. 드래그 시작 시점의 기준 X 좌표를
@@ -167,46 +168,70 @@ function ResizableTable<T extends object>({
     },
   };
 
-  const handleResizeStop = (index: number) => (width: number) => {
-    setWidthOverrides((prev) => ({ ...prev, [index]: width }));
+  const handleResizeStop = (key: string) => (width: number) => {
+    setWidthOverrides((prev) => ({ ...prev, [key]: width }));
   };
 
-  const resizableColumns: ColumnsType<T> = columns.map((col, index) => {
-    const baseWidth =
-      widthOverrides[index] ?? (typeof col.width === 'number' ? col.width : undefined);
+  // children(그룹 헤더) 을 가진 컬럼인지 판별. 그룹 헤더 셀에는 리사이즈 핸들을 달지 않고,
+  // 안쪽 leaf 컬럼까지 재귀하여 핸들을 부착한다 (antd 는 leaf 컬럼 width 로 실제 폭을 잡는다).
+  const hasChildren = (col: ColumnsType<T>[number]): col is ColumnGroupType<T> =>
+    Array.isArray((col as ColumnGroupType<T>).children);
 
-    // width 가 지정된 컬럼은 폭을 줄였을 때 셀 내용이 줄바꿈되지 않고 "..." 로 축약되도록
-    // ellipsis 를 기본 적용한다 (리사이즈로 폭을 넓혀 가린 내용을 확인하는 게 이 컴포넌트의 의도).
-    // 호출부가 ellipsis 를 명시한 경우 그 값을 우선한다.
-    const colType = col as ColumnType<T>;
-    const ellipsis = colType.ellipsis ?? (baseWidth !== undefined ? true : undefined);
+  // 컬럼 트리를 재귀 순회하며 leaf 컬럼에 width override / ellipsis / 리사이즈 핸들(onHeaderCell) 을 부착한다.
+  // path 는 leaf 별 안정적 식별자("0", "1.2" 등) 로 width override 추적과 onResizeStop 콜백 키에 쓰인다.
+  const mapColumns = (cols: ColumnsType<T>, path: string): ColumnsType<T> =>
+    cols.map((col, index) => {
+      const key = path === '' ? `${index}` : `${path}.${index}`;
 
-    return {
-      ...col,
-      width: baseWidth,
-      ellipsis,
-      onHeaderCell: (column) => ({
-        width: (column as ColumnType<T>).width as number | undefined,
-        minWidth: minColumnWidth,
-        onResizeStop: handleResizeStop(index),
-        guide,
-      }),
-    } as ColumnType<T>;
-  });
+      if (hasChildren(col)) {
+        // 그룹 헤더는 자신엔 핸들을 달지 않고 children 만 재귀 처리 (폭은 children 합으로 결정).
+        return { ...col, children: mapColumns(col.children, key) } as ColumnGroupType<T>;
+      }
+
+      const baseWidth =
+        widthOverrides[key] ?? (typeof col.width === 'number' ? col.width : undefined);
+
+      // width 가 지정된 컬럼은 폭을 줄였을 때 셀 내용이 줄바꿈되지 않고 "..." 로 축약되도록
+      // ellipsis 를 기본 적용한다 (리사이즈로 폭을 넓혀 가린 내용을 확인하는 게 이 컴포넌트의 의도).
+      // 호출부가 ellipsis 를 명시한 경우 그 값을 우선한다.
+      const colType = col as ColumnType<T>;
+      const ellipsis = colType.ellipsis ?? (baseWidth !== undefined ? true : undefined);
+
+      return {
+        ...col,
+        width: baseWidth,
+        ellipsis,
+        onHeaderCell: (column) => ({
+          width: (column as ColumnType<T>).width as number | undefined,
+          minWidth: minColumnWidth,
+          onResizeStop: handleResizeStop(key),
+          guide,
+        }),
+      } as ColumnType<T>;
+    });
+
+  const resizableColumns: ColumnsType<T> = mapColumns(columns, '');
 
   // scroll.x 를 'max-content'(내용 기준) 로 두면 antd 가 각 컬럼을 셀 내용의 자연 폭 이상으로
   // 유지해, 지정 width 보다 좁혀도 내용 폭까지만 줄고 ellipsis 가 발동하지 않는다.
   // 대신 모든 컬럼 width 의 합(고정 px) 을 scroll.x 로 주면 antd 가 table-layout: fixed 로 전환되어
   // 각 컬럼이 지정 width 를 그대로 따르고, 내용이 넘치면 "..." 로 축약된다 (드래그로 줄인 폭도 반영).
-  // width 미지정 컬럼이 섞이면 합산이 부정확하므로, 그런 경우엔 'max-content' 로 안전하게 폴백.
-  const totalWidth = resizableColumns.reduce(
-    (sum, col) => {
-      if (sum === null) return null;
-      const w = (col as ColumnType<T>).width;
-      return typeof w === 'number' ? sum + w : null;
-    },
-    0 as number | null,
-  );
+  // width 미지정 leaf 가 섞이면 합산이 부정확하므로, 그런 경우엔 'max-content' 로 안전하게 폴백.
+  // 그룹 헤더 컬럼은 자신의 width 가 없으므로 children 의 leaf width 합을 재귀로 누적한다.
+  const sumLeafWidth = (cols: ColumnsType<T>): number | null =>
+    cols.reduce(
+      (sum, col) => {
+        if (sum === null) return null;
+        if (hasChildren(col)) {
+          const childSum = sumLeafWidth(col.children);
+          return childSum === null ? null : sum + childSum;
+        }
+        const w = (col as ColumnType<T>).width;
+        return typeof w === 'number' ? sum + w : null;
+      },
+      0 as number | null,
+    );
+  const totalWidth = sumLeafWidth(resizableColumns);
   // 호출부에서 scroll 을 지정하면 그 값을 우선.
   const scroll = rest.scroll ?? { x: totalWidth ?? 'max-content' };
 

@@ -9,7 +9,6 @@ import {
   Select,
   Space,
   Statistic,
-  Table,
   Typography,
   message,
 } from 'antd';
@@ -19,6 +18,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAccountsForPosSalesLookup } from '@/api/account';
 import { fetchPosSales, type PosSalesProduct } from '@/api/posSales';
+import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
 
@@ -153,7 +153,7 @@ export default function SalesQueryPage() {
           </Row>
 
           <Card>
-            <Table
+            <ResizableTable
               rowKey="productCode"
               size="small"
               columns={columns}
