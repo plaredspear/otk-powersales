@@ -67,4 +67,54 @@ describe('ResizableTable', () => {
     expect(guideLine.style.opacity).toBe('0');
     expect(document.body.classList.contains('resizable-table-resizing')).toBe(false);
   });
+
+  describe('그룹 헤더(children) 구조', () => {
+    interface GroupRow {
+      key: string;
+      branch: string;
+      a: string;
+      b: string;
+    }
+
+    const GROUP_DATA: GroupRow[] = [{ key: '1', branch: '서울', a: '10', b: '20' }];
+
+    const GROUP_COLUMNS: ColumnsType<GroupRow> = [
+      { title: '지점', dataIndex: 'branch', width: 140 },
+      {
+        title: '실적',
+        children: [
+          { title: '당월', dataIndex: 'a', width: 100 },
+          { title: '전월', dataIndex: 'b', width: 100 },
+          // width 미지정 leaf — 핸들이 붙지 않아야 한다
+          { title: '비고', key: 'note', render: () => <span>-</span> },
+        ],
+      },
+    ];
+
+    function renderGroupTable() {
+      return render(
+        <ResizableTable<GroupRow>
+          rowKey="key"
+          columns={GROUP_COLUMNS}
+          dataSource={GROUP_DATA}
+          pagination={false}
+        />,
+      );
+    }
+
+    it('그룹 헤더 안의 leaf 컬럼 중 width 가 지정된 것에만 핸들을 부착한다', () => {
+      const { container } = renderGroupTable();
+      // top-level 지점(140) + children 당월(100) + 전월(100) = 3개. 그룹 헤더 '실적' 과
+      // width 미지정 leaf '비고' 는 핸들 없음.
+      const handles = container.querySelectorAll('.resizable-handle');
+      expect(handles.length).toBe(3);
+    });
+
+    it('그룹 헤더와 leaf 컬럼을 모두 렌더링한다', () => {
+      renderGroupTable();
+      expect(screen.getAllByText('실적').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('당월').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('전월').length).toBeGreaterThanOrEqual(1);
+    });
+  });
 });
