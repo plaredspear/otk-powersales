@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Empty, Input, Spin, Table, Typography, message } from 'antd';
+import { Alert, Empty, Input, Spin, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -8,6 +8,7 @@ import {
   type ElectronicSalesDashboardListItem,
 } from '@/api/electronicSalesDashboard';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
+import ResizableTable from '@/components/common/ResizableTable';
 import ElectronicSalesDashboardDetailModal from './ElectronicSalesDashboardDetailModal';
 
 const { Text } = Typography;
@@ -180,7 +181,7 @@ export default function ElectronicSalesDashboardPage() {
           <Spin size="large" />
         </div>
       ) : (
-        <Table
+        <ResizableTable
           rowKey={(r) => r.accountId}
           size="small"
           columns={columns}
@@ -206,7 +207,8 @@ export default function ElectronicSalesDashboardPage() {
               setSort(undefined);
             }
           }}
-          scroll={{ x: 'max-content' }}
+          // scroll 미지정 → ResizableTable 이 컬럼 width 합을 x 로 자동 계산하여
+          // tableLayout: fixed 로 전환, 리사이즈/ellipsis 가 동작한다 (기존 'max-content' 는 폭 고정을 막음).
           locale={{ emptyText: '조회 결과가 없습니다' }}
         />
       )}

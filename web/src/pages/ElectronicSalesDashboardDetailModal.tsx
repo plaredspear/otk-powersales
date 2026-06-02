@@ -1,4 +1,4 @@
-import { Alert, Empty, Modal, Spin, Statistic, Table, Row, Col, Card } from 'antd';
+import { Alert, Empty, Modal, Spin, Statistic, Row, Col, Card } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -6,6 +6,7 @@ import {
   type ElectronicSalesDashboardDetail,
   type ElectronicSalesProductSales,
 } from '@/api/electronicSalesDashboard';
+import ResizableTable from '@/components/common/ResizableTable';
 
 interface ElectronicSalesDashboardDetailModalProps {
   open: boolean;
@@ -65,7 +66,7 @@ function DetailBody({ detail }: { detail: ElectronicSalesDashboardDetail }) {
 
   const columns: ColumnsType<ElectronicSalesProductSales> = [
     { title: '제품코드', dataIndex: 'productCode', width: 120 },
-    { title: '제품명', dataIndex: 'productName', render: (v) => v || '-' },
+    { title: '제품명', dataIndex: 'productName', width: 280, ellipsis: true, render: (v) => v || '-' },
     {
       title: '금액',
       dataIndex: 'amount',
@@ -95,13 +96,14 @@ function DetailBody({ detail }: { detail: ElectronicSalesDashboardDetail }) {
         </Row>
       </Card>
 
-      <Table
+      <ResizableTable
         rowKey={(r) => r.productCode}
         size="small"
         columns={columns}
         dataSource={detail.items}
         pagination={false}
-        scroll={{ y: 360 }}
+        // 세로 스크롤(y) 유지 + 컬럼 width 합(x) 명시 → 가로는 고정 폭으로 ellipsis/리사이즈 동작.
+        scroll={{ x: 650, y: 360 }}
         locale={{ emptyText: '제품별 전산매출 내역이 없습니다' }}
       />
     </div>
