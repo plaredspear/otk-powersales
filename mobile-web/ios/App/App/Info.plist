@@ -47,5 +47,12 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- 개발 검증용: 로컬 네트워크(localhost/사설IP) 평문 HTTP 서버(vite dev) 를 server.url 로 로드 허용.
+	     loopback·169.254/10/172.16/192.168 대역에만 적용되며 운영 HTTPS 호스트엔 영향 없음. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
