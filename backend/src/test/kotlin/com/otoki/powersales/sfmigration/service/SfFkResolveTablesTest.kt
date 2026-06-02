@@ -228,6 +228,7 @@ class SfFkResolveTablesTest {
                 "erp_order_product",
                 "monthly_female_employee_integration_schedule",
                 "monthly_sales_history",
+                "sales_progress_rate_master",
                 "notice",
                 "product",
                 "team_member_schedule",

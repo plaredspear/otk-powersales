@@ -57,6 +57,10 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
     // V145 — owner polymorphic R-2 (referenceTo = [Group, User]). MonthlySalesHistory 복원
     // (db841eb9) 시 owner_sfid/owner_user_id/owner_group_id/XOR 는 갖췄으나 화이트리스트 등록 누락.
     "monthly_sales_history",
+    // SalesProgressRateMaster__c.OwnerId.referenceTo = [Group, User] polymorphic.
+    // owner_sfid/owner_user_id/owner_group_id/XOR 는 entity 에 있으나 화이트리스트 등록 누락
+    // (monthly_sales_history 와 동일 함정). 미등록 시 Group(00G) 소유 row 의 owner_*_id 가 둘 다 NULL.
+    "sales_progress_rate_master",
     "notice",
     "product",
     "team_member_schedule",
