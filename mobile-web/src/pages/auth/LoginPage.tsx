@@ -31,8 +31,8 @@ export default function LoginPage() {
 
   return (
     <div style={{ padding: '64px 24px', minHeight: '100vh' }}>
-      <Typography.Title level={3} style={{ textAlign: 'center', marginBottom: 8 }}>
-        오토기 현장
+      <Typography.Title level={3} style={{ textAlign: 'center', marginBottom: 8, color: 'var(--mw-red)' }}>
+        오뚜기
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: 32 }}>
         사번과 비밀번호로 로그인하세요
