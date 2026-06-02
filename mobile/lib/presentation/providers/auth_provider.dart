@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/dio_provider.dart';
+import '../../core/services/fcm_token_registrar.dart';
 import '../../data/datasources/auth_api_datasource.dart';
 import '../../data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
@@ -80,6 +83,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final LogoutUseCase _logoutUseCase;
   final AuthLocalDataSource _localDataSource;
   final AuthRepository _repository;
+  final FcmTokenRegistrar _fcmTokenRegistrar;
 
   AuthNotifier({
     required LoginUseCase loginUseCase,
@@ -88,13 +92,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required LogoutUseCase logoutUseCase,
     required AuthLocalDataSource localDataSource,
     required AuthRepository repository,
+    required FcmTokenRegistrar fcmTokenRegistrar,
   })  : _loginUseCase = loginUseCase,
         _autoLoginUseCase = autoLoginUseCase,
         _changePasswordUseCase = changePasswordUseCase,
         _logoutUseCase = logoutUseCase,
         _localDataSource = localDataSource,
         _repository = repository,
+        _fcmTokenRegistrar = fcmTokenRegistrar,
         super(AuthState.initial());
+
+  /// 인증 완료 시 FCM 토큰을 서버에 등록한다 (fire-and-forget — 인증 흐름 비차단).
+  void _registerFcmToken() {
+    unawaited(_fcmTokenRegistrar.registerCurrentToken());
+  }
 
   /// 앱 시작 시 초기화
   ///
@@ -227,6 +238,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       } else {
         // 모든 조건 통과 → 인증 완료
         state = state.toAuthenticated(result.user);
+        _registerFcmToken();
       }
     } on ArgumentError catch (e) {
       state = state.toError(e.message as String);
@@ -261,6 +273,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       } else {
         // 모든 조건 통과 → 인증 완료
         state = state.toAuthenticated(state.user!);
+        _registerFcmToken();
       }
     } on ArgumentError catch (e) {
       state = state.toError(e.message as String);
@@ -286,6 +299,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // GPS 동의 완료 → 인증 완료
       if (state.user != null) {
         state = state.toAuthenticated(state.user!);
+        _registerFcmToken();
       } else {
         state = state.copyWith(
           isLoading: false,
@@ -299,6 +313,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// 로그아웃
   Future<void> logout() async {
+    // FCM 토큰 해제 — access token 이 아직 유효한 지금(토큰 삭제 전) 수행.
+    await _fcmTokenRegistrar.unregister();
+
     try {
       await _logoutUseCase();
     } catch (_) {
@@ -329,5 +346,6 @@ final authProvider =
     logoutUseCase: ref.watch(logoutUseCaseProvider),
     localDataSource: ref.watch(authLocalDataSourceProvider),
     repository: ref.watch(authRepositoryProvider),
+    fcmTokenRegistrar: ref.watch(fcmTokenRegistrarProvider),
   );
 });

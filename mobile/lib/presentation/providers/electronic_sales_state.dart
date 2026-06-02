@@ -1,76 +1,20 @@
 import '../../domain/entities/electronic_sales.dart';
 
-/// 전산매출 조회 필터 조건
-class ElectronicSalesFilter {
-  /// 년월 (필수, 예: "202601")
-  final String yearMonth;
-
-  /// 거래처명 (선택)
-  final String? customerName;
-
-  /// 제품명 (선택)
-  final String? productName;
-
-  /// 제품 코드 (선택)
-  final String? productCode;
-
-  const ElectronicSalesFilter({
-    required this.yearMonth,
-    this.customerName,
-    this.productName,
-    this.productCode,
-  });
-
-  /// 기본 필터 (현재 월)
-  factory ElectronicSalesFilter.defaultFilter() {
-    final now = DateTime.now();
-    final yearMonth = '${now.year}${now.month.toString().padLeft(2, '0')}';
-    return ElectronicSalesFilter(yearMonth: yearMonth);
-  }
-
-  ElectronicSalesFilter copyWith({
-    String? yearMonth,
-    String? customerName,
-    String? productName,
-    String? productCode,
-  }) {
-    return ElectronicSalesFilter(
-      yearMonth: yearMonth ?? this.yearMonth,
-      customerName: customerName ?? this.customerName,
-      productName: productName ?? this.productName,
-      productCode: productCode ?? this.productCode,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-
-    return other is ElectronicSalesFilter &&
-        other.yearMonth == yearMonth &&
-        other.customerName == customerName &&
-        other.productName == productName &&
-        other.productCode == productCode;
-  }
-
-  @override
-  int get hashCode {
-    return Object.hash(
-      yearMonth,
-      customerName,
-      productName,
-      productCode,
-    );
-  }
-}
-
-/// 전산매출 조회 상태
+/// 전산매출(ABC) 조회 상태.
+///
+/// 거래처 1곳 + 연월 기준 제품별 전산매출. 거래처 미선택 시 미조회 상태.
 class ElectronicSalesState {
-  /// 조회된 전산매출 목록
+  /// 조회된 제품별 전산매출 목록
   final List<ElectronicSales> sales;
 
-  /// 현재 적용된 필터
-  final ElectronicSalesFilter filter;
+  /// 조회 년월 (예: "202601")
+  final String yearMonth;
+
+  /// 선택된 거래처 ID (없으면 미조회 상태)
+  final int? selectedCustomerId;
+
+  /// 선택된 거래처명
+  final String? selectedCustomerName;
 
   /// 로딩 상태
   final bool isLoading;
@@ -78,62 +22,60 @@ class ElectronicSalesState {
   /// 에러 메시지
   final String? errorMessage;
 
-  /// 총 판매금액
+  /// 총 금액
   final int totalAmount;
 
-  /// 총 판매수량
+  /// 총 수량
   final int totalQuantity;
 
-  /// 평균 증감율 (%)
+  /// 평균 증감율 (전년 비교 항목 있을 때만)
   final double? averageGrowthRate;
-
-  /// 거래처 목록 (중복 제거)
-  final List<String> customerList;
-
-  /// 제품 목록 (중복 제거)
-  final List<String> productList;
 
   const ElectronicSalesState({
     required this.sales,
-    required this.filter,
+    required this.yearMonth,
+    this.selectedCustomerId,
+    this.selectedCustomerName,
     this.isLoading = false,
     this.errorMessage,
     this.totalAmount = 0,
     this.totalQuantity = 0,
     this.averageGrowthRate,
-    this.customerList = const [],
-    this.productList = const [],
   });
 
-  /// 초기 상태
+  /// 초기 상태 (현재 월, 거래처 미선택)
   factory ElectronicSalesState.initial() {
-    return ElectronicSalesState(
-      sales: const [],
-      filter: ElectronicSalesFilter.defaultFilter(),
-    );
+    final now = DateTime.now();
+    final yearMonth = '${now.year}${now.month.toString().padLeft(2, '0')}';
+    return ElectronicSalesState(sales: const [], yearMonth: yearMonth);
   }
 
   ElectronicSalesState copyWith({
     List<ElectronicSales>? sales,
-    ElectronicSalesFilter? filter,
+    String? yearMonth,
+    int? selectedCustomerId,
+    String? selectedCustomerName,
     bool? isLoading,
     String? errorMessage,
+    bool clearErrorMessage = false,
     int? totalAmount,
     int? totalQuantity,
     double? averageGrowthRate,
-    List<String>? customerList,
-    List<String>? productList,
+    bool clearAverageGrowthRate = false,
   }) {
     return ElectronicSalesState(
       sales: sales ?? this.sales,
-      filter: filter ?? this.filter,
+      yearMonth: yearMonth ?? this.yearMonth,
+      selectedCustomerId: selectedCustomerId ?? this.selectedCustomerId,
+      selectedCustomerName: selectedCustomerName ?? this.selectedCustomerName,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
+      errorMessage:
+          clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       totalAmount: totalAmount ?? this.totalAmount,
       totalQuantity: totalQuantity ?? this.totalQuantity,
-      averageGrowthRate: averageGrowthRate ?? this.averageGrowthRate,
-      customerList: customerList ?? this.customerList,
-      productList: productList ?? this.productList,
+      averageGrowthRate: clearAverageGrowthRate
+          ? null
+          : (averageGrowthRate ?? this.averageGrowthRate),
     );
   }
 }
