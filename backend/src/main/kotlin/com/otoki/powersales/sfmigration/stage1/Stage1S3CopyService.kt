@@ -362,23 +362,78 @@ class Stage1S3CopyService(
 
     /**
      * entity 별 적재 후 후처리. 현재는 Profile 만 — SF Admin Profile (SOQL Name='System Administrator' 또는 'Admin')
-     * row 의 name 을 운영 alias '시스템 관리자' 로 rename 하여 [com.otoki.powersales.auth.permission.SystemAdminProfilePolicy]
-     * 의 한글 SoT 와 정합. profile.sfid UNIQUE 제약 보존 + sfid 있는 row 만 대상 (LocalDataInitializer 보조 row 보호).
+     * row 를 운영 alias '시스템 관리자' 로 정합 ([com.otoki.powersales.auth.permission.SystemAdminProfilePolicy] 한글 SoT).
      *
-     * 멱등: 이미 '시스템 관리자' 로 rename 된 row 는 WHERE 절에서 자동 제외.
+     * ## '시스템 관리자' 병합 (sfid=NULL seed row 흡수)
+     * 과거 LocalDataInitializer.seedProfiles() 가 local→dev DB 연결 시 '시스템 관리자' 를 sfid=NULL 로 선 INSERT 한
+     * 오염이 dev DB 에 잔존한다. 단순 rename (`System Administrator` → `시스템 관리자`) 은 이 seed row 와 name UNIQUE
+     * 충돌로 실패하므로, 다음 3단계로 병합한다 (멱등):
+     *
+     * 1. **흡수**: sfid=NULL 인 기존 '시스템 관리자' row 에 SF Admin (sfid 정상) row 의 sfid/메타를 복사.
+     *    → user.profile_id 가 이미 이 seed row 의 PK 를 참조 중이므로 PK 보존이 중요 (rename·삭제 아닌 UPDATE).
+     * 2. **중복 제거**: 흡수 후 잔존하는 SF Admin (영문 name, sfid 정상) row 삭제 — 정보는 1 에서 '시스템 관리자' 로 이전됨.
+     * 3. **단순 rename**: seed row 가 없던 깨끗한 환경 — 남아있는 SF Admin row 의 name 만 '시스템 관리자' 로 변경.
+     *
+     * 멱등: 이미 '시스템 관리자'(sfid 정상) 로 정합된 상태면 1·2·3 모두 0 rows.
      */
     private fun applyPostCopyHook(conn: java.sql.Connection, meta: EntityMetadata) {
         if (meta.targetName != "Profile") return
-        val updated = conn.createStatement().use { st ->
+        val schema = meta.schemaName
+
+        // 1. 흡수 — sfid=NULL '시스템 관리자' seed row 에 SF Admin row 의 sfid/메타 복사 (PK 보존).
+        //    동명 SF Admin 이 여럿이면 sfid 사전순 첫 1건 (ORDER BY sfid LIMIT 1) — 운영상 'System Administrator' 1건.
+        val absorbed = conn.createStatement().use { st ->
             st.executeUpdate(
-                "UPDATE ${meta.schemaName}.profile " +
+                """
+                UPDATE $schema.profile t
+                SET sfid = a.sfid,
+                    user_type = COALESCE(a.user_type, t.user_type),
+                    description = COALESCE(a.description, t.description),
+                    created_at = COALESCE(a.created_at, t.created_at),
+                    updated_at = COALESCE(a.updated_at, t.updated_at),
+                    created_by_sfid = COALESCE(a.created_by_sfid, t.created_by_sfid),
+                    last_modified_by_sfid = COALESCE(a.last_modified_by_sfid, t.last_modified_by_sfid)
+                FROM (
+                    SELECT sfid, user_type, description,
+                           created_at, updated_at, created_by_sfid, last_modified_by_sfid
+                    FROM $schema.profile
+                    WHERE sfid IS NOT NULL AND name IN ('System Administrator', 'Admin')
+                    ORDER BY sfid
+                    LIMIT 1
+                ) a
+                WHERE t.name = '시스템 관리자' AND t.sfid IS NULL
+                """.trimIndent()
+            )
+        }
+
+        // 2. 중복 제거 — 1 에서 흡수 완료된 SF Admin (영문 name) row 삭제.
+        //    흡수가 일어난 경우(absorbed>0)에만 — 깨끗한 환경에서는 3 의 rename 으로 처리하므로 skip.
+        val deletedDup = if (absorbed > 0) {
+            conn.createStatement().use { st ->
+                st.executeUpdate(
+                    "DELETE FROM $schema.profile " +
+                        "WHERE sfid IS NOT NULL AND name IN ('System Administrator', 'Admin')"
+                )
+            }
+        } else {
+            0
+        }
+
+        // 3. 단순 rename — seed row 가 없던 깨끗한 환경의 SF Admin row.
+        val renamed = conn.createStatement().use { st ->
+            st.executeUpdate(
+                "UPDATE $schema.profile " +
                     "SET name = '시스템 관리자' " +
                     "WHERE sfid IS NOT NULL " +
                     "  AND name IN ('System Administrator', 'Admin')"
             )
         }
-        if (updated > 0) {
-            log.info("[stage1-copy] Profile post-hook — SF Admin → '시스템 관리자' rename rows={}", updated)
+
+        if (absorbed > 0 || deletedDup > 0 || renamed > 0) {
+            log.info(
+                "[stage1-copy] Profile post-hook '시스템 관리자' 정합 — absorbed={} deletedDup={} renamed={}",
+                absorbed, deletedDup, renamed,
+            )
         }
     }
 }
