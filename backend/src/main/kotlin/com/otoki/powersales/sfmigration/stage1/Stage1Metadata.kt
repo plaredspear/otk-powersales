@@ -58,4 +58,31 @@ data class EntityMetadata(
      * IDENTITY CASCADE 로 비운 후 staging → INSERT 진행 (같은 트랜잭션 내).
      */
     val preClear: Boolean = false,
+    /**
+     * INSERT 시 ON CONFLICT 처리 정책. null (기본) → `ON CONFLICT DO NOTHING`
+     * (충돌 컬럼 미지정 — 어떤 UNIQUE 제약 충돌이든 row drop).
+     *
+     * 지정 시 `ON CONFLICT (<conflictColumn>) DO UPDATE SET <c> = COALESCE(EXCLUDED.<c>, table.<c>) ...`
+     * 로 기존 row 의 지정 컬럼을 staging 값으로 보강한다 (EXCLUDED 가 NULL 이면 기존값 보존).
+     *
+     * 필요 사례 — Profile: `LocalDataInitializer.seedProfiles()` 가 dev/local 환경에서
+     * name-only (sfid=NULL) row 를 먼저 시드하면, 후속 Stage1 의 SF 원본 row (sfid 정상) 가
+     * `DO NOTHING` 무타깃에서 name UNIQUE 충돌로 전량 묵살되어 sfid 가 영영 NULL 로 남는다
+     * (→ Stage2 FK Resolve 의 user.profile_sfid ↔ profile.sfid JOIN 전건 실패).
+     * `ON CONFLICT (name) DO UPDATE SET sfid = COALESCE(EXCLUDED.sfid, profile.sfid)` 로
+     * 재실행 시 seed row 의 sfid 를 SF 원본값으로 자동 보강.
+     */
+    val conflictUpdate: ConflictUpdate? = null,
+)
+
+/**
+ * ON CONFLICT (conflictColumn) DO UPDATE 정책.
+ *
+ * @param conflictColumn 충돌 판정 기준 UNIQUE 컬럼 (단일).
+ * @param updateColumns DO UPDATE SET 대상 컬럼들. 각 컬럼은
+ *   `<c> = COALESCE(EXCLUDED.<c>, <table>.<c>)` 로 생성되어 EXCLUDED 가 NULL 이면 기존값 보존.
+ */
+data class ConflictUpdate(
+    val conflictColumn: String,
+    val updateColumns: List<String>,
 )

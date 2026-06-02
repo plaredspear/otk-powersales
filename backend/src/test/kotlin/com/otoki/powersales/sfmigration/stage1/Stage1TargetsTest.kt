@@ -512,4 +512,45 @@ class Stage1TargetsTest {
                 }
         }
     }
+
+    @Nested
+    @DisplayName("Profile conflictUpdate — name 충돌 시 SF 원본 sfid 보강")
+    inner class ProfileConflictUpdate {
+
+        /**
+         * LocalDataInitializer (제거 전) 가 local→dev DB 로 name-only (sfid=NULL) profile row 를
+         * 선 INSERT 했던 사고의 재발 방지. profile 은 name UNIQUE 충돌 시 DO NOTHING 이 아니라
+         * DO UPDATE 로 SF 원본 sfid / 메타를 보강해야 Stage2 FK Resolve 의 profile_sfid 매칭이 산다.
+         */
+        @Test
+        @DisplayName("Profile 은 ON CONFLICT (name) DO UPDATE — sfid 포함 보강 컬럼 지정")
+        fun profileConflictUpdateOnName() {
+            val meta = Stage1Targets.get("Profile") ?: error("Profile 미등록")
+            val cu = meta.conflictUpdate
+            assertThat(cu).withFailMessage("Profile 은 conflictUpdate 필요 (seed sfid=NULL row 보강)").isNotNull
+            assertThat(cu!!.conflictColumn).isEqualTo("name")
+            assertThat(cu.updateColumns)
+                .withFailMessage("sfid 가 보강 대상에 반드시 포함되어야 FK Resolve 가 산다")
+                .contains("sfid")
+        }
+
+        @Test
+        @DisplayName("conflictUpdate 의 보강 컬럼은 모두 Profile 의 실제 dbColumn 이어야 함")
+        fun profileConflictUpdateColumnsExist() {
+            val meta = Stage1Targets.get("Profile")!!
+            val dbColumns = meta.fields.map { it.dbColumnName }.toSet()
+            meta.conflictUpdate!!.updateColumns.forEach { col ->
+                assertThat(dbColumns)
+                    .withFailMessage("conflictUpdate 보강 컬럼 '%s' 가 Profile fields 에 없음", col)
+                    .contains(col)
+            }
+        }
+
+        @Test
+        @DisplayName("conflictColumn 'name' 은 보강 대상에서 제외 (충돌 키 자신은 UPDATE 불요)")
+        fun conflictColumnNotInUpdateColumns() {
+            val cu = Stage1Targets.get("Profile")!!.conflictUpdate!!
+            assertThat(cu.updateColumns).doesNotContain(cu.conflictColumn)
+        }
+    }
 }

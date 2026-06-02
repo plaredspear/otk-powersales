@@ -1292,6 +1292,17 @@ object Stage1Targets {
             FieldMapping("CreatedById", "created_by_sfid"),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         ),
+        // LocalDataInitializer.seedProfiles() 가 먼저 만든 name-only (sfid=NULL) row 와
+        // name UNIQUE (V185 profile_name_unique) 충돌 시, DO NOTHING 이면 SF 원본 sfid 가
+        // 영영 묵살된다 (→ Stage2 FK Resolve 의 profile_sfid ↔ profile.sfid JOIN 전건 실패).
+        // ON CONFLICT (name) DO UPDATE 로 seed row 의 sfid / 메타 컬럼을 SF 원본값으로 보강.
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "name",
+            updateColumns = listOf(
+                "sfid", "user_type", "description",
+                "created_at", "updated_at", "created_by_sfid", "last_modified_by_sfid",
+            ),
+        ),
     )
 
     // ─────────────────────────────────────────────────────────

@@ -3,8 +3,6 @@ package com.otoki.powersales.common.config
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.auth.repository.ProfileRepository
-import com.otoki.powersales.auth.sharing.entity.ProfileFlags
-import com.otoki.powersales.auth.sharing.repository.ProfileFlagsRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -27,7 +25,6 @@ class LocalDataInitializer(
     private val userRepository: UserRepository,
     private val userProvisioningService: UserProvisioningService,
     private val profileRepository: ProfileRepository,
-    private val profileFlagsRepository: ProfileFlagsRepository,
     private val passwordEncoder: PasswordEncoder,
     private val transactionTemplate: TransactionTemplate,
     private val entityManager: EntityManager,
@@ -36,60 +33,23 @@ class LocalDataInitializer(
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun run(args: ApplicationArguments) {
-        runSafely("seedProfiles") { seedProfiles() }
-        runSafely("seedSystemAdminProfileFlags") { seedSystemAdminProfileFlags() }
         runSafely("seedUser") { seedUser() }
         runSafely("seedSystemAdmin") { seedSystemAdmin() }
     }
 
-    /**
-     * 로컬 환경 전용 Profile row 시드.
+    /*
+     * 과거 본 클래스에는 seedProfiles() / seedSystemAdminProfileFlags() 가 있었으나 제거됨.
      *
-     * dev/prod 는 SF Profile 마이그레이션 (Stage1 Profile 적재 + post-copy hook 의 SF Admin → '시스템 관리자'
-     * rename) 이 profile 테이블을 채우므로 본 함수가 필요 없다. 로컬 환경에서는 SF 적재가 동작하지 않아 profile
-     * 테이블이 비어있어, 후속 [seedUser] / [seedSystemAdmin] 의 profileNameForRole / SYSTEM_ADMIN_PROFILE_NAME
-     * lookup 이 실패한다. [SystemAdminProfilePolicy.REQUIRED_PROFILE_NAMES] 12종을 name 기준으로 INSERT (sfid 는
-     * null — 로컬에는 SF 가 없음).
+     * profile / profile_flags row 의 권위 출처는 **SF Profile 마이그레이션 (Stage1 적재)** 단일이다.
+     * 본 initializer 가 @Profile("local") 이지만 운영상 local 프로파일로 기동하여 dev DB 에 연결해 쓰는
+     * 케이스가 있어, seedProfiles() 가 dev DB 에 name-only (sfid=NULL) profile row 를 선 INSERT 하면
+     * 후속 Stage1 Profile 적재가 name UNIQUE 충돌로 묵살(ON CONFLICT)되어 sfid 가 영영 NULL 로 남는
+     * 사고가 발생했다 (→ Stage2 FK Resolve 의 profile_sfid ↔ profile.sfid JOIN 전건 실패).
      *
-     * 멱등: name 으로 lookup 후 부재 시에만 INSERT.
+     * 따라서 profile row 는 seed 하지 않는다. seedUser / seedSystemAdmin 이 생성하는 user 의 profileId 는
+     * profile 부재 시 null 로 두고 (provisionForSeed → profileIdFor 가 graceful null), SF Stage1 Profile
+     * 적재 후 발령(Appointment) 후처리 또는 web admin 에서 따로 연결한다.
      */
-    private fun seedProfiles() {
-        for (name in SystemAdminProfilePolicy.REQUIRED_PROFILE_NAMES) {
-            if (profileRepository.findByName(name) == null) {
-                profileRepository.save(com.otoki.powersales.auth.entity.Profile(name = name))
-                log.info("[LocalDataInitializer] Profile 시드 — name='{}'", name)
-            }
-        }
-    }
-
-    /**
-     * 로컬 환경 전용 — '시스템 관리자' Profile 의 ProfileFlags 5비트 TRUE 시드.
-     *
-     * dev/prod 는 Stage1 ProfileFlags 적재가 SF retrieve 의 systemPermissions 5비트를 그대로 적재하므로 본 함수가
-     * 필요 없다. 로컬 환경에서는 SF 출처 CSV 가 없어 ProfileFlags 가 비어있어, [ProfileFlagsEvaluator] 가
-     * `ProfileFlagsSnapshot.NONE` (전부 false) 를 반환해 web admin 진입 불가능.
-     *
-     * '시스템 관리자' Profile 1건만 시드 — 그 외 Profile 의 5비트는 false 유지 (로컬 권한 모의 운영).
-     *
-     * 멱등: 5비트 중 하나라도 false 면 모두 TRUE 로 update + INSERT.
-     */
-    private fun seedSystemAdminProfileFlags() {
-        val profile = profileRepository.findByName(SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME) ?: return
-        val flags = profileFlagsRepository.findByProfileId(profile.id) ?: ProfileFlags(profileId = profile.id)
-        val needsUpdate = !flags.permissionsViewAllData || !flags.permissionsModifyAllData ||
-            !flags.permissionsViewAllUsers || !flags.permissionsManageUsers || !flags.permissionsApiEnabled
-        if (!needsUpdate) return
-        flags.permissionsViewAllData = true
-        flags.permissionsModifyAllData = true
-        flags.permissionsViewAllUsers = true
-        flags.permissionsManageUsers = true
-        flags.permissionsApiEnabled = true
-        profileFlagsRepository.save(flags)
-        log.info(
-            "[LocalDataInitializer] '{}' ProfileFlags 5비트 모두 TRUE 시드 — profile.id={}",
-            SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME, profile.id,
-        )
-    }
 
     private fun runSafely(name: String, block: () -> Unit) {
         try {
