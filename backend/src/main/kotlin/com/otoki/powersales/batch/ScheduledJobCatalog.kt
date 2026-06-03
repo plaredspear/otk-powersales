@@ -65,6 +65,11 @@ object ScheduledJobCatalog {
             description = "연기된 SAP 예약 일괄 처리 (매일 자정)",
         ),
         Entry(
+            jobName = SalesProgressRateMasterSyncBatch.JOB_NAME,
+            cron = SalesProgressRateMasterSyncBatch.CRON,
+            description = "거래처목표등록마스터 SF fetch → upsert sync (기본 1시간 주기)",
+        ),
+        Entry(
             jobName = SapOutboxBatch.JOB_NAME,
             cron = "\${app.sap.outbox.cron:*/30 * * * * *}",
             description = "SAP outbox 메시지 worker (기본 30초 주기)",

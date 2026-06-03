@@ -11,4 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository
  */
 interface SalesProgressRateMasterRepository :
     JpaRepository<SalesProgressRateMaster, Long>,
-    SalesProgressRateMasterRepositoryCustom
+    SalesProgressRateMasterRepositoryCustom {
+
+    /** ExternalKey(`연+월+거래처코드`) 일괄 조회 — SF fetch sync 의 upsert 매칭 키. */
+    fun findByExternalKeyIn(externalKeys: Collection<String>): List<SalesProgressRateMaster>
+}
