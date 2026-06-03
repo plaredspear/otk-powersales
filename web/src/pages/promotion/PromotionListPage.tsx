@@ -58,21 +58,23 @@ export default function PromotionListPage() {
 
   const columns: ColumnsType<PromotionListItem> = [
     {
-      title: '행사번호 / 행사명',
+      title: '행사번호',
       dataIndex: 'promotionNumber',
-      width: 280,
+      width: 150,
       fixed: 'left',
       render: (val: string, record) => (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: '100%' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           <a onClick={() => goToDetail(record.id)}>{val}</a>
           <Typography.Text copyable={{ text: val, tooltips: ['행사번호 복사', '복사됨'] }} />
-          {record.promotionName && (
-            <Typography.Text type="secondary" ellipsis={{ tooltip: record.promotionName }}>
-              · {record.promotionName}
-            </Typography.Text>
-          )}
         </span>
       ),
+    },
+    {
+      title: '행사명',
+      dataIndex: 'promotionName',
+      width: 200,
+      ellipsis: true,
+      render: (val: string | null) => val ?? '-',
     },
     {
       title: '거래처',
@@ -110,9 +112,17 @@ export default function PromotionListPage() {
     {
       title: '거래처코드',
       dataIndex: 'accountCode',
-      width: 110,
+      width: 120,
       align: 'center',
-      render: (val: string | null) => val ?? '-',
+      render: (val: string | null) =>
+        val ? (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            {val}
+            <Typography.Text copyable={{ text: val, tooltips: ['거래처코드 복사', '복사됨'] }} />
+          </span>
+        ) : (
+          '-'
+        ),
     },
     {
       title: '행사유형',
@@ -224,7 +234,7 @@ export default function PromotionListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        scroll={{ x: 1950 }}
+        scroll={{ x: 2030 }}
         pagination={{
           current: (data?.page ?? 0) + 1,
           total: data?.totalElements ?? 0,
