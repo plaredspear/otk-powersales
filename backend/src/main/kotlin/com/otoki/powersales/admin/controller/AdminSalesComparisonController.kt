@@ -41,9 +41,15 @@ class AdminSalesComparisonController(
         @CurrentDataScope scope: DataScope,
         @RequestParam year: Int,
         @RequestParam month: Int,
-        @RequestParam costCenterCodes: List<String>
+        @RequestParam costCenterCodes: List<String>,
+        @RequestParam(required = false) suitabilities: List<String>?,
+        @RequestParam(required = false) categoryCodes: List<String>?,
+        @RequestParam(required = false) workingCategory3: List<String>?
     ): ResponseEntity<ApiResponse<SalesComparisonSummaryResponse>> {
-        val response = adminSalesComparisonService.getSummary(scope, year, month, costCenterCodes)
+        val response = adminSalesComparisonService.getSummary(
+            scope, year, month, costCenterCodes,
+            toSummaryFilter(suitabilities, categoryCodes, workingCategory3)
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -89,9 +95,15 @@ class AdminSalesComparisonController(
         @CurrentDataScope scope: DataScope,
         @RequestParam year: Int,
         @RequestParam month: Int,
-        @RequestParam costCenterCodes: List<String>
+        @RequestParam costCenterCodes: List<String>,
+        @RequestParam(required = false) suitabilities: List<String>?,
+        @RequestParam(required = false) categoryCodes: List<String>?,
+        @RequestParam(required = false) workingCategory3: List<String>?
     ): ResponseEntity<ByteArray> = buildExcelResponse(
-        adminSalesComparisonService.exportSummary(scope, year, month, costCenterCodes)
+        adminSalesComparisonService.exportSummary(
+            scope, year, month, costCenterCodes,
+            toSummaryFilter(suitabilities, categoryCodes, workingCategory3)
+        )
     )
 
     /** 중간집계 엑셀 다운로드. */
@@ -125,6 +137,17 @@ class AdminSalesComparisonController(
             workingCategory1,
             workingCategory5
         )
+    )
+
+    /** 요청 파라미터(null/빈 리스트) → [AdminSalesComparisonService.SummaryFilter] 변환. null·빈값은 무필터(빈 set). */
+    private fun toSummaryFilter(
+        suitabilities: List<String>?,
+        categoryCodes: List<String>?,
+        workingCategory3: List<String>?
+    ): AdminSalesComparisonService.SummaryFilter = AdminSalesComparisonService.SummaryFilter(
+        suitabilities = suitabilities?.filter { it.isNotBlank() }?.toSet().orEmpty(),
+        categoryCodes = categoryCodes?.filter { it.isNotBlank() }?.toSet().orEmpty(),
+        workingCategory3 = workingCategory3?.filter { it.isNotBlank() }?.toSet().orEmpty()
     )
 
     private fun buildExcelResponse(result: AdminSalesComparisonService.ExcelResult): ResponseEntity<ByteArray> {

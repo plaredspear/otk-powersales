@@ -137,13 +137,34 @@ export async function fetchSearchCategories(): Promise<SearchAccountCategoryItem
   return res.data.data;
 }
 
+/**
+ * 집계 검색조건 필터 — SF `getSummaryItems` (cls:567-569) 3중 AND 필터 정합.
+ * 빈 배열은 무필터(전체 통과). 거래처유형은 SF `typologyValues` 와 동일하게 **코드(accountCode)** 로 보낸다.
+ */
+export interface SummaryFilter {
+  suitabilities: string[];
+  categoryCodes: string[];
+  workingCategory3: string[];
+}
+
+/** SummaryFilter → 쿼리 파라미터 (빈 배열 항목은 생략). */
+function summaryFilterParams(filter?: SummaryFilter): Record<string, string> {
+  if (!filter) return {};
+  const params: Record<string, string> = {};
+  if (filter.suitabilities.length > 0) params.suitabilities = filter.suitabilities.join(',');
+  if (filter.categoryCodes.length > 0) params.categoryCodes = filter.categoryCodes.join(',');
+  if (filter.workingCategory3.length > 0) params.workingCategory3 = filter.workingCategory3.join(',');
+  return params;
+}
+
 export async function fetchSummary(
   year: number,
   month: number,
   costCenterCodes: string[],
+  filter?: SummaryFilter,
 ): Promise<SalesComparisonSummaryResponse> {
   const res = await client.get<ApiResponse<SalesComparisonSummaryResponse>>(`${BASE}/summary`, {
-    params: { year, month, costCenterCodes: costCenterCodes.join(',') },
+    params: { year, month, costCenterCodes: costCenterCodes.join(','), ...summaryFilterParams(filter) },
   });
   if (!res.data.success || !res.data.data) throw new Error(failureMessage('집계', res));
   return res.data.data;
@@ -215,10 +236,15 @@ async function downloadBlob(path: string, params: Record<string, unknown>, fallb
   URL.revokeObjectURL(url);
 }
 
-export async function exportSummary(year: number, month: number, costCenterCodes: string[]): Promise<void> {
+export async function exportSummary(
+  year: number,
+  month: number,
+  costCenterCodes: string[],
+  filter?: SummaryFilter,
+): Promise<void> {
   await downloadBlob(
     `${BASE}/summary/export`,
-    { year, month, costCenterCodes: costCenterCodes.join(',') },
+    { year, month, costCenterCodes: costCenterCodes.join(','), ...summaryFilterParams(filter) },
     `${year}년${month}월_월평균_매출대비_여사원배치_현황_집계.xlsx`,
   );
 }

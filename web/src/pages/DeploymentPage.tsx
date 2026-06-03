@@ -26,6 +26,7 @@ import {
   type SalesComparisonSummaryRow,
   type SalesComparisonMiddleItem,
   type SalesComparisonDetailItem,
+  type SummaryFilter,
 } from '@/api/salesComparison';
 import { useDashboardBranches } from '@/hooks/dashboard/useDashboardBranches';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -111,10 +112,23 @@ export default function DeploymentPage() {
     staleTime: 1000 * 60 * 30,
   });
   const categoryLabels = useMemo(() => categoryOptions.map((c) => c.name), [categoryOptions]);
+  // 거래처유형 필터는 SF `typologyValues` 와 동일하게 코드(accountCode)로 서버에 전송 — name→code 매핑.
+  const categoryCodeByName = useMemo(
+    () => new Map(categoryOptions.map((c) => [c.name, c.accountCode])),
+    [categoryOptions],
+  );
+
+  // queryParams 의 검색조건 → 서버 SummaryFilter (거래처유형은 name→code 변환). SF cls:567-569 정합.
+  const buildSummaryFilter = (p: QueryParams): SummaryFilter => ({
+    suitabilities: p.suitabilities,
+    categoryCodes: p.categories.map((name) => categoryCodeByName.get(name)).filter((c): c is string => c != null),
+    workingCategory3: p.wc3,
+  });
 
   const summaryQuery = useQuery({
     queryKey: ['salesComparison', 'summary', queryParams],
-    queryFn: () => fetchSummary(queryParams!.year, queryParams!.month, queryParams!.codes),
+    queryFn: () =>
+      fetchSummary(queryParams!.year, queryParams!.month, queryParams!.codes, buildSummaryFilter(queryParams!)),
     enabled: queryParams != null && queryParams.mode === 'summary',
   });
 
@@ -347,7 +361,7 @@ export default function DeploymentPage() {
   const handleExportSummary = async () => {
     if (!queryParams) return;
     try {
-      await apiExportSummary(queryParams.year, queryParams.month, queryParams.codes);
+      await apiExportSummary(queryParams.year, queryParams.month, queryParams.codes, buildSummaryFilter(queryParams));
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
     }

@@ -455,6 +455,94 @@ class AdminSalesComparisonServiceTest {
     }
 
     @Nested
+    @DisplayName("집계 검색조건 필터 (SummaryFilter — SF cls=567-569)")
+    inner class SummaryFilterTest {
+
+        /** 거래처A(대형마트=01) 적합 + 거래처B(체인=02) 적합 — 2거래처 시드. */
+        private fun twoCategoryAccounts() {
+            val itmA = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
+            val itmB = item("B001", "거래처B", "E002", "사원B", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
+            val accA = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)            // Type 대형마트(3대) → 01
+            val accB = account(2, "B001", "거래처B", AccountType.CHAIN)                     // Type 체인 → 02
+            val crit = criteria(fixed = BigDecimal(1_000_000), bifurcation = BigDecimal(600_000), boundary = BigDecimal(20), accountCategoryCode = "01")
+            val crit2 = criteria(fixed = BigDecimal(1_000_000), bifurcation = BigDecimal(600_000), boundary = BigDecimal(20), accountCategoryCode = "02")
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(itmA, itmB))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(accA, accB)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit, crit2)
+        }
+
+        @Test
+        fun `거래처유형 필터 - 선택 코드(01)만 집계, 02 거래처 제외 (SF cls=568)`() {
+            twoCategoryAccounts()
+            val filter = AdminSalesComparisonService.SummaryFilter(
+                suitabilities = emptySet(),
+                categoryCodes = setOf("01"),   // 대형마트만
+                workingCategory3 = emptySet()
+            )
+
+            val response = service.getSummary(allScope, 2026, 5, listOf("CC001"), filter)
+
+            assertThat(response.total.totalCount).isEqualTo(1)               // 거래처A(01)만
+            val fitRow = response.rows.first { it.suitability == "적합" }
+            assertThat(fitRow.countsByCategory["대형마트"]).isEqualTo(1)
+            assertThat(fitRow.countsByCategory["체인"]).isEqualTo(0)         // 02 제외
+        }
+
+        @Test
+        fun `거래처유형 무필터(빈 set) - 전체 유형 집계`() {
+            twoCategoryAccounts()
+            val response = service.getSummary(allScope, 2026, 5, listOf("CC001"), AdminSalesComparisonService.SummaryFilter.NONE)
+
+            assertThat(response.total.totalCount).isEqualTo(2)              // 01 + 02 모두
+        }
+
+        @Test
+        fun `근무형태3 필터 - 격고 사원 행 제외로 worst-case 가 바뀐다 (SF cls=569)`() {
+            // 거래처A: 진열·상시 2명 (환산인원 합 2.0), avg 2,000,000 → ratio = 1,000,000.
+            // boundary 40(%) → min = standard × 0.6.
+            //  - 고정사원: standard 1,500,000 / min 900,000 → 900,000 ≤ 1,000,000 < 1,500,000 → 경계
+            //  - 격고사원: standard 600,000 / min 360,000 → ≥ 600,000 → 적합
+            // 무필터 worst-case = 경계. 근무형태3=[고정]만 선택하면 격고 행 제외 → 후보는 고정(경계) 뿐 → 여전히 경계.
+            // 근무형태3=[격고]만 선택하면 고정 행 제외 → 후보는 격고(적합) 뿐 → 적합 으로 바뀐다.
+            val fixedEmp = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
+            val altEmp = item("A001", "거래처A", "E002", "사원B", "진열", "격고", "상시", BigDecimal.ONE, 2_000_000L)
+            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val crit = criteria(fixed = BigDecimal(1_500_000), bifurcation = BigDecimal(600_000), boundary = BigDecimal(40), accountCategoryCode = "01")
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fixedEmp, altEmp))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit)
+
+            val onlyBifurcation = AdminSalesComparisonService.SummaryFilter(emptySet(), emptySet(), setOf("격고"))
+            val response = service.getSummary(allScope, 2026, 5, listOf("CC001"), onlyBifurcation)
+
+            assertThat(response.rows.first { it.suitability == "적합" }.totalCount).isEqualTo(1)   // 격고만 → 적합
+            assertThat(response.rows.first { it.suitability == "경계" }.totalCount).isEqualTo(0)
+        }
+
+        @Test
+        fun `배치적합성 필터 - 선택 적합성(경계)에 없는 행 제외 (SF cls=567)`() {
+            // 동일 거래처A worst-case=경계 케이스. 배치적합성=[적합]만 선택하면 경계 거래처는 카운트에서 빠진다.
+            val fixedEmp = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
+            val altEmp = item("A001", "거래처A", "E002", "사원B", "진열", "격고", "상시", BigDecimal.ONE, 2_000_000L)
+            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val crit = criteria(fixed = BigDecimal(1_500_000), bifurcation = BigDecimal(600_000), boundary = BigDecimal(40), accountCategoryCode = "01")
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fixedEmp, altEmp))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit)
+
+            // 배치적합성=[적합]만 → 격고(적합) 행만 후보 → worst-case=적합 → 적합으로 카운트.
+            val onlyFit = AdminSalesComparisonService.SummaryFilter(setOf("적합"), emptySet(), emptySet())
+            val response = service.getSummary(allScope, 2026, 5, listOf("CC001"), onlyFit)
+
+            assertThat(response.rows.first { it.suitability == "적합" }.totalCount).isEqualTo(1)
+            assertThat(response.rows.first { it.suitability == "경계" }.totalCount).isEqualTo(0)
+        }
+    }
+
+    @Nested
     @DisplayName("중간집계 모드")
     inner class MiddleTest {
 

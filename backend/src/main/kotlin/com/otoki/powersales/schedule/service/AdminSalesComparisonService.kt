@@ -62,13 +62,19 @@ class AdminSalesComparisonService(
      * 근무형태1=진열 + 근무형태5=상시 조건의 사원 일정만 산출 대상. 거래처 코드 단위 중복 제거.
      * 권한: `scope.isAllBranches` 면 사용자 입력 `costCenterCodes` 그대로 사용, 아니면 `scope.branchCodes` 와 교집합으로 필터.
      */
-    fun getSummary(scope: DataScope, year: Int, month: Int, costCenterCodes: List<String>): SalesComparisonSummaryResponse {
+    fun getSummary(
+        scope: DataScope,
+        year: Int,
+        month: Int,
+        costCenterCodes: List<String>,
+        filter: SummaryFilter = SummaryFilter.NONE
+    ): SalesComparisonSummaryResponse {
         validateParams(year, month, costCenterCodes)
         val effectiveCodes = applyScope(scope, costCenterCodes)
 
         val accountSuitabilities = computeAccountSuitabilities(year, month, effectiveCodes)
-        val rows = buildSummaryRows(accountSuitabilities)
-        val total = buildTotalRow(accountSuitabilities)
+        val rows = buildSummaryRows(accountSuitabilities, filter)
+        val total = buildTotalRow(accountSuitabilities, filter)
 
         return SalesComparisonSummaryResponse(year, month, rows, total)
     }
@@ -149,8 +155,14 @@ class AdminSalesComparisonService(
     /**
      * 집계표 엑셀 export — 헤더 + 적합성 × 카테고리 셀 + 총계.
      */
-    fun exportSummary(scope: DataScope, year: Int, month: Int, costCenterCodes: List<String>): ExcelResult {
-        val response = getSummary(scope, year, month, costCenterCodes)
+    fun exportSummary(
+        scope: DataScope,
+        year: Int,
+        month: Int,
+        costCenterCodes: List<String>,
+        filter: SummaryFilter = SummaryFilter.NONE
+    ): ExcelResult {
+        val response = getSummary(scope, year, month, costCenterCodes, filter)
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("배치적합성_집계")
 
@@ -561,14 +573,23 @@ class AdminSalesComparisonService(
     }
 
     /**
-     * 거래처별 단일 적합성 — SF `getSummaryItems` (cls:572-583) 의 worst-case 규칙 동등.
+     * 거래처별 단일 적합성 — SF `getSummaryItems` (cls:566-583) 의 worst-case 규칙 동등.
      *
      * 진열·상시 사원 각각을 사원 단위 근무형태3 으로 판정한 뒤, 가장 나쁜(forSort 최대) 결과로 거래처를 대표한다
      * (적합 < 경계 < 재검토). SF 는 거래처 안에 경계 사원이 1명이라도 있으면 그 거래처를 경계로 분류한다.
      * 진열·상시 사원이 없으면 공백 — 집계/총계 모두에서 제외 (SF `appropriateValues.contains('')` = false).
+     *
+     * SF 검색조건 필터 정합 (cls:567-569) — worst-case 모집단을 사원 행 단위 AND 필터로 좁힌다:
+     * - [filter] 가 null 이면 무필터 (drill-down middle/detail 등 적합성·근무형태3 필터 미전달 경로).
+     * - 근무형태3 (`workStyleValues.contains(workingStyle3)`, cls:569) — 선택값 사원 행만 worst-case 후보.
+     * - 배치적합성 (`appropriateValues.contains(result)`, cls:567) — 각 사원 행의 판정 result 가
+     *   선택값에 속하는 행만 worst-case 후보 (선택 적합성에 없는 행은 제외 → 거래처 대표값이 달라질 수 있음).
+     * SF 는 두 필터를 거친 행이 1개도 없으면 그 거래처를 집계에 넣지 않는다 (빈 result → 공백).
      */
-    private fun AccountSuitability.computeAccountLevelSuitability(): String {
-        val displayPermanent = allEmployeeItems.filter { it.workingCategory1 == "진열" && it.workingCategory5 == "상시" }
+    private fun AccountSuitability.computeAccountLevelSuitability(filter: SummaryFilter? = null): String {
+        val displayPermanent = allEmployeeItems
+            .filter { it.workingCategory1 == "진열" && it.workingCategory5 == "상시" }
+            .filter { filter == null || filter.workingCategory3.isEmpty() || it.workingCategory3 in filter.workingCategory3 }
         if (displayPermanent.isEmpty()) return ""
         return displayPermanent
             .map { emp ->
@@ -583,6 +604,7 @@ class AdminSalesComparisonService(
                 )
             }
             .filter { it.isNotBlank() }
+            .filter { filter == null || filter.suitabilities.isEmpty() || it in filter.suitabilities }
             .maxByOrNull { suitabilityOrder(it) }   // forSort 최대 = worst-case (적합0 < 경계1 < 재검토2)
             ?: ""
     }
@@ -651,9 +673,21 @@ class AdminSalesComparisonService(
         )
     }
 
-    private fun buildSummaryRows(accountSuitabilities: List<AccountSuitability>): List<SalesComparisonSummaryRow> {
+    /**
+     * SF `getSummaryItems` 의 거래처유형(typology) 필터 정합 (cls:568) — `typologyValues.contains(customerTypeCode)`.
+     * 선택된 거래처유형 코드에 속하는 거래처만 집계 모집단에 남긴다. 필터가 비어있으면 무필터.
+     */
+    private fun List<AccountSuitability>.filterByCategory(filter: SummaryFilter): List<AccountSuitability> =
+        if (filter.categoryCodes.isEmpty()) this
+        else filter { it.accountCategoryCode in filter.categoryCodes }
+
+    private fun buildSummaryRows(
+        accountSuitabilities: List<AccountSuitability>,
+        filter: SummaryFilter
+    ): List<SalesComparisonSummaryRow> {
         val grouped = accountSuitabilities
-            .map { it to it.computeAccountLevelSuitability() }
+            .filterByCategory(filter)
+            .map { it to it.computeAccountLevelSuitability(filter) }
             .filter { it.second.isNotBlank() }
             .groupBy({ it.second }, { it.first })
 
@@ -664,13 +698,19 @@ class AdminSalesComparisonService(
     }
 
     /**
-     * 총계 행 — SF `getSummaryItems` 의 '총계' 누적 동등 (cls:567 동일 필터).
+     * 총계 행 — SF `getSummaryItems` 의 '총계' 누적 동등 (cls:567-569 동일 필터).
      *
-     * 적합성이 공백("")인 거래처(진열·상시 사원 부재)는 제외하므로 총계 = 적합 + 경계 + 재검토.
+     * 적합성이 공백("")인 거래처(진열·상시 사원 부재 또는 필터로 후보 행이 전부 제외)는 제외하므로
+     * 총계 = 적합 + 경계 + 재검토. 거래처유형·근무형태3·배치적합성 필터를 모두 거친 거래처만 카운트한다.
      * (과거 전체 거래처 카운트는 공백 거래처를 총계에만 포함시켜 총계 ≠ 적합+경계+재검토 불일치를 유발했다.)
      */
-    private fun buildTotalRow(accountSuitabilities: List<AccountSuitability>): SalesComparisonSummaryRow {
-        val classified = accountSuitabilities.filter { it.computeAccountLevelSuitability().isNotBlank() }
+    private fun buildTotalRow(
+        accountSuitabilities: List<AccountSuitability>,
+        filter: SummaryFilter
+    ): SalesComparisonSummaryRow {
+        val classified = accountSuitabilities
+            .filterByCategory(filter)
+            .filter { it.computeAccountLevelSuitability(filter).isNotBlank() }
         return buildSummaryRowFromAccounts("총계", classified)
     }
 
@@ -809,6 +849,27 @@ class AdminSalesComparisonService(
         }
         if (costCenterCodes.isEmpty()) {
             throw InvalidParameterException("cost_center_codes는 필수입니다")
+        }
+    }
+
+    /**
+     * 집계(summary) 검색조건 필터 — SF `getSummaryItems` (cls:567-569) 의 3중 AND 필터 정합.
+     *
+     * 빈 set 은 "해당 조건 무필터" 를 뜻한다 (전체 통과). UI 에서는 최소 1개 선택을 강제하지만
+     * (조건 미설정 경고), 서버는 빈 set 을 안전하게 무필터로 해석한다.
+     *
+     * @property suitabilities 배치적합성 — `appropriateValues`. displayName ("적합"/"경계"/"재검토").
+     * @property categoryCodes 거래처유형 — `typologyValues`. AccountCategoryMaster.accountCode (코드값).
+     * @property workingCategory3 근무형태3 — `workStyleValues`. ("고정"/"격고"/"순회").
+     */
+    data class SummaryFilter(
+        val suitabilities: Set<String>,
+        val categoryCodes: Set<String>,
+        val workingCategory3: Set<String>
+    ) {
+        companion object {
+            /** 무필터 (drill-down middle/detail 등 필터 미적용 경로). */
+            val NONE = SummaryFilter(emptySet(), emptySet(), emptySet())
         }
     }
 
