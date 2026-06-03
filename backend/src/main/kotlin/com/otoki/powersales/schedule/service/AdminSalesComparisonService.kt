@@ -28,14 +28,14 @@ import java.time.format.DateTimeFormatter
  * 거래처별 진열사원 배치적합성 산출 + 조회 + 엑셀 export.
  *
  * 레거시 매핑: `SalesComparisonSearchController.getLowDataList` / `getSummaryItems` (force-app/main/default/classes).
- * 동작: 월별여사원 통합일정(`AdminMonthlyIntegrationService.buildIntegrationItems`) 결과를 기반으로 거래처별 진열 상시 환산인원 합 + 6개월 평균매출 + 투입기준마스터의 고정/격고 기준금액을 비교하여 배치적합성(적합/경계/재검토) 판정 후 집계/중간집계/상세 3종 응답을 빌드한다.
+ * 동작: 월별여사원 통합일정(`TeamMemberScheduleSearchService.search` — MFEIS 직접 조회) 결과를 기반으로 거래처별 진열 상시 환산인원 합 + 6개월 평균매출 + 투입기준마스터의 고정/격고 기준금액을 비교하여 배치적합성(적합/경계/재검토) 판정 후 집계/중간집계/상세 3종 응답을 빌드한다.
  * 부수 효과: 없음 (조회 전용).
  * 신규 도입 — 레거시 미존재 web 진입점(`DeploymentPage`) 신규 구현 동반.
  */
 @Service
 @Transactional(readOnly = true)
 class AdminSalesComparisonService(
-    private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
+    private val teamMemberScheduleSearchService: TeamMemberScheduleSearchService,
     private val accountRepository: AccountRepository,
     private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository,
     private val accountCategoryMasterRepository: AccountCategoryMasterRepository
@@ -365,16 +365,46 @@ class AdminSalesComparisonService(
     // --- 내부 산출 로직 ---
 
     /**
+     * MFEIS 검색 결과 항목(`TeamMemberScheduleResultItem`) → 배치적합성 산출 입력(`MonthlyIntegrationScheduleItem`) 매핑.
+     *
+     * `actualAmount`(6개월 평균 ABC 마감실적) → `avgClosingAmount`, `numberOfInputs` → `totalInputCount` 로 환원.
+     * `workingCategory5` 는 MFEIS 저장값(상시/임시) 을 그대로 전달 (SF 정합 — 조회 시점 진열마스터 재조인 없음).
+     */
+    private fun TeamMemberScheduleResultItem.toMonthlyIntegrationItem(): MonthlyIntegrationScheduleItem =
+        MonthlyIntegrationScheduleItem(
+            branchName = orgName ?: "",
+            accountBranchName = accountBranchName,
+            accountCode = accountCode ?: "",
+            accountName = accountName ?: "",
+            employeeCode = employeeNumber ?: "",
+            title = title,
+            employeeName = employeeName ?: "",
+            workingCategory1 = workingCategory1 ?: "",
+            workingCategory3 = workingCategory3,
+            workingCategory4 = workingCategory4,
+            workingCategory5 = workingCategory5,
+            totalInputCount = numberOfInputs?.toInt() ?: 0,
+            equivalentWorkingDays = equivalentNumberOfWorkingDays,
+            convertedHeadcount = convertedHeadcount,
+            avgClosingAmount = actualAmount.toLong()
+        )
+
+    /**
      * 거래처별 배치적합성 산출 결과 (집계/중간집계/상세 공통 입력).
      *
-     * `AdminMonthlyIntegrationService.buildIntegrationItems` 로 사원 × 거래처 단위 일정 행렬을 얻은 뒤 거래처별로 진열 상시 환산인원 합계를 산출하고 6개월 평균매출 / 투입기준마스터의 기준금액과 비교하여 적합/경계/재검토를 판정한다.
+     * `TeamMemberScheduleSearchService.search` 로 MFEIS(월별 여사원 통합일정) 검색 결과를 얻은 뒤 거래처별로 진열 상시 환산인원 합계를 산출하고 6개월 평균매출 / 투입기준마스터의 기준금액과 비교하여 적합/경계/재검토를 판정한다.
+     *
+     * SF 정합: 통합일정 모집단 / `WorkingCategory5`(상시·임시) 저장값 / 6개월 평균 ABC 마감실적은 모두 MFEIS 직접 조회로 SF `SalesComparisonSearchController` 와 동등. 과거 `AdminMonthlyIntegrationService.buildIntegrationItems` 기반(TeamMemberSchedule 동적 집계 + `attendance_log IS NOT NULL` 가드 + `display_work_schedule` 날짜범위 재조인) 은 SF 비동등으로 0건이 되는 원인이라 사용하지 않는다.
      */
     internal fun computeAccountSuitabilities(
         year: Int,
         month: Int,
         costCenterCodes: List<String>
     ): List<AccountSuitability> {
-        val integrationItems = adminMonthlyIntegrationService.buildIntegrationItems(year, month, costCenterCodes)
+        val integrationItems = teamMemberScheduleSearchService
+            .search(year = year.toString(), month = month.toString(), orgValues = costCenterCodes)
+            .result
+            .map { it.toMonthlyIntegrationItem() }
         if (integrationItems.isEmpty()) return emptyList()
 
         // 거래처 단위 그룹핑
@@ -383,11 +413,8 @@ class AdminSalesComparisonService(
         val accounts = if (accountCodes.isEmpty()) emptyList() else accountRepository.findByExternalKeyIn(accountCodes)
         val accountByCode = accounts.associateBy { it.externalKey }
 
-        // 6개월 평균매출 (account.id → avg amount)
-        val avgClosingAmounts = adminMonthlyIntegrationService.let { svc ->
-            // calculateAvgClosingAmounts 는 private 이라 동일 결과를 buildIntegrationItems item.avgClosingAmount 로 추출
-            integrationItems.associate { it.accountCode to it.avgClosingAmount }
-        }
+        // 6개월 평균매출 (accountCode → avg amount) — MFEIS 검색 결과의 actualAmount(6개월 평균 ABC 마감실적) 재사용
+        val avgClosingAmounts = integrationItems.associate { it.accountCode to it.avgClosingAmount }
 
         // 투입기준마스터 (진열 + confirmed = true + isDeleted != true) — 화면 단위 1회 조회
         val criteriaList = employeeInputCriteriaMasterRepository
