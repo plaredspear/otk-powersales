@@ -70,8 +70,11 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             val items = listOf(
                 ScheduleListItemDto(
                     id = 1L,
+                    employeeId = 10L,
                     employeeCode = "20030001",
                     employeeName = "홍길동",
+                    branchName = "성수지점",
+                    accountId = 100,
                     accountCode = "SAP001",
                     accountName = "이마트 성수점",
                     typeOfWork3 = "고정",

@@ -382,6 +382,8 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         actualAmount = 0L,
         isClosed = false,
         isDeleted = false,
+        createdById = 10L,
+        createdByName = "홍길동",
         createdAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0, 0),
         updatedAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0, 0),
         remark = remark

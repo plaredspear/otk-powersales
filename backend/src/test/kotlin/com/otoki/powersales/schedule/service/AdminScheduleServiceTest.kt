@@ -915,8 +915,11 @@ class AdminScheduleServiceTest {
             confirmed: Boolean? = false,
         ): ScheduleListRow = ScheduleListRow(
             id = id,
+            employeeId = null,
             employeeCode = employeeCode,
             employeeName = employeeName,
+            branchName = null,
+            accountId = null,
             accountCode = accountCode,
             accountName = accountName,
             typeOfWork3 = null,
