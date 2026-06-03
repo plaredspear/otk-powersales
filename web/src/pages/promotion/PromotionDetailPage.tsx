@@ -810,6 +810,7 @@ export default function PromotionDetailPage() {
         dataIndex: 'primaryProductAmount',
         width: 110,
         align: 'right' as const,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-pink' }),
         render: (v: number | null) => fmtNum(v),
       },
       {
@@ -827,6 +828,7 @@ export default function PromotionDetailPage() {
         dataIndex: 'primarySalesQuantity',
         width: 120,
         align: 'right' as const,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-pink' }),
         render: (v: number | null) => fmtNum(v),
       },
       {
@@ -834,6 +836,7 @@ export default function PromotionDetailPage() {
         dataIndex: 'otherSalesQuantity',
         width: 100,
         align: 'right' as const,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-yellow' }),
         render: (v: number | null) => fmtNum(v),
       },
       {
@@ -1018,6 +1021,7 @@ export default function PromotionDetailPage() {
         title: '대표품목 매출',
         dataIndex: 'primaryProductAmount',
         width: 110,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-pink' }),
         render: (_: unknown, record: EditableRow) => (
           <InputNumber
             size="small"
@@ -1045,6 +1049,7 @@ export default function PromotionDetailPage() {
         title: '대표품목판매수량',
         dataIndex: 'primarySalesQuantity',
         width: 120,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-pink' }),
         render: (_: unknown, record: EditableRow) => (
           <InputNumber
             size="small"
@@ -1060,6 +1065,7 @@ export default function PromotionDetailPage() {
         title: '기타판매수량',
         dataIndex: 'otherSalesQuantity',
         width: 100,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-yellow' }),
         render: (_: unknown, record: EditableRow) => (
           <InputNumber
             size="small"
@@ -1323,6 +1329,7 @@ export default function PromotionDetailPage() {
         {empEditMode ? (
           <ResizableTable<EditableRow>
             className="promo-emp-table"
+            bordered
             columns={editColumns}
             dataSource={editRows}
             rowKey="id"
@@ -1358,6 +1365,7 @@ export default function PromotionDetailPage() {
         ) : (
           <ResizableTable<PromotionEmployee>
             className="promo-emp-table"
+            bordered
             columns={readColumns}
             dataSource={employees ?? []}
             rowKey="id"
@@ -1382,6 +1390,13 @@ export default function PromotionDetailPage() {
       <style>{`
         .promo-emp-table .ant-table-thead th {
           font-size: 12px !important;
+        }
+        /* SF 행사사원 related list 동등 — 컬럼 헤더 강조색 (대표품목 매출/판매수량 분홍, 기타판매수량 노랑) */
+        .promo-emp-table .ant-table-thead th.promo-emp-hl-pink {
+          background-color: #fde0e4 !important;
+        }
+        .promo-emp-table .ant-table-thead th.promo-emp-hl-yellow {
+          background-color: #fdf3a3 !important;
         }
         .ant-table-row-error td {
           background-color: #fff2f0 !important;

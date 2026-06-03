@@ -196,12 +196,16 @@ function ResizableTable<T extends object>({
       // 호출부가 ellipsis 를 명시한 경우 그 값을 우선한다.
       const colType = col as ColumnType<T>;
       const ellipsis = colType.ellipsis ?? (baseWidth !== undefined ? true : undefined);
+      // 호출부가 지정한 onHeaderCell(예: 헤더 강조 className) 을 보존하기 위해 그 반환값을
+      // 리사이즈용 헤더 props 와 머지한다. 미지정 시 빈 객체.
+      const userHeaderCell = colType.onHeaderCell;
 
       return {
         ...col,
         width: baseWidth,
         ellipsis,
         onHeaderCell: (column) => ({
+          ...(userHeaderCell?.(column) ?? {}),
           width: (column as ColumnType<T>).width as number | undefined,
           minWidth: minColumnWidth,
           onResizeStop: handleResizeStop(key),
