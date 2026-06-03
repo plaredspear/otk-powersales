@@ -66,6 +66,7 @@ class AdminPromotionService(
         promotionType: String?,
         startDate: String?,
         endDate: String?,
+        ownerOnly: Boolean,
         page: Int,
         size: Int
     ): PromotionListResponse {
@@ -84,6 +85,8 @@ class AdminPromotionService(
             promotionType = PromotionType.fromDisplayNameOrNull(promotionType),
             startDate = startDate,
             endDate = endDate,
+            ownerOnly = ownerOnly,
+            currentUserId = scope.userId,
             pageable = pageable
         )
 

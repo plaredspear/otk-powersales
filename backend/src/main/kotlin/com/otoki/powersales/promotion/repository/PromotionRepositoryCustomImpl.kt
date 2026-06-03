@@ -8,6 +8,7 @@ import com.otoki.powersales.account.entity.QAccount.Companion.account
 import com.otoki.powersales.product.entity.QProduct.Companion.product
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
@@ -36,6 +37,8 @@ class PromotionRepositoryCustomImpl(
         promotionType: PromotionType?,
         startDate: String?,
         endDate: String?,
+        ownerOnly: Boolean,
+        currentUserId: Long?,
         pageable: Pageable
     ): Page<Promotion> {
         val builder = BooleanBuilder()
@@ -62,6 +65,18 @@ class PromotionRepositoryCustomImpl(
         if (!endDate.isNullOrBlank()) {
             val date = LocalDate.parse(endDate)
             builder.and(promotion.startDate.loe(date))
+        }
+
+        // SF 웹 ListView filterScope=Mine 대응 — 가시 범위 안에서 내가 owner 인 행사만.
+        // currentUserId 가 null 이면 의도적으로 매칭 0건 (소유자 불명 = 내 것 없음).
+        if (ownerOnly) {
+            builder.and(
+                if (currentUserId != null) {
+                    promotion.ownerUser.id.eq(currentUserId)
+                } else {
+                    Expressions.FALSE.isTrue
+                }
+            )
         }
 
         val content = queryFactory

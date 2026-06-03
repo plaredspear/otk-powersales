@@ -34,7 +34,7 @@ class SavedSearchServiceTest {
 
     private fun savedSearch(
         id: Long = 1,
-        ownerId: Long = 10,
+        ownerId: Long? = 10,
         scope: SavedSearchScope = SavedSearchScope.PRIVATE,
         name: String = "검색A",
         resourceKey: String = "promotion",
@@ -79,6 +79,22 @@ class SavedSearchServiceTest {
             val result = service.list("promotion", employeeId = 10, permissions = withSharedEdit)
 
             assertThat(result.first().editable).isTrue()
+        }
+
+        @Test
+        @DisplayName("시스템 기본 프리셋(owner=null SHARED)은 전 사용자에게 보이고 ownerName 은 null")
+        fun systemPresetVisible() {
+            val systemPreset = savedSearch(id = 3, ownerId = null, scope = SavedSearchScope.SHARED, name = "전체 행사 조회")
+            every { savedSearchRepository.findVisible("promotion", 10) } returns listOf(systemPreset)
+            every { employeeRepository.findAllById(any<List<Long>>()) } returns emptyList()
+
+            val result = service.list("promotion", employeeId = 10, permissions = noPermission)
+
+            assertThat(result).hasSize(1)
+            assertThat(result.first().ownerId).isNull()
+            assertThat(result.first().ownerName).isNull()
+            // 권한 없으면 SHARED 라 editable false
+            assertThat(result.first().editable).isFalse()
         }
     }
 

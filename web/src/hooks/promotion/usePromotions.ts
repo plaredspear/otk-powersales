@@ -10,6 +10,7 @@ export function usePromotions(params: PromotionListParams) {
       params.promotionType,
       params.startDate,
       params.endDate,
+      params.ownerOnly,
       params.page,
       params.size,
     ],

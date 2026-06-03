@@ -38,9 +38,12 @@ class SavedSearch(
     @Column(name = "scope", nullable = false, length = 20)
     var scope: SavedSearchScope,
 
-    /** 생성자 employee.id. SHARED 도 생성자를 보존한다 (감사 목적). */
-    @Column(name = "owner_id", nullable = false)
-    var ownerId: Long,
+    /**
+     * 생성자 employee.id. SHARED 도 생성자를 보존한다 (감사 목적).
+     * 단 시스템 부팅 시 생성하는 기본 공용 프리셋은 소유자가 없으므로 null.
+     */
+    @Column(name = "owner_id")
+    var ownerId: Long?,
 
     /**
      * 필터 조건 (불투명 JSON). 화면(resourceKey)마다 키 구성이 다르므로 백엔드는 내부 키를 해석하지 않고

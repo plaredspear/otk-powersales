@@ -87,13 +87,21 @@ class SavedSearchService(
         if (!isEditable(entity, employeeId, canEditShared)) {
             throw SavedSearchForbiddenException()
         }
-        // 이름 변경 시 유니크 충돌 검사 (자기 자신 제외)
-        if (entity.name != request.name &&
-            savedSearchRepository.existsByResourceKeyAndOwnerIdAndScopeAndName(
-                entity.resourceKey, entity.ownerId, entity.scope, request.name,
-            )
-        ) {
-            throw SavedSearchDuplicateNameException()
+        // 이름 변경 시 유니크 충돌 검사 (자기 자신 제외). owner 유무에 따라 분기.
+        if (entity.name != request.name) {
+            val ownerId = entity.ownerId
+            val duplicate = if (ownerId != null) {
+                savedSearchRepository.existsByResourceKeyAndOwnerIdAndScopeAndName(
+                    entity.resourceKey, ownerId, entity.scope, request.name,
+                )
+            } else {
+                savedSearchRepository.existsByResourceKeyAndOwnerIdIsNullAndScopeAndName(
+                    entity.resourceKey, entity.scope, request.name,
+                )
+            }
+            if (duplicate) {
+                throw SavedSearchDuplicateNameException()
+            }
         }
         entity.name = request.name
         entity.filters = request.filters
@@ -124,13 +132,14 @@ class SavedSearchService(
     }
 
     private fun toResponse(entity: SavedSearch, employeeId: Long, canEditShared: Boolean): SavedSearchResponse {
-        val ownerName = employeeRepository.findByIdOrNull(entity.ownerId)?.name
+        val ownerName = entity.ownerId?.let { employeeRepository.findByIdOrNull(it)?.name }
         return SavedSearchResponse.of(entity, ownerName, isEditable(entity, employeeId, canEditShared))
     }
 
-    private fun resolveOwnerNames(ownerIds: List<Long>): Map<Long, String> {
-        if (ownerIds.isEmpty()) return emptyMap()
-        return employeeRepository.findAllById(ownerIds.distinct())
+    private fun resolveOwnerNames(ownerIds: List<Long?>): Map<Long, String> {
+        val nonNull = ownerIds.filterNotNull().distinct()
+        if (nonNull.isEmpty()) return emptyMap()
+        return employeeRepository.findAllById(nonNull)
             .associate { it.id to it.name }
     }
 }

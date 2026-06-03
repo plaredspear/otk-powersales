@@ -116,7 +116,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
                 page = 0, size = 20, totalElements = 1, totalPages = 1
             )
             every { adminPromotionService.getPromotions(
-                any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any()
             ) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions"))
@@ -133,7 +133,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
                 content = emptyList(), page = 0, size = 20, totalElements = 0, totalPages = 0
             )
             every { adminPromotionService.getPromotions(
-                any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any()
             ) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions"))

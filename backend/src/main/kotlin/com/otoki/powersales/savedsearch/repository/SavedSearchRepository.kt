@@ -32,4 +32,11 @@ interface SavedSearchRepository : JpaRepository<SavedSearch, Long> {
         scope: SavedSearchScope,
         name: String,
     ): Boolean
+
+    /** 시스템 기본 공용 프리셋(owner 없는 SHARED) 존재 확인용 — 부팅 sync 멱등 처리. */
+    fun existsByResourceKeyAndOwnerIdIsNullAndScopeAndName(
+        resourceKey: String,
+        scope: SavedSearchScope,
+        name: String,
+    ): Boolean
 }

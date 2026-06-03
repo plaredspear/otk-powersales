@@ -7,6 +7,8 @@ export interface PromotionListParams {
   promotionType?: string;
   startDate?: string;
   endDate?: string;
+  /** true 면 내가 owner 인 행사만 (SF ListView filterScope=Mine 대응). */
+  ownerOnly?: boolean;
   page: number;
   size: number;
 }
@@ -114,6 +116,7 @@ export async function fetchPromotions(params: PromotionListParams): Promise<Prom
   if (params.promotionType) queryParams.promotionType = params.promotionType;
   if (params.startDate) queryParams.startDate = params.startDate;
   if (params.endDate) queryParams.endDate = params.endDate;
+  if (params.ownerOnly) queryParams.ownerOnly = 'true';
 
   const res = await client.get<ApiResponse<PromotionListData>>('/api/v1/admin/promotions', {
     params: queryParams,

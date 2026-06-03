@@ -14117,7 +14117,7 @@
           },
           "ownerId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "ownerName" : {
             "type" : [ "string", "null" ]
@@ -21040,6 +21040,14 @@
           "required" : false,
           "schema" : {
             "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "ownerOnly",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
           }
         }, {
           "in" : "query",

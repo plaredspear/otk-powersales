@@ -86,6 +86,7 @@ class AdminPromotionController(
         @RequestParam(required = false) promotionType: String?,
         @RequestParam(required = false) startDate: String?,
         @RequestParam(required = false) endDate: String?,
+        @RequestParam(required = false, defaultValue = "false") ownerOnly: Boolean,
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<PromotionListResponse>> {
@@ -95,6 +96,7 @@ class AdminPromotionController(
             promotionType = promotionType,
             startDate = startDate,
             endDate = endDate,
+            ownerOnly = ownerOnly,
             page = page,
             size = size
         )
