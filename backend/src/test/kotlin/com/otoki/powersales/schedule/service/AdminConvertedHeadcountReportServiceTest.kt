@@ -230,8 +230,8 @@ class AdminConvertedHeadcountReportServiceTest {
 
             assertThat(res.groups).hasSize(2)
             val byType = res.groups.associateBy { it.accountType }
-            assertThat(byType["할인점"]!!.subtotalHeadcount).isEqualByComparingTo("2.0")
-            assertThat(byType["수퍼"]!!.subtotalHeadcount).isEqualByComparingTo("3.0")
+            assertThat(byType["대형마트(3대)"]!!.subtotalHeadcount).isEqualByComparingTo("2.0")
+            assertThat(byType["슈퍼"]!!.subtotalHeadcount).isEqualByComparingTo("3.0")
         }
 
         @Test

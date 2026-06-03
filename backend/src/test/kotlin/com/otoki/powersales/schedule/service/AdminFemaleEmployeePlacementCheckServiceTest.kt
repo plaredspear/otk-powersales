@@ -98,7 +98,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             assertThat(item.name).isEqualTo("홍길동")
             assertThat(item.orgName).isEqualTo("영업1팀")
             assertThat(item.employmentStatus).isEqualTo("재직")
-            assertThat(item.accountType).isEqualTo("할인점")
+            assertThat(item.accountType).isEqualTo("대형마트(3대)")
             assertThat(item.accountName).isEqualTo("○○마트 강남점")
             assertThat(item.accountBranchCode).isEqualTo("B0123")
             assertThat(item.accountBranchName).isEqualTo("강남지점")

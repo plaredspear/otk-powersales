@@ -262,23 +262,32 @@ class AccountSFAnnotationTest {
     inner class PicklistEnum {
 
         @Test
-        @DisplayName("AccountType enum 14개 멤버 + 한국어 displayName")
+        @DisplayName("AccountType enum 18개 멤버 + 운영 실제 저장값 displayName (= 거래처유형마스터 Name)")
         fun accountTypeEnumMembers() {
-            assertThat(AccountType.entries).hasSize(14)
-            assertThat(AccountType.DISCOUNT_STORE.displayName).isEqualTo("할인점")
+            // displayName 은 SF picklist 정의 라벨이 아니라 운영 실제 저장값(거래처유형마스터 Name). accountCode 와 1:1.
+            assertThat(AccountType.entries).hasSize(18)
+            assertThat(AccountType.DISCOUNT_STORE.displayName).isEqualTo("대형마트(3대)")
             assertThat(AccountType.CHAIN.displayName).isEqualTo("체인")
-            assertThat(AccountType.NONGHYUP.displayName).isEqualTo("농협")
-            assertThat(AccountType.SUPER.displayName).isEqualTo("수퍼")
-            assertThat(AccountType.FOOD_MATERIAL.displayName).isEqualTo("식자재")
-            assertThat(AccountType.GROUP_FEEDING.displayName).isEqualTo("단체급식")
-            assertThat(AccountType.OIL_CONFECTIONERY.displayName).isEqualTo("유지제과")
-            assertThat(AccountType.RESTAURANT.displayName).isEqualTo("외식")
             assertThat(AccountType.DEPARTMENT_STORE.displayName).isEqualTo("백화점")
             assertThat(AccountType.CVS.displayName).isEqualTo("C.V.S")
+            assertThat(AccountType.NONGHYUP.displayName).isEqualTo("농협")
+            assertThat(AccountType.SUPER.displayName).isEqualTo("슈퍼")
             assertThat(AccountType.AGENCY.displayName).isEqualTo("대리점")
+            assertThat(AccountType.WHOLESALE.displayName).isEqualTo("홀세일")
+            assertThat(AccountType.CONVENIENCE_STORE.displayName).isEqualTo("편의점")
+            assertThat(AccountType.FOOD_MATERIAL.displayName).isEqualTo("식자재")
+            assertThat(AccountType.GROUP_FEEDING.displayName).isEqualTo("단체급식")
+            assertThat(AccountType.OIL_CONFECTIONERY.displayName).isEqualTo("유지베이커리")
+            assertThat(AccountType.RESTAURANT.displayName).isEqualTo("외식")
             assertThat(AccountType.MANUFACTURING.displayName).isEqualTo("제조")
             assertThat(AccountType.MILITARY.displayName).isEqualTo("군납")
             assertThat(AccountType.OTHER.displayName).isEqualTo("기타")
+            assertThat(AccountType.ONLINE.displayName).isEqualTo("온라인")
+            assertThat(AccountType.EXPORT.displayName).isEqualTo("수출")
+            // accountCode 정합 (거래처유형마스터 AccountCode__c)
+            assertThat(AccountType.DISCOUNT_STORE.accountCode).isEqualTo("01")
+            assertThat(AccountType.OTHER.accountCode).isEqualTo("16")
+            assertThat(AccountType.EXPORT.accountCode).isEqualTo("20")
         }
 
         @Test
@@ -293,12 +302,12 @@ class AccountSFAnnotationTest {
         @DisplayName("AccountTypeConverter — enum ↔ 한국어 String 양방향 변환")
         fun accountTypeConverter() {
             val converter = AccountTypeConverter()
-            // enum → DB 한국어
-            assertThat(converter.convertToDatabaseColumn(AccountType.DISCOUNT_STORE)).isEqualTo("할인점")
+            // enum → DB 한국어 (운영 실제 저장값)
+            assertThat(converter.convertToDatabaseColumn(AccountType.DISCOUNT_STORE)).isEqualTo("대형마트(3대)")
             assertThat(converter.convertToDatabaseColumn(AccountType.CVS)).isEqualTo("C.V.S")
             assertThat(converter.convertToDatabaseColumn(null)).isNull()
-            // DB 한국어 → enum
-            assertThat(converter.convertToEntityAttribute("할인점")).isEqualTo(AccountType.DISCOUNT_STORE)
+            // DB 한국어 → enum (운영 실제 저장값 매칭)
+            assertThat(converter.convertToEntityAttribute("대형마트(3대)")).isEqualTo(AccountType.DISCOUNT_STORE)
             assertThat(converter.convertToEntityAttribute("C.V.S")).isEqualTo(AccountType.CVS)
             assertThat(converter.convertToEntityAttribute(null)).isNull()
             assertThat(converter.convertToEntityAttribute("")).isNull()
