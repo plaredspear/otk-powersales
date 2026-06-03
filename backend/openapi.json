@@ -6105,6 +6105,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseListSavedSearchResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SavedSearchResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListSearchAccountCategoryItem" : {
         "properties" : {
           "data" : {
@@ -8393,6 +8421,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/SapOutboxPendingListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseSavedSearchResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SavedSearchResponse"
             }, {
               "type" : "null"
             } ]
@@ -19185,6 +19242,90 @@
         },
         "type" : "object"
       },
+      "SavedSearchCreateRequest" : {
+        "properties" : {
+          "filters" : {
+            "additionalProperties" : { },
+            "type" : "object"
+          },
+          "name" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "resourceKey" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "scope" : {
+            "enum" : [ "PRIVATE", "SHARED" ],
+            "type" : "string"
+          },
+          "sortOrder" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "filters", "name", "resourceKey", "scope" ],
+        "type" : "object"
+      },
+      "SavedSearchResponse" : {
+        "properties" : {
+          "editable" : {
+            "type" : "boolean"
+          },
+          "filters" : {
+            "additionalProperties" : { },
+            "type" : "object"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "ownerId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "ownerName" : {
+            "type" : [ "string", "null" ]
+          },
+          "resourceKey" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "enum" : [ "PRIVATE", "SHARED" ],
+            "type" : "string"
+          },
+          "sortOrder" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "SavedSearchUpdateRequest" : {
+        "properties" : {
+          "filters" : {
+            "additionalProperties" : { },
+            "type" : "object"
+          },
+          "name" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "sortOrder" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "filters", "name" ],
+        "type" : "object"
+      },
       "ScheduleBatchConfirmRequest" : {
         "properties" : {
           "ids" : {
@@ -21712,7 +21853,7 @@
     },
     "/api/v1/admin/attend-info" : {
       "get" : {
-        "operationId" : "list_1",
+        "operationId" : "list_2",
         "parameters" : [ {
           "in" : "query",
           "name" : "filter",
@@ -21754,7 +21895,7 @@
         "tags" : [ "admin-attend-info-controller" ]
       },
       "post" : {
-        "operationId" : "create_3",
+        "operationId" : "create_4",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -21782,7 +21923,7 @@
     },
     "/api/v1/admin/attend-info/{id}" : {
       "delete" : {
-        "operationId" : "delete_3",
+        "operationId" : "delete_4",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -21832,7 +21973,7 @@
         "tags" : [ "admin-attend-info-controller" ]
       },
       "put" : {
-        "operationId" : "update_4",
+        "operationId" : "update_5",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -21869,7 +22010,7 @@
     },
     "/api/v1/admin/attendance-log" : {
       "get" : {
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "filter",
@@ -22024,7 +22165,7 @@
     },
     "/api/v1/admin/cache" : {
       "get" : {
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "responses" : {
           "200" : {
             "content" : {
@@ -22602,7 +22743,7 @@
     },
     "/api/v1/admin/employee-input-criteria-masters" : {
       "get" : {
-        "operationId" : "list",
+        "operationId" : "list_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "status",
@@ -22628,7 +22769,7 @@
         "tags" : [ "admin-employee-input-criteria-master-controller" ]
       },
       "post" : {
-        "operationId" : "create_2",
+        "operationId" : "create_3",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -22702,7 +22843,7 @@
     },
     "/api/v1/admin/employee-input-criteria-masters/{id}" : {
       "delete" : {
-        "operationId" : "delete_2",
+        "operationId" : "delete_3",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -22752,7 +22893,7 @@
         "tags" : [ "admin-employee-input-criteria-master-controller" ]
       },
       "put" : {
-        "operationId" : "update_3",
+        "operationId" : "update_4",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -25854,7 +25995,7 @@
         "tags" : [ "admin-product-expiration-controller" ]
       },
       "post" : {
-        "operationId" : "create_1",
+        "operationId" : "create_2",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -25928,7 +26069,7 @@
     },
     "/api/v1/admin/product-expiration/{id}" : {
       "delete" : {
-        "operationId" : "delete_1",
+        "operationId" : "delete_2",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -25978,7 +26119,7 @@
         "tags" : [ "admin-product-expiration-controller" ]
       },
       "put" : {
-        "operationId" : "update_2",
+        "operationId" : "update_3",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -26378,7 +26519,7 @@
     },
     "/api/v1/admin/promotion-products/{id}" : {
       "delete" : {
-        "operationId" : "delete",
+        "operationId" : "delete_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -26410,7 +26551,7 @@
         "tags" : [ "admin-promotion-product-controller" ]
       },
       "put" : {
-        "operationId" : "update_1",
+        "operationId" : "update_2",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -28393,6 +28534,115 @@
           }
         },
         "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
+    "/api/v1/admin/saved-searches" : {
+      "get" : {
+        "operationId" : "list",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "resourceKey",
+          "required" : true,
+          "schema" : {
+            "maxLength" : 50,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListSavedSearchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "saved-search-controller" ]
+      },
+      "post" : {
+        "operationId" : "create_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SavedSearchCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSavedSearchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "saved-search-controller" ]
+      }
+    },
+    "/api/v1/admin/saved-searches/{id}" : {
+      "delete" : {
+        "operationId" : "delete",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "saved-search-controller" ]
+      },
+      "put" : {
+        "operationId" : "update_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SavedSearchUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSavedSearchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "saved-search-controller" ]
       }
     },
     "/api/v1/admin/schedule" : {
@@ -32195,7 +32445,7 @@
     },
     "/api/v1/mobile/orders/draft" : {
       "delete" : {
-        "operationId" : "delete_4",
+        "operationId" : "delete_5",
         "responses" : {
           "200" : {
             "description" : "OK"
