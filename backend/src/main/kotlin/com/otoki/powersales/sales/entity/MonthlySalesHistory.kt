@@ -138,9 +138,19 @@ class MonthlySalesHistory(
     @Column(name = "ship_closing_amount4")
     var shipClosingAmount4: Double? = null,
 
+    // SF 메타 정합: type=double precision=18 scale=0 (물류마감실적_합계). non-calculated 실저장 합계 필드.
+    @SFField("ShipClosingSumAmount__c")
+    @Column(name = "ship_closing_sum_amount")
+    var shipClosingSumAmount: Double? = null,
+
     @SFField("ABCClosingAmount4__c")
     @Column(name = "abc_closing_amount4")
     var abcClosingAmount4: Double? = null,
+
+    // SF 메타 정합: type=double precision=18 scale=0 (전산마감실적_합계). non-calculated 실저장 합계 필드.
+    @SFField("ABCClosingSumAmount__c")
+    @Column(name = "abc_closing_sum_amount")
+    var abcClosingSumAmount: Double? = null,
 
     @SFField("LastMonthTargetByHand__c")
     @Column(name = "last_month_target_by_hand", precision = 18, scale = 0)
