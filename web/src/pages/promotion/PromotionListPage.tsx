@@ -82,6 +82,18 @@ export default function PromotionListPage() {
       render: (val: string | null) => val ?? '-',
     },
     {
+      title: '대표제품',
+      dataIndex: 'primaryProductName',
+      width: 180,
+      ellipsis: true,
+      render: (val: string | null, record) =>
+        val && record.primaryProductCode ? (
+          <a onClick={() => goToProduct(record.primaryProductCode!)}>{val}</a>
+        ) : (
+          val ?? '-'
+        ),
+    },
+    {
       title: '시작일',
       dataIndex: 'startDate',
       width: 110,
@@ -101,18 +113,6 @@ export default function PromotionListPage() {
       width: 110,
       align: 'center',
       render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '대표제품',
-      dataIndex: 'primaryProductName',
-      width: 180,
-      ellipsis: true,
-      render: (val: string | null, record) =>
-        val && record.primaryProductCode ? (
-          <a onClick={() => goToProduct(record.primaryProductCode!)}>{val}</a>
-        ) : (
-          val ?? '-'
-        ),
     },
     {
       title: '행사유형',
