@@ -17170,6 +17170,13 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "createdById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "createdByName" : {
+            "type" : [ "string", "null" ]
+          },
           "deleted" : {
             "type" : "boolean"
           },

@@ -24,6 +24,8 @@ class PromotionRepositoryCustomImpl(
             .selectFrom(promotion)
             .leftJoin(promotion.account, account).fetchJoin()
             .leftJoin(promotion.primaryProduct, product).fetchJoin()
+            // 상세의 "작성자"(createdBy.name) LazyInit 회피 — LAZY @ManyToOne 을 fetchJoin 으로 한 번에 적재.
+            .leftJoin(promotion.createdBy).fetchJoin()
             .where(promotion.id.eq(id))
             .fetchOne()
     }

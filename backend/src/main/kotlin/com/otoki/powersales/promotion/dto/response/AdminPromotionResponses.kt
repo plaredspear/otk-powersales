@@ -103,6 +103,10 @@ data class PromotionDetailResponse(
     val actualAmount: Long?,
     val isClosed: Boolean,
     val isDeleted: Boolean,
+    // 작성자 = SF CreatedBy 동등. createdBy 는 findByIdWithRelations 에서 fetchJoin (LazyInit 회피).
+    // id 는 작성자 → 사용자 상세(/users/:id) 링크용 (web 에서 user READ 권한 보유 시에만 링크).
+    val createdById: Long?,
+    val createdByName: String?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
     val remark: String? = null
@@ -143,6 +147,8 @@ data class PromotionDetailResponse(
                 actualAmount = promotion.dkActualAmount?.toLong(),
                 isClosed = promotion.isClosed,
                 isDeleted = promotion.isDeleted,
+                createdById = promotion.createdBy?.id,
+                createdByName = promotion.createdBy?.name,
                 createdAt = promotion.createdAt,
                 updatedAt = promotion.updatedAt,
                 remark = promotion.remark

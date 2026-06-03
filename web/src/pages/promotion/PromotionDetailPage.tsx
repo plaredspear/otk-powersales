@@ -755,6 +755,7 @@ export default function PromotionDetailPage() {
         title: <span>행사사원<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
         dataIndex: 'employeeName',
         width: 120,
+        align: 'center' as const,
         render: (name: string | null, record: PromotionEmployee) =>
           name ?? record.employeeCode ?? '-',
       },
@@ -1305,7 +1306,7 @@ export default function PromotionDetailPage() {
                   <div><span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>*</span> 저장시 필수</div>
                   <div><span style={{ color: '#fa8c16', fontWeight: 'bold' }}>**</span> 일정확정시 필수</div>
                   <div>
-                    <span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: '#f6ffed', border: '1px solid #b7eb8f', verticalAlign: 'middle', marginRight: 4 }} />
+                    <span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: '#f0f0f0', border: '1px solid #d9d9d9', verticalAlign: 'middle', marginRight: 4 }} />
                     일정이 확정된 행
                   </div>
                 </div>
@@ -1421,7 +1422,7 @@ export default function PromotionDetailPage() {
           background-color: #fff2f0 !important;
         }
         .ant-table-row-confirmed td {
-          background-color: #f6ffed !important;
+          background-color: #f0f0f0 !important;
         }
         .promotion-detail-collapse .ant-collapse-content-box {
           padding: 0 !important;

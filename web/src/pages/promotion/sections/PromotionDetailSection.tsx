@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import type { PromotionDetail, PromotionFormMeta } from '@/api/promotion';
 import type { Account } from '@/api/account';
 import { fetchAccountsForPromotionLookup } from '@/api/account';
+import { usePermission } from '@/hooks/usePermission';
 
 const PROMOTION_TYPE_TAG: Record<string, string> = {
   시식: 'blue',
@@ -42,6 +43,10 @@ export default function PromotionDetailSection({
   const [accountOptions, setAccountOptions] = useState<Account[]>([]);
   const [accountSearching, setAccountSearching] = useState(false);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { hasEntityPermission } = usePermission();
+  // 작성자 → 사용자 상세(/users/:id) 링크는 user READ 권한 보유자(시스템 관리자급)에게만 (목록과 동일).
+  const canReadUser = hasEntityPermission('user', 'READ');
 
   const handleAccountSearch = (keyword: string) => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
@@ -217,6 +222,21 @@ export default function PromotionDetailSection({
       </Descriptions.Item>
       <Descriptions.Item label="마감여부">
         {promotion.isClosed ? <Tag color="red">마감</Tag> : '미마감'}
+      </Descriptions.Item>
+
+      <Descriptions.Item label="작성자">
+        {promotion.createdByName ? (
+          canReadUser && promotion.createdById != null ? (
+            <Link to={`/users/${promotion.createdById}`}>{promotion.createdByName}</Link>
+          ) : (
+            promotion.createdByName
+          )
+        ) : (
+          '-'
+        )}
+      </Descriptions.Item>
+      <Descriptions.Item label="작성일">
+        {promotion.createdAt ? dayjs(promotion.createdAt).format('YYYY-MM-DD HH:mm') : '-'}
       </Descriptions.Item>
     </Descriptions>
   );

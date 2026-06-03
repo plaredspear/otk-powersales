@@ -68,6 +68,8 @@ export interface PromotionDetail {
   isClosed: boolean;
   remark: string | null;
   isDeleted: boolean;
+  createdById: number | null;
+  createdByName: string | null;
   createdAt: string;
   updatedAt: string;
 }
