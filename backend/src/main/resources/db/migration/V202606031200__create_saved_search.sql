@@ -6,7 +6,7 @@ CREATE TABLE saved_search (
     resource_key VARCHAR(50)  NOT NULL,
     name         VARCHAR(100) NOT NULL,
     scope        VARCHAR(20)  NOT NULL,
-    owner_id     BIGINT       NOT NULL REFERENCES employee (id),
+    owner_id     BIGINT       NOT NULL REFERENCES employee (employee_id),
     filters      JSONB        NOT NULL DEFAULT '{}'::jsonb,
     sort_order   INT          NOT NULL DEFAULT 0,
     created_at   TIMESTAMP    NOT NULL,
