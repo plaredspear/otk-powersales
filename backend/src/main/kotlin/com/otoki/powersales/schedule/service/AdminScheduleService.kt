@@ -35,6 +35,9 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import com.otoki.powersales.schedule.service.internal.LastMonthRevenueLookup
+import com.otoki.powersales.schedule.service.internal.ScheduleDisplayStatusCalculator
+import com.otoki.powersales.schedule.service.internal.ScheduleValidLight
+import com.otoki.powersales.schedule.dto.response.ScheduleDetailDto
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -64,6 +67,7 @@ class AdminScheduleService(
     private val objectMapper: ObjectMapper,
     private val branchCodeExpander: BranchCodeExpander,
     private val policyEvaluator: SharingRulePolicyEvaluator,
+    private val displayStatusCalculator: ScheduleDisplayStatusCalculator,
 ) {
 
     companion object {
@@ -359,6 +363,57 @@ class AdminScheduleService(
         }
     }
 
+    /**
+     * UC-03 단건 편집 모달 상세 조회 — SF 「진열사원 스케줄 마스터」 레이아웃 정합.
+     * 편집 필드 + readonly 계산 정보 (재직상태/유효데이터/유효 formula 포팅) 를 함께 반환한다.
+     */
+    fun getScheduleDetail(scope: DataScope, scheduleId: Long): ScheduleDetailDto {
+        val schedule = scheduleRepository.findById(scheduleId)
+            .filter { it.isDeleted != true }
+            .orElseThrow { ScheduleNotFoundException("존재하지 않거나 삭제된 스케줄입니다") }
+
+        // SF OWD=Private 가시 범위 검증 (목록과 동일 evaluator Predicate)
+        requireScheduleScope(scope, schedule)
+
+        val employee = schedule.employee
+        val account = schedule.account
+
+        val employmentStatus = displayStatusCalculator.employmentStatus(employee)
+        val validData = displayStatusCalculator.validData(employee, schedule.startDate, schedule.endDate)
+        val valid = displayStatusCalculator.validLight(validData)?.let { light ->
+            when (light) {
+                ScheduleValidLight.GREEN -> "유효"
+                ScheduleValidLight.YELLOW -> "예정"
+                ScheduleValidLight.RED -> "종료"
+            }
+        }
+
+        return ScheduleDetailDto(
+            id = schedule.id,
+            name = schedule.name,
+            confirmed = schedule.confirmed,
+            employeeCode = employee?.employeeCode ?: "",
+            employeeName = employee?.name ?: "",
+            accountCode = account?.externalKey,
+            accountName = account?.name,
+            typeOfWork1 = schedule.typeOfWork1?.displayName,
+            typeOfWork3 = schedule.typeOfWork3?.displayName,
+            typeOfWork4 = schedule.typeOfWork4?.displayName,
+            typeOfWork5 = schedule.typeOfWork5?.displayName,
+            startDate = schedule.startDate,
+            endDate = schedule.endDate,
+            branchName = employee?.orgName,
+            title = employee?.jikwee,
+            employmentStatus = employmentStatus,
+            accountStatus = account?.accountStatusName,
+            accountType = account?.accountType?.displayName,
+            valid = valid,
+            validData = validData,
+            costCenterCode = schedule.costCenterCode,
+            lastMonthRevenue = schedule.lastMonthRevenue?.toLong(),
+        )
+    }
+
     @Transactional
     fun batchConfirm(ids: List<Long>): ScheduleBatchConfirmResultDto {
         val schedules = scheduleRepository.findAllById(ids)
@@ -451,7 +506,7 @@ class AdminScheduleService(
         val entity = DisplayWorkSchedule(
             employee = employee,
             account = account,
-            typeOfWork1 = TypeOfWork1.DISPLAY,
+            typeOfWork1 = TypeOfWork1.fromDisplayNameOrNull(request.typeOfWork1) ?: TypeOfWork1.DISPLAY,
             typeOfWork3 = TypeOfWork3.fromDisplayNameOrNull(validatedRow.typeOfWork3),
             typeOfWork4 = SecondWorkType.fromDisplayNameOrNull(validatedRow.typeOfWork4),
             typeOfWork5 = TypeOfWork5.fromDisplayNameOrNull(validatedRow.typeOfWork5),
@@ -509,6 +564,7 @@ class AdminScheduleService(
         if (schedule.confirmed == true && !isAdminGrade(user.employeeCode)) {
             val originalEmployeeCode = schedule.employee?.employeeCode
             val originalAccountCode = schedule.account?.externalKey
+            val originalType1 = schedule.typeOfWork1?.displayName
             val originalType3 = schedule.typeOfWork3?.displayName
             val originalType4 = schedule.typeOfWork4?.displayName
             val originalType5 = schedule.typeOfWork5?.displayName
@@ -517,6 +573,7 @@ class AdminScheduleService(
             val blockedFieldChanged =
                 originalEmployeeCode != request.employeeCode ||
                     originalAccountCode != request.accountCode ||
+                    originalType1 != request.typeOfWork1 ||
                     originalType3 != request.typeOfWork3 ||
                     originalType4 != request.typeOfWork4 ||
                     originalType5 != request.typeOfWork5 ||
@@ -576,6 +633,7 @@ class AdminScheduleService(
 
         schedule.employee = employee
         schedule.account = account
+        schedule.typeOfWork1 = TypeOfWork1.fromDisplayNameOrNull(request.typeOfWork1) ?: TypeOfWork1.DISPLAY
         schedule.typeOfWork3 = TypeOfWork3.fromDisplayNameOrNull(validatedRow.typeOfWork3)
         schedule.typeOfWork4 = SecondWorkType.fromDisplayNameOrNull(validatedRow.typeOfWork4)
         schedule.typeOfWork5 = TypeOfWork5.fromDisplayNameOrNull(validatedRow.typeOfWork5)

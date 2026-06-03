@@ -174,6 +174,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             val request = AdminScheduleCreateRequest(
                 employeeCode = "20030001",
                 accountCode = "ACC001",
+                typeOfWork1 = "진열",
                 typeOfWork3 = "고정",
                 typeOfWork4 = "상온",
                 typeOfWork5 = "상시",
@@ -213,6 +214,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             val request = AdminScheduleCreateRequest(
                 employeeCode = "20030001",
                 accountCode = "ACC001",
+                typeOfWork1 = "진열",
                 typeOfWork3 = "고정",
                 typeOfWork4 = "상온",
                 typeOfWork5 = "상시",
@@ -248,6 +250,49 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
+    @DisplayName("GET /api/v1/admin/schedule/{id} - 단건 상세 조회")
+    inner class GetScheduleDetail {
+
+        @Test
+        @DisplayName("성공 - 편집 필드 + readonly 계산 정보 반환")
+        fun getDetail_success() {
+            val detail = ScheduleDetailDto(
+                id = 10L,
+                name = "SM-00002829",
+                confirmed = false,
+                employeeCode = "20030001",
+                employeeName = "홍길동",
+                accountCode = "ACC001",
+                accountName = "이마트 강남점",
+                typeOfWork1 = "진열",
+                typeOfWork3 = "순회",
+                typeOfWork4 = null,
+                typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 3, 19),
+                endDate = null,
+                branchName = "강남53지점",
+                title = "사원",
+                employmentStatus = "재직",
+                accountStatus = "거래",
+                accountType = "할인점",
+                valid = "유효",
+                validData = "유효",
+                costCenterCode = "5452",
+                lastMonthRevenue = 121861916L,
+            )
+            every { adminScheduleService.getScheduleDetail(any(), eq(10L)) } returns detail
+
+            mockMvc.perform(get("/api/v1/admin/schedule/10"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.name").value("SM-00002829"))
+                .andExpect(jsonPath("$.data.accountName").value("이마트 강남점"))
+                .andExpect(jsonPath("$.data.employmentStatus").value("재직"))
+                .andExpect(jsonPath("$.data.valid").value("유효"))
+                .andExpect(jsonPath("$.data.lastMonthRevenue").value(121861916))
+        }
+    }
+
+    @Nested
     @DisplayName("PUT /api/v1/admin/schedule/{id} - 단건 편집")
     inner class UpdateSchedule {
 
@@ -257,6 +302,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             val request = AdminScheduleUpdateRequest(
                 employeeCode = "20030001",
                 accountCode = "ACC001",
+                typeOfWork1 = "진열",
                 typeOfWork3 = "고정",
                 typeOfWork4 = "상온",
                 typeOfWork5 = "상시",
@@ -295,6 +341,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             val request = AdminScheduleUpdateRequest(
                 employeeCode = "20030001",
                 accountCode = "ACC_NEW",
+                typeOfWork1 = "진열",
                 typeOfWork3 = "고정",
                 typeOfWork4 = "상온",
                 typeOfWork5 = "상시",
@@ -318,6 +365,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             val request = AdminScheduleUpdateRequest(
                 employeeCode = "20030001",
                 accountCode = "ACC001",
+                typeOfWork1 = "진열",
                 typeOfWork3 = "고정",
                 typeOfWork4 = "상온",
                 typeOfWork5 = "상시",
@@ -606,10 +654,12 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     inner class GetBranches {
 
         @Test
-        @DisplayName("제거 확인 - DELETE /{id} 존재로 405 반환")
+        @DisplayName("제거 확인 - GET /{id} 로 라우팅되어 path 타입 변환 실패(400)")
         fun getBranches_removed() {
+            // 과거 전용 /branches GET 엔드포인트는 제거됨. 현재는 GET /{id} 에 매칭되며
+            // path "branches" 가 Long 으로 변환되지 않아 400 (MethodArgumentTypeMismatch) 반환.
             mockMvc.perform(get("/api/v1/admin/schedule/branches"))
-                .andExpect(status().isMethodNotAllowed)
+                .andExpect(status().isBadRequest)
         }
     }
 

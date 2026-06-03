@@ -103,6 +103,7 @@ class AdminScheduleServiceTest {
         objectMapper,
         branchCodeExpander,
         policyEvaluator,
+        com.otoki.powersales.schedule.service.internal.ScheduleDisplayStatusCalculator(),
     )
 
     /** SF UplExcelBtnSchduleMasterController 정합 — 기본 scope (`["CC001"]`) + BranchCodeExpander pass-through. */
@@ -1182,6 +1183,7 @@ class AdminScheduleServiceTest {
         private val baseRequest = AdminScheduleUpdateRequest(
             employeeCode = "20030001",
             accountCode = "ACC001",
+            typeOfWork1 = "진열",
             typeOfWork3 = "고정",
             typeOfWork4 = "상온",
             typeOfWork5 = "상시",
@@ -1669,6 +1671,7 @@ class AdminScheduleServiceTest {
         private val baseRequest = AdminScheduleCreateRequest(
             employeeCode = "20030001",
             accountCode = "ACC001",
+            typeOfWork1 = "진열",
             typeOfWork3 = "고정",
             typeOfWork4 = "상온",
             typeOfWork5 = "상시",

@@ -18,6 +18,9 @@ data class AdminScheduleUpdateRequest(
     @field:NotBlank(message = "거래처코드는 필수입니다")
     val accountCode: String,
 
+    @field:NotBlank(message = "근무형태1은 필수입니다")
+    val typeOfWork1: String,
+
     @field:NotBlank(message = "근무형태3은 필수입니다")
     val typeOfWork3: String,
 

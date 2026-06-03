@@ -10,6 +10,11 @@ export interface AccountSelectProps {
   onChange: (accountCode: string | undefined, account: Account | undefined) => void;
   disabled?: boolean;
   placeholder?: string;
+  /**
+   * 편집 모드 초기 표시 label. 검색 전이라 options 가 비어 value(거래처코드)만 표시되는 문제를
+   * 막기 위해, 현재 value 에 대응하는 거래처명 텍스트를 주입한다.
+   */
+  initialLabel?: string;
 }
 
 interface AccountOption {
@@ -24,7 +29,7 @@ interface AccountOption {
  * `GET /api/v1/admin/accounts` 의 keyword 검색 (거래처명) 활용. 디바운스 300ms.
  * 표시 형식: `거래처코드 — 거래처명 (지점명)`. 선택 값은 externalKey (거래처코드).
  */
-export default function AccountSelect({ value, onChange, disabled, placeholder }: AccountSelectProps) {
+export default function AccountSelect({ value, onChange, disabled, placeholder, initialLabel }: AccountSelectProps) {
   const [keyword, setKeyword] = useState('');
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [options, setOptions] = useState<AccountOption[]>([]);
@@ -72,6 +77,14 @@ export default function AccountSelect({ value, onChange, disabled, placeholder }
     return '검색 결과 없음';
   }, [loading, debouncedKeyword]);
 
+  // 검색 결과에 현재 value 가 없으면 초기 label 합성 옵션을 추가해 코드 대신 거래처명을 표시.
+  const mergedOptions = useMemo(() => {
+    if (value && initialLabel && !options.some((opt) => opt.value === value)) {
+      return [{ value, label: initialLabel } as AccountOption, ...options];
+    }
+    return options;
+  }, [value, initialLabel, options]);
+
   return (
     <Select
       showSearch
@@ -85,7 +98,7 @@ export default function AccountSelect({ value, onChange, disabled, placeholder }
         const matched = options.find((opt) => opt.value === next);
         onChange(next, matched?.account);
       }}
-      options={options}
+      options={mergedOptions}
       notFoundContent={notFoundContent}
       style={{ width: '100%' }}
     />

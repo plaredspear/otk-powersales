@@ -15,6 +15,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.ServletWebRequest
@@ -86,6 +87,26 @@ class GlobalExceptionHandler {
         val response = ApiResponse.error<Any>(
             code = "INVALID_PARAMETER",
             message = "필수 파라미터 '${ex.parameterName}'이(가) 누락되었습니다"
+        )
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(response)
+    }
+
+    /**
+     * Path variable / 요청 파라미터 타입 변환 실패 처리.
+     * 예: `GET /api/v1/admin/schedule/abc` 처럼 Long path variable 에 비숫자 값이 들어온 경우.
+     * 핸들러가 없으면 500 이 되므로 400 으로 명시 처리한다.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+    fun handleMethodArgumentTypeMismatch(
+        ex: MethodArgumentTypeMismatchException,
+        request: WebRequest
+    ): ResponseEntity<ApiResponse<Any>> {
+        val response = ApiResponse.error<Any>(
+            code = "INVALID_PARAMETER",
+            message = "파라미터 '${ex.name}'의 값이 올바르지 않습니다"
         )
 
         return ResponseEntity
