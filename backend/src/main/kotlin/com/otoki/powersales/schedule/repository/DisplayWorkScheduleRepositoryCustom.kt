@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.repository
 
+import com.otoki.powersales.account.entity.AccountType
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.enums.SecondWorkType
@@ -13,6 +14,10 @@ import java.time.LocalDate
 /**
  * findScheduleList projection row — Employee/Account entity hydration 회피 (N+1 차단) 용.
  * Service layer 가 enum → displayName 변환 후 [com.otoki.powersales.schedule.dto.response.ScheduleListItemDto] 로 매핑한다.
+ *
+ * `employeeStatus` / `employeeAppLoginActive` / `employeeEndDate` 는 재직상태 (SF formula `ValidConditionData__c`)
+ * 를 Service 의 [com.otoki.powersales.schedule.service.internal.ScheduleDisplayStatusCalculator.employmentStatus]
+ * 로 계산하기 위한 raw 입력값 (목록↔상세 동일 계산 재사용).
  */
 data class ScheduleListRow(
     val id: Long,
@@ -20,9 +25,14 @@ data class ScheduleListRow(
     val employeeCode: String?,
     val employeeName: String?,
     val branchName: String?,
+    val employeeStatus: String?,
+    val employeeAppLoginActive: Boolean?,
+    val employeeEndDate: LocalDate?,
     val accountId: Int?,
     val accountCode: String?,
     val accountName: String?,
+    val accountType: AccountType?,
+    val accountStatusName: String?,
     val typeOfWork3: TypeOfWork3?,
     val typeOfWork4: SecondWorkType?,
     val typeOfWork5: TypeOfWork5?,

@@ -74,11 +74,14 @@ function buildListColumns(
   onEdit: (row: ScheduleListItem) => void,
   navigate: NavigateFunction,
 ): ColumnsType<ScheduleListItem> {
+  // SF 「진열사원 스케줄 마스터」 List View 컬럼 순서 정합:
+  // 지점명 · 사번 · 성명 · 재직상태 · 거래처코드 · 거래명 · 거래처유형 · 근무형태3 · 근무형태5
+  // · 시작일 · 종료일 · 거래처상태 · 전월매출 · 확정.
   return [
     { title: '지점명', dataIndex: 'branchName', key: 'branchName', width: 110, render: (v) => v ?? '-' },
     { title: '사번', dataIndex: 'employeeCode', key: 'employeeCode', width: 100 },
     {
-      title: '사원명',
+      title: '성명',
       dataIndex: 'employeeName',
       key: 'employeeName',
       width: 90,
@@ -97,9 +100,17 @@ function buildListColumns(
           val
         ),
     },
+    {
+      title: '재직상태',
+      dataIndex: 'employmentStatus',
+      key: 'employmentStatus',
+      width: 100,
+      align: 'center',
+      render: (v) => v ?? '-',
+    },
     { title: '거래처코드', dataIndex: 'accountCode', key: 'accountCode', width: 110, render: (v) => v ?? '-' },
     {
-      title: '거래처명',
+      title: '거래명',
       dataIndex: 'accountName',
       key: 'accountName',
       width: 150,
@@ -117,8 +128,9 @@ function buildListColumns(
           val ?? '-'
         ),
     },
-    { title: '근무유형3', dataIndex: 'typeOfWork3', key: 'typeOfWork3', width: 80, align: 'center' },
-    { title: '근무유형5', dataIndex: 'typeOfWork5', key: 'typeOfWork5', width: 80, align: 'center' },
+    { title: '거래처유형', dataIndex: 'accountType', key: 'accountType', width: 100, align: 'center', render: (v) => v ?? '-' },
+    { title: '근무형태3', dataIndex: 'typeOfWork3', key: 'typeOfWork3', width: 80, align: 'center' },
+    { title: '근무형태5', dataIndex: 'typeOfWork5', key: 'typeOfWork5', width: 80, align: 'center' },
     { title: '시작일', dataIndex: 'startDate', key: 'startDate', width: 110, align: 'center', sorter: true },
     {
       title: '종료일',
@@ -129,6 +141,16 @@ function buildListColumns(
       sorter: true,
       render: (v) => v ?? '-',
     },
+    { title: '거래처상태', dataIndex: 'accountStatus', key: 'accountStatus', width: 100, align: 'center', render: (v) => v ?? '-' },
+    {
+      title: '전월매출',
+      dataIndex: 'lastMonthRevenue',
+      key: 'lastMonthRevenue',
+      width: 120,
+      align: 'right',
+      sorter: true,
+      render: (v: number | null) => (v != null ? v.toLocaleString() : '-'),
+    },
     {
       title: '확정',
       dataIndex: 'confirmed',
@@ -138,15 +160,6 @@ function buildListColumns(
       sorter: true,
       render: (confirmed: boolean | null) =>
         confirmed ? <Tag color="green">확정</Tag> : <Tag>미확정</Tag>,
-    },
-    {
-      title: '전월매출',
-      dataIndex: 'lastMonthRevenue',
-      key: 'lastMonthRevenue',
-      width: 120,
-      align: 'right',
-      sorter: true,
-      render: (v: number | null) => (v != null ? v.toLocaleString() : '-'),
     },
     {
       title: '액션',

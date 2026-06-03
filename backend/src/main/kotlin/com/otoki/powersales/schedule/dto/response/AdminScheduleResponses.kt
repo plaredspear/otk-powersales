@@ -40,9 +40,15 @@ data class ScheduleListItemDto(
     val employeeCode: String,
     val employeeName: String,
     val branchName: String?,
+    // 재직상태 (SF formula `ValidConditionData__c`) — 상세와 동일 계산값
+    val employmentStatus: String?,
     val accountId: Int?,
     val accountCode: String?,
     val accountName: String?,
+    // 거래처유형 (SF `Account.Type`)
+    val accountType: String?,
+    // 거래처상태 (SF `Account.AccountStatusName__c`)
+    val accountStatus: String?,
     val typeOfWork3: String?,
     val typeOfWork4: String?,
     val typeOfWork5: String?,
