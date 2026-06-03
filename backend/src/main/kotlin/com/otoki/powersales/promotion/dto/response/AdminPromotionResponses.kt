@@ -22,6 +22,7 @@ data class PromotionListItem(
     val startDate: LocalDate,
     val endDate: LocalDate,
     val primaryProductName: String?,
+    val primaryProductCode: String?,
     val standLocation: String?,
     val productType: String?,
     val category1: String?,
@@ -36,7 +37,8 @@ data class PromotionListItem(
             promotion: Promotion,
             accountName: String?,
             accountCode: String?,
-            primaryProductName: String?
+            primaryProductName: String?,
+            primaryProductCode: String?
         ): PromotionListItem {
             val productTypeName = promotion.productType?.displayName
             // SF formula DKRetail__PromotionName__c = TEXT(DKRetail__ProductType__c) + '(' + DKRetail__PrimaryProductId__r.Name + ')'
@@ -53,6 +55,7 @@ data class PromotionListItem(
                 startDate = promotion.startDate,
                 endDate = promotion.endDate,
                 primaryProductName = primaryProductName,
+                primaryProductCode = primaryProductCode,
                 standLocation = promotion.standLocation?.displayName,
                 productType = productTypeName,
                 category1 = promotion.category1,

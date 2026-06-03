@@ -21,6 +21,7 @@ export interface PromotionListItem {
   startDate: string;
   endDate: string;
   primaryProductName: string | null;
+  primaryProductCode: string | null;
   standLocation: string | null;
   productType: string | null;
   category1: string | null;
