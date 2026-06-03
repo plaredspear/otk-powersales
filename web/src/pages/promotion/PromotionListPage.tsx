@@ -35,8 +35,11 @@ export default function PromotionListPage() {
 
   const { data: formMeta } = usePromotionFormMeta();
   // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
-  const handleRowClick = useThrottleClick((id: number) =>
+  const goToDetail = useThrottleClick((id: number) =>
     navigate(`/promotions/${id}`, { state: { listSearch: location.search } }),
+  );
+  const goToProduct = useThrottleClick((productCode: string) =>
+    navigate(`/product/${encodeURIComponent(productCode)}`, { state: { listSearch: location.search } }),
   );
   const handleCreate = useThrottleClick(() => navigate('/promotions/new'));
   const { data, isLoading } = usePromotions({
@@ -80,7 +83,7 @@ export default function PromotionListPage() {
       dataIndex: 'promotionNumber',
       width: 130,
       render: (val: string, record) => (
-        <a onClick={() => handleRowClick(record.id)}>{val}</a>
+        <a onClick={() => goToDetail(record.id)}>{val}</a>
       ),
     },
     {
@@ -102,7 +105,12 @@ export default function PromotionListPage() {
       dataIndex: 'primaryProductName',
       width: 180,
       ellipsis: true,
-      render: (val: string | null) => val ?? '-',
+      render: (val: string | null, record) =>
+        val && record.primaryProductCode ? (
+          <a onClick={() => goToProduct(record.primaryProductCode!)}>{val}</a>
+        ) : (
+          val ?? '-'
+        ),
     },
     {
       title: '행사유형',
@@ -187,10 +195,6 @@ export default function PromotionListPage() {
           showTotal: (total) => `총 ${total}건`,
           onChange: (p) => setPage(p - 1),
         }}
-        onRow={(record) => ({
-          onClick: () => handleRowClick(record.id),
-          style: { cursor: 'pointer' },
-        })}
       />
     </div>
   );

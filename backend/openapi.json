@@ -17331,6 +17331,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "primaryProductCode" : {
+            "type" : [ "string", "null" ]
+          },
           "primaryProductName" : {
             "type" : [ "string", "null" ]
           },

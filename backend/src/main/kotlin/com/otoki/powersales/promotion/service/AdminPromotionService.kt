@@ -93,7 +93,8 @@ class AdminPromotionService(
                     promotion = promotion,
                     accountName = promotion.account?.name,
                     accountCode = promotion.account?.externalKey,
-                    primaryProductName = promotion.primaryProduct?.name
+                    primaryProductName = promotion.primaryProduct?.name,
+                    primaryProductCode = promotion.primaryProduct?.productCode
                 )
             },
             page = page,

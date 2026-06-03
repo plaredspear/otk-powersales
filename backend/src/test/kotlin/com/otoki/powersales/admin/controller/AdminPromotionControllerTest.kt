@@ -99,6 +99,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
                         startDate = LocalDate.of(2026, 3, 10),
                         endDate = LocalDate.of(2026, 3, 20),
                         primaryProductName = "XO_교자 (324GX2)",
+                        primaryProductCode = "8801045123456",
                         standLocation = "평대",
                         productType = "냉장/냉동",
                         category1 = "냉장",
