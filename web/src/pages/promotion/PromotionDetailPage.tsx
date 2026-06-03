@@ -51,7 +51,6 @@ import PromotionProductSection, {
 } from './sections/PromotionProductSection';
 import PromotionTargetActualSection from './sections/PromotionTargetActualSection';
 import PromotionPosProductSection from './sections/PromotionPosProductSection';
-import PromotionScheduleSection from './components/PromotionScheduleSection';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
 import ResizableTable from '@/components/common/ResizableTable';
 
@@ -1343,15 +1342,6 @@ export default function PromotionDetailPage() {
           />
         )}
       </div>
-
-      {/* 일정 관리 섹션 (Spec #571 P2-W) */}
-      {hasDates && (
-        <PromotionScheduleSection
-          promotionId={promotionId}
-          promotionStartDate={promotion.startDate}
-          promotionEndDate={promotion.endDate}
-        />
-      )}
 
       {/* 상세 POS품목 섹션 — SF Promotion 상세의 "상세 POS품목" Related List 동등 */}
       <PromotionPosProductSection promotionId={promotionId} />

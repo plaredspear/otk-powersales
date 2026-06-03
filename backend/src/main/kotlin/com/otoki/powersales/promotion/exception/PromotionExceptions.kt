@@ -99,13 +99,6 @@ class ClosedPromotionDeleteException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
-// Spec #693 Q3 — bulk schedule delete 의 마감 보호 가드 (admin/BRANCH_MANAGER 무관 단순 마감 상태 기반)
-class ClosedPromotionScheduleBulkDeleteException : BusinessException(
-    errorCode = "CLOSED_PROMOTION_SCHEDULE_BULK_DELETE",
-    message = "일마감이 하나라도 등록된 행사의 일정은 일괄 삭제할 수 없습니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
 class DateRangeConflictException(minDate: String, maxDate: String) : BusinessException(
     errorCode = "DATE_RANGE_CONFLICT",
     message = "행사 일정은 행사조원 할당일 범위(${minDate} ~ ${maxDate})보다 작을 수 없습니다",
