@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
   Collapse,
@@ -122,7 +122,11 @@ const REQUIRED_FIELDS: (keyof EditableRow)[] = [
 export default function PromotionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const promotionId = Number(id);
+  // 목록에서 넘어온 경우 직전 목록의 query string(page/필터)을 붙여 복귀 — "목록으로" 시 조건 초기화 방지.
+  const listSearch = (location.state as { listSearch?: string } | null)?.listSearch ?? '';
+  const listPath = `/promotions${listSearch}`;
 
   const { data: promotion, isLoading, error } = usePromotion(promotionId);
   const deleteMutation = useDeletePromotion();
@@ -1128,7 +1132,7 @@ export default function PromotionDetailPage() {
   if (error || !promotion) {
     return (
       <div style={{ padding: 24 }}>
-        <Button type="link" onClick={() => navigate('/promotions')}>
+        <Button type="link" onClick={() => navigate(listPath)}>
           ← 목록으로
         </Button>
         <div style={{ padding: 24, textAlign: 'center', color: '#999' }}>
@@ -1159,7 +1163,7 @@ export default function PromotionDetailPage() {
           marginBottom: 16,
         }}
       >
-        <Button type="link" onClick={() => navigate('/promotions')} style={{ paddingLeft: 0 }}>
+        <Button type="link" onClick={() => navigate(listPath)} style={{ paddingLeft: 0 }}>
           ← 목록으로
         </Button>
         {promotionEditing ? (

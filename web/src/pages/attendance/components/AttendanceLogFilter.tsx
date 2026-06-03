@@ -11,6 +11,11 @@ const { RangePicker } = DatePicker;
 
 interface AttendanceLogFilterProps {
   onChange: (filter: FetchAttendanceLogParams) => void;
+  /** URL 복원용 초기값 (마운트 시 1회 적용). */
+  initialKeyword?: string;
+  initialAttendanceType?: AttendanceTypeCode | '';
+  initialDateFrom?: string;
+  initialDateTo?: string;
 }
 
 interface FilterFormValues {
@@ -19,9 +24,20 @@ interface FilterFormValues {
   range?: [Dayjs, Dayjs];
 }
 
-export default function AttendanceLogFilter({ onChange }: AttendanceLogFilterProps) {
+export default function AttendanceLogFilter({
+  onChange,
+  initialKeyword,
+  initialAttendanceType,
+  initialDateFrom,
+  initialDateTo,
+}: AttendanceLogFilterProps) {
   const [form] = Form.useForm<FilterFormValues>();
-  const [initialRange] = useState<[Dayjs, Dayjs]>([dayjs().subtract(30, 'day'), dayjs()]);
+  // URL 의 from/to 가 있으면 그 값으로, 없으면 기본 (최근 30일) 으로 복원.
+  const [initialRange] = useState<[Dayjs, Dayjs]>(() =>
+    initialDateFrom && initialDateTo
+      ? [dayjs(initialDateFrom), dayjs(initialDateTo)]
+      : [dayjs().subtract(30, 'day'), dayjs()],
+  );
 
   const submit = (values: FilterFormValues) => {
     const params: FetchAttendanceLogParams = {
@@ -44,7 +60,11 @@ export default function AttendanceLogFilter({ onChange }: AttendanceLogFilterPro
     <Form
       form={form}
       layout="inline"
-      initialValues={{ attendanceType: '', range: initialRange }}
+      initialValues={{
+        keyword: initialKeyword ?? '',
+        attendanceType: initialAttendanceType ?? '',
+        range: initialRange,
+      }}
       onFinish={submit}
       style={{ marginBottom: 16 }}
     >

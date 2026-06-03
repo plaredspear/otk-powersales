@@ -9,7 +9,7 @@ import {
   useConfirmPPTMastersByIds,
 } from '@/hooks/promotion/usePPTMasters';
 import { downloadPPTMasterTemplate, exportPPTMasters } from '@/api/pptMaster';
-import type { PPTMaster, PPTMasterSearchParams } from '@/api/pptMaster';
+import type { PPTMaster } from '@/api/pptMaster';
 import PPTMasterFormModal from './components/PPTMasterFormModal';
 import PPTMasterUploadModal from './components/PPTMasterUploadModal';
 import {
@@ -17,23 +17,42 @@ import {
   getPPTTeamTypeColor,
 } from '@/constants/pptTeamType';
 import ResizableTable from '@/components/common/ResizableTable';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 
 const TEAM_TYPE_FILTER_OPTIONS = [{ value: '', label: '전체' }, ...PPT_TEAM_TYPE_OPTIONS];
 
-const DEFAULT_PARAMS: PPTMasterSearchParams = {
-  page: 0,
-  size: 20,
-  validOnly: true,
-};
+const DEFAULT_SIZE = 20;
 
 export default function PPTMasterPage() {
-  const [searchParams, setSearchParams] = useState<PPTMasterSearchParams>(DEFAULT_PARAMS);
-  const [filterEmployeeName, setFilterEmployeeName] = useState('');
-  const [filterEmployeeNumber, setFilterEmployeeNumber] = useState('');
-  const [filterTeamType, setFilterTeamType] = useState('');
-  const [filterValidOnly, setFilterValidOnly] = useState(true);
+  // page/필터를 URL query string 에 보관 — 새로고침/링크 공유/복귀 시 직전 조건 복원.
+  // validOnly(boolean) 와 size(number) 는 URL 보관을 위해 string 으로 직렬화하고 사용처에서 역변환한다.
+  const { page, setPage, filters, setFilters } = useListQueryParams({
+    defaultFilters: {
+      employeeName: '',
+      employeeCode: '',
+      teamType: '',
+      validOnly: 'true',
+      size: String(DEFAULT_SIZE),
+    },
+  });
+  const validOnly = filters.validOnly !== 'false';
+  const pageSize = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
 
-  const { data, isLoading } = usePPTMasters(searchParams);
+  // 검색버튼 분리형: 입력 위젯은 로컬 편집 버퍼, URL filters 가 source of truth.
+  // 마운트 시 URL 값으로 1회 초기화하여 새로고침/복귀 시 위젯 표시가 맞도록 한다.
+  const [filterEmployeeName, setFilterEmployeeName] = useState(filters.employeeName);
+  const [filterEmployeeNumber, setFilterEmployeeNumber] = useState(filters.employeeCode);
+  const [filterTeamType, setFilterTeamType] = useState(filters.teamType);
+  const [filterValidOnly, setFilterValidOnly] = useState(validOnly);
+
+  const { data, isLoading } = usePPTMasters({
+    page,
+    size: pageSize,
+    employeeName: filters.employeeName || undefined,
+    employeeCode: filters.employeeCode || undefined,
+    teamType: filters.teamType || undefined,
+    validOnly,
+  });
   const deleteMutation = useDeletePPTMaster();
   const confirmByIdsMutation = useConfirmPPTMastersByIds();
 
@@ -45,13 +64,11 @@ export default function PPTMasterPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const handleSearch = () => {
-    setSearchParams({
-      ...searchParams,
-      page: 0,
-      employeeName: filterEmployeeName || undefined,
-      employeeCode: filterEmployeeNumber || undefined,
-      teamType: filterTeamType || undefined,
-      validOnly: filterValidOnly,
+    setFilters({
+      employeeName: filterEmployeeName,
+      employeeCode: filterEmployeeNumber,
+      teamType: filterTeamType,
+      validOnly: String(filterValidOnly),
     });
   };
 
@@ -60,7 +77,13 @@ export default function PPTMasterPage() {
     setFilterEmployeeNumber('');
     setFilterTeamType('');
     setFilterValidOnly(true);
-    setSearchParams(DEFAULT_PARAMS);
+    setFilters({
+      employeeName: '',
+      employeeCode: '',
+      teamType: '',
+      validOnly: 'true',
+      size: String(DEFAULT_SIZE),
+    });
   };
 
   const handleAdd = () => {
@@ -131,11 +154,10 @@ export default function PPTMasterPage() {
   const handleExport = async () => {
     try {
       const blob = await exportPPTMasters({
-        employeeName: searchParams.employeeName,
-        employeeCode: searchParams.employeeCode,
-        teamType: searchParams.teamType,
-        branchCode: searchParams.branchCode,
-        validOnly: searchParams.validOnly,
+        employeeName: filters.employeeName || undefined,
+        employeeCode: filters.employeeCode || undefined,
+        teamType: filters.teamType || undefined,
+        validOnly,
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -153,7 +175,7 @@ export default function PPTMasterPage() {
       title: '#',
       width: 50,
       align: 'center',
-      render: (_, __, index) => (searchParams.page ?? 0) * (searchParams.size ?? 20) + index + 1,
+      render: (_, __, index) => page * pageSize + index + 1,
     },
     { title: '사번', dataIndex: 'employeeCode', width: 100, align: 'center' },
     { title: '사원명', dataIndex: 'employeeName', width: 100, align: 'center' },
@@ -296,12 +318,17 @@ export default function PPTMasterPage() {
           getCheckboxProps: (record) => ({ disabled: record.isConfirmed }),
         }}
         pagination={{
-          current: (data?.number ?? 0) + 1,
-          pageSize: data?.size ?? 20,
+          current: page + 1,
+          pageSize,
           total: data?.totalElements ?? 0,
           showSizeChanger: true,
-          onChange: (page, pageSize) =>
-            setSearchParams((prev) => ({ ...prev, page: page - 1, size: pageSize })),
+          onChange: (nextPage, nextPageSize) => {
+            if (nextPageSize !== pageSize) {
+              setFilters({ size: String(nextPageSize) });
+            } else {
+              setPage(nextPage - 1);
+            }
+          },
         }}
         scroll={{ x: 1300 }}
         size="middle"

@@ -19,13 +19,9 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchAccountsForPosSalesLookup } from '@/api/account';
 import { fetchPosSales, type PosSalesProduct } from '@/api/posSales';
 import ResizableTable from '@/components/common/ResizableTable';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 
 const { Text } = Typography;
-
-interface QueryParams {
-  customerId: number;
-  yearMonth: string;
-}
 
 /**
  * POS매출 — web admin 조회 페이지.
@@ -34,10 +30,23 @@ interface QueryParams {
  * 레거시 `promotion/month/posmain.jsp` 의 web admin 이관 (Backend `GET /api/v1/admin/sales/pos`).
  */
 export default function SalesQueryPage() {
-  const [accountId, setAccountId] = useState<number | undefined>();
+  // 검색 조건(거래처 + 조회월)을 URL query string 에 보관 — 새로고침/뒤로가기/링크 공유 시 직전 조회 복원.
+  // (테이블 pagination 은 client-side 비제어라 page 는 URL 보관 대상 아님.)
+  const { filters, setFilters } = useListQueryParams({
+    defaultFilters: { customerId: '', yearMonth: '' },
+  });
+
+  // 입력 위젯의 로컬 편집 버퍼. URL filters 를 source of truth 로 두고 마운트 시 1회 초기화.
+  const [accountId, setAccountId] = useState<number | undefined>(() =>
+    filters.customerId ? Number(filters.customerId) : undefined,
+  );
   const [accountKeyword, setAccountKeyword] = useState<string>('');
-  const [month, setMonth] = useState<Dayjs>(dayjs());
-  const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
+  const [month, setMonth] = useState<Dayjs>(() =>
+    // customParseFormat 플러그인 미사용 → YYYYMM(6자리) 을 ISO 형태로 변환해 파싱.
+    filters.yearMonth && filters.yearMonth.length === 6
+      ? dayjs(`${filters.yearMonth.slice(0, 4)}-${filters.yearMonth.slice(4, 6)}-01`)
+      : dayjs(),
+  );
 
   const accountQuery = useQuery({
     queryKey: ['admin', 'accounts', 'pos-sales-lookup', accountKeyword],
@@ -45,10 +54,15 @@ export default function SalesQueryPage() {
       fetchAccountsForPosSalesLookup({ keyword: accountKeyword || undefined, page: 0, size: 50 }),
   });
 
+  // 조회는 URL filters 기반 (검색 버튼 클릭 시 setFilters 로 URL 반영 → 아래 query 가 재실행).
+  const customerId = filters.customerId ? Number(filters.customerId) : undefined;
+  const yearMonth = filters.yearMonth || undefined;
+  const hasQuery = customerId != null && yearMonth != null;
+
   const posSalesQuery = useQuery({
-    queryKey: ['posSales', queryParams],
-    queryFn: () => fetchPosSales(queryParams!.customerId, queryParams!.yearMonth),
-    enabled: queryParams != null,
+    queryKey: ['posSales', customerId, yearMonth],
+    queryFn: () => fetchPosSales(customerId!, yearMonth!),
+    enabled: hasQuery,
     placeholderData: (prev) => prev,
   });
 
@@ -62,7 +76,7 @@ export default function SalesQueryPage() {
       message.warning('거래처는 필수항목입니다.');
       return;
     }
-    setQueryParams({ customerId: accountId, yearMonth: month.format('YYYYMM') });
+    setFilters({ customerId: String(accountId), yearMonth: month.format('YYYYMM') });
   };
 
   const items = posSalesQuery.data?.items ?? [];
@@ -127,7 +141,7 @@ export default function SalesQueryPage() {
         </Space>
       </Card>
 
-      {queryParams != null && (
+      {hasQuery && (
         <>
           <Row gutter={16}>
             <Col span={8}>

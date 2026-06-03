@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { Space, Tag, Typography } from 'antd';
 import { useAttendanceLogList } from '@/hooks/attendance-log/useAttendanceLog';
-import type { AttendanceLogListItem, FetchAttendanceLogParams } from '@/api/attendanceLog';
+import type {
+  AttendanceLogListItem,
+  AttendanceTypeCode,
+  FetchAttendanceLogParams,
+} from '@/api/attendanceLog';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import AttendanceLogFilter from './attendance/components/AttendanceLogFilter';
 import AttendanceLogList from './attendance/components/AttendanceLogList';
 import AttendanceLogDetailModal from './attendance/components/AttendanceLogDetailModal';
@@ -11,20 +16,45 @@ const { Title } = Typography;
 const DEFAULT_PAGE_SIZE = 20;
 
 export default function AttendancePage() {
-  const [filters, setFilters] = useState<FetchAttendanceLogParams>({
-    page: 0,
-    size: DEFAULT_PAGE_SIZE,
+  const { page, setPage, filters, setFilters } = useListQueryParams({
+    defaultFilters: {
+      keyword: '',
+      attendanceType: '',
+      attendanceDateFrom: '',
+      attendanceDateTo: '',
+      size: String(DEFAULT_PAGE_SIZE),
+    },
   });
   const [detailId, setDetailId] = useState<number | null>(null);
 
-  const { data, isLoading } = useAttendanceLogList(filters);
+  const pageSize = Number.parseInt(filters.size, 10) || DEFAULT_PAGE_SIZE;
 
-  const handleFilterChange = (next: FetchAttendanceLogParams) => {
-    setFilters({ ...next, page: 0, size: filters.size ?? DEFAULT_PAGE_SIZE });
+  const queryParams: FetchAttendanceLogParams = {
+    keyword: filters.keyword || undefined,
+    attendanceType: (filters.attendanceType as AttendanceTypeCode | '') || undefined,
+    attendanceDateFrom: filters.attendanceDateFrom || undefined,
+    attendanceDateTo: filters.attendanceDateTo || undefined,
+    page,
+    size: pageSize,
   };
 
-  const handlePageChange = (page: number, size: number) => {
-    setFilters((prev) => ({ ...prev, page: page - 1, size }));
+  const { data, isLoading } = useAttendanceLogList(queryParams);
+
+  const handleFilterChange = (next: FetchAttendanceLogParams) => {
+    setFilters({
+      keyword: next.keyword ?? '',
+      attendanceType: next.attendanceType ?? '',
+      attendanceDateFrom: next.attendanceDateFrom ?? '',
+      attendanceDateTo: next.attendanceDateTo ?? '',
+    });
+  };
+
+  const handlePageChange = (nextPage: number, size: number) => {
+    if (size !== pageSize) {
+      setFilters({ size: String(size) });
+    } else {
+      setPage(nextPage - 1);
+    }
   };
 
   return (
@@ -37,13 +67,19 @@ export default function AttendancePage() {
       <Tag color="blue" style={{ marginBottom: 16 }}>
         모바일 앱에서 등록된 사원의 출근 이력 (DKRetail__CommuteLog__c) 조회 전용
       </Tag>
-      <AttendanceLogFilter onChange={handleFilterChange} />
+      <AttendanceLogFilter
+        onChange={handleFilterChange}
+        initialKeyword={filters.keyword}
+        initialAttendanceType={filters.attendanceType as AttendanceTypeCode | ''}
+        initialDateFrom={filters.attendanceDateFrom || undefined}
+        initialDateTo={filters.attendanceDateTo || undefined}
+      />
       <AttendanceLogList
         loading={isLoading}
         items={data?.content ?? []}
         totalElements={data?.totalElements ?? 0}
-        page={(data?.number ?? filters.page ?? 0) + 1}
-        pageSize={filters.size ?? DEFAULT_PAGE_SIZE}
+        page={(data?.number ?? page) + 1}
+        pageSize={pageSize}
         onPageChange={handlePageChange}
         onView={(item: AttendanceLogListItem) => setDetailId(item.id)}
       />

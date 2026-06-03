@@ -17,13 +17,13 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useInspections, useDeleteInspection } from '@/hooks/inspections/useInspections';
 import { useInspectionDetail } from '@/hooks/inspections/useInspectionDetail';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { usePermission } from '@/hooks/usePermission';
 import InspectionCreateModal from '@/pages/inspection/InspectionCreateModal';
 import type {
   InspectionCategory,
   InspectionFieldTypeCode,
   InspectionListItem,
-  InspectionListParams,
 } from '@/api/inspections';
 import ResizableTable from '@/components/common/ResizableTable';
 
@@ -50,13 +50,35 @@ const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
 
 const PAGE_SIZE = 20;
 
+const DEFAULT_START_DATE = dayjs().subtract(30, 'day').format('YYYY-MM-DD');
+const DEFAULT_END_DATE = dayjs().format('YYYY-MM-DD');
+
 export default function FieldInspectionPage() {
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().subtract(30, 'day'), dayjs()]);
-  const [category, setCategory] = useState<InspectionCategory | ''>('');
-  const [fieldType, setFieldType] = useState<InspectionFieldTypeCode | ''>('');
-  const [employeeName, setEmployeeName] = useState('');
-  const [accountCode, setAccountCode] = useState('');
-  const [page, setPage] = useState(0);
+  // page/필터를 URL query string 에 보관 — 새로고침/링크 공유 시 직전 조건 복원.
+  const { page, setPage, filters, setFilters } = useListQueryParams({
+    defaultFilters: {
+      startDate: DEFAULT_START_DATE,
+      endDate: DEFAULT_END_DATE,
+      category: '',
+      fieldType: '',
+      employeeName: '',
+      accountCode: '',
+    },
+  });
+
+  // 입력 위젯은 편집 버퍼(로컬 state). URL filters 가 source of truth → 마운트 시 URL 값으로 초기화.
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => [
+    filters.startDate ? dayjs(filters.startDate) : dayjs().subtract(30, 'day'),
+    filters.endDate ? dayjs(filters.endDate) : dayjs(),
+  ]);
+  const [category, setCategory] = useState<InspectionCategory | ''>(
+    () => (filters.category as InspectionCategory | ''),
+  );
+  const [fieldType, setFieldType] = useState<InspectionFieldTypeCode | ''>(
+    () => (filters.fieldType as InspectionFieldTypeCode | ''),
+  );
+  const [employeeName, setEmployeeName] = useState(() => filters.employeeName);
+  const [accountCode, setAccountCode] = useState(() => filters.accountCode);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -68,28 +90,27 @@ export default function FieldInspectionPage() {
   const canDelete = hasEntityPermission('site_activity', 'DELETE');
   const deleteMutation = useDeleteInspection();
 
-  const [searchParams, setSearchParams] = useState<InspectionListParams>({
-    startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
-    endDate: dayjs().format('YYYY-MM-DD'),
-    page: 0,
+  const { data, isLoading } = useInspections({
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    category: (filters.category || undefined) as InspectionCategory | undefined,
+    fieldType: (filters.fieldType || undefined) as InspectionFieldTypeCode | undefined,
+    employeeName: filters.employeeName || undefined,
+    accountCode: filters.accountCode || undefined,
+    page,
     size: PAGE_SIZE,
   });
-
-  const { data, isLoading } = useInspections(searchParams);
   const { data: detail, isLoading: detailLoading } = useInspectionDetail(detailId);
   const openDetail = useThrottleClick((id: number) => setDetailId(id));
 
   const handleSearch = () => {
-    setPage(0);
-    setSearchParams({
+    setFilters({
       startDate: dateRange[0].format('YYYY-MM-DD'),
       endDate: dateRange[1].format('YYYY-MM-DD'),
-      category: (category || undefined) as InspectionCategory | undefined,
-      fieldType: (fieldType || undefined) as InspectionFieldTypeCode | undefined,
-      employeeName: employeeName || undefined,
-      accountCode: accountCode || undefined,
-      page: 0,
-      size: PAGE_SIZE,
+      category,
+      fieldType,
+      employeeName,
+      accountCode,
     });
   };
 
@@ -102,9 +123,7 @@ export default function FieldInspectionPage() {
   };
 
   const handlePageChange = (newPage: number) => {
-    const zeroIndexedPage = newPage - 1;
-    setPage(zeroIndexedPage);
-    setSearchParams((prev) => ({ ...prev, page: zeroIndexedPage }));
+    setPage(newPage - 1);
   };
 
   const handleDelete = async () => {
@@ -126,7 +145,7 @@ export default function FieldInspectionPage() {
       title: 'No',
       width: 60,
       fixed: 'left',
-      render: (_v, _r, index) => (searchParams.page ?? 0) * PAGE_SIZE + index + 1,
+      render: (_v, _r, index) => page * PAGE_SIZE + index + 1,
     },
     {
       title: '분류',
