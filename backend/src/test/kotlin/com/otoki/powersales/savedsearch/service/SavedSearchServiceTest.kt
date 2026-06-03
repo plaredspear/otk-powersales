@@ -53,7 +53,7 @@ class SavedSearchServiceTest {
     inner class ListTest {
 
         @Test
-        @DisplayName("본인 PRIVATE 와 SHARED 가 함께 반환되고 editable 이 스코프/권한에 따라 설정된다")
+        @DisplayName("시스템 프리셋(합성) + 본인 PRIVATE + SHARED 가 함께 반환되고 editable 이 스코프/권한에 따라 설정된다")
         fun listVisible() {
             val mine = savedSearch(id = 1, ownerId = 10, scope = SavedSearchScope.PRIVATE, name = "내검색")
             val shared = savedSearch(id = 2, ownerId = 99, scope = SavedSearchScope.SHARED, name = "공용검색")
@@ -62,7 +62,8 @@ class SavedSearchServiceTest {
 
             val result = service.list("promotion", employeeId = 10, permissions = noPermission)
 
-            assertThat(result).hasSize(2)
+            // 시스템 프리셋 1개("전체 행사 조회") + 저장 2개 = 3
+            assertThat(result).hasSize(3)
             // 본인 PRIVATE → editable true
             assertThat(result.first { it.id == 1L }.editable).isTrue()
             // SHARED + 권한 없음 → editable false
@@ -78,23 +79,38 @@ class SavedSearchServiceTest {
 
             val result = service.list("promotion", employeeId = 10, permissions = withSharedEdit)
 
-            assertThat(result.first().editable).isTrue()
+            // 시스템 프리셋(음수 id)이 합성되므로 저장된 SHARED(id=2)를 직접 찾아 검증
+            assertThat(result.first { it.id == 2L }.editable).isTrue()
         }
 
         @Test
-        @DisplayName("시스템 기본 프리셋(owner=null SHARED)은 전 사용자에게 보이고 ownerName 은 null")
-        fun systemPresetVisible() {
-            val systemPreset = savedSearch(id = 3, ownerId = null, scope = SavedSearchScope.SHARED, name = "전체 행사 조회")
-            every { savedSearchRepository.findVisible("promotion", 10) } returns listOf(systemPreset)
+        @DisplayName("시스템 기본 프리셋은 DB 가 비어도 코드 합성으로 항상 맨 앞에 반환되고 음수 id·null owner·editable false")
+        fun systemPresetSynthesized() {
+            every { savedSearchRepository.findVisible("promotion", 10) } returns emptyList()
             every { employeeRepository.findAllById(any<List<Long>>()) } returns emptyList()
 
-            val result = service.list("promotion", employeeId = 10, permissions = noPermission)
+            val result = service.list("promotion", employeeId = 10, permissions = withSharedEdit)
 
             assertThat(result).hasSize(1)
-            assertThat(result.first().ownerId).isNull()
-            assertThat(result.first().ownerName).isNull()
-            // 권한 없으면 SHARED 라 editable false
-            assertThat(result.first().editable).isFalse()
+            val preset = result.first()
+            assertThat(preset.id).isNegative()
+            assertThat(preset.name).isEqualTo("전체 행사 조회")
+            assertThat(preset.scope).isEqualTo(SavedSearchScope.SHARED)
+            assertThat(preset.ownerId).isNull()
+            assertThat(preset.ownerName).isNull()
+            // 시스템 프리셋은 EDIT 권한이 있어도 editable false (운영자도 수정·삭제 불가)
+            assertThat(preset.editable).isFalse()
+        }
+
+        @Test
+        @DisplayName("등록된 프리셋이 없는 resourceKey 는 시스템 프리셋 합성이 없다")
+        fun noSystemPresetForUnknownResource() {
+            every { savedSearchRepository.findVisible("unknown", 10) } returns emptyList()
+            every { employeeRepository.findAllById(any<List<Long>>()) } returns emptyList()
+
+            val result = service.list("unknown", employeeId = 10, permissions = noPermission)
+
+            assertThat(result).isEmpty()
         }
     }
 
@@ -195,6 +211,18 @@ class SavedSearchServiceTest {
                 service.update(999, request, employeeId = 10, permissions = noPermission)
             }.isInstanceOf(SavedSearchNotFoundException::class.java)
         }
+
+        @Test
+        @DisplayName("시스템 프리셋(음수 id) 수정 시 404 — DB 조회 없이 거부")
+        fun updateSystemPresetForbidden() {
+            val request = SavedSearchUpdateRequest(name = "x", filters = emptyMap())
+
+            assertThatThrownBy {
+                service.update(-1, request, employeeId = 10, permissions = withSharedEdit)
+            }.isInstanceOf(SavedSearchNotFoundException::class.java)
+
+            verify(exactly = 0) { savedSearchRepository.findById(any()) }
+        }
     }
 
     @Nested
@@ -222,6 +250,17 @@ class SavedSearchServiceTest {
                 service.delete(1, employeeId = 10, permissions = noPermission)
             }.isInstanceOf(SavedSearchForbiddenException::class.java)
 
+            verify(exactly = 0) { savedSearchRepository.delete(any<SavedSearch>()) }
+        }
+
+        @Test
+        @DisplayName("시스템 프리셋(음수 id) 삭제 시 404 — DB 조회 없이 거부")
+        fun deleteSystemPresetForbidden() {
+            assertThatThrownBy {
+                service.delete(-1, employeeId = 10, permissions = withSharedEdit)
+            }.isInstanceOf(SavedSearchNotFoundException::class.java)
+
+            verify(exactly = 0) { savedSearchRepository.findById(any()) }
             verify(exactly = 0) { savedSearchRepository.delete(any<SavedSearch>()) }
         }
     }
