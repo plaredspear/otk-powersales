@@ -286,7 +286,9 @@ export default function SfMigrationStage1Page() {
                 placeholder="target 선택 (예: ErpOrderProduct)"
                 loading={targetsQuery.isLoading}
                 showSearch
-                options={(targetsQuery.data ?? []).map((t) => ({ value: t, label: t }))}
+                options={[...(targetsQuery.data ?? [])]
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((t) => ({ value: t, label: t }))}
               />
             </Form.Item>
             <Form.Item
