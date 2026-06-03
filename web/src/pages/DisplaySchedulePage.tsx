@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, type NavigateFunction } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   Button,
@@ -69,12 +70,53 @@ const previewColumns: ColumnsType<RowPreview> = [
   { title: '종료일', dataIndex: 'endDate', key: 'endDate', width: 110, render: (v) => v ?? '-' },
 ];
 
-function buildListColumns(onEdit: (row: ScheduleListItem) => void): ColumnsType<ScheduleListItem> {
+function buildListColumns(
+  onEdit: (row: ScheduleListItem) => void,
+  navigate: NavigateFunction,
+): ColumnsType<ScheduleListItem> {
   return [
-    { title: '사원번호', dataIndex: 'employeeCode', key: 'employeeCode', width: 100 },
-    { title: '사원명', dataIndex: 'employeeName', key: 'employeeName', width: 80 },
+    { title: '지점명', dataIndex: 'branchName', key: 'branchName', width: 110, render: (v) => v ?? '-' },
+    { title: '사번', dataIndex: 'employeeCode', key: 'employeeCode', width: 100 },
+    {
+      title: '사원명',
+      dataIndex: 'employeeName',
+      key: 'employeeName',
+      width: 90,
+      render: (val: string, row) =>
+        row.employeeId != null ? (
+          <a
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(`/female-employee/${row.employeeId}`);
+            }}
+            href={`/female-employee/${row.employeeId}`}
+          >
+            {val}
+          </a>
+        ) : (
+          val
+        ),
+    },
     { title: '거래처코드', dataIndex: 'accountCode', key: 'accountCode', width: 110, render: (v) => v ?? '-' },
-    { title: '거래처명', dataIndex: 'accountName', key: 'accountName', width: 150, render: (v) => v ?? '-' },
+    {
+      title: '거래처명',
+      dataIndex: 'accountName',
+      key: 'accountName',
+      width: 150,
+      ellipsis: true,
+      render: (val: string | null, row) =>
+        row.accountId != null && val ? (
+          <Button
+            type="link"
+            style={{ padding: 0, height: 'auto' }}
+            onClick={() => navigate(`/account/${row.accountId}`)}
+          >
+            {val}
+          </Button>
+        ) : (
+          val ?? '-'
+        ),
+    },
     { title: '근무유형3', dataIndex: 'typeOfWork3', key: 'typeOfWork3', width: 80, align: 'center' },
     { title: '근무유형5', dataIndex: 'typeOfWork5', key: 'typeOfWork5', width: 80, align: 'center' },
     { title: '시작일', dataIndex: 'startDate', key: 'startDate', width: 110, align: 'center', sorter: true },
@@ -97,7 +139,6 @@ function buildListColumns(onEdit: (row: ScheduleListItem) => void): ColumnsType<
       render: (confirmed: boolean | null) =>
         confirmed ? <Tag color="green">확정</Tag> : <Tag>미확정</Tag>,
     },
-    { title: '조직코드', dataIndex: 'costCenterCode', key: 'costCenterCode', width: 80, align: 'center', render: (v) => v ?? '-' },
     {
       title: '전월매출',
       dataIndex: 'lastMonthRevenue',
@@ -122,6 +163,7 @@ function buildListColumns(onEdit: (row: ScheduleListItem) => void): ColumnsType<
 }
 
 export default function DisplaySchedulePage() {
+  const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
   const [uploadResult, setUploadResult] = useState<ScheduleUploadResult | null>(null);
   const uploadMutation = useScheduleUpload();
@@ -154,7 +196,7 @@ export default function DisplaySchedulePage() {
   const [editTarget, setEditTarget] = useState<ScheduleListItem | null>(null);
   const [exporting, setExporting] = useState(false);
   const modalOpen = createModalOpen || editTarget != null;
-  const listColumns = buildListColumns((row) => setEditTarget(row));
+  const listColumns = buildListColumns((row) => setEditTarget(row), navigate);
 
   const scheduleListQuery = useScheduleList({
     page: listPage,

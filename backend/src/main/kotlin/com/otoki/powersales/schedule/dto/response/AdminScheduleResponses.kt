@@ -36,8 +36,11 @@ data class ScheduleConfirmResultDto(
 
 data class ScheduleListItemDto(
     val id: Long,
+    val employeeId: Long?,
     val employeeCode: String,
     val employeeName: String,
+    val branchName: String?,
+    val accountId: Int?,
     val accountCode: String?,
     val accountName: String?,
     val typeOfWork3: String?,

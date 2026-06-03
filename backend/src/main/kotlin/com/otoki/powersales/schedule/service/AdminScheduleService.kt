@@ -340,8 +340,11 @@ class AdminScheduleService(
         return schedulePage.map { row ->
             ScheduleListItemDto(
                 id = row.id,
+                employeeId = row.employeeId,
                 employeeCode = row.employeeCode ?: "",
                 employeeName = row.employeeName ?: "",
+                branchName = row.branchName,
+                accountId = row.accountId,
                 accountCode = row.accountCode,
                 accountName = row.accountName,
                 typeOfWork3 = row.typeOfWork3?.displayName,
