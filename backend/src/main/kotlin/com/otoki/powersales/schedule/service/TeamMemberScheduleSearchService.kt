@@ -130,14 +130,14 @@ class TeamMemberScheduleSearchService(
         year: String,
         month: String,
     ): Map<Long, BigDecimal> {
-        val accountByExternalKey: Map<String, Long> = rows
-            .mapNotNull { row ->
-                val accId = row.accountId ?: return@mapNotNull null
-                val externalKey = row.accountExternalKey ?: return@mapNotNull null
-                externalKey to accId.toLong()
-            }
-            .toMap()
-        if (accountByExternalKey.isEmpty()) return emptyMap()
+        // SF `SalesComparisonSearchController` 6개월 매출 join 키 정합 — MFEIS.Account__c(Account Id) =
+        // MonthlySalesHistory__c.AccountId__c (cls:289-294). sapAccountCode(=ExternalKey) 가 아니라
+        // account_id 로 조회해야, SF 가 `WHERE AccountId__c IN` 으로 배제하는 account_id=null 매출 행
+        // (Account 삭제 시 SetNull 로 잔존) 을 신규도 동일하게 제외한다.
+        val accountIds: Set<Long> = rows
+            .mapNotNull { it.accountId?.toLong() }
+            .toSet()
+        if (accountIds.isEmpty()) return emptyMap()
 
         // SF `Date.today()` 는 사용자 세션(한국 운영자 = KST) timezone 기준 — 신규도 KST 로 맞춰야 SF 정합.
         // JVM 기본 timezone(배포 환경 UTC) 의 LocalDate.now() 는 KST 자정~09시 구간에 하루 어긋나
@@ -146,22 +146,22 @@ class TeamMemberScheduleSearchService(
         val salesDates = enumerateMonths(startYm, endYm)
             .map { "%d%02d".format(it.year, it.monthValue) }
 
-        val salesRows: List<MonthlySalesRow> = monthlySalesHistoryGateway.findBySalesDates(
+        val salesRows: List<MonthlySalesRow> = monthlySalesHistoryGateway.findBySalesDatesByAccountId(
             salesDates = salesDates,
-            sapAccountCodes = accountByExternalKey.keys,
+            accountIds = accountIds,
         )
 
         // SF divider — 데이터 존재 월 수 (SF L164-181: avgAmount += closing; div++)
         val sumByAccount = mutableMapOf<Long, BigDecimal>()
         val countByAccount = mutableMapOf<Long, Int>()
         for (row in salesRows) {
-            val accId = accountByExternalKey[row.sapAccountCode] ?: continue
+            val accId = row.accountId ?: continue
             val closingSum = row.closingAmountSum
             sumByAccount.merge(accId, closingSum) { a, b -> a + b }
             countByAccount.merge(accId, 1) { a, b -> a + b }
         }
 
-        return accountByExternalKey.values.associateWith { accId ->
+        return accountIds.associateWith { accId ->
             val sum = sumByAccount[accId] ?: BigDecimal.ZERO
             val div = countByAccount[accId] ?: 0
             if (div == 0) BigDecimal.ZERO else (sum.divide(BigDecimal(div), 0, RoundingMode.HALF_UP))

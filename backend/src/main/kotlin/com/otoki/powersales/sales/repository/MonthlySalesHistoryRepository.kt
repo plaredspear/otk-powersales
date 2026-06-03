@@ -26,4 +26,19 @@ interface MonthlySalesHistoryRepository : JpaRepository<MonthlySalesHistory, Lon
         salesMonths: Collection<SalesMonth>,
         sapAccountCodes: Collection<String>,
     ): List<MonthlySalesHistory>
+
+    /**
+     * 다월 일괄 + 다중 거래처(account_id) 조회 — 배치적합성 6개월 평균 마감실적 산출용.
+     *
+     * SF `SalesComparisonSearchController` (cls:289-294) 의 `WHERE AccountId__c IN :accountIds2`
+     * 정합 — `MonthlySalesHistory__c.AccountId__c` (Account Id) 기준 조회로, `AccountId__c` 가
+     * null 인 row (SF `deleteConstraint=SetNull` 로 Account 삭제 시 잔존하는 매출 행) 는 IN 절에서
+     * 자연 배제된다. `sapAccountCode` 기준 조회는 이 null-AccountId row 를 SAP 코드로 끌어와
+     * SF 와 평균 모수가 달라지므로 배치적합성 경로는 account_id 기준을 쓴다.
+     */
+    fun findBySalesYearInAndSalesMonthInAndAccountIdIn(
+        salesYears: Collection<SalesYear>,
+        salesMonths: Collection<SalesMonth>,
+        accountIds: Collection<Int>,
+    ): List<MonthlySalesHistory>
 }

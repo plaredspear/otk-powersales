@@ -55,7 +55,47 @@ class MonthlySalesHistoryQueryGateway(
 
         return repository
             .findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(salesYears, salesMonths, sapAccountCodes)
-            .asSequence()
+            .toMonthlySalesRows(requestedYearMonths)
+    }
+
+    /**
+     * 다월 일괄 + 다중 거래처(account_id) 조회 — 배치적합성 6개월 평균 마감실적 산출용.
+     *
+     * SF `SalesComparisonSearchController` (cls:289-294) 의 `WHERE AccountId__c IN :accountIds2`
+     * 정합. 반환 row 의 [MonthlySalesRow.accountId] 가 채워지므로 호출 측은 account_id 로 직접 집계한다
+     * (sapAccountCode 기준 집계와 달리 `account_id` 가 null 인 row 는 IN 절에서 자연 배제).
+     */
+    fun findBySalesDatesByAccountId(
+        salesDates: Collection<String>,
+        accountIds: Collection<Long>,
+    ): List<MonthlySalesRow> {
+        if (accountIds.isEmpty() || salesDates.isEmpty()) return emptyList()
+
+        val requestedYearMonths: Set<Pair<SalesYear, SalesMonth>> = salesDates
+            .mapNotNull { toYearMonthPair(it) }
+            .toSet()
+        if (requestedYearMonths.isEmpty()) return emptyList()
+
+        val salesYears = requestedYearMonths.map { it.first }.distinct()
+        val salesMonths = requestedYearMonths.map { it.second }.distinct()
+
+        return repository
+            .findBySalesYearInAndSalesMonthInAndAccountIdIn(
+                salesYears,
+                salesMonths,
+                accountIds.map { it.toInt() },
+            )
+            .toMonthlySalesRows(requestedYearMonths)
+    }
+
+    /**
+     * Repository cartesian 후보 → 정확한 (년, 월) 쌍 매칭 + `isDeleted` 필터 + [MonthlySalesRow] 변환.
+     * `findBySalesDates` / `findBySalesDatesByAccountId` 공통.
+     */
+    private fun List<MonthlySalesHistory>.toMonthlySalesRows(
+        requestedYearMonths: Set<Pair<SalesYear, SalesMonth>>,
+    ): List<MonthlySalesRow> =
+        asSequence()
             .filter { it.isDeleted != true }
             .filter { row ->
                 val year = row.salesYear ?: return@filter false
@@ -68,6 +108,7 @@ class MonthlySalesHistoryQueryGateway(
                     sapAccountCode = sapCode,
                     salesDate = salesDateOf(row),
                     closingAmountSum = closingAmountSum(row),
+                    accountId = row.account?.id?.toLong(),
                     abcClosingAmount1 = row.abcClosingAmount1?.let { BigDecimal.valueOf(it) },
                     abcClosingAmount2 = row.abcClosingAmount2?.let { BigDecimal.valueOf(it) },
                     abcClosingAmount3 = row.abcClosingAmount3?.let { BigDecimal.valueOf(it) },
@@ -79,7 +120,6 @@ class MonthlySalesHistoryQueryGateway(
                 )
             }
             .toList()
-    }
 
     /**
      * SF `ClosingAmountSum__c` formula 동등 — `(abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)`.
@@ -134,6 +174,8 @@ data class MonthlySalesRow(
     val sapAccountCode: String,
     val salesDate: String,
     val closingAmountSum: BigDecimal,
+    /** Account FK (`account_id`). account_id 기준 조회 시에만 채워짐 — sapAccountCode 기준 조회에서는 null */
+    val accountId: Long? = null,
     val abcClosingAmount1: BigDecimal?,
     val abcClosingAmount2: BigDecimal? = null,
     val abcClosingAmount3: BigDecimal? = null,

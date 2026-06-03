@@ -18,7 +18,9 @@ import org.springframework.transaction.annotation.Transactional
 import java.io.ByteArrayOutputStream
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.YearMonth
 import com.otoki.powersales.common.util.TimeZones
 import java.time.format.DateTimeFormatter
 
@@ -414,9 +416,20 @@ class AdminSalesComparisonService(
         // 6개월 평균매출 (accountCode → avg amount) — MFEIS 검색 결과의 actualAmount(6개월 평균 ABC 마감실적) 재사용
         val avgClosingAmounts = integrationItems.associate { it.accountCode to it.avgClosingAmount }
 
-        // 투입기준마스터 (진열 + confirmed = true + isDeleted != true) — 화면 단위 1회 조회
+        // 투입기준마스터 (진열 + confirmed = true + isDeleted != true) — 화면 단위 1회 조회.
+        // SF `SalesComparisonSearchController` (cls:334-342) 의 유효기간 필터 정합 —
+        // `StartDate__c <= 선택월 말일 AND (EndDate__c IS NULL OR EndDate__c >= 선택월 1일)`.
+        // 선택 년월에 유효한 마스터만 판정에 사용한다 (유효기간 무관 매칭은 다른 기간 기준금액을
+        // 끌어와 SF 와 판정이 어긋나는 원인).
+        val selectedMonth = YearMonth.of(year, month)
+        val selectedFirstDay: LocalDate = selectedMonth.atDay(1)
+        val selectedLastDay: LocalDate = selectedMonth.atEndOfMonth()
         val criteriaList = employeeInputCriteriaMasterRepository
             .findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(TypeOfWork1.DISPLAY, true)
+            .filter { master ->
+                val start = master.startDate ?: return@filter false
+                start <= selectedLastDay && (master.endDate?.let { it >= selectedFirstDay } ?: true)
+            }
 
         // 거래처유형 코드 맵 — SF `categoryMap` (cls:101) 동등. AccountCategoryMaster.name → accountCode (예: "대형마트(3대)" → "01").
         // SF categoryMap 은 useSearch 필터 없이 전체 거래처유형을 담는다 (검색 제외 유형도 거래처 분류엔 필요).

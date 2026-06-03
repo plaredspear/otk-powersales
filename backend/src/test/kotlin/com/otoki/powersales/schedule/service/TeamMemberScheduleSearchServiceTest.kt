@@ -22,7 +22,7 @@ class TeamMemberScheduleSearchServiceTest {
 
     private val service = TeamMemberScheduleSearchService(expander, queryFactory, monthlySalesHistoryGateway)
 
-    private fun row(accountId: Int, externalKey: String?): TeamMemberScheduleRow =
+    private fun row(accountId: Int?, externalKey: String? = null): TeamMemberScheduleRow =
         TeamMemberScheduleRow(
             year = null,
             month = null,
@@ -46,11 +46,13 @@ class TeamMemberScheduleSearchServiceTest {
 
     // closingAmountSum = (abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4) 를 게이트웨이가 산출한 결과.
     // 본 테스트는 합계만 검증하므로 abc1 + ship1 을 합계로 표현.
-    private fun salesRow(sapCode: String, abc1: Long = 0L, ship1: Long = 0L) =
+    // SF 정합(AccountId__c 기준 집계) — account_id 기반 조회 결과는 accountId 가 채워진다.
+    private fun salesRow(accountId: Long, sapCode: String = "S001", abc1: Long = 0L, ship1: Long = 0L) =
         MonthlySalesRow(
             sapAccountCode = sapCode,
             salesDate = "",
             closingAmountSum = BigDecimal(abc1 + ship1),
+            accountId = accountId,
             abcClosingAmount1 = BigDecimal(abc1),
         )
 
@@ -75,10 +77,11 @@ class TeamMemberScheduleSearchServiceTest {
     @Test
     @DisplayName("6개월 평균 ClosingAmountSum 산출 — ABC+Ship 합산 / divider = 데이터 존재 월 수")
     fun computeAverageSumsAbcAndShipDividesByExistingMonths() {
-        every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
-            salesRow("S001", abc1 = 100, ship1 = 200),  // sum 300
-            salesRow("S001", abc1 = 500, ship1 = 100),  // sum 600
-            salesRow("S001", abc1 = 0, ship1 = 900),    // sum 900
+        // SF 정합 — account_id(AccountId__c) 기준 조회. accountId 로 합산/divider.
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns listOf(
+            salesRow(accountId = 1L, abc1 = 100, ship1 = 200),  // sum 300
+            salesRow(accountId = 1L, abc1 = 500, ship1 = 100),  // sum 600
+            salesRow(accountId = 1L, abc1 = 0, ship1 = 900),    // sum 900
         )
 
         val result = service.computeSixMonthAverageSales(listOf(row(1, "S001")), "2026", "3")
@@ -88,9 +91,9 @@ class TeamMemberScheduleSearchServiceTest {
     }
 
     @Test
-    @DisplayName("externalKey null Account → ORORA 조회 안 함 + empty map")
-    fun nullExternalKeyReturnsEmpty() {
-        val result = service.computeSixMonthAverageSales(listOf(row(1, externalKey = null)), "2026", "3")
+    @DisplayName("accountId null Account → 매출 조회 안 함 + empty map (SF AccountId__c IN 정합)")
+    fun nullAccountIdReturnsEmpty() {
+        val result = service.computeSixMonthAverageSales(listOf(row(accountId = null)), "2026", "3")
         assertThat(result).isEmpty()
     }
 }

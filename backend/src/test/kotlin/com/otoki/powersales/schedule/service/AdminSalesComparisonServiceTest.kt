@@ -18,6 +18,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
+import java.time.LocalDate
 import io.mockk.every
 import io.mockk.mockk
 
@@ -105,6 +106,8 @@ class AdminSalesComparisonServiceTest {
             boundary = boundary,
             confirmed = true,
             isDeleted = false,
+            // SF 유효기간 필터 정합 — 선택 년월(테스트 2026-05) 을 포함하도록 과거 시작 + 무기한.
+            startDate = LocalDate.of(2023, 1, 1),
             category = cm
         )
     }
@@ -371,6 +374,7 @@ class AdminSalesComparisonServiceTest {
                 boundary = BigDecimal(20),   // SF Percent — 20% (formula 에서 0.20 으로 평가)
                 confirmed = true,
                 isDeleted = false,
+                startDate = LocalDate.of(2023, 1, 1),  // SF 유효기간 필터 정합 — 선택 년월(2026-05) 포함
                 category = cm
             )
 
@@ -404,6 +408,7 @@ class AdminSalesComparisonServiceTest {
                 boundary = BigDecimal(40),   // SF Percent — 40% (formula 에서 0.40 으로 평가)
                 confirmed = true,
                 isDeleted = false,
+                startDate = LocalDate.of(2023, 1, 1),  // SF 유효기간 필터 정합 — 선택 년월(2026-05) 포함
                 category = categoryMaster("대형마트(3대)", "01")
             )
 
@@ -433,6 +438,7 @@ class AdminSalesComparisonServiceTest {
                 boundary = BigDecimal(20),   // SF Percent — 20%
                 confirmed = true,
                 isDeleted = false,
+                startDate = LocalDate.of(2023, 1, 1),  // SF 유효기간 필터 정합 — 선택 년월(2026-05) 포함
                 category = categoryMaster("대형마트(3대)", "01")
             )
 
