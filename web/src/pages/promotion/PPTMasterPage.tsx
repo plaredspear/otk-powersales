@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, Input, Popconfirm, Select, Space, Tag, message } from 'antd';
+import { Badge, Button, Card, Checkbox, Input, Popconfirm, Select, Space, Tag, Tooltip, message } from 'antd';
 import { PlusOutlined, DownloadOutlined, UploadOutlined, CheckOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -208,19 +208,24 @@ export default function PPTMasterPage() {
       render: (_, __, index) => page * pageSize + index + 1,
     },
     {
-      title: '전문행사조마스터',
+      title: '전문행사조 마스터 번호',
       dataIndex: 'name',
-      width: 130,
+      width: 160,
       align: 'center',
       render: (val: string | null) => val ?? '-',
     },
     {
       title: '유효',
-      width: 80,
+      width: 70,
       align: 'center',
+      // SF Valid__c 정합 — 신호등 점(●)만 표시. 상태명은 Tooltip 으로 제공.
       render: (_, record) => {
         const v = getValidStatus(record);
-        return <Badge status={v.status} text={v.label} />;
+        return (
+          <Tooltip title={v.label}>
+            <Badge status={v.status} />
+          </Tooltip>
+        );
       },
     },
     { title: '지점명', dataIndex: 'branchName', width: 110, align: 'center', render: (v: string | null) => v ?? '-' },
@@ -406,7 +411,7 @@ export default function PPTMasterPage() {
             }
           },
         }}
-        scroll={{ x: 1850 }}
+        scroll={{ x: 1870 }}
         size="middle"
       />
 
