@@ -1,13 +1,11 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.entity.AccountType
 import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.schedule.dto.response.*
-import com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster
 import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.schedule.repository.EmployeeInputCriteriaMasterRepository
 import org.apache.poi.ss.usermodel.FillPatternType
@@ -420,6 +418,12 @@ class AdminSalesComparisonService(
         val criteriaList = employeeInputCriteriaMasterRepository
             .findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(TypeOfWork1.DISPLAY, true)
 
+        // 거래처유형 코드 맵 — SF `categoryMap` (cls:101) 동등. AccountCategoryMaster.name → accountCode (예: "할인점" → "01").
+        // SF categoryMap 은 useSearch 필터 없이 전체 거래처유형을 담는다 (검색 제외 유형도 거래처 분류엔 필요).
+        val categoryCodeByName = accountCategoryMasterRepository.findAll()
+            .filter { it.isDeleted != true }
+            .associate { it.name to it.accountCode }
+
         return accountCodeMap.entries.mapNotNull { (accountCode, items) ->
             val account = accountByCode[accountCode] ?: return@mapNotNull null
 
@@ -440,15 +444,25 @@ class AdminSalesComparisonService(
             val avgClosingAmount = avgClosingAmounts[accountCode] ?: 0L
             val thisMonthSalesAmount = avgClosingAmount  // 별도 당월 매출 컬럼 매핑 부재 — 6개월 평균 재사용 (TODO: SF 명세 확인 후 정정 후보)
 
-            val criteria = findCriteriaForAccount(criteriaList, account)
+            // SF 거래처유형 코드 산출 (cls:366-372) — 화면 카테고리 컬럼용.
+            // 체인 특수 4종(ABCType__c)은 ABCType 으로, 그 외는 Account.Type 으로 categoryMap 변환.
+            val typeCode = account.accountType?.displayName?.let { categoryCodeByName[it] }
+            val categoryColumnCode = if (account.abcType in chainAccountTypeNames) {
+                categoryCodeByName[account.abcType] ?: typeCode
+            } else {
+                typeCode
+            }
+
+            // SF 판정 마스터 매칭 (cls:466) — 항상 Account.Type 기준 코드 (ABCType 분기는 화면 카테고리에만 적용).
+            val criteria = criteriaList.firstOrNull { it.accountCategorizedCode == typeCode }
             val fixedStandard = criteria?.fixed1PersonStandardAmount
             val fixedMin = criteria?.fixed1PersonMinAmountInRealmRange
             val bifurcationStandard = criteria?.bifurcationHalfPersonStandard
             val bifurcationMin = criteria?.bifurcationHalfPersonMinAmountInRealmRange
 
             // 진열 환산인원으로 평균매출 분배. 거래처별 적합성은 거래처 단위 1건 — 근무형태3 분기는 사원 단위 (상세) 에서.
-            val accountCategory = resolveAccountCategory(account)
-            val accountCategoryCode = resolveAccountCategoryCode(account)
+            val accountCategory = categoryColumnFromCode(categoryColumnCode).displayName
+            val accountCategoryCode = categoryColumnCode
 
             AccountSuitability(
                 account = account,
@@ -495,41 +509,55 @@ class AdminSalesComparisonService(
         if (workingCategory3 == "순회") return Suitability.FIT.displayName
         if (totalDisplayConverted.compareTo(BigDecimal.ZERO) == 0) return ""
 
-        val ratio = BigDecimal(avgClosingAmount).divide(totalDisplayConverted, 0, RoundingMode.HALF_UP)
+        // SF `getCheckVal` (cls:529) `amt = amt / convertedCnt` — 정수 반올림 없이 Decimal 비교.
+        // (과거 0-scale HALF_UP 반올림은 경계 케이스에서 적합↔경계 결과를 SF 와 다르게 만들었다.)
+        val ratio = BigDecimal(avgClosingAmount).divide(totalDisplayConverted, 10, RoundingMode.HALF_UP)
 
-        val (standard, min) = when (workingCategory3) {
-            "고정" -> fixedStandard to fixedMin
-            "격고" -> bifurcationStandard to bifurcationMin
-            else -> return ""
-        }
-        if (standard == null || min == null) return ""
+        // SF `getCheckVal` (cls:531-541) — master/근무형태 미매칭 시 standard=min=0 (return 아님).
+        // 그 결과 `ratio >= 0` 이 거의 항상 참 → 적합. (과거 null 시 공백 반환은 SF 와 달라 적합 카운트를 누락시켰다.)
+        val standard = when (workingCategory3) {
+            "고정" -> fixedStandard
+            "격고" -> bifurcationStandard
+            else -> null
+        } ?: BigDecimal.ZERO
+        val min = when (workingCategory3) {
+            "고정" -> fixedMin
+            "격고" -> bifurcationMin
+            else -> null
+        } ?: BigDecimal.ZERO
 
         return when {
-            ratio >= standard -> Suitability.FIT.displayName
-            ratio >= min -> Suitability.BOUNDARY.displayName
-            else -> Suitability.REVIEW.displayName
+            ratio >= standard -> Suitability.FIT.displayName            // SF cls:544 amt >= standardAmount
+            min <= ratio && ratio < standard -> Suitability.BOUNDARY.displayName  // SF cls:546
+            else -> Suitability.REVIEW.displayName                      // SF cls:550
         }
     }
 
-    /** 거래처별 단일 적합성 — 진열 상시 환산인원 합 기준. 첫 진열 상시 사원의 근무형태3 으로 판정 (대표값). */
+    /**
+     * 거래처별 단일 적합성 — SF `getSummaryItems` (cls:572-583) 의 worst-case 규칙 동등.
+     *
+     * 진열·상시 사원 각각을 사원 단위 근무형태3 으로 판정한 뒤, 가장 나쁜(forSort 최대) 결과로 거래처를 대표한다
+     * (적합 < 경계 < 재검토). SF 는 거래처 안에 경계 사원이 1명이라도 있으면 그 거래처를 경계로 분류한다.
+     * 진열·상시 사원이 없으면 공백 — 집계/총계 모두에서 제외 (SF `appropriateValues.contains('')` = false).
+     */
     private fun AccountSuitability.computeAccountLevelSuitability(): String {
         val displayPermanent = allEmployeeItems.filter { it.workingCategory1 == "진열" && it.workingCategory5 == "상시" }
         if (displayPermanent.isEmpty()) return ""
-        // 거래처 안 사원의 근무형태3 가 섞여 있으면 가장 빈도 높은 값으로 판정
-        val dominantWc3 = displayPermanent
-            .mapNotNull { it.workingCategory3 }
-            .groupingBy { it }
-            .eachCount()
-            .maxByOrNull { it.value }?.key
-        return judgeSuitability(
-            workingCategory3 = dominantWc3,
-            avgClosingAmount = avgClosingAmount,
-            totalDisplayConverted = totalDisplayConvertedHeadcount,
-            fixedStandard = fixedStandardAmount,
-            fixedMin = fixedMinAmount,
-            bifurcationStandard = bifurcationHalfStandardAmount,
-            bifurcationMin = bifurcationHalfMinAmount
-        )
+        return displayPermanent
+            .map { emp ->
+                judgeSuitability(
+                    workingCategory3 = emp.workingCategory3,
+                    avgClosingAmount = avgClosingAmount,
+                    totalDisplayConverted = totalDisplayConvertedHeadcount,
+                    fixedStandard = fixedStandardAmount,
+                    fixedMin = fixedMinAmount,
+                    bifurcationStandard = bifurcationHalfStandardAmount,
+                    bifurcationMin = bifurcationHalfMinAmount
+                )
+            }
+            .filter { it.isNotBlank() }
+            .maxByOrNull { suitabilityOrder(it) }   // forSort 최대 = worst-case (적합0 < 경계1 < 재검토2)
+            ?: ""
     }
 
     private fun AccountSuitability.toMiddleItem(): SalesComparisonMiddleItem = SalesComparisonMiddleItem(
@@ -608,8 +636,15 @@ class AdminSalesComparisonService(
         }
     }
 
+    /**
+     * 총계 행 — SF `getSummaryItems` 의 '총계' 누적 동등 (cls:567 동일 필터).
+     *
+     * 적합성이 공백("")인 거래처(진열·상시 사원 부재)는 제외하므로 총계 = 적합 + 경계 + 재검토.
+     * (과거 전체 거래처 카운트는 공백 거래처를 총계에만 포함시켜 총계 ≠ 적합+경계+재검토 불일치를 유발했다.)
+     */
     private fun buildTotalRow(accountSuitabilities: List<AccountSuitability>): SalesComparisonSummaryRow {
-        return buildSummaryRowFromAccounts("총계", accountSuitabilities)
+        val classified = accountSuitabilities.filter { it.computeAccountLevelSuitability().isNotBlank() }
+        return buildSummaryRowFromAccounts("총계", classified)
     }
 
     private fun buildSummaryRowFromAccounts(
@@ -671,32 +706,23 @@ class AdminSalesComparisonService(
         )
     }
 
-    private fun findCriteriaForAccount(criteriaList: List<EmployeeInputCriteriaMaster>, account: Account): EmployeeInputCriteriaMaster? {
-        val targetCategoryCode = if (account.name in chainAccountTypeNames) {
-            account.abcType
-        } else {
-            resolveAccountCategoryCode(account)
-        }
-        return criteriaList.firstOrNull { it.accountCategorizedCode == targetCategoryCode }
-    }
-
-    private fun resolveAccountCategoryCode(account: Account): String? {
-        return account.accountType?.displayName
-    }
-
-    private fun resolveAccountCategory(account: Account): String {
-        if (account.name in chainAccountTypeNames) return AccountCategoryColumn.CHAIN.displayName
-        return when (account.accountType) {
-            AccountType.DISCOUNT_STORE -> AccountCategoryColumn.HYPER.displayName
-            AccountType.NONGHYUP -> AccountCategoryColumn.NH.displayName
-            AccountType.CHAIN -> AccountCategoryColumn.CHAIN.displayName
-            AccountType.SUPER -> AccountCategoryColumn.SUPER.displayName
-            AccountType.AGENCY -> AccountCategoryColumn.DEALER.displayName
-            AccountType.DEPARTMENT_STORE -> AccountCategoryColumn.DEPT.displayName
-            AccountType.MILITARY -> AccountCategoryColumn.MILITARY.displayName
-            AccountType.FOOD_MATERIAL -> AccountCategoryColumn.FOOD.displayName
-            else -> AccountCategoryColumn.OTHER.displayName
-        }
+    /**
+     * 거래처유형 코드 → 매트릭스 컬럼 매핑 — SF `getCategory` (cls:663-685) 동등.
+     *
+     * AccountCategoryMaster.accountCode 값 기준: 01 대형마트 / 02 체인 / 03 백화점 / 05 농협 / 06 슈퍼 /
+     * 07 대리점 / 08 홀세일 / 10 식자재 / 15 군납 / 그 외(미매칭·04·09·11~14·16+ 포함) → 기타.
+     */
+    private fun categoryColumnFromCode(code: String?): AccountCategoryColumn = when (code) {
+        "01" -> AccountCategoryColumn.HYPER
+        "02" -> AccountCategoryColumn.CHAIN
+        "03" -> AccountCategoryColumn.DEPT
+        "05" -> AccountCategoryColumn.NH
+        "06" -> AccountCategoryColumn.SUPER
+        "07" -> AccountCategoryColumn.DEALER
+        "08" -> AccountCategoryColumn.WHOLESALE
+        "10" -> AccountCategoryColumn.FOOD
+        "15" -> AccountCategoryColumn.MILITARY
+        else -> AccountCategoryColumn.OTHER
     }
 
     private fun suitabilityOrder(label: String): Int = when (label) {

@@ -10,6 +10,7 @@ import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
@@ -121,22 +122,28 @@ class EmployeeInputCriteriaMaster(
     /**
      * SF Formula 재현 — `BifurcationHalfPersonStandard__c - (BifurcationHalfPersonStandard__c * Boundary__c)`.
      * (sf-meta-diff Q4)
+     *
+     * `Boundary__c` 는 SF Percent(백분율) 타입 — SF formula 엔진이 산술식에서 자동 /100 평가한다 (예: 저장값 20 → 0.20).
+     * 신규 boundary 컬럼은 SF 값(정수 %)을 그대로 받으므로 비율 환산 시 /100 보정 필수.
      */
     val bifurcationHalfPersonMinAmountInRealmRange: BigDecimal?
         get() {
             val standard = bifurcationHalfPersonStandard ?: return null
-            val rate = boundary ?: return null
+            val rate = boundary?.divide(BigDecimal(100), 6, RoundingMode.HALF_UP) ?: return null
             return standard.subtract(standard.multiply(rate))
         }
 
     /**
      * SF Formula 재현 — `Fixed1PersonStandardAmount__c - (Fixed1PersonStandardAmount__c * Boundary__c)`.
      * (sf-meta-diff Q4)
+     *
+     * `Boundary__c` 는 SF Percent(백분율) 타입 — SF formula 엔진이 산술식에서 자동 /100 평가한다 (예: 저장값 20 → 0.20).
+     * 신규 boundary 컬럼은 SF 값(정수 %)을 그대로 받으므로 비율 환산 시 /100 보정 필수.
      */
     val fixed1PersonMinAmountInRealmRange: BigDecimal?
         get() {
             val standard = fixed1PersonStandardAmount ?: return null
-            val rate = boundary ?: return null
+            val rate = boundary?.divide(BigDecimal(100), 6, RoundingMode.HALF_UP) ?: return null
             return standard.subtract(standard.multiply(rate))
         }
 
