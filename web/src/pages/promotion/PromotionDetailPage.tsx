@@ -1225,6 +1225,9 @@ export default function PromotionDetailPage() {
         </Button>
         {promotionEditing ? (
           <Space>
+            <span style={{ color: '#888', fontSize: 13 }}>
+              <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>*</span> = 필수 정보
+            </span>
             <Button onClick={cancelPromotionEdit}>취소</Button>
             <Button type="primary" onClick={savePromotionEdit} loading={updateMutation.isPending}>
               저장
@@ -1280,7 +1283,9 @@ export default function PromotionDetailPage() {
           {
             key: 'targetActual',
             label: '목표/실적',
-            children: <PromotionTargetActualSection promotion={promotion} />,
+            children: (
+              <PromotionTargetActualSection promotion={promotion} editing={promotionEditing} />
+            ),
           },
         ]}
       />
