@@ -142,8 +142,11 @@ class DisplayWorkScheduleRepositoryCustomImpl(
                 Projections.constructor(
                     ScheduleListRow::class.java,
                     displayWorkSchedule.id,
+                    employee.id,
                     employee.employeeCode,
                     employee.name,
+                    employee.orgName,
+                    account.id,
                     account.externalKey,
                     account.name,
                     displayWorkSchedule.typeOfWork3,

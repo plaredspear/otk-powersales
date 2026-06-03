@@ -46,8 +46,11 @@ export interface ScheduleConfirmResult {
 
 export interface ScheduleListItem {
   id: number;
+  employeeId: number | null;
   employeeCode: string;
   employeeName: string;
+  branchName: string | null;
+  accountId: number | null;
   accountCode: string | null;
   accountName: string | null;
   typeOfWork3: string | null;

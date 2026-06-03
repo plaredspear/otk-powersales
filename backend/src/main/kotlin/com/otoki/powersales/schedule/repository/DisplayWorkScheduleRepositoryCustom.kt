@@ -16,8 +16,11 @@ import java.time.LocalDate
  */
 data class ScheduleListRow(
     val id: Long,
+    val employeeId: Long?,
     val employeeCode: String?,
     val employeeName: String?,
+    val branchName: String?,
+    val accountId: Int?,
     val accountCode: String?,
     val accountName: String?,
     val typeOfWork3: TypeOfWork3?,
