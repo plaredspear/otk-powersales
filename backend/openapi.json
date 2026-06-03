@@ -8145,6 +8145,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseSalesProgressRateMasterDetailResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SalesProgressRateMasterDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseSalesProgressRateMasterListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SalesProgressRateMasterListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseSapInboundAuditDetail" : {
         "properties" : {
           "data" : {
@@ -18340,6 +18398,189 @@
         },
         "type" : "object"
       },
+      "SalesProgressRateMasterDetailResponse" : {
+        "properties" : {
+          "accountBranchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountBranchView" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountId" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
+          "businessRate" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "createdByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "currentMonthSalesAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "externalKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "foTargetAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "frTargetAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "lastModifiedByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "previousMonthSalesAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "progressRate" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "rmTargetAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "rtTargetAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "targetMonth" : {
+            "type" : [ "string", "null" ]
+          },
+          "targetSum" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "targetSumAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "targetYear" : {
+            "type" : [ "string", "null" ]
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "SalesProgressRateMasterListItem" : {
+        "properties" : {
+          "accountBranchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
+          "currentMonthSalesAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "foTargetAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "frTargetAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "previousMonthSalesAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "progressRate" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "rmTargetAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "rtTargetAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "targetMonth" : {
+            "type" : [ "string", "null" ]
+          },
+          "targetSum" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "targetYear" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "SalesProgressRateMasterListResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SalesProgressRateMasterListItem"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "SalesSummary" : {
         "properties" : {
           "actualAmount" : {
@@ -26645,6 +26886,110 @@
           }
         },
         "tags" : [ "admin-safety-check-controller" ]
+      }
+    },
+    "/api/v1/admin/sales-progress-rate-masters" : {
+      "get" : {
+        "operationId" : "getList_4",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "targetYear",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "targetMonth",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSalesProgressRateMasterListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sales-progress-rate-master-controller" ]
+      }
+    },
+    "/api/v1/admin/sales-progress-rate-masters/{id}" : {
+      "get" : {
+        "operationId" : "getDetail_6",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSalesProgressRateMasterDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sales-progress-rate-master-controller" ]
       }
     },
     "/api/v1/admin/sales/electronic/detail/{customerId}" : {

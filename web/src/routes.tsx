@@ -40,6 +40,12 @@ const NoticeFormPage = lazy(() => import('@/pages/notice/NoticeFormPage'));
 const PromotionListPage = lazy(() => import('@/pages/promotion/PromotionListPage'));
 const PromotionDetailPage = lazy(() => import('@/pages/promotion/PromotionDetailPage'));
 const PromotionFormPage = lazy(() => import('@/pages/promotion/PromotionFormPage'));
+const SalesProgressRateMasterListPage = lazy(
+  () => import('@/pages/sales-progress-rate-master/SalesProgressRateMasterListPage'),
+);
+const SalesProgressRateMasterDetailPage = lazy(
+  () => import('@/pages/sales-progress-rate-master/SalesProgressRateMasterDetailPage'),
+);
 const EducationListPage = lazy(() => import('@/pages/education/EducationListPage'));
 const EducationDetailPage = lazy(() => import('@/pages/education/EducationDetailPage'));
 const EducationFormPage = lazy(() => import('@/pages/education/EducationFormPage'));
@@ -228,6 +234,13 @@ export const router = createBrowserRouter(
               element: <PermissionRoute entity="promotion" operation="EDIT" />,
               children: [
                 { path: '/promotions/:id/edit', element: <LazyWrapper><PromotionFormPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute entity="sales_progress_rate_master" operation="READ" />,
+              children: [
+                { path: '/sales-progress-rate-masters', element: <LazyWrapper><SalesProgressRateMasterListPage /></LazyWrapper> },
+                { path: '/sales-progress-rate-masters/:id', element: <LazyWrapper><SalesProgressRateMasterDetailPage /></LazyWrapper> },
               ],
             },
             {
