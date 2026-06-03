@@ -29,7 +29,7 @@ phases:
 
   build:
     # CodeBuild 기본 동작은 build phase 실패 시 post_build 로 fall through 한다.
-    # Dockerfile RUN 단계에서 테스트가 실패하면 그대로 docker push / artifact 생성이
+    # Dockerfile RUN(bootJar) 단계에서 빌드가 실패하면 그대로 docker push / artifact 생성이
     # 이어져 ECR 에 부분 이미지나 잘못된 artifact 가 흘러갈 수 있어, 명시적으로 ABORT 한다.
     on-failure: ABORT
     commands:
