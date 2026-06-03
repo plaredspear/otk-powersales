@@ -1,10 +1,8 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.common.exception.BusinessException
 import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.leave.repository.HolidayMasterRepository
 import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -44,7 +42,6 @@ class AdminMonthlyIntegrationService(
     private val accountRepository: AccountRepository,
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
     private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
-    private val holidayMasterRepository: HolidayMasterRepository,
     private val branchCodeExpander: BranchCodeExpander,
     private val accountCategoryMasterRepository: AccountCategoryMasterRepository,
     private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository,
@@ -263,29 +260,36 @@ class AdminMonthlyIntegrationService(
             return
         }
 
-        val workingDaysMonth = schedules.map { it.workingDate!! }.distinct().size
         val numberOfInputs = BigDecimal.valueOf(schedules.size.toLong())
 
+        // 환산근무일수(분자) — SF 레거시 insert 경로(`TeamMemberScheduleTriggerHandler.getEquivalentNumberOfWorkingDays`)
+        // 동등. 근무유형3(고정/격고/순회) 구분 없이 그날 사원의 근무 TMS row 수 N 으로 1/N 일률 분할 후 누적.
         var equivalentWorkingDays = BigDecimal.ZERO
         for (schedule in schedules) {
-            val accountCountOnDate = teamMemberScheduleRepository.countWorkSchedulesByEmployeeAndDateAndWorkingType(
+            val rowCountOnDate = teamMemberScheduleRepository.countWorkScheduleRowsByEmployeeAndDate(
                 employeeId, schedule.workingDate!!
             )
-            val coefficient = when (schedule.workingCategory3) {
-                WorkingCategory3.FIXED -> BigDecimal.ONE
-                WorkingCategory3.ALTERNATE -> BigDecimal("0.5")
-                WorkingCategory3.PATROL -> if (accountCountOnDate > 0) {
-                    BigDecimal.ONE.divide(BigDecimal(accountCountOnDate), 4, RoundingMode.HALF_UP)
-                } else BigDecimal.ZERO
-                else -> BigDecimal.ONE
+            val coefficient = if (rowCountOnDate > 0) {
+                BigDecimal.ONE.divide(BigDecimal(rowCountOnDate), 4, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal.ZERO
             }
             equivalentWorkingDays = equivalentWorkingDays.add(coefficient)
         }
         equivalentWorkingDays = equivalentWorkingDays.setScale(4, RoundingMode.HALF_UP)
 
-        val businessDays = calculateBusinessDays(yearMonth)
-        val convertedHeadcount = if (businessDays > 0) {
-            equivalentWorkingDays.divide(BigDecimal(businessDays), 4, RoundingMode.HALF_UP)
+        // 분모 — SF 레거시 `WorkingDaysMonth__c` 동등. 달력 영업일이 아니라
+        // 사원이 해당 지점(costCenterCode) 소속으로 그 달 실제 근무(WORK)한 거래처 무관 distinct 날짜 수.
+        val costCenterCode = schedules.first().costCenterCode
+        val workingDaysMonth = if (costCenterCode != null) {
+            teamMemberScheduleRepository.countDistinctWorkingDatesByEmployeeAndCostCenterAndMonth(
+                employeeId, costCenterCode, from, to
+            )
+        } else {
+            schedules.map { it.workingDate!! }.distinct().size
+        }
+        val convertedHeadcount = if (workingDaysMonth > 0) {
+            equivalentWorkingDays.divide(BigDecimal(workingDaysMonth), 4, RoundingMode.HALF_UP)
         } else {
             BigDecimal.ZERO
         }
@@ -371,30 +375,6 @@ class AdminMonthlyIntegrationService(
             employeeInputCriteriaMaster = employeeInputCriteriaMaster,
         )
         monthlyIntegrationScheduleRepository.save(record)
-    }
-
-
-    internal fun calculateBusinessDays(yearMonth: YearMonth): Int {
-        val from = yearMonth.atDay(1)
-        val to = yearMonth.atEndOfMonth()
-
-        var weekdays = 0
-        var date = from
-        while (!date.isAfter(to)) {
-            val dow = date.dayOfWeek
-            if (dow != java.time.DayOfWeek.SATURDAY && dow != java.time.DayOfWeek.SUNDAY) {
-                weekdays++
-            }
-            date = date.plusDays(1)
-        }
-
-        val holidays = holidayMasterRepository.findByHolidayDateBetween(from, to)
-        val holidayWeekdays = holidays.count { h ->
-            val dow = h.holidayDate.dayOfWeek
-            dow != java.time.DayOfWeek.SATURDAY && dow != java.time.DayOfWeek.SUNDAY
-        }
-
-        return weekdays - holidayWeekdays
     }
 
     // --- Private helpers ---

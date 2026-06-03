@@ -337,18 +337,38 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun countWorkSchedulesByEmployeeAndDateAndWorkingType(
+    override fun countWorkScheduleRowsByEmployeeAndDate(
         employeeId: Long,
         workingDate: LocalDate
     ): Int {
         return queryFactory
-            .select(teamMemberSchedule.account.id).distinct()
+            .select(teamMemberSchedule.id)
             .from(teamMemberSchedule)
             .where(
                 teamMemberSchedule.employee.id.eq(employeeId),
                 teamMemberSchedule.workingDate.eq(workingDate),
                 teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
                 teamMemberSchedule.account.isNotNull,
+                isNotDeleted()
+            )
+            .fetch()
+            .size
+    }
+
+    override fun countDistinctWorkingDatesByEmployeeAndCostCenterAndMonth(
+        employeeId: Long,
+        costCenterCode: String,
+        from: LocalDate,
+        to: LocalDate
+    ): Int {
+        return queryFactory
+            .select(teamMemberSchedule.workingDate).distinct()
+            .from(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.employee.id.eq(employeeId),
+                teamMemberSchedule.costCenterCode.eq(costCenterCode),
+                teamMemberSchedule.workingDate.between(from, to),
+                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
                 isNotDeleted()
             )
             .fetch()
