@@ -455,9 +455,12 @@ class AdminSalesComparisonService(
 
             // SF 거래처유형 코드 산출 (cls:366-372) — 화면 카테고리 컬럼용.
             // 체인 특수 4종(ABCType__c)은 ABCType 으로, 그 외는 Account.Type 으로 categoryMap 변환.
+            // SF 는 `categoryMap.get(ABCType)` 결과를 fallback 없이 그대로 customerTypeCode 에 넣는다 (cls:367).
+            // 운영 마스터에 체인4종 Name 이 없으므로 결과는 null → getCategory(null) → 기타(others) 로 분류된다.
+            // (과거 `?: typeCode` fallback 은 체인4종 거래처를 Account.Type(체인02)으로 되돌려 체인 컬럼을 SF 보다 부풀렸다.)
             val typeCode = account.accountType?.displayName?.let { categoryCodeByName[it] }
             val categoryColumnCode = if (account.abcType in chainAccountTypeNames) {
-                categoryCodeByName[account.abcType] ?: typeCode
+                categoryCodeByName[account.abcType]
             } else {
                 typeCode
             }
