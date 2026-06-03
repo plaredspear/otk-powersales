@@ -4,6 +4,8 @@ import type { ApiResponse } from './types';
 
 export interface PPTMaster {
   id: number;
+  /** SF Name (AutoNumber PM{0000000}) — 마이그레이션 레코드만 보유, 신규 등록분은 null */
+  name: string | null;
   employeeId: number;
   employeeCode: string;
   employeeName: string;
@@ -15,7 +17,14 @@ export interface PPTMaster {
   endDate: string | null;
   isConfirmed: boolean;
   branchCode: string | null;
+  /** SF BranchName__c — 사원 소속 지점명 */
   branchName: string | null;
+  /** SF ValidConditionData__c 산출용 raw — 재직상태 계산 */
+  employeeStatus: string | null;
+  employeeAppLoginActive: boolean | null;
+  employeeEndDate: string | null;
+  /** SF AccountType__c — 거래처유형 (수퍼/할인점 등) */
+  accountType: string | null;
   createdAt: string;
   updatedAt: string;
 }

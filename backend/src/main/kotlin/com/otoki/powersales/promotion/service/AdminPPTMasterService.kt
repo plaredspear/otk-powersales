@@ -80,7 +80,12 @@ class AdminPPTMasterService(
         val account = master.accountId?.let { accountRepository.findById(it).orElse(null) }
         return PPTMasterResponse.Companion.from(
             master, employee?.employeeCode, employee?.name,
-            account?.externalKey, account?.name
+            account?.externalKey, account?.name,
+            branchName = employee?.orgName,
+            employeeStatus = employee?.status,
+            employeeAppLoginActive = employee?.appLoginActive,
+            employeeEndDate = employee?.endDate,
+            accountType = account?.accountType
         )
     }
 
@@ -114,7 +119,12 @@ class AdminPPTMasterService(
 
         return PPTMasterResponse.Companion.from(
             master, employee.employeeCode, employee.name,
-            account.externalKey, account.name
+            account.externalKey, account.name,
+            branchName = employee.orgName,
+            employeeStatus = employee.status,
+            employeeAppLoginActive = employee.appLoginActive,
+            employeeEndDate = employee.endDate,
+            accountType = account.accountType
         )
     }
 
@@ -166,7 +176,12 @@ class AdminPPTMasterService(
 
         return PPTMasterResponse.Companion.from(
             master, employee.employeeCode, employee.name,
-            account.externalKey, account.name
+            account.externalKey, account.name,
+            branchName = employee.orgName,
+            employeeStatus = employee.status,
+            employeeAppLoginActive = employee.appLoginActive,
+            employeeEndDate = employee.endDate,
+            accountType = account.accountType
         )
     }
 

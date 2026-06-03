@@ -62,7 +62,12 @@ class PPTMasterRepositoryCustomImpl(
                     employee.employeeCode,
                     employee.name,
                     account.externalKey,
-                    account.name
+                    account.name,
+                    employee.orgName,
+                    employee.status,
+                    employee.appLoginActive,
+                    employee.endDate,
+                    account.accountType
                 )
             )
             .from(professionalPromotionTeamMaster)

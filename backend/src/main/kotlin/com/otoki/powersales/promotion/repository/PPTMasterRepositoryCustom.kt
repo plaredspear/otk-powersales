@@ -48,5 +48,13 @@ data class PPTMasterSearchResult(
     val employeeCode: String?,
     val employeeName: String?,
     val accountCode: String?,
-    val accountName: String?
+    val accountName: String?,
+    // SF listView 정합 — 사원 소속 지점명(BranchName__c = FullName__r.DKRetail__OrgName__c)
+    val branchName: String?,
+    // SF 재직상태(ValidConditionData__c) 프론트 산출용 raw 필드 (재직/휴직/퇴직예정/퇴직)
+    val employeeStatus: String?,
+    val employeeAppLoginActive: Boolean?,
+    val employeeEndDate: java.time.LocalDate?,
+    // SF 거래처유형(AccountType__c = Account.Type)
+    val accountType: com.otoki.powersales.account.entity.AccountType?
 )

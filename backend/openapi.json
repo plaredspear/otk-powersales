@@ -15520,7 +15520,14 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
+          "accountType" : {
+            "enum" : [ "할인점", "체인", "농협", "수퍼", "식자재", "단체급식", "유지제과", "외식", "백화점", "C.V.S", "대리점", "제조", "군납", "기타" ],
+            "type" : [ "string", "null" ]
+          },
           "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
             "type" : [ "string", "null" ]
           },
           "confirmed" : {
@@ -15530,7 +15537,14 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "employeeAppLoginActive" : {
+            "type" : [ "boolean", "null" ]
+          },
           "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeEndDate" : {
+            "format" : "date",
             "type" : [ "string", "null" ]
           },
           "employeeId" : {
@@ -15540,6 +15554,9 @@
           "employeeName" : {
             "type" : [ "string", "null" ]
           },
+          "employeeStatus" : {
+            "type" : [ "string", "null" ]
+          },
           "endDate" : {
             "format" : "date",
             "type" : [ "string", "null" ]
@@ -15547,6 +15564,9 @@
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
           },
           "startDate" : {
             "format" : "date",
