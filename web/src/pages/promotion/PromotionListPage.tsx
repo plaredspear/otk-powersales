@@ -9,6 +9,7 @@ import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import type { PromotionListItem } from '@/api/promotion';
 import dayjs from 'dayjs';
+import 'dayjs/locale/ko';
 import ResizableTable from '@/components/common/ResizableTable';
 import SavedSearchBar from '@/components/savedSearch/SavedSearchBar';
 
@@ -21,6 +22,10 @@ const PROMOTION_TYPE_TAG: Record<string, string> = {
 
 function formatDate(value: string): string {
   return dayjs(value).format('YYYY-MM-DD');
+}
+
+function formatDateTime(value: string): string {
+  return dayjs(value).locale('ko').format('YYYY. M. D. A h:mm');
 }
 
 export default function PromotionListPage() {
@@ -202,9 +207,9 @@ export default function PromotionListPage() {
     {
       title: '작성 일자',
       dataIndex: 'createdAt',
-      width: 110,
+      width: 140,
       align: 'center',
-      render: (val: string) => formatDate(val),
+      render: (val: string) => formatDateTime(val),
     },
     {
       title: '작성자',
