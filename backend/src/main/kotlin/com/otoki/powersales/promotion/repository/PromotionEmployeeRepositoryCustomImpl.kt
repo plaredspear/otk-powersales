@@ -29,6 +29,8 @@ class PromotionEmployeeRepositoryCustomImpl(
         return queryFactory
             .selectFrom(promotionEmployee)
             .leftJoin(promotionEmployee.employee, employee).fetchJoin()
+            // 전문행사조(투입당시) 값 = teamMemberSchedule.professionalPromotionTeam (SF ScheduleId__r.ProfessionalPromotionTeam__c 동등)
+            .leftJoin(promotionEmployee.teamMemberSchedule, teamMemberSchedule).fetchJoin()
             .where(promotionEmployee.promotionId.eq(promotionId))
             .orderBy(promotionEmployee.scheduleDate.asc())
             .fetch()

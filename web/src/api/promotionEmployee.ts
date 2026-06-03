@@ -15,6 +15,7 @@ export interface PromotionEmployee {
   workType1: string | null;
   workType3: string | null;
   workType4: string | null;
+  currentProfessionalPromotionTeam: string | null;
   professionalPromotionTeam: string | null;
   scheduleId: number | null;
   promoCloseByTm: boolean;

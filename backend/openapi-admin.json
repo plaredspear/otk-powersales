@@ -12314,6 +12314,9 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "currentProfessionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
+          },
           "dailyTargetCount" : {
             "type" : [ "number", "null" ]
           },
@@ -12345,6 +12348,9 @@
           },
           "primarySalesQuantity" : {
             "type" : [ "number", "null" ]
+          },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
           },
           "promoCloseByTm" : {
             "type" : "boolean"
@@ -12393,6 +12399,9 @@
           "basePrice" : {
             "type" : [ "number", "null" ]
           },
+          "currentProfessionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
+          },
           "dailyTargetCount" : {
             "type" : [ "number", "null" ]
           },
@@ -12427,6 +12436,9 @@
           },
           "primarySalesQuantity" : {
             "type" : [ "number", "null" ]
+          },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
           },
           "promoCloseByTm" : {
             "type" : "boolean"
