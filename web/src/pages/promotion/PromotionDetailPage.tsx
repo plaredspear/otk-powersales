@@ -49,8 +49,8 @@ import PromotionDetailSection, {
 import PromotionProductSection, {
   type ProductFormValues,
 } from './sections/PromotionProductSection';
+import PromotionTargetActualSection from './sections/PromotionTargetActualSection';
 import PromotionPosProductSection from './sections/PromotionPosProductSection';
-import PromotionScheduleSection from './components/PromotionScheduleSection';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
 import ResizableTable from '@/components/common/ResizableTable';
 
@@ -1190,10 +1190,10 @@ export default function PromotionDetailPage() {
         ) : null}
       </div>
 
-      {/* 2개 섹션: Collapse */}
+      {/* 세부 사항 / 행사품목 / 목표·실적 섹션: Collapse */}
       <Collapse
         className="promotion-detail-collapse"
-        defaultActiveKey={['detail', 'product']}
+        defaultActiveKey={['detail', 'product', 'targetActual']}
         items={[
           {
             key: 'detail',
@@ -1219,6 +1219,11 @@ export default function PromotionDetailPage() {
                 onFormChange={(v) => setProductForm((prev) => ({ ...prev, ...v }))}
               />
             ),
+          },
+          {
+            key: 'targetActual',
+            label: '목표/실적',
+            children: <PromotionTargetActualSection promotion={promotion} />,
           },
         ]}
       />
@@ -1337,15 +1342,6 @@ export default function PromotionDetailPage() {
           />
         )}
       </div>
-
-      {/* 일정 관리 섹션 (Spec #571 P2-W) */}
-      {hasDates && (
-        <PromotionScheduleSection
-          promotionId={promotionId}
-          promotionStartDate={promotion.startDate}
-          promotionEndDate={promotion.endDate}
-        />
-      )}
 
       {/* 상세 POS품목 섹션 — SF Promotion 상세의 "상세 POS품목" Related List 동등 */}
       <PromotionPosProductSection promotionId={promotionId} />

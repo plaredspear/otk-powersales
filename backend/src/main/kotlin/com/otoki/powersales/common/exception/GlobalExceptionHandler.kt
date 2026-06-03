@@ -5,7 +5,6 @@ import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.dto.ErrorDetail
 import com.otoki.powersales.promotion.exception.BatchValidationException
 import com.otoki.powersales.sap.inbound.dto.SapResultWrapper
-import com.otoki.powersales.schedule.exception.PromotionScheduleNotFoundPartialException
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -165,28 +164,6 @@ class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(body)
-    }
-
-    /**
-     * 일괄 삭제 부분 미존재 예외 처리 — error.details.missingIds 에 누락된 ID 목록을 포함한다 (Spec #571 P1-B, #576, #580).
-     *
-     * 응답 형식은 글로벌 ApiResponse 계약을 따른다:
-     * `{ success, data, error: { code, message, details: { missingIds: [...] } }, message, timestamp }`
-     */
-    @ExceptionHandler(PromotionScheduleNotFoundPartialException::class)
-    fun handlePromotionScheduleNotFoundPartialException(
-        ex: PromotionScheduleNotFoundPartialException,
-        request: WebRequest
-    ): ResponseEntity<ApiResponse<Any?>> {
-        val errorDetail = ErrorDetail(
-            code = ex.errorCode,
-            message = ex.message ?: "",
-            details = mapOf("missingIds" to ex.missingIds)
-        )
-
-        return ResponseEntity
-            .status(ex.httpStatus)
-            .body(ApiResponse.error<Any?>(errorDetail))
     }
 
     /**

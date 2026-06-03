@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
-import { DatePicker, Descriptions, Input, Select, Spin, Tag } from 'antd';
+import { Link } from 'react-router-dom';
+import { DatePicker, Descriptions, Input, Select, Spin, Tag, Tooltip, message } from 'antd';
+import { CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { PromotionDetail, PromotionFormMeta } from '@/api/promotion';
 import type { Account } from '@/api/account';
@@ -61,6 +63,15 @@ export default function PromotionDetailSection({
     }, 300);
   };
 
+  const handleCopyPromotionNumber = async () => {
+    try {
+      await navigator.clipboard.writeText(promotion.promotionNumber);
+      message.success('행사번호를 복사했습니다');
+    } catch {
+      message.error('복사에 실패했습니다');
+    }
+  };
+
   const typeColor = promotion.promotionType
     ? PROMOTION_TYPE_TAG[promotion.promotionType]
     : undefined;
@@ -77,7 +88,15 @@ export default function PromotionDetailSection({
 
   return (
     <Descriptions column={2} bordered size="small">
-      <Descriptions.Item label="행사번호">{promotion.promotionNumber}</Descriptions.Item>
+      <Descriptions.Item label="행사번호">
+        {promotion.promotionNumber}
+        <Tooltip title="행사번호 복사">
+          <CopyOutlined
+            onClick={handleCopyPromotionNumber}
+            style={{ marginLeft: 8, color: '#1677ff', cursor: 'pointer' }}
+          />
+        </Tooltip>
+      </Descriptions.Item>
       <Descriptions.Item label="시작일">
         {editing ? (
           <DatePicker
@@ -92,6 +111,7 @@ export default function PromotionDetailSection({
         )}
       </Descriptions.Item>
 
+      <Descriptions.Item label="행사명">{promotion.promotionName ?? '-'}</Descriptions.Item>
       <Descriptions.Item label="종료일">
         {editing ? (
           <DatePicker
@@ -139,8 +159,10 @@ export default function PromotionDetailSection({
             }))}
             style={{ width: '100%' }}
           />
+        ) : promotion.accountName ? (
+          <Link to={`/account/${promotion.accountId}`}>{promotion.accountName}</Link>
         ) : (
-          promotion.accountName ?? '-'
+          '-'
         )}
       </Descriptions.Item>
       <Descriptions.Item label="행사유형">
@@ -160,7 +182,7 @@ export default function PromotionDetailSection({
       </Descriptions.Item>
 
       <Descriptions.Item label="거래처코드">
-        {promotion.accountId ?? '-'}
+        {promotion.accountCode ?? '-'}
       </Descriptions.Item>
       <Descriptions.Item label="매대위치">
         {editing ? (
@@ -193,12 +215,8 @@ export default function PromotionDetailSection({
       <Descriptions.Item label="CC코드">
         {promotion.costCenterCode ?? '-'}
       </Descriptions.Item>
-
       <Descriptions.Item label="마감여부">
         {promotion.isClosed ? <Tag color="red">마감</Tag> : '미마감'}
-      </Descriptions.Item>
-      <Descriptions.Item label="제품유형">
-        {promotion.category1 ?? '-'}
       </Descriptions.Item>
     </Descriptions>
   );

@@ -14,10 +14,9 @@ import org.springframework.stereotype.Component
 import java.time.LocalDate
 
 /**
- * 단건/일괄 일정 변경에서 공유하는 검증 헬퍼.
+ * 일정 변경에서 공유하는 검증 헬퍼.
  *
- * 기존 `AdminTeamScheduleService` 내부 private validator (스펙 #571 P1-B 추출 대상)
- * 와 동일 동작을 제공하며, 행사 단위 일괄 API(`AdminPromotionScheduleService`)에서도 재사용된다.
+ * 기존 `AdminTeamScheduleService` 내부 private validator 를 추출하여 동일 동작을 제공한다.
  */
 @Component
 class TeamScheduleValidator(

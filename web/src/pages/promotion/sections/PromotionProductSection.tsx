@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Descriptions, Input, Select, Spin } from 'antd';
 import type { PromotionDetail } from '@/api/promotion';
 import type { Product } from '@/api/product';
@@ -83,6 +84,10 @@ export default function PromotionProductSection({
             }))}
             style={{ width: '100%' }}
           />
+        ) : promotion.primaryProductName && promotion.primaryProductCode ? (
+          <Link to={`/product/${promotion.primaryProductCode}`}>
+            {promotion.primaryProductName}
+          </Link>
         ) : (
           promotion.primaryProductName ?? '-'
         )}
@@ -101,7 +106,7 @@ export default function PromotionProductSection({
       </Descriptions.Item>
 
       <Descriptions.Item label="제품코드">
-        {promotion.primaryProductId ?? '-'}
+        {promotion.primaryProductCode ?? '-'}
       </Descriptions.Item>
       <Descriptions.Item label="비고">
         {editing ? (
@@ -117,7 +122,7 @@ export default function PromotionProductSection({
       </Descriptions.Item>
 
       <Descriptions.Item label="제품유형">
-        {promotion.productType ?? '-'}
+        {promotion.category1 ?? '-'}
       </Descriptions.Item>
       <Descriptions.Item label=" ">{''}</Descriptions.Item>
     </Descriptions>

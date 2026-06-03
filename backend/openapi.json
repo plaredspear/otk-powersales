@@ -7797,93 +7797,6 @@
         },
         "type" : "object"
       },
-      "ApiResponsePromotionScheduleBulkDeleteResponse" : {
-        "properties" : {
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/PromotionScheduleBulkDeleteResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ApiResponsePromotionScheduleBulkUpdateResponse" : {
-        "properties" : {
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/PromotionScheduleBulkUpdateResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ApiResponsePromotionScheduleListResponse" : {
-        "properties" : {
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/PromotionScheduleListResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "ApiResponsePromotionTargetActualReportResponse" : {
         "properties" : {
           "data" : {
@@ -17169,12 +17082,19 @@
       },
       "PromotionDetailResponse" : {
         "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
           "accountId" : {
             "format" : "int32",
             "type" : "integer"
           },
           "accountName" : {
             "type" : [ "string", "null" ]
+          },
+          "actualAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "category1" : {
             "type" : [ "string", "null" ]
@@ -17206,6 +17126,9 @@
           "otherProduct" : {
             "type" : [ "string", "null" ]
           },
+          "primaryProductCode" : {
+            "type" : [ "string", "null" ]
+          },
           "primaryProductId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
@@ -17214,6 +17137,9 @@
             "type" : [ "string", "null" ]
           },
           "productType" : {
+            "type" : [ "string", "null" ]
+          },
+          "promotionName" : {
             "type" : [ "string", "null" ]
           },
           "promotionNumber" : {
@@ -17231,6 +17157,10 @@
           "startDate" : {
             "format" : "date",
             "type" : "string"
+          },
+          "targetAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "updatedAt" : {
             "format" : "date-time",
@@ -17621,170 +17551,6 @@
           },
           "productName" : {
             "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
-      "PromotionScheduleBulkDeleteRequest" : {
-        "properties" : {
-          "scheduleIds" : {
-            "items" : {
-              "format" : "int64",
-              "type" : "integer"
-            },
-            "maxItems" : 500,
-            "minItems" : 1,
-            "type" : "array"
-          }
-        },
-        "required" : [ "scheduleIds" ],
-        "type" : "object"
-      },
-      "PromotionScheduleBulkDeleteResponse" : {
-        "properties" : {
-          "deletedCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
-      "PromotionScheduleBulkUpdateItem" : {
-        "properties" : {
-          "accountId" : {
-            "format" : "int32",
-            "type" : [ "integer", "null" ]
-          },
-          "scheduleId" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          },
-          "workingCategory1" : {
-            "type" : [ "string", "null" ]
-          },
-          "workingCategory3" : {
-            "type" : [ "string", "null" ]
-          },
-          "workingCategory4" : {
-            "type" : [ "string", "null" ]
-          },
-          "workingDate" : {
-            "format" : "date",
-            "type" : [ "string", "null" ]
-          }
-        },
-        "required" : [ "accountId", "scheduleId", "workingCategory1", "workingCategory3", "workingDate" ],
-        "type" : "object"
-      },
-      "PromotionScheduleBulkUpdateRequest" : {
-        "properties" : {
-          "items" : {
-            "items" : {
-              "$ref" : "#/components/schemas/PromotionScheduleBulkUpdateItem"
-            },
-            "maxItems" : 500,
-            "minItems" : 1,
-            "type" : "array"
-          }
-        },
-        "required" : [ "items" ],
-        "type" : "object"
-      },
-      "PromotionScheduleBulkUpdateResponse" : {
-        "properties" : {
-          "scheduleIds" : {
-            "items" : {
-              "format" : "int64",
-              "type" : "integer"
-            },
-            "type" : "array"
-          },
-          "updatedCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
-      "PromotionScheduleItem" : {
-        "properties" : {
-          "accountCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "accountId" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "accountName" : {
-            "type" : "string"
-          },
-          "scheduleId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "workingCategory1" : {
-            "type" : [ "string", "null" ]
-          },
-          "workingCategory3" : {
-            "type" : [ "string", "null" ]
-          },
-          "workingCategory4" : {
-            "type" : [ "string", "null" ]
-          },
-          "workingDate" : {
-            "format" : "date",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "PromotionScheduleListResponse" : {
-        "properties" : {
-          "members" : {
-            "items" : {
-              "$ref" : "#/components/schemas/PromotionScheduleMember"
-            },
-            "type" : "array"
-          },
-          "promotionId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "schedulePeriod" : {
-            "$ref" : "#/components/schemas/SchedulePeriod"
-          },
-          "totalMemberCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "totalScheduleCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
-      "PromotionScheduleMember" : {
-        "properties" : {
-          "employeeCode" : {
-            "type" : "string"
-          },
-          "employeeId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "employeeName" : {
-            "type" : "string"
-          },
-          "promotionEmployeeId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "schedules" : {
-            "items" : {
-              "$ref" : "#/components/schemas/PromotionScheduleItem"
-            },
-            "type" : "array"
           }
         },
         "type" : "object"
@@ -19321,19 +19087,6 @@
           },
           "typeOfWork5" : {
             "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
-      "SchedulePeriod" : {
-        "properties" : {
-          "endDate" : {
-            "format" : "date",
-            "type" : "string"
-          },
-          "startDate" : {
-            "format" : "date",
-            "type" : "string"
           }
         },
         "type" : "object"
@@ -26866,148 +26619,6 @@
           }
         },
         "tags" : [ "admin-promotion-employee-controller" ]
-      }
-    },
-    "/api/v1/admin/promotions/{promotionId}/schedules" : {
-      "get" : {
-        "operationId" : "getSchedules_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "promotionId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        }, {
-          "in" : "query",
-          "name" : "startDate",
-          "required" : false,
-          "schema" : {
-            "format" : "date",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "endDate",
-          "required" : false,
-          "schema" : {
-            "format" : "date",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePromotionScheduleListResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-promotion-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/promotions/{promotionId}/schedules/bulk" : {
-      "delete" : {
-        "operationId" : "bulkDelete",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "promotionId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/PromotionScheduleBulkDeleteRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePromotionScheduleBulkDeleteResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-promotion-schedule-controller" ]
-      },
-      "put" : {
-        "operationId" : "bulkUpdate",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "promotionId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/PromotionScheduleBulkUpdateRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePromotionScheduleBulkUpdateResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-promotion-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/promotions/{promotionId}/schedules/regenerate" : {
-      "post" : {
-        "operationId" : "regenerate",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "promotionId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePromotionConfirmResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-promotion-schedule-controller" ]
       }
     },
     "/api/v1/admin/safety-check/status" : {

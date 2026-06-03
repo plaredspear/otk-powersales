@@ -83,19 +83,24 @@ data class PromotionListItem(
 data class PromotionDetailResponse(
     val id: Long,
     val promotionNumber: String,
+    val promotionName: String?,
     val promotionType: String?,
     val accountId: Int,
     val accountName: String?,
+    val accountCode: String?,
     val startDate: LocalDate,
     val endDate: LocalDate,
     val primaryProductId: Long?,
     val primaryProductName: String?,
+    val primaryProductCode: String?,
     val otherProduct: String?,
     val message: String?,
     val standLocation: String?,
     val costCenterCode: String?,
     val productType: String?,
     val category1: String?,
+    val targetAmount: Long?,
+    val actualAmount: Long?,
     val isClosed: Boolean,
     val isDeleted: Boolean,
     val createdAt: LocalDateTime,
@@ -106,28 +111,42 @@ data class PromotionDetailResponse(
         fun from(
             promotion: Promotion,
             accountName: String?,
-            primaryProductName: String?
-        ): PromotionDetailResponse = PromotionDetailResponse(
-            id = promotion.id,
-            promotionNumber = promotion.promotionNumber,
-            promotionType = promotion.promotionType?.displayName,
-            accountId = promotion.account!!.id,
-            accountName = accountName,
-            startDate = promotion.startDate,
-            endDate = promotion.endDate,
-            primaryProductId = promotion.primaryProductId,
-            primaryProductName = primaryProductName,
-            otherProduct = promotion.otherProduct,
-            message = promotion.message,
-            standLocation = promotion.standLocation?.displayName,
-            costCenterCode = promotion.costCenterCode,
-            productType = promotion.productType?.displayName,
-            category1 = promotion.category1,
-            isClosed = promotion.isClosed,
-            isDeleted = promotion.isDeleted,
-            createdAt = promotion.createdAt,
-            updatedAt = promotion.updatedAt,
-            remark = promotion.remark
-        )
+            accountCode: String?,
+            primaryProductName: String?,
+            primaryProductCode: String?
+        ): PromotionDetailResponse {
+            val productTypeName = promotion.productType?.displayName
+            // SF formula DKRetail__PromotionName__c = TEXT(DKRetail__ProductType__c) + '(' + DKRetail__PrimaryProductId__r.Name + ')'
+            val promotionName = if (primaryProductName != null) {
+                "${productTypeName.orEmpty()}(${primaryProductName})"
+            } else null
+            return PromotionDetailResponse(
+                id = promotion.id,
+                promotionNumber = promotion.promotionNumber,
+                promotionName = promotionName,
+                promotionType = promotion.promotionType?.displayName,
+                accountId = promotion.account!!.id,
+                accountName = accountName,
+                accountCode = accountCode,
+                startDate = promotion.startDate,
+                endDate = promotion.endDate,
+                primaryProductId = promotion.primaryProductId,
+                primaryProductName = primaryProductName,
+                primaryProductCode = primaryProductCode,
+                otherProduct = promotion.otherProduct,
+                message = promotion.message,
+                standLocation = promotion.standLocation?.displayName,
+                costCenterCode = promotion.costCenterCode,
+                productType = productTypeName,
+                category1 = promotion.category1,
+                targetAmount = promotion.dkTargetAmount?.toLong(),
+                actualAmount = promotion.dkActualAmount?.toLong(),
+                isClosed = promotion.isClosed,
+                isDeleted = promotion.isDeleted,
+                createdAt = promotion.createdAt,
+                updatedAt = promotion.updatedAt,
+                remark = promotion.remark
+            )
+        }
     }
 }
