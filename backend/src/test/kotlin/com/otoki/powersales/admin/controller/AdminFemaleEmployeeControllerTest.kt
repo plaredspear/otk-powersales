@@ -80,7 +80,9 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             totalPages = 1,
         )
         every {
-            adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(AppAuthority.WOMAN), any(), any())
+            adminEmployeeService.getEmployees(
+                any(), any(), any(), any(), eq(AppAuthority.WOMAN), any(), any(), applyBranchScope = eq(true)
+            )
         } returns response
 
         mockMvc.perform(get("/api/v1/admin/female-employees"))
@@ -93,8 +95,11 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.content[0].age").value("45살"))
             .andExpect(jsonPath("$.data.content[0].yearsOfService").value("5년"))
 
+        // 여사원 현황은 본인 지점 스코프 적용 (applyBranchScope=true) 로 호출
         verify(exactly = 1) {
-            adminEmployeeService.getEmployees(any(), any(), any(), any(), eq(AppAuthority.WOMAN), any(), any())
+            adminEmployeeService.getEmployees(
+                any(), any(), any(), any(), eq(AppAuthority.WOMAN), any(), any(), applyBranchScope = eq(true)
+            )
         }
     }
 
@@ -109,7 +114,10 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             totalPages = 0,
         )
         every {
-            adminEmployeeService.getEmployees(any(), eq("재직"), eq("A001"), eq("김"), eq(AppAuthority.WOMAN), eq(0), eq(10))
+            adminEmployeeService.getEmployees(
+                any(), eq("재직"), eq("A001"), eq("김"), eq(AppAuthority.WOMAN), eq(0), eq(10),
+                applyBranchScope = eq(true),
+            )
         } returns response
 
         mockMvc.perform(

@@ -72,8 +72,10 @@ class AdminEmployeeController(
      * 행사상세/전문행사조 화면의 사원 lookup search — SF PromotionEmployee__c.EmployeeId__c Lookup 정합.
      *
      * SF 의 lookup search 는 Employee FLS/object access 와 무관하게 화면 권한 (Promotion CRUD) 으로
-     * 작동 — 본 endpoint 는 SF 메커니즘 정합. 결과는 동일 [EmployeeListResponse] 재사용
-     * (sharing rule 평가는 `adminEmployeeService.getEmployees` 가 그대로 적용).
+     * 작동 — 본 endpoint 는 SF 메커니즘 정합. 결과는 동일 [EmployeeListResponse] 재사용.
+     *
+     * 사원 후보는 전사 검색 — SF 행사 사원 그리드 (`RelatedListDataGridController.getLookupCandidates`)
+     * 가 `Name Like + Status='재직'` 만 적용하고 지점 필터를 두지 않으므로 지점 스코프 미적용.
      *
      * 검색 범위는 재직 사원 한정 — 레거시 SF SOQL (`DKRetail__Status__c = '재직'`) 이 서버에서 항상
      * 강제하던 조건을 동일하게 서버에서 고정한다 (호출 측 status 파라미터에 의존하지 않음).
@@ -158,8 +160,10 @@ class AdminEmployeeController(
      * 진열사원 스케줄 마스터 화면의 사원 lookup search — SF TeamMemberSchedule__c.EmployeeId__c Lookup 정합.
      *
      * SF 의 lookup search 는 Employee FLS/object access 와 무관하게 화면 권한 (Schedule CRUD) 으로
-     * 작동 — 본 endpoint 는 SF 메커니즘 정합. 결과는 동일 [EmployeeListResponse] 재사용
-     * (sharing rule 평가는 `adminEmployeeService.getEmployees` 가 그대로 적용).
+     * 작동 — 본 endpoint 는 SF 메커니즘 정합. 결과는 동일 [EmployeeListResponse] 재사용.
+     *
+     * 사원 후보는 본인 소속 지점(costCenterCode) 으로 제한 — SF `ManageScheduleComponent`
+     * (`CostCenterCode__c IN currentUserCcCode`) / `UplExcelSchduleMaster` 정합.
      */
     @GetMapping("/lookup-for-schedule")
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
@@ -178,7 +182,8 @@ class AdminEmployeeController(
             keyword = keyword,
             role = null,
             page = page,
-            size = size
+            size = size,
+            applyBranchScope = true,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }

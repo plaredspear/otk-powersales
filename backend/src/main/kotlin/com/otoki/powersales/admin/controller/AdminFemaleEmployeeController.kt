@@ -48,6 +48,8 @@ class AdminFemaleEmployeeController(
             role = AppAuthority.WOMAN,
             page = page,
             size = size,
+            // SF `SalesMemberListController` / `TeamMemberListController` 의 CostCenterCode 본인 지점 스코프 정합
+            applyBranchScope = true,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }

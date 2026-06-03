@@ -62,8 +62,8 @@ class AdminEmployeeServiceTest {
         }
 
         @Test
-        @DisplayName("SF 이진 모델 - 지점 권한 사용자도 필터 없이 조회 시 전사 반환 (게이트 통과=전사)")
-        fun branchOnly_noFilter() {
+        @DisplayName("스코프 미적용(기본) - 지점 권한 사용자도 필터 없이 조회 시 전사 반환")
+        fun noScope_branchOnly_noFilter() {
             val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
 
             val employees = listOf(
@@ -71,7 +71,7 @@ class AdminEmployeeServiceTest {
                 createEmployee(employeeCode = "10000002", costCenterCode = "B002"),
             )
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 2L)
-            // SF 이진 모델 — 지점 보안축 미적용. costCenterCode 미지정 → 전사(branchFilter=null).
+            // applyBranchScope=false (행사 그리드/사원 목록 등) — 지점 보안축 미적용. costCenterCode 미지정 → 전사.
             every { employeeRepository.findEmployees(null, null, null, null, any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
@@ -80,13 +80,13 @@ class AdminEmployeeServiceTest {
         }
 
         @Test
-        @DisplayName("SF 이진 모델 - costCenterCode 는 순수 표시 필터 (권한 외 지점도 차단 안 함)")
-        fun branchOnly_displayFilterOnly() {
+        @DisplayName("스코프 미적용(기본) - costCenterCode 는 순수 표시 필터 (권한 외 지점도 차단 안 함)")
+        fun noScope_branchOnly_displayFilterOnly() {
             val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
 
             val employees = listOf(createEmployee(employeeCode = "10000002", costCenterCode = "B002"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            // scope.branchCodes=["A001"] 이지만 SF 이진 모델이라 표시 필터(B002)를 그대로 전달
+            // scope.branchCodes=["A001"] 이지만 applyBranchScope=false 라 표시 필터(B002)를 그대로 전달
             every { employeeRepository.findEmployees(null, listOf("B002"), null, null, any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, "B002", null, null, 0, 20)
@@ -96,18 +96,87 @@ class AdminEmployeeServiceTest {
         }
 
         @Test
-        @DisplayName("SF 이진 모델 - branchCodes 비어있어도 게이트 통과자는 전사 반환")
-        fun branchOnly_emptyBranchCodes() {
+        @DisplayName("스코프 미적용(기본) - branchCodes 비어있어도 전사 반환")
+        fun noScope_branchOnly_emptyBranchCodes() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
 
             val employees = listOf(createEmployee(employeeCode = "10000001"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            // NoAccess 개념 소멸 — 게이트 통과 = 전사(branchFilter=null)
+            // applyBranchScope=false — 보안축 없음. costCenterCode 미지정 → 전사(branchFilter=null)
             every { employeeRepository.findEmployees(null, null, null, null, any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
 
             assertThat(result.content).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("스코프 적용 - 전사 권한자는 필터 없이 전사 반환")
+        fun scope_allBranches_noFilter() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+            val employees = listOf(createEmployee(employeeCode = "10000001"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            // applyBranchScope=true + isAllBranches → EffectiveBranchResult.All → branchFilter=null
+            every { employeeRepository.findEmployees(null, null, null, null, any()) } returns page
+
+            val result = adminEmployeeService.getEmployees(
+                scope, null, null, null, null, 0, 20, applyBranchScope = true
+            )
+
+            assertThat(result.content).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("스코프 적용 - 지점 권한자는 본인 지점으로 제한 (여사원 현황/스케줄 lookup)")
+        fun scope_branchOnly_restrictsToOwnBranch() {
+            val scope = DataScope(branchCodes = listOf("A001", "A002"), isAllBranches = false)
+
+            val employees = listOf(createEmployee(employeeCode = "10000001", costCenterCode = "A001"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            // applyBranchScope=true + 미지정 → EffectiveBranchResult.Filtered(["A001","A002"])
+            every {
+                employeeRepository.findEmployees(null, listOf("A001", "A002"), null, null, any())
+            } returns page
+
+            val result = adminEmployeeService.getEmployees(
+                scope, null, null, null, null, 0, 20, applyBranchScope = true
+            )
+
+            assertThat(result.content).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("스코프 적용 - 권한 밖 지점 요청 시 빈 결과 (NoAccess)")
+        fun scope_branchOnly_outOfScopeBranch_returnsEmpty() {
+            val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
+
+            // 권한(A001) 밖 지점(B002) 요청 → EffectiveBranchResult.NoAccess → repository 미호출
+            val result = adminEmployeeService.getEmployees(
+                scope, null, "B002", null, null, 0, 20, applyBranchScope = true
+            )
+
+            assertThat(result.content).isEmpty()
+            assertThat(result.totalElements).isEqualTo(0)
+            assertThat(result.totalPages).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("스코프 적용 - 권한 내 단일 지점 선택 시 그 지점만 조회")
+        fun scope_branchOnly_inScopeBranch_filtersToSelected() {
+            val scope = DataScope(branchCodes = listOf("A001", "A002"), isAllBranches = false)
+
+            val employees = listOf(createEmployee(employeeCode = "10000001", costCenterCode = "A001"))
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
+            // applyBranchScope=true + 권한 내 A001 선택 → Filtered(["A001"])
+            every { employeeRepository.findEmployees(null, listOf("A001"), null, null, any()) } returns page
+
+            val result = adminEmployeeService.getEmployees(
+                scope, null, "A001", null, null, 0, 20, applyBranchScope = true
+            )
+
+            assertThat(result.content).hasSize(1)
+            assertThat(result.content[0].costCenterCode).isEqualTo("A001")
         }
 
         @Test
