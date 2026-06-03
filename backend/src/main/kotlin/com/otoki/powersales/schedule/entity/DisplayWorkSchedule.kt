@@ -75,7 +75,7 @@ class DisplayWorkSchedule(
     @SFField("TypeOfWork1__c")
     @Column(name = "type_of_work1", length = 255)
     @Convert(converter = TypeOfWork1Converter::class)
-    val typeOfWork1: TypeOfWork1? = null,
+    var typeOfWork1: TypeOfWork1? = null,
 
     @SFField("TypeOfWork3__c")
     @Column(name = "type_of_work3", length = 255)

@@ -54,6 +54,7 @@ export interface ScheduleListItem {
   accountCode: string | null;
   accountName: string | null;
   typeOfWork3: string | null;
+  typeOfWork4: string | null;
   typeOfWork5: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -115,6 +116,7 @@ export interface ScheduleBatchDeleteResult {
 export interface ScheduleCreateRequest {
   employeeCode: string;
   accountCode: string;
+  typeOfWork1: string;
   typeOfWork3: string;
   typeOfWork4: string;
   typeOfWork5: string;
@@ -123,6 +125,37 @@ export interface ScheduleCreateRequest {
 }
 
 export type ScheduleUpdateRequest = ScheduleCreateRequest;
+
+/**
+ * 단건 편집 모달 상세 — SF 「진열사원 스케줄 마스터」 레이아웃 정합.
+ * 편집 필드 + readonly 계산 정보 (SF 「저장 시 이 필드가 계산됨」) 를 함께 반환.
+ */
+export interface ScheduleDetail {
+  id: number;
+  name: string | null;
+  confirmed: boolean | null;
+  // 편집 가능 필드
+  employeeCode: string;
+  employeeName: string;
+  accountCode: string | null;
+  accountName: string | null;
+  typeOfWork1: string | null;
+  typeOfWork3: string | null;
+  typeOfWork4: string | null;
+  typeOfWork5: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  // readonly 계산 정보
+  branchName: string | null;
+  title: string | null;
+  employmentStatus: string | null;
+  accountStatus: string | null;
+  accountType: string | null;
+  valid: string | null;
+  validData: string | null;
+  costCenterCode: string | null;
+  lastMonthRevenue: number | null;
+}
 
 export interface ScheduleCreateResult {
   id: number;
@@ -271,6 +304,14 @@ export async function batchConfirmSchedules(ids: number[]): Promise<ScheduleBatc
     throw new Error(res.data.error?.message || res.data.message || '일괄 확정에 실패했습니다');
   }
 
+  return res.data.data;
+}
+
+export async function fetchScheduleDetail(id: number): Promise<ScheduleDetail> {
+  const res = await client.get<ApiResponse<ScheduleDetail>>(`/api/v1/admin/schedule/${id}`);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '상세 조회에 실패했습니다');
+  }
   return res.data.data;
 }
 

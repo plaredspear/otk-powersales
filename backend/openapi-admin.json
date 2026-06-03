@@ -1873,6 +1873,10 @@
             "format" : "date",
             "type" : "string"
           },
+          "typeOfWork1" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
           "typeOfWork3" : {
             "minLength" : 1,
             "type" : "string"
@@ -1886,7 +1890,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "accountCode", "employeeCode", "startDate", "typeOfWork3", "typeOfWork4", "typeOfWork5" ],
+        "required" : [ "accountCode", "employeeCode", "startDate", "typeOfWork1", "typeOfWork3", "typeOfWork4", "typeOfWork5" ],
         "type" : "object"
       },
       "AdminScheduleUpdateRequest" : {
@@ -1907,6 +1911,10 @@
             "format" : "date",
             "type" : "string"
           },
+          "typeOfWork1" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
           "typeOfWork3" : {
             "minLength" : 1,
             "type" : "string"
@@ -1920,7 +1928,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "accountCode", "employeeCode", "startDate", "typeOfWork3", "typeOfWork4", "typeOfWork5" ],
+        "required" : [ "accountCode", "employeeCode", "startDate", "typeOfWork1", "typeOfWork3", "typeOfWork4", "typeOfWork5" ],
         "type" : "object"
       },
       "AdminSiteActivityDetailResponse" : {
@@ -6915,6 +6923,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/ScheduleCreateResultDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseScheduleDetailDto" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ScheduleDetailDto"
             }, {
               "type" : "null"
             } ]
@@ -14118,6 +14155,81 @@
             "type" : [ "string", "null" ]
           },
           "typeOfWork5" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "ScheduleDetailDto" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "confirmed" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "costCenterCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : "string"
+          },
+          "employmentStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "endDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "lastMonthRevenue" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork1" : {
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork3" : {
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork4" : {
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork5" : {
+            "type" : [ "string", "null" ]
+          },
+          "valid" : {
+            "type" : [ "string", "null" ]
+          },
+          "validData" : {
             "type" : [ "string", "null" ]
           }
         },
@@ -23050,6 +23162,38 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      },
+      "get" : {
+        "operationId" : "getScheduleDetail",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleDetailDto"
                 }
               }
             },

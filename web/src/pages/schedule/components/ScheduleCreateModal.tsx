@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Modal, Form, DatePicker, Select, message, Alert } from 'antd';
+import { Modal, Form, DatePicker, Select, message, Alert, Row, Col, Typography, Badge, Checkbox } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import EmployeeSelect from './EmployeeSelect';
 import AccountSelect from './AccountSelect';
-import { useScheduleCreate, useScheduleUpdate } from '@/hooks/schedule/useScheduleCreate';
+import { useScheduleCreate, useScheduleUpdate, useScheduleDetail } from '@/hooks/schedule/useScheduleCreate';
 import type { ScheduleCreateRequest, ScheduleListItem } from '@/api/schedule';
+
+const { Text } = Typography;
+
+const WORK_TYPE1_OPTIONS = [{ label: '진열', value: '진열' }];
 
 const WORK_TYPE3_OPTIONS = [
   { label: '고정', value: '고정' },
@@ -22,6 +26,8 @@ const WORK_TYPE5_OPTIONS = [
   { label: '임시', value: '임시' },
 ];
 
+const CALC_HINT = '저장 시 이 필드가 계산됨';
+
 export interface ScheduleCreateModalProps {
   open: boolean;
   onClose: () => void;
@@ -33,21 +39,45 @@ export interface ScheduleCreateModalProps {
 interface FormValues {
   employeeCode?: string;
   accountCode?: string;
+  typeOfWork1?: string;
   typeOfWork3?: string;
   typeOfWork4?: string;
   typeOfWork5?: string;
-  dateRange?: [Dayjs, Dayjs | null];
+  startDate?: Dayjs;
+  endDate?: Dayjs | null;
+}
+
+/** SF 「저장 시 이 필드가 계산됨」 readonly 정보 1행 (라벨 + 값 + 회색 캡션). */
+function CalcField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 13 }}>{label}</div>
+      <div style={{ minHeight: 22 }}>{value ?? <Text type="secondary">-</Text>}</div>
+      <Text type="secondary" italic style={{ fontSize: 12 }}>
+        {CALC_HINT}
+      </Text>
+    </div>
+  );
+}
+
+/** 유효 신호등 — SF Valid__c 이미지(green/yellow/red) 동등. */
+function ValidLight({ valid }: { valid: string | null | undefined }) {
+  if (valid === '유효') return <Badge color="green" text="유효" />;
+  if (valid === '예정') return <Badge color="gold" text="예정" />;
+  if (valid === '종료') return <Badge color="red" text="종료" />;
+  return <Text type="secondary">-</Text>;
 }
 
 /**
- * UC-02 / UC-03 — 진열사원 스케줄 단건 신규 등록 / 편집 Modal.
+ * 진열사원 스케줄 단건 신규 등록 / 편집 Modal.
  *
- * 레거시 SF 「New」 / 「Edit」 버튼 → 표준 레코드 입력 폼 동등.
- * 검증/자동채움은 backend `POST /api/v1/admin/schedule` (신규) 또는 `PUT /{id}` (편집) 에서 일괄 처리되어
- * 본 컴포넌트는 입력 받아 호출 + 결과 토스트만 담당.
+ * SF 「진열사원 스케줄 마스터」 편집 레이아웃 정합 — 좌측 편집 필드 +
+ * 우측 readonly 계산 정보 (SF 「저장 시 이 필드가 계산됨」). 편집 모드에서는
+ * `GET /api/v1/admin/schedule/{id}` 로 상세를 조회해 readonly 정보를 채운다.
  *
+ * 검증/자동채움은 backend `POST /api/v1/admin/schedule` (신규) 또는 `PUT /{id}` (편집) 에서 일괄 처리.
  * 편집 모드에서 confirmed=true 인 레코드를 ADMIN_GRADE 외 사용자가 종료일 외 필드를 변경 시도하면
- * backend 가 `SCHEDULE_EDIT_BLOCKED_AFTER_CONFIRM` (409) 로 차단 — UC-05 정합.
+ * backend 가 `SCHEDULE_EDIT_BLOCKED_AFTER_CONFIRM` (409) 로 차단.
  */
 export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarget }: ScheduleCreateModalProps) {
   const [form] = Form.useForm<FormValues>();
@@ -58,42 +88,45 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
   const isEdit = editTarget != null;
   const mutation = isEdit ? updateMutation : createMutation;
 
+  const { data: detail, isLoading: detailLoading } = useScheduleDetail(editTarget?.id ?? null, open && isEdit);
+
   useEffect(() => {
     if (!open) return;
     setErrorMessage(null);
-    if (isEdit && editTarget) {
+    if (isEdit && detail) {
       form.setFieldsValue({
-        employeeCode: editTarget.employeeCode,
-        accountCode: editTarget.accountCode ?? undefined,
-        typeOfWork3: editTarget.typeOfWork3 ?? undefined,
-        typeOfWork4: undefined, // ScheduleListItem 에 없음 — 사용자 재선택
-        typeOfWork5: editTarget.typeOfWork5 ?? undefined,
-        dateRange: editTarget.startDate
-          ? [dayjs(editTarget.startDate), editTarget.endDate ? dayjs(editTarget.endDate) : null]
-          : undefined,
+        employeeCode: detail.employeeCode || undefined,
+        accountCode: detail.accountCode ?? undefined,
+        typeOfWork1: detail.typeOfWork1 ?? '진열',
+        typeOfWork3: detail.typeOfWork3 ?? undefined,
+        typeOfWork4: detail.typeOfWork4 ?? undefined,
+        typeOfWork5: detail.typeOfWork5 ?? undefined,
+        startDate: detail.startDate ? dayjs(detail.startDate) : undefined,
+        endDate: detail.endDate ? dayjs(detail.endDate) : null,
       });
-    } else {
+    } else if (!isEdit) {
       form.resetFields();
+      form.setFieldValue('typeOfWork1', '진열');
     }
-  }, [open, isEdit, editTarget, form]);
+  }, [open, isEdit, detail, form]);
 
   const handleOk = async () => {
     setErrorMessage(null);
     try {
       const values = await form.validateFields();
-      const [startDayjs, endDayjs] = values.dateRange ?? [];
-      if (!startDayjs) {
+      if (!values.startDate) {
         setErrorMessage('시작일은 필수입니다');
         return;
       }
       const payload: ScheduleCreateRequest = {
         employeeCode: values.employeeCode!,
         accountCode: values.accountCode!,
+        typeOfWork1: values.typeOfWork1!,
         typeOfWork3: values.typeOfWork3!,
         typeOfWork4: values.typeOfWork4!,
         typeOfWork5: values.typeOfWork5!,
-        startDate: startDayjs.format('YYYY-MM-DD'),
-        endDate: endDayjs ? endDayjs.format('YYYY-MM-DD') : null,
+        startDate: values.startDate.format('YYYY-MM-DD'),
+        endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
       };
       if (isEdit && editTarget) {
         const result = await updateMutation.mutateAsync({ id: editTarget.id, payload });
@@ -114,6 +147,8 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
     }
   };
 
+  const numberFmt = (v: number | null | undefined) => (v != null ? v.toLocaleString('ko-KR') : '-');
+
   return (
     <Modal
       title={isEdit ? '진열사원 스케줄 편집' : '진열사원 스케줄 신규 등록'}
@@ -123,73 +158,100 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
       okText="저장"
       cancelText="취소"
       confirmLoading={mutation.isPending}
-      width={560}
+      width={isEdit ? 880 : 560}
     >
-      <Form form={form} layout="vertical" preserve={false}>
-        {errorMessage && (
-          <Alert type="error" message={errorMessage} style={{ marginBottom: 16 }} closable onClose={() => setErrorMessage(null)} />
+      {errorMessage && (
+        <Alert type="error" message={errorMessage} style={{ marginBottom: 16 }} closable onClose={() => setErrorMessage(null)} />
+      )}
+      {isEdit && detail?.confirmed && (
+        <Alert
+          type="warning"
+          message="확정된 스케줄입니다. 시스템 관리자 / 영업지원이 아닌 경우 종료일 외 필드 변경 시 저장이 차단됩니다."
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {isEdit && (
+        <div style={{ textAlign: 'right', marginBottom: 8 }}>
+          <Text type="danger">*</Text> <Text type="secondary">= 필수 정보</Text>
+        </div>
+      )}
+
+      <Row gutter={32}>
+        {/* 좌측: 편집 가능 필드 */}
+        <Col span={isEdit ? 12 : 24}>
+          {isEdit && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 13 }}>No.</div>
+              <div>{detail?.name ?? '-'}</div>
+            </div>
+          )}
+          {isEdit && (
+            <div style={{ marginBottom: 16 }}>
+              <Checkbox checked={detail?.confirmed ?? false} disabled>
+                확정
+              </Checkbox>
+            </div>
+          )}
+          <Form form={form} layout="vertical" preserve={false}>
+            <Form.Item name="employeeCode" label="성명" rules={[{ required: true, message: '성명은 필수입니다' }]}>
+              <EmployeeSelect
+                value={form.getFieldValue('employeeCode')}
+                initialLabel={detail ? `${detail.employeeName}(${detail.employeeCode})` : undefined}
+                onChange={(code) => form.setFieldValue('employeeCode', code)}
+              />
+            </Form.Item>
+
+            <Form.Item name="accountCode" label="거래처명" rules={[{ required: true, message: '거래처명은 필수입니다' }]}>
+              <AccountSelect
+                value={form.getFieldValue('accountCode')}
+                initialLabel={detail?.accountName ?? undefined}
+                onChange={(code) => form.setFieldValue('accountCode', code)}
+              />
+            </Form.Item>
+
+            <Form.Item name="typeOfWork1" label="근무형태1" rules={[{ required: true, message: '근무형태1은 필수입니다' }]}>
+              <Select placeholder="진열" options={WORK_TYPE1_OPTIONS} />
+            </Form.Item>
+
+            <Form.Item name="typeOfWork3" label="근무형태3" rules={[{ required: true, message: '근무형태3은 필수입니다' }]}>
+              <Select placeholder="고정 / 격고 / 순회" options={WORK_TYPE3_OPTIONS} />
+            </Form.Item>
+
+            <Form.Item name="typeOfWork4" label="근무형태4" rules={[{ required: true, message: '근무형태4는 필수입니다' }]}>
+              <Select placeholder="상온 / 냉동·냉장" options={WORK_TYPE4_OPTIONS} />
+            </Form.Item>
+
+            <Form.Item name="typeOfWork5" label="근무형태5" rules={[{ required: true, message: '근무형태5는 필수입니다' }]}>
+              <Select placeholder="상시 / 임시" options={WORK_TYPE5_OPTIONS} />
+            </Form.Item>
+
+            <Form.Item name="startDate" label="시작일" rules={[{ required: true, message: '시작일은 필수입니다' }]}>
+              <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} placeholder="시작일" />
+            </Form.Item>
+
+            <Form.Item name="endDate" label="종료일">
+              <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} placeholder="종료일 (선택)" />
+            </Form.Item>
+          </Form>
+        </Col>
+
+        {/* 우측: readonly 계산 정보 (SF 「저장 시 이 필드가 계산됨」) — 편집 모드에서만 */}
+        {isEdit && (
+          <Col span={12}>
+            <CalcField label="사번" value={detailLoading ? '…' : detail?.employeeCode} />
+            <CalcField label="지점명" value={detailLoading ? '…' : detail?.branchName} />
+            <CalcField label="직위" value={detailLoading ? '…' : detail?.title} />
+            <CalcField label="재직상태" value={detailLoading ? '…' : detail?.employmentStatus} />
+            <CalcField label="거래처코드" value={detailLoading ? '…' : detail?.accountCode} />
+            <CalcField label="거래처상태" value={detailLoading ? '…' : detail?.accountStatus} />
+            <CalcField label="거래처유형" value={detailLoading ? '…' : detail?.accountType} />
+            <CalcField label="유효" value={detailLoading ? '…' : <ValidLight valid={detail?.valid} />} />
+            <CalcField label="유효데이터" value={detailLoading ? '…' : detail?.validData} />
+            <CalcField label="전월매출" value={detailLoading ? '…' : numberFmt(detail?.lastMonthRevenue)} />
+            <CalcField label="조직유형" value={detailLoading ? '…' : detail?.costCenterCode} />
+          </Col>
         )}
-        {isEdit && editTarget?.confirmed && (
-          <Alert
-            type="warning"
-            message="확정된 스케줄입니다. 시스템 관리자 / 영업지원이 아닌 경우 종료일 외 필드 변경 시 저장이 차단됩니다."
-            style={{ marginBottom: 16 }}
-          />
-        )}
-        <Form.Item
-          name="employeeCode"
-          label="사원"
-          rules={[{ required: true, message: '사원은 필수입니다' }]}
-        >
-          <EmployeeSelect
-            value={form.getFieldValue('employeeCode')}
-            onChange={(code) => form.setFieldValue('employeeCode', code)}
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="accountCode"
-          label="거래처"
-          rules={[{ required: true, message: '거래처는 필수입니다' }]}
-        >
-          <AccountSelect
-            value={form.getFieldValue('accountCode')}
-            onChange={(code) => form.setFieldValue('accountCode', code)}
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="typeOfWork3"
-          label="근무형태3"
-          rules={[{ required: true, message: '근무형태3은 필수입니다' }]}
-        >
-          <Select placeholder="고정 / 격고 / 순회" options={WORK_TYPE3_OPTIONS} />
-        </Form.Item>
-
-        <Form.Item
-          name="typeOfWork4"
-          label="근무형태4"
-          rules={[{ required: true, message: '근무형태4는 필수입니다' }]}
-        >
-          <Select placeholder="상온 / 냉동·냉장" options={WORK_TYPE4_OPTIONS} />
-        </Form.Item>
-
-        <Form.Item
-          name="typeOfWork5"
-          label="근무형태5"
-          rules={[{ required: true, message: '근무형태5는 필수입니다' }]}
-        >
-          <Select placeholder="상시 / 임시" options={WORK_TYPE5_OPTIONS} />
-        </Form.Item>
-
-        <Form.Item
-          name="dateRange"
-          label="기간 (시작일 필수 / 종료일 선택)"
-          rules={[{ required: true, message: '기간은 필수입니다' }]}
-        >
-          <DatePicker.RangePicker allowEmpty={[false, true]} style={{ width: '100%' }} />
-        </Form.Item>
-      </Form>
+      </Row>
     </Modal>
   );
 }

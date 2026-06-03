@@ -12,6 +12,7 @@ import com.otoki.powersales.schedule.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleBatchDeleteResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleCreateResultDto
+import com.otoki.powersales.schedule.dto.response.ScheduleDetailDto
 import com.otoki.powersales.schedule.dto.response.ScheduleListItemDto
 import com.otoki.powersales.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.schedule.enums.SchedulePreset
@@ -85,6 +86,17 @@ class AdminScheduleController(
     ): ResponseEntity<ApiResponse<ScheduleBatchConfirmResultDto>> {
         val result = adminScheduleService.batchUnconfirm(request.ids)
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정 해제되었습니다"))
+    }
+
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/{id}")
+    fun getScheduleDetail(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @PathVariable id: Long,
+    ): ResponseEntity<ApiResponse<ScheduleDetailDto>> {
+        val result = adminScheduleService.getScheduleDetail(scope, id)
+        return ResponseEntity.ok(ApiResponse.success(result))
     }
 
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)

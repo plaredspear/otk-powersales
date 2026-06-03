@@ -18,6 +18,11 @@ export interface EmployeeSelectProps {
   onChange: (employeeCode: string | undefined, employee: Employee | undefined) => void;
   disabled?: boolean;
   placeholder?: string;
+  /**
+   * 편집 모드 초기 표시 label. 검색 전이라 options 가 비어 value(사번)만 표시되는 문제를
+   * 막기 위해, 현재 value 에 대응하는 표시 텍스트(예: `이름(사번)`)를 주입한다.
+   */
+  initialLabel?: string;
 }
 
 interface EmployeeOption {
@@ -26,7 +31,7 @@ interface EmployeeOption {
   employee: Employee;
 }
 
-export default function EmployeeSelect({ value, onChange, disabled, placeholder }: EmployeeSelectProps) {
+export default function EmployeeSelect({ value, onChange, disabled, placeholder, initialLabel }: EmployeeSelectProps) {
   const [keyword, setKeyword] = useState('');
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [options, setOptions] = useState<EmployeeOption[]>([]);
@@ -72,6 +77,14 @@ export default function EmployeeSelect({ value, onChange, disabled, placeholder 
     return '검색 결과 없음';
   }, [loading, debouncedKeyword]);
 
+  // 검색 결과에 현재 value 가 없으면 초기 label 합성 옵션을 추가해 코드 대신 이름을 표시.
+  const mergedOptions = useMemo(() => {
+    if (value && initialLabel && !options.some((opt) => opt.value === value)) {
+      return [{ value, label: initialLabel } as EmployeeOption, ...options];
+    }
+    return options;
+  }, [value, initialLabel, options]);
+
   return (
     <Select
       showSearch
@@ -85,7 +98,7 @@ export default function EmployeeSelect({ value, onChange, disabled, placeholder 
         const matched = options.find((opt) => opt.value === next);
         onChange(next, matched?.employee);
       }}
-      options={options}
+      options={mergedOptions}
       notFoundContent={notFoundContent}
       style={{ width: '100%' }}
     />
