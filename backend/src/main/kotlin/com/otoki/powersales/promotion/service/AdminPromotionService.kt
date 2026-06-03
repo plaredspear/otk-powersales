@@ -113,7 +113,9 @@ class AdminPromotionService(
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = promotion.account?.name,
-            primaryProductName = promotion.primaryProduct?.name
+            accountCode = promotion.account?.externalKey,
+            primaryProductName = promotion.primaryProduct?.name,
+            primaryProductCode = promotion.primaryProduct?.productCode
         )
     }
 
@@ -259,7 +261,9 @@ class AdminPromotionService(
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account.name,
-            primaryProductName = product.name
+            accountCode = account.externalKey,
+            primaryProductName = product.name,
+            primaryProductCode = product.productCode
         )
     }
 
@@ -336,7 +340,9 @@ class AdminPromotionService(
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account?.name,
-            primaryProductName = product.name
+            accountCode = account?.externalKey,
+            primaryProductName = product.name,
+            primaryProductCode = product.productCode
         )
     }
 

@@ -47,19 +47,24 @@ export interface PromotionListData {
 export interface PromotionDetail {
   id: number;
   promotionNumber: string;
+  promotionName: string | null;
   promotionType: string | null;
   accountId: number;
   accountName: string | null;
+  accountCode: string | null;
   startDate: string;
   endDate: string;
   primaryProductId: number | null;
   primaryProductName: string | null;
+  primaryProductCode: string | null;
   otherProduct: string | null;
   message: string | null;
   standLocation: string | null;
   costCenterCode: string | null;
   productType: string | null;
   category1: string | null;
+  targetAmount: number | null;
+  actualAmount: number | null;
   isClosed: boolean;
   remark: string | null;
   isDeleted: boolean;

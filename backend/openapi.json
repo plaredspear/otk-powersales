@@ -17169,12 +17169,19 @@
       },
       "PromotionDetailResponse" : {
         "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
           "accountId" : {
             "format" : "int32",
             "type" : "integer"
           },
           "accountName" : {
             "type" : [ "string", "null" ]
+          },
+          "actualAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "category1" : {
             "type" : [ "string", "null" ]
@@ -17206,6 +17213,9 @@
           "otherProduct" : {
             "type" : [ "string", "null" ]
           },
+          "primaryProductCode" : {
+            "type" : [ "string", "null" ]
+          },
           "primaryProductId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
@@ -17214,6 +17224,9 @@
             "type" : [ "string", "null" ]
           },
           "productType" : {
+            "type" : [ "string", "null" ]
+          },
+          "promotionName" : {
             "type" : [ "string", "null" ]
           },
           "promotionNumber" : {
@@ -17231,6 +17244,10 @@
           "startDate" : {
             "format" : "date",
             "type" : "string"
+          },
+          "targetAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "updatedAt" : {
             "format" : "date-time",

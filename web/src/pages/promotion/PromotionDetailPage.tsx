@@ -49,6 +49,7 @@ import PromotionDetailSection, {
 import PromotionProductSection, {
   type ProductFormValues,
 } from './sections/PromotionProductSection';
+import PromotionTargetActualSection from './sections/PromotionTargetActualSection';
 import PromotionPosProductSection from './sections/PromotionPosProductSection';
 import PromotionScheduleSection from './components/PromotionScheduleSection';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
@@ -1190,10 +1191,10 @@ export default function PromotionDetailPage() {
         ) : null}
       </div>
 
-      {/* 2개 섹션: Collapse */}
+      {/* 세부 사항 / 행사품목 / 목표·실적 섹션: Collapse */}
       <Collapse
         className="promotion-detail-collapse"
-        defaultActiveKey={['detail', 'product']}
+        defaultActiveKey={['detail', 'product', 'targetActual']}
         items={[
           {
             key: 'detail',
@@ -1219,6 +1220,11 @@ export default function PromotionDetailPage() {
                 onFormChange={(v) => setProductForm((prev) => ({ ...prev, ...v }))}
               />
             ),
+          },
+          {
+            key: 'targetActual',
+            label: '목표/실적',
+            children: <PromotionTargetActualSection promotion={promotion} />,
           },
         ]}
       />
