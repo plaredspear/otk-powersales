@@ -27,6 +27,7 @@ const SafetyCheckPage = lazy(() => import('@/pages/SafetyCheckPage'));
 const ProductPage = lazy(() => import('@/pages/ProductPage'));
 const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'));
 const AccountPage = lazy(() => import('@/pages/AccountPage'));
+const AccountDetailPage = lazy(() => import('@/pages/AccountDetailPage'));
 const EmployeePage = lazy(() => import('@/pages/EmployeePage'));
 const EmployeeListPage = lazy(() => import('@/pages/settings/EmployeeListPage'));
 const EmployeeDetailPage = lazy(() => import('@/pages/EmployeeDetailPage'));
@@ -293,6 +294,7 @@ export const router = createBrowserRouter(
               element: <PermissionRoute entity="account" operation="READ" />,
               children: [
                 { path: '/account', element: <LazyWrapper><AccountPage /></LazyWrapper> },
+                { path: '/account/:id', element: <LazyWrapper><AccountDetailPage /></LazyWrapper> },
               ],
             },
             {

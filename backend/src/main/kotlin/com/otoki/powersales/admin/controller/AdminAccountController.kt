@@ -4,6 +4,7 @@ import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.account.dto.request.AdminAccountCreateRequest
 import com.otoki.powersales.account.dto.request.AdminAccountUpdateRequest
+import com.otoki.powersales.account.dto.response.AccountDetailResponse
 import com.otoki.powersales.account.dto.response.AccountListResponse
 import com.otoki.powersales.account.dto.response.AdminAccountCreateResponse
 import com.otoki.powersales.account.dto.response.AdminAccountUpdateResponse
@@ -177,6 +178,23 @@ class AdminAccountController(
             page = page,
             size = size
         )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 거래처 상세 조회 — 거래처 상세 페이지(`/account/:id`) 의 "기본 정보" 영역.
+     *
+     * 목록(`getAccounts`)과 동일한 `account.READ` + SF Sharing Rule 정책 적용. 가시 범위 밖 거래처는
+     * 404 (SF sharing rule 동등). lookup 경로(`/lookup*`)와 path 충돌 없음 (`{id}` 는 Int).
+     */
+    @GetMapping("/{id}")
+    @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.READ)
+    fun getAccountDetail(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @PathVariable id: Int
+    ): ResponseEntity<ApiResponse<AccountDetailResponse>> {
+        val response = adminAccountService.getAccountDetail(scope, id)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

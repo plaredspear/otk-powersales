@@ -48,6 +48,118 @@ data class AccountListItem(
 }
 
 /**
+ * 관리자 웹 거래처 상세 조회 응답 DTO.
+ *
+ * 거래처 상세 페이지(`GET /api/v1/admin/accounts/{id}`) 의 "기본 정보" 영역 — 레거시 SF Account
+ * 레코드 페이지(`Account_Record_Page`)의 표준 detailPanel + FieldSet 노출 필드 동등.
+ *
+ * [AdminAccountUpdateResponse] 와 노출 필드가 대부분 겹치나, 상세 페이지는 **읽기 전용 식별 정보**
+ * (`externalKey` / `sfid 제외` / `latitude` / `longitude`) 를 추가로 포함한다. SAP 동기 키 중
+ * 거래처코드(`externalKey`)는 화면 식별자로 노출하되, `werk*`/`sales_dept_*` 등 내부 SAP 코드는 제외.
+ */
+data class AccountDetailResponse(
+    val id: Int,
+    val externalKey: String?,
+    val name: String?,
+    val accountGroup: String?,
+    val employeeCode: String?,
+    val branchCode: String?,
+    val branchName: String?,
+    val address1: String?,
+    val address2: String?,
+    val zipCode: String?,
+    val latitude: String?,
+    val longitude: String?,
+    val phone: String?,
+    val mobilePhone: String?,
+    val fax: String?,
+    val representative: String?,
+    val email: String?,
+    val website: String?,
+    val industry: Industry?,
+    val description: String?,
+    val businessLicenseNumber: String?,
+    val businessType: String?,
+    val businessCategory: String?,
+    val abcType: String?,
+    val abcTypeCode: String?,
+    val accountType: AccountType?,
+    val accountStatusName: String?,
+    val accountStatusCode: String?,
+    val accountNumber: String?,
+    val site: String?,
+    val accountSource: AccountSource?,
+    val mapCoordinate: String?,
+    val rating: Rating?,
+    val ownership: Ownership?,
+    val freezerInstalled: Boolean?,
+    val freezerType: FreezerType?,
+    val firstInstalled: LocalDate?,
+    val orderEndTime: LocalTime?,
+    val closingTime1: String?,
+    val closingTime2: String?,
+    val closingTime3: String?,
+    val remainingCredit: BigDecimal?,
+    val totalCredit: BigDecimal?,
+    val annualRevenue: BigDecimal?,
+    val numberOfEmployees: BigDecimal?,
+    val consignmentAcc: String?,
+    val distribution: String?
+) {
+    companion object {
+        fun from(account: Account): AccountDetailResponse = AccountDetailResponse(
+            id = account.id,
+            externalKey = account.externalKey,
+            name = account.name,
+            accountGroup = account.accountGroup,
+            employeeCode = account.employeeCode,
+            branchCode = account.branchCode,
+            branchName = account.branchName,
+            address1 = account.address1,
+            address2 = account.address2,
+            zipCode = account.zipCode,
+            latitude = account.latitude,
+            longitude = account.longitude,
+            phone = account.phone,
+            mobilePhone = account.mobilePhone,
+            fax = account.fax,
+            representative = account.representative,
+            email = account.email,
+            website = account.website,
+            industry = account.industry,
+            description = account.description,
+            businessLicenseNumber = account.businessLicenseNumber,
+            businessType = account.businessType,
+            businessCategory = account.businessCategory,
+            abcType = account.abcType,
+            abcTypeCode = account.abcTypeCode,
+            accountType = account.accountType,
+            accountStatusName = account.accountStatusName,
+            accountStatusCode = account.accountStatusCode,
+            accountNumber = account.accountNumber,
+            site = account.site,
+            accountSource = account.accountSource,
+            mapCoordinate = account.mapCoordinate,
+            rating = account.rating,
+            ownership = account.ownership,
+            freezerInstalled = account.freezerInstalled,
+            freezerType = account.freezerType,
+            firstInstalled = account.firstInstalled,
+            orderEndTime = account.orderEndTime,
+            closingTime1 = account.closingTime1,
+            closingTime2 = account.closingTime2,
+            closingTime3 = account.closingTime3,
+            remainingCredit = account.remainingCredit,
+            totalCredit = account.totalCredit,
+            annualRevenue = account.annualRevenue,
+            numberOfEmployees = account.numberOfEmployees,
+            consignmentAcc = account.consignmentAcc,
+            distribution = account.distribution
+        )
+    }
+}
+
+/**
  * 관리자 웹 신규 거래처 등록 응답 DTO. (Spec #640)
  *
  * `account_group` 은 자동 set `'9999'` 고정. `branch_code` 는 Employee.cost_center_code 직접 사용으로
