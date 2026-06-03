@@ -105,9 +105,6 @@ class AdminSalesComparisonServiceTest {
             boundary = boundary,
             confirmed = true,
             isDeleted = false,
-            // 선택월(2026/5) 유효 — SF criteriaList SOQL StartDate__c <= 선택월말일 AND (EndDate__c NULL OR >= 선택월1일) 정합.
-            startDate = java.time.LocalDate.of(2026, 1, 1),
-            endDate = null,
             category = cm
         )
     }
@@ -374,7 +371,6 @@ class AdminSalesComparisonServiceTest {
                 boundary = BigDecimal(20),   // SF Percent — 20% (formula 에서 0.20 으로 평가)
                 confirmed = true,
                 isDeleted = false,
-                startDate = java.time.LocalDate.of(2026, 1, 1),
                 category = cm
             )
 
@@ -408,7 +404,6 @@ class AdminSalesComparisonServiceTest {
                 boundary = BigDecimal(40),   // SF Percent — 40% (formula 에서 0.40 으로 평가)
                 confirmed = true,
                 isDeleted = false,
-                startDate = java.time.LocalDate.of(2026, 1, 1),
                 category = categoryMaster("대형마트(3대)", "01")
             )
 
@@ -438,7 +433,6 @@ class AdminSalesComparisonServiceTest {
                 boundary = BigDecimal(20),   // SF Percent — 20%
                 confirmed = true,
                 isDeleted = false,
-                startDate = java.time.LocalDate.of(2026, 1, 1),
                 category = categoryMaster("대형마트(3대)", "01")
             )
 
