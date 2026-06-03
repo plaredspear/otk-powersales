@@ -12243,6 +12243,17 @@
         },
         "type" : "object"
       },
+      "FcmTokenRegisterRequest" : {
+        "properties" : {
+          "token" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "token" ],
+        "type" : "object"
+      },
       "FemaleEmployeePlacementCheckItem" : {
         "properties" : {
           "accountBranchCode" : {
@@ -22471,7 +22482,7 @@
         "tags" : [ "admin-employee-controller" ]
       },
       "post" : {
-        "operationId" : "register_2",
+        "operationId" : "register_3",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -30498,7 +30509,7 @@
     },
     "/api/v1/mobile/attendance" : {
       "post" : {
-        "operationId" : "register_1",
+        "operationId" : "register_2",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -31079,6 +31090,50 @@
           }
         },
         "tags" : [ "education-controller" ]
+      }
+    },
+    "/api/v1/mobile/fcm-token" : {
+      "delete" : {
+        "operationId" : "unregister",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "fcm-token-controller" ]
+      },
+      "post" : {
+        "operationId" : "register_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FcmTokenRegisterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "fcm-token-controller" ]
       }
     },
     "/api/v1/mobile/holidays" : {
