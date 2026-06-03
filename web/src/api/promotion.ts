@@ -29,6 +29,7 @@ export interface PromotionListItem {
   costCenterCode: string | null;
   targetAmount: number | null;
   actualAmount: number | null;
+  createdById: number | null;
   createdByName: string | null;
   remark: string | null;
   isDeleted: boolean;
