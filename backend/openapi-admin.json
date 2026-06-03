@@ -10903,6 +10903,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
           "newValue" : {
             "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
             "type" : [ "string", "null" ]
@@ -10912,9 +10915,6 @@
             "type" : [ "string", "null" ]
           },
           "orgName" : {
-            "type" : [ "string", "null" ]
-          },
-          "status" : {
             "type" : [ "string", "null" ]
           }
         },
