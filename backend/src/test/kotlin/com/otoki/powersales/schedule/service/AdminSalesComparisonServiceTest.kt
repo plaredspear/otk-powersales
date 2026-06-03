@@ -109,16 +109,16 @@ class AdminSalesComparisonServiceTest {
         )
     }
 
-    /** AccountCategoryMaster — SF categoryMap (name → accountCode) 시드. 기본: 할인점→01(대형마트), 체인→02. */
+    /** AccountCategoryMaster — SF categoryMap (name → accountCode) 시드. 기본: 대형마트(3대)→01, 체인→02. */
     private fun categoryMaster(name: String, code: String) =
         com.otoki.powersales.account.entity.AccountCategoryMaster(accountCode = code, name = name)
 
     @BeforeEach
     fun setup() {
         every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns emptyList()
-        // SF categoryMap 시드 — Account.Type(한국어) → accountCode. 할인점=01(대형마트), 체인=02.
+        // SF categoryMap 시드 — Account.Type(운영 실제 저장값) → accountCode. 대형마트(3대)=01, 체인=02.
         every { accountCategoryMasterRepository.findAll() } returns listOf(
-            categoryMaster("할인점", "01"),
+            categoryMaster("대형마트(3대)", "01"),
             categoryMaster("체인", "02"),
         )
     }
@@ -362,8 +362,8 @@ class AdminSalesComparisonServiceTest {
                 avgClosingAmount = 1_500_000L
             )
             val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
-            // SF 판정 마스터 매칭은 Account.Type("할인점") → categoryMap → "01" → criteria.accountCategorizedCode 와 일치.
-            val cm = categoryMaster("할인점", "01")
+            // SF 판정 마스터 매칭은 Account.Type("대형마트(3대)") → categoryMap → "01" → criteria.accountCategorizedCode 와 일치.
+            val cm = categoryMaster("대형마트(3대)", "01")
             val crit = EmployeeInputCriteriaMaster(
                 typeOfWork1 = TypeOfWork1.DISPLAY,
                 fixed1PersonStandardAmount = BigDecimal(1_000_000),
@@ -404,7 +404,7 @@ class AdminSalesComparisonServiceTest {
                 boundary = BigDecimal(40),   // SF Percent — 40% (formula 에서 0.40 으로 평가)
                 confirmed = true,
                 isDeleted = false,
-                category = categoryMaster("할인점", "01")
+                category = categoryMaster("대형마트(3대)", "01")
             )
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fixedEmp, altEmp))
@@ -433,7 +433,7 @@ class AdminSalesComparisonServiceTest {
                 boundary = BigDecimal(20),   // SF Percent — 20%
                 confirmed = true,
                 isDeleted = false,
-                category = categoryMaster("할인점", "01")
+                category = categoryMaster("대형마트(3대)", "01")
             )
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fitEmp, eventOnly))

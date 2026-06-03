@@ -74,7 +74,7 @@ class AdminFemaleEmployeeSafetyCheckReportServiceTest {
             assertThat(item.employeeCode).isEqualTo("20230016")
             assertThat(item.ladyName).isEqualTo("홍길동")
             assertThat(item.employeeOrgName).isEqualTo("영업1팀")
-            assertThat(item.accountType).isEqualTo("할인점")
+            assertThat(item.accountType).isEqualTo("대형마트(3대)")
             assertThat(item.accountBranchCode).isEqualTo("B0123")
             assertThat(item.workingCategory1).isEqualTo("진열")
             assertThat(item.equipment1).isEqualTo("Y")

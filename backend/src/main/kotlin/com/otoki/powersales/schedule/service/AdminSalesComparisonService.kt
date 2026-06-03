@@ -418,8 +418,9 @@ class AdminSalesComparisonService(
         val criteriaList = employeeInputCriteriaMasterRepository
             .findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(TypeOfWork1.DISPLAY, true)
 
-        // 거래처유형 코드 맵 — SF `categoryMap` (cls:101) 동등. AccountCategoryMaster.name → accountCode (예: "할인점" → "01").
+        // 거래처유형 코드 맵 — SF `categoryMap` (cls:101) 동등. AccountCategoryMaster.name → accountCode (예: "대형마트(3대)" → "01").
         // SF categoryMap 은 useSearch 필터 없이 전체 거래처유형을 담는다 (검색 제외 유형도 거래처 분류엔 필요).
+        // Account.Type / ABCType 의 raw 저장값(= 거래처유형마스터 Name) 으로 직접 조회 — SF `categoryMap.get(Account__r.Type)` 정합.
         val categoryCodeByName = accountCategoryMasterRepository.findAll()
             .filter { it.isDeleted != true }
             .associate { it.name to it.accountCode }
