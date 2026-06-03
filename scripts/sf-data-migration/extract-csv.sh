@@ -54,7 +54,7 @@ set -euo pipefail
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,SiteActivity,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,SalesProgressRateMaster,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,SiteActivity,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,DailySalesHistory,SalesProgressRateMaster,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
 SKIP_GROUP_MEMBERS=0
 SKIP_VERIFY=0
 # spec #790 Q4 채택 — XML 메타 (extract-sharing-meta.sh) 자동 포함, --skip-sharing-meta 로 제외 가능
@@ -632,6 +632,18 @@ WHERE IsDeleted = FALSE
 EOF
 )
 
+DAILY_SALES_HISTORY_SOQL=$(cat <<'EOF'
+SELECT
+    Id, SAPAccountCode__c, SalesDate__c, Externalkey__c, AccountId__c,
+    ERPSalesAmount1__c, ERPSalesAmount2__c, ERPSalesAmount3__c,
+    ERPDistributionAmount1__c, ERPDistributionAmount2__c, ERPDistributionAmount3__c,
+    ERPSalesAmount__c, ERPDistributionAmount__c, LedgerAmount__c,
+    CreatedDate, LastModifiedDate
+FROM DailySalesHistory__c
+WHERE IsDeleted = FALSE
+EOF
+)
+
 SALES_PROGRESS_RATE_MASTER_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, AccountCDUpl__c, BusinessRate__c, CurrentMonthSalesAmount__c,
@@ -1187,6 +1199,10 @@ fi
 
 if contains_target "MonthlySalesHistory"; then
     run_query "MonthlySalesHistory (MonthlySalesHistory__c)" "$MONTHLY_SALES_HISTORY_SOQL" "$OUT_DIR/monthly_sales_historys.csv"
+fi
+
+if contains_target "DailySalesHistory"; then
+    run_query "DailySalesHistory (DailySalesHistory__c)" "$DAILY_SALES_HISTORY_SOQL" "$OUT_DIR/daily_sales_historys.csv"
 fi
 
 if contains_target "SalesProgressRateMaster"; then
