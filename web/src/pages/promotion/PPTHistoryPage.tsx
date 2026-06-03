@@ -3,7 +3,8 @@ import { Button, Card, DatePicker, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { usePPTHistories } from '@/hooks/promotion/usePPTHistories';
-import type { PPTHistory, PPTHistorySearchParams } from '@/api/pptMaster';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import type { PPTHistory } from '@/api/pptMaster';
 import {
   PPT_TEAM_TYPE_OPTIONS_WITH_GENERAL,
   getPPTTeamTypeColor,
@@ -16,10 +17,7 @@ const TEAM_TYPE_FILTER_OPTIONS = [
   ...PPT_TEAM_TYPE_OPTIONS_WITH_GENERAL,
 ];
 
-const DEFAULT_PARAMS: PPTHistorySearchParams = {
-  page: 0,
-  size: 20,
-};
+const DEFAULT_SIZE = 20;
 
 function statusColor(status: string | null | undefined): string {
   if (status == null) return 'default';
@@ -29,26 +27,53 @@ function statusColor(status: string | null | undefined): string {
 }
 
 export default function PPTHistoryPage() {
-  const [searchParams, setSearchParams] = useState<PPTHistorySearchParams>(DEFAULT_PARAMS);
-  const [filterEmployeeName, setFilterEmployeeName] = useState('');
-  const [filterEmployeeCode, setFilterEmployeeCode] = useState('');
-  const [filterTeamType, setFilterTeamType] = useState('');
-  const [filterChangedRange, setFilterChangedRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  // page/필터를 URL query string 에 보관 — 새로고침/뒤로가기/공유 시 직전 조건 복원.
+  const { page, setPage, filters, setFilters } = useListQueryParams({
+    defaultFilters: {
+      employeeName: '',
+      employeeCode: '',
+      teamType: '',
+      changedAtFrom: '',
+      changedAtTo: '',
+      size: String(DEFAULT_SIZE),
+    },
+  });
+  const size = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
+
+  // 입력 위젯은 편집 버퍼 — URL 이 source of truth. 마운트 시 URL 값으로 초기화.
+  const [filterEmployeeName, setFilterEmployeeName] = useState(filters.employeeName);
+  const [filterEmployeeCode, setFilterEmployeeCode] = useState(filters.employeeCode);
+  const [filterTeamType, setFilterTeamType] = useState(filters.teamType);
+  const [filterChangedRange, setFilterChangedRange] = useState<[Dayjs | null, Dayjs | null] | null>(
+    () =>
+      filters.changedAtFrom || filters.changedAtTo
+        ? [
+            filters.changedAtFrom ? dayjs(filters.changedAtFrom) : null,
+            filters.changedAtTo ? dayjs(filters.changedAtTo) : null,
+          ]
+        : null,
+  );
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState<PPTHistory | null>(null);
 
-  const { data, isLoading } = usePPTHistories(searchParams);
+  const { data, isLoading } = usePPTHistories({
+    page,
+    size,
+    employeeName: filters.employeeName || undefined,
+    employeeCode: filters.employeeCode || undefined,
+    teamType: filters.teamType || undefined,
+    changedAtFrom: filters.changedAtFrom || undefined,
+    changedAtTo: filters.changedAtTo || undefined,
+  });
 
   const handleSearch = () => {
-    setSearchParams({
-      ...searchParams,
-      page: 0,
-      employeeName: filterEmployeeName || undefined,
-      employeeCode: filterEmployeeCode || undefined,
-      teamType: filterTeamType || undefined,
-      changedAtFrom: filterChangedRange?.[0]?.format('YYYY-MM-DD') || undefined,
-      changedAtTo: filterChangedRange?.[1]?.format('YYYY-MM-DD') || undefined,
+    setFilters({
+      employeeName: filterEmployeeName,
+      employeeCode: filterEmployeeCode,
+      teamType: filterTeamType,
+      changedAtFrom: filterChangedRange?.[0]?.format('YYYY-MM-DD') ?? '',
+      changedAtTo: filterChangedRange?.[1]?.format('YYYY-MM-DD') ?? '',
     });
   };
 
@@ -57,7 +82,14 @@ export default function PPTHistoryPage() {
     setFilterEmployeeCode('');
     setFilterTeamType('');
     setFilterChangedRange(null);
-    setSearchParams(DEFAULT_PARAMS);
+    setFilters({
+      employeeName: '',
+      employeeCode: '',
+      teamType: '',
+      changedAtFrom: '',
+      changedAtTo: '',
+      size: String(DEFAULT_SIZE),
+    });
   };
 
   const handleRowClick = (record: PPTHistory) => {
@@ -162,13 +194,18 @@ export default function PPTHistoryPage() {
         dataSource={data?.content}
         loading={isLoading}
         pagination={{
-          current: (data?.number ?? 0) + 1,
-          pageSize: data?.size ?? 20,
+          current: page + 1,
+          pageSize: size,
           total: data?.totalElements ?? 0,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50'],
-          onChange: (page, pageSize) =>
-            setSearchParams((prev) => ({ ...prev, page: page - 1, size: pageSize })),
+          onChange: (nextPage, pageSize) => {
+            if (pageSize !== size) {
+              setFilters({ size: String(pageSize) });
+            } else {
+              setPage(nextPage - 1);
+            }
+          },
         }}
         onRow={(record) => ({
           onClick: () => handleRowClick(record),

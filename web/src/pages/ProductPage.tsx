@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Alert, Button, Input, Select, Space, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useProducts, useProductCategories } from '@/hooks/product/useProducts';
 import { downloadProductsExcel, type Product } from '@/api/product';
 import { useProductInventorySearchStore } from '@/stores/productInventorySearchStore';
@@ -40,12 +41,15 @@ function shelfLifeUnitLabel(unit: string | null): string {
 
 export default function ProductPage() {
   const navigate = useNavigate();
-  const [keyword, setKeyword] = useState<string | undefined>();
-  const [category1, setCategory1] = useState<string | undefined>();
-  const [category2, setCategory2] = useState<string | undefined>();
-  const [category3, setCategory3] = useState<string | undefined>();
-  const [productStatus, setProductStatus] = useState<string | undefined>();
-  const [page, setPage] = useState(0);
+  const location = useLocation();
+  // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
+  const goToDetail = (code: string) =>
+    navigate(`/product/${encodeURIComponent(code)}`, { state: { listSearch: location.search } });
+  // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
+  const { page, setPage, filters, setFilter, setFilters } = useListQueryParams({
+    defaultFilters: { keyword: '', category1: '', category2: '', category3: '', productStatus: '' },
+  });
+  const { keyword, category1, category2, category3, productStatus } = filters;
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
@@ -53,11 +57,11 @@ export default function ProductPage() {
   const setInventoryTargets = useProductInventorySearchStore((s) => s.setTargets);
 
   const { data, isLoading, isError, error, refetch } = useProducts({
-    keyword,
-    category1,
-    category2,
-    category3,
-    productStatus,
+    keyword: keyword || undefined,
+    category1: category1 || undefined,
+    category2: category2 || undefined,
+    category3: category3 || undefined,
+    productStatus: productStatus || undefined,
     page,
     size: PAGE_SIZE,
   });
@@ -85,16 +89,11 @@ export default function ProductPage() {
   }, [categories, category1, category2]);
 
   const handleCategory1Change = (val: string) => {
-    setCategory1(val || undefined);
-    setCategory2(undefined);
-    setCategory3(undefined);
-    setPage(0);
+    setFilters({ category1: val, category2: '', category3: '' });
   };
 
   const handleCategory2Change = (val: string) => {
-    setCategory2(val || undefined);
-    setCategory3(undefined);
-    setPage(0);
+    setFilters({ category2: val, category3: '' });
   };
 
   const selectedProducts = useMemo(() => {
@@ -163,7 +162,7 @@ export default function ProductPage() {
           <a
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/product/${encodeURIComponent(val)}`);
+              goToDetail(val);
             }}
           >
             {val}
@@ -183,7 +182,7 @@ export default function ProductPage() {
             onClick={(e) => {
               e.stopPropagation();
               if (record.productCode) {
-                navigate(`/product/${encodeURIComponent(record.productCode)}`);
+                goToDetail(record.productCode);
               }
             }}
           >
@@ -274,35 +273,36 @@ export default function ProductPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select
           style={{ width: 140 }}
-          value={category1 ?? ''}
+          value={category1}
           options={[{ value: '', label: '카테고리1 전체' }, ...category1Options]}
           onChange={handleCategory1Change}
         />
         <Select
           style={{ width: 140 }}
-          value={category2 ?? ''}
+          value={category2}
           options={[{ value: '', label: '카테고리2 전체' }, ...category2Options]}
           disabled={!category1}
           onChange={handleCategory2Change}
         />
         <Select
           style={{ width: 140 }}
-          value={category3 ?? ''}
+          value={category3}
           options={[{ value: '', label: '카테고리3 전체' }, ...category3Options]}
           disabled={!category2}
-          onChange={(val) => { setCategory3(val || undefined); setPage(0); }}
+          onChange={(val) => setFilter('category3', val)}
         />
         <Select
           style={{ width: 140 }}
-          value={productStatus ?? ''}
+          value={productStatus}
           options={STATUS_OPTIONS}
-          onChange={(val) => { setProductStatus(val || undefined); setPage(0); }}
+          onChange={(val) => setFilter('productStatus', val)}
         />
         <Input.Search
           placeholder="제품코드/제품명/바코드 검색"
           allowClear
+          defaultValue={keyword}
           style={{ width: 280 }}
-          onSearch={(val) => { setKeyword(val || undefined); setPage(0); }}
+          onSearch={(val) => setFilter('keyword', val)}
         />
       </div>
 
@@ -341,7 +341,7 @@ export default function ProductPage() {
           preserveSelectedRowKeys: true,
         }}
         pagination={{
-          current: (data?.page ?? 0) + 1,
+          current: page + 1,
           total: data?.totalElements ?? 0,
           pageSize: PAGE_SIZE,
           showSizeChanger: false,

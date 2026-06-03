@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useEmployees } from '@/hooks/employee/useEmployees';
 import type { Employee } from '@/api/employee';
 import { APP_AUTHORITY_OPTIONS, type AppAuthority } from '@/constants/userRole';
@@ -39,11 +40,15 @@ const INACTIVE_NOTICE = '앱 로그인이 비활성화된 사원입니다. 사�
 
 export default function EmployeeListPage() {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<string | undefined>();
-  const [costCenterCode, setCostCenterCode] = useState<string | undefined>();
-  const [keyword, setKeyword] = useState<string | undefined>();
-  const [role, setRole] = useState<AppAuthority | undefined>();
-  const [page, setPage] = useState(0);
+  const location = useLocation();
+  // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
+  const goToDetail = (id: number) =>
+    navigate(`/employee/${id}`, { state: { listSearch: location.search } });
+  // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
+  const { page, setPage, filters, setFilter } = useListQueryParams({
+    defaultFilters: { status: '', costCenterCode: '', keyword: '', role: '' },
+  });
+  const { status, costCenterCode, keyword, role } = filters;
   const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -52,10 +57,10 @@ export default function EmployeeListPage() {
   const canWrite = hasEntityPermission('employee', 'EDIT');
 
   const { data, isLoading, isError, error, refetch } = useEmployees({
-    status,
-    costCenterCode,
-    keyword,
-    role,
+    status: status || undefined,
+    costCenterCode: costCenterCode || undefined,
+    keyword: keyword || undefined,
+    role: (role || undefined) as AppAuthority | undefined,
     page,
     size: PAGE_SIZE,
   });
@@ -69,7 +74,7 @@ export default function EmployeeListPage() {
         <a
           onClick={(e) => {
             e.preventDefault();
-            navigate(`/employee/${record.id}`);
+            goToDetail(record.id);
           }}
           href={`/employee/${record.id}`}
         >
@@ -85,7 +90,7 @@ export default function EmployeeListPage() {
         <a
           onClick={(e) => {
             e.preventDefault();
-            navigate(`/employee/${record.id}`);
+            goToDetail(record.id);
           }}
           href={`/employee/${record.id}`}
         >
@@ -187,26 +192,27 @@ export default function EmployeeListPage() {
           style={{ width: 140 }}
           value={status ?? ''}
           options={STATUS_OPTIONS}
-          onChange={(val) => { setStatus(val || undefined); setPage(0); }}
+          onChange={(val) => setFilter('status', val || '')}
         />
         <Input
           placeholder="지점코드"
           allowClear
           style={{ width: 140 }}
           value={costCenterCode ?? ''}
-          onChange={(e) => { setCostCenterCode(e.target.value || undefined); setPage(0); }}
+          onChange={(e) => setFilter('costCenterCode', e.target.value)}
         />
         <Select
           style={{ width: 140 }}
           value={role ?? ''}
           options={ROLE_FILTER_OPTIONS}
-          onChange={(val) => { setRole((val || undefined) as AppAuthority | undefined); setPage(0); }}
+          onChange={(val) => setFilter('role', val || '')}
         />
         <Input.Search
           placeholder="사번 또는 이름 검색"
           allowClear
+          defaultValue={keyword ?? ''}
           style={{ width: 240 }}
-          onSearch={(val) => { setKeyword(val || undefined); setPage(0); }}
+          onSearch={(val) => setFilter('keyword', val || '')}
         />
         <div style={{ marginLeft: 'auto' }}>
           {canWrite && (

@@ -24,6 +24,7 @@ import {
 } from '@/hooks/inspections/useThemes';
 import { useUsers } from '@/hooks/user/useUsers';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { usePermission } from '@/hooks/usePermission';
 import ResizableTable from '@/components/common/ResizableTable';
 
@@ -42,17 +43,28 @@ export default function ThemeManagementPage() {
   const canEdit = hasEntityPermission('inspection_theme', 'EDIT');
   const canDelete = hasEntityPermission('inspection_theme', 'DELETE');
 
-  const [keyword, setKeyword] = useState('');
-  const [department, setDepartment] = useState('');
-  const [branchCode, setBranchCode] = useState('');
-  const [page, setPage] = useState(0);
-  const [searchParams, setSearchParams] = useState<ThemeListParams>({ page: 0, size: PAGE_SIZE });
+  const { page, setPage, filters, setFilters } = useListQueryParams({
+    defaultFilters: { keyword: '', department: '', branchCode: '' },
+  });
+
+  // 입력 위젯의 로컬 편집 버퍼 (URL 이 source of truth, 검색 클릭 시 URL 로 반영).
+  const [keyword, setKeyword] = useState(filters.keyword);
+  const [department, setDepartment] = useState(filters.department);
+  const [branchCode, setBranchCode] = useState(filters.branchCode);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [ownerKeyword, setOwnerKeyword] = useState('');
   const [ownerOptionPatch, setOwnerOptionPatch] = useState<{ value: number; label: string }[]>([]);
   const [form] = Form.useForm<ThemeFormValues>();
+
+  const searchParams: ThemeListParams = {
+    keyword: filters.keyword || undefined,
+    department: filters.department || undefined,
+    branchCode: filters.branchCode || undefined,
+    page,
+    size: PAGE_SIZE,
+  };
 
   const { data, isLoading } = useThemes(searchParams);
   const { data: detail, isLoading: detailLoading } = useThemeDetail(detailId);
@@ -82,28 +94,18 @@ export default function ThemeManagementPage() {
   const openDetail = useThrottleClick((id: number) => setDetailId(id));
 
   const handleSearch = () => {
-    setPage(0);
-    setSearchParams({
-      keyword: keyword || undefined,
-      department: department || undefined,
-      branchCode: branchCode || undefined,
-      page: 0,
-      size: PAGE_SIZE,
-    });
+    setFilters({ keyword, department, branchCode });
   };
 
   const handleReset = () => {
     setKeyword('');
     setDepartment('');
     setBranchCode('');
-    setPage(0);
-    setSearchParams({ page: 0, size: PAGE_SIZE });
+    setFilters({ keyword: '', department: '', branchCode: '' });
   };
 
   const handlePageChange = (newPage: number) => {
-    const zeroIndexed = newPage - 1;
-    setPage(zeroIndexed);
-    setSearchParams((prev) => ({ ...prev, page: zeroIndexed }));
+    setPage(newPage - 1);
   };
 
   const openCreate = () => {

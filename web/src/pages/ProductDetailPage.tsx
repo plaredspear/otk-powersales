@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Button, Card, Col, Descriptions, Image, Row, Skeleton, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { ProductBarcodeItem } from '@/api/product';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useProductDetail } from '@/hooks/product/useProducts';
 import { useProductInventorySearchStore } from '@/stores/productInventorySearchStore';
 import InventorySearchModal from '@/components/product/InventorySearchModal';
@@ -29,6 +29,10 @@ const BARCODE_COLUMNS: ColumnsType<ProductBarcodeItem> = [
 export default function ProductDetailPage() {
   const { productCode } = useParams<{ productCode: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  // 목록에서 넘어온 경우 직전 목록의 query string(page/필터)을 붙여 복귀 — "목록으로" 시 조건 초기화 방지.
+  const listSearch = (location.state as { listSearch?: string } | null)?.listSearch ?? '';
+  const listPath = `/product${listSearch}`;
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const setInventoryTargets = useProductInventorySearchStore((s) => s.setTargets);
 
@@ -66,7 +70,7 @@ export default function ProductDetailPage() {
           action={
             <Space>
               <Button onClick={() => refetch()}>재시도</Button>
-              <Button onClick={() => navigate(-1)}>뒤로</Button>
+              <Button onClick={() => navigate(listPath)}>목록으로</Button>
             </Space>
           }
         />
@@ -81,7 +85,7 @@ export default function ProductDetailPage() {
   return (
     <div style={{ padding: 16 }}>
       <Space style={{ marginBottom: 16 }}>
-        <Button onClick={() => navigate(-1)}>← 목록으로</Button>
+        <Button onClick={() => navigate(listPath)}>← 목록으로</Button>
         <Button type="primary" onClick={handleOpenInventory}>
           재고조회
         </Button>

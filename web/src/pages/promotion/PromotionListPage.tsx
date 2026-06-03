@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, DatePicker, Input, Select, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
@@ -7,6 +6,7 @@ import { usePromotions } from '@/hooks/promotion/usePromotions';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
 import { usePermission } from '@/hooks/usePermission';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import type { PromotionListItem } from '@/api/promotion';
 import dayjs from 'dayjs';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -24,22 +24,26 @@ function formatDate(value: string): string {
 
 export default function PromotionListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { hasEntityPermission } = usePermission();
   const canWrite = hasEntityPermission('promotion', 'EDIT');
-  const [promotionType, setPromotionType] = useState<string | undefined>();
-  const [startDate, setStartDate] = useState<string | undefined>();
-  const [endDate, setEndDate] = useState<string | undefined>();
-  const [keyword, setKeyword] = useState('');
-  const [page, setPage] = useState(0);
+  // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
+  const { page, setPage, filters, setFilter } = useListQueryParams({
+    defaultFilters: { promotionType: '', startDate: '', endDate: '', keyword: '' },
+  });
+  const { promotionType, startDate, endDate, keyword } = filters;
 
   const { data: formMeta } = usePromotionFormMeta();
-  const handleRowClick = useThrottleClick((id: number) => navigate(`/promotions/${id}`));
+  // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
+  const handleRowClick = useThrottleClick((id: number) =>
+    navigate(`/promotions/${id}`, { state: { listSearch: location.search } }),
+  );
   const handleCreate = useThrottleClick(() => navigate('/promotions/new'));
   const { data, isLoading } = usePromotions({
     keyword: keyword || undefined,
-    promotionType,
-    startDate,
-    endDate,
+    promotionType: promotionType || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
     page,
     size: 20,
   });
@@ -148,33 +152,24 @@ export default function PromotionListPage() {
           style={{ width: 130 }}
           value={promotionType ?? ''}
           options={promotionTypeOptions}
-          onChange={(val) => {
-            setPromotionType(val || undefined);
-            setPage(0);
-          }}
+          onChange={(val) => setFilter('promotionType', val || '')}
         />
         <DatePicker
           placeholder="시작일"
-          onChange={(date) => {
-            setStartDate(date ? date.format('YYYY-MM-DD') : undefined);
-            setPage(0);
-          }}
+          value={startDate ? dayjs(startDate) : null}
+          onChange={(date) => setFilter('startDate', date ? date.format('YYYY-MM-DD') : '')}
         />
         <DatePicker
           placeholder="종료일"
-          onChange={(date) => {
-            setEndDate(date ? date.format('YYYY-MM-DD') : undefined);
-            setPage(0);
-          }}
+          value={endDate ? dayjs(endDate) : null}
+          onChange={(date) => setFilter('endDate', date ? date.format('YYYY-MM-DD') : '')}
         />
         <Input.Search
           placeholder="행사명/행사번호 검색"
           allowClear
+          defaultValue={keyword ?? ''}
           style={{ width: 250 }}
-          onSearch={(val) => {
-            setKeyword(val);
-            setPage(0);
-          }}
+          onSearch={(val) => setFilter('keyword', val)}
         />
       </div>
 
