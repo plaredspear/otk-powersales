@@ -87,7 +87,23 @@ interface TeamMemberScheduleRepositoryCustom {
 
     fun findWorkSchedulesByEmployeeAndAccountAndMonth(employeeId: Long, accountId: Int, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
-    fun countWorkSchedulesByEmployeeAndDateAndWorkingType(employeeId: Long, workingDate: LocalDate): Int
+    /**
+     * 사원의 특정 일자 근무(WORK) TMS row 개수.
+     * 환산근무일수 산정 시 그날 1/N 분할의 N — SF 레거시 insert 경로(`TeamMemberScheduleTriggerHandler.getEquivalentNumberOfWorkingDays`)
+     * 와 동일하게 거래처 distinct 가 아니라 TMS row 개수를 센다.
+     */
+    fun countWorkScheduleRowsByEmployeeAndDate(employeeId: Long, workingDate: LocalDate): Int
+
+    /**
+     * 사원이 해당 지점(costCenterCode) 소속으로 그 달 근무(WORK)한 서로 다른 날짜 수.
+     * 환산인원 산정 시 분모(SF 레거시 `WorkingDaysMonth__c`) — 거래처 무관, 사원+지점코드+년월 단위 distinct workingDate.
+     */
+    fun countDistinctWorkingDatesByEmployeeAndCostCenterAndMonth(
+        employeeId: Long,
+        costCenterCode: String,
+        from: LocalDate,
+        to: LocalDate
+    ): Int
 
     /**
      * 일반 출근(REGULAR) SAP daily batch 용 페이지 조회.
