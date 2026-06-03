@@ -12241,6 +12241,13 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "createdById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "createdByName" : {
+            "type" : [ "string", "null" ]
+          },
           "deleted" : {
             "type" : "boolean"
           },
@@ -14136,7 +14143,14 @@
           "accountCode" : {
             "type" : [ "string", "null" ]
           },
+          "accountId" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
           "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
             "type" : [ "string", "null" ]
           },
           "confirmed" : {
@@ -14147,6 +14161,10 @@
           },
           "employeeCode" : {
             "type" : "string"
+          },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "employeeName" : {
             "type" : "string"
