@@ -1,26 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, DatePicker, Input, Select, Space, Tag } from 'antd';
+import { Button, DatePicker, Empty, Input, Pagination, Segmented, Select, Space, Spin, Tag } from 'antd';
+import { AppstoreOutlined, TableOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useClaims } from '@/hooks/claims/useClaims';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { ClaimListItem } from '@/api/claims';
 import ResizableTable from '@/components/common/ResizableTable';
+import ClaimCard from './components/ClaimCard';
+import { STATUS_TAG } from './claimDisplay';
 
 const { RangePicker } = DatePicker;
-
-const STATUS_TAG: Record<string, { color: string; label: string }> = {
-  DRAFT: { color: 'default', label: '임시저장' },
-  SF_PENDING: { color: 'processing', label: '전송대기' },
-  SENT: { color: 'green', label: '전송완료' },
-  SEND_FAILED: { color: 'red', label: '전송실패' },
-  // 레거시/구버전 표시값 호환
-  SUBMITTED: { color: 'blue', label: '접수' },
-  IN_PROGRESS: { color: 'orange', label: '처리중' },
-  RESOLVED: { color: 'green', label: '처리완료' },
-  REJECTED: { color: 'red', label: '반려' },
-};
 
 const STATUS_OPTIONS = [
   { value: '', label: '전체' },
@@ -42,6 +33,7 @@ export default function ClaimListPage() {
   const [employeeName, setEmployeeName] = useState('');
   const [storeName, setStoreName] = useState('');
   const [page, setPage] = useState(0);
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
   // 검색 시 적용되는 파라미터 (검색 버튼 클릭 시 갱신)
   const [searchParams, setSearchParams] = useState({
@@ -141,7 +133,15 @@ export default function ClaimListPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+        <Segmented
+          value={viewMode}
+          onChange={(v) => setViewMode(v as 'table' | 'card')}
+          options={[
+            { label: '테이블', value: 'table', icon: <TableOutlined /> },
+            { label: '카드', value: 'card', icon: <AppstoreOutlined /> },
+          ]}
+        />
         <Button type="primary" onClick={() => navigate('/claims/new')}>
           신규 등록
         </Button>
@@ -191,24 +191,54 @@ export default function ClaimListPage() {
         </Space>
       </div>
 
-      <ResizableTable
-        rowKey="claimId"
-        columns={columns}
-        dataSource={data?.content}
-        loading={isLoading}
-        pagination={{
-          current: page + 1,
-          total: data?.totalElements ?? 0,
-          pageSize: PAGE_SIZE,
-          showSizeChanger: false,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: handlePageChange,
-        }}
-        onRow={(record) => ({
-          onClick: () => handleRowClick(record.claimId),
-          style: { cursor: 'pointer' },
-        })}
-      />
+      {viewMode === 'table' ? (
+        <ResizableTable
+          rowKey="claimId"
+          columns={columns}
+          dataSource={data?.content}
+          loading={isLoading}
+          pagination={{
+            current: page + 1,
+            total: data?.totalElements ?? 0,
+            pageSize: PAGE_SIZE,
+            showSizeChanger: false,
+            showTotal: (total) => `총 ${total}건`,
+            onChange: handlePageChange,
+          }}
+          onRow={(record) => ({
+            onClick: () => handleRowClick(record.claimId),
+            style: { cursor: 'pointer' },
+          })}
+        />
+      ) : (
+        <Spin spinning={isLoading}>
+          {data && data.content.length > 0 ? (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                gap: 16,
+              }}
+            >
+              {data.content.map((claim) => (
+                <ClaimCard key={claim.claimId} claim={claim} onClick={handleRowClick} />
+              ))}
+            </div>
+          ) : (
+            !isLoading && <Empty description="조회된 클레임이 없습니다" />
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+            <Pagination
+              current={page + 1}
+              total={data?.totalElements ?? 0}
+              pageSize={PAGE_SIZE}
+              showSizeChanger={false}
+              showTotal={(total) => `총 ${total}건`}
+              onChange={handlePageChange}
+            />
+          </div>
+        </Spin>
+      )}
     </div>
   );
 }

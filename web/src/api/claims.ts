@@ -26,6 +26,8 @@ export interface ClaimListItem {
   defectQuantity: number | null;
   status: string;
   createdAt: string;
+  /** 카드 뷰 배경용 대표 이미지 URL (불량 사진 우선, 없으면 첫 사진). 사진 없으면 null. */
+  representativeImageUrl: string | null;
 }
 
 export interface ClaimListData {

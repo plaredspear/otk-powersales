@@ -15,6 +15,7 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.product.entity.Product
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -49,6 +50,9 @@ class AdminClaimServiceTest {
             val claim = createClaim()
             val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
             every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdInAndIsDeletedFalse(any(), any())
+            } returns emptyList()
 
             val result = adminClaimService.getClaims(null, null, null, null, null, 0, 20)
 
@@ -69,6 +73,9 @@ class AdminClaimServiceTest {
             val claim = createClaim(status = ClaimStatus.SENT)
             val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
             every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdInAndIsDeletedFalse(any(), any())
+            } returns emptyList()
 
             val result = adminClaimService.getClaims(
                 LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
@@ -88,6 +95,119 @@ class AdminClaimServiceTest {
             val result = adminClaimService.getClaims(null, null, "INVALID", null, null, 0, 20)
 
             assertThat(result.content).isEmpty()
+        }
+
+        @Test
+        @DisplayName("대표 이미지 - 불량(CLAIM_DEFECT) 사진 우선 (생성시각이 늦어도 우선)")
+        fun getClaims_representativeImage_defectFirst() {
+            val claim = createClaim(id = 1L)
+            val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
+            every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdInAndIsDeletedFalse(any(), any())
+            } returns listOf(
+                // 영수증(먼저 생성) + 불량(나중 생성) -> 시각이 늦어도 불량이 대표
+                createUploadFile(
+                    id = 11L, uniqueKey = "receipt_001.jpg", uploadKbn = "receipt",
+                    createdAt = java.time.LocalDateTime.of(2026, 4, 1, 8, 0, 0)
+                ),
+                createUploadFile(
+                    id = 12L, uniqueKey = "claim_001.jpg", uploadKbn = "claim",
+                    createdAt = java.time.LocalDateTime.of(2026, 4, 1, 9, 0, 0)
+                )
+            )
+
+            val result = adminClaimService.getClaims(null, null, null, null, null, 0, 20)
+
+            assertThat(result.content[0].representativeImageUrl)
+                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/claim_001.jpg")
+        }
+
+        @Test
+        @DisplayName("대표 이미지 - 불량 사진 없으면 첫 사진(createdAt 최소) fallback")
+        fun getClaims_representativeImage_firstPhotoFallback() {
+            val claim = createClaim(id = 1L)
+            val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
+            every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdInAndIsDeletedFalse(any(), any())
+            } returns listOf(
+                createUploadFile(
+                    id = 11L, uniqueKey = "receipt_001.jpg", uploadKbn = "receipt",
+                    createdAt = java.time.LocalDateTime.of(2026, 4, 1, 9, 0, 0)
+                ),
+                createUploadFile(
+                    id = 12L, uniqueKey = "part_001.jpg", uploadKbn = "part",
+                    createdAt = java.time.LocalDateTime.of(2026, 4, 1, 8, 0, 0)
+                )
+            )
+
+            val result = adminClaimService.getClaims(null, null, null, null, null, 0, 20)
+
+            // 불량 없음 -> createdAt 최소인 part_001 선택
+            assertThat(result.content[0].representativeImageUrl)
+                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/part_001.jpg")
+        }
+
+        @Test
+        @DisplayName("대표 이미지 - 첨부 사진 0건이면 null")
+        fun getClaims_representativeImage_noPhotos() {
+            val claim = createClaim(id = 1L)
+            val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
+            every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdInAndIsDeletedFalse(any(), any())
+            } returns emptyList()
+
+            val result = adminClaimService.getClaims(null, null, null, null, null, 0, 20)
+
+            assertThat(result.content[0].representativeImageUrl).isNull()
+        }
+
+        @Test
+        @DisplayName("대표 이미지 - 불량이지만 uniqueKey 없으면 후보 제외, 유효한 다른 사진 선택")
+        fun getClaims_representativeImage_defectWithoutUniqueKey() {
+            val claim = createClaim(id = 1L)
+            val page = PageImpl(listOf(claim), PageRequest.of(0, 20), 1)
+            every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdInAndIsDeletedFalse(any(), any())
+            } returns listOf(
+                createUploadFile(id = 11L, uniqueKey = null, uploadKbn = "claim"),
+                createUploadFile(id = 12L, uniqueKey = "part_001.jpg", uploadKbn = "part")
+            )
+
+            val result = adminClaimService.getClaims(null, null, null, null, null, 0, 20)
+
+            assertThat(result.content[0].representativeImageUrl)
+                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/part_001.jpg")
+        }
+
+        @Test
+        @DisplayName("대표 이미지 - 다중 claim 매핑 정확성 + 배치 조회 1회 호출")
+        fun getClaims_representativeImage_multiClaimMapping() {
+            val claim1 = createClaim(id = 1L)
+            val claim2 = createClaim(id = 2L)
+            val page = PageImpl(listOf(claim1, claim2), PageRequest.of(0, 20), 2)
+            every { adminClaimRepository.findClaims(any(), any(), any(), any(), any(), any()) } returns page
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdInAndIsDeletedFalse(any(), any())
+            } returns listOf(
+                // 두 claim 의 파일이 섞여 반환됨
+                createUploadFile(id = 11L, uniqueKey = "c1.jpg", uploadKbn = "claim", parentId = 1L),
+                createUploadFile(id = 21L, uniqueKey = "c2.jpg", uploadKbn = "claim", parentId = 2L)
+            )
+
+            val result = adminClaimService.getClaims(null, null, null, null, null, 0, 20)
+
+            val byId = result.content.associateBy { it.claimId }
+            assertThat(byId[1L]?.representativeImageUrl)
+                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/c1.jpg")
+            assertThat(byId[2L]?.representativeImageUrl)
+                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/c2.jpg")
+            verify(exactly = 1) {
+                uploadFileRepository.findByParentTypeAndParentIdInAndIsDeletedFalse(any(), any())
+            }
         }
     }
 
@@ -223,7 +343,10 @@ class AdminClaimServiceTest {
     private fun createUploadFile(
         id: Long,
         uniqueKey: String?,
-        name: String? = "file.jpg"
+        name: String? = "file.jpg",
+        uploadKbn: String? = null,
+        parentId: Long = 1L,
+        createdAt: java.time.LocalDateTime = java.time.LocalDateTime.of(2026, 4, 1, 9, 30, 0)
     ): UploadFile = UploadFile(
         id = id,
         sfid = "a0O%012d".format(id),
@@ -231,6 +354,9 @@ class AdminClaimServiceTest {
         uniqueKey = uniqueKey,
         recordId = "a012x00000ABCDE",
         parentType = "DKRetail__Claim__c",
-        parentId = 1L
-    )
+        parentId = parentId,
+        uploadKbn = uploadKbn
+    ).apply {
+        this.createdAt = createdAt
+    }
 }

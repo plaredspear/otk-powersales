@@ -9,6 +9,11 @@ interface UploadFileRepository : JpaRepository<UploadFile, Long> {
 
     fun findByParentTypeAndParentIdAndIsDeletedFalse(parentType: String, parentId: Long): List<UploadFile>
 
+    fun findByParentTypeAndParentIdInAndIsDeletedFalse(
+        parentType: String,
+        parentIds: List<Long>
+    ): List<UploadFile>
+
     fun findByIdAndParentTypeAndParentIdAndIsDeletedFalse(
         id: Long,
         parentType: String,

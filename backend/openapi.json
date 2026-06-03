@@ -1300,6 +1300,9 @@
           "productName" : {
             "type" : [ "string", "null" ]
           },
+          "representativeImageUrl" : {
+            "type" : [ "string", "null" ]
+          },
           "status" : {
             "type" : "string"
           },
