@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.service
 
+import com.otoki.powersales.common.util.TimeZones
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.sales.service.MonthlySalesRow
@@ -138,7 +139,10 @@ class TeamMemberScheduleSearchService(
             .toMap()
         if (accountByExternalKey.isEmpty()) return emptyMap()
 
-        val (startYm, endYm) = sixMonthRange(year, month, today = LocalDate.now())
+        // SF `Date.today()` 는 사용자 세션(한국 운영자 = KST) timezone 기준 — 신규도 KST 로 맞춰야 SF 정합.
+        // JVM 기본 timezone(배포 환경 UTC) 의 LocalDate.now() 는 KST 자정~09시 구간에 하루 어긋나
+        // "검색월 == 당월" 분기를 뒤집어 6개월 윈도우를 통째로 밀 수 있다.
+        val (startYm, endYm) = sixMonthRange(year, month, today = LocalDate.now(TimeZones.SEOUL_ZONE))
         val salesDates = enumerateMonths(startYm, endYm)
             .map { "%d%02d".format(it.year, it.monthValue) }
 
