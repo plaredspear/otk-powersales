@@ -1,6 +1,26 @@
 import client from './client';
 import type { ApiResponse } from './types';
 
+/**
+ * 집계표 카테고리 컬럼 — backend `AccountCategoryColumn` enum (고정 10컬럼) 과 1:1.
+ *
+ * SF `SalesComparisonSearchController.summaryItems` 고정 필드 + `getCategory` 코드 매핑 정합.
+ * 검색조건의 거래처유형 필터(가변 picklist, useSearch=true 마스터명)와는 별개 — 집계표 컬럼은 항상 이 10개 고정.
+ * backend 응답 `countsByCategory` 의 키가 곧 이 displayName 이므로, 컬럼 헤더는 반드시 이 순서/라벨을 그대로 써야 매칭된다.
+ */
+export const SUMMARY_CATEGORY_COLUMNS = [
+  '대형마트',
+  '농협',
+  '체인',
+  '슈퍼',
+  '대리점',
+  '백화점',
+  '홀세일',
+  '군납',
+  '식자재',
+  '기타',
+] as const;
+
 export interface SalesComparisonSummaryRow {
   suitability: string;
   totalCount: number;
