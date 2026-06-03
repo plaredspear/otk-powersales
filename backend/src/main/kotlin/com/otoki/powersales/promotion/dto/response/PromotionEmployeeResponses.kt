@@ -16,6 +16,10 @@ data class PromotionEmployeeListResponse(
     val workStatus: String?,
     val workType1: String?,
     val workType3: String?,
+    // 전문행사조(현재) — 사원 마스터의 현재 전문행사조 (SF EmployeeId__r.ProfessionalPromotionTeam__c 동등)
+    val currentProfessionalPromotionTeam: String?,
+    // 전문행사조(투입당시) — 조원일정의 전문행사조 스냅샷 (SF ScheduleId__r.ProfessionalPromotionTeam__c 동등)
+    val professionalPromotionTeam: String?,
     val scheduleId: Long?,
     val promoCloseByTm: Boolean,
     val basePrice: BigDecimal?,
@@ -42,6 +46,8 @@ data class PromotionEmployeeListResponse(
                 workStatus = entity.workStatus?.displayName,
                 workType1 = entity.workType1?.displayName,
                 workType3 = entity.workType3?.displayName,
+                currentProfessionalPromotionTeam = entity.employee?.professionalPromotionTeam?.displayName,
+                professionalPromotionTeam = entity.teamMemberSchedule?.professionalPromotionTeam,
                 scheduleId = entity.teamMemberScheduleId,
                 promoCloseByTm = entity.promoCloseByTm,
                 basePrice = entity.basePrice,
@@ -68,6 +74,10 @@ data class PromotionEmployeeDetailResponse(
     val workStatus: String?,
     val workType1: String?,
     val workType3: String?,
+    // 전문행사조(현재) — 사원 마스터의 현재 전문행사조 (SF EmployeeId__r.ProfessionalPromotionTeam__c 동등)
+    val currentProfessionalPromotionTeam: String?,
+    // 전문행사조(투입당시) — 조원일정의 전문행사조 스냅샷 (SF ScheduleId__r.ProfessionalPromotionTeam__c 동등)
+    val professionalPromotionTeam: String?,
     val scheduleId: Long?,
     val promoCloseByTm: Boolean,
     val basePrice: BigDecimal?,
@@ -95,6 +105,8 @@ data class PromotionEmployeeDetailResponse(
                 workStatus = entity.workStatus?.displayName,
                 workType1 = entity.workType1?.displayName,
                 workType3 = entity.workType3?.displayName,
+                currentProfessionalPromotionTeam = entity.employee?.professionalPromotionTeam?.displayName,
+                professionalPromotionTeam = entity.teamMemberSchedule?.professionalPromotionTeam,
                 scheduleId = entity.teamMemberScheduleId,
                 promoCloseByTm = entity.promoCloseByTm,
                 basePrice = entity.basePrice,

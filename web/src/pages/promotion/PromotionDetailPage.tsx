@@ -88,6 +88,7 @@ interface EditableRow {
   // Read-only display fields
   employeeName: string | null;
   scheduleId: number | null;
+  currentProfessionalPromotionTeam: string | null;
 }
 
 function toEditableRow(pe: PromotionEmployee): EditableRow {
@@ -107,6 +108,7 @@ function toEditableRow(pe: PromotionEmployee): EditableRow {
     actualAmount: pe.actualAmount,
     employeeName: pe.employeeName,
     scheduleId: pe.scheduleId,
+    currentProfessionalPromotionTeam: pe.currentProfessionalPromotionTeam,
     promoCloseByTm: pe.promoCloseByTm,
     primaryProductAmount: pe.primaryProductAmount,
     primarySalesQuantity: pe.primarySalesQuantity,
@@ -758,9 +760,11 @@ export default function PromotionDetailPage() {
       },
       {
         title: '전문행사조(현재)',
+        dataIndex: 'currentProfessionalPromotionTeam',
         width: 130,
         align: 'center' as const,
-        render: () => '-',
+        render: (v: string | null) =>
+          v ? <Tag color={getPPTTeamTypeColor(v)}>{v}</Tag> : '-',
       },
       {
         title: '전문행사조(투입당시)',
@@ -934,9 +938,11 @@ export default function PromotionDetailPage() {
       },
       {
         title: '전문행사조(현재)',
+        dataIndex: 'currentProfessionalPromotionTeam',
         width: 130,
         align: 'center' as const,
-        render: () => '-',
+        render: (v: string | null) =>
+          v ? <Tag color={getPPTTeamTypeColor(v)}>{v}</Tag> : '-',
       },
       {
         title: '전문행사조(투입당시)',
