@@ -434,7 +434,7 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - 목록 조회 -> 페이지 응답")
         fun getMasters_success() {
             val master = createMaster()
-            val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점")
+            val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점", branchName = "강남지점", employeeStatus = "재직", employeeAppLoginActive = true, employeeEndDate = null, accountType = null)
             val page = PageImpl(listOf(searchResult), PageRequest.of(0, 20), 1)
 
             every {
@@ -553,7 +553,7 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - 검색 조건에 맞는 마스터를 xlsx 로 반환")
         fun exportToExcel_success() {
             val master = createMaster()
-            val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점")
+            val searchResult = PPTMasterSearchResult(master, "12345678", "홍길동", "SAP001", "이마트 강남점", branchName = "강남지점", employeeStatus = "재직", employeeAppLoginActive = true, employeeEndDate = null, accountType = null)
             val page = PageImpl(listOf(searchResult), PageRequest.of(0, 50_000), 1)
             every {
                 pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())

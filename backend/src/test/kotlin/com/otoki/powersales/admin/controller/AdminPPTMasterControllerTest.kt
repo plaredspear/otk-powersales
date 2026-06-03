@@ -35,6 +35,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
 
     private fun createResponse(): PPTMasterResponse = PPTMasterResponse(
         id = 1L,
+        name = "PM0000001",
         employeeId = 1L,
         employeeCode = "12345678",
         employeeName = "홍길동",
@@ -46,6 +47,11 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
         endDate = null,
         isConfirmed = true,
         branchCode = "1100",
+        branchName = "강남지점",
+        employeeStatus = "재직",
+        employeeAppLoginActive = true,
+        employeeEndDate = null,
+        accountType = null,
         createdAt = java.time.LocalDateTime.of(2026, 3, 22, 9, 0),
         updatedAt = java.time.LocalDateTime.of(2026, 3, 22, 9, 0)
     )

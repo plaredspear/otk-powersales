@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Button, Card, Checkbox, Input, Popconfirm, Select, Space, Tag, message } from 'antd';
+import { Link } from 'react-router-dom';
+import { Badge, Button, Card, Checkbox, Input, Popconfirm, Select, Space, Tag, message } from 'antd';
 import { PlusOutlined, DownloadOutlined, UploadOutlined, CheckOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -22,6 +23,35 @@ import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 const TEAM_TYPE_FILTER_OPTIONS = [{ value: '', label: '전체' }, ...PPT_TEAM_TYPE_OPTIONS];
 
 const DEFAULT_SIZE = 20;
+
+// SF Valid__c / ValidData__c 정합 — 확정·시작일·종료일로 유효 상태(신호등) 산출.
+//   미확정(주황) / 유효(녹색) / 예정(노랑) / 종료(빨강)
+type ValidStatus = { label: string; status: 'success' | 'warning' | 'error' | 'default' };
+
+function getValidStatus(record: PPTMaster): ValidStatus {
+  if (!record.isConfirmed) return { label: '미확정', status: 'default' };
+  const today = dayjs().startOf('day');
+  const start = dayjs(record.startDate).startOf('day');
+  const end = record.endDate ? dayjs(record.endDate).startOf('day') : null;
+  const notEnded = !end || !end.isBefore(today); // 종료일 없거나 오늘 이후
+  if (start.isAfter(today) && notEnded) return { label: '예정', status: 'warning' };
+  if (!start.isAfter(today) && notEnded) return { label: '유효', status: 'success' };
+  return { label: '종료', status: 'error' };
+}
+
+// SF ValidConditionData__c 정합 — 사원 재직상태 산출.
+//   퇴직/앱비활성 + 종료일 경과 → "퇴직", 미경과 → "퇴직예정", 휴직 → "휴직", 그 외 → "재직"
+function getEmployeeStatusLabel(record: PPTMaster): string {
+  const { employeeStatus, employeeAppLoginActive, employeeEndDate } = record;
+  const isQuit = employeeStatus === '퇴직' || employeeAppLoginActive === false;
+  if (isQuit && employeeEndDate) {
+    const end = dayjs(employeeEndDate).startOf('day');
+    const today = dayjs().startOf('day');
+    return end.isBefore(today) ? '퇴직' : '퇴직예정';
+  }
+  if (employeeStatus === '휴직') return '휴직';
+  return employeeStatus ?? '재직';
+}
 
 export default function PPTMasterPage() {
   // page/필터를 URL query string 에 보관 — 새로고침/링크 공유/복귀 시 직전 조건 복원.
@@ -177,14 +207,53 @@ export default function PPTMasterPage() {
       align: 'center',
       render: (_, __, index) => page * pageSize + index + 1,
     },
+    {
+      title: '전문행사조마스터',
+      dataIndex: 'name',
+      width: 130,
+      align: 'center',
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '유효',
+      width: 80,
+      align: 'center',
+      render: (_, record) => {
+        const v = getValidStatus(record);
+        return <Badge status={v.status} text={v.label} />;
+      },
+    },
+    { title: '지점명', dataIndex: 'branchName', width: 110, align: 'center', render: (v: string | null) => v ?? '-' },
     { title: '사번', dataIndex: 'employeeCode', width: 100, align: 'center' },
-    { title: '사원명', dataIndex: 'employeeName', width: 100, align: 'center' },
+    {
+      title: '사원명',
+      dataIndex: 'employeeName',
+      width: 100,
+      align: 'center',
+      render: (val: string, record) =>
+        record.employeeId ? <Link to={`/employee/${record.employeeId}`}>{val}</Link> : val,
+    },
+    {
+      title: '재직상태',
+      width: 100,
+      align: 'center',
+      render: (_, record) => getEmployeeStatusLabel(record),
+    },
     { title: '거래처코드', dataIndex: 'accountCode', width: 120, align: 'center' },
     {
       title: '거래처명',
       dataIndex: 'accountName',
       width: 150,
       ellipsis: true,
+      render: (val: string | null, record) =>
+        val && record.accountId ? <Link to={`/account/${record.accountId}`}>{val}</Link> : (val ?? '-'),
+    },
+    {
+      title: '거래처유형',
+      dataIndex: 'accountType',
+      width: 100,
+      align: 'center',
+      render: (val: string | null) => val ?? '-',
     },
     {
       title: '전문행사조',
@@ -210,11 +279,18 @@ export default function PPTMasterPage() {
       align: 'center',
       render: (val: boolean) => (val ? '✅' : '-'),
     },
-    { title: '지점', dataIndex: 'branchName', width: 100, align: 'center' },
+    {
+      title: '최종 수정 일자',
+      dataIndex: 'updatedAt',
+      width: 150,
+      align: 'center',
+      render: (val: string) => (val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-'),
+    },
     {
       title: '액션',
       width: 170,
       align: 'center',
+      fixed: 'right',
       render: (_, record) => (
         <Space size={4}>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>
@@ -330,7 +406,7 @@ export default function PPTMasterPage() {
             }
           },
         }}
-        scroll={{ x: 1300 }}
+        scroll={{ x: 1850 }}
         size="middle"
       />
 
