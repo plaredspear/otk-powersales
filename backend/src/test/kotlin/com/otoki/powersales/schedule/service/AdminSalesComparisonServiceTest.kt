@@ -109,9 +109,18 @@ class AdminSalesComparisonServiceTest {
         )
     }
 
+    /** AccountCategoryMaster — SF categoryMap (name → accountCode) 시드. 기본: 할인점→01(대형마트), 체인→02. */
+    private fun categoryMaster(name: String, code: String) =
+        com.otoki.powersales.account.entity.AccountCategoryMaster(accountCode = code, name = name)
+
     @BeforeEach
     fun setup() {
         every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns emptyList()
+        // SF categoryMap 시드 — Account.Type(한국어) → accountCode. 할인점=01(대형마트), 체인=02.
+        every { accountCategoryMasterRepository.findAll() } returns listOf(
+            categoryMaster("할인점", "01"),
+            categoryMaster("체인", "02"),
+        )
     }
 
     @Nested
@@ -266,13 +275,28 @@ class AdminSalesComparisonServiceTest {
         }
 
         @Test
-        fun `투입기준 부재면 공백`() {
+        fun `투입기준 부재면 standard=min=0 으로 적합 (SF getCheckVal cls=531-544 동등)`() {
+            // SF: master null 이면 standardAmount=minAmountInRealmRange=0 → ratio >= 0 → 적합.
             val result = service.judgeSuitability(
                 workingCategory3 = "고정",
                 avgClosingAmount = 1_000_000L,
                 totalDisplayConverted = BigDecimal.ONE,
                 fixedStandard = null,
                 fixedMin = null,
+                bifurcationStandard = null,
+                bifurcationMin = null
+            )
+            assertThat(result).isEqualTo(Suitability.FIT.displayName)
+        }
+
+        @Test
+        fun `환산인원 0 이면 공백 (SF getCheckVal cls=518)`() {
+            val result = service.judgeSuitability(
+                workingCategory3 = "고정",
+                avgClosingAmount = 1_000_000L,
+                totalDisplayConverted = BigDecimal.ZERO,
+                fixedStandard = BigDecimal(1_000_000),
+                fixedMin = BigDecimal(800_000),
                 bifurcationStandard = null,
                 bifurcationMin = null
             )
@@ -338,15 +362,13 @@ class AdminSalesComparisonServiceTest {
                 avgClosingAmount = 1_500_000L
             )
             val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
-            val cm = com.otoki.powersales.account.entity.AccountCategoryMaster(
-                accountCode = AccountType.DISCOUNT_STORE.displayName,
-                name = AccountType.DISCOUNT_STORE.displayName
-            )
+            // SF 판정 마스터 매칭은 Account.Type("할인점") → categoryMap → "01" → criteria.accountCategorizedCode 와 일치.
+            val cm = categoryMaster("할인점", "01")
             val crit = EmployeeInputCriteriaMaster(
                 typeOfWork1 = TypeOfWork1.DISPLAY,
                 fixed1PersonStandardAmount = BigDecimal(1_000_000),
                 bifurcationHalfPersonStandard = BigDecimal(600_000),
-                boundary = BigDecimal("0.2"),
+                boundary = BigDecimal(20),   // SF Percent — 20% (formula 에서 0.20 으로 평가)
                 confirmed = true,
                 isDeleted = false,
                 category = cm
@@ -363,6 +385,66 @@ class AdminSalesComparisonServiceTest {
             assertThat(fitRow.countsByCategory["대형마트"]).isEqualTo(1)
             assertThat(fitRow.accountIdsByCategory["대형마트"]).containsExactly(1)
             assertThat(response.total.totalCount).isEqualTo(1)
+        }
+
+        @Test
+        fun `한 거래처에 적합+경계 사원 혼재면 worst-case(경계) 로 분류 (SF cls=579)`() {
+            // 거래처A: 진열·상시 2명 (환산인원 합 2.0), avg 2,000,000 → ratio = 1,000,000.
+            // boundary 40(%) → min = standard × (1 - 0.4) = standard × 0.6 (SF Percent /100 평가).
+            //  - 고정사원: standard 1,500,000 / min 900,000 → 900,000 ≤ 1,000,000 < 1,500,000 → 경계
+            //  - 격고사원: standard 600,000 / min 360,000 → 1,000,000 ≥ 600,000 → 적합
+            //  → worst-case = 경계
+            val fixedEmp = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
+            val altEmp = item("A001", "거래처A", "E002", "사원B", "진열", "격고", "상시", BigDecimal.ONE, 2_000_000L)
+            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val crit = EmployeeInputCriteriaMaster(
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                fixed1PersonStandardAmount = BigDecimal(1_500_000),
+                bifurcationHalfPersonStandard = BigDecimal(600_000),
+                boundary = BigDecimal(40),   // SF Percent — 40% (formula 에서 0.40 으로 평가)
+                confirmed = true,
+                isDeleted = false,
+                category = categoryMaster("할인점", "01")
+            )
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fixedEmp, altEmp))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit)
+
+            val response = service.getSummary(allScope, 2026, 5, listOf("CC001"))
+
+            assertThat(response.rows.first { it.suitability == "경계" }.totalCount).isEqualTo(1)
+            assertThat(response.rows.first { it.suitability == "적합" }.totalCount).isEqualTo(0)
+            // 총계 = 적합+경계+재검토 (worst-case 거래처 distinct)
+            assertThat(response.total.totalCount).isEqualTo(1)
+        }
+
+        @Test
+        fun `총계는 적합+경계+재검토 합 - 공백(진열상시 부재) 거래처는 총계에서도 제외 (SF cls=567)`() {
+            // 거래처A: 진열·상시 1명 (적합) / 거래처B: 행사만 (진열·상시 없음 → 공백)
+            val fitEmp = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
+            val eventOnly = item("B001", "거래처B", "E002", "사원B", "행사", null, null, BigDecimal.ONE, 2_000_000L)
+            val accA = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val accB = account(2, "B001", "거래처B", AccountType.DISCOUNT_STORE)
+            val crit = EmployeeInputCriteriaMaster(
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                fixed1PersonStandardAmount = BigDecimal(1_000_000),
+                bifurcationHalfPersonStandard = BigDecimal(600_000),
+                boundary = BigDecimal(20),   // SF Percent — 20%
+                confirmed = true,
+                isDeleted = false,
+                category = categoryMaster("할인점", "01")
+            )
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fitEmp, eventOnly))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(accA, accB)
+            every { employeeInputCriteriaMasterRepository.findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(any(), any()) } returns listOf(crit)
+
+            val response = service.getSummary(allScope, 2026, 5, listOf("CC001"))
+
+            val sumOfRows = response.rows.sumOf { it.totalCount }
+            assertThat(response.total.totalCount).isEqualTo(sumOfRows)  // 총계 == 적합+경계+재검토
+            assertThat(response.total.totalCount).isEqualTo(1)          // 공백 거래처B 제외
         }
     }
 
