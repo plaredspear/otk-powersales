@@ -30,6 +30,7 @@ data class PromotionListItem(
     val costCenterCode: String?,
     val targetAmount: Double?,
     val actualAmount: Double?,
+    val createdById: Long?,
     val createdByName: String?,
     val isDeleted: Boolean,
     val createdAt: LocalDateTime,
@@ -67,7 +68,9 @@ data class PromotionListItem(
                 // SF rollup DKRetail__TargetAmount__c / DKRetail__ActualAmount__c 동기화 스칼라 컬럼.
                 targetAmount = promotion.dkTargetAmount,
                 actualAmount = promotion.dkActualAmount,
-                // 작성자 = SF CreatedBy.Name 동등 (createdBy 는 searchForAdmin 에서 fetchJoin — N+1 없음).
+                // 작성자 = SF CreatedBy 동등 (createdBy 는 searchForAdmin 에서 fetchJoin — N+1 없음).
+                // id 는 목록의 작성자 → 사용자 상세(/users/:id) 링크용 (web 에서 user READ 권한 보유 시에만 링크).
+                createdById = promotion.createdBy?.id,
                 createdByName = promotion.createdBy?.name,
                 isDeleted = promotion.isDeleted,
                 createdAt = promotion.createdAt,

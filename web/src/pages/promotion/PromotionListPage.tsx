@@ -27,6 +27,9 @@ export default function PromotionListPage() {
   const location = useLocation();
   const { hasEntityPermission } = usePermission();
   const canWrite = hasEntityPermission('promotion', 'EDIT');
+  // 작성자 → 사용자 상세(/users/:id) 링크는 user READ 권한 보유자(시스템 관리자급)에게만.
+  // SF 레거시 동등 + 신규 user 조회가 관리자 전용이라, 미보유자(조장/사원)는 이름 텍스트만 노출.
+  const canReadUser = hasEntityPermission('user', 'READ');
   // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
   const { page, setPage, filters, setFilter } = useListQueryParams({
     defaultFilters: { promotionType: '', startDate: '', endDate: '', keyword: '' },
@@ -40,6 +43,9 @@ export default function PromotionListPage() {
   );
   const goToProduct = useThrottleClick((productCode: string) =>
     navigate(`/product/${encodeURIComponent(productCode)}`, { state: { listSearch: location.search } }),
+  );
+  const goToUser = useThrottleClick((userId: number) =>
+    navigate(`/users/${userId}`, { state: { listSearch: location.search } }),
   );
   const handleCreate = useThrottleClick(() => navigate('/promotions/new'));
   const { data, isLoading } = usePromotions({
@@ -183,7 +189,12 @@ export default function PromotionListPage() {
       width: 100,
       align: 'center',
       ellipsis: true,
-      render: (val: string | null) => val ?? '-',
+      render: (val: string | null, record) =>
+        val && canReadUser && record.createdById != null ? (
+          <a onClick={() => goToUser(record.createdById!)}>{val}</a>
+        ) : (
+          val ?? '-'
+        ),
     },
   ];
 
