@@ -467,6 +467,34 @@ class AdminSalesComparisonServiceTest {
             assertThat(response.items).hasSize(1)
             assertThat(response.items.first().accountCode).isEqualTo("A001")
         }
+
+        @Test
+        fun `투입횟수-환산일수는 진열상시만 합산하고 행사 행은 제외 (SF 정합)`() {
+            // 이마트 원주점 케이스 재현: 진열상시(투입18/환산18) + 행사2행(투입24/환산21.5).
+            // SF 중간집계 표시값은 진열상시 행만 = 투입18/환산18. 행사 혼입 시 42/39.5 로 부풀려짐.
+            val displayItm = item(
+                "A001", "거래처A", "E001", "사원A", "진열", "고정", "상시",
+                BigDecimal.ONE, 1_500_000L, totalInputCount = 18, equivalentWorkingDays = BigDecimal("18.0")
+            )
+            val eventItm1 = item(
+                "A001", "거래처A", "E002", "사원B", "행사", null, null,
+                BigDecimal.ONE, 1_500_000L, totalInputCount = 12, equivalentWorkingDays = BigDecimal("10.75")
+            )
+            val eventItm2 = item(
+                "A001", "거래처A", "E003", "사원C", "행사", null, null,
+                BigDecimal.ONE, 1_500_000L, totalInputCount = 12, equivalentWorkingDays = BigDecimal("10.75")
+            )
+            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(displayItm, eventItm1, eventItm2))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
+
+            val response = service.getMiddle(allScope, 2026, 5, listOf("CC001"), listOf(1))
+
+            val row = response.items.first { it.accountCode == "A001" }
+            assertThat(row.totalInputCount).isEqualTo(18)                              // 행사 24 제외
+            assertThat(row.totalEquivalentWorkingDays).isEqualByComparingTo(BigDecimal("18.0"))  // 행사 21.5 제외
+        }
     }
 
     @Nested

@@ -446,8 +446,10 @@ class AdminSalesComparisonService(
                 .fold(BigDecimal.ZERO) { acc, it -> acc.add(it.convertedHeadcount) }
                 .setScale(3, RoundingMode.HALF_UP)
             val totalDisplayHeadcount = displayItems.map { it.employeeCode }.distinct().size
-            val totalInputCount = items.sumOf { it.totalInputCount }
-            val totalEquivalentDays = items
+            // SF 중간집계 표시값은 진열·상시 행만의 합 — 화면 검증(이마트 원주점 투입18/환산일18 = 진열행과 일치).
+            // 행사 행을 포함하면 투입횟수·환산일수가 SF 보다 부풀려진다 (행사24 혼입 → 42).
+            val totalInputCount = displayItems.sumOf { it.totalInputCount }
+            val totalEquivalentDays = displayItems
                 .fold(BigDecimal.ZERO) { acc, it -> acc.add(it.equivalentWorkingDays) }
                 .setScale(3, RoundingMode.HALF_UP)
             val avgClosingAmount = avgClosingAmounts[accountCode] ?: 0L
