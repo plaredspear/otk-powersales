@@ -3,6 +3,7 @@ package com.otoki.powersales.savedsearch.service
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.savedsearch.SavedSearchPresets
 import com.otoki.powersales.savedsearch.dto.request.SavedSearchCreateRequest
 import com.otoki.powersales.savedsearch.dto.request.SavedSearchUpdateRequest
 import com.otoki.powersales.savedsearch.dto.response.SavedSearchResponse
@@ -33,18 +34,27 @@ class SavedSearchService(
     private val sharedEditKey: String =
         SfPermissionResolver.entityKey("saved_search", SfPermissionOperation.EDIT)
 
-    /** 목록 조회 — (본인 PRIVATE) ∪ (전체 SHARED). */
+    /**
+     * 목록 조회 — (시스템 기본 공용 프리셋) ∪ (본인 PRIVATE) ∪ (전체 SHARED).
+     *
+     * 시스템 프리셋([SavedSearchPresets])은 DB 가 아닌 코드 SoT 라서 응답에 합성해 맨 앞에 끼워넣는다.
+     * 항상 editable=false (운영자도 수정·삭제 불가).
+     */
     fun list(resourceKey: String, employeeId: Long, permissions: Set<String>): List<SavedSearchResponse> {
+        val systemPresets = SavedSearchPresets.systemPresetsFor(resourceKey).map { preset ->
+            SavedSearchResponse.of(entity = preset, ownerName = null, editable = false)
+        }
         val items = savedSearchRepository.findVisible(resourceKey, employeeId)
         val ownerNames = resolveOwnerNames(items.map { it.ownerId })
         val canEditShared = permissions.contains(sharedEditKey)
-        return items.map { entity ->
+        val stored = items.map { entity ->
             SavedSearchResponse.of(
                 entity = entity,
                 ownerName = ownerNames[entity.ownerId],
                 editable = isEditable(entity, employeeId, canEditShared),
             )
         }
+        return systemPresets + stored
     }
 
     @Transactional
@@ -82,6 +92,7 @@ class SavedSearchService(
         employeeId: Long,
         permissions: Set<String>,
     ): SavedSearchResponse {
+        if (SavedSearchPresets.isSystemPresetId(id)) throw SavedSearchNotFoundException()
         val entity = savedSearchRepository.findByIdOrNull(id) ?: throw SavedSearchNotFoundException()
         val canEditShared = permissions.contains(sharedEditKey)
         if (!isEditable(entity, employeeId, canEditShared)) {
@@ -111,6 +122,7 @@ class SavedSearchService(
 
     @Transactional
     fun delete(id: Long, employeeId: Long, permissions: Set<String>) {
+        if (SavedSearchPresets.isSystemPresetId(id)) throw SavedSearchNotFoundException()
         val entity = savedSearchRepository.findByIdOrNull(id) ?: throw SavedSearchNotFoundException()
         if (!isEditable(entity, employeeId, permissions.contains(sharedEditKey))) {
             throw SavedSearchForbiddenException()
