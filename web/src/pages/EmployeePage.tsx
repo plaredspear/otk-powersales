@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFemaleEmployees } from '@/hooks/employee/useEmployees';
 import type { Employee } from '@/api/employee';
 import { usePermission } from '@/hooks/usePermission';
@@ -34,10 +35,11 @@ const INACTIVE_NOTICE = '앱 로그인이 비활성화된 사원입니다. 사�
 
 export default function EmployeePage() {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<string | undefined>();
-  const [costCenterCode, setCostCenterCode] = useState<string | undefined>();
-  const [keyword, setKeyword] = useState<string | undefined>();
-  const [page, setPage] = useState(0);
+  // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
+  const { page, setPage, filters, setFilter } = useListQueryParams({
+    defaultFilters: { status: '', costCenterCode: '', keyword: '' },
+  });
+  const { status, costCenterCode, keyword } = filters;
   const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -46,9 +48,9 @@ export default function EmployeePage() {
   const canWrite = hasEntityPermission('employee', 'EDIT');
 
   const { data, isLoading, isError, error, refetch } = useFemaleEmployees({
-    status,
-    costCenterCode,
-    keyword,
+    status: status || undefined,
+    costCenterCode: costCenterCode || undefined,
+    keyword: keyword || undefined,
     page,
     size: PAGE_SIZE,
   });
@@ -185,20 +187,21 @@ export default function EmployeePage() {
           style={{ width: 140 }}
           value={status ?? ''}
           options={STATUS_OPTIONS}
-          onChange={(val) => { setStatus(val || undefined); setPage(0); }}
+          onChange={(val) => setFilter('status', val)}
         />
         <Input
           placeholder="지점코드"
           allowClear
           style={{ width: 140 }}
           value={costCenterCode ?? ''}
-          onChange={(e) => { setCostCenterCode(e.target.value || undefined); setPage(0); }}
+          onChange={(e) => setFilter('costCenterCode', e.target.value)}
         />
         <Input.Search
           placeholder="사번 또는 이름 검색"
           allowClear
+          defaultValue={keyword ?? ''}
           style={{ width: 240 }}
-          onSearch={(val) => { setKeyword(val || undefined); setPage(0); }}
+          onSearch={(val) => setFilter('keyword', val)}
         />
         <div style={{ marginLeft: 'auto' }}>
           {canWrite && (
