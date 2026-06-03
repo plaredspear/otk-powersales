@@ -58,14 +58,19 @@ export default function PromotionListPage() {
 
   const columns: ColumnsType<PromotionListItem> = [
     {
-      title: '행사번호',
+      title: '행사번호 / 행사명',
       dataIndex: 'promotionNumber',
-      width: 150,
+      width: 280,
       fixed: 'left',
       render: (val: string, record) => (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: '100%' }}>
           <a onClick={() => goToDetail(record.id)}>{val}</a>
           <Typography.Text copyable={{ text: val, tooltips: ['행사번호 복사', '복사됨'] }} />
+          {record.promotionName && (
+            <Typography.Text type="secondary" ellipsis={{ tooltip: record.promotionName }}>
+              · {record.promotionName}
+            </Typography.Text>
+          )}
         </span>
       ),
     },
@@ -89,13 +94,6 @@ export default function PromotionListPage() {
       width: 110,
       align: 'center',
       render: formatDate,
-    },
-    {
-      title: '행사명',
-      dataIndex: 'promotionName',
-      width: 200,
-      ellipsis: true,
-      render: (val: string | null) => val ?? '-',
     },
     {
       title: '거래처코드',
