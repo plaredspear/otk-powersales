@@ -65,9 +65,12 @@ export default function EmployeeDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   // 진입 맥락별 "목록으로" 대상: 여사원 현황(/female-employee/...) → 여사원 목록, 그 외(설정 사원목록 /employee/...) → 설정 사원 목록.
-  const listPath = location.pathname.startsWith('/female-employee')
+  const listBasePath = location.pathname.startsWith('/female-employee')
     ? '/female-employee'
     : '/settings/employees';
+  // 목록에서 넘어온 경우 직전 목록의 query string(page/필터)을 붙여 복귀 — "목록으로" 시 조건 초기화 방지.
+  const listSearch = (location.state as { listSearch?: string } | null)?.listSearch ?? '';
+  const listPath = `${listBasePath}${listSearch}`;
   const { hasEntityPermission, hasSystemPermission } = usePermission();
   const canEdit = hasEntityPermission('employee', 'EDIT');
   const canReset = hasSystemPermission('MANAGE_USERS');
