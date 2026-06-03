@@ -7,6 +7,7 @@ import java.math.BigDecimal
 
 data class PromotionEmployeeListResponse(
     val id: Long,
+    val name: String?,
     val promotionId: Long,
     val employeeId: Long?,
     val employeeCode: String?,
@@ -15,7 +16,7 @@ data class PromotionEmployeeListResponse(
     val workStatus: String?,
     val workType1: String?,
     val workType3: String?,
-    val teamMemberScheduleId: Long?,
+    val scheduleId: Long?,
     val promoCloseByTm: Boolean,
     val basePrice: BigDecimal?,
     val dailyTargetCount: BigDecimal?,
@@ -32,6 +33,7 @@ data class PromotionEmployeeListResponse(
         fun from(entity: PromotionEmployee, employeeName: String?, employeeCode: String? = null): PromotionEmployeeListResponse =
             PromotionEmployeeListResponse(
                 id = entity.id,
+                name = entity.name,
                 promotionId = entity.promotionId!!,
                 employeeId = entity.employeeId,
                 employeeCode = employeeCode,
@@ -40,7 +42,7 @@ data class PromotionEmployeeListResponse(
                 workStatus = entity.workStatus?.displayName,
                 workType1 = entity.workType1?.displayName,
                 workType3 = entity.workType3?.displayName,
-                teamMemberScheduleId = entity.teamMemberScheduleId,
+                scheduleId = entity.teamMemberScheduleId,
                 promoCloseByTm = entity.promoCloseByTm,
                 basePrice = entity.basePrice,
                 dailyTargetCount = entity.dailyTargetCount,
@@ -66,7 +68,7 @@ data class PromotionEmployeeDetailResponse(
     val workStatus: String?,
     val workType1: String?,
     val workType3: String?,
-    val teamMemberScheduleId: Long?,
+    val scheduleId: Long?,
     val promoCloseByTm: Boolean,
     val basePrice: BigDecimal?,
     val dailyTargetCount: BigDecimal?,
@@ -93,7 +95,7 @@ data class PromotionEmployeeDetailResponse(
                 workStatus = entity.workStatus?.displayName,
                 workType1 = entity.workType1?.displayName,
                 workType3 = entity.workType3?.displayName,
-                teamMemberScheduleId = entity.teamMemberScheduleId,
+                scheduleId = entity.teamMemberScheduleId,
                 promoCloseByTm = entity.promoCloseByTm,
                 basePrice = entity.basePrice,
                 dailyTargetCount = entity.dailyTargetCount,

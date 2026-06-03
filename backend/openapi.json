@@ -17289,11 +17289,11 @@
             "format" : "date",
             "type" : [ "string", "null" ]
           },
-          "targetAmount" : {
+          "scheduleId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
-          "teamMemberScheduleId" : {
+          "targetAmount" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
@@ -17339,6 +17339,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
           "otherSalesAmount" : {
             "type" : [ "number", "null" ]
           },
@@ -17368,11 +17371,11 @@
             "format" : "date",
             "type" : [ "string", "null" ]
           },
-          "targetAmount" : {
+          "scheduleId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
-          "teamMemberScheduleId" : {
+          "targetAmount" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },

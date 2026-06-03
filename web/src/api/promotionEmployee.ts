@@ -5,6 +5,7 @@ import type { ApiResponse } from './types';
 
 export interface PromotionEmployee {
   id: number;
+  name: string | null;
   promotionId: number;
   employeeId: number | null;
   employeeCode: string | null;

@@ -52,6 +52,7 @@ import PromotionProductSection, {
 import PromotionTargetActualSection from './sections/PromotionTargetActualSection';
 import PromotionPosProductSection from './sections/PromotionPosProductSection';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
+import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title } = Typography;
@@ -136,6 +137,12 @@ export default function PromotionDetailPage() {
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { hasEntityPermission } = usePermission();
   const canWrite = hasEntityPermission('promotion', 'EDIT');
+  const canReadEmployee = hasEntityPermission('employee', 'READ');
+
+  // NO.(행사사원 코드) 클릭 시 해당 사원 상세로 이동 — SF 레거시의 행사사원 레코드 링크 대체
+  const goToEmployee = useThrottleClick((employeeId: number) =>
+    navigate(`/employee/${employeeId}`),
+  );
 
   // --- 행사 인라인 편집 상태 ---
   const [promotionEditing, setPromotionEditing] = useState(false);
@@ -730,7 +737,18 @@ export default function PromotionDetailPage() {
 
   // --- 읽기 모드 컬럼 ---
   const readColumns: ColumnsType<PromotionEmployee> = [
-      { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
+      {
+        title: 'NO.',
+        dataIndex: 'name',
+        width: 110,
+        align: 'center' as const,
+        render: (name: string | null, record: PromotionEmployee) =>
+          name && canReadEmployee && record.employeeId != null ? (
+            <a onClick={() => goToEmployee(record.employeeId!)}>{name}</a>
+          ) : (
+            name ?? '-'
+          ),
+      },
       {
         title: <span>행사사원<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
         dataIndex: 'employeeName',
@@ -841,6 +859,19 @@ export default function PromotionDetailPage() {
         align: 'center' as const,
         render: (v: string | null) =>
           v ? <CheckCircleFilled style={{ color: '#52c41a' }} /> : null,
+      },
+      {
+        // SF 확정(ScheduleConfirmed__c): 조원일정 연결(scheduleId != null) 시 ✔️, 미연결 시 ❌
+        title: '확정',
+        dataIndex: 'scheduleId',
+        width: 70,
+        align: 'center' as const,
+        render: (v: number | null) =>
+          v != null ? (
+            <CheckCircleFilled style={{ color: '#52c41a' }} />
+          ) : (
+            <CloseCircleFilled style={{ color: '#ff4d4f' }} />
+          ),
       },
       closeColumn,
   ];
