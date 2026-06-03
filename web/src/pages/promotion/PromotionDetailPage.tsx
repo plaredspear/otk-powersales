@@ -1121,6 +1121,19 @@ export default function PromotionDetailPage() {
           ) : null,
       },
       {
+        // SF 확정(ScheduleConfirmed__c): 조원일정 연결(scheduleId != null) 시 ✔️, 미연결 시 ❌ — 읽기 전용 파생값
+        title: '확정',
+        dataIndex: 'scheduleId',
+        width: 70,
+        align: 'center' as const,
+        render: (v: number | null) =>
+          v != null ? (
+            <CheckCircleFilled style={{ color: '#52c41a' }} />
+          ) : (
+            <CloseCircleFilled style={{ color: '#ff4d4f' }} />
+          ),
+      },
+      {
         title: '여사원마감',
         dataIndex: 'promoCloseByTm',
         width: 90,
