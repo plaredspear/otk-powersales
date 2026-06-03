@@ -187,11 +187,11 @@ export async function confirmPPTMastersByIds(
 
 export interface PPTHistory {
   id: number;
+  name: string | null;
   employeeId: number;
   employeeName: string | null;
   employeeCode: string | null;
   orgName: string | null;
-  status: string | null;
   oldValue: string | null;
   newValue: string;
   changedAt: string;

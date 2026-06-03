@@ -242,8 +242,8 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
             val historyResponse = PPTMasterHistoryListResponse(
                 content = listOf(
                     PPTMasterHistoryResponse(
-                        id = 1L, employeeId = 1L, employeeName = "홍길동",
-                        employeeCode = "12345678", orgName = "서울지점", status = "재직",
+                        id = 1L, name = "PH0000001", employeeId = 1L, employeeName = "홍길동",
+                        employeeCode = "12345678", orgName = "서울지점",
                         oldValue = null, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
                         changedAt = java.time.LocalDateTime.of(2026, 3, 22, 9, 0)
                     )
@@ -258,7 +258,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.content[0].newValue").value("라면세일조"))
                 .andExpect(jsonPath("$.data.content[0].employeeCode").value("12345678"))
                 .andExpect(jsonPath("$.data.content[0].orgName").value("서울지점"))
-                .andExpect(jsonPath("$.data.content[0].status").value("재직"))
+                .andExpect(jsonPath("$.data.content[0].name").value("PH0000001"))
         }
     }
 
@@ -272,8 +272,8 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
             val historyResponse = PPTMasterHistoryListResponse(
                 content = listOf(
                     PPTMasterHistoryResponse(
-                        id = 10L, employeeId = 5L, employeeName = "백은경",
-                        employeeCode = "EMP005", orgName = "서울지점", status = "재직",
+                        id = 10L, name = "PH0014972", employeeId = 5L, employeeName = "백은경",
+                        employeeCode = "EMP005", orgName = "서울지점",
                         oldValue = ProfessionalPromotionTeamType.RAMEN_SALE,
                         newValue = ProfessionalPromotionTeamType.CURRY_PROMOTION,
                         changedAt = java.time.LocalDateTime.of(2026, 5, 18, 14, 30)
@@ -289,7 +289,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.content[0].employeeName").value("백은경"))
                 .andExpect(jsonPath("$.data.content[0].employeeCode").value("EMP005"))
                 .andExpect(jsonPath("$.data.content[0].orgName").value("서울지점"))
-                .andExpect(jsonPath("$.data.content[0].status").value("재직"))
+                .andExpect(jsonPath("$.data.content[0].name").value("PH0014972"))
                 .andExpect(jsonPath("$.data.content[0].oldValue").value("라면세일조"))
                 .andExpect(jsonPath("$.data.content[0].newValue").value("카레행사조"))
         }
@@ -317,13 +317,13 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
         }
 
         @Test
-        @DisplayName("성공 - 사원이 deleted 인 row 는 사원 컨텍스트 4 필드 모두 null")
+        @DisplayName("성공 - 사원이 deleted 인 row 는 사원 컨텍스트 3 필드 모두 null")
         fun getAllHistory_deletedEmployee_nullContext() {
             val historyResponse = PPTMasterHistoryListResponse(
                 content = listOf(
                     PPTMasterHistoryResponse(
-                        id = 99L, employeeId = 999L,
-                        employeeName = null, employeeCode = null, orgName = null, status = null,
+                        id = 99L, name = "PH0000099", employeeId = 999L,
+                        employeeName = null, employeeCode = null, orgName = null,
                         oldValue = null, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
                         changedAt = java.time.LocalDateTime.of(2026, 5, 18, 14, 30)
                     )
@@ -337,7 +337,6 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.content[0].employeeName").doesNotExist())
                 .andExpect(jsonPath("$.data.content[0].employeeCode").doesNotExist())
                 .andExpect(jsonPath("$.data.content[0].orgName").doesNotExist())
-                .andExpect(jsonPath("$.data.content[0].status").doesNotExist())
         }
     }
 }

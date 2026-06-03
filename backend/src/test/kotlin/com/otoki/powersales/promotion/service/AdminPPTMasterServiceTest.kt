@@ -759,6 +759,7 @@ class AdminPPTMasterServiceTest {
             val employee = createEmployee()
             val history = ProfessionalPromotionTeamHistory(
                 id = 1L,
+                name = "PH0000001",
                 employeeId = employee.id,
                 oldValue = ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING,
                 newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
@@ -774,11 +775,11 @@ class AdminPPTMasterServiceTest {
 
             assertThat(result.content).hasSize(1)
             val row = result.content[0]
+            assertThat(row.name).isEqualTo("PH0000001")
             assertThat(row.employeeId).isEqualTo(employee.id)
             assertThat(row.employeeName).isEqualTo("홍길동")
             assertThat(row.employeeCode).isEqualTo("12345678")
             assertThat(row.orgName).isEqualTo("서울지점")
-            assertThat(row.status).isEqualTo("재직")
             assertThat(row.oldValue).isEqualTo(ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING)
             assertThat(row.newValue).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
         }
@@ -819,7 +820,7 @@ class AdminPPTMasterServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - 사원 lookup 결과가 null 인 row → 사원 컨텍스트 4 필드 null")
+        @DisplayName("성공 - 사원 lookup 결과가 null 인 row → 사원 컨텍스트 3 필드 null")
         fun getAllHistory_deletedEmployee_nullContext() {
             val history = ProfessionalPromotionTeamHistory(
                 id = 99L,
@@ -838,7 +839,6 @@ class AdminPPTMasterServiceTest {
             assertThat(result.content[0].employeeName).isNull()
             assertThat(result.content[0].employeeCode).isNull()
             assertThat(result.content[0].orgName).isNull()
-            assertThat(result.content[0].status).isNull()
         }
     }
 
@@ -847,12 +847,13 @@ class AdminPPTMasterServiceTest {
     inner class GetHistoryEnrichmentTests {
 
         @Test
-        @DisplayName("성공 - getHistory 응답에 employeeCode/orgName/status 포함")
+        @DisplayName("성공 - getHistory 응답에 name/employeeCode/orgName 포함")
         fun getHistory_includesEmployeeContext() {
             val master = createMaster(employeeId = 1L)
             val employee = createEmployee()
             val history = ProfessionalPromotionTeamHistory(
                 id = 1L,
+                name = "PH0000001",
                 employeeId = 1L,
                 oldValue = null,
                 newValue = ProfessionalPromotionTeamType.RAMEN_SALE
@@ -866,10 +867,10 @@ class AdminPPTMasterServiceTest {
 
             val result = service.getHistory(1L, PageRequest.of(0, 20))
 
+            assertThat(result.content[0].name).isEqualTo("PH0000001")
             assertThat(result.content[0].employeeName).isEqualTo("홍길동")
             assertThat(result.content[0].employeeCode).isEqualTo("12345678")
             assertThat(result.content[0].orgName).isEqualTo("서울지점")
-            assertThat(result.content[0].status).isEqualTo("재직")
         }
     }
 }
