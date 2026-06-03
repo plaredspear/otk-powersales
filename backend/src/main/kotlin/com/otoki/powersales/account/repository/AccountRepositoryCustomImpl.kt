@@ -65,6 +65,17 @@ class AccountRepositoryCustomImpl(
         }
     }
 
+    override fun findAccessibleByPolicyAndId(policyPredicate: Predicate, id: Int): Account? {
+        return queryFactory
+            .selectFrom(account)
+            .where(
+                notDeleted(),
+                policyPredicate,
+                account.id.eq(id)
+            )
+            .fetchOne()
+    }
+
     override fun findCoordinatesMissingAccounts(limit: Int): List<Account> {
         return queryFactory
             .selectFrom(account)

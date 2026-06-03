@@ -1,6 +1,7 @@
 package com.otoki.powersales.account.service
 
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.account.exception.AccountNotFoundException
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
@@ -12,6 +13,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -219,6 +221,56 @@ class AdminAccountServiceTest {
             adminAccountService.getAccounts(scope, null, null, null, null, 0, 20)
 
             assertThat(pageableSlot.captured.sort.toString()).isEqualTo("name: ASC")
+        }
+    }
+
+    @Nested
+    @DisplayName("getAccountDetail — sharing policy 단건 조회")
+    inner class GetAccountDetailTests {
+
+        @Test
+        @DisplayName("가시 범위 안 거래처 → AccountDetailResponse 매핑 반환")
+        fun returnsDetailWhenAccessible() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            stubEvaluator(scope)
+            val account = createAccount(id = 7, name = "GS25 역삼점", externalKey = "AC001234")
+            every { accountRepository.findAccessibleByPolicyAndId(any(), 7) } returns account
+
+            val result = adminAccountService.getAccountDetail(scope, 7)
+
+            assertThat(result.id).isEqualTo(7)
+            assertThat(result.name).isEqualTo("GS25 역삼점")
+            assertThat(result.externalKey).isEqualTo("AC001234")
+        }
+
+        @Test
+        @DisplayName("evaluator.buildPredicate(sObjectName=Account) 결과를 Repository 에 전달")
+        fun passesPolicyPredicateToRepository() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true, userId = 100L)
+            stubEvaluator(scope)
+            every { accountRepository.findAccessibleByPolicyAndId(any(), 7) } returns createAccount(id = 7)
+
+            adminAccountService.getAccountDetail(scope, 7)
+
+            verify(exactly = 1) {
+                policyEvaluator.buildPredicate(
+                    scope = scope,
+                    sObjectName = "Account",
+                    entityPath = any<EntityPathBase<*>>(),
+                )
+            }
+            verify(exactly = 1) { accountRepository.findAccessibleByPolicyAndId(any(), 7) }
+        }
+
+        @Test
+        @DisplayName("가시 범위 밖 / 부재 거래처 → AccountNotFoundException")
+        fun throwsWhenNotAccessible() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            stubEvaluator(scope)
+            every { accountRepository.findAccessibleByPolicyAndId(any(), 999) } returns null
+
+            assertThatThrownBy { adminAccountService.getAccountDetail(scope, 999) }
+                .isInstanceOf(AccountNotFoundException::class.java)
         }
     }
 

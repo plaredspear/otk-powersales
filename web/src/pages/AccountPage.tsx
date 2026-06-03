@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert, Button, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import ResizableTable from '@/components/common/ResizableTable';
 import { useAccounts } from '@/hooks/account/useAccounts';
 import { usePermission } from '@/hooks/usePermission';
@@ -36,18 +37,48 @@ const STATUS_OPTIONS = [
 const PAGE_SIZE = 20;
 
 export default function AccountPage() {
-  const [abcType, setAbcType] = useState<string | undefined>();
-  const [branchCode, setBranchCode] = useState<string | undefined>();
-  const [accountStatusName, setAccountStatusName] = useState<string | undefined>();
-  const [keyword, setKeyword] = useState<string | undefined>();
-  const [page, setPage] = useState(0);
+  // 상세 → "목록으로" 복귀 시 query string 으로 전달된 직전 검색 조건을 초기 state 로 복원.
+  const [searchParams] = useSearchParams();
+  const [abcType, setAbcType] = useState<string | undefined>(
+    () => searchParams.get('abcType') ?? undefined,
+  );
+  const [branchCode, setBranchCode] = useState<string | undefined>(
+    () => searchParams.get('branchCode') ?? undefined,
+  );
+  const [accountStatusName, setAccountStatusName] = useState<string | undefined>(
+    () => searchParams.get('accountStatusName') ?? undefined,
+  );
+  const [keyword, setKeyword] = useState<string | undefined>(
+    () => searchParams.get('keyword') ?? undefined,
+  );
+  const [page, setPage] = useState(() => {
+    const p = Number(searchParams.get('page'));
+    return Number.isFinite(p) && p > 0 ? p : 0;
+  });
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const navigate = useNavigate();
   const { hasEntityPermission } = usePermission();
   const canCreateAccount = hasEntityPermission('account', 'EDIT');
   const canUpdateAccount = hasEntityPermission('account', 'EDIT');
   const canDeleteAccount = hasEntityPermission('account', 'DELETE');
   const showActionsColumn = canUpdateAccount || canDeleteAccount;
+
+  // 상세 페이지에서 "목록으로" 복귀 시 직전 검색 조건을 복원하기 위한 query string.
+  const listSearch = (() => {
+    const sp = new URLSearchParams();
+    if (keyword) sp.set('keyword', keyword);
+    if (abcType) sp.set('abcType', abcType);
+    if (branchCode) sp.set('branchCode', branchCode);
+    if (accountStatusName) sp.set('accountStatusName', accountStatusName);
+    if (page > 0) sp.set('page', String(page));
+    const qs = sp.toString();
+    return qs ? `?${qs}` : '';
+  })();
+
+  const goToDetail = (id: number) => {
+    navigate(`/account/${id}`, { state: { listSearch } });
+  };
 
   const { data, isLoading, isError, error, refetch } = useAccounts({
     keyword,
@@ -60,7 +91,17 @@ export default function AccountPage() {
 
   const columns: ColumnsType<Account> = [
     { title: '거래처코드', dataIndex: 'externalKey', width: 110, render: (val: string | null) => val ?? '-' },
-    { title: '거래처명', dataIndex: 'name', width: 180, ellipsis: true, render: (val: string | null) => val ?? '-' },
+    {
+      title: '거래처명',
+      dataIndex: 'name',
+      width: 180,
+      ellipsis: true,
+      render: (val: string | null, account: Account) => (
+        <Button type="link" style={{ padding: 0, height: 'auto' }} onClick={() => goToDetail(account.id)}>
+          {val ?? '-'}
+        </Button>
+      ),
+    },
     {
       title: 'ABC유형',
       dataIndex: 'abcType',
@@ -144,6 +185,7 @@ export default function AccountPage() {
             placeholder="거래처코드 또는 거래처명 검색"
             allowClear
             style={{ width: 280 }}
+            defaultValue={keyword ?? ''}
             onSearch={(val) => { setKeyword(val || undefined); setPage(0); }}
           />
         </Space>

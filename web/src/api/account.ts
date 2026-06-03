@@ -32,6 +32,62 @@ export interface AccountListData {
   totalPages: number;
 }
 
+/**
+ * 거래처 상세 조회 응답 (`GET /api/v1/admin/accounts/{id}`).
+ *
+ * 레거시 SF Account 레코드 페이지의 "기본 정보" 영역 동등. 거래처코드(`externalKey`) / 좌표 등
+ * 읽기 전용 식별 정보를 포함한다. 백엔드 [AccountDetailResponse] 와 1:1.
+ */
+export interface AccountDetail {
+  id: number;
+  externalKey: string | null;
+  name: string | null;
+  accountGroup: string | null;
+  employeeCode: string | null;
+  branchCode: string | null;
+  branchName: string | null;
+  address1: string | null;
+  address2: string | null;
+  zipCode: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  phone: string | null;
+  mobilePhone: string | null;
+  fax: string | null;
+  representative: string | null;
+  email: string | null;
+  website: string | null;
+  industry: string | null;
+  description: string | null;
+  businessLicenseNumber: string | null;
+  businessType: string | null;
+  businessCategory: string | null;
+  abcType: string | null;
+  abcTypeCode: string | null;
+  accountType: string | null;
+  accountStatusName: string | null;
+  accountStatusCode: string | null;
+  accountNumber: string | null;
+  site: string | null;
+  accountSource: string | null;
+  mapCoordinate: string | null;
+  rating: string | null;
+  ownership: string | null;
+  freezerInstalled: boolean | null;
+  freezerType: string | null;
+  firstInstalled: string | null;
+  orderEndTime: string | null;
+  closingTime1: string | null;
+  closingTime2: string | null;
+  closingTime3: string | null;
+  remainingCredit: string | null;
+  totalCredit: string | null;
+  annualRevenue: string | null;
+  numberOfEmployees: number | null;
+  consignmentAcc: string | null;
+  distribution: string | null;
+}
+
 
 // --- API function ---
 
@@ -39,6 +95,19 @@ export async function fetchAccounts(params: FetchAccountsParams): Promise<Accoun
   const res = await client.get<ApiResponse<AccountListData>>('/api/v1/admin/accounts', { params });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '거래처 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 거래처 상세 조회 (`GET /api/v1/admin/accounts/{id}`, `ACCOUNT_READ` 권한 필요).
+ *
+ * 가시 범위 밖 거래처는 404 (`ACCOUNT_NOT_FOUND`) — SF Sharing Rule 동등.
+ */
+export async function fetchAccountDetail(id: number): Promise<AccountDetail> {
+  const res = await client.get<ApiResponse<AccountDetail>>(`/api/v1/admin/accounts/${id}`);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '거래처 상세 조회에 실패했습니다');
   }
   return res.data.data;
 }

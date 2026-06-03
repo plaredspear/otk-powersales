@@ -37,6 +37,18 @@ interface AccountRepositoryCustom {
     ): Page<Account>
 
     /**
+     * SF Sharing Rule 정책 적용 단건 거래처 상세 조회.
+     *
+     * [findAllAccessibleByPolicy] 의 단건 버전 — sharing policy Predicate + soft-delete 제외 +
+     * `account.id = [id]` 합성으로 조회한다. 가시 범위 밖 거래처를 요청하면 매칭 0건으로 `null` 반환
+     * (SF sharing rule 의 "권한 없는 레코드는 존재하지 않음" 동등 — 호출 측에서 404 변환).
+     *
+     * @param policyPredicate SharingRulePolicyEvaluator 가 합성한 sharing policy Predicate
+     * @param id 조회 대상 Account.id
+     */
+    fun findAccessibleByPolicyAndId(policyPredicate: Predicate, id: Int): Account?
+
+    /**
      * 좌표 미수신 거래처 조회 — Naver Geocode batch (#637) 진입 조건.
      *
      * 조건:

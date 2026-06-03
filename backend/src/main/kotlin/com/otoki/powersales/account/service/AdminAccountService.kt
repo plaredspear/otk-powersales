@@ -1,8 +1,10 @@
 package com.otoki.powersales.account.service
 
+import com.otoki.powersales.account.dto.response.AccountDetailResponse
 import com.otoki.powersales.account.dto.response.AccountListItem
 import com.otoki.powersales.account.dto.response.AccountListResponse
 import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.account.exception.AccountNotFoundException
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
@@ -82,5 +84,29 @@ class AdminAccountService(
             totalElements = accountPage.totalElements,
             totalPages = accountPage.totalPages
         )
+    }
+
+    /**
+     * SF Sharing Rule 정책 적용 단건 거래처 상세 조회.
+     *
+     * 목록(`getAccounts`)과 동일하게 [SharingRulePolicyEvaluator.buildPredicate] 결과를 적용해
+     * 가시 범위 안의 거래처만 조회한다. 가시 범위 밖 id 를 요청하면 매칭 0건 → [AccountNotFoundException]
+     * (SF sharing rule 의 "권한 없는 레코드는 존재하지 않음" 동등 — 존재 여부 정보 노출 방지).
+     *
+     * @param scope 호출자(controller)에서 산출/주입한 현재 사용자의 DataScope.
+     * @param id path variable Account.id
+     * @throws AccountNotFoundException 부재 / soft-delete / 가시 범위 밖
+     */
+    fun getAccountDetail(scope: DataScope, id: Int): AccountDetailResponse {
+        val policyPredicate = policyEvaluator.buildPredicate(
+            scope = scope,
+            sObjectName = "Account",
+            entityPath = account,
+        )
+
+        val found = accountRepository.findAccessibleByPolicyAndId(policyPredicate, id)
+            ?: throw AccountNotFoundException(id)
+
+        return AccountDetailResponse.from(found)
     }
 }

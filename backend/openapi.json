@@ -39,6 +39,160 @@
         },
         "type" : "object"
       },
+      "AccountDetailResponse" : {
+        "properties" : {
+          "abcType" : {
+            "type" : [ "string", "null" ]
+          },
+          "abcTypeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountGroup" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountSource" : {
+            "enum" : [ "Advertisement", "Customer Event", "Employee Referral", "Google AdWords", "Other", "Partner", "Purchased List", "Trade Show", "Webinar", "Website" ],
+            "type" : [ "string", "null" ]
+          },
+          "accountStatusCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountStatusName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "enum" : [ "할인점", "체인", "농협", "수퍼", "식자재", "단체급식", "유지제과", "외식", "백화점", "C.V.S", "대리점", "제조", "군납", "기타" ],
+            "type" : [ "string", "null" ]
+          },
+          "address1" : {
+            "type" : [ "string", "null" ]
+          },
+          "address2" : {
+            "type" : [ "string", "null" ]
+          },
+          "annualRevenue" : {
+            "type" : [ "number", "null" ]
+          },
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "businessCategory" : {
+            "type" : [ "string", "null" ]
+          },
+          "businessLicenseNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "businessType" : {
+            "type" : [ "string", "null" ]
+          },
+          "closingTime1" : {
+            "type" : [ "string", "null" ]
+          },
+          "closingTime2" : {
+            "type" : [ "string", "null" ]
+          },
+          "closingTime3" : {
+            "type" : [ "string", "null" ]
+          },
+          "consignmentAcc" : {
+            "type" : [ "string", "null" ]
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "distribution" : {
+            "type" : [ "string", "null" ]
+          },
+          "email" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "externalKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "fax" : {
+            "type" : [ "string", "null" ]
+          },
+          "firstInstalled" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "freezerInstalled" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "freezerType" : {
+            "enum" : [ "대", "중" ],
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "industry" : {
+            "enum" : [ "Agriculture", "Apparel", "Banking", "Biotechnology", "Chemicals", "Communications", "Construction", "Consulting", "Education", "Electronics", "Energy", "Engineering", "Entertainment", "Environmental", "Finance", "Food & Beverage", "Government", "Healthcare", "Hospitality", "Insurance", "Machinery", "Manufacturing", "Media", "Not For Profit", "Other", "Recreation", "Retail", "Shipping", "Technology", "Telecommunications", "Transportation", "Utilities" ],
+            "type" : [ "string", "null" ]
+          },
+          "latitude" : {
+            "type" : [ "string", "null" ]
+          },
+          "longitude" : {
+            "type" : [ "string", "null" ]
+          },
+          "mapCoordinate" : {
+            "type" : [ "string", "null" ]
+          },
+          "mobilePhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "numberOfEmployees" : {
+            "type" : [ "number", "null" ]
+          },
+          "orderEndTime" : {
+            "type" : [ "string", "null" ]
+          },
+          "ownership" : {
+            "enum" : [ "Public", "Private", "Subsidiary", "Other" ],
+            "type" : [ "string", "null" ]
+          },
+          "phone" : {
+            "type" : [ "string", "null" ]
+          },
+          "rating" : {
+            "enum" : [ "Hot", "Warm", "Cold" ],
+            "type" : [ "string", "null" ]
+          },
+          "remainingCredit" : {
+            "type" : [ "number", "null" ]
+          },
+          "representative" : {
+            "type" : [ "string", "null" ]
+          },
+          "site" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalCredit" : {
+            "type" : [ "number", "null" ]
+          },
+          "website" : {
+            "type" : [ "string", "null" ]
+          },
+          "zipCode" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "AccountInfo" : {
         "properties" : {
           "accountId" : {
@@ -2859,6 +3013,35 @@
             "type" : "string"
           },
           "date" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAccountDetailResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AccountDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
             "type" : "string"
           }
         },
@@ -21030,6 +21213,38 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-account-controller" ]
+      },
+      "get" : {
+        "operationId" : "getAccountDetail",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAccountDetailResponse"
                 }
               }
             },

@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.account.dto.request.AdminAccountCreateRequest
 import com.otoki.powersales.account.dto.request.AdminAccountUpdateRequest
+import com.otoki.powersales.account.dto.response.AccountDetailResponse
 import com.otoki.powersales.account.dto.response.AccountListItem
 import com.otoki.powersales.account.dto.response.AccountListResponse
 import com.otoki.powersales.account.dto.response.AdminAccountCreateResponse
@@ -125,6 +126,46 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalElements").value(0))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/accounts/{id} - 거래처 상세 조회")
+    inner class GetAccountDetail {
+
+        @Test
+        @DisplayName("성공 - 상세 조회 (200 OK + 기본 정보 + 거래처코드)")
+        fun getAccountDetail_success() {
+            val response = AccountDetailResponse.from(
+                com.otoki.powersales.account.entity.Account(
+                    id = 7,
+                    name = "GS25 역삼점",
+                    externalKey = "AC001234",
+                    abcType = "편의점",
+                    branchCode = "A001",
+                    branchName = "서울1지점",
+                    accountStatusName = "활성"
+                )
+            )
+            every { adminAccountService.getAccountDetail(any(), eq(7)) } returns response
+
+            mockMvc.perform(get("/api/v1/admin/accounts/{id}", 7))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(7))
+                .andExpect(jsonPath("$.data.name").value("GS25 역삼점"))
+                .andExpect(jsonPath("$.data.externalKey").value("AC001234"))
+        }
+
+        @Test
+        @DisplayName("실패 - 비존재/가시 범위 밖 id → 404 ACCOUNT_NOT_FOUND")
+        fun getAccountDetail_notFound() {
+            every { adminAccountService.getAccountDetail(any(), eq(9999)) } throws AccountNotFoundException(9999)
+
+            mockMvc.perform(get("/api/v1/admin/accounts/{id}", 9999))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.message").value("거래처를 찾을 수 없습니다: 9999"))
         }
     }
 
