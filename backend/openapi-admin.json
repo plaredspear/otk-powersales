@@ -14282,6 +14282,12 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
+          "accountStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
           "branchName" : {
             "type" : [ "string", "null" ]
           },
@@ -14300,6 +14306,9 @@
           },
           "employeeName" : {
             "type" : "string"
+          },
+          "employmentStatus" : {
+            "type" : [ "string", "null" ]
           },
           "endDate" : {
             "format" : "date",

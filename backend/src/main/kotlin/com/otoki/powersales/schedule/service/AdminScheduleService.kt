@@ -348,9 +348,18 @@ class AdminScheduleService(
                 employeeCode = row.employeeCode ?: "",
                 employeeName = row.employeeName ?: "",
                 branchName = row.branchName,
+                employmentStatus = if (row.employeeId != null) {
+                    displayStatusCalculator.employmentStatus(
+                        row.employeeStatus, row.employeeAppLoginActive, row.employeeEndDate
+                    )
+                } else {
+                    null
+                },
                 accountId = row.accountId,
                 accountCode = row.accountCode,
                 accountName = row.accountName,
+                accountType = row.accountType?.displayName,
+                accountStatus = row.accountStatusName,
                 typeOfWork3 = row.typeOfWork3?.displayName,
                 typeOfWork4 = row.typeOfWork4?.displayName,
                 typeOfWork5 = row.typeOfWork5?.displayName,

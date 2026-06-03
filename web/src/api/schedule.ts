@@ -50,9 +50,15 @@ export interface ScheduleListItem {
   employeeCode: string;
   employeeName: string;
   branchName: string | null;
+  /** 재직상태 (SF formula ValidConditionData__c) — 재직/휴직/퇴직YYYY-MM-DD/퇴직예정YYYY-MM-DD */
+  employmentStatus: string | null;
   accountId: number | null;
   accountCode: string | null;
   accountName: string | null;
+  /** 거래처유형 (SF Account.Type) */
+  accountType: string | null;
+  /** 거래처상태 (SF Account.AccountStatusName__c) */
+  accountStatus: string | null;
   typeOfWork3: string | null;
   typeOfWork4: string | null;
   typeOfWork5: string | null;

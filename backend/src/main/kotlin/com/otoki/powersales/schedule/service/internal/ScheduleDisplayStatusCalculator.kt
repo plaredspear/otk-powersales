@@ -32,10 +32,22 @@ class ScheduleDisplayStatusCalculator {
      */
     fun employmentStatus(employee: Employee?, today: LocalDate = LocalDate.now()): String? {
         if (employee == null) return null
-        val status = employee.status
-        val appLoginActive = employee.appLoginActive == true
-        val empEndDate = employee.endDate
-        val resigned = status == "퇴직" || !appLoginActive
+        return employmentStatus(employee.status, employee.appLoginActive, employee.endDate, today)
+    }
+
+    /**
+     * 재직상태 (`ValidConditionData__c`) — raw 필드 오버로드.
+     *
+     * 목록 조회는 N+1 회피를 위해 [Employee] entity 를 hydration 하지 않고 projection row 의
+     * status / appLoginActive / endDate 만 받으므로, 상세 (entity 기반) 와 동일 로직을 raw 필드로 재사용한다.
+     */
+    fun employmentStatus(
+        status: String?,
+        appLoginActive: Boolean?,
+        empEndDate: LocalDate?,
+        today: LocalDate = LocalDate.now(),
+    ): String {
+        val resigned = status == "퇴직" || appLoginActive != true
 
         return when {
             resigned && empEndDate != null && empEndDate.isBefore(today) ->
