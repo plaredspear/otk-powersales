@@ -284,7 +284,8 @@ class Stage1S3CopyService(
                                     val values = ArrayList<String?>(meta.fields.size + extraValues.size)
                                     for (f in meta.fields) {
                                         val idx = headerIndex[f.sfFieldName]
-                                        val raw = if (idx != null && idx < arr.size) arr[idx] else null
+                                        val rawCell = if (idx != null && idx < arr.size) arr[idx] else null
+                                        val raw = f.normalize(rawCell)
                                         val effective = when {
                                             raw.isNullOrBlank() && f.nullPlaceholder != null -> f.nullPlaceholder
                                             raw.isNullOrBlank() -> null

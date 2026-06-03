@@ -855,7 +855,8 @@ object Stage1Targets {
         fields = listOf(
             FieldMapping("Id", "sfid", nullable = false),
             FieldMapping("SAPAccountCode__c", "sap_account_code"),
-            FieldMapping("SalesDate__c", "sales_date"),
+            // SF Date (yyyy-MM-dd) → DB varchar(8) yyyyMMdd. external_key 는 이미 yyyyMMdd 로 export 되어 변환 불요.
+            FieldMapping("SalesDate__c", "sales_date", dateToYyyymmdd = true),
             FieldMapping("Externalkey__c", "external_key"),
             FieldMapping("AccountId__c", "account_sfid"),
             FieldMapping("ERPSalesAmount1__c", "erp_sales_amount1"),

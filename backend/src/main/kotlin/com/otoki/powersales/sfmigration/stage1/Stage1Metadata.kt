@@ -19,7 +19,31 @@ data class FieldMapping(
      * 값 지정 → SF 원본이 NULL/blank 일 때 placeholder 로 대체.
      */
     val nullPlaceholder: String? = null,
-)
+    /**
+     * SF `Date` 타입 (CSV export 시 ISO `yyyy-MM-dd`, 10자) 을 DB `varchar(8)` `yyyyMMdd` 로
+     * 변환할지 여부.
+     * true → 하이픈 제거 (예: "2021-03-01" → "20210301"). 신규 시스템 SAP 인바운드
+     *        (DailySalesHistoryUpsertService) 가 salesDate 를 `yyyyMMdd` 8자로 검증 + externalKey
+     *        (`sapAccountCode + salesDate`) 키를 구성하므로, 마이그레이션도 동일 포맷이어야
+     *        SF `Externalkey__c` (SAPAccountCode + yyyyMMdd) 와 정합. SF `Date` 컬럼이 DB 에서
+     *        `LocalDate`/`date` 로 매핑된 경우는 false 유지 (yyyy-MM-dd 가 그대로 정상 적재).
+     */
+    val dateToYyyymmdd: Boolean = false,
+) {
+    /**
+     * 마이그레이션 적재 직전 SF 원본값을 DB 컬럼 포맷에 맞게 정규화.
+     * 현재는 [dateToYyyymmdd] 변환만 담당. 적재 service 가 본 메서드를 단일 통로로 사용.
+     */
+    fun normalize(raw: String?): String? {
+        if (raw.isNullOrBlank()) return raw
+        if (dateToYyyymmdd) {
+            // "yyyy-MM-dd" 또는 "yyyy-MM-dd'T'HH:mm:ss..." → 앞 10자(날짜)만 취해 하이픈 제거.
+            val datePart = if (raw.length >= 10) raw.substring(0, 10) else raw
+            return datePart.replace("-", "")
+        }
+        return raw
+    }
+}
 
 data class EntityMetadata(
     val targetName: String,
