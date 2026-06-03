@@ -215,7 +215,7 @@ class AdminPPTMasterService(
         return PPTMasterHistoryListResponse(
             content = page.content.map {
                 PPTMasterHistoryResponse.Companion.from(
-                    it, employee?.name, employee?.employeeCode, employee?.orgName, employee?.status
+                    it, employee?.name, employee?.employeeCode, employee?.orgName
                 )
             },
             totalElements = page.totalElements,
@@ -242,7 +242,7 @@ class AdminPPTMasterService(
             content = page.content.map { history ->
                 val emp = history.employee
                 PPTMasterHistoryResponse.Companion.from(
-                    history, emp?.name, emp?.employeeCode, emp?.orgName, emp?.status
+                    history, emp?.name, emp?.employeeCode, emp?.orgName
                 )
             },
             totalElements = page.totalElements,

@@ -7,11 +7,11 @@ import type { PPTHistory } from '@/api/pptMaster';
 
 const sampleHistory: PPTHistory = {
   id: 1,
+  name: 'PH0014972',
   employeeId: 100,
   employeeName: '백은경',
   employeeCode: 'EMP005',
   orgName: '서울지점',
-  status: '재직',
   oldValue: '라면세일조',
   newValue: '카레행사조',
   changedAt: '2026-05-18T14:30:00',
@@ -19,11 +19,11 @@ const sampleHistory: PPTHistory = {
 
 const deletedEmployeeHistory: PPTHistory = {
   id: 2,
+  name: 'PH0010771',
   employeeId: 999,
   employeeName: null,
   employeeCode: null,
   orgName: null,
-  status: null,
   oldValue: null,
   newValue: '라면세일조',
   changedAt: '2026-05-17T09:00:00',
@@ -62,6 +62,7 @@ describe('PPTHistoryPage', () => {
 
   it('초기 렌더 시 이력 행 2건 표시', () => {
     renderPage();
+    expect(screen.getByText('PH0014972')).toBeInTheDocument();
     expect(screen.getByText('백은경')).toBeInTheDocument();
     expect(screen.getByText('EMP005')).toBeInTheDocument();
     expect(screen.getByText('서울지점')).toBeInTheDocument();

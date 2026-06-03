@@ -101,11 +101,11 @@ data class PPTMasterResponse(
 
 data class PPTMasterHistoryResponse(
     val id: Long,
+    val name: String?,
     val employeeId: Long?,
     val employeeName: String?,
     val employeeCode: String?,
     val orgName: String?,
-    val status: String?,
     val oldValue: ProfessionalPromotionTeamType?,
     val newValue: ProfessionalPromotionTeamType?,
     val changedAt: LocalDateTime
@@ -115,16 +115,15 @@ data class PPTMasterHistoryResponse(
             history: ProfessionalPromotionTeamHistory,
             employeeName: String?,
             employeeCode: String?,
-            orgName: String?,
-            status: String?
+            orgName: String?
         ): PPTMasterHistoryResponse {
             return PPTMasterHistoryResponse(
                 id = history.id,
+                name = history.name,
                 employeeId = history.employeeId,
                 employeeName = employeeName,
                 employeeCode = employeeCode,
                 orgName = orgName,
-                status = status,
                 oldValue = history.oldValue,
                 newValue = history.newValue,
                 changedAt = history.changedAt

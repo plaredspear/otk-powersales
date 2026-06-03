@@ -19,13 +19,6 @@ const TEAM_TYPE_FILTER_OPTIONS = [
 
 const DEFAULT_SIZE = 20;
 
-function statusColor(status: string | null | undefined): string {
-  if (status == null) return 'default';
-  if (status === '재직') return 'green';
-  if (status === '휴직') return 'warning';
-  return 'default';
-}
-
 export default function PPTHistoryPage() {
   // page/필터를 URL query string 에 보관 — 새로고침/뒤로가기/공유 시 직전 조건 복원.
   const { page, setPage, filters, setFilters } = useListQueryParams({
@@ -99,23 +92,9 @@ export default function PPTHistoryPage() {
 
   const columns: ColumnsType<PPTHistory> = [
     {
-      title: '변경 시각',
-      dataIndex: 'changedAt',
+      title: '전문행사조 이력번호',
+      dataIndex: 'name',
       width: 160,
-      align: 'center',
-      render: (val: string) => dayjs(val).format('YYYY-MM-DD HH:mm'),
-    },
-    {
-      title: '사번',
-      dataIndex: 'employeeCode',
-      width: 110,
-      align: 'center',
-      render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '사원명',
-      dataIndex: 'employeeName',
-      width: 100,
       align: 'center',
       render: (val: string | null) => val ?? '-',
     },
@@ -127,12 +106,18 @@ export default function PPTHistoryPage() {
       render: (val: string | null) => val ?? '-',
     },
     {
-      title: '재직상태',
-      dataIndex: 'status',
+      title: '사번',
+      dataIndex: 'employeeCode',
+      width: 110,
+      align: 'center',
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '사원',
+      dataIndex: 'employeeName',
       width: 100,
       align: 'center',
-      render: (val: string | null) =>
-        val == null ? '-' : <Tag color={statusColor(val)}>{val}</Tag>,
+      render: (val: string | null) => val ?? '-',
     },
     {
       title: '변경 전',
@@ -148,6 +133,13 @@ export default function PPTHistoryPage() {
       width: 140,
       align: 'center',
       render: (val: string) => <Tag color={getPPTTeamTypeColor(val)}>{val}</Tag>,
+    },
+    {
+      title: '변경 시점',
+      dataIndex: 'changedAt',
+      width: 160,
+      align: 'center',
+      render: (val: string) => dayjs(val).format('YYYY-MM-DD HH:mm'),
     },
   ];
 
@@ -211,7 +203,7 @@ export default function PPTHistoryPage() {
           onClick: () => handleRowClick(record),
           style: { cursor: 'pointer' },
         })}
-        scroll={{ x: 920 }}
+        scroll={{ x: 970 }}
         size="middle"
       />
 
