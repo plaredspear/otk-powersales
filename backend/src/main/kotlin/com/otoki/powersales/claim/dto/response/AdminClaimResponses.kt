@@ -27,10 +27,15 @@ data class AdminClaimListItem(
     val subcategoryLabel: String?,
     val defectQuantity: BigDecimal?,
     val status: String,
-    val createdAt: LocalDateTime
+    val createdAt: LocalDateTime,
+    /**
+     * 목록 카드 뷰 배경용 대표 이미지 URL.
+     * 불량(CLAIM_DEFECT) 사진 우선, 없으면 첫 사진. 사진이 없으면 null.
+     */
+    val representativeImageUrl: String?
 ) {
     companion object {
-        fun from(claim: Claim): AdminClaimListItem = AdminClaimListItem(
+        fun from(claim: Claim, representativeImageUrl: String?): AdminClaimListItem = AdminClaimListItem(
             claimId = claim.id,
             employeeName = claim.employee?.name,
             employeeCode = claim.employee?.employeeCode,
@@ -43,7 +48,8 @@ data class AdminClaimListItem(
             subcategoryLabel = claim.claimType2.label,
             defectQuantity = claim.defectQuantity,
             status = claim.status.name,
-            createdAt = claim.createdAt
+            createdAt = claim.createdAt,
+            representativeImageUrl = representativeImageUrl
         )
     }
 }

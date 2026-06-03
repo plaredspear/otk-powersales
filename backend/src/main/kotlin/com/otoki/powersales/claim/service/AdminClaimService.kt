@@ -9,6 +9,7 @@ import com.otoki.powersales.claim.repository.AdminClaimRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.UploadFileKbnTypes
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -52,13 +53,44 @@ class AdminClaimService(
             pageable = pageable
         )
 
+        val claims = claimPage.content
+        val claimIds = claims.map { it.id }
+        val filesByClaimId: Map<Long, List<UploadFile>> =
+            if (claimIds.isEmpty()) {
+                emptyMap()
+            } else {
+                uploadFileRepository
+                    .findByParentTypeAndParentIdInAndIsDeletedFalse(UploadFileParentTypes.CLAIM, claimIds)
+                    .filter { it.parentId != null }
+                    .groupBy { it.parentId!! }
+            }
+
         return AdminClaimListResponse(
-            content = claimPage.content.map { AdminClaimListItem.Companion.from(it) },
+            content = claims.map { claim ->
+                val imageUrl = resolveRepresentativeImageUrl(filesByClaimId[claim.id].orEmpty())
+                AdminClaimListItem.from(claim, imageUrl)
+            },
             page = claimPage.number,
             size = claimPage.size,
             totalElements = claimPage.totalElements,
             totalPages = claimPage.totalPages
         )
+    }
+
+    /**
+     * 클레임 첨부 사진 중 목록 카드 배경용 대표 이미지 URL 을 선정한다.
+     * - uniqueKey 가 없는 파일은 후보에서 제외 (URL 변환 불가).
+     * - 불량(CLAIM_DEFECT) 사진 우선, 동급이면 createdAt 최소(첫 사진).
+     * - 후보가 없으면 null.
+     */
+    private fun resolveRepresentativeImageUrl(files: List<UploadFile>): String? {
+        val candidate = files
+            .filter { !it.uniqueKey.isNullOrBlank() }
+            .minWithOrNull(
+                compareByDescending<UploadFile> { it.uploadKbn == UploadFileKbnTypes.CLAIM_DEFECT }
+                    .thenBy { it.createdAt }
+            ) ?: return null
+        return publicUrlResolver.resolve(candidate.uniqueKey)
     }
 
     fun getClaimDetail(claimId: Long): AdminClaimDetailResponse {
