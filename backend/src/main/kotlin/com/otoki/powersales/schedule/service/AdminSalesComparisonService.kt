@@ -425,8 +425,16 @@ class AdminSalesComparisonService(
             .filter { it.isDeleted != true }
             .associate { it.name to it.accountCode }
 
+        // SF 모집단 필터 (cls:168) — `WHERE ... AND Account__r.Type IN: categoryMap.keySet()`.
+        // 거래처유형(Account.Type) 이 거래처유형마스터(categoryMap) 에 등록된 거래처만 모집단에 포함.
+        // 미등록/null 유형 거래처는 SF SOQL 단계에서 제외되므로 신규도 동일하게 제외해야 적합/총계 카운트가 SF 와 일치한다.
+        val categoryNames = categoryCodeByName.keys
+
         return accountCodeMap.entries.mapNotNull { (accountCode, items) ->
             val account = accountByCode[accountCode] ?: return@mapNotNull null
+
+            // SF 모집단 필터 — Account.Type 이 거래처유형마스터에 없으면 제외 (cls:168 SOQL 동등).
+            if (account.accountType?.displayName !in categoryNames) return@mapNotNull null
 
             val displayItems = items.filter { it.workingCategory1 == "진열" && it.workingCategory5 == "상시" }
             val eventItems = items.filter { it.workingCategory1 == "행사" }
