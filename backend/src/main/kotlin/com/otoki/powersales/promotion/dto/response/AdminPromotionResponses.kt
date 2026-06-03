@@ -28,6 +28,9 @@ data class PromotionListItem(
     val category1: String?,
     val isClosed: Boolean,
     val costCenterCode: String?,
+    val targetAmount: Double?,
+    val actualAmount: Double?,
+    val createdByName: String?,
     val isDeleted: Boolean,
     val createdAt: LocalDateTime,
     val remark: String? = null
@@ -61,6 +64,11 @@ data class PromotionListItem(
                 category1 = promotion.category1,
                 isClosed = promotion.isClosed,
                 costCenterCode = promotion.costCenterCode,
+                // SF rollup DKRetail__TargetAmount__c / DKRetail__ActualAmount__c 동기화 스칼라 컬럼.
+                targetAmount = promotion.dkTargetAmount,
+                actualAmount = promotion.dkActualAmount,
+                // 작성자 = SF CreatedBy.Name 동등 (createdBy 는 searchForAdmin 에서 fetchJoin — N+1 없음).
+                createdByName = promotion.createdBy?.name,
                 isDeleted = promotion.isDeleted,
                 createdAt = promotion.createdAt,
                 remark = promotion.remark
