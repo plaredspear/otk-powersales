@@ -415,8 +415,21 @@ class AdminSalesComparisonService(
         val avgClosingAmounts = integrationItems.associate { it.accountCode to it.avgClosingAmount }
 
         // 투입기준마스터 (진열 + confirmed = true + isDeleted != true) — 화면 단위 1회 조회
-        val criteriaList = employeeInputCriteriaMasterRepository
+        // SF criteriaList SOQL (cls:334-342) 정합: 선택 년월에 유효한 기준만 + ORDER BY StartDate → 같은 카테고리는 최신 startDate 로 덮어쓰기.
+        //   WHERE StartDate__c <= 선택월말일 AND (EndDate__c = NULL OR EndDate__c >= 선택월1일)
+        // (과거 날짜 무관 firstOrNull 매칭은 같은 거래처유형의 구버전 기준금액을 집어 경계↔적합 판정을 SF 와 다르게 만들었다.)
+        val selectedMonthFirstDay = java.time.LocalDate.of(year, month, 1)
+        val selectedMonthLastDay = selectedMonthFirstDay.withDayOfMonth(selectedMonthFirstDay.lengthOfMonth())
+        val criteriaByCode = employeeInputCriteriaMasterRepository
             .findByTypeOfWork1AndConfirmedTrueAndIsDeletedNot(TypeOfWork1.DISPLAY, true)
+            .filter { c ->
+                val start = c.startDate ?: return@filter false
+                !start.isAfter(selectedMonthLastDay) &&
+                    (c.endDate == null || !c.endDate!!.isBefore(selectedMonthFirstDay))
+            }
+            // SF `ORDER BY StartDate__c` 후 같은 key put → 마지막(= startDate 최대)이 남는다.
+            .sortedBy { it.startDate }
+            .associateBy { it.accountCategorizedCode }
 
         // 거래처유형 코드 맵 — SF `categoryMap` (cls:101) 동등. AccountCategoryMaster.name → accountCode (예: "대형마트(3대)" → "01").
         // SF categoryMap 은 useSearch 필터 없이 전체 거래처유형을 담는다 (검색 제외 유형도 거래처 분류엔 필요).
@@ -466,7 +479,8 @@ class AdminSalesComparisonService(
             }
 
             // SF 판정 마스터 매칭 (cls:466) — 항상 Account.Type 기준 코드 (ABCType 분기는 화면 카테고리에만 적용).
-            val criteria = criteriaList.firstOrNull { it.accountCategorizedCode == typeCode }
+            // 선택월 유효 + 최신 startDate 기준 (criteriaByCode) 으로 조회 — SF criteriaMap.get(Type+년월) 동등.
+            val criteria = criteriaByCode[typeCode]
             val fixedStandard = criteria?.fixed1PersonStandardAmount
             val fixedMin = criteria?.fixed1PersonMinAmountInRealmRange
             val bifurcationStandard = criteria?.bifurcationHalfPersonStandard
