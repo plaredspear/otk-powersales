@@ -8,7 +8,7 @@ data class SavedSearchResponse(
     val resourceKey: String,
     val name: String,
     val scope: SavedSearchScope,
-    val ownerId: Long,
+    val ownerId: Long?,
     val ownerName: String?,
     val filters: Map<String, Any?>,
     val sortOrder: Int,

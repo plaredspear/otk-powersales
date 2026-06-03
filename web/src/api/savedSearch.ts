@@ -8,7 +8,7 @@ export interface SavedSearch {
   resourceKey: string;
   name: string;
   scope: SavedSearchScope;
-  ownerId: number;
+  ownerId: number | null;
   ownerName: string | null;
   filters: Record<string, string>;
   sortOrder: number;
