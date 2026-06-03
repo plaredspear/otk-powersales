@@ -15,6 +15,24 @@ const PROMOTION_TYPE_TAG: Record<string, string> = {
   증정: 'gold',
 };
 
+/** 필수 입력 필드 라벨 — 편집 모드에서 빨간 * 표시 (SF 레거시 편집 화면 동등). */
+function RequiredLabel({ text, required }: { text: string; required: boolean }) {
+  if (!required) return <>{text}</>;
+  return (
+    <>
+      <span style={{ color: '#ff4d4f', marginRight: 2 }}>*</span>
+      {text}
+    </>
+  );
+}
+
+/** 저장 시 다른 값으로부터 계산되는 읽기 전용 필드 안내 (SF "저장 시 이 필드가 계산됨" 동등). */
+function CalculatedHint() {
+  return (
+    <div style={{ color: '#999', fontSize: 12, marginTop: 2 }}>저장 시 이 필드가 계산됨</div>
+  );
+}
+
 export interface DetailFormValues {
   accountId: number;
   accountName: string | null;
@@ -102,7 +120,7 @@ export default function PromotionDetailSection({
           />
         </Tooltip>
       </Descriptions.Item>
-      <Descriptions.Item label="시작일">
+      <Descriptions.Item label={<RequiredLabel text="시작일" required={editing} />}>
         {editing ? (
           <DatePicker
             size="small"
@@ -116,8 +134,11 @@ export default function PromotionDetailSection({
         )}
       </Descriptions.Item>
 
-      <Descriptions.Item label="행사명">{promotion.promotionName ?? '-'}</Descriptions.Item>
-      <Descriptions.Item label="종료일">
+      <Descriptions.Item label="행사명">
+        {promotion.promotionName ?? '-'}
+        {editing && <CalculatedHint />}
+      </Descriptions.Item>
+      <Descriptions.Item label={<RequiredLabel text="종료일" required={editing} />}>
         {editing ? (
           <DatePicker
             size="small"
@@ -131,7 +152,7 @@ export default function PromotionDetailSection({
         )}
       </Descriptions.Item>
 
-      <Descriptions.Item label="거래처">
+      <Descriptions.Item label={<RequiredLabel text="거래처" required={editing} />}>
         {editing ? (
           <Select
             size="small"
@@ -188,6 +209,7 @@ export default function PromotionDetailSection({
 
       <Descriptions.Item label="거래처코드">
         {promotion.accountCode ?? '-'}
+        {editing && <CalculatedHint />}
       </Descriptions.Item>
       <Descriptions.Item label="매대위치">
         {editing ? (
