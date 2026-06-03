@@ -405,7 +405,7 @@ export const menuRoute: MenuRoute = {
       name: '개발자 도구',
       icon: <ToolOutlined />,
       children: [
-        { path: '/admin/tools/naver-geocode', name: 'Naver Geocode 변환 테스트', systemPermission: 'MODIFY_ALL_DATA' },
+        { path: '/admin/tools/external-api', name: '외부 API 테스트', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/tools/scheduled-jobs', name: '스케줄 잡 실행 이력', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/tools/sap-inbound', name: 'SAP Inbound', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/tools/sap-outbound', name: 'SAP Outbound', systemPermission: 'VIEW_ALL_DATA' },

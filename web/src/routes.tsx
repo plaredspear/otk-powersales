@@ -75,6 +75,7 @@ const PPTHistoryPage = lazy(() => import('@/pages/promotion/PPTHistoryPage'));
 const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage'));
 const AdminAccountRegisterPage = lazy(() => import('@/pages/settings/AdminAccountRegisterPage'));
 const NaverGeocodeTestPage = lazy(() => import('@/pages/admin/NaverGeocodeTestPage'));
+const ExternalApiTestPage = lazy(() => import('@/pages/admin/tools/external-api/ExternalApiTestPage'));
 const ScheduledJobsPage = lazy(() => import('@/pages/admin/scheduled-jobs/ScheduledJobsPage'));
 const SapInboundPage = lazy(() => import('@/pages/admin/tools/sap-inbound/SapInboundPage'));
 const SapOutboundPage = lazy(() => import('@/pages/admin/tools/sap-outbound/SapOutboundPage'));
@@ -313,6 +314,7 @@ export const router = createBrowserRouter(
             {
               element: <PermissionRoute systemPermission="MODIFY_ALL_DATA" />,
               children: [
+                { path: '/admin/tools/external-api', element: <LazyWrapper><ExternalApiTestPage /></LazyWrapper> },
                 { path: '/admin/tools/naver-geocode', element: <LazyWrapper><NaverGeocodeTestPage /></LazyWrapper> },
               ],
             },
