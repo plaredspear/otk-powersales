@@ -285,13 +285,6 @@ export default function PPTMasterPage() {
       render: (val: boolean) => (val ? '✅' : '-'),
     },
     {
-      title: '최종 수정 일자',
-      dataIndex: 'updatedAt',
-      width: 150,
-      align: 'center',
-      render: (val: string) => (val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-'),
-    },
-    {
       title: '액션',
       width: 170,
       align: 'center',
