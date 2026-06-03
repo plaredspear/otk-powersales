@@ -17490,6 +17490,10 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
+          "actualAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
           "category1" : {
             "type" : [ "string", "null" ]
           },
@@ -17502,6 +17506,9 @@
           "createdAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "createdByName" : {
+            "type" : [ "string", "null" ]
           },
           "deleted" : {
             "type" : "boolean"
@@ -17541,6 +17548,10 @@
           "startDate" : {
             "format" : "date",
             "type" : "string"
+          },
+          "targetAmount" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
           }
         },
         "type" : "object"

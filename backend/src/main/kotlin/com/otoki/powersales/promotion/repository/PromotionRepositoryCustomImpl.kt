@@ -66,6 +66,8 @@ class PromotionRepositoryCustomImpl(
             .selectFrom(promotion)
             .leftJoin(promotion.account, account).fetchJoin()
             .leftJoin(promotion.primaryProduct, product).fetchJoin()
+            // 목록의 "작성자" 컬럼(createdBy.name) N+1 방지 — LAZY @ManyToOne 을 fetchJoin 으로 한 번에 적재.
+            .leftJoin(promotion.createdBy).fetchJoin()
             // policyPredicate 의 owner/hierarchy path (promotion.ownerUser.*) 가 implicit inner join 을
             // 만들지 않도록 명시적 leftJoin. OR 합성이라 ownerUser=null row 도 다른 절로 통과해야 함.
             .leftJoin(promotion.ownerUser)

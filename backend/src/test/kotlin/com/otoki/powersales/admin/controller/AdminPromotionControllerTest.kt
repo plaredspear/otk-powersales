@@ -105,6 +105,9 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
                         category1 = "냉장",
                         isClosed = false,
                         costCenterCode = "1101",
+                        targetAmount = 1500000.0,
+                        actualAmount = 1230000.0,
+                        createdByName = "홍길동",
                         isDeleted = false,
                         createdAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0, 0)
                     )

@@ -27,6 +27,9 @@ export interface PromotionListItem {
   category1: string | null;
   isClosed: boolean;
   costCenterCode: string | null;
+  targetAmount: number | null;
+  actualAmount: number | null;
+  createdByName: string | null;
   remark: string | null;
   isDeleted: boolean;
   createdAt: string;

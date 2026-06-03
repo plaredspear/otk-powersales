@@ -139,6 +139,42 @@ export default function PromotionListPage() {
       align: 'center',
       render: (val: string | null) => val ?? '-',
     },
+    {
+      title: 'CC Code',
+      dataIndex: 'costCenterCode',
+      width: 100,
+      align: 'center',
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '목표금액',
+      dataIndex: 'targetAmount',
+      width: 120,
+      align: 'right',
+      render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
+    },
+    {
+      title: '실적금액 (원)',
+      dataIndex: 'actualAmount',
+      width: 120,
+      align: 'right',
+      render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
+    },
+    {
+      title: '작성 일자',
+      dataIndex: 'createdAt',
+      width: 110,
+      align: 'center',
+      render: (val: string) => formatDate(val),
+    },
+    {
+      title: '작성자',
+      dataIndex: 'createdByName',
+      width: 100,
+      align: 'center',
+      ellipsis: true,
+      render: (val: string | null) => val ?? '-',
+    },
   ];
 
   return (
@@ -188,7 +224,7 @@ export default function PromotionListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        scroll={{ x: 1400 }}
+        scroll={{ x: 1950 }}
         pagination={{
           current: (data?.page ?? 0) + 1,
           total: data?.totalElements ?? 0,
