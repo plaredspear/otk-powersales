@@ -34,10 +34,12 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     mutationState.isPending = false;
   });
 
-  it('H1 - 페이지 진입 시 Naver Geocode / SAP Outbound 탭이 모두 노출', () => {
+  it('H1 - 페이지 진입 시 Naver Geocode + SAP 인터페이스별 개별 탭이 모두 노출', () => {
     renderPage();
     expect(screen.getByRole('tab', { name: 'Naver Geocode' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'SAP Outbound' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '여신 한도 조회' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '주문 등록' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '전문행사조 마스터' })).toBeInTheDocument();
   });
 
   it('H2 - 기본 탭(Naver)에서 주소 변환 시 raw JSON 응답을 출력', async () => {
@@ -66,13 +68,14 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     expect(pre).toHaveTextContent('"x": "127.0584"');
   });
 
-  it('H3 - SAP Outbound 탭으로 전환 시 전용 페이지 링크가 노출', async () => {
+  it('H3 - SAP 인터페이스 탭으로 전환 시 해당 탭에서 직접 미리보기/실송신 가능', async () => {
     renderPage();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('tab', { name: 'SAP Outbound' }));
+    await user.click(screen.getByRole('tab', { name: '여신 한도 조회' }));
 
-    const link = await screen.findByRole('link', { name: /SAP Outbound 페이지로 이동/ });
-    expect(link).toHaveAttribute('href', '/admin/tools/sap-outbound');
+    expect(await screen.findByRole('button', { name: '미리보기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '실송신' })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('예: 1032619')).toBeInTheDocument();
   });
 
   it('E1 - 주소 blank 시 "변환" 버튼이 disabled', () => {
