@@ -22,6 +22,7 @@ import {
   exportSummary as apiExportSummary,
   exportMiddle as apiExportMiddle,
   exportDetail as apiExportDetail,
+  SUMMARY_CATEGORY_COLUMNS,
   type SalesComparisonSummaryRow,
   type SalesComparisonMiddleItem,
   type SalesComparisonDetailItem,
@@ -260,7 +261,8 @@ export default function DeploymentPage() {
           style: (record as { isTotal?: boolean }).isTotal ? suitabilityCellStyle('총계') : {},
         }),
       },
-      ...categoryLabels.map((label) => ({
+      // 집계표 카테고리 컬럼 — SF 고정 10컬럼 (backend AccountCategoryColumn). 검색조건의 거래처유형 필터(가변 picklist)와 별개.
+      ...SUMMARY_CATEGORY_COLUMNS.map((label) => ({
         title: label,
         dataIndex: ['countsByCategory', label],
         width: 90,
@@ -278,7 +280,7 @@ export default function DeploymentPage() {
       })),
     ];
     return cols;
-  }, [categoryLabels]);
+  }, []);
 
   const middleColumns: ColumnsType<SalesComparisonMiddleItem> = [
     { title: '거래처지점명', dataIndex: 'accountBranchName', width: 110, render: (v) => v ?? '-' },
