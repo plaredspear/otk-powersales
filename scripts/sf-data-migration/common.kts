@@ -1005,6 +1005,32 @@ val MONTHLY_SALES_HISTORY_METADATA = EntityMetadata(
     useCopyStrategy = true
 )
 
+val DAILY_SALES_HISTORY_METADATA = EntityMetadata(
+    targetName = "DailySalesHistory",
+    sObjectName = "DailySalesHistory__c",
+    tableName = "daily_sales_history",
+    pkColumn = "id",
+    conflictKey = "sfid",
+    fields = listOf(
+        FieldMapping("Id", "sfid", nullable = false),
+        FieldMapping("SAPAccountCode__c", "sap_account_code"),
+        FieldMapping("SalesDate__c", "sales_date", isString = false),
+        FieldMapping("Externalkey__c", "external_key"),
+        FieldMapping("AccountId__c", "account_sfid"),
+        FieldMapping("ERPSalesAmount1__c", "erp_sales_amount1", isString = false),
+        FieldMapping("ERPSalesAmount2__c", "erp_sales_amount2", isString = false),
+        FieldMapping("ERPSalesAmount3__c", "erp_sales_amount3", isString = false),
+        FieldMapping("ERPDistributionAmount1__c", "erp_distribution_amount1", isString = false),
+        FieldMapping("ERPDistributionAmount2__c", "erp_distribution_amount2", isString = false),
+        FieldMapping("ERPDistributionAmount3__c", "erp_distribution_amount3", isString = false),
+        FieldMapping("ERPSalesAmount__c", "erp_sales_amount", isString = false),
+        FieldMapping("ERPDistributionAmount__c", "erp_distribution_amount", isString = false),
+        FieldMapping("LedgerAmount__c", "ledger_amount", isString = false),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false)
+    )
+)
+
 val SALES_PROGRESS_RATE_MASTER_METADATA = EntityMetadata(
     targetName = "SalesProgressRateMaster",
     sObjectName = "SalesProgressRateMaster__c",
@@ -1748,6 +1774,7 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "SiteActivity" to TargetSpec(SITE_ACTIVITY_METADATA, "DKRetail__SiteAcitivity__c", "site_activities.csv", "inspection/entity/SiteActivity"),
     "MonthlyFemaleEmployeeIntegrationSchedule" to TargetSpec(MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA, "MonthlyFemaleEmployeeIntegrationSchedule__c", "monthly_female_employee_integration_schedules.csv", "schedule/entity/MonthlyFemaleEmployeeIntegrationSchedule"),
     "MonthlySalesHistory" to TargetSpec(MONTHLY_SALES_HISTORY_METADATA, "MonthlySalesHistory__c", "monthly_sales_historys.csv", "sales/entity/MonthlySalesHistory"),
+    "DailySalesHistory" to TargetSpec(DAILY_SALES_HISTORY_METADATA, "DailySalesHistory__c", "daily_sales_historys.csv", "sales/entity/DailySalesHistory"),
     "SalesProgressRateMaster" to TargetSpec(SALES_PROGRESS_RATE_MASTER_METADATA, "SalesProgressRateMaster__c", "sales_progress_rate_masters.csv", "sales/entity/SalesProgressRateMaster"),
     "NewProduct" to TargetSpec(NEW_PRODUCT_METADATA, "NewProduct__c", "new_products.csv", "product/entity/NewProduct"),
     "OrderRequest" to TargetSpec(ORDER_REQUEST_METADATA, "DKRetail__OrderRequest__c", "order_requests.csv", "order/entity/OrderRequest"),
@@ -1797,6 +1824,7 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "SiteActivity",
     "MonthlyFemaleEmployeeIntegrationSchedule",
     "MonthlySalesHistory",
+    "DailySalesHistory",
     "SalesProgressRateMaster",
     "NewProduct",
     "OrderRequest",
@@ -1822,7 +1850,7 @@ val SUPPORTED_TARGETS = setOf(
     "AgreementHistory", "AgreementWord", "AlternativeHoliday", "Appointment", "AttendanceLog",
     "AttendInfo", "Claim", "DisplayWorkSchedule", "EmployeeInputCriteriaMaster",
     "ErpOrder", "ErpOrderProduct", "HolidayMaster", "InspectionTheme", "SiteActivity",
-    "MonthlyFemaleEmployeeIntegrationSchedule", "MonthlySalesHistory", "SalesProgressRateMaster", "NewProduct", "OrderRequest", "OrderRequestProduct",
+    "MonthlyFemaleEmployeeIntegrationSchedule", "MonthlySalesHistory", "DailySalesHistory", "SalesProgressRateMaster", "NewProduct", "OrderRequest", "OrderRequestProduct",
     "ProductBarcode", "ProfessionalPromotionTeamHistory", "ProfessionalPromotionTeamMaster", "PromotionEmployee", "PushMessage",
     "PushMessageReceiver", "TeamMemberSchedule", "UploadFile", "Suggestion",
     "UserRole", "Profile"

@@ -845,6 +845,31 @@ object Stage1Targets {
         ),
     )
 
+    private val DAILY_SALES_HISTORY = EntityMetadata(
+        targetName = "DailySalesHistory",
+        sObjectName = "DailySalesHistory__c",
+        tableName = "daily_sales_history",
+        csvFileName = "daily_sales_historys.csv",
+        fields = listOf(
+            FieldMapping("Id", "sfid", nullable = false),
+            FieldMapping("SAPAccountCode__c", "sap_account_code"),
+            FieldMapping("SalesDate__c", "sales_date"),
+            FieldMapping("Externalkey__c", "external_key"),
+            FieldMapping("AccountId__c", "account_sfid"),
+            FieldMapping("ERPSalesAmount1__c", "erp_sales_amount1"),
+            FieldMapping("ERPSalesAmount2__c", "erp_sales_amount2"),
+            FieldMapping("ERPSalesAmount3__c", "erp_sales_amount3"),
+            FieldMapping("ERPDistributionAmount1__c", "erp_distribution_amount1"),
+            FieldMapping("ERPDistributionAmount2__c", "erp_distribution_amount2"),
+            FieldMapping("ERPDistributionAmount3__c", "erp_distribution_amount3"),
+            FieldMapping("ERPSalesAmount__c", "erp_sales_amount"),
+            FieldMapping("ERPDistributionAmount__c", "erp_distribution_amount"),
+            FieldMapping("LedgerAmount__c", "ledger_amount"),
+            FieldMapping("CreatedDate", "created_at", nullable = false),
+            FieldMapping("LastModifiedDate", "updated_at", nullable = false),
+        ),
+    )
+
     private val SALES_PROGRESS_RATE_MASTER = EntityMetadata(
         targetName = "SalesProgressRateMaster",
         sObjectName = "SalesProgressRateMaster__c",
@@ -1612,6 +1637,7 @@ object Stage1Targets {
         SITE_ACTIVITY,
         MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE,
         MONTHLY_SALES_HISTORY,
+        DAILY_SALES_HISTORY,
         SALES_PROGRESS_RATE_MASTER,
         NEW_PRODUCT,
         ORDER_REQUEST,
@@ -1683,6 +1709,7 @@ object Stage1Targets {
         "SiteActivity",
         "MonthlyFemaleEmployeeIntegrationSchedule",
         "MonthlySalesHistory",
+        "DailySalesHistory",
         "SalesProgressRateMaster",
         "NewProduct",
         "OrderRequest",
