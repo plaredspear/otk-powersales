@@ -98,7 +98,7 @@ fun applyStageOneRawInsert(
     conn.prepareStatement(sql).use { ps ->
         for (row in rows) {
             for ((idx, f) in meta.fields.withIndex()) {
-                val value = row[f.sfFieldName]
+                val value = f.normalize(row[f.sfFieldName])
                 if (value == null) {
                     ps.setNull(idx + 1, Types.NULL)
                 } else {
@@ -168,7 +168,7 @@ fun applyStageOneStreamingInsert(
                 return@streamCsvFile
             }
             for ((idx, f) in meta.fields.withIndex()) {
-                val raw = row[f.sfFieldName]
+                val raw = f.normalize(row[f.sfFieldName])
                 val effective = if (raw.isNullOrBlank() && f.nullPlaceholder != null) {
                     placeholderRows.add(Triple(row["Id"] ?: "?", row[identifierField] ?: "?", f.dbColumnName))
                     f.nullPlaceholder
@@ -274,7 +274,7 @@ fun applyStageOneCopyInsert(
             }
             val values = ArrayList<String?>(meta.fields.size + extraValues.size)
             for (f in meta.fields) {
-                val raw = row[f.sfFieldName]
+                val raw = f.normalize(row[f.sfFieldName])
                 val effective = if (raw.isNullOrBlank() && f.nullPlaceholder != null) {
                     placeholderRows.add(Triple(row["Id"] ?: "?", row[identifierField] ?: "?", f.dbColumnName))
                     f.nullPlaceholder
@@ -430,7 +430,7 @@ fun applyStageOneCopyInsertChunked(
             }
             val values = ArrayList<String?>(meta.fields.size + extraValues.size)
             for (f in meta.fields) {
-                val raw = row[f.sfFieldName]
+                val raw = f.normalize(row[f.sfFieldName])
                 val effective = if (raw.isNullOrBlank() && f.nullPlaceholder != null) {
                     placeholderRows.add(Triple(row["Id"] ?: "?", row[identifierField] ?: "?", f.dbColumnName))
                     f.nullPlaceholder
@@ -482,7 +482,7 @@ fun applyPermissionStagingRawInsert(
     conn.prepareStatement(sql).use { ps ->
         for (row in rows) {
             for ((idx, f) in meta.fields.withIndex()) {
-                val value = row[f.sfFieldName]
+                val value = f.normalize(row[f.sfFieldName])
                 if (value == null) {
                     ps.setNull(idx + 1, Types.NULL)
                 } else {
