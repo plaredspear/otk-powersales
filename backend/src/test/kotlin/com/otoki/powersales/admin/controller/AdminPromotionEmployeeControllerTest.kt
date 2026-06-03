@@ -244,6 +244,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
 
     private fun createListResponse() = PromotionEmployeeListResponse(
         id = 1L,
+        name = "PE00000001",
         promotionId = 10L,
         employeeId = 100L,
         employeeCode = "20030117",
@@ -252,7 +253,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         workStatus = "근무",
         workType1 = "행사",
         workType3 = "고정",
-        teamMemberScheduleId = null,
+        scheduleId = null,
         promoCloseByTm = false,
         basePrice = BigDecimal.valueOf(1500L),
         dailyTargetCount = BigDecimal.valueOf(100L),
@@ -276,7 +277,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         workStatus = "근무",
         workType1 = "행사",
         workType3 = "고정",
-        teamMemberScheduleId = null,
+        scheduleId = null,
         promoCloseByTm = false,
         basePrice = BigDecimal.valueOf(1500L),
         dailyTargetCount = BigDecimal.valueOf(100L),

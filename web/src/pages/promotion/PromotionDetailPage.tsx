@@ -52,6 +52,7 @@ import PromotionProductSection, {
 import PromotionTargetActualSection from './sections/PromotionTargetActualSection';
 import PromotionPosProductSection from './sections/PromotionPosProductSection';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
+import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title } = Typography;
@@ -136,6 +137,12 @@ export default function PromotionDetailPage() {
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { hasEntityPermission } = usePermission();
   const canWrite = hasEntityPermission('promotion', 'EDIT');
+  const canReadEmployee = hasEntityPermission('employee', 'READ');
+
+  // NO.(행사사원 코드) 클릭 시 해당 사원 상세로 이동 — SF 레거시의 행사사원 레코드 링크 대체
+  const goToEmployee = useThrottleClick((employeeId: number) =>
+    navigate(`/employee/${employeeId}`),
+  );
 
   // --- 행사 인라인 편집 상태 ---
   const [promotionEditing, setPromotionEditing] = useState(false);
@@ -730,7 +737,18 @@ export default function PromotionDetailPage() {
 
   // --- 읽기 모드 컬럼 ---
   const readColumns: ColumnsType<PromotionEmployee> = [
-      { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
+      {
+        title: 'NO.',
+        dataIndex: 'name',
+        width: 110,
+        align: 'center' as const,
+        render: (name: string | null, record: PromotionEmployee) =>
+          name && canReadEmployee && record.employeeId != null ? (
+            <a onClick={() => goToEmployee(record.employeeId!)}>{name}</a>
+          ) : (
+            name ?? '-'
+          ),
+      },
       {
         title: <span>행사사원<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
         dataIndex: 'employeeName',
@@ -792,6 +810,7 @@ export default function PromotionDetailPage() {
         dataIndex: 'primaryProductAmount',
         width: 110,
         align: 'right' as const,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-pink' }),
         render: (v: number | null) => fmtNum(v),
       },
       {
@@ -809,6 +828,7 @@ export default function PromotionDetailPage() {
         dataIndex: 'primarySalesQuantity',
         width: 120,
         align: 'right' as const,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-pink' }),
         render: (v: number | null) => fmtNum(v),
       },
       {
@@ -816,6 +836,7 @@ export default function PromotionDetailPage() {
         dataIndex: 'otherSalesQuantity',
         width: 100,
         align: 'right' as const,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-yellow' }),
         render: (v: number | null) => fmtNum(v),
       },
       {
@@ -841,6 +862,19 @@ export default function PromotionDetailPage() {
         align: 'center' as const,
         render: (v: string | null) =>
           v ? <CheckCircleFilled style={{ color: '#52c41a' }} /> : null,
+      },
+      {
+        // SF 확정(ScheduleConfirmed__c): 조원일정 연결(scheduleId != null) 시 ✔️, 미연결 시 ❌
+        title: '확정',
+        dataIndex: 'scheduleId',
+        width: 70,
+        align: 'center' as const,
+        render: (v: number | null) =>
+          v != null ? (
+            <CheckCircleFilled style={{ color: '#52c41a' }} />
+          ) : (
+            <CloseCircleFilled style={{ color: '#ff4d4f' }} />
+          ),
       },
       closeColumn,
   ];
@@ -987,6 +1021,7 @@ export default function PromotionDetailPage() {
         title: '대표품목 매출',
         dataIndex: 'primaryProductAmount',
         width: 110,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-pink' }),
         render: (_: unknown, record: EditableRow) => (
           <InputNumber
             size="small"
@@ -1014,6 +1049,7 @@ export default function PromotionDetailPage() {
         title: '대표품목판매수량',
         dataIndex: 'primarySalesQuantity',
         width: 120,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-pink' }),
         render: (_: unknown, record: EditableRow) => (
           <InputNumber
             size="small"
@@ -1029,6 +1065,7 @@ export default function PromotionDetailPage() {
         title: '기타판매수량',
         dataIndex: 'otherSalesQuantity',
         width: 100,
+        onHeaderCell: () => ({ className: 'promo-emp-hl-yellow' }),
         render: (_: unknown, record: EditableRow) => (
           <InputNumber
             size="small"
@@ -1292,6 +1329,7 @@ export default function PromotionDetailPage() {
         {empEditMode ? (
           <ResizableTable<EditableRow>
             className="promo-emp-table"
+            bordered
             columns={editColumns}
             dataSource={editRows}
             rowKey="id"
@@ -1327,6 +1365,7 @@ export default function PromotionDetailPage() {
         ) : (
           <ResizableTable<PromotionEmployee>
             className="promo-emp-table"
+            bordered
             columns={readColumns}
             dataSource={employees ?? []}
             rowKey="id"
@@ -1351,6 +1390,13 @@ export default function PromotionDetailPage() {
       <style>{`
         .promo-emp-table .ant-table-thead th {
           font-size: 12px !important;
+        }
+        /* SF 행사사원 related list 동등 — 컬럼 헤더 강조색 (대표품목 매출/판매수량 분홍, 기타판매수량 노랑) */
+        .promo-emp-table .ant-table-thead th.promo-emp-hl-pink {
+          background-color: #fde0e4 !important;
+        }
+        .promo-emp-table .ant-table-thead th.promo-emp-hl-yellow {
+          background-color: #fdf3a3 !important;
         }
         .ant-table-row-error td {
           background-color: #fff2f0 !important;
