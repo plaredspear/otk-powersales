@@ -26635,6 +26635,14 @@
           }
         }, {
           "in" : "query",
+          "name" : "ownerOnly",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {

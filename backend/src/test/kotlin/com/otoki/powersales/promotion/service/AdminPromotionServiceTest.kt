@@ -123,12 +123,12 @@ class AdminPromotionServiceTest {
             val page = PageImpl(listOf(promotion), pageable, 1)
             every { promotionRepository.searchForAdmin(
                 policyPredicate = any(), keyword = null, promotionType = null,
-                startDate = null, endDate = null, pageable = pageable
+                startDate = null, endDate = null, ownerOnly = false, currentUserId = any(), pageable = pageable
             ) } returns page
 
             val result = adminPromotionService.getPromotions(scope = scope,
                 keyword = null, promotionType = null,
-                startDate = null, endDate = null, page = 0, size = 20
+                startDate = null, endDate = null, ownerOnly = false, page = 0, size = 20
             )
 
             assertThat(result.content).hasSize(1)
@@ -146,16 +146,42 @@ class AdminPromotionServiceTest {
             val pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending())
             every { promotionRepository.searchForAdmin(
                 policyPredicate = any(), keyword = null, promotionType = null,
-                startDate = null, endDate = null, pageable = pageable
+                startDate = null, endDate = null, ownerOnly = false, currentUserId = any(), pageable = pageable
             ) } returns PageImpl(emptyList(), pageable, 0)
 
             val result = adminPromotionService.getPromotions(scope = scope,
                 keyword = null, promotionType = null,
-                startDate = null, endDate = null, page = 0, size = 20
+                startDate = null, endDate = null, ownerOnly = false, page = 0, size = 20
             )
 
             assertThat(result.content).isEmpty()
             assertThat(result.totalElements).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("ownerOnly=true -> repository 에 ownerOnly + currentUserId(scope.userId) 전달")
+        fun getPromotions_ownerOnly_passesUserId() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true, userId = 77L)
+            val pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending())
+            every {
+                promotionRepository.searchForAdmin(
+                    policyPredicate = any(), keyword = null, promotionType = null,
+                    startDate = null, endDate = null, ownerOnly = true, currentUserId = 77L, pageable = pageable,
+                )
+            } returns PageImpl(emptyList(), pageable, 0)
+
+            val result = adminPromotionService.getPromotions(
+                scope = scope, keyword = null, promotionType = null,
+                startDate = null, endDate = null, ownerOnly = true, page = 0, size = 20,
+            )
+
+            assertThat(result.totalElements).isEqualTo(0)
+            verify {
+                promotionRepository.searchForAdmin(
+                    policyPredicate = any(), keyword = null, promotionType = null,
+                    startDate = null, endDate = null, ownerOnly = true, currentUserId = 77L, pageable = pageable,
+                )
+            }
         }
     }
 

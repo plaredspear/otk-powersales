@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button, DatePicker, Input, Select, Tag, Typography } from 'antd';
+import { Button, Checkbox, DatePicker, Input, Select, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
@@ -33,9 +33,9 @@ export default function PromotionListPage() {
   const canReadUser = hasEntityPermission('user', 'READ');
   // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
   const { page, setPage, filters, setFilter, setFilters } = useListQueryParams({
-    defaultFilters: { promotionType: '', startDate: '', endDate: '', keyword: '' },
+    defaultFilters: { promotionType: '', startDate: '', endDate: '', keyword: '', ownerOnly: '' },
   });
-  const { promotionType, startDate, endDate, keyword } = filters;
+  const { promotionType, startDate, endDate, keyword, ownerOnly } = filters;
 
   // 저장된 검색 적용 — 모든 필터 키를 명시적으로 덮어써 이전 조건 잔존을 막는다.
   const applySavedSearch = (saved: Record<string, string>) => {
@@ -44,16 +44,18 @@ export default function PromotionListPage() {
       startDate: saved.startDate ?? '',
       endDate: saved.endDate ?? '',
       keyword: saved.keyword ?? '',
+      ownerOnly: saved.ownerOnly ?? '',
     });
   };
 
   // 저장 대상 필터 + 사람이 읽는 미리보기.
-  const savedFilters: Record<string, string> = { promotionType, startDate, endDate, keyword };
+  const savedFilters: Record<string, string> = { promotionType, startDate, endDate, keyword, ownerOnly };
   const savedPreview = [
     { label: '행사유형', value: promotionType || '전체' },
     { label: '시작일', value: startDate },
     { label: '종료일', value: endDate },
     { label: '검색어', value: keyword },
+    { label: '범위', value: ownerOnly === 'true' ? '내 행사만' : '전체' },
   ];
 
   const { data: formMeta } = usePromotionFormMeta();
@@ -73,6 +75,7 @@ export default function PromotionListPage() {
     promotionType: promotionType || undefined,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
+    ownerOnly: ownerOnly === 'true' || undefined,
     page,
     size: 20,
   });
@@ -267,6 +270,13 @@ export default function PromotionListPage() {
           style={{ width: 250 }}
           onSearch={(val) => setFilter('keyword', val)}
         />
+        <Checkbox
+          checked={ownerOnly === 'true'}
+          onChange={(e) => setFilter('ownerOnly', e.target.checked ? 'true' : '')}
+          style={{ alignSelf: 'center' }}
+        >
+          내 행사만
+        </Checkbox>
       </div>
 
       <ResizableTable
