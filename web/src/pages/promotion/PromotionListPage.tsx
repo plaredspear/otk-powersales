@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button, DatePicker, Input, Select, Tag } from 'antd';
+import { Button, DatePicker, Input, Select, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
@@ -58,6 +58,18 @@ export default function PromotionListPage() {
 
   const columns: ColumnsType<PromotionListItem> = [
     {
+      title: '행사번호',
+      dataIndex: 'promotionNumber',
+      width: 150,
+      fixed: 'left',
+      render: (val: string, record) => (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <a onClick={() => goToDetail(record.id)}>{val}</a>
+          <Typography.Text copyable={{ text: val, tooltips: ['행사번호 복사', '복사됨'] }} />
+        </span>
+      ),
+    },
+    {
       title: '거래처',
       dataIndex: 'accountName',
       width: 160,
@@ -77,14 +89,6 @@ export default function PromotionListPage() {
       width: 110,
       align: 'center',
       render: formatDate,
-    },
-    {
-      title: '행사번호',
-      dataIndex: 'promotionNumber',
-      width: 130,
-      render: (val: string, record) => (
-        <a onClick={() => goToDetail(record.id)}>{val}</a>
-      ),
     },
     {
       title: '행사명',
