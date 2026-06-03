@@ -180,24 +180,7 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
       }
     >
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-        <Form.Item
-          name="employeeId"
-          label="사원"
-          rules={[{ required: true, message: '사원을 선택해주세요' }]}
-        >
-          <Select
-            showSearch
-            placeholder="사번 또는 이름으로 검색 (2자 이상)"
-            filterOption={false}
-            onSearch={searchEmployees}
-            loading={employeeLoading}
-            options={employeeOptions.map((emp) => ({
-              value: emp.id,
-              label: `${emp.name} (${emp.employeeCode})${emp.orgName ? ` ${emp.orgName}` : ''}`,
-            }))}
-          />
-        </Form.Item>
-
+        {/* 항목 순서는 SF '새 전문행사조 마스터' 모달과 동일하게: 거래처 → 사원 → 시작일 → 확정 → 종료일 → 전문행사조 */}
         <Form.Item
           name="accountId"
           label="거래처"
@@ -217,11 +200,21 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
         </Form.Item>
 
         <Form.Item
-          name="teamType"
-          label="전문행사조"
-          rules={[{ required: true, message: '전문행사조를 선택해주세요' }]}
+          name="employeeId"
+          label="사원"
+          rules={[{ required: true, message: '사원을 선택해주세요' }]}
         >
-          <Select placeholder="전문행사조 선택" options={PPT_TEAM_TYPE_OPTIONS} />
+          <Select
+            showSearch
+            placeholder="사번 또는 이름으로 검색 (2자 이상)"
+            filterOption={false}
+            onSearch={searchEmployees}
+            loading={employeeLoading}
+            options={employeeOptions.map((emp) => ({
+              value: emp.id,
+              label: `${emp.name} (${emp.employeeCode})${emp.orgName ? ` ${emp.orgName}` : ''}`,
+            }))}
+          />
         </Form.Item>
 
         <Form.Item
@@ -232,12 +225,20 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
 
+        <Form.Item name="isConfirmed" valuePropName="checked">
+          <Checkbox>확정 여부</Checkbox>
+        </Form.Item>
+
         <Form.Item name="endDate" label="종료일">
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
 
-        <Form.Item name="isConfirmed" valuePropName="checked">
-          <Checkbox>확정 여부</Checkbox>
+        <Form.Item
+          name="teamType"
+          label="전문행사조"
+          rules={[{ required: true, message: '전문행사조를 선택해주세요' }]}
+        >
+          <Select placeholder="전문행사조 선택" options={PPT_TEAM_TYPE_OPTIONS} />
         </Form.Item>
       </Form>
     </Modal>
