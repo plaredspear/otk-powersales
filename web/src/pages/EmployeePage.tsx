@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -35,6 +35,10 @@ const INACTIVE_NOTICE = '앱 로그인이 비활성화된 사원입니다. 사�
 
 export default function EmployeePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
+  const goToDetail = (id: number) =>
+    navigate(`/female-employee/${id}`, { state: { listSearch: location.search } });
   // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
   const { page, setPage, filters, setFilter } = useListQueryParams({
     defaultFilters: { status: '', costCenterCode: '', keyword: '' },
@@ -64,7 +68,7 @@ export default function EmployeePage() {
         <a
           onClick={(e) => {
             e.preventDefault();
-            navigate(`/female-employee/${record.id}`);
+            goToDetail(record.id);
           }}
           href={`/female-employee/${record.id}`}
         >
@@ -80,7 +84,7 @@ export default function EmployeePage() {
         <a
           onClick={(e) => {
             e.preventDefault();
-            navigate(`/female-employee/${record.id}`);
+            goToDetail(record.id);
           }}
           href={`/female-employee/${record.id}`}
         >
