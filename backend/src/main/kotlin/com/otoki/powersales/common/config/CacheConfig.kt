@@ -149,8 +149,14 @@ class CacheConfig {
          * 관리자 DataScope (조회 범위) — 5분 TTL.
          *
          * [CACHE_ADMIN_PERMISSION] 과 동일 사유로 Caffeine → Redis 전환. key = userId.
+         *
+         * v2 접미사: [com.otoki.powersales.admin.dto.DataScope] 에 신규 필드가 추가된 뒤 `isAllBranches`
+         * (primitive `Boolean`) 가 absent 인 옛 `:v1` entry 를 Jackson 3 가 역직렬화하다
+         * `FAIL_ON_NULL_FOR_PRIMITIVES` 로 `Cannot map null into type boolean` 예외 → admin API 500.
+         * cache name 을 bump 해 키 공간을 분리하면, rolling 배포로 신·구 인스턴스가 공존해도
+         * (구버전은 `:v1`, 신버전은 `:v2` 만 접근) 충돌이 없고 옛 entry 는 5분 TTL 후 자연 소멸한다.
          */
-        const val CACHE_ADMIN_DATA_SCOPE = "admin-data-scope:v1"
+        const val CACHE_ADMIN_DATA_SCOPE = "admin-data-scope:v2"
 
         /** spec #792 — sharing recalc 가 일괄 evict 하는 cache name 일람 */
         val SHARING_RELATED_CACHE_NAMES: List<String> = listOf(
