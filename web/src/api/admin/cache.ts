@@ -36,3 +36,12 @@ export async function evictCache(cacheName: string): Promise<EvictResult> {
   }
   return res.data.data;
 }
+
+/** 전체 캐시 일괄 evict — Spring CacheManager 캐시 + in-memory 권한 캐시 모두. */
+export async function evictAllCaches(): Promise<EvictResult[]> {
+  const res = await client.post<ApiResponse<EvictResult[]>>('/api/v1/admin/cache/evict-all');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '전체 캐시 무효화에 실패했습니다');
+  }
+  return res.data.data;
+}
