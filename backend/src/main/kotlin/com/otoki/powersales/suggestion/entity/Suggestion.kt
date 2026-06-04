@@ -70,6 +70,11 @@ class Suggestion(
     @Column(name = "dk_category", length = 40)
     var dkCategory: String? = null,
 
+    // SF Text(40) `DKRetail__Type__c` (제안유형). plain String 원본 보존.
+    @SFField("DKRetail__Type__c")
+    @Column(name = "type", length = 40)
+    var type: String? = null,
+
     @SFField("Category1__c")
     @Column(name = "category1", length = 255)
     var category1: String? = null,
