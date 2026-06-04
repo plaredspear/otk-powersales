@@ -29,7 +29,7 @@ class SfPermissionInspectionService(
     @Transactional(readOnly = true)
     fun inspectByEmployeeId(employeeId: Long): EmployeePermissionInspection? {
         val employee = employeeRepository.findById(employeeId).orElse(null) ?: return null
-        return inspectByEmployeeCode(employee.employeeCode)
+        return employee.employeeCode?.let { inspectByEmployeeCode(it) }
     }
 
     @Transactional(readOnly = true)

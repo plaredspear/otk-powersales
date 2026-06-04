@@ -13,7 +13,7 @@ data class SafetyCheckStatusResponse(
 
 data class MemberStatus(
     val id: Long,
-    val employeeCode: String,
+    val employeeCode: String?,
     val employeeName: String,
     val accountCode: String?,
     val accountName: String?,

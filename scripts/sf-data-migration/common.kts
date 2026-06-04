@@ -138,7 +138,10 @@ val EMPLOYEE_METADATA = EntityMetadata(
     conflictKey = "employee_code",
     fields = listOf(
         FieldMapping("Id", "sfid", nullable = false),
-        FieldMapping("DKRetail__EmpCode__c", "employee_code", nullable = false),
+        // employee_code nullable — SF 사번(DKRetail__EmpCode__c) blank 사원도 적재 (석사점 진열사원 등).
+        // blank 면 stage1 normalize 가 NULL 로 변환, plain UNIQUE 라 NULL 다중 허용. stage2 FK resolve 는
+        // sfid 기준이라 employee_code NULL 여도 MFEIS.employee_id resolve 가능.
+        FieldMapping("DKRetail__EmpCode__c", "employee_code"),
         FieldMapping("Name", "name"),
         FieldMapping("DKRetail__Birthdate__c", "birth_date"),
         FieldMapping("DKRetail__Status__c", "status"),

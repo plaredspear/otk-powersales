@@ -76,7 +76,9 @@ class AuthService(
 
         // 로그인 이력 기록 (실패해도 로그인에 영향 없음)
         try {
-            loginHistoryRepository.save(LoginHistory(empCode = employee.employeeCode))
+            loginHistoryRepository.save(
+                LoginHistory(empCode = employee.employeeCode ?: error("로그인 사원의 사번이 null - 비정상"))
+            )
         } catch (e: Exception) {
             log.warn("로그인 이력 기록 실패: employeeCode={}", employee.employeeCode, e)
         }
@@ -121,7 +123,7 @@ class AuthService(
     private fun validateDeviceBinding(employee: Employee, deviceId: String?) {
         if (deviceId.isNullOrBlank()) return
         if (!uuidCheckProperties.enabled) return
-        if (uuidCheckProperties.isExcluded(employee.employeeCode)) return
+        if (uuidCheckProperties.isExcluded(employee.employeeCode ?: error("로그인 사원의 사번이 null - 비정상"))) return
 
         if (employee.deviceUuid == null) {
             employee.bindDevice(deviceId)
@@ -146,7 +148,9 @@ class AuthService(
         if (deviceId.isNullOrBlank()) {
             // WEB 로그인 — 레거시 호환 분기 (신규 Web 로그인은 WebAuthenticationService 사용).
             // spec #801 — SF 권한 모델 적용: user 의 SF 권한 set 이 비어있으면 web login 차단.
-            val user = userRepository.findByEmployeeCode(employee.employeeCode)
+            val user = userRepository.findByEmployeeCode(
+                employee.employeeCode ?: error("로그인 사원의 사번이 null - 비정상")
+            )
             if (user == null || sfPermissionResolver.resolveForUser(user).isEmpty()) {
                 throw WebLoginNotAllowedException()
             }

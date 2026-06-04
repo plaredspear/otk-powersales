@@ -11,7 +11,7 @@ import java.time.LocalDateTime
  */
 data class AdminEmployeeRegisterResponse(
     val employeeId: Long,
-    val employeeCode: String,
+    val employeeCode: String?,
     val name: String,
     val role: String?,
     val origin: EmployeeOrigin,

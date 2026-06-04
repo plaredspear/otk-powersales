@@ -161,7 +161,7 @@ class AdminProductExpirationService(
             .orElseThrow { EmployeeNotFoundException() }
 
         val role = employee.role
-        val user = userRepository.findByEmployeeCode(employee.employeeCode)
+        val user = employee.employeeCode?.let { userRepository.findByEmployeeCode(it) }
         val profileName = user?.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
         val isAllBranches = profileName == "시스템 관리자" || user?.isSalesSupport == true ||
             profileName in setOf("1.본부장", "2.사업부장", "3.영업부장")

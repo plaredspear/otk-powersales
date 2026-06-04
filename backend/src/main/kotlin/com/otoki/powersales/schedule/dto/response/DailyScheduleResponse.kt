@@ -7,7 +7,7 @@ data class DailyScheduleResponse(
     val date: String, // YYYY-MM-DD 형식
     val dayOfWeek: String,
     val memberName: String,
-    val employeeCode: String,
+    val employeeCode: String?,
     val workingType: String? = null,
     val reportProgress: ReportProgressDto,
     val accounts: List<DisplayWorkScheduleItemDto>

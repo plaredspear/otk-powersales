@@ -9,7 +9,7 @@ import com.otoki.powersales.employee.entity.Employee
  */
 data class LeaderTeamMemberListResponse(
     val id: Long,
-    val employeeCode: String,
+    val employeeCode: String?,
     val name: String,
     val status: String?,
     val costCenterCode: String?

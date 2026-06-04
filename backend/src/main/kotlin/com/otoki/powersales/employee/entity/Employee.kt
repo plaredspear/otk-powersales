@@ -45,9 +45,12 @@ class Employee(
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 
+    // 사번(DKRetail__EmpCode__c) — SF 에서 blank 인 사원(외부 위탁 진열사원 등)이 존재하여 nullable.
+    // 마이그레이션 전량 적재 정합 (common.kts employee_code nullable). plain UNIQUE 라 NULL 다중 허용.
+    // 사번 없는 사원은 앱 로그인 대상이 아니므로 employeeInfo 가 null 이어도 도메인상 정상.
     @SFField("DKRetail__EmpCode__c")
     @Column(name = "employee_code", unique = true, length = 100)
-    val employeeCode: String,
+    val employeeCode: String?,
 
     @SFField("Name")
     @Column(name = "name", length = 80)
@@ -285,14 +288,17 @@ class Employee(
         foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT)
     )
     @NotFound(action = NotFoundAction.IGNORE)
-    var employeeInfo: EmployeeInfo? = EmployeeInfo(
-        employeeCode = employeeCode,
-        password = password,
-        passwordChangeRequired = passwordChangeRequired,
-        deviceUuid = deviceUuid,
-        fcmToken = fcmToken,
-        lastAgreementNumber = lastAgreementNumber
-    )
+    // employeeCode 가 null(사번 미보유 사원)이면 EmployeeInfo(PK=employee_code NOT NULL)를 만들 수 없으므로 null.
+    var employeeInfo: EmployeeInfo? = employeeCode?.let {
+        EmployeeInfo(
+            employeeCode = it,
+            password = password,
+            passwordChangeRequired = passwordChangeRequired,
+            deviceUuid = deviceUuid,
+            fcmToken = fcmToken,
+            lastAgreementNumber = lastAgreementNumber
+        )
+    }
 
     // --- Delegate properties (기존 인터페이스 유지) ---
 
@@ -324,7 +330,10 @@ class Employee(
 
     private fun ensureEmployeeInfo(): EmployeeInfo {
         if (employeeInfo == null) {
-            employeeInfo = EmployeeInfo(employeeCode = employeeCode)
+            // EmployeeInfo PK 는 employee_code (NOT NULL). 사번 미보유 사원은 인증/디바이스 정보 대상이 아니다.
+            val code = employeeCode
+                ?: throw IllegalStateException("사번(employee_code) 미보유 사원은 EmployeeInfo(인증/디바이스 정보)를 가질 수 없습니다")
+            employeeInfo = EmployeeInfo(employeeCode = code)
         }
         return employeeInfo!!
     }

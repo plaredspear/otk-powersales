@@ -179,7 +179,7 @@ class AppointmentUserProfileUpdater(
      * 매칭 User 행 부재 시 silently skip (마이그레이션 이전 단계 / 신규 미동기화 사원 케이스).
      */
     internal fun updateUserProfileCache(employee: Employee) {
-        val user = userRepository.findByEmployeeCode(employee.employeeCode) ?: return
+        val user = employee.employeeCode?.let { userRepository.findByEmployeeCode(it) } ?: return
         user.profileId = employeeProfileResolver.resolveProfileId(employee) ?: user.profileId
         user.isSalesSupport = userRoleResolver.isSalesSupport(employee)
         user.costCenterCode = employee.costCenterCode

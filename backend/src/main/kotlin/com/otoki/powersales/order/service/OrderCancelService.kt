@@ -52,7 +52,11 @@ class OrderCancelService(
 
         val employee = employeeRepository.findById(userId).orElseThrow { OrderNotFoundException() }
         val targetIds = targetLines.map { it.id }
-        val result = orderCancelCommitter.commit(orderRequestId, targetIds, employee.employeeCode)
+        val result = orderCancelCommitter.commit(
+            orderRequestId,
+            targetIds,
+            employee.employeeCode ?: error("주문 취소 요청 사원의 사번이 null - 비정상")
+        )
         return OrderCancelResponse.of(result.orderRequest, result.cancelledLines)
     }
 

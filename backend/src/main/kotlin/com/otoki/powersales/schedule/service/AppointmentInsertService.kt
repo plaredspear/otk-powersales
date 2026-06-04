@@ -47,7 +47,7 @@ class AppointmentInsertService(
             emptySet()
         } else {
             employeeRepository.findByEmployeeCodeIn(empCodes)
-                .map { it.employeeCode }
+                .mapNotNull { it.employeeCode }
                 .toHashSet()
         }
 

@@ -205,15 +205,14 @@ SELECT
     ExternalKey__c, OwnerId, CreatedDate, LastModifiedDate,
     CreatedById, LastModifiedById, IsDeleted
 FROM Org__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
-# Employee 는 WHERE 필터 없음 (의도) — agreement_history 등 이력성 entity 의 employee_sfid 는
-# 퇴직·휴직 사원을 대량 참조한다. Status='재직' 만 export 하면 Stage 2 FK resolve 에서
-# employee lookup 미해소(부모 부재)가 다수 발생. IsDeleted=FALSE 도 제거하여 soft-delete 된
-# 사원까지 전량 적재한다 (타 SObject 의 IsDeleted=FALSE 표준과 의도적으로 다름 — 이력 FK 완전 해소 우선).
-# 퇴직/휴직/삭제 사원은 employee.status 로 구분되어 backend 조회에서 status 필터로 걸러진다.
+# 전량 추출 정책 — 모든 SObject 에서 WHERE 필터(IsDeleted=FALSE 및 권한/그룹 필터)를 제거한다.
+# 이유: soft-delete·퇴직·휴직 row 가 존재해야 Stage 2 FK resolve 가 부모를 찾고(employee_sfid 등),
+# 통계 모집단에 포함된다. 퇴직/휴직/삭제 사원은 employee.status 로 구분되어 backend 조회에서
+# status 필터로 걸러진다. 사번(DKRetail__EmpCode__c) blank 사원도 적재 (common.kts employee_code
+# nullable + entity employeeCode String? 정합).
 # 주석은 heredoc 밖에 둔다 — build_count_soql 가 개행을 공백 치환하므로 SOQL 내 `--` 주석은 COUNT 쿼리를 깬다.
 EMPLOYEE_SOQL=$(cat <<'EOF'
 SELECT
@@ -239,11 +238,11 @@ FROM DKRetail__Employee__c
 EOF
 )
 
-# User 는 IsActive 필터 없음 (의도) — account.OwnerId / CreatedById / LastModifiedById 등은
-# 퇴사·인사이동으로 비활성(IsActive=FALSE)된 User 를 대량 참조한다. 활성만 export 하면 Stage 2
-# FK resolve 에서 user lookup 미해소(부모 부재)가 다수 발생(특히 owner FK). 비활성 User 도 전량
-# 적재하되 user.is_active=FALSE 로 들어가 로그인/목록 노출에서 걸러진다. (단 Profile.Name NOT IN
-# 시스템 프로필 제외는 유지 — Admin/Integration 등 SF 시스템 계정은 적재 대상 아님.)
+# User 는 전량 추출 (필터 없음) — account.OwnerId / CreatedById / LastModifiedById 등은 퇴사·인사이동으로
+# 비활성(IsActive=FALSE)된 User 를 대량 참조한다. 활성만 export 하면 Stage 2 FK resolve 에서 user lookup
+# 미해소(부모 부재)가 다수 발생(특히 owner FK). 비활성 User 도 전량 적재하되 user.is_active=FALSE 로 들어가
+# 로그인/목록 노출에서 걸러진다. Profile.Name NOT IN 시스템 프로필 제외도 전량 추출 정책에 따라 제거 —
+# SF 시스템/통합 계정(Admin/Integration 등)도 audit FK 부모 확보를 위해 적재 (권한 모델 노출은 별도 게이팅).
 USER_SOQL=$(cat <<'EOF'
 SELECT
     Id, Username, Email, IsActive,
@@ -256,19 +255,6 @@ SELECT
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
     Profile.Name
 FROM User
-WHERE Profile.Name NOT IN (
-    'Admin', 'Standard', 'Read Only',
-    'Analytics Cloud Integration User', 'Analytics Cloud Security User',
-    'Anypoint Integration', 'Chatter External User', 'Chatter Free User',
-    'Chatter Moderator User', 'ContractManager',
-    'CPQ Integration User', 'Einstein Agent User',
-    'External Apps Login User', 'External Einstein Agent User',
-    'Guest License User', 'Identity User',
-    'Minimum Access - API Only Integrations', 'Minimum Access - Salesforce',
-    'Sales Insights Integration User',
-    'Salesforce API Only System Integrations', 'SalesforceIQ Integration User',
-    'SolutionManager', 'StandardAul', 'Test Standard Platform User'
-  )
 EOF
 )
 
@@ -283,8 +269,6 @@ SELECT
     IsActive,
     SystemModstamp
 FROM PermissionSetAssignment
-WHERE Assignee.IsActive = TRUE
-  AND PermissionSet.IsCustom = TRUE
 EOF
 )
 # Note: PermissionSetAssignment 는 SF 표준 필드만 8개 (CreatedDate / LastModifiedDate 미보유 —
@@ -294,7 +278,6 @@ GM_SOQL=$(cat <<'EOF'
 SELECT
     Id, GroupId, Group.Name, UserOrGroupId
 FROM GroupMember
-WHERE Group.Type = 'Regular'
 EOF
 )
 
@@ -303,7 +286,6 @@ PS_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, Label
 FROM PermissionSet
-WHERE IsCustom = TRUE
 EOF
 )
 
@@ -312,6 +294,9 @@ EOF
 # 비어 내려오므로 (동일 retrieve 호출에 SObject 가 없으면 SF 가 채우지 않음), 운영 실측은 본 SOQL 로 확보.
 # extract-sharing-meta.main.kts 가 본 CSV 를 Profile 별로 그룹핑하여 profile-flags.csv 의
 # objectPermissionsJson 컬럼을 채운다 (PermissionSet 은 XML 출처 유지 — 본 갭은 Profile 한정).
+# 전량 추출 정책에 따라 Parent.IsOwnedByProfile=TRUE 필터는 제거됨 — Profile 소유 외 PermissionSet 의
+# 객체권한도 함께 내려오나, extract-sharing-meta 가 Parent.Profile.Name 이 있는 row 만 Profile 별로
+# 그룹핑하므로 (Profile 미소유 row 는 Parent.Profile.Name = NULL) profile-flags 산출에는 무해.
 PROFILE_OBJECT_PERMISSIONS_SOQL=$(cat <<'EOF'
 SELECT
     Parent.Profile.Name,
@@ -319,7 +304,6 @@ SELECT
     PermissionsRead, PermissionsCreate, PermissionsEdit, PermissionsDelete,
     PermissionsViewAllRecords, PermissionsModifyAllRecords
 FROM ObjectPermissions
-WHERE Parent.IsOwnedByProfile = TRUE
 EOF
 )
 
@@ -349,7 +333,6 @@ SELECT
     ParentId, Rating, Ownership,
     OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM Account
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -371,7 +354,6 @@ SELECT
     Claim_Management__c, New_Product__c, StoreCondition__c,
     OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM DKRetail__Product__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -385,7 +367,6 @@ SELECT
     OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
     IsDeleted, DKRetail__ActualAmount__c, DKRetail__TargetAmount__c
 FROM DKRetail__Promotion__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -398,7 +379,6 @@ SELECT
     IsDeleted, OwnerId, CreatedDate, LastModifiedDate,
     CreatedById, LastModifiedById
 FROM DKRetail__Notice__c
-WHERE IsDeleted = FALSE
 EOF
 )
 SUGGESTION_SOQL=$(cat <<'EOF'
@@ -417,7 +397,6 @@ SELECT
     OwnerId, CreatedById, LastModifiedById,
     IsDeleted, CreatedDate, LastModifiedDate
 FROM DKRetail__Proposal__c
-WHERE IsDeleted = FALSE
 EOF
 )
 ACCOUNT_CATEGORY_MASTER_SOQL=$(cat <<'EOF'
@@ -425,7 +404,6 @@ SELECT
     Id, AccountCode__c, Name, useSearch__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM AccountCategoryMaster__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -435,7 +413,6 @@ SELECT
     IsDeleted, Name, OwnerId, CreatedDate, LastModifiedDate,
     CreatedById, LastModifiedById
 FROM AgreementHistory__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -445,7 +422,6 @@ SELECT
     IsDeleted, CreatedDate, LastModifiedDate, OwnerId, CreatedById,
     LastModifiedById
 FROM AgreementWord__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -456,7 +432,6 @@ SELECT
     DKRetail__Status__c, DKRetail__ChangeReason__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM DKRetail__AlternativeHoliday__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -468,7 +443,6 @@ SELECT
     OrdDetailNode__c, IsDeleted, CreatedDate, LastModifiedDate,
     CreatedById, LastModifiedById, OwnerId
 FROM Appointment__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -479,7 +453,6 @@ SELECT
     OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
     IsDeleted
 FROM DKRetail__CommuteLog__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -489,7 +462,6 @@ SELECT
     Status__c, OwnerId, CreatedDate, LastModifiedDate,
     CreatedById, LastModifiedById, IsDeleted
 FROM AttendInfo__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -510,7 +482,6 @@ SELECT
     DKRetail__ActionDate__c, IsDeleted, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM DKRetail__Claim__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -521,7 +492,6 @@ SELECT
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
     CostCenterCode__c, LastMonthRevenue__c, IsDeleted
 FROM DisplayWorkScheduleMaster__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -532,7 +502,6 @@ SELECT
     TypeOfWork1__c, OwnerId, CreatedDate, LastModifiedDate,
     CreatedById, LastModifiedById, IsDeleted
 FROM EmployeeInputCriteriaMaster__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -544,7 +513,6 @@ SELECT
     AccountId__c, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
     IsDeleted
 FROM ERP_Order__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -560,7 +528,6 @@ SELECT
     ReleaseQuantity__c, ReleaseAmount__c, BoxQuantity__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM ERP_OrderProduct__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -569,7 +536,6 @@ SELECT
     Id, HolidayDate__c, Name, Type__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM HolidayMaster__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -579,7 +545,6 @@ SELECT
     PublicFlag__c, IsDeleted, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM Theme__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -596,7 +561,6 @@ SELECT
     DKRetail__AccountId__c, DKRetail__EmployeeId__c, DKRetail__ProductId__c, ThemeId__c,
     OwnerId, CreatedById, CreatedDate, LastModifiedDate, LastModifiedById
 FROM DKRetail__SiteAcitivity__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -611,7 +575,6 @@ SELECT
     EmployeeInputCriteriaMaster__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM MonthlyFemaleEmployeeIntegrationSchedule__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -628,7 +591,6 @@ SELECT
     LastMonthTargetByHand__c, ThisMonthTarget__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM MonthlySalesHistory__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -640,7 +602,6 @@ SELECT
     ERPSalesAmount__c, ERPDistributionAmount__c, LedgerAmount__c,
     CreatedDate, LastModifiedDate
 FROM DailySalesHistory__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -653,7 +614,6 @@ SELECT
     AccountBranchCode__c, IsDeleted, Account__c, OwnerId, CreatedById,
     CreatedDate, LastModifiedDate, LastModifiedById
 FROM SalesProgressRateMaster__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -666,7 +626,6 @@ SELECT
     MarketingTeam__c, IsDeleted, RecordTypeId, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM NewProduct__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -677,7 +636,6 @@ SELECT
     DKRetail__RequestStatus__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM DKRetail__OrderRequest__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -691,7 +649,6 @@ SELECT
     DKRetail__TotalCount__c, TotalCount__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM DKRetail__OrderRequestProduct__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -701,7 +658,6 @@ SELECT
     ProductSequence__c, Product__c, ProductCode__c, CustomKey__c, IsDeleted,
     OwnerId, CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM ProductBarcode__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -710,7 +666,6 @@ SELECT
     Id, Name, EmployeeId__c, oldValue__c, newValue__c, updateTime__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM ProfessionalPromotionTeamHistory__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -720,7 +675,6 @@ SELECT
     StartDate__c, EndDate__c, Confirmed__c, CostCenterCode__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM ProfessionalPromotionTeamMaster__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -736,7 +690,6 @@ SELECT
     DKRetail__WorkType2__c, CreatedDate, LastModifiedDate,
     CreatedById, LastModifiedById, IsDeleted
 FROM DKRetail__PromotionEmployee__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -748,7 +701,6 @@ SELECT
     CreatedById, LastModifiedById,
     IsDeleted, CreatedDate, LastModifiedDate
 FROM DKRetail__PromotionProduct__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -758,7 +710,6 @@ SELECT
     BranchCode__c, SObjectRecordId__c, IsDeleted, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM PushMessage__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -767,7 +718,6 @@ SELECT
     Id, Name, EmployeeId__c, MessageId__c, IsDeleted,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM PushMessageReceiver__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -789,7 +739,6 @@ SELECT
     CostCenterCode__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM DKRetail__TeamMemberSchedule__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -799,7 +748,6 @@ SELECT
     UploadKbn__c, FileId__c, Date__c, IsDeleted, CreatedDate, OwnerId,
     CreatedById, LastModifiedById
 FROM UploadFile__c
-WHERE IsDeleted = FALSE
 EOF
 )
 
@@ -829,7 +777,6 @@ SELECT
     Email, DoesSendEmailToMembers, DoesIncludeBosses,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById
 FROM Group
-WHERE Type IN ('Regular', 'Queue')
 EOF
 )
 

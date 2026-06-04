@@ -8,7 +8,7 @@ import java.time.LocalDateTime
  */
 data class ResetDeviceResponse(
     val employeeId: Long,
-    val employeeCode: String,
+    val employeeCode: String?,
     val name: String,
     val previousDeviceBound: Boolean,
     val resetAt: LocalDateTime
@@ -35,7 +35,7 @@ data class ResetDeviceResponse(
  */
 data class ResetPasswordResponse(
     val employeeId: Long,
-    val employeeCode: String,
+    val employeeCode: String?,
     val name: String,
     val temporaryPasswordIssued: Boolean,
     val passwordChangeRequired: Boolean,

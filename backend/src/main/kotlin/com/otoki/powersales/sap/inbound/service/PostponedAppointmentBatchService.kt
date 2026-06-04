@@ -39,7 +39,8 @@ class PostponedAppointmentBatchService(
 
         for (employee in employees) {
             try {
-                val appointment = appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc(employee.employeeCode)
+                val appointment = employee.employeeCode
+                    ?.let { appointmentRepository.findFirstByEmployeeCodeOrderByAppointDateDesc(it) }
                 if (appointment == null) {
                     log.warn("예약 발령 Appointment 없음: employeeCode={}", employee.employeeCode)
                     employee.crmWorkStartDate = null

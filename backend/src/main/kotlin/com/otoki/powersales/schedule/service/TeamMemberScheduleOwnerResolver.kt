@@ -38,7 +38,7 @@ class TeamMemberScheduleOwnerResolver(
 
         val leaderEmployeeCodes = leadersByCostCenter.values
             .flatten()
-            .map { it.employeeCode }
+            .mapNotNull { it.employeeCode }
             .distinct()
         if (leaderEmployeeCodes.isEmpty()) return emptyMap()
 

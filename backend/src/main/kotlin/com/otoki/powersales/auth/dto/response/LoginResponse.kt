@@ -27,7 +27,7 @@ data class UserInfo(
         fun from(employee: Employee): UserInfo {
             return UserInfo(
                 id = employee.id,
-                employeeCode = employee.employeeCode,
+                employeeCode = employee.employeeCode ?: error("로그인 사원의 사번이 null - 비정상"),
                 name = employee.name,
                 orgName = employee.orgName,
                 role = employee.role

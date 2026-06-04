@@ -56,7 +56,8 @@ class AccountUpsertService(
             emptyMap()
         } else {
             employeeRepository.findByEmployeeCodeIn(employeeCodes.distinct())
-                .associateBy { it.employeeCode }
+                .filter { it.employeeCode != null }
+                .associateBy { it.employeeCode!! }
         }
 
         // Spec #758: owner FK 가 User 로 전환됨. Employee 매칭은 존재 검증용으로 유지하고

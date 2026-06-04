@@ -7,7 +7,7 @@ import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 
 data class TeamMemberDto(
     val employeeId: Long,
-    val employeeCode: String,
+    val employeeCode: String?,
     val name: String
 ) {
     companion object {

@@ -38,7 +38,7 @@ class AdminDataScopeService(
     fun resolve(userId: Long): DataScope {
         val employee = employeeRepository.findWithEmployeeInfoById(userId)
             ?: throw IllegalStateException("사용자를 찾을 수 없습니다: $userId")
-        val user = userRepository.findByEmployeeCode(employee.employeeCode)
+        val user = employee.employeeCode?.let { userRepository.findByEmployeeCode(it) }
         val profileName = user?.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
         return resolveLegacy(profileName, user?.isSalesSupport ?: false, employee.costCenterCode)
     }
@@ -47,7 +47,7 @@ class AdminDataScopeService(
      * 기존 API (backward compat) — Employee 직접. sharing policy 신규 차원 미채움.
      */
     fun resolve(employee: Employee): DataScope {
-        val user = userRepository.findByEmployeeCode(employee.employeeCode)
+        val user = employee.employeeCode?.let { userRepository.findByEmployeeCode(it) }
         val profileName = user?.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
         return resolveLegacy(profileName, user?.isSalesSupport ?: false, employee.costCenterCode)
     }

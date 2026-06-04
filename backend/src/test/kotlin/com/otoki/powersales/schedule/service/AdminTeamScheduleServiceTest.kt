@@ -89,7 +89,7 @@ class AdminTeamScheduleServiceTest {
     ): com.otoki.powersales.auth.web.WebUserPrincipal =
         com.otoki.powersales.auth.web.WebUserPrincipal(
             userId = employee.id * 10,
-            usernameValue = employee.employeeCode,
+            usernameValue = employee.employeeCode!!,
             employeeCode = employee.employeeCode,
             employeeId = employee.id,
             role = employee.role,

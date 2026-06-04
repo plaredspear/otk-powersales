@@ -51,7 +51,8 @@ class AdminClaimResendService(
                 parsed = AdminClaimCreateService.ParsedInput(
                     sapAccountCode = claim.account?.externalKey!!,
                     productCode = claim.product?.productCode!!,
-                    employeeCode = claim.employee?.employeeCode!!,
+                    employeeCode = claim.employee?.employeeCode
+                        ?: error("사번 미보유 사원의 claim 은 재전송할 수 없습니다"),
                     dateType = claim.dateType ?: ClaimDateType.EXPIRY_DATE,
                     date = claim.date,
                     claimDate = claim.createdAt.toLocalDate(),

@@ -331,7 +331,8 @@ class AdminPPTMasterService(
         // Pre-fetch employees and accounts for batch lookup
         val employeeCodes = request.items.map { it.employeeCode }.distinct()
         val accountCodes = request.items.map { it.accountCode }.distinct()
-        val employeeMap = employeeRepository.findByEmployeeCodeIn(employeeCodes).associateBy { it.employeeCode }
+        val employeeMap = employeeRepository.findByEmployeeCodeIn(employeeCodes)
+            .filter { it.employeeCode != null }.associateBy { it.employeeCode!! }
         val accountMap = accountRepository.findByExternalKeyIn(accountCodes).associateBy { it.externalKey }
 
         request.items.forEachIndexed { index, item ->

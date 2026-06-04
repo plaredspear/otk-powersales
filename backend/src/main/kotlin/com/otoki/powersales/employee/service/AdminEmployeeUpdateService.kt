@@ -43,7 +43,7 @@ class AdminEmployeeUpdateService(
             ?: throw EmployeeNotFoundException(employeeId)
 
         if (employee.origin == EmployeeOrigin.SAP) {
-            throw SapOriginEmployeeNotEditableException(employee.employeeCode)
+            throw SapOriginEmployeeNotEditableException(employee.employeeCode ?: "")
         }
 
         applyMutableFields(employee, request)
@@ -63,7 +63,7 @@ class AdminEmployeeUpdateService(
      * 후처리(AppointmentUserProfileUpdater) 에서 별도 갱신하므로 본 경로에서 동기화하지 않는다.
      */
     private fun syncUserCache(employee: Employee) {
-        val user = userRepository.findByEmployeeCode(employee.employeeCode) ?: return
+        val user = employee.employeeCode?.let { userRepository.findByEmployeeCode(it) } ?: return
         user.costCenterCode = employee.costCenterCode
     }
 

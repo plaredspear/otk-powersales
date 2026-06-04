@@ -13,7 +13,7 @@ data class EmployeeListResponse(
 
 data class EmployeeListItem(
     val id: Long,
-    val employeeCode: String,
+    val employeeCode: String?,
     val name: String,
     val status: String?,
     val gender: String?,
@@ -74,7 +74,7 @@ data class EmployeeListItem(
 data class EmployeeDetailResponse(
     // -- 인사 정보 --
     val id: Long,
-    val employeeCode: String,
+    val employeeCode: String?,
     val name: String,
     val gender: String?,
     val status: String?,

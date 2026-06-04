@@ -161,8 +161,8 @@ class WebJwtService(
     fun getIsSalesSupportFromToken(token: String): Boolean =
         parseClaims(token).get("is_sales_support", java.lang.Boolean::class.java)?.booleanValue() ?: false
 
-    /** employee_code claim 추출. */
-    fun getEmployeeCodeFromToken(token: String): String =
+    /** employee_code claim 추출 — 사번 미보유 사원(employeeCode null)은 claim 도 null. */
+    fun getEmployeeCodeFromToken(token: String): String? =
         parseClaims(token).get("employee_code", String::class.java)
 
     /** cost_center_code claim 추출 — Employee 미존재 또는 미할당 시 null. */

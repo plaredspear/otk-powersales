@@ -61,7 +61,8 @@ class EmployeeUpsertService(
             mutableMapOf()
         } else {
             employeeRepository.findByEmployeeCodeIn(employeeCodes.distinct())
-                .associateBy { it.employeeCode }
+                .filter { it.employeeCode != null }
+                .associateBy { it.employeeCode!! }
                 .toMutableMap()
         }
 
@@ -121,10 +122,10 @@ class EmployeeUpsertService(
 
         // Employee.cost_center_code derived 캐시 동기화 — 기존 user 행에 대해서만 즉시 갱신.
         // 신규 사원의 User 행은 아래 EmployeeCreatedEvent 흐름에서 새로 생성된다.
-        val existingCodes = toSave.map { it.employeeCode }.filter { it.isNotBlank() } - newEmployees.map { it.employeeCode }.toSet()
+        val existingCodes = toSave.mapNotNull { it.employeeCode }.filter { it.isNotBlank() } - newEmployees.mapNotNull { it.employeeCode }.toSet()
         if (existingCodes.isNotEmpty()) {
             val users = userRepository.findByEmployeeCodeIn(existingCodes)
-            val empByCode = toSave.associateBy { it.employeeCode }
+            val empByCode = toSave.filter { it.employeeCode != null }.associateBy { it.employeeCode!! }
             users.forEach { user ->
                 val empCode = user.employeeCode ?: return@forEach
                 user.costCenterCode = empByCode[empCode]?.costCenterCode
@@ -136,7 +137,7 @@ class EmployeeUpsertService(
         newEmployees.forEach { employee ->
             eventPublisher.publishEvent(
                 EmployeeCreatedEvent(
-                    employeeCode = employee.employeeCode,
+                    employeeCode = employee.employeeCode ?: error("신규 Employee 의 사번이 null - 비정상 (사번 필수 검증 후 생성)"),
                     name = employee.name,
                     workEmail = employee.workEmail,
                     email = employee.email,

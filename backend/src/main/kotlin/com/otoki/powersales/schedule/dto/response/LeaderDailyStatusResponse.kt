@@ -51,5 +51,5 @@ data class LeaderDailyWorkerItem(
 data class LeaderDailyEmployeeItem(
     val employeeId: Long?,
     val employeeName: String,
-    val employeeCode: String,
+    val employeeCode: String?,
 )

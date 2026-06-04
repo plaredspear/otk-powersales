@@ -84,7 +84,7 @@ class AdminDataScopeServiceTest {
             val userId = 1L
             val employee = createTestEmployee(id = userId, costCenterCode = "B001")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-            stubProfile(employee.employeeCode, profileName = "3.영업부장")
+            stubProfile(employee.employeeCode!!, profileName = "3.영업부장")
 
             val result = adminDataScopeService.resolve(userId)
 
@@ -98,7 +98,7 @@ class AdminDataScopeServiceTest {
             val userId = 2L
             val employee = createTestEmployee(id = userId, costCenterCode = "B002")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-            stubProfile(employee.employeeCode, profileName = "2.사업부장")
+            stubProfile(employee.employeeCode!!, profileName = "2.사업부장")
 
             val result = adminDataScopeService.resolve(userId)
 
@@ -112,7 +112,7 @@ class AdminDataScopeServiceTest {
             val userId = 3L
             val employee = createTestEmployee(id = userId, costCenterCode = "B003")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-            stubProfile(employee.employeeCode, profileName = "1.본부장")
+            stubProfile(employee.employeeCode!!, profileName = "1.본부장")
 
             val result = adminDataScopeService.resolve(userId)
 
@@ -126,7 +126,7 @@ class AdminDataScopeServiceTest {
             val userId = 4L
             val employee = createTestEmployee(id = userId, costCenterCode = "B004")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-            stubProfile(employee.employeeCode, profileName = "9. Staff", isSalesSupport = true)
+            stubProfile(employee.employeeCode!!, profileName = "9. Staff", isSalesSupport = true)
 
             val result = adminDataScopeService.resolve(userId)
 
@@ -140,7 +140,7 @@ class AdminDataScopeServiceTest {
             val userId = 12L
             val employee = createTestEmployee(id = userId, costCenterCode = "B999")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-            stubProfile(employee.employeeCode, profileName = "시스템 관리자")
+            stubProfile(employee.employeeCode!!, profileName = "시스템 관리자")
 
             val result = adminDataScopeService.resolve(userId)
 
@@ -156,7 +156,7 @@ class AdminDataScopeServiceTest {
             val userId = 5L
             val employee = createTestEmployee(id = userId, costCenterCode = "B100")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-            stubProfile(employee.employeeCode, profileName = "9. Staff")
+            stubProfile(employee.employeeCode!!, profileName = "9. Staff")
 
             val result = adminDataScopeService.resolve(userId)
 
@@ -170,7 +170,7 @@ class AdminDataScopeServiceTest {
             val userId = 6L
             val employee = createTestEmployee(id = userId, costCenterCode = "B200")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-            stubProfile(employee.employeeCode, profileName = "8. Manager")
+            stubProfile(employee.employeeCode!!, profileName = "8. Manager")
 
             val result = adminDataScopeService.resolve(userId)
 
@@ -184,7 +184,7 @@ class AdminDataScopeServiceTest {
             val userId = 7L
             val employee = createTestEmployee(id = userId, costCenterCode = null)
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-            stubProfile(employee.employeeCode, profileName = "9. Staff")
+            stubProfile(employee.employeeCode!!, profileName = "9. Staff")
 
             val result = adminDataScopeService.resolve(userId)
 
@@ -200,7 +200,7 @@ class AdminDataScopeServiceTest {
             val userId = 8L
             val employee = createTestEmployee(id = userId, costCenterCode = "B300")
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-            stubProfile(employee.employeeCode, profileName = null)
+            stubProfile(employee.employeeCode!!, profileName = null)
 
             val result = adminDataScopeService.resolve(userId)
 
@@ -214,7 +214,7 @@ class AdminDataScopeServiceTest {
             val userId = 9L
             val employee = createTestEmployee(id = userId, costCenterCode = null)
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-            stubProfile(employee.employeeCode, profileName = null)
+            stubProfile(employee.employeeCode!!, profileName = null)
 
             val result = adminDataScopeService.resolve(userId)
 

@@ -44,7 +44,7 @@ data class HomeResponse(
     data class ExpiryAlertInfo(
         val branchName: String,
         val employeeName: String,
-        val employeeCode: String,
+        val employeeCode: String?,
         val expiryCount: Int
     )
 

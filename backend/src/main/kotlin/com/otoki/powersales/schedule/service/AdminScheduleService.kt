@@ -178,7 +178,8 @@ class AdminScheduleService(
         // SF checkResult L181 정합 — CostCenterCode IN :newOrgValues AND EmpCode IN :empCodes
         val usersByEmployeeCode = if (employeeCodes.isNotEmpty() && expandedBranchCodes.isNotEmpty()) {
             employeeRepository.findByCostCenterCodeInAndEmployeeCodeIn(expandedBranchCodes, employeeCodes)
-                .associateBy { it.employeeCode }
+                .filter { it.employeeCode != null }
+                .associateBy { it.employeeCode!! }
         } else {
             emptyMap()
         }
