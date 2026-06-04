@@ -37,7 +37,8 @@ import java.util.concurrent.Executors
 class Stage1CopyController(
     private val service: Stage1S3CopyService,
     private val progress: Stage1CopyProgress,
-    private val inMemoryPermissionCacheRegistry: com.otoki.powersales.admin.service.InMemoryPermissionCacheRegistry,
+    private val adminPermissionCache: com.otoki.powersales.auth.permission.AdminPermissionCache,
+    private val adminDataScopeCache: com.otoki.powersales.admin.security.AdminDataScopeCache,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -59,9 +60,10 @@ class Stage1CopyController(
         executor.submit {
             try {
                 service.copyFromS3(req.targetName, req.s3Bucket, req.s3Key, req.maxRows)
-                // 권한 원천 테이블 적재 시 stale in-memory 권한 캐시 무효화 (마이그레이션 직후 권한 어긋남 방지).
+                // 권한 원천 테이블 적재 시 stale 권한 캐시 무효화 (마이그레이션 직후 권한 어긋남 방지).
                 if (Stage1Targets.affectsPermissionCache(req.targetName)) {
-                    inMemoryPermissionCacheRegistry.invalidateAll()
+                    adminPermissionCache.invalidateAll()
+                    adminDataScopeCache.invalidateAll()
                 }
             } catch (e: Exception) {
                 log.error("[stage1-copy] async run failed", e)
@@ -83,8 +85,9 @@ class Stage1CopyController(
             try {
                 service.copyAllFromS3(req.s3Bucket, req.s3KeyPrefix, req.maxRows)
                 // 일괄 적재는 권한 원천 테이블 (Profile / PermissionSet* / User 등) 을 항상 포함 →
-                // stale in-memory 권한 캐시 무효화.
-                inMemoryPermissionCacheRegistry.invalidateAll()
+                // stale 권한 캐시 무효화.
+                adminPermissionCache.invalidateAll()
+                adminDataScopeCache.invalidateAll()
             } catch (e: Exception) {
                 log.error("[stage1-copy-all] async run failed", e)
             }

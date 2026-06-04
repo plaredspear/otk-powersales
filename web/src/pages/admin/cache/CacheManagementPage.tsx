@@ -135,8 +135,9 @@ export default function CacheManagementPage() {
       </Title>
       <Paragraph type="secondary" style={{ marginBottom: 16 }}>
         cache name 전체 단위 evict 지원. 코드 수정/배포 후 stale 결과가 24h TTL 또는 SAP daily
-        sync 까지 남아있는 사례에 사용하세요. <code>mem:</code> prefix 는 권한 in-memory 캐시
-        (5분 TTL) 로, SF 데이터 마이그레이션 직후 권한이 즉시 반영되지 않을 때 evict 하세요.
+        sync 까지 남아있는 사례에 사용하세요. <code>admin-permission:v1</code> /{' '}
+        <code>admin-data-scope:v1</code> 은 권한 가드 캐시 (5분 TTL) 로, SF 데이터 마이그레이션 직후
+        권한이 즉시 반영되지 않을 때 evict 하세요.
       </Paragraph>
 
       <Space style={{ marginBottom: 12 }}>

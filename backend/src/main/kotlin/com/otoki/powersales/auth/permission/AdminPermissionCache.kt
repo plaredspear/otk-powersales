@@ -1,13 +1,14 @@
 package com.otoki.powersales.auth.permission
 
-import com.github.benmanes.caffeine.cache.Caffeine
+import com.otoki.powersales.common.config.CacheConfig
 import com.otoki.powersales.user.repository.UserRepository
 import org.slf4j.LoggerFactory
+import org.springframework.cache.CacheManager
 import org.springframework.stereotype.Service
-import java.time.Duration
+import java.util.concurrent.Callable
 
 /**
- * 관리자 SF 권한 set 의 in-memory cache.
+ * 관리자 SF 권한 set 의 Redis cache.
  *
  * ## 도입 배경
  *
@@ -16,11 +17,21 @@ import java.time.Duration
  * `large_client_header_buffers` 기본 한도 (4 8k) 를 초과해 `400 Request Header Or Cookie Too Large`
  * 발생. JWT 에서 permissions claim 을 제거하고 가드 평가 시점에 본 캐시로 lazy lookup.
  *
+ * ## Caffeine → Redis 전환
+ *
+ * 이전 구현은 `Caffeine.newBuilder()` 자체 in-memory 인스턴스였다. 멀티 인스턴스 (dev/prod) 환경에서
+ * [invalidate] 가 호출된 단일 JVM 메모리만 비워, 다른 인스턴스는 최대 5분 TTL 동안 stale snapshot 으로
+ * 권한을 잘못 판정하는 치명적 결함이 있었다 (SF 마이그레이션 / 권한 편집 직후 인스턴스 간 권한 불일치).
+ * Spring [CacheManager] (dev/prod = RedisCacheManager) 의 공유 캐시로 전환하여 invalidate 가 전 인스턴스에
+ * 즉시 반영되도록 한다. local/test 는 `@Primary NoOpCacheManager` 라 항상 miss → 매번 DB resolve (무캐시,
+ * stale 없음 — 기존 동작과 동등).
+ *
  * ## 정합
  *
  * - 입력: `userId`
  * - 출력: [SfPermissionResolver.resolveForUser] 산출 결과 그대로 (entity:R/C/E/D + SYSTEM:* 평탄화)
- * - TTL: 5분 — SF Profile / PermissionSetAssignment 변경 후 즉시 반영이 필요하면 [invalidate] 명시 호출
+ * - TTL: 5분 ([CacheConfig.CACHE_ADMIN_PERMISSION]) — SF Profile / PermissionSetAssignment 변경 후 즉시
+ *   반영이 필요하면 [invalidate] 명시 호출. Redis 공유라 evict 가 전 인스턴스 반영.
  *
  * ## 캐시 미스 시 동작
  *
@@ -31,45 +42,35 @@ import java.time.Duration
 class AdminPermissionCache(
     private val sfPermissionResolver: SfPermissionResolver,
     private val userRepository: UserRepository,
+    private val cacheManager: CacheManager,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val cache = Caffeine.newBuilder()
-        .expireAfterWrite(Duration.ofMinutes(5))
-        .maximumSize(10_000)
-        .build<Long, Set<String>>()
-
     /**
      * user 의 permission set 을 반환. cache miss 시 DB 조회 후 5분 TTL 로 적재.
+     *
+     * cache 빈 미등록 (이론상) 시 캐시 없이 DB resolve 직접 호출.
      */
     fun get(userId: Long): Set<String> {
-        return cache.get(userId) { resolveFromDb(userId) }
+        val cache = cacheManager.getCache(CacheConfig.CACHE_ADMIN_PERMISSION)
+            ?: return resolveFromDb(userId)
+        @Suppress("UNCHECKED_CAST")
+        return cache.get(userId, Callable { resolveFromDb(userId) }) as Set<String>
     }
 
     /**
-     * 특정 user 의 cache entry 제거 — SF 권한 변경 즉시 반영용.
+     * 특정 user 의 cache entry 제거 — SF 권한 변경 즉시 반영용 (전 인스턴스).
      */
     fun invalidate(userId: Long) {
-        cache.invalidate(userId)
+        cacheManager.getCache(CacheConfig.CACHE_ADMIN_PERMISSION)?.evict(userId)
     }
 
     /**
-     * 전체 cache 제거 — 관리자가 권한 모델 일괄 갱신 후 명시 호출.
+     * 전체 cache 제거 — 관리자가 권한 모델 일괄 갱신 후 명시 호출 (전 인스턴스).
      */
     fun invalidateAll() {
-        cache.invalidateAll()
-    }
-
-    /**
-     * 현재 적재된 entry 추정 개수 — 운영도구 "Redis 캐시 관리" UI 의 표 표시용.
-     *
-     * Caffeine `estimatedSize()` 는 동시 쓰기/만료 진행 중 근사값. 정확 count 가 아니라 운영자
-     * 가시성 목적 (0 이면 비어 있음 / >0 이면 적재됨) 으로 충분.
-     */
-    fun estimatedSize(): Long {
-        cache.cleanUp()
-        return cache.estimatedSize()
+        cacheManager.getCache(CacheConfig.CACHE_ADMIN_PERMISSION)?.clear()
     }
 
     private fun resolveFromDb(userId: Long): Set<String> {
