@@ -104,6 +104,11 @@ class User(
     @Column(name = "branch", length = 255)
     var branch: String? = null,
 
+    // SF Text(100) `prnflag__c` (홍보영양사여부). 데이터 보존용 — 신규 조회/로직 미사용.
+    @SFField("prnflag__c")
+    @Column(name = "prn_flag", length = 100)
+    var prnFlag: String? = null,
+
     @SFField("LastLoginDate")
     @Column(name = "last_login_at")
     var lastLoginAt: LocalDateTime? = null,

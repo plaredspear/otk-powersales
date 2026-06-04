@@ -216,6 +216,7 @@ val USER_METADATA = EntityMetadata(
         FieldMapping("Phone", "phone"),
         FieldMapping("HR_Code__c", "hr_code"),
         FieldMapping("Branch__c", "branch"),
+        FieldMapping("prnflag__c", "prn_flag"),
         FieldMapping("LastLoginDate", "last_login_at"),
         FieldMapping("ManagerId", "manager_sfid"),
         FieldMapping("ProfileId", "profile_sfid"),

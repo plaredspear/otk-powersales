@@ -249,7 +249,7 @@ SELECT
     DKRetail__EmployeeNumber__c,
     Name, LastName, FirstName, Alias,
     Title, Department, Division,
-    MobilePhone, Phone, HR_Code__c, Branch__c,
+    MobilePhone, Phone, HR_Code__c, Branch__c, prnflag__c,
     LastLoginDate, ManagerId,
     ProfileId, UserRoleId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,

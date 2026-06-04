@@ -69,19 +69,19 @@ class UserEntityTest {
     }
 
     @Nested
-    @DisplayName("AC1 — @SFField 매핑 키셋 (도메인 19개 + Group A 3개 + BaseEntity 2개)")
+    @DisplayName("AC1 — @SFField 매핑 키셋 (도메인 20개 + Group A 3개 + BaseEntity 2개)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(User::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 24 (도메인 19 + Group A audit 3 + BaseEntity 2)")
+        @DisplayName("매핑 키 수 = 25 (도메인 20 + Group A audit 3 + BaseEntity 2)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(24)
+            assertThat(mapping).hasSize(25)
         }
 
         @Test
-        @DisplayName("도메인 19개 SF API Name → 컬럼명 1:1")
+        @DisplayName("도메인 20개 SF API Name → 컬럼명 1:1")
         fun domainMappingValues() {
             assertThat(mapping["Username"]).isEqualTo("username")
             assertThat(mapping["Email"]).isEqualTo("email")
@@ -98,6 +98,7 @@ class UserEntityTest {
             assertThat(mapping["Phone"]).isEqualTo("phone")
             assertThat(mapping["HR_Code__c"]).isEqualTo("hr_code")
             assertThat(mapping["Branch__c"]).isEqualTo("branch")
+            assertThat(mapping["prnflag__c"]).isEqualTo("prn_flag")
             assertThat(mapping["LastLoginDate"]).isEqualTo("last_login_at")
             assertThat(mapping["ManagerId"]).isEqualTo("manager_sfid")
             assertThat(mapping["ProfileId"]).isEqualTo("profile_sfid")
