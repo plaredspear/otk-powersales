@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.security
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.service.AdminDataScopeService
 import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.common.config.CacheConfig
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -15,7 +16,7 @@ import org.springframework.cache.concurrent.ConcurrentMapCacheManager
 class AdminDataScopeCacheTest {
 
     private val resolveService = mockk<AdminDataScopeService>()
-    private val cacheManager = ConcurrentMapCacheManager("admin-data-scope:v1")
+    private val cacheManager = ConcurrentMapCacheManager(CacheConfig.CACHE_ADMIN_DATA_SCOPE)
     private val cache = AdminDataScopeCache(resolveService, cacheManager)
 
     private val principal = mockk<WebUserPrincipal>()
