@@ -553,4 +553,28 @@ class Stage1TargetsTest {
             assertThat(cu.updateColumns).doesNotContain(cu.conflictColumn)
         }
     }
+
+    @Nested
+    @DisplayName("listWithCsv — SINGLE 모드 파일명 자동조립 메타")
+    inner class ListWithCsv {
+
+        @Test
+        @DisplayName("DEPENDENCY_ORDER 와 동일한 순서/개수 + targetName 1:1")
+        fun sameOrderAsDependency() {
+            val names = Stage1Targets.listWithCsv().map { it.targetName }
+            assertThat(names).isEqualTo(Stage1Targets.list())
+        }
+
+        @Test
+        @DisplayName("각 항목의 csvFileName 은 get(targetName).csvFileName 과 정확히 일치")
+        fun csvFileNameMatchesMeta() {
+            Stage1Targets.listWithCsv().forEach { tc ->
+                val meta = Stage1Targets.get(tc.targetName)
+                    ?: error("${tc.targetName} 가 ALL 맵에 미등록")
+                assertThat(tc.csvFileName)
+                    .withFailMessage("${tc.targetName} 의 listWithCsv csvFileName 이 meta 와 불일치")
+                    .isEqualTo(meta.csvFileName)
+            }
+        }
+    }
 }

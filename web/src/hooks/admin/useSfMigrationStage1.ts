@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getStage1CopyProgress,
+  getStage1Defaults,
   listStage1Targets,
   startStage1Copy,
   startStage1CopyAll,
@@ -8,11 +9,14 @@ import {
   type Stage1CopyAllRequest,
   type Stage1CopyProgress,
   type Stage1CopyRequest,
+  type Stage1Defaults,
+  type Stage1Target,
 } from '@/api/admin/sfMigrationStage1';
 
 const KEY_BASE = ['admin', 'sf-migration-stage1'] as const;
 const PROGRESS_KEY = [...KEY_BASE, 'progress'] as const;
 const TARGETS_KEY = [...KEY_BASE, 'targets'] as const;
+const DEFAULTS_KEY = [...KEY_BASE, 'defaults'] as const;
 
 export function useStage1CopyProgress(options?: { enabled?: boolean }) {
   return useQuery<Stage1CopyProgress>({
@@ -59,8 +63,16 @@ export function useStartStage1CopyAll() {
 }
 
 export function useStage1Targets() {
-  return useQuery<string[]>({
+  return useQuery<Stage1Target[]>({
     queryKey: TARGETS_KEY,
     queryFn: listStage1Targets,
+  });
+}
+
+export function useStage1Defaults() {
+  return useQuery<Stage1Defaults>({
+    queryKey: DEFAULTS_KEY,
+    queryFn: getStage1Defaults,
+    staleTime: Infinity, // 환경 설정값 — 세션 중 불변.
   });
 }

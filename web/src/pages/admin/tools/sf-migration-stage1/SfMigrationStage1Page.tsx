@@ -19,6 +19,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
   useStage1CopyProgress,
+  useStage1Defaults,
   useStage1Targets,
   useStartStage1Copy,
   useStartStage1CopyAll,
@@ -84,10 +85,11 @@ function rowsThroughput(p: Stage1CopyProgress): string {
 export default function SfMigrationStage1Page() {
   const progressQuery = useStage1CopyProgress();
   const targetsQuery = useStage1Targets();
+  const defaultsQuery = useStage1Defaults();
   const startSingleMutation = useStartStage1Copy();
   const startBatchMutation = useStartStage1CopyAll();
 
-  const [singleForm] = Form.useForm<{ targetName: string; s3Bucket: string; s3Key: string }>();
+  const [singleForm] = Form.useForm<{ targetName: string; s3Bucket: string; s3KeyPrefix: string }>();
   const [batchForm] = Form.useForm<{ s3Bucket: string; s3KeyPrefix: string }>();
   const [runMode, setRunMode] = useState<RunMode>('single');
   const [sampleMode, setSampleMode] = useState<SampleMode>('all');
@@ -97,6 +99,23 @@ export default function SfMigrationStage1Page() {
   const statusTag = progress ? STATUS_TAG[progress.status] : STATUS_TAG.IDLE;
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [alreadyRunning, setAlreadyRunning] = useState(false);
+
+  // backend 환경값 (S3_BUCKET + 고정 prefix) 으로 두 폼을 프리필 — 사용자 수동 입력 제거.
+  // 사용자가 직접 수정한 필드는 덮어쓰지 않도록 최초 1회만 적용.
+  const defaults = defaultsQuery.data;
+  const [defaultsApplied, setDefaultsApplied] = useState(false);
+  useEffect(() => {
+    if (!defaults || defaultsApplied) return;
+    singleForm.setFieldsValue({
+      s3Bucket: defaults.s3Bucket,
+      s3KeyPrefix: defaults.s3KeyPrefix,
+    });
+    batchForm.setFieldsValue({
+      s3Bucket: defaults.s3Bucket,
+      s3KeyPrefix: defaults.s3KeyPrefix,
+    });
+    setDefaultsApplied(true);
+  }, [defaults, defaultsApplied, singleForm, batchForm]);
 
   // 진행 중 row 표시 갱신을 위해 force render 1초 간격 (Statistic 의 elapsed 가 client clock 의존).
   const [, setTick] = useState(0);
@@ -109,6 +128,17 @@ export default function SfMigrationStage1Page() {
   const startMutationPending =
     startSingleMutation.isPending || startBatchMutation.isPending;
 
+  // single 모드 최종 S3 key 미리보기 — 선택 target 의 csvFileName 을 prefix 와 조립.
+  const watchedTarget = Form.useWatch('targetName', singleForm);
+  const watchedPrefix = Form.useWatch('s3KeyPrefix', singleForm);
+  const selectedCsvFileName = (targetsQuery.data ?? []).find(
+    (t) => t.targetName === watchedTarget,
+  )?.csvFileName;
+  const previewS3Key =
+    watchedPrefix && selectedCsvFileName
+      ? `${watchedPrefix.replace(/\/+$/, '')}/${selectedCsvFileName}`
+      : null;
+
   const resetSubmitState = () => {
     setSubmitError(null);
     setAlreadyRunning(false);
@@ -117,7 +147,7 @@ export default function SfMigrationStage1Page() {
   const onSubmitSingle = (values: {
     targetName: string;
     s3Bucket: string;
-    s3Key: string;
+    s3KeyPrefix: string;
   }) => {
     resetSubmitState();
     startSingleMutation.mutate(
@@ -230,6 +260,27 @@ export default function SfMigrationStage1Page() {
         에 업로드해야 한다. 대용량 entity (예: ErpOrderProduct ≈ 5GB) 는 수 분~수십 분 소요.
       </Paragraph>
 
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="현재 적재 대상 S3 위치"
+        description={
+          <Descriptions column={1} size="small" colon={false}>
+            <Descriptions.Item label="S3 Bucket (환경변수 S3_BUCKET)">
+              {defaults?.s3Bucket ? (
+                <Text code>{defaults.s3Bucket}</Text>
+              ) : (
+                <Text type="warning">미설정 (backend S3_BUCKET 환경변수 확인 필요)</Text>
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="CSV 경로 (prefix)">
+              <Text code>{defaults?.s3KeyPrefix ?? '-'}/</Text>
+            </Descriptions.Item>
+          </Descriptions>
+        }
+      />
+
       <Card style={{ marginBottom: 16 }} title="실행">
         <Radio.Group
           value={runMode}
@@ -287,8 +338,8 @@ export default function SfMigrationStage1Page() {
                 loading={targetsQuery.isLoading}
                 showSearch
                 options={[...(targetsQuery.data ?? [])]
-                  .sort((a, b) => a.localeCompare(b))
-                  .map((t) => ({ value: t, label: t }))}
+                  .sort((a, b) => a.targetName.localeCompare(b.targetName))
+                  .map((t) => ({ value: t.targetName, label: t.targetName }))}
               />
             </Form.Item>
             <Form.Item
@@ -299,11 +350,23 @@ export default function SfMigrationStage1Page() {
               <Input placeholder="otoki-dev-storage" />
             </Form.Item>
             <Form.Item
-              label="S3 Key"
-              name="s3Key"
-              rules={[{ required: true, message: 'S3 key 를 입력하세요' }]}
+              label="S3 Key Prefix"
+              name="s3KeyPrefix"
+              tooltip="파일명은 선택한 target 의 csvFileName 으로 자동 조립됩니다 (<prefix>/<csvFileName>)."
+              rules={[{ required: true, message: 'S3 key prefix 를 입력하세요' }]}
+              extra={
+                previewS3Key ? (
+                  <Text type="secondary">
+                    최종 S3 key: <Text code>{previewS3Key}</Text>
+                  </Text>
+                ) : selectedCsvFileName ? (
+                  <Text type="secondary">
+                    파일명: <Text code>{selectedCsvFileName}</Text> (prefix 입력 시 전체 경로 표시)
+                  </Text>
+                ) : undefined
+              }
             >
-              <Input placeholder="sf-migration/input/erp_order_products.csv" />
+              <Input placeholder="sf-migration/input" />
             </Form.Item>
             <Space>
               <Button

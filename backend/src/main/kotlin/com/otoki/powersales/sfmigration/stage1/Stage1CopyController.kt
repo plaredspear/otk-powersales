@@ -3,6 +3,7 @@ package com.otoki.powersales.sfmigration.stage1
 import com.otoki.powersales.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -39,6 +40,8 @@ class Stage1CopyController(
     private val progress: Stage1CopyProgress,
     private val adminPermissionCache: com.otoki.powersales.auth.permission.AdminPermissionCache,
     private val adminDataScopeCache: com.otoki.powersales.admin.security.AdminDataScopeCache,
+    // 운영 S3 bucket (EB 콘솔 환경 속성 S3_BUCKET). Stage1 CSV 도 동일 bucket 사용 — UI 프리필.
+    @Value("\${app.aws.s3.bucket:}") private val configuredS3Bucket: String,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -56,10 +59,15 @@ class Stage1CopyController(
             return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.success(progress.toResponse()))
         }
-        progress.begin(req.targetName, req.s3Bucket, req.s3Key)
+        // 파일명은 target 의 csvFileName 으로 자동 조립 (BATCH 모드와 대칭). 매핑 SoT = Stage1Targets.
+        val meta = Stage1Targets.get(req.targetName)
+            ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("UNKNOWN_TARGET", "Unknown target: ${req.targetName}"))
+        val s3Key = "${req.s3KeyPrefix.removeSuffix("/")}/${meta.csvFileName}"
+        progress.begin(req.targetName, req.s3Bucket, s3Key)
         executor.submit {
             try {
-                service.copyFromS3(req.targetName, req.s3Bucket, req.s3Key, req.maxRows)
+                service.copyFromS3(req.targetName, req.s3Bucket, s3Key, req.maxRows)
                 // 권한 원천 테이블 적재 시 stale 권한 캐시 무효화 (마이그레이션 직후 권한 어긋남 방지).
                 if (Stage1Targets.affectsPermissionCache(req.targetName)) {
                     adminPermissionCache.invalidateAll()
@@ -101,8 +109,19 @@ class Stage1CopyController(
     }
 
     @GetMapping("/api/v1/admin/sf-migration/stage1/targets")
-    fun listTargets(): ResponseEntity<ApiResponse<List<String>>> {
-        return ResponseEntity.ok(ApiResponse.success(Stage1Targets.list()))
+    fun listTargets(): ResponseEntity<ApiResponse<List<Stage1Targets.TargetCsv>>> {
+        return ResponseEntity.ok(ApiResponse.success(Stage1Targets.listWithCsv()))
+    }
+
+    /**
+     * Stage1 적재 폼 기본값 — S3 bucket (운영 S3_BUCKET 환경 속성) + CSV 공통 prefix.
+     * web 이 single/batch 폼을 프리필하고 사용자가 현재 사용할 bucket/경로를 확인하도록 노출.
+     */
+    @GetMapping("/api/v1/admin/sf-migration/stage1/defaults")
+    fun getDefaults(): ResponseEntity<ApiResponse<Stage1Defaults>> {
+        return ResponseEntity.ok(
+            ApiResponse.success(Stage1Defaults(s3Bucket = configuredS3Bucket, s3KeyPrefix = DEFAULT_S3_KEY_PREFIX)),
+        )
     }
 
     private fun Stage1CopyProgress.toResponse(): Stage1CopyProgressResponse {
@@ -133,4 +152,20 @@ class Stage1CopyController(
             },
         )
     }
+
+    companion object {
+        /** Stage1 CSV 의 S3 공통 경로 (bucket 하위). extract-csv.sh 의 input/ 업로드 관례와 정합. */
+        const val DEFAULT_S3_KEY_PREFIX = "sf-migration/input"
+    }
 }
+
+/**
+ * Stage1 적재 폼 기본값 — UI 프리필 + 사용자 확인용.
+ *
+ * @param s3Bucket    운영 S3 bucket (S3_BUCKET 환경 속성). 미설정(local 등) 시 빈 문자열.
+ * @param s3KeyPrefix CSV 공통 prefix (예: "sf-migration/input").
+ */
+data class Stage1Defaults(
+    val s3Bucket: String,
+    val s3KeyPrefix: String,
+)

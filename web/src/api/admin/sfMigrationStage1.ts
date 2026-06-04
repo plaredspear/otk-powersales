@@ -50,7 +50,8 @@ export interface Stage1CopyProgress {
 export interface Stage1CopyRequest {
   targetName: string;
   s3Bucket: string;
-  s3Key: string;
+  /** CSV 공통 prefix (예: "sf-migration/input"). 파일명은 target 의 csvFileName 으로 backend 가 자동 조립. */
+  s3KeyPrefix: string;
   /** sample 적재 상한 (CSV row 기준). 미지정 시 전체 적재. */
   maxRows?: number;
 }
@@ -122,8 +123,31 @@ export async function getStage1CopyProgress(): Promise<Stage1CopyProgress> {
   return res.data.data;
 }
 
-export async function listStage1Targets(): Promise<string[]> {
-  const res = await client.get<ApiResponse<string[]>>(
+export interface Stage1Target {
+  targetName: string;
+  /** SF export CSV 파일명 (예: "erp_order_products.csv"). prefix 와 합쳐 최종 S3 key 조립. */
+  csvFileName: string;
+}
+
+export interface Stage1Defaults {
+  /** 운영 S3 bucket (backend 의 S3_BUCKET 환경 속성). 미설정 시 빈 문자열. */
+  s3Bucket: string;
+  /** CSV 공통 prefix (예: "sf-migration/input"). */
+  s3KeyPrefix: string;
+}
+
+export async function getStage1Defaults(): Promise<Stage1Defaults> {
+  const res = await client.get<ApiResponse<Stage1Defaults>>(
+    '/api/v1/admin/sf-migration/stage1/defaults',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'Stage 1 기본값 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function listStage1Targets(): Promise<Stage1Target[]> {
+  const res = await client.get<ApiResponse<Stage1Target[]>>(
     '/api/v1/admin/sf-migration/stage1/targets',
   );
   if (!res.data.success || !res.data.data) {

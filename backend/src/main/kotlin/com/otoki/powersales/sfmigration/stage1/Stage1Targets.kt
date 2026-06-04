@@ -1761,6 +1761,15 @@ object Stage1Targets {
     fun list(): List<String> = DEPENDENCY_ORDER
 
     /**
+     * 등록된 target 의 (이름, csvFileName) 일람 (등록 순서). UI 가 prefix + csvFileName 으로
+     * 최종 S3 key 를 미리보기 표시하기 위해 사용 (SINGLE 모드 파일명 자동조립).
+     */
+    fun listWithCsv(): List<TargetCsv> =
+        DEPENDENCY_ORDER.mapNotNull { name -> ALL[name]?.let { TargetCsv(name, it.csvFileName) } }
+
+    data class TargetCsv(val targetName: String, val csvFileName: String)
+
+    /**
      * in-memory 권한 캐시 (AdminPermissionCache / AdminDataScopeCache) 의 입력 source 가 되는 target 집합.
      *
      * 이 중 하나라도 적재되면 캐시된 권한 set / DataScope 가 stale 이 되므로, 적재 완료 후
