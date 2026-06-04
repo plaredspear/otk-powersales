@@ -254,10 +254,26 @@ export function ScheduleCalendar({
         .fc-daygrid-day-top > * {
           width: 100% !important;
         }
+        /*
+          화면(브라우저 높이)이 작아질 때 셀 행 높이가 (날짜 + 요약 배지 2줄 + 이벤트 +
+          "+N 개" 링크) 콘텐츠보다 작아지면, 셀 내용이 셀 경계를 넘어 다음 주 행의 날짜와
+          겹쳤다. 해결: 셀마다 콘텐츠를 다 담을 최소 높이를 보장한다 (overflow:hidden 으로
+          개별 셀을 자르거나 셀별 스크롤을 만들지 않는다). 컨테이너가 (6주 × 최소높이) 보다
+          작아지면 부모 div(아래 overflowY:auto)의 세로 스크롤로 캘린더 전체가 스크롤된다.
+          화면이 충분히 크면 FullCalendar 가 셀을 균등 분배해 한 화면에 다 보인다.
+          월간 뷰(.fc-daygrid) 한정 — 목록 뷰(.fc-list)는 이 셀렉터에 매칭되지 않아 무관.
+        */
+        .fc-daygrid-body .fc-daygrid-day {
+          height: auto !important;
+        }
+        .fc-scrollgrid-sync-table .fc-daygrid-day-frame {
+          min-height: 96px !important;
+        }
       `}</style>
-      {/* FullCalendar — SF 레거시 정합: 캘린더 전체가 한 화면에 보이도록 height=100% 컨테이너 채움 + 셀별 +N 개 popover.
-          목록 뷰는 행 수가 많아 부모 높이를 넘기므로 컨테이너에 세로 스크롤을 부여한다. */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: isListView ? 'auto' : 'visible' }}>
+      {/* FullCalendar — 셀별 +N 개 popover. 컨테이너 높이가 충분하면 한 화면에 다 보이고,
+          화면이 작아 (6주 × 셀 최소높이) 를 넘기면 부모 컨테이너에 세로 스크롤을 부여해
+          셀 내용이 다음 주 행과 겹치지 않게 한다. 목록 뷰도 동일하게 세로 스크롤. */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, listPlugin]}
@@ -267,8 +283,8 @@ export function ScheduleCalendar({
           locale="ko"
           allDayText="종일"
           noEventsText="일정이 없습니다"
-          height={isListView ? 'auto' : '100%'}
-          dayMaxEventRows={true}
+          height="auto"
+          dayMaxEventRows={3}
           moreLinkText={(num) => `+${num} 개`}
           events={events}
           eventOrder="sortOrder"
