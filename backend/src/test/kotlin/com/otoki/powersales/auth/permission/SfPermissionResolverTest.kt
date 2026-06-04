@@ -1,5 +1,7 @@
 package com.otoki.powersales.auth.permission
 
+import com.otoki.powersales.auth.entity.Profile
+import com.otoki.powersales.auth.repository.ProfileRepository
 import com.otoki.powersales.auth.sharing.entity.PermissionSetAssignment
 import com.otoki.powersales.auth.sharing.entity.PermissionSetFlags
 import com.otoki.powersales.auth.sharing.entity.ProfileFlags
@@ -9,6 +11,7 @@ import com.otoki.powersales.auth.sharing.repository.ProfileFlagsRepository
 import com.otoki.powersales.user.entity.User
 import io.mockk.every
 import io.mockk.mockk
+import java.util.Optional
 import org.assertj.core.api.Assertions.assertThat
 import io.mockk.verify
 import org.junit.jupiter.api.DisplayName
@@ -21,6 +24,7 @@ class SfPermissionResolverTest {
     private val profileFlagsRepository: ProfileFlagsRepository = mockk()
     private val assignmentRepository: PermissionSetAssignmentRepository = mockk()
     private val permissionSetFlagsRepository: PermissionSetFlagsRepository = mockk()
+    private val profileRepository: ProfileRepository = mockk()
     private val entitySfNameRegistry: EntitySfNameRegistry = mockk()
     private val objectMapper = JsonMapper.builder().build()
 
@@ -28,6 +32,7 @@ class SfPermissionResolverTest {
         profileFlagsRepository = profileFlagsRepository,
         permissionSetAssignmentRepository = assignmentRepository,
         permissionSetFlagsRepository = permissionSetFlagsRepository,
+        profileRepository = profileRepository,
         entitySfNameRegistry = entitySfNameRegistry,
         objectMapper = objectMapper,
     )
@@ -121,6 +126,38 @@ class SfPermissionResolverTest {
     }
 
     @Test
+    @DisplayName("시스템 관리자 — profile_flags 행이 없어도 전체 자원 CRUD 자동 펼침")
+    fun systemAdminExpandsAllResourcesWithoutProfileFlags() {
+        val user = userWithProfile(profileId = 31L, profileName = "시스템 관리자")
+        // 운영에서 발생한 상황 재현 — SF 표준 Profile 이라 profile_flags 행 부재
+        every { profileFlagsRepository.findByProfileId(31L) } returns null
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns emptyList()
+        every { entitySfNameRegistry.allResources() } returns setOf("employee", "dashboard", "account")
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("SYSTEM:VIEW_ALL_DATA", "SYSTEM:MODIFY_ALL_DATA")
+        assertThat(result).contains("employee:R", "employee:C", "employee:E", "employee:D")
+        assertThat(result).contains("dashboard:R", "dashboard:C", "dashboard:E", "dashboard:D")
+        assertThat(result).contains("account:R", "account:C", "account:E", "account:D")
+    }
+
+    @Test
+    @DisplayName("비 시스템 관리자 — profile_flags 없으면 권한 펼침 없음")
+    fun nonSystemAdminWithoutFlagsHasNoExpansion() {
+        val user = userWithProfile(profileId = 4L, profileName = "4.지점장")
+        every { profileFlagsRepository.findByProfileId(4L) } returns null
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns emptyList()
+        every { entitySfNameRegistry.allResources() } returns setOf("employee", "dashboard")
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).doesNotContain("SYSTEM:VIEW_ALL_DATA", "SYSTEM:MODIFY_ALL_DATA")
+        assertThat(result).doesNotContain("employee:R", "dashboard:R")
+        assertThat(result).isEmpty()
+    }
+
+    @Test
     @DisplayName("custom_permissions JSON 깨짐 — 무시 + 다른 권한 산출 정상")
     fun corruptedCustomPermissionsJsonIgnored() {
         val user = userWithProfile(profileId = null)
@@ -167,10 +204,14 @@ class SfPermissionResolverTest {
         verify(exactly = 0) { permissionSetFlagsRepository.findById(any()) }
     }
 
-    private fun userWithProfile(profileId: Long?): User {
+    private fun userWithProfile(profileId: Long?, profileName: String = "5.영업사원"): User {
         val mock = mockk<User>()
         every { mock.id } returns 99L
         every { mock.profileId } returns profileId
+        if (profileId != null) {
+            val profile = Profile(id = profileId, name = profileName)
+            every { profileRepository.findById(profileId) } returns Optional.of(profile)
+        }
         return mock
     }
 

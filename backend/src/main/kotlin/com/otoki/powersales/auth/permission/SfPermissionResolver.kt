@@ -1,5 +1,6 @@
 package com.otoki.powersales.auth.permission
 
+import com.otoki.powersales.auth.repository.ProfileRepository
 import com.otoki.powersales.auth.sharing.entity.PermissionSetFlags
 import com.otoki.powersales.auth.sharing.entity.ProfileFlags
 import com.otoki.powersales.auth.sharing.repository.PermissionSetAssignmentRepository
@@ -43,6 +44,7 @@ class SfPermissionResolver(
     private val profileFlagsRepository: ProfileFlagsRepository,
     private val permissionSetAssignmentRepository: PermissionSetAssignmentRepository,
     private val permissionSetFlagsRepository: PermissionSetFlagsRepository,
+    private val profileRepository: ProfileRepository,
     private val entitySfNameRegistry: EntitySfNameRegistry,
     private val objectMapper: ObjectMapper,
 ) {
@@ -54,6 +56,16 @@ class SfPermissionResolver(
      */
     fun resolveForUser(user: User): Set<String> {
         val result = mutableSetOf<String>()
+
+        // 0. 시스템 관리자 — ProfileFlags 적재 여부 무관 전체 권한 자동 부여 (WebAdminContextFilter 의 API 가드 우회와 대칭).
+        //    SF '시스템 관리자' (표준 System Administrator) 는 profile-meta.xml retrieve 대상 외라 profile_flags 행이
+        //    부재할 수 있어, modify_all_data 비트가 미적재면 메뉴 게이팅용 permissions 가 비어 일부 메뉴만 노출되는
+        //    비대칭이 발생한다. 여기서 system 비트 2종을 선주입하면 expandAllDataBits 가 전 자원 CRUD 를 펼쳐
+        //    프론트 메뉴 / API 가드 / JWT claim 이 일괄 정상화된다.
+        if (isSystemAdmin(user)) {
+            result.add(systemKey(SfSystemPermission.VIEW_ALL_DATA))
+            result.add(systemKey(SfSystemPermission.MODIFY_ALL_DATA))
+        }
 
         // 1. ProfileFlags — system permission 비트
         val profileFlags: ProfileFlags? = user.profileId?.let { profileFlagsRepository.findByProfileId(it) }
@@ -71,6 +83,15 @@ class SfPermissionResolver(
         expandAllDataBits(result)
 
         return result
+    }
+
+    /**
+     * user 의 Profile.name 으로 시스템 관리자 여부 판정 ([SystemAdminProfilePolicy] SoT 재사용).
+     * profileId 미설정 / Profile row 부재 시 false.
+     */
+    private fun isSystemAdmin(user: User): Boolean {
+        val profileName = user.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
+        return SystemAdminProfilePolicy.isSystemAdmin(profileName)
     }
 
     private fun applyProfileFlags(flags: ProfileFlags, result: MutableSet<String>) {
