@@ -1,87 +1,76 @@
 package com.otoki.powersales.admin.service
 
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.cache.Cache
-import org.springframework.cache.CacheManager
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager
 
 @DisplayName("AdminCacheService 테스트")
 class AdminCacheServiceTest {
 
-    private val cacheManager = mockk<CacheManager>(relaxed = true)
-    private val registry = mockk<InMemoryPermissionCacheRegistry>(relaxed = true)
-
-    // RedisTemplate 은 null (non-Redis 환경 시뮬레이션 — estimateKeyCount = -1).
-    private val service = AdminCacheService(cacheManager, null, registry)
+    // ConcurrentMapCacheManager 로 실제 cache 동작 검증 (RedisTemplate 은 null → estimateKeyCount = -1).
+    private val cacheManager = ConcurrentMapCacheManager(
+        "teamScheduleBranchesV2",
+        "admin-permission:v1",
+        "admin-data-scope:v1",
+    )
+    private val service = AdminCacheService(cacheManager, null)
 
     @Test
-    @DisplayName("listCaches - CacheManager 캐시 + in-memory 가상 캐시 합집합 반환")
-    fun listCaches_mergesManagedAndInMemory() {
-        every { cacheManager.cacheNames } returns setOf("teamScheduleBranchesV2", "organizationCascadeV2")
-        every { cacheManager.getCache(any()) } returns mockk<Cache>(relaxed = true)
-        every { registry.list() } returns listOf(
-            InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE to 4L,
-            InMemoryPermissionCacheRegistry.NAME_ADMIN_DATA_SCOPE_CACHE to 2L,
-        )
-
+    @DisplayName("listCaches - CacheManager 등록 캐시 (권한 가드 캐시 포함) 정렬 반환")
+    fun listCaches_includesAllManagedCaches() {
         val result = service.listCaches()
 
         assertThat(result.map { it.name }).containsExactly(
-            "organizationCascadeV2",
+            "admin-data-scope:v1",
+            "admin-permission:v1",
             "teamScheduleBranchesV2",
-            InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE,
-            InMemoryPermissionCacheRegistry.NAME_ADMIN_DATA_SCOPE_CACHE,
         )
+        // non-Redis (ConcurrentMap) 이므로 추정 불가 = -1.
+        assertThat(result).allMatch { it.estimatedKeyCount == -1L }
     }
 
     @Test
-    @DisplayName("evict - 가상 cache name 은 registry 로 위임")
-    fun evict_virtualDelegatesToRegistry() {
-        every { registry.handles(InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE) } returns true
-        every { registry.evict(InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE) } returns (6L to 0L)
+    @DisplayName("evict - 등록된 cache 의 Cache.clear 호출 (entry 제거됨)")
+    fun evict_clearsCache() {
+        cacheManager.getCache("admin-permission:v1")!!.put(1L, setOf("account:R"))
+        assertThat(cacheManager.getCache("admin-permission:v1")!!.get(1L)).isNotNull()
 
-        val result = service.evict(InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE, "ADMIN001")
+        val result = service.evict("admin-permission:v1", "ADMIN001")
 
-        assertThat(result.keysBefore).isEqualTo(6L)
-        assertThat(result.keysAfter).isEqualTo(0L)
-        verify { registry.evict(InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE) }
-        verify(exactly = 0) { cacheManager.getCache(any()) }
+        assertThat(result.cacheName).isEqualTo("admin-permission:v1")
+        assertThat(cacheManager.getCache("admin-permission:v1")!!.get(1L)).isNull()
     }
 
     @Test
-    @DisplayName("evict - 일반 cache name 은 CacheManager.clear 호출")
-    fun evict_managedClearsCacheManager() {
-        every { registry.handles("teamScheduleBranchesV2") } returns false
-        val cache = mockk<Cache>(relaxed = true)
-        every { cacheManager.getCache("teamScheduleBranchesV2") } returns cache
+    @DisplayName("evict - 미등록 cache name 은 예외")
+    fun evict_unknownNameThrows() {
+        // ConcurrentMapCacheManager 는 기본 dynamic=true 라 미등록 이름도 lazy 생성됨 →
+        // setCacheNames 로 dynamic 비활성화하여 미등록 이름은 getCache=null 이 되도록 strict 검증.
+        val strictManager = ConcurrentMapCacheManager().apply {
+            setCacheNames(listOf("admin-permission:v1"))
+        }
+        val strictService = AdminCacheService(strictManager, null)
 
-        service.evict("teamScheduleBranchesV2", "ADMIN001")
-
-        verify { cache.clear() }
+        assertThatThrownBy { strictService.evict("nonexistent-cache", "ADMIN001") }
+            .isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    @DisplayName("evictAll - 모든 cache name (managed + in-memory) 순회 evict")
+    @DisplayName("evictAll - 모든 등록 cache 순회 evict")
     fun evictAll_iteratesAllCaches() {
-        every { cacheManager.cacheNames } returns setOf("teamScheduleBranchesV2")
-        every { cacheManager.getCache(any()) } returns mockk<Cache>(relaxed = true)
-        every { registry.list() } returns listOf(
-            InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE to 4L,
-        )
-        every { registry.handles("teamScheduleBranchesV2") } returns false
-        every { registry.handles(InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE) } returns true
-        every { registry.evict(InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE) } returns (4L to 0L)
+        cacheManager.getCache("admin-permission:v1")!!.put(1L, setOf("account:R"))
+        cacheManager.getCache("teamScheduleBranchesV2")!!.put("ALL", listOf("x"))
 
         val results = service.evictAll("ADMIN001")
 
         assertThat(results.map { it.cacheName }).containsExactlyInAnyOrder(
+            "admin-data-scope:v1",
+            "admin-permission:v1",
             "teamScheduleBranchesV2",
-            InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE,
         )
-        verify { registry.evict(InMemoryPermissionCacheRegistry.NAME_ADMIN_PERMISSION_CACHE) }
+        assertThat(cacheManager.getCache("admin-permission:v1")!!.get(1L)).isNull()
+        assertThat(cacheManager.getCache("teamScheduleBranchesV2")!!.get("ALL")).isNull()
     }
 }

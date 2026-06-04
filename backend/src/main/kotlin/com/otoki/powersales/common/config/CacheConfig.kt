@@ -136,6 +136,22 @@ class CacheConfig {
         /** Spec #803 — entity × Profile 매트릭스 계산 결과 (5분 TTL). */
         const val CACHE_PERMISSION_MATRIX = "permission-matrix:v1"
 
+        /**
+         * 관리자 권한 가드용 평탄화 권한 key set (`Set<String>`) — 5분 TTL.
+         *
+         * 이전 Caffeine in-memory 구현은 멀티 인스턴스 환경에서 invalidate 가 호출된 단일 JVM 만
+         * 비워 권한 stale 을 유발 → Redis 공유 캐시로 전환. WebAdminContextFilter 가 매 admin 요청마다
+         * lookup. SF Profile / PermissionSetAssignment 변경 시 [AdminPermissionCache.invalidate] evict.
+         */
+        const val CACHE_ADMIN_PERMISSION = "admin-permission:v1"
+
+        /**
+         * 관리자 DataScope (조회 범위) — 5분 TTL.
+         *
+         * [CACHE_ADMIN_PERMISSION] 과 동일 사유로 Caffeine → Redis 전환. key = userId.
+         */
+        const val CACHE_ADMIN_DATA_SCOPE = "admin-data-scope:v1"
+
         /** spec #792 — sharing recalc 가 일괄 evict 하는 cache name 일람 */
         val SHARING_RELATED_CACHE_NAMES: List<String> = listOf(
             CACHE_HIERARCHY_SUBORDINATES,
@@ -212,6 +228,9 @@ class CacheConfig {
             CACHE_FIELD_PERMISSION to sharingPolicyConfig,
             // spec #803 — 권한 매트릭스
             CACHE_PERMISSION_MATRIX to permissionMatrixConfig,
+            // 관리자 권한 가드 캐시 (Caffeine → Redis 전환) — 5분 TTL
+            CACHE_ADMIN_PERMISSION to permissionMatrixConfig,
+            CACHE_ADMIN_DATA_SCOPE to permissionMatrixConfig,
         )
         return RedisCacheManagerBuilderCustomizer { builder ->
             builder.withInitialCacheConfigurations(perCacheConfig)

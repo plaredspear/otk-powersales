@@ -55,9 +55,6 @@ dependencies {
 	// 켜면 CacheManager Bean 자동 등록 / NoOp fallback / cache abstraction 인프라가
 	// 모두 비활성이라 "CacheManager bean not found" 로 부팅 실패한다.
 	implementation("org.springframework.boot:spring-boot-starter-cache")
-	// Caffeine — SF permission cache (AdminPermissionCache, 5min TTL) 전용. JWT claim 비대화로
-	// nginx large_client_header_buffers 한도 (8KB) 초과를 해소하기 위한 lazy cache.
-	implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
