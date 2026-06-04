@@ -1523,6 +1523,26 @@ object Stage1Targets {
     )
 
     // ─────────────────────────────────────────────────────────
+    // BranchMapping — cost_center_code 이력 합집합 매핑 (BranchMapping__mdt, XML 메타 출처)
+    // customMetadata/BranchMapping.*.md-meta.xml → branch-mapping.csv (extract-sharing-meta.main.kts).
+    // PK = branch_code (Stage1 시점 NOT NULL) → ON CONFLICT DO NOTHING 멱등 → preClear 불요.
+    // 직전엔 BranchMappingMatrix Kotlin object 박제 + 부팅 ApplicationRunner sync 였으나
+    // 다른 XML 메타 (SharingRule/SObjectSetting 등) 와 동일하게 CSV 적재 경로로 일원화.
+    // ─────────────────────────────────────────────────────────
+
+    private val BRANCH_MAPPING = EntityMetadata(
+        targetName = "BranchMapping",
+        sObjectName = null, // XML 메타 출처 (Custom Metadata Type)
+        tableName = "branch_mapping",
+        csvFileName = "branch-mapping.csv",
+        fields = listOf(
+            FieldMapping("branchCode", "branch_code", nullable = false),
+            FieldMapping("includedBranchCodes", "included_branch_codes", nullable = false),
+            FieldMapping("label", "label"),
+        ),
+    )
+
+    // ─────────────────────────────────────────────────────────
     // spec #794 — SF Record Type 별 분기 권한 (XML 메타 3 출처 정규화)
     // ─────────────────────────────────────────────────────────
 
@@ -1672,6 +1692,8 @@ object Stage1Targets {
         // spec #791 — SF OWD + master-detail relationship
         SOBJECT_SETTING,
         SOBJECT_RELATION,
+        // BranchMapping — cost_center_code 이력 합집합 매핑 (독립 메타)
+        BRANCH_MAPPING,
         // spec #794 — SF Record Type 별 분기 권한
         RECORD_TYPE,
         PROFILE_RECORD_TYPE,
@@ -1744,6 +1766,8 @@ object Stage1Targets {
         // spec #791 — SF OWD + master-detail relationship (의존 없음 — 독립 메타)
         "SObjectSetting",
         "SObjectRelation",
+        // BranchMapping — cost_center_code 이력 합집합 매핑 (의존 없음 — 독립 메타)
+        "BranchMapping",
         // spec #794 — Record Type 권한 (RecordType 먼저, Profile/PermissionSet 의 RT visibility 는 자연 키로 join)
         "RecordType",
         "ProfileRecordType",
@@ -1800,4 +1824,7 @@ object Stage1Targets {
 
     /** target 이 in-memory 권한 캐시에 영향을 주는지. */
     fun affectsPermissionCache(targetName: String): Boolean = targetName in PERMISSION_RELATED_TARGETS
+
+    /** BranchMapping 적재가 BranchCodeExpander 의 in-memory 캐시에 영향을 주는지. */
+    fun affectsBranchCodeCache(targetName: String): Boolean = targetName == "BranchMapping"
 }

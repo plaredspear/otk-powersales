@@ -11,7 +11,11 @@ import org.springframework.stereotype.Component
  * 출력 = 입력 + BranchMapping 으로 확장된 이력 코드의 합집합 Set.
  *
  * ## 캐시 정책
- * `@PostConstruct` 부팅 1회 메모리 캐시. 운영 중 BranchMapping 변경 없다고 가정 (admin UI 도입 시 무효화 메커니즘 별도).
+ * `@PostConstruct` 부팅 1회 메모리 캐시 (DB `branch_mapping` 테이블 조회). 운영 중 BranchMapping 변경 없다고 가정
+ * (테이블은 SF 마이그레이션 Stage1 CSV 로 적재 — admin UI 도입 시 무효화 메커니즘 별도).
+ *
+ * **주의**: 테이블이 Stage1 CSV (런타임 admin 트리거) 로 채워지므로, 빈 DB 로 부팅한 신규 환경은
+ * Stage1 적재 직후 본 캐시가 stale (빈 상태) 로 남는다. 적재 후 1회 재부팅하거나 [reload] 로 갱신.
  *
  * ## SF 동작 대응
  * | SF `Util.cls:162-175` | backend |
@@ -25,10 +29,22 @@ import org.springframework.stereotype.Component
 class BranchCodeExpander(
     private val repository: BranchMappingRepository,
 ) {
-    private lateinit var cache: Map<String, Set<String>>
+    // 런타임 reload (Stage1 적재 후) 가시성 보장 — @Volatile 로 참조 교체를 다른 스레드에 즉시 노출.
+    @Volatile
+    private var cache: Map<String, Set<String>> = emptyMap()
 
     @PostConstruct
     fun init() {
+        reload()
+    }
+
+    /**
+     * DB `branch_mapping` 테이블에서 캐시 재빌드.
+     *
+     * 부팅 시 [init] 1회 + SF 마이그레이션 Stage1 `BranchMapping` 적재 직후 (Stage1CopyController)
+     * 호출. 빈 DB 로 부팅한 신규 환경이 Stage1 적재 후 stale (빈) 캐시로 남는 것을 방지.
+     */
+    fun reload() {
         cache = repository.findAll().associate { entity ->
             entity.branchCode to splitIncluded(entity.includedBranchCodes)
         }
