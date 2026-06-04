@@ -19,6 +19,14 @@ object SystemAdminProfilePolicy {
     const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
 
     /**
+     * 시스템 관리자 여부 — Profile.name 기반 단일 판정.
+     *
+     * 코드베이스 곳곳의 `profileName == "시스템 관리자"` 문자열 비교 (일부는 로컬 const 재정의) 가
+     * 본 메서드로 수렴 대상. null 이면 false (비 시스템 관리자).
+     */
+    fun isSystemAdmin(profileName: String?): Boolean = profileName == SYSTEM_ADMIN_PROFILE_NAME
+
+    /**
      * 12종 Profile 의 SoT.
      *
      * 한글 표기는 SF retrieve 메타 (`force-app/main/default/profiles/<name>.profile-meta.xml`) 의 실측을 따른다.
