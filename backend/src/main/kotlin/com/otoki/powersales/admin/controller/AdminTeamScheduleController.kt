@@ -4,6 +4,7 @@ import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleMassDeleteRequest
+import com.otoki.powersales.schedule.dto.request.TeamScheduleSearchRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.service.AdminTeamScheduleService
@@ -11,12 +12,10 @@ import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
-import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
-import java.time.LocalDate
 
 @RestController
 @RequestMapping("/api/v1/admin/team-schedule")
@@ -50,22 +49,26 @@ class AdminTeamScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
+    /**
+     * 여사원 일정 조회.
+     *
+     * 거래처 전체선택(549건) 시 `accountIds` 가 수 KB 쿼리스트링이 되어 GET URL 길이 한도를 초과해
+     * 요청이 핸들러 도달 전 차단되던 문제로 GET → POST 전환 — 필터 ID 리스트를 body 로 운반한다.
+     */
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
-    @GetMapping
-    fun getSchedules(
+    @PostMapping("/search")
+    fun searchSchedules(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate,
-        @RequestParam(required = false) employeeIds: String?,
-        @RequestParam(required = false) accountIds: String?,
-        @RequestParam(required = false) promotionTeams: String?,
-        @RequestParam(required = false) branchCode: String?
+        @Valid @RequestBody request: TeamScheduleSearchRequest
     ): ResponseEntity<ApiResponse<MonthlyScheduleWithSummaryDto>> {
-        val employeeIdList = employeeIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toLong() }
-        val accountIdList = accountIds?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.map { it.toInt() }
-        val promotionTeamList = promotionTeams?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
         val result = adminTeamScheduleService.getSchedulesWithSummary(
-            from, to, employeeIdList, accountIdList, promotionTeamList, principal, branchCode
+            from = requireNotNull(request.from),
+            to = requireNotNull(request.to),
+            employeeIds = request.employeeIds?.takeIf { it.isNotEmpty() },
+            accountIds = request.accountIds?.takeIf { it.isNotEmpty() },
+            promotionTeams = request.promotionTeams?.takeIf { it.isNotEmpty() },
+            principal = principal,
+            branchCode = request.branchCode?.takeIf { it.isNotBlank() }
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }

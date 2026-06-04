@@ -118,7 +118,7 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/team-schedule - 월간 일정 + 일별 요약 통합 조회")
+    @DisplayName("POST /api/v1/admin/team-schedule/search - 월간 일정 + 일별 요약 통합 조회")
     inner class GetMonthlySchedules {
 
         @Test
@@ -169,9 +169,9 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
             } returns response
 
             mockMvc.perform(
-                get("/api/v1/admin/team-schedule")
-                    .param("from", "2026-03-01")
-                    .param("to", "2026-03-31")
+                post("/api/v1/admin/team-schedule/search")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"from":"2026-03-01","to":"2026-03-31"}""")
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -198,9 +198,9 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
             } returns response
 
             mockMvc.perform(
-                get("/api/v1/admin/team-schedule")
-                    .param("from", "2026-03-01")
-                    .param("to", "2026-03-31")
+                post("/api/v1/admin/team-schedule/search")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"from":"2026-03-01","to":"2026-03-31"}""")
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.schedules.length()").value(0))

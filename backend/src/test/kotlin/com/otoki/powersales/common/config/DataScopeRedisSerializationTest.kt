@@ -121,4 +121,35 @@ class DataScopeRedisSerializationTest {
         )
         assertThat(roundTrip(sharingRule)).isEqualTo(sharingRule)
     }
+
+    /**
+     * `admin-permission:v1` 캐시가 저장하는 평탄화 권한 key set (`Set<String>`) round-trip 검증.
+     *
+     * [com.otoki.powersales.auth.permission.SfPermissionResolver.resolveForUser] 가
+     * `mutableSetOf<String>()` (런타임 `LinkedHashSet`) 을 반환하므로 그 실 타입으로 재현.
+     * 여사원 일정관리 화면이 요구하는 두 권한 key 가 round-trip 후에도 보존되는지 확인.
+     */
+    @Test
+    @DisplayName("admin-permission 캐시의 Set<String> 권한 key set 이 손실 없이 round-trip 된다")
+    fun roundTrip_permissionKeySet() {
+        val pair = CacheConfig().defaultRedisCacheConfiguration().valueSerializationPair
+
+        val original: Set<String> = linkedSetOf(
+            "monthly_female_employee_integration_schedule:R",
+            "team_member_schedule:R",
+            "employee:R",
+            "SYSTEM:VIEW_ALL_USERS",
+        )
+
+        val bytes = pair.write(original)
+        val json = String(bytes.array(), bytes.position(), bytes.remaining())
+        println("serialized permission set JSON = $json")
+
+        @Suppress("UNCHECKED_CAST")
+        val restored = pair.read(java.nio.ByteBuffer.wrap(bytes.array())) as Set<String>
+
+        assertThat(restored)
+            .contains("monthly_female_employee_integration_schedule:R", "team_member_schedule:R")
+            .containsExactlyInAnyOrderElementsOf(original)
+    }
 }

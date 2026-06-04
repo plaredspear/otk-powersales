@@ -113,19 +113,19 @@ export async function fetchTeamSchedules(params: {
   promotionTeams?: string[];
   branchCode?: string;
 }): Promise<MonthlyScheduleWithSummary> {
-  const res = await client.get<ApiResponse<MonthlyScheduleWithSummary>>(
-    '/api/v1/admin/team-schedule',
+  // 거래처 전체선택(549건) 시 accountIds 가 수 KB 쿼리스트링이 되어 GET URL 길이 한도를 초과해
+  // 차단되던 문제로 조회를 POST + body 로 전환. 필터 ID 리스트를 body 로 운반한다.
+  const res = await client.post<ApiResponse<MonthlyScheduleWithSummary>>(
+    '/api/v1/admin/team-schedule/search',
     {
-      params: {
-        from: params.from,
-        to: params.to,
-        employeeIds: params.employeeIds.join(','),
-        accountIds: params.accountIds.join(','),
-        ...(params.promotionTeams && params.promotionTeams.length > 0
-          ? { promotionTeams: params.promotionTeams.join(',') }
-          : {}),
-        ...(params.branchCode ? { branchCode: params.branchCode } : {}),
-      },
+      from: params.from,
+      to: params.to,
+      employeeIds: params.employeeIds,
+      accountIds: params.accountIds,
+      ...(params.promotionTeams && params.promotionTeams.length > 0
+        ? { promotionTeams: params.promotionTeams }
+        : {}),
+      ...(params.branchCode ? { branchCode: params.branchCode } : {}),
     },
   );
   if (!res.data.success || !res.data.data) {
