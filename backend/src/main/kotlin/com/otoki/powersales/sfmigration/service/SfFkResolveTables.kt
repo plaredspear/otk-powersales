@@ -61,6 +61,9 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
     // owner_sfid/owner_user_id/owner_group_id/XOR 는 entity 에 있으나 화이트리스트 등록 누락
     // (monthly_sales_history 와 동일 함정). 미등록 시 Group(00G) 소유 row 의 owner_*_id 가 둘 다 NULL.
     "sales_progress_rate_master",
+    // DailySalesHistory__c.OwnerId.referenceTo = [Group, User] polymorphic. owner_sfid → owner_user_id (005) /
+    // owner_group_id (00G) 분기. SF 정합 누락 필드 추가 (MonthlySalesHistory / SalesProgressRateMaster 동일 패턴).
+    "daily_sales_history",
     "notice",
     "product",
     "team_member_schedule",

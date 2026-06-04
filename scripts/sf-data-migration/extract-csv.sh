@@ -249,7 +249,7 @@ SELECT
     DKRetail__EmployeeNumber__c,
     Name, LastName, FirstName, Alias,
     Title, Department, Division,
-    MobilePhone, Phone, HR_Code__c, Branch__c,
+    MobilePhone, Phone, HR_Code__c, Branch__c, prnflag__c,
     LastLoginDate, ManagerId,
     ProfileId, UserRoleId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById,
@@ -385,7 +385,7 @@ SUGGESTION_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name,
     DKRetail__Title__c, DKRetail__Description__c,
-    Category__c, DKRetail__Category__c, Category1__c, Category2__c, Category3__c,
+    Category__c, DKRetail__Category__c, DKRetail__Type__c, Category1__c, Category2__c, Category3__c,
     AccountId__c, DKRetail__SAPAccountCode__c,
     DKRetail__EmployeeId__c,
     DKRetail__ProductId__c, ProductCode__c,
@@ -600,6 +600,7 @@ SELECT
     ERPSalesAmount1__c, ERPSalesAmount2__c, ERPSalesAmount3__c,
     ERPDistributionAmount1__c, ERPDistributionAmount2__c, ERPDistributionAmount3__c,
     ERPSalesAmount__c, ERPDistributionAmount__c, LedgerAmount__c,
+    OwnerId,
     CreatedDate, LastModifiedDate
 FROM DailySalesHistory__c
 EOF

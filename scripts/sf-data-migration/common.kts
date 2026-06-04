@@ -216,6 +216,7 @@ val USER_METADATA = EntityMetadata(
         FieldMapping("Phone", "phone"),
         FieldMapping("HR_Code__c", "hr_code"),
         FieldMapping("Branch__c", "branch"),
+        FieldMapping("prnflag__c", "prn_flag"),
         FieldMapping("LastLoginDate", "last_login_at"),
         FieldMapping("ManagerId", "manager_sfid"),
         FieldMapping("ProfileId", "profile_sfid"),
@@ -451,6 +452,7 @@ val SUGGESTION_METADATA = EntityMetadata(
         FieldMapping("DKRetail__Description__c", "content", nullable = false),
         FieldMapping("Category__c", "category", nullable = false),
         FieldMapping("DKRetail__Category__c", "dk_category"),
+        FieldMapping("DKRetail__Type__c", "type"),
         FieldMapping("Category1__c", "category1"),
         FieldMapping("Category2__c", "category2"),
         FieldMapping("Category3__c", "category3"),
@@ -1055,6 +1057,8 @@ val DAILY_SALES_HISTORY_METADATA = EntityMetadata(
         FieldMapping("ERPSalesAmount__c", "erp_sales_amount", isString = false),
         FieldMapping("ERPDistributionAmount__c", "erp_distribution_amount", isString = false),
         FieldMapping("LedgerAmount__c", "ledger_amount", isString = false),
+        // OwnerId polymorphic R-2 — owner_sfid sync buffer (Stage2 fk substep 이 owner_user_id / owner_group_id 채움)
+        FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
         FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false)
     )

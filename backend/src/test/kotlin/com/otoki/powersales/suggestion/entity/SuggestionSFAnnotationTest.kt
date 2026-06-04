@@ -105,6 +105,12 @@ class SuggestionSFAnnotationTest {
         }
 
         @Test
+        @DisplayName("type ↔ DKRetail__Type__c (제안유형 Text 40 — SF 정합 누락 필드 추가)")
+        fun type() {
+            assertThat(sfFieldOf("type")).isEqualTo("DKRetail__Type__c")
+        }
+
+        @Test
         @DisplayName("claim_type / claim_type_measures 양쪽 보존 (Q9 옵션 1)")
         fun claimTypeAndMeasures() {
             assertThat(sfFieldOf("claimType")).isEqualTo("ClaimType__c")
