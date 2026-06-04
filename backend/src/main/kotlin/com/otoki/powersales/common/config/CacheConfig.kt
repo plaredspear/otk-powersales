@@ -14,6 +14,7 @@ import org.springframework.data.redis.serializer.RedisSerializationContext
 import org.springframework.data.redis.serializer.RedisSerializer
 import org.springframework.data.redis.serializer.StringRedisSerializer
 import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator
+import tools.jackson.module.kotlin.KotlinModule
 import java.time.Duration
 
 /**
@@ -150,11 +151,13 @@ class CacheConfig {
          *
          * [CACHE_ADMIN_PERMISSION] 과 동일 사유로 Caffeine → Redis 전환. key = userId.
          *
-         * v2 접미사: [com.otoki.powersales.admin.dto.DataScope] 에 신규 필드가 추가된 뒤 `isAllBranches`
-         * (primitive `Boolean`) 가 absent 인 옛 `:v1` entry 를 Jackson 3 가 역직렬화하다
-         * `FAIL_ON_NULL_FOR_PRIMITIVES` 로 `Cannot map null into type boolean` 예외 → admin API 500.
-         * cache name 을 bump 해 키 공간을 분리하면, rolling 배포로 신·구 인스턴스가 공존해도
-         * (구버전은 `:v1`, 신버전은 `:v2` 만 접근) 충돌이 없고 옛 entry 는 5분 TTL 후 자연 소멸한다.
+         * v2 접미사: 근본 원인은 value serializer 의 ObjectMapper 에 KotlinModule 미등록이었다
+         * ([defaultRedisCacheConfiguration] 참조). 미등록 상태에서 [com.otoki.powersales.admin.dto.DataScope]
+         * 의 `is`-prefixed primitive Boolean `isAllBranches` 가 JSON 에 `allBranches` 로 기록되는데
+         * 역직렬화는 생성자 파라미터 `isAllBranches` 를 찾아 absent → `FAIL_ON_NULL_FOR_PRIMITIVES` 로
+         * `Cannot map null into type boolean` 예외 → admin API 500. KotlinModule 등록으로 직렬화 포맷이
+         * `isAllBranches` 로 바뀌므로, cache name 을 bump 해 옛 `allBranches` 포맷 entry 와 키 공간을
+         * 분리한다 — rolling 배포로 신·구 인스턴스가 공존해도 충돌 없고 옛 entry 는 5분 TTL 후 자연 소멸.
          */
         const val CACHE_ADMIN_DATA_SCOPE = "admin-data-scope:v2"
 
@@ -191,9 +194,15 @@ class CacheConfig {
             .allowIfBaseType(Any::class.java)
             .allowIfSubType { _, _ -> true }
             .build()
+        // KotlinModule 명시 등록 — builder 의 default ObjectMapper 는 KotlinModule 을 ServiceLoader 로
+        // 자동 등록하지 않는다. 미등록 시 Kotlin data class 의 `is`-prefixed Boolean (예: DataScope.isAllBranches)
+        // getter 가 Java Bean 규칙으로 `allBranches` property 로 직렬화되는 반면, 역직렬화는 생성자 파라미터명
+        // `isAllBranches` 를 찾아 absent → primitive Boolean 에 null 매핑 (`Cannot map null into type boolean`)
+        // 으로 admin API 500. KotlinModule 이 생성자 파라미터명을 property 이름으로 고정해 round-trip 정합.
         val valueSerializer: RedisSerializer<Any> = GenericJacksonJsonRedisSerializer.builder()
             .enableDefaultTyping(typeValidator)
             .enableSpringCacheNullValueSupport()
+            .customize { it.addModule(KotlinModule.Builder().build()) }
             .build()
 
         return RedisCacheConfiguration.defaultCacheConfig()
