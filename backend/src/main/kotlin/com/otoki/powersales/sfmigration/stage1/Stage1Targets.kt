@@ -1759,4 +1759,36 @@ object Stage1Targets {
      * 등록된 target 일람 (등록 순서). UI 의 dropdown 표시에 사용.
      */
     fun list(): List<String> = DEPENDENCY_ORDER
+
+    /**
+     * in-memory 권한 캐시 (AdminPermissionCache / AdminDataScopeCache) 의 입력 source 가 되는 target 집합.
+     *
+     * 이 중 하나라도 적재되면 캐시된 권한 set / DataScope 가 stale 이 되므로, 적재 완료 후
+     * 캐시 무효화가 필요하다. SfPermissionResolver / AdminDataScopeService 가 조회하는 테이블 기준.
+     */
+    val PERMISSION_RELATED_TARGETS: Set<String> = setOf(
+        "User",
+        "UserRole",
+        "UserRoleHierarchySnapshot",
+        "Profile",
+        "ProfileFlags",
+        "PermissionSet",
+        "PermissionSetFlags",
+        "PermissionSetAssignment",
+        "Group",
+        "GroupMember",
+        "SharingRule",
+        "SharingRuleCondition",
+        "SharingRuleTarget",
+        "SObjectSetting",
+        "SObjectRelation",
+        "RecordType",
+        "ProfileRecordType",
+        "PermissionSetRecordType",
+        "ProfileFieldPermission",
+        "PermissionSetFieldPermission",
+    )
+
+    /** target 이 in-memory 권한 캐시에 영향을 주는지. */
+    fun affectsPermissionCache(targetName: String): Boolean = targetName in PERMISSION_RELATED_TARGETS
 }

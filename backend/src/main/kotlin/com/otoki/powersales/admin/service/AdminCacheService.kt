@@ -27,6 +27,11 @@ class AdminCacheService(
      * 본 클래스가 RedisTemplate 을 keyCommands().scan() 카운팅 용도로만 사용해 generic 타입은 무관.
      */
     private val redisTemplate: RedisTemplate<String, String>?,
+    /**
+     * CacheManager 미등록 in-memory(Caffeine) 권한 캐시 (adminPermissionCache / adminDataScopeCache).
+     * 가상 cache name (`mem:*`) 으로 list / evict 에 합류.
+     */
+    private val inMemoryPermissionCacheRegistry: InMemoryPermissionCacheRegistry,
 ) {
 
     private val log = LoggerFactory.getLogger(AdminCacheService::class.java)
@@ -36,19 +41,33 @@ class AdminCacheService(
      *
      * key 개수는 Redis `SCAN` 으로 추정 — 큰 cache 의 `KEYS` 명령 부하 회피.
      * Redis 미사용 환경 (local NoOpCacheManager) 은 size = -1 (불명).
+     *
+     * Spring CacheManager 캐시 + in-memory 권한 캐시 (가상 cache name `mem:*`) 합집합.
      */
     fun listCaches(): List<CacheInfo> {
-        return cacheManager.cacheNames.sorted().map { name ->
-            val size = estimateKeyCount(name)
+        val managed = cacheManager.cacheNames.sorted().map { name ->
+            CacheInfo(name = name, estimatedKeyCount = estimateKeyCount(name))
+        }
+        val inMemory = inMemoryPermissionCacheRegistry.list().map { (name, size) ->
             CacheInfo(name = name, estimatedKeyCount = size)
         }
+        return managed + inMemory
     }
 
     /**
-     * 단일 cache name 전체 evict. Spring `Cache.clear()` 호출.
-     * Redis backend 면 `cacheName::*` 전체 키 삭제.
+     * 단일 cache name 전체 evict.
+     * - 가상 cache name (`mem:*`): [InMemoryPermissionCacheRegistry] 의 Caffeine `invalidateAll()`.
+     * - 그 외: Spring `Cache.clear()` (Redis backend 면 `cacheName::*` 전체 키 삭제).
      */
     fun evict(cacheName: String, actorEmployeeCode: String): EvictResult {
+        if (inMemoryPermissionCacheRegistry.handles(cacheName)) {
+            val (before, after) = inMemoryPermissionCacheRegistry.evict(cacheName)
+            log.info(
+                "[ADMIN_CACHE_EVICT] actor={} cacheName={} (in-memory) keysBefore={} keysAfter={}",
+                actorEmployeeCode, cacheName, before, after
+            )
+            return EvictResult(cacheName = cacheName, keysBefore = before, keysAfter = after)
+        }
         val cache = cacheManager.getCache(cacheName)
             ?: throw IllegalArgumentException("존재하지 않는 cache name: $cacheName")
         val before = estimateKeyCount(cacheName)
@@ -59,6 +78,29 @@ class AdminCacheService(
             actorEmployeeCode, cacheName, before, after
         )
         return EvictResult(cacheName = cacheName, keysBefore = before, keysAfter = after)
+    }
+
+    /**
+     * 등록된 모든 cache (Spring CacheManager + in-memory 권한 캐시) 일괄 evict.
+     *
+     * 운영자가 "fix 배포 직후 어느 캐시가 stale 인지 특정이 어려운" 상황에서 전체를 한 번에 비울 때 사용.
+     * cache name 별 [evict] 를 순회 호출하며, 1개 실패 시 나머지는 계속 진행 (best-effort).
+     *
+     * @return cache name 별 [EvictResult] 일람 (실패 cache 는 keysAfter = -1 + 로그).
+     */
+    fun evictAll(actorEmployeeCode: String): List<EvictResult> {
+        val allNames = listCaches().map { it.name }
+        log.info("[ADMIN_CACHE_EVICT_ALL] actor={} totalCaches={}", actorEmployeeCode, allNames.size)
+        val results = allNames.map { name ->
+            try {
+                evict(name, actorEmployeeCode)
+            } catch (e: Exception) {
+                log.error("[ADMIN_CACHE_EVICT_ALL] cacheName={} evict 실패: {}", name, e.message)
+                EvictResult(cacheName = name, keysBefore = -1L, keysAfter = -1L)
+            }
+        }
+        log.info("[ADMIN_CACHE_EVICT_ALL] actor={} done — {} caches cleared", actorEmployeeCode, results.size)
+        return results
     }
 
     private fun estimateKeyCount(cacheName: String): Long {

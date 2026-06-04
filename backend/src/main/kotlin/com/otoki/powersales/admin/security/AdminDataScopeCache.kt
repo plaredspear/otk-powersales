@@ -60,4 +60,15 @@ class AdminDataScopeCache(
     fun invalidateAll() {
         cache.invalidateAll()
     }
+
+    /**
+     * 현재 적재된 entry 추정 개수 — 운영도구 "Redis 캐시 관리" UI 의 표 표시용.
+     *
+     * Caffeine `estimatedSize()` 는 동시 쓰기/만료 진행 중 근사값. 정확 count 가 아니라 운영자
+     * 가시성 목적 (0 이면 비어 있음 / >0 이면 적재됨) 으로 충분.
+     */
+    fun estimatedSize(): Long {
+        cache.cleanUp()
+        return cache.estimatedSize()
+    }
 }

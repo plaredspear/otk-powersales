@@ -35,6 +35,7 @@ class SfMigrationStage2Controller(
     private val naturalKeyFkService: SfMigrationStage2NaturalKeyFkService,
     private val fkProgress: SfFkResolveProgress,
     private val hierarchyTraversal: UserRoleHierarchyTraversal,
+    private val inMemoryPermissionCacheRegistry: com.otoki.powersales.admin.service.InMemoryPermissionCacheRegistry,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -53,6 +54,9 @@ class SfMigrationStage2Controller(
         fkExecutor.submit {
             try {
                 fkService.runFkResolve()
+                // FK resolve 가 permission_set_assignment.user_id 등 권한 FK 를 채운 직후 — stale
+                // in-memory 권한 캐시 무효화 (마이그레이션 직후 권한 어긋남 방지).
+                inMemoryPermissionCacheRegistry.invalidateAll()
             } catch (e: Exception) {
                 log.error("[fk] async run failed", e)
             }

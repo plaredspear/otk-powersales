@@ -1580,7 +1580,7 @@
             "type" : "string"
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeId" : {
             "format" : "int64",
@@ -5606,6 +5606,34 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListEvictResult" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EvictResult"
             },
             "type" : [ "array", "null" ]
           },
@@ -11159,7 +11187,7 @@
             "type" : "string"
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "memberName" : {
             "type" : "string"
@@ -11703,7 +11731,7 @@
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "endDate" : {
             "type" : [ "string", "null" ]
@@ -11938,7 +11966,7 @@
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "endDate" : {
             "type" : [ "string", "null" ]
@@ -12471,7 +12499,7 @@
             "type" : "string"
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeName" : {
             "type" : "string"
@@ -13342,7 +13370,7 @@
       "LeaderDailyEmployeeItem" : {
         "properties" : {
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeId" : {
             "format" : "int64",
@@ -13546,7 +13574,7 @@
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -13787,7 +13815,7 @@
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeName" : {
             "type" : "string"
@@ -18009,7 +18037,7 @@
       "ResetDeviceResponse" : {
         "properties" : {
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeId" : {
             "format" : "int64",
@@ -18031,7 +18059,7 @@
       "ResetPasswordResponse" : {
         "properties" : {
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeId" : {
             "format" : "int64",
@@ -20369,7 +20397,7 @@
       "TeamMemberDto" : {
         "properties" : {
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeId" : {
             "format" : "int64",
@@ -22172,6 +22200,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListCacheInfo"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-cache-controller" ]
+      }
+    },
+    "/api/v1/admin/cache/evict-all" : {
+      "post" : {
+        "operationId" : "evictAll",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListEvictResult"
                 }
               }
             },

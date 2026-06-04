@@ -2706,7 +2706,7 @@
             "type" : "string"
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "memberName" : {
             "type" : "string"
@@ -2926,7 +2926,7 @@
             "type" : "string"
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeName" : {
             "type" : "string"
@@ -3234,7 +3234,7 @@
       "LeaderDailyEmployeeItem" : {
         "properties" : {
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeId" : {
             "format" : "int64",
@@ -3438,7 +3438,7 @@
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -3561,7 +3561,7 @@
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeName" : {
             "type" : "string"

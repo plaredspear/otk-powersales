@@ -60,4 +60,22 @@ class AdminCacheControllerTest : AdminControllerTestSupport() {
 
         verify { adminCacheService.evict("teamScheduleBranchesV2", "ADMIN001") }
     }
+
+    @Test
+    @DisplayName("POST /api/v1/admin/cache/evict-all - 전체 cache 일괄 evict 성공")
+    fun evictAll_success() {
+        every { adminCacheService.evictAll("ADMIN001") } returns listOf(
+            AdminCacheService.EvictResult(cacheName = "teamScheduleBranchesV2", keysBefore = 5, keysAfter = 0),
+            AdminCacheService.EvictResult(cacheName = "mem:adminPermissionCache", keysBefore = 3, keysAfter = 0),
+        )
+
+        mockMvc.perform(post("/api/v1/admin/cache/evict-all"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("전체 캐시가 무효화되었습니다 (2건)"))
+            .andExpect(jsonPath("$.data.length()").value(2))
+            .andExpect(jsonPath("$.data[1].cacheName").value("mem:adminPermissionCache"))
+
+        verify { adminCacheService.evictAll("ADMIN001") }
+    }
 }
