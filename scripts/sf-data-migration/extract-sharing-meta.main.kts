@@ -499,6 +499,50 @@ CSVWriter(PrintWriter(sObjectRelationCsv)).use { w ->
 println("[sobject-relation] $sObjectRelationCount 건 → $sObjectRelationCsv")
 
 // =============================================================================
+// 6-b) branch-mapping — cost_center_code 이력 합집합 매핑 (BranchMapping__mdt)
+//
+// Custom Metadata Type: customMetadata/BranchMapping.<DeveloperName>.md-meta.xml
+//   <label> + <values><field>BranchCode__c</field><value>...</value></values>
+//                     + <values><field>IncludedBranchCode__c</field><value>...</value></values>
+//
+// 신규 branch_mapping 테이블 (PK = branch_code) 로 Stage1 적재. 직전엔 BranchMappingMatrix
+// Kotlin object 박제 + 부팅 ApplicationRunner sync 였으나, SharingRule/SObjectSetting 등 다른
+// XML 메타와 동일하게 CSV 적재 경로로 일원화 (코드 박제 제거 + 매 부팅 sync 로그 제거).
+// =============================================================================
+
+val customMetadataDir = src.resolve("customMetadata")
+val branchMappingCsv = out.resolve("branch-mapping.csv")
+
+// CustomMetadata 의 <values><field>X</field><value>Y</value></values> → field X 의 value Y.
+fun Element.customMetadataValue(field: String): String? =
+    childElements("values")
+        .firstOrNull { it.childText("field") == field }
+        ?.childText("value")
+
+var branchMappingCount = 0
+CSVWriter(PrintWriter(branchMappingCsv)).use { w ->
+    w.writeNext(arrayOf("branchCode", "includedBranchCodes", "label"))
+    if (customMetadataDir.isDirectory) {
+        customMetadataDir
+            .listFiles { f -> f.name.startsWith("BranchMapping.") && f.name.endsWith(".md-meta.xml") }
+            ?.sortedBy { it.name }
+            ?.forEach { file ->
+                try {
+                    val root = parseXml(file)
+                    val branchCode = root.customMetadataValue("BranchCode__c") ?: return@forEach
+                    val includedBranchCodes = root.customMetadataValue("IncludedBranchCode__c") ?: return@forEach
+                    val label = root.childText("label") ?: ""
+                    w.writeNext(arrayOf(branchCode, includedBranchCodes, label))
+                    branchMappingCount++
+                } catch (_: Exception) {
+                    // 깨진 파일 skip
+                }
+            }
+    }
+}
+println("[branch-mapping] $branchMappingCount 건 → $branchMappingCsv")
+
+// =============================================================================
 // 7) record-type — extract-csv.sh 의 RECORD_TYPE_SOQL 로 이관됨.
 //
 // 기존엔 XML 출처(objects/<SObject>/recordTypes/<DeveloperName>.recordType-meta.xml)로
@@ -668,6 +712,7 @@ println("  profile-flags.csv         : $profileCount 건")
 println("  permission-set-flags.csv  : $permsetCount 건")
 println("  sobject-setting.csv       : $sObjectSettingCount 건  [spec #791]")
 println("  sobject-relation.csv      : $sObjectRelationCount 건  [spec #791]")
+println("  branch-mapping.csv        : $branchMappingCount 건  [BranchMapping__mdt]")
 println("  record-type.csv           : (extract-csv.sh RECORD_TYPE_SOQL 로 이관)  [spec #794]")
 println("  profile-record-type.csv   : $profileRecordTypeCount 건  [spec #794]")
 println("  permission-set-record-type.csv: $permSetRecordTypeCount 건  [spec #794]")

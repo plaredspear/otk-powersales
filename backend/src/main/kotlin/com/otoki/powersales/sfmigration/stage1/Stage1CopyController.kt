@@ -40,6 +40,7 @@ class Stage1CopyController(
     private val progress: Stage1CopyProgress,
     private val adminPermissionCache: com.otoki.powersales.auth.permission.AdminPermissionCache,
     private val adminDataScopeCache: com.otoki.powersales.admin.security.AdminDataScopeCache,
+    private val branchCodeExpander: com.otoki.powersales.organization.branchmapping.BranchCodeExpander,
     // 운영 S3 bucket (EB 콘솔 환경 속성 S3_BUCKET). Stage1 CSV 도 동일 bucket 사용 — UI 프리필.
     @Value("\${app.aws.s3.bucket:}") private val configuredS3Bucket: String,
 ) {
@@ -73,6 +74,10 @@ class Stage1CopyController(
                     adminPermissionCache.invalidateAll()
                     adminDataScopeCache.invalidateAll()
                 }
+                // BranchMapping 적재 시 BranchCodeExpander 의 부팅 1회 캐시 재빌드 (stale 방지).
+                if (Stage1Targets.affectsBranchCodeCache(req.targetName)) {
+                    branchCodeExpander.reload()
+                }
             } catch (e: Exception) {
                 log.error("[stage1-copy] async run failed", e)
             }
@@ -96,6 +101,8 @@ class Stage1CopyController(
                 // stale 권한 캐시 무효화.
                 adminPermissionCache.invalidateAll()
                 adminDataScopeCache.invalidateAll()
+                // 일괄 적재는 BranchMapping 도 항상 포함 → BranchCodeExpander 캐시 재빌드 (stale 방지).
+                branchCodeExpander.reload()
             } catch (e: Exception) {
                 log.error("[stage1-copy-all] async run failed", e)
             }

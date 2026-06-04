@@ -51,6 +51,18 @@ class Stage1TargetsTest {
             assertThat(meta.tableName).isEqualTo("group_member")
             assertThat(meta.csvFileName).isEqualTo("group_members.csv")
         }
+
+        @Test
+        @DisplayName("BranchMapping — XML 메타 출처 (Custom Metadata, sObjectName null), preClear 불요")
+        fun branchMapping() {
+            val meta = Stage1Targets.get("BranchMapping")
+            assertThat(meta).withFailMessage("BranchMapping 미등록").isNotNull
+            assertThat(meta!!.sObjectName).withFailMessage("Custom Metadata 출처라 null 이어야 함").isNull()
+            assertThat(meta.tableName).isEqualTo("branch_mapping")
+            assertThat(meta.csvFileName).isEqualTo("branch-mapping.csv")
+            // PK = branch_code (Stage1 시점 NOT NULL) → ON CONFLICT DO NOTHING 멱등 → preClear 불요.
+            assertThat(meta.preClear).isFalse()
+        }
     }
 
     @Nested
@@ -131,6 +143,21 @@ class Stage1TargetsTest {
             assertThat(meta.fields.find { it.sfFieldName == "Id" }!!.dbColumnName).isEqualTo("sfid")
             assertThat(meta.fields.find { it.sfFieldName == "UserOrGroupId" }!!.dbColumnName).isEqualTo("user_or_group_sfid")
         }
+
+        @Test
+        @DisplayName("BranchMapping — extract-sharing-meta.main.kts 의 branch-mapping.csv 헤더 정합")
+        fun branchMappingHeaders() {
+            val meta = Stage1Targets.get("BranchMapping")!!
+            val headers = meta.fields.map { it.sfFieldName }
+            // extract-sharing-meta.main.kts 의 CSV 출력 컬럼 (branchCode, includedBranchCodes, label) 정합
+            assertThat(headers).containsExactly("branchCode", "includedBranchCodes", "label")
+            assertThat(meta.fields.find { it.sfFieldName == "branchCode" }!!.dbColumnName).isEqualTo("branch_code")
+            assertThat(meta.fields.find { it.sfFieldName == "includedBranchCodes" }!!.dbColumnName)
+                .isEqualTo("included_branch_codes")
+            // branch_code / included_branch_codes 는 NOT NULL (PK + 필수)
+            assertThat(meta.fields.find { it.sfFieldName == "branchCode" }!!.nullable).isFalse()
+            assertThat(meta.fields.find { it.sfFieldName == "includedBranchCodes" }!!.nullable).isFalse()
+        }
     }
 
     @Nested
@@ -138,13 +165,13 @@ class Stage1TargetsTest {
     inner class DependencyOrder {
 
         @Test
-        @DisplayName("7 entity 모두 DEPENDENCY_ORDER 에 등록")
+        @DisplayName("XML/SOQL 메타 entity 모두 DEPENDENCY_ORDER 에 등록")
         fun allRegistered() {
             val order = Stage1Targets.DEPENDENCY_ORDER
             listOf(
                 "SharingRule", "SharingRuleCondition", "SharingRuleTarget",
                 "UserRoleHierarchySnapshot", "ProfileFlags", "PermissionSetFlags",
-                "GroupMember",
+                "GroupMember", "BranchMapping",
             ).forEach { target ->
                 assertThat(order).withFailMessage("$target 가 DEPENDENCY_ORDER 미등록").contains(target)
             }

@@ -77,6 +77,24 @@ class BranchCodeExpanderTest {
     }
 
     @Test
+    @DisplayName("reload — 빈 DB 부팅 후 Stage1 적재 시뮬레이션 (stale 캐시 갱신)")
+    fun reloadAfterEmptyBoot() {
+        // 빈 DB 로 부팅 (Stage1 적재 전) — 캐시 빈 상태
+        val emptyRepo = mockk<BranchMappingRepository>()
+        every { emptyRepo.findAll() } returns emptyList()
+        val freshExpander = BranchCodeExpander(emptyRepo)
+        freshExpander.init()
+        assertThat(freshExpander.expand(listOf("5849"))).containsExactly("5849") // pass-through (캐시 비어 있음)
+
+        // Stage1 적재 후 데이터가 채워진 상태로 reload
+        every { emptyRepo.findAll() } returns listOf(
+            BranchMapping(branchCode = "5849", includedBranchCodes = "5479,5849", label = "부산1지점"),
+        )
+        freshExpander.reload()
+        assertThat(freshExpander.expand(listOf("5849"))).containsExactlyInAnyOrder("5849", "5479")
+    }
+
+    @Test
     @DisplayName("splitIncluded — 빈 토큰 / 공백 제거")
     fun splitIncluded() {
         assertThat(BranchCodeExpander.splitIncluded("a,b,c"))
