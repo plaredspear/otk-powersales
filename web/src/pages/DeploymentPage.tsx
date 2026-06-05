@@ -71,6 +71,31 @@ function suitabilityCellStyle(suitability: string): React.CSSProperties {
   }
 }
 
+// 체크박스 그룹 항목 전체를 토글하는 "전체" 체크박스. 일부만 선택 시 indeterminate 표시.
+function SelectAllCheckbox({
+  allValues,
+  selected,
+  onChange,
+}: {
+  allValues: string[];
+  selected: string[];
+  onChange: (vals: string[]) => void;
+}) {
+  const checkedCount = selected.filter((v) => allValues.includes(v)).length;
+  const allChecked = allValues.length > 0 && checkedCount === allValues.length;
+  const indeterminate = checkedCount > 0 && checkedCount < allValues.length;
+  return (
+    <Checkbox
+      checked={allChecked}
+      indeterminate={indeterminate}
+      disabled={allValues.length === 0}
+      onChange={(e) => onChange(e.target.checked ? [...allValues] : [])}
+    >
+      전체
+    </Checkbox>
+  );
+}
+
 function getDefaultYearMonth(): { year: number; month: number } {
   const now = new Date();
   const cm = now.getMonth() + 1;
@@ -386,6 +411,20 @@ export default function DeploymentPage() {
       <div style={{ width: 280, padding: 16, borderRight: '1px solid #f0f0f0', overflowY: 'auto' }}>
         <Title level={5}>검색 조건</Title>
 
+        <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+          <Button type="primary" icon={<SearchOutlined />} block onClick={handleSearch}>
+            조회하기
+          </Button>
+          <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Button size="small" onClick={handleSelectAllConditions}>
+              모든조건선택
+            </Button>
+            <Button size="small" onClick={handleResetCondition}>
+              조건초기화
+            </Button>
+          </Space>
+        </Space>
+
         <div style={{ marginBottom: 12 }}>
           <Text strong>검색유형</Text>
           <Radio.Group
@@ -408,6 +447,13 @@ export default function DeploymentPage() {
 
         <div style={{ marginBottom: 12 }}>
           <Text strong>지점</Text>
+          <div style={{ marginTop: 4 }}>
+            <SelectAllCheckbox
+              allValues={branches.map((b) => b.branchCode)}
+              selected={selectedCodes}
+              onChange={setSelectedCodes}
+            />
+          </div>
           <div style={{ marginTop: 4, maxHeight: 160, overflowY: 'auto', border: '1px solid #f0f0f0', padding: 4 }}>
             <Checkbox.Group
               value={selectedCodes}
@@ -427,6 +473,13 @@ export default function DeploymentPage() {
           <>
             <div style={{ marginBottom: 12 }}>
               <Text strong>배치적합성</Text>
+              <div style={{ marginTop: 4 }}>
+                <SelectAllCheckbox
+                  allValues={SUITABILITY_OPTIONS}
+                  selected={selectedSuitabilities}
+                  onChange={setSelectedSuitabilities}
+                />
+              </div>
               <Checkbox.Group
                 value={selectedSuitabilities}
                 onChange={(vals) => setSelectedSuitabilities(vals as string[])}
@@ -436,6 +489,13 @@ export default function DeploymentPage() {
             </div>
             <div style={{ marginBottom: 12 }}>
               <Text strong>거래처유형</Text>
+              <div style={{ marginTop: 4 }}>
+                <SelectAllCheckbox
+                  allValues={categoryLabels}
+                  selected={selectedCategories}
+                  onChange={setSelectedCategories}
+                />
+              </div>
               <div style={{ marginTop: 4, maxHeight: 140, overflowY: 'auto', border: '1px solid #f0f0f0', padding: 4 }}>
                 <Checkbox.Group
                   value={selectedCategories}
@@ -477,6 +537,13 @@ export default function DeploymentPage() {
 
         <div style={{ marginBottom: 12 }}>
           <Text strong>근무형태3</Text>
+          <div style={{ marginTop: 4 }}>
+            <SelectAllCheckbox
+              allValues={WORKING_CATEGORY_3_OPTIONS}
+              selected={selectedWc3}
+              onChange={setSelectedWc3}
+            />
+          </div>
           <Checkbox.Group
             value={selectedWc3}
             onChange={(vals) => setSelectedWc3(vals as string[])}
@@ -484,20 +551,6 @@ export default function DeploymentPage() {
             style={{ display: 'flex', flexDirection: 'column', marginTop: 4 }}
           />
         </div>
-
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Button type="primary" icon={<SearchOutlined />} block onClick={handleSearch}>
-            조회하기
-          </Button>
-          <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-            <Button size="small" onClick={handleSelectAllConditions}>
-              모든조건선택
-            </Button>
-            <Button size="small" onClick={handleResetCondition}>
-              조건초기화
-            </Button>
-          </Space>
-        </Space>
       </div>
 
       <div style={{ flex: 1, padding: 16, overflowX: 'auto', minWidth: 0 }}>
