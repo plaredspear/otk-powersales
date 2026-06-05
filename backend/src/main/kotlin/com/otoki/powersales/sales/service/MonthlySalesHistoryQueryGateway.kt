@@ -16,9 +16,11 @@ import java.math.BigDecimal
  * - ORORA 게이트웨이 ([OroraMonthlySalesHistoryQueryGateway]) 와 동등한 인터페이스 (`YYYYMM`
  *   문자열 리스트 + 거래처 코드) 를 제공해 호출 측 변경을 최소화.
  *
- * ## 마감실적 합계 산출 (ORORA `ClosingAmountSum__c` formula 동등)
- * SF formula 복제 컬럼 (`abcClosingSumAmount` / `shipClosingSumAmount`) 에 의존하지 않고,
- * 개별 카테고리 컬럼을 코드로 재합산한다 — `(abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)`.
+ * ## 마감실적 합계 산출 (SF `ClosingAmountSum__c` formula 동등)
+ * SF formula (`ABCClosingSumAmount__c + ShipClosingSumAmount__c`) 와 동등하게 **원본 합계 컬럼**
+ * (`abcClosingSumAmount` / `shipClosingSumAmount`) 을 더한다. 개별 카테고리 컬럼(abc1~4 / ship1~4)
+ * 재합산은 합계 컬럼과 항상 같지 않아 (운영 데이터에 따라 개별 컬럼이 비고 합계 컬럼에만 적재된
+ * 거래처/월 존재) 물류매출을 누락시키므로 사용하지 않는다 — 상세는 [closingAmountSum] 참조.
  * SF formula 의 `formulaTreatBlanksAs=BlankAsZero` 정합 — null 컬럼은 `ZERO` 치환.
  *
  * ## ORORA 게이트웨이와의 차이
@@ -122,18 +124,19 @@ class MonthlySalesHistoryQueryGateway(
             .toList()
 
     /**
-     * SF `ClosingAmountSum__c` formula 동등 — `(abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)`.
+     * SF `ClosingAmountSum__c` formula 동등 — `ABCClosingSumAmount__c + ShipClosingSumAmount__c`.
      * null 컬럼은 `BlankAsZero` 정합으로 `ZERO` 치환.
+     *
+     * SF formula (field-meta `ClosingAmountSum__c`) 는 개별 카테고리 컬럼(abc1~4 / ship1~4) 이 아니라
+     * **원본 합계 컬럼** (`ABCClosingSumAmount__c` / `ShipClosingSumAmount__c`) 을 더한다. 두 값은
+     * 항상 같지 않다 — 운영 데이터에 따라 개별 컬럼이 비어 있고 합계 컬럼에만 물류매출이 적재된
+     * 거래처/월이 있어, 개별 재합산은 물류매출을 누락시킨다 (실측: 거래처 1000077 의 2024-08·09·10
+     * 은 ship1~4=0 이지만 ship_closing_sum_amount 에 물류매출 존재 → 6개월 평균이 SF 65.45M ≠ 70.02M
+     * 으로 어긋남). SF 화면값 동등을 위해 원본 합계 컬럼을 그대로 사용한다.
      */
     private fun closingAmountSum(row: MonthlySalesHistory): BigDecimal {
-        val abcSum = listOf(
-            row.abcClosingAmount1, row.abcClosingAmount2,
-            row.abcClosingAmount3, row.abcClosingAmount4,
-        ).sumOf { it ?: 0.0 }
-        val shipSum = listOf(
-            row.shipClosingAmount1, row.shipClosingAmount2,
-            row.shipClosingAmount3, row.shipClosingAmount4,
-        ).sumOf { it ?: 0.0 }
+        val abcSum = row.abcClosingSumAmount ?: 0.0
+        val shipSum = row.shipClosingSumAmount ?: 0.0
         return BigDecimal.valueOf(abcSum + shipSum)
     }
 
