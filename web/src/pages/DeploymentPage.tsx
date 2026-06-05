@@ -18,11 +18,12 @@ import {
   fetchSummary,
   fetchMiddle,
   fetchDetail,
-  fetchSearchCategories,
   exportSummary as apiExportSummary,
   exportMiddle as apiExportMiddle,
   exportDetail as apiExportDetail,
   SUMMARY_CATEGORY_COLUMNS,
+  CATEGORY_COLUMN_CODES,
+  categoryColumnLabel,
   type SalesComparisonSummaryRow,
   type SalesComparisonMiddleItem,
   type SalesComparisonDetailItem,
@@ -106,22 +107,14 @@ export default function DeploymentPage() {
 
   const { data: branches = [] } = useDashboardBranches();
 
-  const { data: categoryOptions = [] } = useQuery({
-    queryKey: ['salesComparison', 'categories'],
-    queryFn: fetchSearchCategories,
-    staleTime: 1000 * 60 * 30,
-  });
-  const categoryLabels = useMemo(() => categoryOptions.map((c) => c.name), [categoryOptions]);
-  // 거래처유형 필터는 SF `typologyValues` 와 동일하게 코드(accountCode)로 서버에 전송 — name→code 매핑.
-  const categoryCodeByName = useMemo(
-    () => new Map(categoryOptions.map((c) => [c.name, c.accountCode])),
-    [categoryOptions],
-  );
+  // 거래처유형 필터는 결과 테이블 컬럼과 동일한 SF 고정 10개(AccountCategoryColumn) 로 노출 — 좌측 필터 ↔ 컬럼 헤더 일치.
+  const categoryLabels = useMemo(() => [...SUMMARY_CATEGORY_COLUMNS], []);
 
-  // queryParams 의 검색조건 → 서버 SummaryFilter (거래처유형은 name→code 변환). SF cls:567-569 정합.
+  // queryParams 의 검색조건 → 서버 SummaryFilter (거래처유형 컬럼 → SF accountCode 집합 변환). SF cls:567-569 정합.
+  // '기타' 는 단일 코드가 없어 SF others 13개 코드 전체를 전송 (CATEGORY_COLUMN_CODES).
   const buildSummaryFilter = (p: QueryParams): SummaryFilter => ({
     suitabilities: p.suitabilities,
-    categoryCodes: p.categories.map((name) => categoryCodeByName.get(name)).filter((c): c is string => c != null),
+    categoryCodes: p.categories.flatMap((col) => CATEGORY_COLUMN_CODES[col] ?? []),
     workingCategory3: p.wc3,
   });
 
@@ -238,9 +231,8 @@ export default function DeploymentPage() {
   }, [summaryQuery.data]);
 
   const handleSummaryCellClick = (row: SalesComparisonSummaryRow & { isTotal?: boolean }, key: string) => {
-    if (row.isTotal && key === 'totalCount') return;
     const ids = key === 'totalCount'
-      ? Object.values(row.accountIdsByCategory).flat()
+      ? [...new Set(Object.values(row.accountIdsByCategory).flat())]
       : (row.accountIdsByCategory[key] ?? []);
     if (ids.length === 0) {
       message.info('해당 셀에 거래처가 없습니다.');
@@ -275,9 +267,9 @@ export default function DeploymentPage() {
           style: (record as { isTotal?: boolean }).isTotal ? suitabilityCellStyle('총계') : {},
         }),
       },
-      // 집계표 카테고리 컬럼 — SF 고정 10컬럼 (backend AccountCategoryColumn). 검색조건의 거래처유형 필터(가변 picklist)와 별개.
+      // 집계표 카테고리 컬럼 — SF 고정 10컬럼 (backend AccountCategoryColumn). 좌측 거래처유형 필터와 동일 목록.
       ...SUMMARY_CATEGORY_COLUMNS.map((label) => ({
-        title: label,
+        title: categoryColumnLabel(label),
         dataIndex: ['countsByCategory', label],
         width: 90,
         align: 'right' as const,
@@ -448,7 +440,7 @@ export default function DeploymentPage() {
                 <Checkbox.Group
                   value={selectedCategories}
                   onChange={(vals) => setSelectedCategories(vals as string[])}
-                  options={categoryLabels}
+                  options={categoryLabels.map((col) => ({ label: categoryColumnLabel(col), value: col }))}
                   style={{ display: 'flex', flexDirection: 'column' }}
                 />
               </div>

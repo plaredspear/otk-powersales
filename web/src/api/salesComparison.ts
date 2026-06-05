@@ -21,6 +21,37 @@ export const SUMMARY_CATEGORY_COLUMNS = [
   '기타',
 ] as const;
 
+/**
+ * 거래처유형 컬럼(displayName) → SF accountCode 집합 매핑.
+ *
+ * SF `SalesComparisonSearchController.getCategory` (cls:663-685) 의 코드→컬럼 분기를 역으로 정의.
+ * 좌측 거래처유형 필터를 컬럼 헤더와 동일한 고정 10개로 노출하기 위해, 각 컬럼 선택 시 서버 `categoryCodes` 로
+ * 보낼 코드 집합. '기타' 는 단일 코드가 없으므로 SF `getCategory` else 분기로 분류되는 13개 코드 전체를 전송한다
+ * (SF '모든조건선택' typologyAllOptions 중 others 로 가는 04/11~14/16/19~25 정합).
+ */
+/**
+ * 거래처유형 컬럼(displayName) → 화면 표시 라벨.
+ *
+ * SF `SalesComparisonListComponent1Helper.js` setColumns 의 헤더 라벨 정합 — 대형마트 컬럼만 "(3대)" 표기.
+ * 데이터 키(countsByCategory)는 enum displayName 그대로이므로 표시 라벨만 별도 매핑한다.
+ */
+export function categoryColumnLabel(column: string): string {
+  return column === '대형마트' ? '대형마트(3대)' : column;
+}
+
+export const CATEGORY_COLUMN_CODES: Record<string, string[]> = {
+  대형마트: ['01'],
+  농협: ['05'],
+  체인: ['02'],
+  슈퍼: ['06'],
+  대리점: ['07'],
+  백화점: ['03'],
+  홀세일: ['08'],
+  군납: ['15'],
+  식자재: ['10'],
+  기타: ['04', '11', '12', '13', '14', '16', '19', '20', '21', '22', '23', '24', '25'],
+};
+
 export interface SalesComparisonSummaryRow {
   suitability: string;
   totalCount: number;
@@ -120,21 +151,10 @@ export interface SalesComparisonDetailResponse {
   total: SalesComparisonDetailTotal;
 }
 
-export interface SearchAccountCategoryItem {
-  accountCode: string;
-  name: string;
-}
-
 const BASE = '/api/v1/admin/schedules/sales-comparison';
 
 function failureMessage(label: string, res: { data: ApiResponse<unknown> }): string {
   return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
-}
-
-export async function fetchSearchCategories(): Promise<SearchAccountCategoryItem[]> {
-  const res = await client.get<ApiResponse<SearchAccountCategoryItem[]>>(`${BASE}/categories`);
-  if (!res.data.success || !res.data.data) throw new Error(failureMessage('거래처유형', res));
-  return res.data.data;
 }
 
 /**
