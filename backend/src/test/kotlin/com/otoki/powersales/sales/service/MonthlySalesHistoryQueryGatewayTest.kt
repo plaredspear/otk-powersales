@@ -16,7 +16,7 @@ import java.math.BigDecimal
  * [MonthlySalesHistoryQueryGateway] 동작 검증.
  *
  * - YYYYMM → (SalesYear, SalesMonth) 변환 + 정확한 (년, 월) 쌍 매칭
- * - closingAmountSum = (abc1~4) + (ship1~4) 재합산 (formula 복제 컬럼 미사용)
+ * - closingAmountSum = abcClosingSumAmount + shipClosingSumAmount (SF formula 동등, 합계 컬럼 사용)
  * - isDeleted soft-delete row 제외
  * - 빈 입력 → repository 호출 skip
  */
@@ -38,6 +38,8 @@ class MonthlySalesHistoryQueryGatewayTest {
         ship2: Double? = null,
         ship3: Double? = null,
         ship4: Double? = null,
+        abcSum: Double? = null,
+        shipSum: Double? = null,
         isDeleted: Boolean? = false,
     ) = MonthlySalesHistory(
         sapAccountCode = sap,
@@ -51,24 +53,48 @@ class MonthlySalesHistoryQueryGatewayTest {
         shipClosingAmount2 = ship2,
         shipClosingAmount3 = ship3,
         shipClosingAmount4 = ship4,
+        abcClosingSumAmount = abcSum,
+        shipClosingSumAmount = shipSum,
         isDeleted = isDeleted,
     )
 
     @Test
-    @DisplayName("closingAmountSum = (abc1~4) + (ship1~4) 재합산 / null 컬럼은 0 치환")
-    fun closingAmountSumRecomputed() {
+    @DisplayName("closingAmountSum = abcClosingSumAmount + shipClosingSumAmount (SF formula 동등) / null 은 0 치환")
+    fun closingAmountSumUsesSumColumns() {
         every {
             repository.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
         } returns listOf(
-            row("SAP1", "2026", "05", abc1 = 100.0, abc3 = 200.0, ship1 = 50.0, ship4 = 150.0),
+            row("SAP1", "2026", "05", abcSum = 300.0, shipSum = 200.0),
         )
 
         val result = gateway.findBySalesDates(listOf("202605"), listOf("SAP1"))
 
         assertThat(result).hasSize(1)
-        // (100 + 0 + 200 + 0) + (50 + 0 + 0 + 150) = 500
+        // SF formula: ABCClosingSumAmount + ShipClosingSumAmount = 300 + 200 = 500
         assertThat(result.first().closingAmountSum).isEqualByComparingTo(BigDecimal("500"))
-        assertThat(result.first().abcClosingAmount1).isEqualByComparingTo(BigDecimal("100"))
+    }
+
+    @Test
+    @DisplayName("개별 컬럼(ship1~4)이 비고 합계 컬럼(shipSum)에만 적재된 거래처 — SF formula 가 물류매출을 누락하지 않음")
+    fun closingAmountSumPrefersSumColumnOverIndividual() {
+        // 실측 패턴 (거래처 1000077, 2024-08): ship1~4=0 이지만 shipClosingSumAmount 에 물류매출 존재.
+        // 개별 재합산이면 물류매출을 0 으로 빠뜨려 SF 화면값과 어긋난다 → 합계 컬럼을 신뢰해야 동등.
+        every {
+            repository.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
+        } returns listOf(
+            row(
+                "SAP1", "2026", "05",
+                abc1 = 0.0, abc2 = 0.0, abc3 = 0.0, abc4 = 0.0,
+                ship1 = 0.0, ship2 = 0.0, ship3 = 0.0, ship4 = 0.0,
+                abcSum = 70477396.0, shipSum = 8135370.0,
+            ),
+        )
+
+        val result = gateway.findBySalesDates(listOf("202605"), listOf("SAP1"))
+
+        assertThat(result).hasSize(1)
+        // 개별 재합산이면 0 이 되지만, 합계 컬럼 기준 = 70477396 + 8135370 = 78612766
+        assertThat(result.first().closingAmountSum).isEqualByComparingTo(BigDecimal("78612766"))
     }
 
     @Test
@@ -98,9 +124,9 @@ class MonthlySalesHistoryQueryGatewayTest {
         every {
             repository.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
         } returns listOf(
-            row("SAP1", "2026", "05", abc1 = 100.0),  // 매칭
-            row("SAP1", "2026", "04", abc1 = 200.0),  // 매칭
-            row("SAP1", "2026", "03", abc1 = 999.0),  // 요청 밖 → 제외
+            row("SAP1", "2026", "05", abcSum = 100.0),  // 매칭
+            row("SAP1", "2026", "04", abcSum = 200.0),  // 매칭
+            row("SAP1", "2026", "03", abcSum = 999.0),  // 요청 밖 → 제외
         )
 
         val result = gateway.findBySalesDates(listOf("202605", "202604"), listOf("SAP1"))
@@ -117,8 +143,8 @@ class MonthlySalesHistoryQueryGatewayTest {
         every {
             repository.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
         } returns listOf(
-            row("SAP1", "2026", "05", abc1 = 100.0, isDeleted = false),
-            row("SAP1", "2026", "05", abc1 = 999.0, isDeleted = true),
+            row("SAP1", "2026", "05", abcSum = 100.0, isDeleted = false),
+            row("SAP1", "2026", "05", abcSum = 999.0, isDeleted = true),
         )
 
         val result = gateway.findBySalesDates(listOf("202605"), listOf("SAP1"))
