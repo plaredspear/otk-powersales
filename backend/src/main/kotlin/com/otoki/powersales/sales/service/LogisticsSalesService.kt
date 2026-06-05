@@ -60,7 +60,7 @@ class LogisticsSalesService(
         FROZEN("FROZEN", { it.shipClosingAmount3 }),
     }
 
-    fun getLogisticsSales(customerId: Int, yearMonth: String): LogisticsSalesResponse {
+    fun getLogisticsSales(customerId: Long, yearMonth: String): LogisticsSalesResponse {
         val account = accountRepository.findByIdInAndIsDeletedNot(listOf(customerId), true).firstOrNull()
             ?: throw BusinessException(
                 errorCode = "ACCOUNT_NOT_FOUND",

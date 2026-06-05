@@ -68,7 +68,7 @@ class AccountUpdateService(
      */
     @Transactional
     fun update(
-        id: Int,
+        id: Long,
         principal: WebUserPrincipal,
         request: AdminAccountUpdateRequest
     ): AdminAccountUpdateResponse {

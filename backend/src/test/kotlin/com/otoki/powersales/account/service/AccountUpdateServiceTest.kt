@@ -34,7 +34,7 @@ class AccountUpdateServiceTest {
         employeeRepository,
     )
 
-    private val accountId = 1234
+    private val accountId = 1234L
     private fun webPrincipal(userId: Long, role: String?, profileName: String = "9. Staff") = WebUserPrincipal(
         userId = userId,
         usernameValue = "u$userId@otokims.co.kr",
@@ -55,7 +55,7 @@ class AccountUpdateServiceTest {
     private val systemAdminPrincipal = webPrincipal(9L, null, profileName = "시스템 관리자")
 
     private fun nativeAccount(
-        id: Int = accountId,
+        id: Long = accountId,
         name: String? = "(신규) 강남점",
         employeeCode: String? = "100123",
         branchCode: String? = "C001",

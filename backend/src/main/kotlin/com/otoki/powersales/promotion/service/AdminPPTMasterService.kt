@@ -447,7 +447,7 @@ class AdminPPTMasterService(
         return employeeRepository.findById(employeeId).orElseThrow { PPTMasterEmployeeNotFoundException() }
     }
 
-    private fun findAccountById(accountId: Int): Account {
+    private fun findAccountById(accountId: Long): Account {
         return accountRepository.findById(accountId).orElseThrow { PPTMasterAccountNotFoundException() }
     }
 
@@ -456,7 +456,7 @@ class AdminPPTMasterService(
     }
 
     private fun validateNoDuplicate(
-        employeeId: Long, accountId: Int, teamType: ProfessionalPromotionTeamType, startDate: LocalDate, excludeId: Long? = null
+        employeeId: Long, accountId: Long, teamType: ProfessionalPromotionTeamType, startDate: LocalDate, excludeId: Long? = null
     ) {
         val duplicates = pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(
             employeeId, accountId, teamType, startDate, excludeId

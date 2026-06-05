@@ -196,7 +196,7 @@ class HomeService(
     private fun fetchAccountMap(
         teamMemberSchedules: List<TeamMemberSchedule>,
         displayWorkSchedules: List<DisplayWorkSchedule> = emptyList()
-    ): Map<Int, String> {
+    ): Map<Long, String> {
         val accountIds = (
             teamMemberSchedules.mapNotNull { it.account?.id } +
             displayWorkSchedules.mapNotNull { it.account?.id }
@@ -212,7 +212,7 @@ class HomeService(
     private fun toTeamMemberScheduleInfo(
         teamMemberSchedule: TeamMemberSchedule,
         employeeMap: Map<Long, Employee>,
-        accountMap: Map<Int, String>
+        accountMap: Map<Long, String>
     ): HomeResponse.TeamMemberScheduleInfo {
         val matchedEmployee = teamMemberSchedule.employee?.id?.let { employeeMap[it] }
         return HomeResponse.TeamMemberScheduleInfo(
@@ -237,8 +237,8 @@ class HomeService(
     private fun toDisplayWorkScheduleInfo(
         displayWorkSchedule: DisplayWorkSchedule,
         employeeMap: Map<Long, Employee>,
-        accountMap: Map<Int, String>,
-        displayTmsByKey: Map<Pair<Long, Int>, TeamMemberSchedule>
+        accountMap: Map<Long, String>,
+        displayTmsByKey: Map<Pair<Long, Long>, TeamMemberSchedule>
     ): HomeResponse.TeamMemberScheduleInfo {
         val matchedEmployee = displayWorkSchedule.employee?.id?.let { employeeMap[it] }
         val empId = displayWorkSchedule.employee?.id

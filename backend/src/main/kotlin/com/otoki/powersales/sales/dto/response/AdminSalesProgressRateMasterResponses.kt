@@ -70,7 +70,7 @@ data class SalesProgressRateMasterDetailResponse(
     val name: String?,
     val targetYear: String?,
     val targetMonth: String?,
-    val accountId: Int?,
+    val accountId: Long?,
     val accountName: String?,
     val accountBranchName: String?,
     val accountCode: String?,

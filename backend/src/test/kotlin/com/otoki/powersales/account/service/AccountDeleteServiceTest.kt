@@ -27,7 +27,7 @@ class AccountDeleteServiceTest {
     private fun user(id: Long): User = User(id = id, username = "user$id", employeeCode = "E$id", password = "")
 
     private fun nativeAccount(
-        id: Int = 1234,
+        id: Long = 1234L,
         isDeleted: Boolean? = null,
         owner: User? = user(ownerUserId)
     ): Account = Account(

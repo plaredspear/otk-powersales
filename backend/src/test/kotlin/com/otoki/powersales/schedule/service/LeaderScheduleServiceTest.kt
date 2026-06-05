@@ -205,7 +205,7 @@ class LeaderScheduleServiceTest {
             val target = createEmployee(id = 5012, authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "활동")
             every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
             every { employeeRepository.findById(target.id) } returns Optional.of(target)
-            every { accountRepository.findById(any<Int>()) } returns Optional.empty()
+            every { accountRepository.findById(any<Long>()) } returns Optional.empty()
 
             assertThatThrownBy { leaderScheduleService.createTeamMemberSchedule(leader.id, createRequest()) }
                 .isInstanceOf(LeaderScheduleNotLeaderAccountException::class.java)
@@ -346,7 +346,7 @@ class LeaderScheduleServiceTest {
     )
 
     private fun createAccount(
-        id: Int,
+        id: Long,
         branchCode: String?,
         accountGroup: String?,
         name: String? = "거래처$id",
@@ -365,7 +365,7 @@ class LeaderScheduleServiceTest {
         workingType: String = "근무",
         workingCategory2: String = "전담",
         workingCategory3: String = "고정",
-        accountId: Int? = 90234,
+        accountId: Long? = 90234,
         workingCategory1: String? = "진열"
     ): LeaderScheduleCreateRequest = LeaderScheduleCreateRequest(
         targetEmployeeId = targetEmployeeId,

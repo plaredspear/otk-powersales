@@ -52,7 +52,7 @@ interface TeamMemberScheduleRepositoryCustom {
     ): List<TeamMemberSchedule>
 
     fun findMonthlyByAccountIds(
-        accountIds: List<Int>,
+        accountIds: List<Long>,
         from: LocalDate,
         to: LocalDate,
         promotionTeams: List<String>? = null
@@ -81,11 +81,11 @@ interface TeamMemberScheduleRepositoryCustom {
 
     fun findAnnualLeaveByDateRangeAndEmployeeIds(from: LocalDate, to: LocalDate, employeeIds: List<Long>): List<TeamMemberSchedule>
 
-    fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Int>
+    fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Long>
 
     fun findIntegrationScheduleRecords(employeeIds: List<Long>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
-    fun findWorkSchedulesByEmployeeAndAccountAndMonth(employeeId: Long, accountId: Int, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
+    fun findWorkSchedulesByEmployeeAndAccountAndMonth(employeeId: Long, accountId: Long, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
     /**
      * 사원의 특정 일자 근무(WORK) TMS row 개수.

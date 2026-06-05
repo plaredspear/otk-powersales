@@ -93,7 +93,7 @@ class ElectronicSalesAdminQueryService(
      *
      * @throws AdminForbiddenException 거래처가 권한 범위 밖일 때
      */
-    fun getDetail(scope: DataScope, customerId: Int, year: Int, month: Int): ElectronicSalesDashboardDetailResponse {
+    fun getDetail(scope: DataScope, customerId: Long, year: Int, month: Int): ElectronicSalesDashboardDetailResponse {
         validateYearMonth(year, month)
         val account = accountRepository.findByIdInAndIsDeletedNot(listOf(customerId), true).firstOrNull()
             ?: throw BusinessException(

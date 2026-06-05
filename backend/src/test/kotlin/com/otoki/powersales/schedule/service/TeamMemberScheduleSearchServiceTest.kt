@@ -22,7 +22,7 @@ class TeamMemberScheduleSearchServiceTest {
 
     private val service = TeamMemberScheduleSearchService(expander, queryFactory, monthlySalesHistoryGateway)
 
-    private fun row(accountId: Int?, externalKey: String? = null): TeamMemberScheduleRow =
+    private fun row(accountId: Long?, externalKey: String? = null): TeamMemberScheduleRow =
         TeamMemberScheduleRow(
             year = null,
             month = null,

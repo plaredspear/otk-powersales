@@ -51,7 +51,7 @@ class PosSalesService(
 	 *
 	 * 거래처 미존재 시 404. 거래처 SAP 코드(`externalKey`) 부재 또는 POS DB 장애 시 빈 명세로 fallback.
 	 */
-	fun getPosSales(customerId: Int, yearMonth: String): PosSalesResponse {
+	fun getPosSales(customerId: Long, yearMonth: String): PosSalesResponse {
 		val account = accountRepository.findByIdInAndIsDeletedNot(listOf(customerId), true).firstOrNull()
 			?: throw BusinessException(
 				errorCode = "ACCOUNT_NOT_FOUND",

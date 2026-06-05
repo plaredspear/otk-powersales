@@ -7,7 +7,7 @@ package com.otoki.powersales.sales.dto.response
  * (`SelectAbcData` — `GROUP BY ITEM_CD`) 동등. 거래처 1곳의 해당 월 제품별 매출 금액/수량.
  */
 data class ElectronicSalesDashboardDetailResponse(
-    val customerId: Int,
+    val customerId: Long,
     val customerName: String?,
     val sapAccountCode: String?,
     val salesYear: Int,

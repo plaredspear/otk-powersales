@@ -548,7 +548,7 @@ class PromotionSchedulesUpsertHelperTest {
     )
 
     private fun createAccount(
-        id: Int = 100,
+        id: Long = 100L,
         name: String? = "테스트거래처"
     ): Account = Account(
         id = id,
@@ -573,7 +573,7 @@ class PromotionSchedulesUpsertHelperTest {
         workingDate: LocalDate = startDate,
         workingType: WorkingType = WorkingType.WORK,
         workingCategory3: WorkingCategory3 = WorkingCategory3.FIXED,
-        accountId: Int? = 999,
+        accountId: Long? = 999,
         promotionEmployeeId: Long? = null
     ): TeamMemberSchedule = TeamMemberSchedule(
         id = id,

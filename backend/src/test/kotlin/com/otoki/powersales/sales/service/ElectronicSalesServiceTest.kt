@@ -23,7 +23,7 @@ class ElectronicSalesServiceTest {
 
 	private val service = ElectronicSalesService(accountRepository, liveTotSalesDailyRepository)
 
-	private fun account(id: Int = 1, name: String = "사과마을", externalKey: String? = "12345") =
+	private fun account(id: Long = 1L, name: String = "사과마을", externalKey: String? = "12345") =
 		Account(id = id, name = name, externalKey = externalKey)
 
 	private fun row(itemCd: String, itemNm: String?, amt: Long, qty: Long): ElectronicSalesRow {

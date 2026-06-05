@@ -44,7 +44,7 @@ class OrderDraftServiceTest {
     )
 
     private fun account(empCode: String? = employeeCode) = Account(
-        id = accountId.toInt(),
+        id = accountId,
         name = "테스트거래처",
         externalKey = "EK001",
         employeeCode = empCode,
@@ -86,7 +86,7 @@ class OrderDraftServiceTest {
         @DisplayName("H1 - 신규 등록 (기존 임시저장 없음) → tmp_order 1행 + 라인 1행")
         fun newSave() {
             every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
-            every { accountRepository.findById(eq(accountId.toInt())) } returns Optional.of(account())
+            every { accountRepository.findById(eq(accountId)) } returns Optional.of(account())
             every { tmpOrderRepository.findByEmployeeIdForUpdate(userId) } returns null
             every { productRepository.findByProductCodeIn(any()) } returns listOf(Product(id = 99L, productCode = "P001", name = "진라면"))
             every { tmpOrderRepository.save(any<TmpOrder>()) } answers {
@@ -107,7 +107,7 @@ class OrderDraftServiceTest {
         fun overwriteSave() {
             val existing = TmpOrder(id = 10L, employeeId = userId)
             every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
-            every { accountRepository.findById(eq(accountId.toInt())) } returns Optional.of(account())
+            every { accountRepository.findById(eq(accountId)) } returns Optional.of(account())
             every { tmpOrderRepository.findByEmployeeIdForUpdate(userId) } returns existing
             every { productRepository.findByProductCodeIn(any()) } returns emptyList()
             every { tmpOrderRepository.delete(any<TmpOrder>()) } returns Unit
@@ -130,7 +130,7 @@ class OrderDraftServiceTest {
         @DisplayName("E1 - 본인 담당 거래처 아님 → ORD_DRAFT_ACCOUNT_FORBIDDEN")
         fun notMyAccount() {
             every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
-            every { accountRepository.findById(eq(accountId.toInt())) } returns Optional.of(account(empCode = "OTHER"))
+            every { accountRepository.findById(eq(accountId)) } returns Optional.of(account(empCode = "OTHER"))
 
             assertThatThrownBy { service.save(userId, req()) }
                 .isInstanceOf(OrderDraftAccountForbiddenException::class.java)
@@ -142,7 +142,7 @@ class OrderDraftServiceTest {
         @DisplayName("E1 - 거래처 employeeCode 가 null → ORD_DRAFT_ACCOUNT_FORBIDDEN")
         fun nullAccountEmpCode() {
             every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
-            every { accountRepository.findById(eq(accountId.toInt())) } returns Optional.of(account(empCode = null))
+            every { accountRepository.findById(eq(accountId)) } returns Optional.of(account(empCode = null))
 
             assertThatThrownBy { service.save(userId, req()) }
                 .isInstanceOf(OrderDraftAccountForbiddenException::class.java)
@@ -206,7 +206,7 @@ class OrderDraftServiceTest {
             )
             draft.products += product
             every { tmpOrderRepository.findByEmployeeId(userId) } returns draft
-            every { accountRepository.findById(eq(accountId.toInt())) } returns Optional.of(account())
+            every { accountRepository.findById(eq(accountId)) } returns Optional.of(account())
             every { productRepository.findByProductCodeIn(eq(listOf("P001"))) } returns listOf(Product(id = 99L, productCode = "P001", name = "진라면"))
 
             val response = service.findByUserId(userId)

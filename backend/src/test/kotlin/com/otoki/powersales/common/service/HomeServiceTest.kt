@@ -581,7 +581,7 @@ class HomeServiceTest {
         id: Long = 0L,
         sfid: String? = null,
         employeeId: Long? = null,
-        accountId: Int? = null,
+        accountId: Long? = null,
         workingDate: LocalDate = LocalDate.now(),
         workingType: WorkingType? = WorkingType.WORK,
         workingCategory1: WorkingCategory1? = WorkingCategory1.DISPLAY,
@@ -608,7 +608,7 @@ class HomeServiceTest {
     private fun createDisplayWorkSchedule(
         id: Long = 0L,
         employeeId: Long? = null,
-        accountId: Int? = null,
+        accountId: Long? = null,
         typeOfWork1: TypeOfWork1? = TypeOfWork1.DISPLAY,
         typeOfWork3: TypeOfWork3? = TypeOfWork3.ROTATION,
         startDate: LocalDate = LocalDate.now(),
@@ -628,7 +628,7 @@ class HomeServiceTest {
     }
 
     private fun createAccount(
-        id: Int = 0,
+        id: Long = 0L,
         sfid: String? = null,
         name: String? = null
     ): Account {

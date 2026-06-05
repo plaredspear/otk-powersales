@@ -56,7 +56,7 @@ data class AdminThemeDetailResponse(
  */
 data class AdminCreateSiteActivityRequest(
     val themeId: Long,
-    val accountId: Int,
+    val accountId: Long,
     val employeeId: Long,
     val inspectionDate: String,
     val category: String,
@@ -78,7 +78,7 @@ data class AdminCreateSiteActivityRequest(
  */
 data class AdminUpdateSiteActivityRequest(
     val themeId: Long,
-    val accountId: Int,
+    val accountId: Long,
     val employeeId: Long,
     val inspectionDate: String,
     val category: String,

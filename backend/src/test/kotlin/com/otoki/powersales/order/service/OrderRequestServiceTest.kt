@@ -337,7 +337,7 @@ class OrderRequestServiceTest {
 
     private fun createOrderRequest(
         id: Long = 1L,
-        accountId: Int = 1,
+        accountId: Long = 1,
         accountName: String = "Test Account",
     ): OrderRequest {
         val account = Account(id = accountId, name = accountName)

@@ -115,7 +115,7 @@ class DisplayMasterBatchServiceTest {
                 typeOfWork3 = TypeOfWork3.FIXED,
                 typeOfWork5 = TypeOfWork5.REGULAR,
                 employee = Employee(id = idx.toLong(), employeeCode = "EMP$idx", name = "사원$idx"),
-                account = Account(id = idx, externalKey = "ACC$idx")
+                account = Account(id = idx.toLong(), externalKey = "ACC$idx")
             )
         }
 }

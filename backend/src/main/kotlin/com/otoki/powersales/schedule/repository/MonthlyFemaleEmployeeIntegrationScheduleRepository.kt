@@ -9,7 +9,7 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepository :
 
     fun findByEmployeeIdAndAccountIdAndYearAndMonth(
         employeeId: Long,
-        accountId: Int,
+        accountId: Long,
         year: String,
         month: String
     ): MonthlyFemaleEmployeeIntegrationSchedule?
@@ -34,7 +34,7 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepository :
      * 같은 그룹 row 들을 모두 조회.
      */
     fun findByAccountIdAndWorkingCategory1AndYearAndMonth(
-        accountId: Int,
+        accountId: Long,
         workingCategory1: String,
         year: String,
         month: String,

@@ -15,7 +15,7 @@ package com.otoki.powersales.sales.dto.response
  * - 레거시 BARCODE group key 는 제품 단위 집계로 단순화하고 대표 바코드 1건만 노출.
  */
 data class PosSalesResponse(
-	val customerId: Int,
+	val customerId: Long,
 	val customerName: String,
 	val sapAccountCode: String,
 	val yearMonth: String,

@@ -51,7 +51,7 @@ class SiteActivityServiceTest {
         s3Region = "ap-northeast-2"
     )
 
-    private fun account(id: Int = 1, name: String = "테스트마트") =
+    private fun account(id: Long = 1L, name: String = "테스트마트") =
         Account(id = id, name = name, externalKey = "SAP$id")
 
     private fun employee(id: Long = 100L) =

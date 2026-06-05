@@ -24,7 +24,7 @@ class AccountNameBlankException : BusinessException(
  *
  * errorCode 는 `ACCOUNT_NOT_FOUND` 동일 — id 노출은 메시지 디테일만 분기.
  */
-class AccountNotFoundException(id: Int? = null) : BusinessException(
+class AccountNotFoundException(id: Long? = null) : BusinessException(
     errorCode = "ACCOUNT_NOT_FOUND",
     message = if (id != null) "거래처를 찾을 수 없습니다: $id" else "거래처를 찾을 수 없습니다.",
     httpStatus = HttpStatus.NOT_FOUND

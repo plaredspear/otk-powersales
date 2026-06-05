@@ -46,7 +46,7 @@ data class MobilePromotionDetailResponse(
     val id: Long,
     val promotionNumber: String,
     val promotionType: String?,
-    val accountId: Int,
+    val accountId: Long,
     val accountName: String?,
     val startDate: LocalDate,
     val endDate: LocalDate,

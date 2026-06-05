@@ -31,7 +31,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         employeeId: Long,
         startDate: LocalDate,
         endDate: LocalDate
-    ): List<Int> {
+    ): List<Long> {
         return queryFactory
             .select(displayWorkSchedule.account.id).distinct()
             .from(displayWorkSchedule)
@@ -64,7 +64,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         employeeId: Long,
         fromDate: LocalDate,
         toDate: LocalDate
-    ): List<Int> {
+    ): List<Long> {
         val dateCondition = BooleanBuilder()
             .or(displayWorkSchedule.startDate.goe(fromDate).and(displayWorkSchedule.startDate.lt(toDate)))
             .or(displayWorkSchedule.endDate.goe(fromDate).and(displayWorkSchedule.endDate.lt(toDate)))
@@ -116,7 +116,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
 
     override fun findScheduleList(
         employeeCode: String?,
-        accountIds: List<Int>?,
+        accountIds: List<Long>?,
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
@@ -298,7 +298,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
 
     override fun findByEmployeeAndAccountAndStartDate(
         employeeId: Long,
-        accountId: Int,
+        accountId: Long,
         startDate: LocalDate
     ): DisplayWorkSchedule? {
         return queryFactory
@@ -328,7 +328,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
 
     override fun findByEmployeeIdsAndAccountIds(
         employeeIds: List<Long>,
-        accountIds: List<Int>
+        accountIds: List<Long>
     ): List<DisplayWorkSchedule> {
         return queryFactory
             .selectFrom(displayWorkSchedule)
@@ -344,7 +344,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     override fun findConfirmedByDateRangeAndAccountIds(
         monthEnd: LocalDate,
         monthStart: LocalDate,
-        accountIds: List<Int>
+        accountIds: List<Long>
     ): List<DisplayWorkSchedule> {
         return queryFactory
             .selectFrom(displayWorkSchedule)
@@ -359,7 +359,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
 
     override fun existsConfirmedByEmployeeAndAccountAndDate(
         employeeId: Long,
-        accountId: Int,
+        accountId: Long,
         workingDate: LocalDate
     ): Boolean {
         val result = queryFactory
@@ -500,7 +500,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         return displayWorkSchedule.employee.id.`in`(matchingIds)
     }
 
-    private fun buildAccountIdsCondition(accountIds: List<Int>?): BooleanExpression? {
+    private fun buildAccountIdsCondition(accountIds: List<Long>?): BooleanExpression? {
         if (accountIds == null) return null
         if (accountIds.isEmpty()) return displayWorkSchedule.account.id.eq(-1) // no match
         return displayWorkSchedule.account.id.`in`(accountIds)

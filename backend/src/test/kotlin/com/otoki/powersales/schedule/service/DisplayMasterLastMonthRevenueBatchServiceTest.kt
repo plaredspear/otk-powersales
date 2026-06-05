@@ -84,7 +84,7 @@ class DisplayMasterLastMonthRevenueBatchServiceTest {
         val account = Account(id = 10, externalKey = "ACC010")
         val entity = entity(id = 1L, account = account, lastMonthRevenue = BigDecimal("5000000"))
         every { repository.findValidForLastMonthRevenuePaged(any(), any(), eq(0)) } returns listOf(entity)
-        every { lookup.forAccounts(any(), eq(today)) } returns mapOf(10 to BigDecimal("5000000"))
+        every { lookup.forAccounts(any(), eq(today)) } returns mapOf(10L to BigDecimal("5000000"))
 
         service.runDaily(today)
 
@@ -98,7 +98,7 @@ class DisplayMasterLastMonthRevenueBatchServiceTest {
         val account = Account(id = 10, externalKey = "ACC010")
         val entity = entity(id = 1L, account = account, lastMonthRevenue = BigDecimal("3000000"))
         every { repository.findValidForLastMonthRevenuePaged(any(), any(), eq(0)) } returns listOf(entity)
-        every { lookup.forAccounts(any(), eq(today)) } returns mapOf(10 to BigDecimal("5000000"))
+        every { lookup.forAccounts(any(), eq(today)) } returns mapOf(10L to BigDecimal("5000000"))
 
         service.runDaily(today)
 
@@ -112,7 +112,7 @@ class DisplayMasterLastMonthRevenueBatchServiceTest {
         val account = Account(id = 10, externalKey = "ACC010")
         val entity = entity(id = 1L, account = account, lastMonthRevenue = BigDecimal("1000"))
         every { repository.findValidForLastMonthRevenuePaged(any(), any(), eq(0)) } returns listOf(entity)
-        every { lookup.forAccounts(any(), eq(today)) } returns mapOf(10 to BigDecimal("1000.00"))
+        every { lookup.forAccounts(any(), eq(today)) } returns mapOf(10L to BigDecimal("1000.00"))
 
         service.runDaily(today)
 
@@ -144,7 +144,7 @@ class DisplayMasterLastMonthRevenueBatchServiceTest {
         val a = entity(id = 1L, account = account, lastMonthRevenue = null)
         val b = entity(id = 2L, account = account, lastMonthRevenue = null)
         every { repository.findValidForLastMonthRevenuePaged(any(), any(), eq(0)) } returns listOf(a, b)
-        every { lookup.forAccounts(any(), eq(today)) } returns mapOf(10 to BigDecimal("100"))
+        every { lookup.forAccounts(any(), eq(today)) } returns mapOf(10L to BigDecimal("100"))
         every { repository.updateLastMonthRevenueById(eq(1L), any()) } throws RuntimeException("DB down")
         every { repository.updateLastMonthRevenueById(eq(2L), any()) } returns 1L
 
@@ -158,7 +158,7 @@ class DisplayMasterLastMonthRevenueBatchServiceTest {
         range.map { idx ->
             entity(
                 id = idx.toLong(),
-                account = Account(id = idx, externalKey = "ACC$idx"),
+                account = Account(id = idx.toLong(), externalKey = "ACC$idx"),
                 lastMonthRevenue = null,
             )
         }

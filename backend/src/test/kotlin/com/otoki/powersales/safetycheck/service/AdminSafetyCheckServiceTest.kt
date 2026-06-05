@@ -370,7 +370,7 @@ class AdminSafetyCheckServiceTest {
         employeeId: Long,
         workingDate: LocalDate,
         workingType: WorkingType,
-        accountId: Int? = null,
+        accountId: Long? = null,
         traversalFlag: String? = null
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
@@ -412,7 +412,7 @@ class AdminSafetyCheckServiceTest {
         return SafetyCheckItem(questionNum = questionNum, seqNum = seqNum, contents = contents)
     }
 
-    private fun createAccount(id: Int, name: String): Account {
+    private fun createAccount(id: Long, name: String): Account {
         return Account(id = id, name = name)
     }
 }

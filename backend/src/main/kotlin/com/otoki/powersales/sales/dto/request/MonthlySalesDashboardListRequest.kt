@@ -9,7 +9,7 @@ data class MonthlySalesDashboardListRequest(
     val year: Int,
     val month: Int,
     val costCenterCodes: List<String>,
-    val accountIds: List<Int> = emptyList(),
+    val accountIds: List<Long> = emptyList(),
     val accountGroup: String? = null,
     val customerKeyword: String? = null,
     val page: Int = 0,

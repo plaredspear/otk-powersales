@@ -174,7 +174,7 @@ class TeamMemberScheduleCascadeHelperTest {
     private fun makeSchedule(
         id: Long,
         empId: Long,
-        accId: Int,
+        accId: Long,
         date: LocalDate,
         workingType: WorkingType? = WorkingType.WORK,
         workingCategory1: WorkingCategory1? = WorkingCategory1.EVENT,
@@ -189,5 +189,5 @@ class TeamMemberScheduleCascadeHelperTest {
         displayWorkSchedule = displayWorkSchedule
     )
 
-    private fun accountFor(id: Int): Account = Account(id = id, name = "거래처$id", externalKey = "EXT$id")
+    private fun accountFor(id: Long): Account = Account(id = id, name = "거래처$id", externalKey = "EXT$id")
 }

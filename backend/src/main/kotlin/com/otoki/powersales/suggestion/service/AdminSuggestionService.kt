@@ -194,7 +194,7 @@ class AdminSuggestionService(
             ?.let { productRepository.findByProductCode(it) }
 
         val account = request.accountId?.let {
-            accountRepository.findById(it.toInt()).orElse(null)
+            accountRepository.findById(it).orElse(null)
         }
 
         val (receptionCenter, responsibleCenter) = suggestionService.computeWerkCenters(account = account, product = product)

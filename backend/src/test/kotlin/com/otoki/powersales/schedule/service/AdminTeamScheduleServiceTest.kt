@@ -126,7 +126,7 @@ class AdminTeamScheduleServiceTest {
     )
 
     private fun createAccount(
-        id: Int = 1,
+        id: Long = 1L,
         sfid: String? = "ACC_SFID_001",
         name: String = "테스트거래처",
         externalKey: String? = "ACC001",
@@ -157,7 +157,7 @@ class AdminTeamScheduleServiceTest {
         workingCategory1: WorkingCategory1? = WorkingCategory1.DISPLAY,
         workingCategory2: WorkingCategory2? = null,
         workingCategory3: WorkingCategory3? = WorkingCategory3.FIXED,
-        accountId: Int? = 1,
+        accountId: Long? = 1,
         accountName: String? = null,
         accountExternalKey: String? = null,
         teamLeaderId: Long? = 99L,

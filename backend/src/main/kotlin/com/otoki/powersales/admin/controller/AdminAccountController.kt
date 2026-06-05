@@ -192,7 +192,7 @@ class AdminAccountController(
     fun getAccountDetail(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
-        @PathVariable id: Int
+        @PathVariable id: Long
     ): ResponseEntity<ApiResponse<AccountDetailResponse>> {
         val response = adminAccountService.getAccountDetail(scope, id)
         return ResponseEntity.ok(ApiResponse.success(response))
@@ -213,7 +213,7 @@ class AdminAccountController(
     @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.EDIT)
     fun updateAccount(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @PathVariable id: Int,
+        @PathVariable id: Long,
         @Valid @RequestBody request: AdminAccountUpdateRequest
     ): ResponseEntity<ApiResponse<AdminAccountUpdateResponse>> {
         val response = accountUpdateService.update(id, principal, request)
@@ -224,7 +224,7 @@ class AdminAccountController(
     @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.DELETE)
     fun deleteAccount(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @PathVariable id: Int
+        @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
         accountDeleteService.delete(id, principal.userId)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "거래처 삭제 성공"))

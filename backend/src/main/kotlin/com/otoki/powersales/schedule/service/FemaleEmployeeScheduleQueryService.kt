@@ -58,7 +58,7 @@ class FemaleEmployeeScheduleQueryService(
 
             accountIds.isNotEmpty() -> queryFactory
                 .selectFrom(q)
-                .where(q.account.id.`in`(accountIds.map { it.toInt() }).and(ymPredicate).and(ccPredicate))
+                .where(q.account.id.`in`(accountIds).and(ymPredicate).and(ccPredicate))
                 .orderBy(q.account.name.asc())
                 .fetch()
 

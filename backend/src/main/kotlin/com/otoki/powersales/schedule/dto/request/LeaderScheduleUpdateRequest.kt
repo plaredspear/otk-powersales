@@ -11,5 +11,5 @@ import jakarta.validation.constraints.NotNull
  */
 data class LeaderScheduleUpdateRequest(
     @field:NotNull(message = "거래처를 선택해야 합니다")
-    val accountId: Int?
+    val accountId: Long?
 )

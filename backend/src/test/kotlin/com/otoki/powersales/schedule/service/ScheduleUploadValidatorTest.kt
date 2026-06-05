@@ -808,7 +808,7 @@ class ScheduleUploadValidatorTest {
         externalKey: String,
         sfid: String,
         name: String,
-        id: Int = 1,
+        id: Long = 1L,
         accountStatusName: String? = null,
         accountGroup: String? = null,
         distribution: String? = null,

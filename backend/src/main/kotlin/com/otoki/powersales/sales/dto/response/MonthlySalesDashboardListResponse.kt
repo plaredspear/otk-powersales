@@ -19,7 +19,7 @@ data class MonthlySalesDashboardListResponse(
 }
 
 data class MonthlySalesDashboardListItem(
-    val accountId: Int,
+    val accountId: Long,
     val accountName: String?,
     val sapAccountCode: String?,
     val branchCode: String?,

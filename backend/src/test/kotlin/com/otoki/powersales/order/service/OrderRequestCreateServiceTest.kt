@@ -130,7 +130,7 @@ class OrderRequestCreateServiceTest {
         @DisplayName("본인 담당 거래처 아님 → ORD_ACCOUNT_FORBIDDEN")
         fun accountForbidden() {
             every { employeeRepository.findById(userId) } returns Optional.of(employee(employeeCode = employeeCode))
-            every { accountRepository.findById(accountId.toInt()) } returns Optional.of(account(employeeCode = "OTHER"))
+            every { accountRepository.findById(accountId) } returns Optional.of(account(employeeCode = "OTHER"))
 
             assertThatThrownBy { service.create(userId, baseRequest(lines = listOf(line()))) }
                 .isInstanceOf(OrderAccountForbiddenException::class.java)
@@ -214,7 +214,7 @@ class OrderRequestCreateServiceTest {
 
     private fun stubAuthAndAccount() {
         every { employeeRepository.findById(userId) } returns Optional.of(employee(employeeCode = employeeCode))
-        every { accountRepository.findById(accountId.toInt()) } returns Optional.of(account(employeeCode = employeeCode))
+        every { accountRepository.findById(accountId) } returns Optional.of(account(employeeCode = employeeCode))
     }
 
     private fun stubInventory(map: Map<String, InventoryInfo>) {
@@ -253,7 +253,7 @@ class OrderRequestCreateServiceTest {
     private fun employee(employeeCode: String) = Employee(id = userId, employeeCode = employeeCode, name = "Test")
 
     private fun account(employeeCode: String?) = Account(
-        id = accountId.toInt(),
+        id = accountId,
         name = "Test 거래처",
         externalKey = "EXT-$accountId",
         employeeCode = employeeCode,

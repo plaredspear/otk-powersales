@@ -17,7 +17,7 @@ interface SiteActivityRepositoryCustom {
      */
     fun searchByEmployee(
         employeeId: Long,
-        accountId: Int?,
+        accountId: Long?,
         category: InspectionCategory?,
         fromDate: LocalDate,
         toDate: LocalDate

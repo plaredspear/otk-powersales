@@ -30,7 +30,7 @@ class OrderRequestRepositoryCustomImpl(
             .and(orderRequest.deliveryDate.goe(deliveryDateFrom))
             .and(orderRequest.deliveryDate.loe(deliveryDateTo))
 
-        if (accountId != null) where.and(orderRequest.account.id.eq(accountId.toInt()))
+        if (accountId != null) where.and(orderRequest.account.id.eq(accountId))
         if (status != null) where.and(orderRequest.orderRequestStatus.eq(status))
 
         return queryFactory

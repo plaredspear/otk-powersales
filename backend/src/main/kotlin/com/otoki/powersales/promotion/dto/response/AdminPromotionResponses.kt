@@ -85,7 +85,7 @@ data class PromotionDetailResponse(
     val promotionNumber: String,
     val promotionName: String?,
     val promotionType: String?,
-    val accountId: Int,
+    val accountId: Long,
     val accountName: String?,
     val accountCode: String?,
     val startDate: LocalDate,

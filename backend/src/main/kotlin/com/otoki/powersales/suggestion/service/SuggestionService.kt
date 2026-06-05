@@ -100,7 +100,7 @@ class SuggestionService(
             ?.let { productRepository.findByProductCode(it) }
 
         val account = request.accountId?.let {
-            accountRepository.findById(it.toInt()).orElse(null)
+            accountRepository.findById(it).orElse(null)
         }
 
         // step 4 (mapping — 5종 trigger 부수효과 이식 + R17 WERK)

@@ -69,7 +69,7 @@ class OrderRequestCreateService(
         validateRequest(request)
         val employee = employeeRepository.findById(userId)
             .orElseThrow { OrderAccountForbiddenException() }
-        val account = accountRepository.findById(request.accountId.toInt())
+        val account = accountRepository.findById(request.accountId)
             .orElseThrow { OrderInvalidRequestException("거래처를 찾을 수 없습니다") }
 
         if (account.employeeCode.isNullOrBlank() || account.employeeCode != employee.employeeCode) {

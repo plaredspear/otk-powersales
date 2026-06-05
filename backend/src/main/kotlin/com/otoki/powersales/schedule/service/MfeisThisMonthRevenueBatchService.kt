@@ -64,7 +64,7 @@ class MfeisThisMonthRevenueBatchService(
 
         targets.chunked(chunkSize).forEach { chunk ->
             val accounts = chunk.mapNotNull { it.account }.distinctBy { it.id }
-            val externalKeyToId: Map<String, Int> = accounts
+            val externalKeyToId: Map<String, Long> = accounts
                 .filter { it.externalKey != null }
                 .associate { it.externalKey!! to it.id }
             if (externalKeyToId.isEmpty()) {
@@ -75,9 +75,9 @@ class MfeisThisMonthRevenueBatchService(
             val histories = monthlySalesHistoryGateway.findBySalesDates(salesDates, externalKeyToId.keys)
 
             // 거래처별 평균 — 양수 필터 + 양수 count divider (legacy 동등)
-            val avgByAccountId: Map<Int, BigDecimal> = histories
-                .groupBy { externalKeyToId[it.sapAccountCode] ?: 0 }
-                .filter { it.key != 0 }
+            val avgByAccountId: Map<Long, BigDecimal> = histories
+                .groupBy { externalKeyToId[it.sapAccountCode] ?: 0L }
+                .filter { it.key != 0L }
                 .mapValues { (_, accountHistories) ->
                     val positives = accountHistories
                         .mapNotNull { it.abcClosingAmount1 }

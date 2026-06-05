@@ -20,7 +20,7 @@ data class TeamMemberDto(
 }
 
 data class TeamScheduleAccountDto(
-    val accountId: Int,
+    val accountId: Long,
     val externalKey: String,
     val name: String
 ) {
@@ -42,7 +42,7 @@ data class TeamScheduleDto(
     val workingCategory1: String?,
     val workingCategory2: String?,
     val workingCategory3: String?,
-    val accountId: Int?,
+    val accountId: Long?,
     val accountName: String?,
     val accountExternalKey: String?,
     // SF 목록(FullCalendarComponentController.fetchAllShcedule) title 정합 — 거래처 유형/지점명.

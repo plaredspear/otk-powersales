@@ -26,7 +26,7 @@ class ScheduleUploadValidator {
     data class ValidatedRow(
         val userId: Long,
         val userEmployeeCode: String?,
-        val accountId: Int,
+        val accountId: Long,
         val typeOfWork3: String,
         val typeOfWork4: String,
         val typeOfWork5: String,
@@ -426,7 +426,7 @@ class ScheduleUploadValidator {
         val rowNumber: Int,
         val userId: Long,
         val userEmployeeCode: String?,
-        val accountId: Int,
+        val accountId: Long,
         val typeOfWork3: String,
         val typeOfWork5: String,
         val startDate: LocalDate,

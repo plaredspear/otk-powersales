@@ -12,7 +12,7 @@ class MonthlySalesDashboardExcelExporterTest {
 
     private val exporter = MonthlySalesDashboardExcelExporter()
 
-    private fun item(id: Int, name: String, isConfirmed: Boolean) = MonthlySalesDashboardListItem(
+    private fun item(id: Long, name: String, isConfirmed: Boolean) = MonthlySalesDashboardListItem(
         accountId = id,
         accountName = name,
         sapAccountCode = "SAP$id",

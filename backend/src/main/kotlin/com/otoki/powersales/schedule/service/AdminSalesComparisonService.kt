@@ -89,7 +89,7 @@ class AdminSalesComparisonService(
         year: Int,
         month: Int,
         costCenterCodes: List<String>,
-        accountIds: List<Int>
+        accountIds: List<Long>
     ): SalesComparisonMiddleResponse {
         validateParams(year, month, costCenterCodes)
         val effectiveCodes = applyScope(scope, costCenterCodes)
@@ -121,7 +121,7 @@ class AdminSalesComparisonService(
         year: Int,
         month: Int,
         costCenterCodes: List<String>,
-        accountIds: List<Int>,
+        accountIds: List<Long>,
         workingCategory1Filter: String?,
         workingCategory5Filter: String?
     ): SalesComparisonDetailResponse {
@@ -229,7 +229,7 @@ class AdminSalesComparisonService(
         year: Int,
         month: Int,
         costCenterCodes: List<String>,
-        accountIds: List<Int>
+        accountIds: List<Long>
     ): ExcelResult {
         val response = getMiddle(scope, year, month, costCenterCodes, accountIds)
         val workbook = XSSFWorkbook()
@@ -299,7 +299,7 @@ class AdminSalesComparisonService(
         year: Int,
         month: Int,
         costCenterCodes: List<String>,
-        accountIds: List<Int>,
+        accountIds: List<Long>,
         workingCategory1Filter: String?,
         workingCategory5Filter: String?
     ): ExcelResult {

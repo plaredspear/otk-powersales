@@ -20,5 +20,5 @@ data class TeamScheduleCreateRequest(
     val workingCategory1: WorkingCategory1? = null,
     val workingCategory2: WorkingCategory2? = null,
     val workingCategory3: WorkingCategory3? = null,
-    val accountId: Int? = null
+    val accountId: Long? = null
 )

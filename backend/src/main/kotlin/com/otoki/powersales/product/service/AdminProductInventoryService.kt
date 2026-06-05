@@ -70,7 +70,7 @@ class AdminProductInventoryService(
         }
     }
 
-    private fun validateAccount(accountId: Int) {
+    private fun validateAccount(accountId: Long) {
         accountRepository.findById(accountId).orElseThrow {
             InvalidSearchParameterException("거래처를 찾을 수 없습니다: $accountId")
         }

@@ -9,7 +9,7 @@ data class LeaderScheduleUpdateResponse(
     val scheduleId: Long,
     val targetEmployeeId: Long,
     val workingDate: String,
-    val accountId: Int?,
+    val accountId: Long?,
     val accountName: String?,
     val workingCategory3: String?,
 ) {

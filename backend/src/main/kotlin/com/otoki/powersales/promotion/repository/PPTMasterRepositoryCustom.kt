@@ -24,7 +24,7 @@ interface PPTMasterRepositoryCustom {
 
     fun findValidMastersByEmployeeIdAndTeamType(
         employeeId: Long,
-        accountId: Int,
+        accountId: Long,
         teamType: ProfessionalPromotionTeamType,
         startDate: LocalDate,
         excludeId: Long? = null

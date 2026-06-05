@@ -47,7 +47,7 @@ class AccountDeleteService(
      * @param requesterUserId 삭제 요청자(로그인 사용자)의 User.id — `account.ownerUser.id` 와 비교.
      */
     @Transactional
-    fun delete(id: Int, requesterUserId: Long) {
+    fun delete(id: Long, requesterUserId: Long) {
         val account = accountRepository.findActiveById(id)
             ?: throw AccountNotFoundException()
 

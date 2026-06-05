@@ -65,7 +65,7 @@ class AccountRepositoryCustomImpl(
         }
     }
 
-    override fun findAccessibleByPolicyAndId(policyPredicate: Predicate, id: Int): Account? {
+    override fun findAccessibleByPolicyAndId(policyPredicate: Predicate, id: Long): Account? {
         return queryFactory
             .selectFrom(account)
             .where(
@@ -98,14 +98,14 @@ class AccountRepositoryCustomImpl(
         return found != null
     }
 
-    override fun findActiveById(id: Int): Account? {
+    override fun findActiveById(id: Long): Account? {
         return queryFactory
             .selectFrom(account)
             .where(account.id.eq(id), notDeleted())
             .fetchOne()
     }
 
-    override fun existsActiveByNameAndIdNot(name: String, id: Int): Boolean {
+    override fun existsActiveByNameAndIdNot(name: String, id: Long): Boolean {
         val found = queryFactory
             .selectOne()
             .from(account)

@@ -1401,7 +1401,7 @@ class AdminPromotionServiceTest {
         remark = remark
     )
 
-    private fun createAccount(id: Int = 100, name: String = "GS25 역삼점", branchName: String? = "강남53지점") = Account(
+    private fun createAccount(id: Long = 100L, name: String = "GS25 역삼점", branchName: String? = "강남53지점") = Account(
         id = id,
         name = name
     ).also { it.branchName = branchName }
@@ -1426,7 +1426,7 @@ class AdminPromotionServiceTest {
 
     private fun createRequest(
         promotionType: String? = null,
-        accountId: Int = 100,
+        accountId: Long = 100,
         startDate: LocalDate = LocalDate.of(2026, 3, 10),
         endDate: LocalDate = LocalDate.of(2026, 3, 20),
         primaryProductId: Long? = 200L,

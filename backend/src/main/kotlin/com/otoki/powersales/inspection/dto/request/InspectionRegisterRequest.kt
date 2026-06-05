@@ -18,7 +18,7 @@ data class InspectionRegisterRequest(
     val category: InspectionCategory?,
 
     @field:NotNull(message = "accountId는 필수입니다")
-    val accountId: Int?,
+    val accountId: Long?,
 
     @field:NotNull(message = "inspectionDate는 필수입니다")
     val inspectionDate: LocalDate?,

@@ -25,7 +25,7 @@ class ElectronicSalesAdminQueryServiceTest {
 
     private val allBranchesScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
-    private fun account(id: Int, externalKey: String?, branchCode: String? = "B001"): Account = mockk {
+    private fun account(id: Long, externalKey: String?, branchCode: String? = "B001"): Account = mockk {
         every { this@mockk.id } returns id
         every { this@mockk.externalKey } returns externalKey
         every { this@mockk.name } returns "거래처$id"

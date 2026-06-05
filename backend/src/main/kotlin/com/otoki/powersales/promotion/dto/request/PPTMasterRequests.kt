@@ -12,7 +12,7 @@ data class PPTMasterCreateRequest(
     val employeeId: Long,
 
     @field:NotNull(message = "거래처 ID는 필수입니다")
-    val accountId: Int,
+    val accountId: Long,
 
     @field:NotNull(message = "전문행사조 유형은 필수입니다")
     val teamType: ProfessionalPromotionTeamType,
@@ -30,7 +30,7 @@ data class PPTMasterUpdateRequest(
     val employeeId: Long,
 
     @field:NotNull(message = "거래처 ID는 필수입니다")
-    val accountId: Int,
+    val accountId: Long,
 
     @field:NotNull(message = "전문행사조 유형은 필수입니다")
     val teamType: ProfessionalPromotionTeamType,

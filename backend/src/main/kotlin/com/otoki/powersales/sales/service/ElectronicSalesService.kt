@@ -46,7 +46,7 @@ class ElectronicSalesService(
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
 
-	fun getElectronicSales(customerId: Int, yearMonth: String): ElectronicSalesResponse {
+	fun getElectronicSales(customerId: Long, yearMonth: String): ElectronicSalesResponse {
 		val account = accountRepository.findByIdInAndIsDeletedNot(listOf(customerId), true).firstOrNull()
 			?: throw BusinessException(
 				errorCode = "ACCOUNT_NOT_FOUND",

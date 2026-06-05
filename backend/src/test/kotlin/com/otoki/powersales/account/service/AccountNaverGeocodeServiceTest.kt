@@ -171,7 +171,7 @@ class AccountNaverGeocodeServiceTest {
     }
 
     private fun createAccount(
-        id: Int,
+        id: Long,
         address1: String? = "주소",
         latitude: String? = null,
         longitude: String? = null

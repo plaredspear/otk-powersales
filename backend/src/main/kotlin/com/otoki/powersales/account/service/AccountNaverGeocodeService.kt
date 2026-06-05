@@ -44,7 +44,7 @@ class AccountNaverGeocodeService(
      * @return 좌표 set 성공 여부 (응답에 `addresses` 가 비어 있거나 호출 실패 시 false)
      */
     @Transactional
-    fun enrichSingleAccount(accountId: Int): Boolean {
+    fun enrichSingleAccount(accountId: Long): Boolean {
         val account = accountRepository.findById(accountId).orElse(null) ?: run {
             log.warn("Account 조회 실패 — accountId={}", accountId)
             return false

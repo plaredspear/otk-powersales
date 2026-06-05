@@ -10,7 +10,7 @@ data class PromotionCreateRequest(
     val promotionType: String? = null,
 
     @field:NotNull(message = "거래처 ID는 필수입니다")
-    val accountId: Int,
+    val accountId: Long,
 
     @field:NotNull(message = "시작일은 필수입니다")
     val startDate: LocalDate,

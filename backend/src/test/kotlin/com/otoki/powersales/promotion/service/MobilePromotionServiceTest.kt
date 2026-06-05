@@ -119,7 +119,7 @@ class MobilePromotionServiceTest {
     )
 
     private fun createAccount(
-        id: Int = 100,
+        id: Long = 100L,
         sfid: String? = "ACC_SFID_001",
         name: String? = "이마트 성수점"
     ): Account = Account(

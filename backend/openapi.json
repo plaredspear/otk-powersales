@@ -133,7 +133,7 @@
             "type" : [ "string", "null" ]
           },
           "id" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "industry" : {
@@ -196,7 +196,7 @@
       "AccountInfo" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
@@ -338,7 +338,7 @@
             "type" : "string"
           },
           "id" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "name" : {
@@ -633,7 +633,7 @@
             "type" : [ "string", "null" ]
           },
           "id" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "industry" : {
@@ -971,7 +971,7 @@
             "type" : [ "string", "null" ]
           },
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
@@ -1044,7 +1044,7 @@
             "type" : [ "string", "null" ]
           },
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
@@ -1098,7 +1098,7 @@
       "AdminAttendanceLogSearchRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "attendanceDateFrom" : {
@@ -1348,7 +1348,7 @@
       "AdminCreateSiteActivityRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "category" : {
@@ -1993,7 +1993,7 @@
       "AdminSiteActivityDetailResponse" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "accountName" : {
@@ -2616,7 +2616,7 @@
       "AdminUpdateSiteActivityRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "category" : {
@@ -10339,7 +10339,7 @@
       "ClaimCreateResponse" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
@@ -11556,7 +11556,7 @@
       "ElectronicSalesDashboardDetailResponse" : {
         "properties" : {
           "customerId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "customerName" : {
@@ -11593,7 +11593,7 @@
       "ElectronicSalesDashboardListItem" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "accountName" : {
@@ -11644,7 +11644,7 @@
       "ElectronicSalesRequest" : {
         "properties" : {
           "customerId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "yearMonth" : {
@@ -11659,7 +11659,7 @@
       "ElectronicSalesResponse" : {
         "properties" : {
           "customerId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "customerName" : {
@@ -13110,7 +13110,7 @@
       "InspectionDetailResponse" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "accountName" : {
@@ -13194,7 +13194,7 @@
       "InspectionListItem" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "accountName" : {
@@ -13234,7 +13234,7 @@
       "InspectionRegisterRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "category" : {
@@ -13285,7 +13285,7 @@
       "InventorySearchRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "deliveryRequestDate" : {
@@ -13358,7 +13358,7 @@
             "type" : [ "string", "null" ]
           },
           "id" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "name" : {
@@ -13476,7 +13476,7 @@
       "LeaderScheduleCreateRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "targetEmployeeId" : {
@@ -13535,7 +13535,7 @@
       "LeaderScheduleUpdateRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           }
         },
@@ -13545,7 +13545,7 @@
       "LeaderScheduleUpdateResponse" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
@@ -13767,7 +13767,7 @@
       "LogisticsSalesRequest" : {
         "properties" : {
           "customerId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "yearMonth" : {
@@ -13791,7 +13791,7 @@
             "type" : "boolean"
           },
           "customerId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "customerName" : {
@@ -13865,7 +13865,7 @@
       "MobilePromotionDetailResponse" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "accountName" : {
@@ -14184,7 +14184,7 @@
             "type" : "array"
           },
           "customerId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "customerName" : {
@@ -14218,7 +14218,7 @@
       "MonthlySalesDashboardListItem" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "accountName" : {
@@ -15476,7 +15476,7 @@
       "PPTMasterCreateRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "confirmed" : {
@@ -15599,7 +15599,7 @@
             "type" : [ "string", "null" ]
           },
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
@@ -15684,7 +15684,7 @@
       "PPTMasterUpdateRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "confirmed" : {
@@ -16425,7 +16425,7 @@
       "PosSalesRequest" : {
         "properties" : {
           "customerId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "yearMonth" : {
@@ -16440,7 +16440,7 @@
       "PosSalesResponse" : {
         "properties" : {
           "customerId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "customerName" : {
@@ -17235,7 +17235,7 @@
       "PromotionCreateRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "endDate" : {
@@ -17289,7 +17289,7 @@
             "type" : [ "string", "null" ]
           },
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "accountName" : {
@@ -18241,7 +18241,7 @@
             "type" : "string"
           },
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "accountName" : {
@@ -18378,7 +18378,7 @@
             "type" : "string"
           },
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "accountName" : {
@@ -18516,7 +18516,7 @@
           "accountIdsByCategory" : {
             "additionalProperties" : {
               "items" : {
-                "format" : "int32",
+                "format" : "int64",
                 "type" : "integer"
               },
               "type" : "array"
@@ -18577,7 +18577,7 @@
             "type" : [ "string", "null" ]
           },
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
@@ -19616,7 +19616,7 @@
             "type" : [ "string", "null" ]
           },
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
@@ -20412,7 +20412,7 @@
       "TeamMemberScheduleInfo" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
@@ -20527,7 +20527,7 @@
       "TeamScheduleAccountDto" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           },
           "externalKey" : {
@@ -20542,7 +20542,7 @@
       "TeamScheduleCreateRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "employeeCode" : {
@@ -20591,7 +20591,7 @@
             "type" : [ "string", "null" ]
           },
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "accountName" : {
@@ -20697,7 +20697,7 @@
         "properties" : {
           "accountIds" : {
             "items" : {
-              "format" : "int32",
+              "format" : "int64",
               "type" : "integer"
             },
             "type" : [ "array", "null" ]
@@ -20733,7 +20733,7 @@
       "TeamScheduleUpdateRequest" : {
         "properties" : {
           "accountId" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : [ "integer", "null" ]
           },
           "workingCategory1" : {
@@ -21595,7 +21595,7 @@
           "name" : "id",
           "required" : true,
           "schema" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           }
         } ],
@@ -21627,7 +21627,7 @@
           "name" : "id",
           "required" : true,
           "schema" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           }
         } ],
@@ -21652,7 +21652,7 @@
           "name" : "id",
           "required" : true,
           "schema" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           }
         } ],
@@ -27416,7 +27416,7 @@
           "name" : "customerId",
           "required" : true,
           "schema" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           }
         }, {
@@ -27493,7 +27493,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "format" : "int32",
+              "format" : "int64",
               "type" : "integer"
             },
             "type" : "array"
@@ -27595,7 +27595,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "format" : "int32",
+              "format" : "int64",
               "type" : "integer"
             },
             "type" : "array"
@@ -27653,7 +27653,7 @@
           "name" : "customerId",
           "required" : true,
           "schema" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           }
         }, {
@@ -27730,7 +27730,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "format" : "int32",
+              "format" : "int64",
               "type" : "integer"
             },
             "type" : "array"
@@ -27832,7 +27832,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "format" : "int32",
+              "format" : "int64",
               "type" : "integer"
             },
             "type" : "array"
@@ -29665,7 +29665,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "format" : "int32",
+              "format" : "int64",
               "type" : "integer"
             },
             "type" : "array"
@@ -29742,7 +29742,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "format" : "int32",
+              "format" : "int64",
               "type" : "integer"
             },
             "type" : "array"
@@ -29820,7 +29820,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "format" : "int32",
+              "format" : "int64",
               "type" : "integer"
             },
             "type" : "array"
@@ -29883,7 +29883,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "format" : "int32",
+              "format" : "int64",
               "type" : "integer"
             },
             "type" : "array"
@@ -31955,7 +31955,7 @@
           "name" : "accountId",
           "required" : false,
           "schema" : {
-            "format" : "int32",
+            "format" : "int64",
             "type" : "integer"
           }
         }, {

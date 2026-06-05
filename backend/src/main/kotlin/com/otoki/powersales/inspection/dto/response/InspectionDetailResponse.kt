@@ -15,7 +15,7 @@ data class InspectionDetailResponse(
     val id: Long,
     val category: String,
     val accountName: String,
-    val accountId: Int,
+    val accountId: Long,
     val themeName: String,
     val themeId: Long,
     val inspectionDate: String,

@@ -14,7 +14,7 @@ import java.time.LocalDate
  */
 data class InventorySearchRequest(
     @field:NotNull(message = "거래처를 선택해주세요")
-    val accountId: Int?,
+    val accountId: Long?,
 
     @field:NotEmpty(message = "선택하신 제품이 없습니다. 조회 할 제품을 선택해주세요.")
     @field:Size(max = 50, message = "최대 50건까지만 조회가 가능합니다. 조회 할 제품을 줄여주세요.")

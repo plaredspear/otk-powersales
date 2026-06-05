@@ -32,7 +32,7 @@ import java.time.LocalDate
  * - 입력: `List<Account>` (또는 단건 `Account?`) — `Account.externalKey` = SAP 거래처 코드
  * - 직전월 산출: `today.minusMonths(1)` → `"YYYYMM"` 6자 문자열 (게이트웨이가 `SalesYear`/`SalesMonth` 로 변환)
  * - 호출: [MonthlySalesHistoryQueryGateway.findBySalesDates]
- * - 결과 매핑: `sapAccountCode → Account.id` 재매핑 후 `Map<Int, BigDecimal>` 반환
+ * - 결과 매핑: `sapAccountCode → Account.id` 재매핑 후 `Map<Long, BigDecimal>` 반환
  *
  * SF `LastMonthRevenue__c` 의 `Number(precision=18, scale=0)` 정합 보존 — `setScale(0, HALF_UP)`
  * 로 소수점 절단.
@@ -51,9 +51,9 @@ class LastMonthRevenueLookup(
     fun forAccounts(
         accounts: List<Account>,
         today: LocalDate = LocalDate.now(),
-    ): Map<Int, BigDecimal> {
+    ): Map<Long, BigDecimal> {
         if (accounts.isEmpty()) return emptyMap()
-        val externalKeyToId: Map<String, Int> = accounts
+        val externalKeyToId: Map<String, Long> = accounts
             .filter { it.externalKey != null }
             .associate { it.externalKey!! to it.id }
         if (externalKeyToId.isEmpty()) return emptyMap()

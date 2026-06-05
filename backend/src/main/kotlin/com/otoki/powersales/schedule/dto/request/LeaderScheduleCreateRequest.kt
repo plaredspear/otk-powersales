@@ -24,7 +24,7 @@ data class LeaderScheduleCreateRequest(
     @field:NotBlank(message = "근무 분류 3은 필수입니다")
     val workingCategory3: String,
 
-    val accountId: Int? = null,
+    val accountId: Long? = null,
 
     val workingCategory1: String? = null
 )

@@ -185,7 +185,7 @@ class AdminTeamScheduleService(
         from: LocalDate,
         to: LocalDate,
         employeeIds: List<Long>?,
-        accountIds: List<Int>?,
+        accountIds: List<Long>?,
         promotionTeams: List<String>? = null,
         principal: WebUserPrincipal? = null,
         branchCode: String? = null
@@ -362,7 +362,7 @@ class AdminTeamScheduleService(
         schedule.account = newAccount
 
         if (oldEmployeeId != null) {
-            val refreshTargets = mutableSetOf<Triple<Long, Int, YearMonth>>()
+            val refreshTargets = mutableSetOf<Triple<Long, Long, YearMonth>>()
 
             if (oldWorkingDate != null && oldAccountId != null) {
                 refreshTargets.add(Triple(oldEmployeeId, oldAccountId, YearMonth.from(oldWorkingDate)))

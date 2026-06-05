@@ -97,7 +97,7 @@ class AdminAccountService(
      * @param id path variable Account.id
      * @throws AccountNotFoundException 부재 / soft-delete / 가시 범위 밖
      */
-    fun getAccountDetail(scope: DataScope, id: Int): AccountDetailResponse {
+    fun getAccountDetail(scope: DataScope, id: Long): AccountDetailResponse {
         val policyPredicate = policyEvaluator.buildPredicate(
             scope = scope,
             sObjectName = "Account",

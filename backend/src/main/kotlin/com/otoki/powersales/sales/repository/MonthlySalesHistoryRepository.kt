@@ -39,6 +39,6 @@ interface MonthlySalesHistoryRepository : JpaRepository<MonthlySalesHistory, Lon
     fun findBySalesYearInAndSalesMonthInAndAccountIdIn(
         salesYears: Collection<SalesYear>,
         salesMonths: Collection<SalesMonth>,
-        accountIds: Collection<Int>,
+        accountIds: Collection<Long>,
     ): List<MonthlySalesHistory>
 }

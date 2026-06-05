@@ -47,7 +47,7 @@ class ScheduleConflictValidator(
         employeeId: Long,
         workingDate: LocalDate,
         workingType: WorkingType,
-        accountId: Int?,
+        accountId: Long?,
         workingCategory3: WorkingCategory3?,
         excludeScheduleId: Long? = null
     ) {

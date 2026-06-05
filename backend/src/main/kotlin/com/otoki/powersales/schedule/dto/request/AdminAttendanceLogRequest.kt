@@ -5,7 +5,7 @@ import java.time.LocalDate
 
 data class AdminAttendanceLogSearchRequest(
     val employeeId: Long? = null,
-    val accountId: Int? = null,
+    val accountId: Long? = null,
     val attendanceType: AttendanceType? = null,
     val attendanceDateFrom: LocalDate? = null,
     val attendanceDateTo: LocalDate? = null,

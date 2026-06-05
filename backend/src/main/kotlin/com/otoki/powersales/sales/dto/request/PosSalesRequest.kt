@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Pattern
  */
 data class PosSalesRequest(
 	@field:NotNull(message = "거래처 ID는 필수입니다")
-	val customerId: Int,
+	val customerId: Long,
 
 	@field:NotBlank(message = "연월은 필수입니다")
 	@field:Pattern(

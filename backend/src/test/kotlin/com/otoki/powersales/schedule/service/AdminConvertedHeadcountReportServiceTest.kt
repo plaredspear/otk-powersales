@@ -20,7 +20,7 @@ class AdminConvertedHeadcountReportServiceTest {
     private val service = AdminConvertedHeadcountReportService(repository)
 
     private fun account(type: AccountType, branchName: String?, abcType: String? = null): Account {
-        val acc = Account(id = type.ordinal + 1)
+        val acc = Account(id = (type.ordinal + 1).toLong())
         acc.accountType = type
         acc.branchName = branchName
         acc.abcType = abcType

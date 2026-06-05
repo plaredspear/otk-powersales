@@ -42,7 +42,7 @@ data class SalesComparisonSummaryRow(
     val suitability: String,
     val totalCount: Int,
     val countsByCategory: Map<String, Int>,
-    val accountIdsByCategory: Map<String, List<Int>>
+    val accountIdsByCategory: Map<String, List<Long>>
 )
 
 /** 중간집계 조회 응답 — 거래처별 행 + 적합성별 소계 + 전체 총계. */
@@ -56,7 +56,7 @@ data class SalesComparisonMiddleResponse(
 
 /** 중간집계 한 행 — 거래처 단위. */
 data class SalesComparisonMiddleItem(
-    val accountId: Int,
+    val accountId: Long,
     val accountCode: String,
     val accountName: String,
     val accountBranchName: String?,
@@ -97,7 +97,7 @@ data class SalesComparisonDetailResponse(
 
 /** 상세 한 행 — 사원 × 거래처 단위. */
 data class SalesComparisonDetailItem(
-    val accountId: Int,
+    val accountId: Long,
     val accountCode: String,
     val accountName: String,
     val accountBranchName: String?,

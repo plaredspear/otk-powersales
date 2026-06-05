@@ -32,7 +32,7 @@ class MfeisThisMonthRevenueBatchServiceTest {
         )
     }
 
-    private fun account(id: Int, externalKey: String?): Account = mockk {
+    private fun account(id: Long, externalKey: String?): Account = mockk {
         every { this@mockk.id } returns id
         every { this@mockk.externalKey } returns externalKey
     }

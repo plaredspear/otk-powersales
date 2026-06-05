@@ -309,7 +309,7 @@ class MyAccountServiceTest {
     }
 
     private fun createAccount(
-        id: Int = 1,
+        id: Long = 1L,
         externalKey: String = "1025172",
         name: String = "(유)경산식품",
         address1: String? = "전라남도 목포시",

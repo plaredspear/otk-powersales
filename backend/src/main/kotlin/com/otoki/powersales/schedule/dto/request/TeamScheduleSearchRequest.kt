@@ -23,7 +23,7 @@ data class TeamScheduleSearchRequest(
     val to: LocalDate?,
 
     val employeeIds: List<Long>? = null,
-    val accountIds: List<Int>? = null,
+    val accountIds: List<Long>? = null,
     val promotionTeams: List<String>? = null,
     val branchCode: String? = null,
 )

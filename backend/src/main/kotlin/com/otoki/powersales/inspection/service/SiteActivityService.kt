@@ -63,7 +63,7 @@ class SiteActivityService(
      */
     fun getList(
         employeeId: Long,
-        accountId: Int?,
+        accountId: Long?,
         category: InspectionCategory?,
         fromDate: LocalDate,
         toDate: LocalDate

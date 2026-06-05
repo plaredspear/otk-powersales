@@ -674,7 +674,7 @@ class AdminScheduleServiceTest {
             verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 &&
                     list[0].employee?.id == 1L &&
-                    list[0].account?.id == 1 &&
+                    list[0].account?.id == 1L &&
                     list[0].typeOfWork1 == TypeOfWork1.DISPLAY &&
                     list[0].confirmed == false
             }) }
@@ -1719,7 +1719,7 @@ class AdminScheduleServiceTest {
             assertThat(result.costCenterCode).isEqualTo("A10010")
             verify { scheduleRepository.save(match<DisplayWorkSchedule> {
                 it.employee?.id == 1L &&
-                    it.account?.id == 1 &&
+                    it.account?.id == 1L &&
                     it.typeOfWork1 == TypeOfWork1.DISPLAY &&
                     it.confirmed == false &&
                     it.costCenterCode == "A10010"
@@ -1871,7 +1871,7 @@ class AdminScheduleServiceTest {
     private fun createSchedule(
         id: Long = 1L,
         employeeId: Long = 1L,
-        accountId: Int = 1,
+        accountId: Long = 1,
         confirmed: Boolean? = false,
         isDeleted: Boolean? = null,
         employee: Employee? = null,
@@ -1911,7 +1911,7 @@ class AdminScheduleServiceTest {
     )
 
     private fun createAccount(
-        id: Int = 1,
+        id: Long = 1L,
         externalKey: String = "ACC001",
         sfid: String = "ACC_SFID_001",
         name: String = "테스트거래처"

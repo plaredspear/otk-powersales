@@ -6,7 +6,7 @@ import com.otoki.powersales.account.entity.Account
  * 조장의 본인 거래처 목록 응답 DTO (Spec #554 P1-B §3.5.2).
  */
 data class LeaderAccountListResponse(
-    val id: Int,
+    val id: Long,
     val name: String?,
     val address1: String?,
     val branchCode: String?,

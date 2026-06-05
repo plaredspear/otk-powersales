@@ -130,7 +130,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     }
 
     override fun findMonthlyByAccountIds(
-        accountIds: List<Int>,
+        accountIds: List<Long>,
         from: LocalDate,
         to: LocalDate,
         promotionTeams: List<String>?
@@ -281,7 +281,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         employeeId: Long,
         fromDate: LocalDate,
         toDate: LocalDate
-    ): List<Int> {
+    ): List<Long> {
         return queryFactory
             .select(teamMemberSchedule.account.id).distinct()
             .from(teamMemberSchedule)
@@ -319,7 +319,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
 
     override fun findWorkSchedulesByEmployeeAndAccountAndMonth(
         employeeId: Long,
-        accountId: Int,
+        accountId: Long,
         from: LocalDate,
         to: LocalDate
     ): List<TeamMemberSchedule> {

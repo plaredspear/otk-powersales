@@ -32,7 +32,7 @@ class AdminDashboardServiceTest {
 
     // -- fixtures --
 
-    private fun account(id: Int, type: AccountType): Account =
+    private fun account(id: Long, type: AccountType): Account =
         Account(id = id, accountType = type, externalKey = "SAP$id")
 
     private fun mfeis(

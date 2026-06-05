@@ -32,7 +32,7 @@ class InspectionController(
     @GetMapping
     fun getList(
         @AuthenticationPrincipal principal: UserPrincipal,
-        @RequestParam(required = false) accountId: Int?,
+        @RequestParam(required = false) accountId: Long?,
         @RequestParam(required = false) category: InspectionCategory?,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fromDate: LocalDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) toDate: LocalDate

@@ -22,7 +22,7 @@ class LastMonthRevenueLookupTest {
     private val today = LocalDate.of(2026, 5, 15)
     private val expectedSalesDate = "202604"
 
-    private fun account(id: Int, externalKey: String?): Account = mockk {
+    private fun account(id: Long, externalKey: String?): Account = mockk {
         every { this@mockk.id } returns id
         every { this@mockk.externalKey } returns externalKey
     }
@@ -58,8 +58,8 @@ class LastMonthRevenueLookupTest {
 
             assertThat(result).containsExactlyInAnyOrderEntriesOf(
                 mapOf(
-                    1 to BigDecimal("12346"),
-                    2 to BigDecimal("1000"),
+                    1L to BigDecimal("12346"),
+                    2L to BigDecimal("1000"),
                 )
             )
         }
@@ -94,7 +94,7 @@ class LastMonthRevenueLookupTest {
 
             val result = lookup.forAccounts(listOf(a1, a2), today = today)
 
-            assertThat(result).containsExactlyEntriesOf(mapOf(1 to BigDecimal("300")))
+            assertThat(result).containsExactlyEntriesOf(mapOf(1L to BigDecimal("300")))
         }
     }
 

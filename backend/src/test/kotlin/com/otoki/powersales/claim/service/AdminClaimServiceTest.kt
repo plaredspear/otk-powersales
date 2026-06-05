@@ -296,7 +296,7 @@ class AdminClaimServiceTest {
     )
 
     private fun createAccount(
-        id: Int = 1,
+        id: Long = 1L,
         name: String = "홍길동 슈퍼"
     ): Account = Account(
         id = id,

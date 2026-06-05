@@ -28,7 +28,7 @@ data class ScheduleListRow(
     val employeeStatus: String?,
     val employeeAppLoginActive: Boolean?,
     val employeeEndDate: LocalDate?,
-    val accountId: Int?,
+    val accountId: Long?,
     val accountCode: String?,
     val accountName: String?,
     val accountType: AccountType?,
@@ -49,7 +49,7 @@ interface DisplayWorkScheduleRepositoryCustom {
         employeeId: Long,
         startDate: LocalDate,
         endDate: LocalDate
-    ): List<Int>
+    ): List<Long>
 
     fun findDistinctStartDatesByEmployeeIdAndDateBetween(
         employeeId: Long,
@@ -75,7 +75,7 @@ interface DisplayWorkScheduleRepositoryCustom {
         latestEndDate: LocalDate
     ): List<DisplayWorkSchedule>
 
-    fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Int>
+    fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Long>
 
     /**
      * @param policyPredicate SF `DisplayWorkScheduleMaster__c` 가시 범위 Predicate
@@ -88,7 +88,7 @@ interface DisplayWorkScheduleRepositoryCustom {
      */
     fun findScheduleList(
         employeeCode: String?,
-        accountIds: List<Int>?,
+        accountIds: List<Long>?,
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
@@ -108,15 +108,15 @@ interface DisplayWorkScheduleRepositoryCustom {
 
     fun findByEmployeeAndStartDate(employeeId: Long, startDate: LocalDate): List<DisplayWorkSchedule>
 
-    fun findByEmployeeAndAccountAndStartDate(employeeId: Long, accountId: Int, startDate: LocalDate): DisplayWorkSchedule?
+    fun findByEmployeeAndAccountAndStartDate(employeeId: Long, accountId: Long, startDate: LocalDate): DisplayWorkSchedule?
 
     fun findByEmployeeAndStartDateBetween(employeeId: Long, start: LocalDate, end: LocalDate): List<DisplayWorkSchedule>
 
-    fun findByEmployeeIdsAndAccountIds(employeeIds: List<Long>, accountIds: List<Int>): List<DisplayWorkSchedule>
+    fun findByEmployeeIdsAndAccountIds(employeeIds: List<Long>, accountIds: List<Long>): List<DisplayWorkSchedule>
 
-    fun findConfirmedByDateRangeAndAccountIds(monthEnd: LocalDate, monthStart: LocalDate, accountIds: List<Int>): List<DisplayWorkSchedule>
+    fun findConfirmedByDateRangeAndAccountIds(monthEnd: LocalDate, monthStart: LocalDate, accountIds: List<Long>): List<DisplayWorkSchedule>
 
-    fun existsConfirmedByEmployeeAndAccountAndDate(employeeId: Long, accountId: Int, workingDate: LocalDate): Boolean
+    fun existsConfirmedByEmployeeAndAccountAndDate(employeeId: Long, accountId: Long, workingDate: LocalDate): Boolean
 
     /**
      * 사원의 오늘 유효한 확정 진열마스터 조회

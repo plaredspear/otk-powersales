@@ -5,7 +5,7 @@ import com.otoki.powersales.claim.entity.Claim
 data class ClaimCreateResponse(
     val id: Long,
     val accountName: String?,
-    val accountId: Int?,
+    val accountId: Long?,
     val productName: String?,
     val productCode: String?,
     val createdAt: String

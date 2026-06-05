@@ -240,7 +240,7 @@ data class TeamMemberScheduleRow(
     val year: String?,
     val month: String?,
     val name: String?,
-    val accountId: Int?,
+    val accountId: Long?,
     val accountExternalKey: String?,
     val accountBranchName: String?,
     val accountName: String?,

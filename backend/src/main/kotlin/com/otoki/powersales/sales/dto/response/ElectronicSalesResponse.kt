@@ -14,7 +14,7 @@ package com.otoki.powersales.sales.dto.response
  *   nullable 이라 생략한다.
  */
 data class ElectronicSalesResponse(
-	val customerId: Int,
+	val customerId: Long,
 	val customerName: String,
 	val sapAccountCode: String,
 	val yearMonth: String,

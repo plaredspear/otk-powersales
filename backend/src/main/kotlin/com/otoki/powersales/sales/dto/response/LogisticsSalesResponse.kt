@@ -16,7 +16,7 @@ package com.otoki.powersales.sales.dto.response
  *   (상온/라면/냉동·냉장). 레거시는 4종이나 현 모바일 UI 범위에 맞춰 3종만 반환.
  */
 data class LogisticsSalesResponse(
-    val customerId: Int,
+    val customerId: Long,
     val customerName: String,
     val sapAccountCode: String,
     val yearMonth: String,

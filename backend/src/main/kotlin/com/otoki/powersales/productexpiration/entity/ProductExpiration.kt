@@ -35,7 +35,7 @@ class ProductExpiration(
     val accountName: String? = null,
 
     @Column(name = "account_id")
-    val accountId: Int? = null,
+    val accountId: Long? = null,
 
     @HCColumn("account_code")
     @Column(name = "account_code", length = 100)

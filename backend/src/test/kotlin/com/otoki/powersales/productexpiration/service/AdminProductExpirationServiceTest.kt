@@ -72,7 +72,7 @@ class AdminProductExpirationServiceTest {
     ) = Employee(id = id, sfid = sfid, employeeCode = employeeCode, name = name, role = role, orgName = orgName)
 
     private fun createAccount(
-        id: Int = 1,
+        id: Long = 1L,
         sfid: String? = "ACC_SFID_001",
         name: String? = "테스트거래처",
         externalKey: String? = "ACC001"
@@ -90,7 +90,7 @@ class AdminProductExpirationServiceTest {
         seq: Int = 0,
         employeeId: Long? = 1L,
         employeeSfid: String? = "EMP_SFID_001",
-        accountId: Int? = 1,
+        accountId: Long? = 1,
         accountName: String? = "테스트거래처",
         accountCode: String? = "ACC001",
         productId: Long? = 1L,

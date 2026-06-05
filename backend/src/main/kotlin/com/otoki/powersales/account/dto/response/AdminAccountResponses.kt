@@ -20,7 +20,7 @@ data class AccountListResponse(
 )
 
 data class AccountListItem(
-    val id: Int,
+    val id: Long,
     val externalKey: String?,
     val name: String?,
     val abcType: String?,
@@ -58,7 +58,7 @@ data class AccountListItem(
  * 거래처코드(`externalKey`)는 화면 식별자로 노출하되, `werk*`/`sales_dept_*` 등 내부 SAP 코드는 제외.
  */
 data class AccountDetailResponse(
-    val id: Int,
+    val id: Long,
     val externalKey: String?,
     val name: String?,
     val accountGroup: String?,
@@ -167,7 +167,7 @@ data class AccountDetailResponse(
  * 매칭 실패 시 NULL.
  */
 data class AdminAccountCreateResponse(
-    val id: Int,
+    val id: Long,
     val name: String,
     val accountGroup: String,
     val employeeCode: String,
@@ -196,7 +196,7 @@ data class AdminAccountCreateResponse(
  * #640 [AdminAccountCreateResponse] 와 별도 (필드 범위 차이 — 본 응답은 수정 가능 일반 필드 광범위 포함).
  */
 data class AdminAccountUpdateResponse(
-    val id: Int,
+    val id: Long,
     val name: String?,
     val accountGroup: String?,
     val employeeCode: String?,

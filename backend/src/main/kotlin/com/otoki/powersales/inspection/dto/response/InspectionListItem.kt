@@ -14,7 +14,7 @@ data class InspectionListItem(
     val id: Long,
     val category: String,
     val accountName: String,
-    val accountId: Int,
+    val accountId: Long,
     val inspectionDate: String,
     val fieldType: String,
     val fieldTypeCode: String

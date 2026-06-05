@@ -23,7 +23,7 @@ data class HomeResponse(
         val employeeName: String,
         val employeeCode: String,
         val accountName: String?,
-        val accountId: Int?,
+        val accountId: Long?,
         val workCategory: String,
         val workType: String?,
         val isCommuteRegistered: Boolean,

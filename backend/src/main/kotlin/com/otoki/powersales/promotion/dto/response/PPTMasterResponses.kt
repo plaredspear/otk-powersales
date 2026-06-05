@@ -15,7 +15,7 @@ data class PPTMasterResponse(
     val employeeId: Long?,
     val employeeCode: String?,
     val employeeName: String?,
-    val accountId: Int?,
+    val accountId: Long?,
     val accountCode: String?,
     val accountName: String?,
     val teamType: ProfessionalPromotionTeamType,

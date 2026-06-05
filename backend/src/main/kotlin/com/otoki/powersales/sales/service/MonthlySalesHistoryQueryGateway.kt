@@ -85,7 +85,7 @@ class MonthlySalesHistoryQueryGateway(
             .findBySalesYearInAndSalesMonthInAndAccountIdIn(
                 salesYears,
                 salesMonths,
-                accountIds.map { it.toInt() },
+                accountIds,
             )
             .toMonthlySalesRows(requestedYearMonths)
     }

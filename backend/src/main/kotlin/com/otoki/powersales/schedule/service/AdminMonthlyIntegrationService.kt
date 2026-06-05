@@ -239,7 +239,7 @@ class AdminMonthlyIntegrationService(
     }
 
     @Transactional
-    fun refreshIntegration(employeeId: Long, accountId: Int, yearMonth: YearMonth) {
+    fun refreshIntegration(employeeId: Long, accountId: Long, yearMonth: YearMonth) {
         val from = yearMonth.atDay(1)
         val to = yearMonth.atEndOfMonth()
 
@@ -433,7 +433,7 @@ class AdminMonthlyIntegrationService(
         // 7. Grouping key → aggregate
         data class GroupKey(
             val employeeId: Long,
-            val accountId: Int,
+            val accountId: Long,
             val workingCategory1: String?,
             val workingCategory3: String?,
             val workingCategory4: String?,
@@ -461,7 +461,7 @@ class AdminMonthlyIntegrationService(
         // 그 외 (당월 / persist 미적용 / 등) 는 calculateAvgClosingAmounts 동기 계산 fallback.
         val yearStr = year.toString()
         val monthStr = String.format("%02d", month)
-        val employeeAccountPersistedAmounts: Map<Pair<Long, Int>, BigDecimal> = grouped.keys
+        val employeeAccountPersistedAmounts: Map<Pair<Long, Long>, BigDecimal> = grouped.keys
             .map { it.employeeId to it.accountId }
             .distinct()
             .mapNotNull { (empId, accId) ->
@@ -561,9 +561,9 @@ class AdminMonthlyIntegrationService(
         year: Int,
         month: Int,
         accounts: List<Account>
-    ): Map<Int, Long> {
+    ): Map<Long, Long> {
         if (accounts.isEmpty()) return emptyMap()
-        val externalKeyToId: Map<String, Int> = accounts
+        val externalKeyToId: Map<String, Long> = accounts
             .filter { it.externalKey != null }
             .associate { it.externalKey!! to it.id }
         if (externalKeyToId.isEmpty()) return emptyMap()
@@ -592,8 +592,8 @@ class AdminMonthlyIntegrationService(
         // spec #680 Q2 옵션 2 — legacy `UpdateThisMonthRevenueBatch.cls:execute` + `get6MonthsAvg` 동등.
         // 양수 (ClosingAmount > 0) 월만 합산 + divider = 양수 count (legacy `dividerMap_6M`).
         // 0/음수 매출 월은 제외 (legacy 의 batch 외 컨트롤러는 미적용이라 비대칭 — 신규는 일관 정책).
-        return histories.groupBy { externalKeyToId[it.sapAccountCode] ?: 0 }
-            .filter { it.key != 0 }
+        return histories.groupBy { externalKeyToId[it.sapAccountCode] ?: 0L }
+            .filter { it.key != 0L }
             .mapValues { (_, rows) ->
                 val positives = rows
                     .mapNotNull { it.abcClosingAmount1 }

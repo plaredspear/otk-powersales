@@ -44,7 +44,7 @@ class AdminElectronicSalesDashboardController(
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
-        @RequestParam(required = false) accountIds: List<Int>?,
+        @RequestParam(required = false) accountIds: List<Long>?,
         @RequestParam(required = false) accountGroup: String?,
         @RequestParam(required = false) customerKeyword: String?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
@@ -69,7 +69,7 @@ class AdminElectronicSalesDashboardController(
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
-        @RequestParam(required = false) accountIds: List<Int>?,
+        @RequestParam(required = false) accountIds: List<Long>?,
         @RequestParam(required = false) accountGroup: String?,
         @RequestParam(required = false) customerKeyword: String?,
         @RequestParam(required = false) sort: String?,
@@ -90,7 +90,7 @@ class AdminElectronicSalesDashboardController(
     @GetMapping("/detail/{customerId}")
     fun getDetail(
         @CurrentDataScope scope: DataScope,
-        @PathVariable customerId: Int,
+        @PathVariable customerId: Long,
         @RequestParam year: Int,
         @RequestParam month: Int,
     ): ResponseEntity<ApiResponse<ElectronicSalesDashboardDetailResponse>> {

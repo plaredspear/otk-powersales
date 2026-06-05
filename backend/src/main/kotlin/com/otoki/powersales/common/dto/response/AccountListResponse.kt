@@ -19,7 +19,7 @@ data class AccountListResponse(
 data class AccountInfo(
     val scheduleId: Long? = null,
     val displayWorkScheduleId: Long? = null,
-    val accountId: Int?,
+    val accountId: Long?,
     val accountName: String,
     val accountTypeCode: String?,
     val workCategory: String,

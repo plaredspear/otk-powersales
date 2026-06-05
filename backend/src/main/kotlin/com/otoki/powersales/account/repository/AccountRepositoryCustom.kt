@@ -46,7 +46,7 @@ interface AccountRepositoryCustom {
      * @param policyPredicate SharingRulePolicyEvaluator 가 합성한 sharing policy Predicate
      * @param id 조회 대상 Account.id
      */
-    fun findAccessibleByPolicyAndId(policyPredicate: Predicate, id: Int): Account?
+    fun findAccessibleByPolicyAndId(policyPredicate: Predicate, id: Long): Account?
 
     /**
      * 좌표 미수신 거래처 조회 — Naver Geocode batch (#637) 진입 조건.
@@ -74,14 +74,14 @@ interface AccountRepositoryCustom {
      *
      * `is_deleted` 가 nullable Boolean 이므로 `IS NULL` 과 `= false` 두 케이스 모두 활성으로 간주.
      */
-    fun findActiveById(id: Int): Account?
+    fun findActiveById(id: Long): Account?
 
     /**
      * 동일 [name] + 활성(미삭제) + 자기 자신 ([id]) 제외 거래처 존재 여부.
      *
      * UPDATE 흐름에서 자기 자신은 중복 검증에서 제외 (`Trigger.oldMap` 비교 동등 효과).
      */
-    fun existsActiveByNameAndIdNot(name: String, id: Int): Boolean
+    fun existsActiveByNameAndIdNot(name: String, id: Long): Boolean
 
     /**
      * SF `UplExcelBtnSchduleMasterController.checkResult` (L174) 정합 —

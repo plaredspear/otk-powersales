@@ -74,7 +74,7 @@ class AdminPPTMasterServiceTest {
     }
 
     private fun createAccount(
-        id: Int = 1,
+        id: Long = 1L,
         externalKey: String? = "SAP001",
         name: String? = "이마트 강남점"
     ): Account {
@@ -84,7 +84,7 @@ class AdminPPTMasterServiceTest {
     private fun createMaster(
         id: Long = 1L,
         employeeId: Long = 1L,
-        accountId: Int = 1,
+        accountId: Long = 1,
         teamType: ProfessionalPromotionTeamType = ProfessionalPromotionTeamType.RAMEN_SALE,
         startDate: LocalDate = LocalDate.of(2026, 3, 1),
         endDate: LocalDate? = null,

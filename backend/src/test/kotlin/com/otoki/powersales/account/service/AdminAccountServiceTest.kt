@@ -180,7 +180,7 @@ class AdminAccountServiceTest {
         fun paginationMeta() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             stubEvaluator(scope)
-            val accounts = (1..20).map { createAccount(id = it, name = "Acc-$it") }
+            val accounts = (1..20).map { createAccount(id = it.toLong(), name = "Acc-$it") }
             every {
                 accountRepository.findAllAccessibleByPolicy(
                     policyPredicate = any(),
@@ -298,7 +298,7 @@ class AdminAccountServiceTest {
     }
 
     private fun createAccount(
-        id: Int = 1,
+        id: Long = 1L,
         name: String? = "테스트 거래처",
         externalKey: String? = "AC000001",
         abcType: String? = "편의점",

@@ -113,7 +113,7 @@ class AdminProductInventoryServiceTest {
             .hasMessageContaining("거래처")
     }
 
-    private fun createAccount(id: Int): Account = Account(id = id, name = "테스트 거래처")
+    private fun createAccount(id: Long): Account = Account(id = id, name = "테스트 거래처")
 
     private fun createProduct(
         productCode: String,

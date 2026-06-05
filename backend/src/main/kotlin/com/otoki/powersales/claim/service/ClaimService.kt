@@ -76,7 +76,7 @@ class ClaimService(
         val employee = employeeRepository.findByIdOrNull(userId)
             ?: throw ClaimInvalidParameterException("사원을 찾을 수 없습니다")
 
-        val account = accountRepository.findByIdOrNull(request.accountId!!.toInt())
+        val account = accountRepository.findByIdOrNull(request.accountId!!)
             ?: throw AccountNotFoundException()
 
         val product = productRepository.findByProductCode(request.productCode!!)
@@ -141,7 +141,7 @@ class ClaimService(
         val claim = findEditableClaim(userId, claimId)
 
         request.accountId?.let {
-            val account = accountRepository.findByIdOrNull(it.toInt())
+            val account = accountRepository.findByIdOrNull(it)
                 ?: throw AccountNotFoundException()
             claim.account = account
             // CC코드 자동 복사 — Account 변경 시 branchCode 로 재복사

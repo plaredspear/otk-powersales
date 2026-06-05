@@ -61,7 +61,7 @@ class AdminSalesComparisonController(
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
-        @RequestParam(required = false) accountIds: List<Int>?
+        @RequestParam(required = false) accountIds: List<Long>?
     ): ResponseEntity<ApiResponse<SalesComparisonMiddleResponse>> {
         val response = adminSalesComparisonService.getMiddle(scope, year, month, costCenterCodes, accountIds ?: emptyList())
         return ResponseEntity.ok(ApiResponse.success(response))
@@ -75,7 +75,7 @@ class AdminSalesComparisonController(
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
-        @RequestParam(required = false) accountIds: List<Int>?,
+        @RequestParam(required = false) accountIds: List<Long>?,
         @RequestParam(required = false) workingCategory1: String?,
         @RequestParam(required = false) workingCategory5: String?
     ): ResponseEntity<ApiResponse<SalesComparisonDetailResponse>> {
@@ -114,7 +114,7 @@ class AdminSalesComparisonController(
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
-        @RequestParam(required = false) accountIds: List<Int>?
+        @RequestParam(required = false) accountIds: List<Long>?
     ): ResponseEntity<ByteArray> = buildExcelResponse(
         adminSalesComparisonService.exportMiddle(scope, year, month, costCenterCodes, accountIds ?: emptyList())
     )
@@ -127,7 +127,7 @@ class AdminSalesComparisonController(
         @RequestParam year: Int,
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
-        @RequestParam(required = false) accountIds: List<Int>?,
+        @RequestParam(required = false) accountIds: List<Long>?,
         @RequestParam(required = false) workingCategory1: String?,
         @RequestParam(required = false) workingCategory5: String?
     ): ResponseEntity<ByteArray> = buildExcelResponse(

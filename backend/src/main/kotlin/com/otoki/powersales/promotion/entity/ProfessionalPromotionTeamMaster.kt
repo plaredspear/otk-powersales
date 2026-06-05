@@ -37,7 +37,7 @@ class ProfessionalPromotionTeamMaster(
     val employeeId: Long? = null,
 
     @Column(name = "account_id")
-    var accountId: Int? = null,
+    var accountId: Long? = null,
 
     @SFField("Account__c")
     @Column(name = "account_sfid", length = 18)
@@ -119,7 +119,7 @@ class ProfessionalPromotionTeamMaster(
         startDate: LocalDate,
         endDate: LocalDate?,
         isConfirmed: Boolean,
-        accountId: Int? = null
+        accountId: Long? = null
     ) {
         this.teamType = teamType
         this.startDate = startDate

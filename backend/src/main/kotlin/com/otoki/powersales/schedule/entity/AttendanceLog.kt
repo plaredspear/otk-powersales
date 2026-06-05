@@ -54,7 +54,7 @@ class AttendanceLog(
     val accountSfid: String? = null,
 
     @Column(name = "account_id")
-    val accountId: Int? = null,
+    val accountId: Long? = null,
 
     @SFField("DKRetail__SecondWorkType__c")
     @Column(name = "second_work_type", length = 255)

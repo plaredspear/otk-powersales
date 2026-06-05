@@ -48,7 +48,7 @@ class OrderDraftService(
 
         val employee = employeeRepository.findById(userId)
             .orElseThrow { OrderDraftAccountForbiddenException() }
-        val account = accountRepository.findById(request.accountId.toInt())
+        val account = accountRepository.findById(request.accountId)
             .orElseThrow { OrderDraftInvalidRequestException("거래처를 찾을 수 없습니다") }
 
         if (account.employeeCode.isNullOrBlank() || account.employeeCode != employee.employeeCode) {
@@ -105,7 +105,7 @@ class OrderDraftService(
      */
     fun findByUserId(userId: Long): OrderDraftDetailResponse? {
         val draft = tmpOrderRepository.findByEmployeeId(userId) ?: return null
-        val account = draft.accountId?.let { accountRepository.findById(it.toInt()).orElse(null) }
+        val account = draft.accountId?.let { accountRepository.findById(it).orElse(null) }
         val productCodes = draft.products.mapNotNull { it.tmpProductCode }.distinct()
         val productNames = productRepository.findByProductCodeIn(productCodes)
             .associate { (it.productCode ?: "") to it.name }

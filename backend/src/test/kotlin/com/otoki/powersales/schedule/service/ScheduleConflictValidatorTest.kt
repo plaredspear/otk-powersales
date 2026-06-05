@@ -27,7 +27,7 @@ class ScheduleConflictValidatorTest {
 
     private val targetEmployeeId = 5012L
     private val workingDate = LocalDate.of(2026, 5, 15)
-    private val accountId = 90234
+    private val accountId = 90234L
 
     @Nested
     @DisplayName("충돌 없음")
@@ -167,7 +167,7 @@ class ScheduleConflictValidatorTest {
         every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()) } returns schedules
     }
 
-    private fun workSchedule(category3: WorkingCategory3, accountIdValue: Int? = null): TeamMemberSchedule {
+    private fun workSchedule(category3: WorkingCategory3, accountIdValue: Long? = null): TeamMemberSchedule {
         val account = accountIdValue?.let { Account(id = it) }
         return TeamMemberSchedule(
             employee = Employee(id = targetEmployeeId, employeeCode = "20300001", name = "팀원"),

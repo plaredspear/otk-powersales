@@ -28,7 +28,7 @@ class AdminMonthlyInputAdequacyServiceTest {
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
 
-    private fun account(id: Int, code: String, name: String, type: AccountType?): Account {
+    private fun account(id: Long, code: String, name: String, type: AccountType?): Account {
         val acc = Account(id = id, externalKey = code)
         acc.name = name
         acc.accountType = type

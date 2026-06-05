@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 /**
  * 거래처 마스터 Repository
  */
-interface AccountRepository : JpaRepository<Account, Int>, AccountRepositoryCustom {
+interface AccountRepository : JpaRepository<Account, Long>, AccountRepositoryCustom {
 
     /**
      * 거래처 외부키(SAP 코드)로 조회
@@ -16,7 +16,7 @@ interface AccountRepository : JpaRepository<Account, Int>, AccountRepositoryCust
     /**
      * 거래처 ID 목록으로 일괄 조회
      */
-    fun findByIdIn(ids: List<Int>): List<Account>
+    fun findByIdIn(ids: List<Long>): List<Account>
 
     /**
      * 지점 코드 목록으로 거래처 일괄 조회 (관리자 대시보드 범위 필터)
@@ -53,5 +53,5 @@ interface AccountRepository : JpaRepository<Account, Int>, AccountRepositoryCust
     /**
      * 거래처 ID 목록 + 삭제되지 않은 거래처 조회 (일반사원용)
      */
-    fun findByIdInAndIsDeletedNot(ids: List<Int>, isDeleted: Boolean): List<Account>
+    fun findByIdInAndIsDeletedNot(ids: List<Long>, isDeleted: Boolean): List<Account>
 }

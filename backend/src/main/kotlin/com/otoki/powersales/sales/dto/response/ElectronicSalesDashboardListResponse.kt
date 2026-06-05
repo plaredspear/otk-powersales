@@ -25,7 +25,7 @@ data class ElectronicSalesDashboardListResponse(
  * @property salesQuantity 전산매출 수량 합계 — POS `SUM(SALES_RQTY)`
  */
 data class ElectronicSalesDashboardListItem(
-    val accountId: Int,
+    val accountId: Long,
     val accountName: String?,
     val sapAccountCode: String?,
     val branchCode: String?,
