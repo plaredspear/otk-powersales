@@ -23,16 +23,18 @@ BEGIN
     END IF;
 END $$;
 
--- 4. PK 전환: employee_code PK DROP → employee_id PK ADD
+-- 4. login_history → employee_info FK DROP (employee_info.employee_code 더 이상 PK 아님)
+--    PK 전환(5)보다 선행해야 한다 — 이 FK 가 employee_info_pkey 인덱스에 의존하므로
+--    먼저 떼지 않으면 employee_info_pkey DROP 이 "other objects depend on it" 으로 실패.
+ALTER TABLE powersales.login_history DROP CONSTRAINT IF EXISTS fk_login_history_employee_info;
+
+-- 5. PK 전환: employee_code PK DROP → employee_id PK ADD
 ALTER TABLE powersales.employee_info ALTER COLUMN employee_id SET NOT NULL;
 ALTER TABLE powersales.employee_info DROP CONSTRAINT IF EXISTS employee_info_pkey;
 ALTER TABLE powersales.employee_info ADD  CONSTRAINT employee_info_pkey PRIMARY KEY (employee_id);
 
--- 5. employee_code 일반 컬럼 잔류 + UNIQUE (HC 자연 키 무결성 보존; nullable 유지)
+-- 6. employee_code 일반 컬럼 잔류 + UNIQUE (HC 자연 키 무결성 보존; nullable 유지)
 ALTER TABLE powersales.employee_info ADD CONSTRAINT employee_info_employee_code_key UNIQUE (employee_code);
-
--- 6. login_history → employee_info FK DROP (employee_info.employee_code 더 이상 PK 아님)
-ALTER TABLE powersales.login_history DROP CONSTRAINT IF EXISTS fk_login_history_employee_info;
 
 -- 7. employee_info.employee_id → employee.employee_id FK 추가 (공유 PK FK)
 ALTER TABLE powersales.employee_info
