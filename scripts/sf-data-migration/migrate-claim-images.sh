@@ -9,24 +9,29 @@
 #   추출 → S3 재업로드 → upload_file 적재해야 한다. cut-over 전까지 반복 실행 가능하도록 전 단계를
 #   스크립트화한다 (각 단계 멱등 / --skip-* 로 부분 재시도).
 #
+# S3 업로드는 기본적으로 AWS 콘솔에서 사용자가 직접 수행한다 (aws CLI 미사용).
+# 스크립트는 콘솔에 그대로 올릴 로컬 산출물을 준비하고, 업로드 대상 경로를 안내한다.
+# (aws CLI 로 자동 업로드까지 원하면 --aws-upload 플래그.)
+#
 # 파이프라인 (단계):
 #   1) query      sf data query (ContentVersion 메타) → <out>/contentversion-claim.csv
-#   2) download   메타 CSV 행별 sf api request (VersionData) → <out>/bin/{CV.Id}.{ext} (증분)
-#   3) s3-images  aws s3 cp <out>/bin/ s3://<bucket>/<image-prefix>/ (이미지 재업로드)
-#   4) build-csv  build-claim-upload-files.main.kts → <out>/upload_files.csv (메타 변환)
-#   5) upload-csv aws s3 cp upload_files.csv s3://<bucket>/<stage1-prefix>/upload_files.csv
-#   6) trigger    (옵션 --trigger) backend Stage1 copy-from-s3(UploadFile) → polling → Stage2 resolve
+#   2) download   메타 CSV 행별 sf api request (VersionData) → <out>/images/{CV.Id}.{ext} (증분)
+#   3) build-csv  build-claim-upload-files.main.kts → <out>/upload_files.csv (메타 변환)
+#   --- 여기까지가 기본. 이후 S3 업로드는 콘솔 수동 (안내 출력) ---
+#   (opt --aws-upload) aws s3 cp <out>/images/ 와 upload_files.csv 를 자동 업로드
+#   (opt --trigger)    backend Stage1 copy-from-s3(UploadFile) → polling → Stage2 resolve
 #
 # 사전 준비:
 #   - sf CLI 인증:   sf org login web --alias <alias>   (또는 sf org list 로 확인)
-#   - AWS 자격증명:  aws configure / AWS_PROFILE / 환경변수 (s3 cp 사용)
-#   - (--trigger 시) backend API 토큰 — --token <JWT> 또는 env BACKEND_TOKEN, --api-base <url>
+#   - (--aws-upload 시) AWS 자격증명:  aws configure / AWS_PROFILE / 환경변수
+#   - (--trigger 시)   backend API 토큰 — --token <JWT> 또는 env BACKEND_TOKEN, --api-base <url>
 #
 # 사용법:
 #   ./migrate-claim-images.sh --org <alias> --bucket <s3-bucket> --stage1-prefix <prefix>
-#   ./migrate-claim-images.sh --org <alias> --bucket <s3-bucket> --stage1-prefix <prefix> \
-#       --trigger --api-base https://<host> --token <JWT>
-#   ./migrate-claim-images.sh ... --skip-query --skip-download   # 변환/업로드만 재시도
+#       → 로컬 준비 + 콘솔 업로드 안내 (S3 업로드는 콘솔에서 직접)
+#   ./migrate-claim-images.sh --org <alias> --bucket <s3-bucket> --stage1-prefix <prefix> --aws-upload
+#       → aws CLI 로 S3 업로드까지 자동
+#   ./migrate-claim-images.sh ... --skip-query --skip-download     # 변환만 재시도
 #
 # SF/AWS CLI 자발 호출 금지 정책: 본 스크립트는 sf/aws 를 래핑하지만 실행 주체는 사용자다.
 
@@ -47,9 +52,8 @@ OUT_DIR="$SCRIPT_DIR/output/claim-images"
 
 SKIP_QUERY=0
 SKIP_DOWNLOAD=0
-SKIP_S3=0
 SKIP_BUILD_CSV=0
-SKIP_UPLOAD_CSV=0
+AWS_UPLOAD=0
 DO_TRIGGER=0
 
 API_BASE="${BACKEND_API_BASE:-}"
@@ -69,9 +73,8 @@ while [[ $# -gt 0 ]]; do
         --out-dir)       OUT_DIR="$2"; shift 2 ;;
         --skip-query)       SKIP_QUERY=1; shift ;;
         --skip-download)    SKIP_DOWNLOAD=1; shift ;;
-        --skip-s3)          SKIP_S3=1; shift ;;
         --skip-build-csv)   SKIP_BUILD_CSV=1; shift ;;
-        --skip-upload-csv)  SKIP_UPLOAD_CSV=1; shift ;;
+        --aws-upload)    AWS_UPLOAD=1; shift ;;
         --trigger)       DO_TRIGGER=1; shift ;;
         --api-base)      API_BASE="$2"; shift 2 ;;
         --token)         TOKEN="$2"; shift 2 ;;
@@ -84,11 +87,12 @@ done
 # 검증
 # -----------------------------------------------------------------------------
 
+# bucket / stage1-prefix 는 콘솔 업로드 경로 안내 + (옵션) aws-upload / trigger 에 쓰인다.
 if [[ -z "$BUCKET" ]]; then
-    echo "[error] --bucket 필수" >&2; exit 1
+    echo "[error] --bucket 필수 (콘솔 업로드 경로 안내 + Stage1 s3Bucket)" >&2; exit 1
 fi
-if [[ -z "$STAGE1_PREFIX" && "$SKIP_UPLOAD_CSV" -eq 0 ]]; then
-    echo "[error] --stage1-prefix 필수 (--skip-upload-csv 시 생략 가능)" >&2; exit 1
+if [[ -z "$STAGE1_PREFIX" ]]; then
+    echo "[error] --stage1-prefix 필수 (upload_files.csv 를 둘 Stage1 CSV prefix)" >&2; exit 1
 fi
 
 SF_ORG_ARGS=()
@@ -97,17 +101,18 @@ if [[ -n "$SF_ORG" ]]; then
 fi
 
 META_CSV="$OUT_DIR/contentversion-claim.csv"
-BIN_DIR="$OUT_DIR/bin"
+IMG_DIR="$OUT_DIR/images"
 UPLOAD_CSV="$OUT_DIR/upload_files.csv"
 
-mkdir -p "$OUT_DIR" "$BIN_DIR"
+mkdir -p "$OUT_DIR" "$IMG_DIR"
 
 echo "[info] out dir       : $OUT_DIR"
 echo "[info] bucket        : $BUCKET"
 echo "[info] image prefix  : $IMAGE_PREFIX"
-echo "[info] stage1 prefix : ${STAGE1_PREFIX:-(skip)}"
+echo "[info] stage1 prefix : $STAGE1_PREFIX"
 echo "[info] sf org        : ${SF_ORG:-(default)}"
 echo "[info] api version   : $SF_API_VERSION"
+echo "[info] s3 upload      : $([[ "$AWS_UPLOAD" -eq 1 ]] && echo 'aws CLI (자동)' || echo '콘솔 수동 (안내만)')"
 echo
 
 # ContentVersion 추출 SOQL — 클레임 첨부만 (Type__c 3종 + RecordId__c 보유).
@@ -123,7 +128,7 @@ if [[ "$SKIP_QUERY" -eq 1 ]]; then
         echo "[error] --skip-query 인데 메타 CSV 없음: $META_CSV" >&2; exit 1
     fi
 else
-    echo "[step 1/6] query ContentVersion 메타 → $META_CSV"
+    echo "[step 1/3] query ContentVersion 메타 → $META_CSV"
     sf data query \
         --query "$CONTENTVERSION_SOQL" \
         --result-format csv \
@@ -136,7 +141,6 @@ echo
 # -----------------------------------------------------------------------------
 # 2) download — VersionData 바이너리 (증분: 이미 있는 파일 skip)
 # -----------------------------------------------------------------------------
-# 메타 CSV 컬럼 인덱스: Id, RecordId__c, Type__c, Title, PathOnClient, FileExtension, ...
 
 ext_of() {
     # $1=FileExtension $2=PathOnClient
@@ -150,14 +154,12 @@ ext_of() {
 if [[ "$SKIP_DOWNLOAD" -eq 1 ]]; then
     echo "[skip] download"
 else
-    echo "[step 2/6] download VersionData → $BIN_DIR (증분)"
+    echo "[step 2/3] download VersionData → $IMG_DIR (증분)"
     local_dl=0; local_skip=0
-    # CSV 파싱 — Id(1), FileExtension(6), PathOnClient(5) 위치는 SOQL SELECT 순서 기준.
-    # OpenCSV 안 쓰고 awk 로 따옴표 처리: sf csv 는 RFC4180. 안전을 위해 python3 로 파싱.
     while IFS=$'\t' read -r cvId fileExt pathOnClient; do
         [[ -z "$cvId" ]] && continue
         ext="$(ext_of "$fileExt" "$pathOnClient")"
-        outfile="$BIN_DIR/$cvId.$ext"
+        outfile="$IMG_DIR/$cvId.$ext"
         if [[ -f "$outfile" ]]; then
             local_skip=$((local_skip + 1))
             continue
@@ -179,20 +181,7 @@ fi
 echo
 
 # -----------------------------------------------------------------------------
-# 3) s3-images — 바이너리 S3 재업로드
-# -----------------------------------------------------------------------------
-
-if [[ "$SKIP_S3" -eq 1 ]]; then
-    echo "[skip] s3-images"
-else
-    echo "[step 3/6] upload images → s3://$BUCKET/$IMAGE_PREFIX/"
-    aws s3 cp "$BIN_DIR/" "s3://$BUCKET/$IMAGE_PREFIX/" --recursive
-    echo "[ok] images uploaded"
-fi
-echo
-
-# -----------------------------------------------------------------------------
-# 4) build-csv — 메타 CSV → upload_files.csv
+# 3) build-csv — 메타 CSV → upload_files.csv
 # -----------------------------------------------------------------------------
 
 if [[ "$SKIP_BUILD_CSV" -eq 1 ]]; then
@@ -201,7 +190,7 @@ if [[ "$SKIP_BUILD_CSV" -eq 1 ]]; then
         echo "[error] --skip-build-csv 인데 upload_files.csv 없음: $UPLOAD_CSV" >&2; exit 1
     fi
 else
-    echo "[step 4/6] build upload_files.csv → $UPLOAD_CSV"
+    echo "[step 3/3] build upload_files.csv → $UPLOAD_CSV"
     kotlinc -script "$SCRIPT_DIR/build-claim-upload-files.main.kts" -- \
         --meta-csv "$META_CSV" \
         --out "$UPLOAD_CSV" \
@@ -209,29 +198,49 @@ else
 fi
 echo
 
+img_count=$(find "$IMG_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
+
 # -----------------------------------------------------------------------------
-# 5) upload-csv — upload_files.csv 를 Stage1 prefix 로 업로드
+# S3 업로드 — 기본: 콘솔 수동 안내 / --aws-upload: aws CLI 자동
 # -----------------------------------------------------------------------------
 
-if [[ "$SKIP_UPLOAD_CSV" -eq 1 ]]; then
-    echo "[skip] upload-csv"
-else
-    echo "[step 5/6] upload CSV → s3://$BUCKET/$STAGE1_PREFIX/upload_files.csv"
+if [[ "$AWS_UPLOAD" -eq 1 ]]; then
+    echo "[s3-upload] aws CLI 로 업로드"
+    echo "  - images → s3://$BUCKET/$IMAGE_PREFIX/"
+    aws s3 cp "$IMG_DIR/" "s3://$BUCKET/$IMAGE_PREFIX/" --recursive
+    echo "  - csv    → s3://$BUCKET/$STAGE1_PREFIX/upload_files.csv"
     aws s3 cp "$UPLOAD_CSV" "s3://$BUCKET/$STAGE1_PREFIX/upload_files.csv"
-    echo "[ok] upload_files.csv uploaded"
+    echo "[ok] s3 업로드 완료"
+else
+    echo "════════════════════════════════════════════════════════════════"
+    echo " 로컬 산출물 준비 완료 — AWS 콘솔에서 아래 두 가지를 업로드하세요"
+    echo "════════════════════════════════════════════════════════════════"
+    echo
+    echo " ① 클레임 이미지 ($img_count 개)"
+    echo "    로컬 : $IMG_DIR/   (폴더 안 파일들)"
+    echo "    대상 : s3://$BUCKET/$IMAGE_PREFIX/"
+    echo "           (콘솔에서 '$IMAGE_PREFIX/' 폴더로 들어가 파일 업로드)"
+    echo
+    echo " ② Stage1 적재용 CSV"
+    echo "    로컬 : $UPLOAD_CSV"
+    echo "    대상 : s3://$BUCKET/$STAGE1_PREFIX/upload_files.csv"
+    echo "           (콘솔에서 '$STAGE1_PREFIX/' 폴더로 들어가 upload_files.csv 업로드)"
+    echo
+    echo " 주의: 이미지 파일명(= {ContentVersion.Id}.{ext})을 바꾸지 마세요."
+    echo "       upload_files.csv 의 UniqueKey__c 와 1:1 로 맞물립니다."
+    echo "════════════════════════════════════════════════════════════════"
 fi
 echo
 
 # -----------------------------------------------------------------------------
-# 6) trigger (옵션) — backend Stage1 (UploadFile) → polling → Stage2 resolve
+# trigger (옵션) — backend Stage1 (UploadFile) → polling → Stage2 resolve
 # -----------------------------------------------------------------------------
 
 if [[ "$DO_TRIGGER" -eq 0 ]]; then
-    echo "[step 6/6] trigger SKIPPED (--trigger 미지정)"
-    echo
-    echo "다음 단계 — web SF Migration 화면에서 수동 실행:"
+    echo "다음 단계 — web SF Migration 화면에서 (S3 업로드 완료 후):"
     echo "  1) Stage1 copy-from-s3 (target=UploadFile, s3KeyPrefix=$STAGE1_PREFIX)"
     echo "  2) Stage2 'UploadFile Parent Resolve'"
+    echo "  (또는 다시 실행: --trigger --api-base <url> --token <JWT>)"
     exit 0
 fi
 
@@ -240,7 +249,7 @@ if [[ -z "$API_BASE" || -z "$TOKEN" ]]; then
     exit 1
 fi
 
-echo "[step 6/6] trigger Stage1 + Stage2 via $API_BASE"
+echo "[trigger] Stage1 + Stage2 via $API_BASE (S3 업로드가 끝났다고 가정)"
 
 auth_hdr=(-H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json")
 
