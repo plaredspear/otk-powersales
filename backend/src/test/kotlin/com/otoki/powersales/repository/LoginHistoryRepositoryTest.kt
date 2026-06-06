@@ -1,7 +1,6 @@
 package com.otoki.powersales.repository
 
 import com.otoki.powersales.common.entity.LoginHistory
-import com.otoki.powersales.employee.entity.EmployeeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -15,7 +14,6 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.common.config.QueryDslConfig
 import com.otoki.powersales.common.repository.LoginHistoryRepository
-import java.time.LocalDateTime
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -29,13 +27,9 @@ class LoginHistoryRepositoryTest {
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
 
-    private lateinit var testEmployee: EmployeeInfo
-
     @BeforeEach
     fun setUp() {
         loginHistoryRepository.deleteAll()
-        testEntityManager.clear()
-        testEmployee = testEntityManager.persistAndFlush(EmployeeInfo(employeeCode = "E001"))
         testEntityManager.clear()
     }
 
@@ -88,27 +82,6 @@ class LoginHistoryRepositoryTest {
             // Then
             assertThat(result).hasSize(2)
             assertThat(result.map { it.id }.distinct()).hasSize(2)
-        }
-    }
-
-    @Nested
-    @DisplayName("EmployeeInfo relation 테스트")
-    inner class EmployeeInfoRelationTests {
-
-        @Test
-        @DisplayName("relation LAZY 로딩 - LoginHistory 조회 후 employeeInfo 접근 -> EmployeeInfo 로딩 성공")
-        fun lazyLoadEmployeeInfo() {
-            // Given
-            val history = LoginHistory(empCode = "E001")
-            val saved = testEntityManager.persistAndFlush(history)
-            testEntityManager.clear()
-
-            // When
-            val result = loginHistoryRepository.findById(saved.id).get()
-
-            // Then
-            assertThat(result.employeeInfo).isNotNull
-            assertThat(result.employeeInfo!!.employeeCode).isEqualTo("E001")
         }
     }
 }

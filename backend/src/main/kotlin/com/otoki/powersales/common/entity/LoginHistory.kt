@@ -2,7 +2,6 @@ package com.otoki.powersales.common.entity
 
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HerokuOnly
-import com.otoki.powersales.employee.entity.EmployeeInfo
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -26,9 +25,4 @@ class LoginHistory(
     @HCColumn("inst_date")
     @Column(name = "login_at", nullable = false)
     val instDate: LocalDateTime = LocalDateTime.now(),
-
-    // -- Relations --
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_code", insertable = false, updatable = false)
-    val employeeInfo: EmployeeInfo? = null,
 )

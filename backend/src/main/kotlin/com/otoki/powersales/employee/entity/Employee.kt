@@ -6,8 +6,6 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.converter.CrmWorkTypeConverter
 import com.otoki.powersales.employee.entity.converter.GenderConverter
 import jakarta.persistence.*
-import org.hibernate.annotations.NotFound
-import org.hibernate.annotations.NotFoundAction
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -275,22 +273,16 @@ class Employee(
     lastAgreementNumber: String? = null
 ) : BaseEntity() {
 
-    // --- employee_info @OneToOne 관계 ---
+    // --- employee_info @OneToOne 관계 (PK 공유) ---
+    // employee_info.employee_id = employee.employee_id 공유 PK 1:1. EmployeeInfo 가 owning side(@MapsId).
+    // 영속 시 부모(this) PK 가 자식 PK 로 전파된다.
     // LAZY 동작은 build.gradle.kts 의 hibernate.enhancement.enableLazyInitialization 에 의존.
-    // enhance 미적용 시 JPA 명세상 non-PK OneToOne LAZY 는 즉시 SELECT 로 fallback (N+1 위험).
 
-    @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(
-        name = "employee_code",
-        referencedColumnName = "employee_code",
-        insertable = false,
-        updatable = false,
-        foreignKey = ForeignKey(ConstraintMode.NO_CONSTRAINT)
-    )
-    @NotFound(action = NotFoundAction.IGNORE)
-    // employeeCode 가 null(사번 미보유 사원)이면 EmployeeInfo(PK=employee_code NOT NULL)를 만들 수 없으므로 null.
+    @OneToOne(mappedBy = "employee", cascade = [CascadeType.ALL], fetch = FetchType.LAZY, orphanRemoval = true)
+    // employeeCode 가 null(사번 미보유 사원)이면 인증/디바이스 정보 대상이 아니므로 EmployeeInfo 를 만들지 않는다.
     var employeeInfo: EmployeeInfo? = employeeCode?.let {
         EmployeeInfo(
+            employee = this,
             employeeCode = it,
             password = password,
             passwordChangeRequired = passwordChangeRequired,
@@ -330,10 +322,11 @@ class Employee(
 
     private fun ensureEmployeeInfo(): EmployeeInfo {
         if (employeeInfo == null) {
-            // EmployeeInfo PK 는 employee_code (NOT NULL). 사번 미보유 사원은 인증/디바이스 정보 대상이 아니다.
+            // 사번 미보유 사원은 인증/디바이스 정보 대상이 아니므로 EmployeeInfo 를 가질 수 없다.
+            // EmployeeInfo.employeeId 는 @PrimaryKeyJoinColumn 으로 영속 시 employee.id 가 전파된다.
             val code = employeeCode
                 ?: throw IllegalStateException("사번(employee_code) 미보유 사원은 EmployeeInfo(인증/디바이스 정보)를 가질 수 없습니다")
-            employeeInfo = EmployeeInfo(employeeCode = code)
+            employeeInfo = EmployeeInfo(employee = this, employeeCode = code)
         }
         return employeeInfo!!
     }

@@ -81,6 +81,8 @@ const SapInboundPage = lazy(() => import('@/pages/admin/tools/sap-inbound/SapInb
 const SapOutboundPage = lazy(() => import('@/pages/admin/tools/sap-outbound/SapOutboundPage'));
 const SfMigrationPage = lazy(() => import('@/pages/admin/tools/sf-migration/SfMigrationPage'));
 const SfMigrationStage1Page = lazy(() => import('@/pages/admin/tools/sf-migration-stage1/SfMigrationStage1Page'));
+const HerokuMigrationPage = lazy(() => import('@/pages/admin/tools/heroku-migration/HerokuMigrationPage'));
+const HerokuMigrationStage1Page = lazy(() => import('@/pages/admin/tools/heroku-migration-stage1/HerokuMigrationStage1Page'));
 const CacheManagementPage = lazy(() => import('@/pages/admin/cache/CacheManagementPage'));
 const AgreementWordsPage = lazy(() => import('@/pages/admin/agreement-words/AgreementWordsPage'));
 const UserListPage = lazy(() => import('@/pages/users/UserListPage'));
@@ -343,6 +345,8 @@ export const router = createBrowserRouter(
             // URL 은 기억·접근 용이성 위해 단축: Stage 1 적재 = sf-migration-1, Stage 2 FK = sf-migration-2.
             { path: '/admin/tools/sf-migration-2', element: <LazyWrapper><SfMigrationPage /></LazyWrapper> },
             { path: '/admin/tools/sf-migration-1', element: <LazyWrapper><SfMigrationStage1Page /></LazyWrapper> },
+            { path: '/admin/tools/heroku-migration-2', element: <LazyWrapper><HerokuMigrationPage /></LazyWrapper> },
+            { path: '/admin/tools/heroku-migration-1', element: <LazyWrapper><HerokuMigrationStage1Page /></LazyWrapper> },
             {
               element: <PermissionRoute entity="agreement_word" operation="READ" />,
               children: [
