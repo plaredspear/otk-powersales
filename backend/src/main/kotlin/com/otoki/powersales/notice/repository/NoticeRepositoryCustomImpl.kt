@@ -2,6 +2,7 @@ package com.otoki.powersales.notice.repository
 
 import com.otoki.powersales.notice.entity.Notice
 import com.otoki.powersales.notice.enums.NoticeCategory
+import com.otoki.powersales.notice.enums.NoticeScope
 import com.otoki.powersales.notice.entity.QNotice.Companion.notice
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
@@ -21,6 +22,7 @@ class NoticeRepositoryCustomImpl(
     ): Page<Notice> {
         val where = BooleanBuilder()
             .and(buildDeletedCondition())
+            .and(buildScopeCondition())
             .and(buildCategoryCondition(category, branch))
             .and(buildSearchCondition(search))
 
@@ -81,6 +83,7 @@ class NoticeRepositoryCustomImpl(
             .selectFrom(notice)
             .where(
                 buildDeletedCondition(),
+                buildScopeCondition(),
                 notice.category.eq(NoticeCategory.COMPANY)
                     .or(notice.category.eq(NoticeCategory.BRANCH).and(notice.branch.eq(branch)))
                     .or(notice.category.eq(NoticeCategory.EDUCATION))
@@ -92,6 +95,20 @@ class NoticeRepositoryCustomImpl(
 
     private fun buildDeletedCondition(): Predicate {
         return notice.isDeleted.isNull.or(notice.isDeleted.eq(false))
+    }
+
+    /**
+     * 공개범위(scope) 노출 조건 — 레거시 `communityMapper.xml#selectNotice` 의
+     * `AND (dkretail__scope__c = '전체' OR dkretail__scope__c = '현장여사원')` 재현.
+     *
+     * 레거시는 scope 화이트리스트('전체' + '현장여사원')로 '영업사원' 공지를 홈/목록에서 제외한다
+     * (예: 【판매전략실】 공지는 scope='영업사원'). 신규 SF 피크리스트 `DKRetail__Scope__c` 는
+     * `영업사원`/`현장여사원` 2값만 존재하며 '전체' 는 레거시 UI 상수일 뿐 실데이터에 없으므로,
+     * "영업사원 제외"(= scope IS NULL OR scope = 현장여사원) 로 변환한다.
+     * null scope(미지정/구 '전체' 잔재)는 레거시 '전체' 의도에 맞춰 노출 유지.
+     */
+    private fun buildScopeCondition(): Predicate {
+        return notice.scope.isNull.or(notice.scope.ne(NoticeScope.SALES_EMPLOYEE))
     }
 
     private fun buildAdminCategoryCondition(category: NoticeCategory?): Predicate? {

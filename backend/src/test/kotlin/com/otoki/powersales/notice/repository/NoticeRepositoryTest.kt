@@ -3,6 +3,7 @@ package com.otoki.powersales.notice.repository
 import com.otoki.powersales.common.config.QueryDslConfig
 import com.otoki.powersales.notice.entity.Notice
 import com.otoki.powersales.notice.enums.NoticeCategory
+import com.otoki.powersales.notice.enums.NoticeScope
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -45,6 +46,7 @@ class NoticeRepositoryTest {
         branch: String? = null,
         contents: String? = null,
         isDeleted: Boolean? = null,
+        scope: NoticeScope? = null,
         createdDate: LocalDateTime? = LocalDateTime.now()
     ): Notice {
         val notice = Notice(
@@ -52,7 +54,8 @@ class NoticeRepositoryTest {
             category = category,
             branch = branch,
             contents = contents,
-            isDeleted = isDeleted
+            isDeleted = isDeleted,
+            scope = scope
         )
         val persisted = testEntityManager.persistAndFlush(notice)
         if (createdDate != null) {
@@ -177,6 +180,22 @@ class NoticeRepositoryTest {
 
             // Then
             assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("영업사원 공개범위 공지(예: 판매전략실)는 제외된다 - 레거시 scope 화이트리스트")
+        fun excludesSalesEmployeeScope() {
+            // Given
+            val now = LocalDateTime.now()
+            persistNotice(name = "현장여사원 공지", category = NoticeCategory.COMPANY, scope = NoticeScope.FIELD_FEMALE_EMPLOYEE, createdDate = now.minus(1, java.time.temporal.ChronoUnit.HOURS))
+            persistNotice(name = "scope 미지정 공지", category = NoticeCategory.COMPANY, scope = null, createdDate = now.minus(2, java.time.temporal.ChronoUnit.HOURS))
+            persistNotice(name = "판매전략실 공지", category = NoticeCategory.COMPANY, scope = NoticeScope.SALES_EMPLOYEE, createdDate = now.minus(3, java.time.temporal.ChronoUnit.HOURS))
+
+            // When
+            val result = noticeRepository.findRecentNotices("부산1지점")
+
+            // Then
+            assertThat(result.map { it.name }).containsExactly("현장여사원 공지", "scope 미지정 공지")
         }
     }
 
@@ -324,6 +343,23 @@ class NoticeRepositoryTest {
             // Then
             assertThat(result.totalElements).isEqualTo(1)
             assertThat(result.content[0].name).isEqualTo("정상 공지")
+        }
+
+        @Test
+        @DisplayName("영업사원 공개범위 공지(예: 판매전략실)는 제외된다 - 레거시 scope 화이트리스트")
+        fun excludesSalesEmployeeScope() {
+            // Given
+            persistNotice(name = "현장여사원 공지", category = NoticeCategory.COMPANY, scope = NoticeScope.FIELD_FEMALE_EMPLOYEE)
+            persistNotice(name = "scope 미지정 공지", category = NoticeCategory.COMPANY, scope = null)
+            persistNotice(name = "판매전략실 공지", category = NoticeCategory.COMPANY, scope = NoticeScope.SALES_EMPLOYEE)
+
+            // When
+            val result = noticeRepository.findNotices(null, null, "서울지점", pageable)
+
+            // Then
+            assertThat(result.totalElements).isEqualTo(2)
+            assertThat(result.content.map { it.name })
+                .containsExactlyInAnyOrder("현장여사원 공지", "scope 미지정 공지")
         }
 
         @Test
