@@ -50,7 +50,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 SF_ORG=""
 SF_API_VERSION="60.0"
-IMAGE_PREFIX="uploads/claim/migrated"
+# 이미지 S3 객체 key prefix (= upload_file.unique_key 의 prefix = web/mobile 조회 경로).
+# public/ 하위 — web/mobile 이 anonymous 로 접근하는 public 폴더. 신규 직접 등록(buildKey)도
+# 추후 본 위치에 맞춰 정리 예정 (현재는 마이그레이션 쪽을 권위 기준으로 먼저 확정).
+# --image-prefix 로 override 가능.
+IMAGE_PREFIX="public/uploads/claim/migrated"
 # 클레임 이미지만 적재 — 이미지 확장자 화이트리스트 (PDF 등 비이미지 첨부 제외).
 IMAGE_EXTS="jpg,jpeg,png,gif,bmp,webp,heic,heif"
 # Stage1 CSV prefix — 클레임 전용 고정값. 레거시 Stage1 CSV (sf-migration/input/) 의

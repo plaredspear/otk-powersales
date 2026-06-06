@@ -51,7 +51,7 @@
  *   kotlinc -script build-claim-upload-files.main.kts -- \
  *       --meta-csv <ContentDocumentLink 메타 CSV> \
  *       --out <claim_upload_files.csv> \
- *       [--image-prefix uploads/claim/migrated]
+ *       [--image-prefix public/uploads/claim/migrated]
  *
  * 멱등: 입력이 같으면 출력도 동일. 반복 실행 안전 (출력 파일 덮어씀).
  */
@@ -70,7 +70,7 @@ import java.io.FileWriter
 
 var metaCsvPath: String? = null
 var outPath: String? = null
-var imagePrefix = "uploads/claim/migrated"
+var imagePrefix = "public/uploads/claim/migrated"
 // 이미지 확장자 화이트리스트 (클레임 이미지만 적재 — PDF 등 비이미지 첨부 제외).
 var imageExts = "jpg,jpeg,png,gif,bmp,webp,heic,heif"
 
@@ -83,7 +83,7 @@ run {
             "--image-prefix" -> imagePrefix = it.next().trimEnd('/')
             "--image-exts" -> imageExts = it.next()
             "-h", "--help" -> {
-                println("Usage: kotlinc -script build-claim-upload-files.main.kts -- --meta-csv <in> --out <out> [--image-prefix uploads/claim/migrated] [--image-exts jpg,jpeg,png,...]")
+                println("Usage: kotlinc -script build-claim-upload-files.main.kts -- --meta-csv <in> --out <out> [--image-prefix public/uploads/claim/migrated] [--image-exts jpg,jpeg,png,...]")
                 kotlin.system.exitProcess(0)
             }
             else -> {
