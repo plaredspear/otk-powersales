@@ -582,6 +582,75 @@ class Stage1TargetsTest {
     }
 
     @Nested
+    @DisplayName("ClaimImageUploadFile — 클레임 이미지 전용 독립 타겟 (ALL 만, DEPENDENCY_ORDER 제외)")
+    inner class ClaimImageUploadFileTarget {
+
+        @Test
+        @DisplayName("ALL 맵에 등록 — get('ClaimImageUploadFile') 조회 가능")
+        fun registeredInAll() {
+            val meta = Stage1Targets.get("ClaimImageUploadFile")
+            assertThat(meta).withFailMessage("ClaimImageUploadFile 미등록").isNotNull
+            assertThat(meta!!.tableName).isEqualTo("upload_file")
+            assertThat(meta.csvFileName).isEqualTo("claim_upload_files.csv")
+        }
+
+        @Test
+        @DisplayName("sObjectName null — ContentDocumentLink 경유 (SOQL 추출 대상 아님 → verify-metadata skip)")
+        fun sObjectNameNull() {
+            val meta = Stage1Targets.get("ClaimImageUploadFile")!!
+            assertThat(meta.sObjectName)
+                .withFailMessage("클레임 이미지는 ContentDocumentLink 경유라 sObjectName 은 null 이어야 함")
+                .isNull()
+        }
+
+        @Test
+        @DisplayName("DEPENDENCY_ORDER 미등록 — 드롭다운(list) / copy-all 일괄에 노출 안 됨")
+        fun notInDependencyOrder() {
+            assertThat(Stage1Targets.DEPENDENCY_ORDER)
+                .withFailMessage("ClaimImageUploadFile 은 DEPENDENCY_ORDER 에 없어야 함 (독립 실행 전용)")
+                .doesNotContain("ClaimImageUploadFile")
+            assertThat(Stage1Targets.list())
+                .withFailMessage("드롭다운 목록(list)에 노출되면 안 됨")
+                .doesNotContain("ClaimImageUploadFile")
+            assertThat(Stage1Targets.listWithCsv().map { it.targetName })
+                .withFailMessage("listWithCsv(드롭다운+csv)에 노출되면 안 됨")
+                .doesNotContain("ClaimImageUploadFile")
+        }
+
+        @Test
+        @DisplayName("fields 는 UploadFile 과 동일 — 같은 upload_file 테이블/컬럼 매핑 공유")
+        fun fieldsSameAsUploadFile() {
+            val claim = Stage1Targets.get("ClaimImageUploadFile")!!
+            val legacy = Stage1Targets.get("UploadFile")!!
+            assertThat(claim.fields)
+                .withFailMessage("ClaimImageUploadFile.fields 는 UploadFile.fields 와 동일해야 함")
+                .isEqualTo(legacy.fields)
+        }
+
+        @Test
+        @DisplayName("csvFileName 은 UploadFile 과 달라야 함 — 레거시 upload_files.csv 와 분리")
+        fun csvFileNameDistinctFromUploadFile() {
+            val claim = Stage1Targets.get("ClaimImageUploadFile")!!
+            val legacy = Stage1Targets.get("UploadFile")!!
+            assertThat(claim.csvFileName)
+                .withFailMessage("레거시 upload_files.csv 와 파일명이 같으면 같은 폴더 적재 시 덮어쓰기 위험")
+                .isNotEqualTo(legacy.csvFileName)
+        }
+
+        @Test
+        @DisplayName("preClear=false + conflictUpdate=null — 기존 upload_file row 무영향 (ON CONFLICT DO NOTHING)")
+        fun preClearFalseConflictNull() {
+            val meta = Stage1Targets.get("ClaimImageUploadFile")!!
+            assertThat(meta.preClear)
+                .withFailMessage("preClear=true 면 적재 시 upload_file 전체 TRUNCATE — 레거시 row 소실")
+                .isFalse
+            assertThat(meta.conflictUpdate)
+                .withFailMessage("conflictUpdate 는 null (ON CONFLICT DO NOTHING) — sfid 충돌 시 기존 row 보존")
+                .isNull()
+        }
+    }
+
+    @Nested
     @DisplayName("listWithCsv — SINGLE 모드 파일명 자동조립 메타")
     inner class ListWithCsv {
 

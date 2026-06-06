@@ -1248,6 +1248,30 @@ object Stage1Targets {
         ),
     )
 
+    /**
+     * 클레임 이미지 전용 upload_file 적재 타겟.
+     *
+     * 클레임(DKRetail__Claim__c) 첨부 이미지는 레거시에서 SF Files(ContentVersion)에만 저장되어
+     * UploadFile__c 추출(= [UPLOAD_FILE]) 에 잡히지 않는다. ContentDocumentLink → ContentVersion
+     * 추출 → S3 재업로드 후, 같은 upload_file 테이블에 적재하되 CSV 는 독립 파일명/경로를 쓴다
+     * (레거시 upload_files.csv 와 분리). 적재 후 parent 연결은 [UPLOAD_FILE] 과 동일하게
+     * Stage2 upload-file-polymorphic-parent (record_sfid 직접 조인) 가 자동 처리한다.
+     *
+     * 본 타겟은 [ALL] 에만 등록하고 [DEPENDENCY_ORDER] 에는 등록하지 않는다 — UI 드롭다운 /
+     * copy-all 일괄에는 노출되지 않고, 클레임 이미지 전용 UI 가 targetName 을 직접 지정해
+     * single copy-from-s3 로만 호출한다. UploadFile 드롭다운은 레거시 추출분만 적재 (기존 패턴 보존).
+     *
+     * fields 는 [UPLOAD_FILE] 과 동일 (같은 테이블/컬럼). sObjectName 은 null — SOQL 추출 대상이
+     * 아니라 ContentDocumentLink 경유이므로 verify-metadata @SFField 정합 검사에서 skip 된다.
+     */
+    private val CLAIM_IMAGE_UPLOAD_FILE = EntityMetadata(
+        targetName = "ClaimImageUploadFile",
+        sObjectName = null,
+        tableName = "upload_file",
+        csvFileName = "claim_upload_files.csv",
+        fields = UPLOAD_FILE.fields,
+    )
+
     private val SUGGESTION = EntityMetadata(
         targetName = "Suggestion",
         sObjectName = "DKRetail__Proposal__c",
@@ -1681,6 +1705,9 @@ object Stage1Targets {
         SUGGESTION,
         TEAM_MEMBER_SCHEDULE,
         UPLOAD_FILE,
+        // 클레임 이미지 전용 — ALL 에만 등록 (DEPENDENCY_ORDER 미등록 → 드롭다운/copy-all 제외).
+        // 클레임 이미지 전용 UI 가 single copy-from-s3 로만 호출한다.
+        CLAIM_IMAGE_UPLOAD_FILE,
         USER_ROLE,
         PROFILE,
         // spec #790 — SF Sharing 메타
