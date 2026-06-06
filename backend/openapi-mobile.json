@@ -1957,6 +1957,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseUserInfo" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/UserInfo"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "AttendanceRegisterRequest" : {
         "properties" : {
           "displayWorkScheduleId" : {
@@ -3001,6 +3030,9 @@
       },
       "HomeResponse" : {
         "properties" : {
+          "attendanceApplicable" : {
+            "type" : "boolean"
+          },
           "attendanceSummary" : {
             "$ref" : "#/components/schemas/AttendanceSummaryInfo"
           },
@@ -5782,6 +5814,24 @@
         "operationId" : "logout",
         "responses" : {
           "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/api/v1/mobile/auth/me" : {
+      "get" : {
+        "operationId" : "getMe",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUserInfo"
+                }
+              }
+            },
             "description" : "OK"
           }
         },
