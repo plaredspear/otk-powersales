@@ -42,9 +42,9 @@ class UploadFileSFAnnotationTest {
         private val mapping = SFSchemaUtils.getSFMapping(UploadFile::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 13 (기존 8 + Spec #712 신규 5)")
+        @DisplayName("매핑 키 수 = 15 (기존 8 + Spec #712 신규 5 + audit CreatedDate + LastModifiedDate)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(14)
+            assertThat(mapping).hasSize(15)
         }
 
         @Test
@@ -52,9 +52,10 @@ class UploadFileSFAnnotationTest {
         fun existingFields() {
             assertThat(mapping["Name"]).isEqualTo("name")
             assertThat(mapping["UniqueKey__c"]).isEqualTo("unique_key")
-            assertThat(mapping["RecordId__c"]).isEqualTo("record_id")
+            assertThat(mapping["RecordId__c"]).isEqualTo("record_sfid")
             assertThat(mapping["Size__c"]).isEqualTo("size")
-            assertThat(mapping["Object__c"]).isEqualTo("parent_type")
+            // Object__c → object_type (SF 원본 보존). parent_type 은 Stage2 가 object_type 기준 파생 (@SFField 미부착).
+            assertThat(mapping["Object__c"]).isEqualTo("object_type")
             assertThat(mapping["Url__c"]).isEqualTo("url")
             assertThat(mapping["UploadKbn__c"]).isEqualTo("upload_kbn")
             assertThat(mapping["FileId__c"]).isEqualTo("file_id")
@@ -65,6 +66,7 @@ class UploadFileSFAnnotationTest {
         fun spec712NewFields() {
             assertThat(mapping["IsDeleted"]).isEqualTo("is_deleted")
             assertThat(mapping["CreatedDate"]).isEqualTo("created_at")
+            assertThat(mapping["LastModifiedDate"]).isEqualTo("updated_at")
             assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
             assertThat(mapping["CreatedById"]).isEqualTo("created_by_sfid")
             assertThat(mapping["LastModifiedById"]).isEqualTo("last_modified_by_sfid")
@@ -86,6 +88,13 @@ class UploadFileSFAnnotationTest {
         @DisplayName("parent_id (entity-only 다형성 sfid) 에 @SFField 미부착")
         fun parentIdHasNoSfField() {
             val field = UploadFile::class.java.getDeclaredField("parentId")
+            assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
+        }
+
+        @Test
+        @DisplayName("parent_type (Stage2 파생, 신규 시스템 값) 에 @SFField 미부착")
+        fun parentTypeHasNoSfField() {
+            val field = UploadFile::class.java.getDeclaredField("parentType")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
         }
 

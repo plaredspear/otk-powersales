@@ -256,6 +256,10 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
  *                  자체가 sharedTo 본문 element 의 DeveloperName 으로만 식별).
  *                  target_id 채움은 NaturalKey FK Service 의 sharing_rule_target 전용 분기
  *                  (target_developer_name + target_type) 가 처리. sfid prefix 경로 skip.
+ * - record       : upload_file.record_sfid 는 parent_type 분기로 claim/notice/proposal/site_activity
+ *                  를 가리키는 polymorphic. 단일 (refTable, refIdColumn) 로 표현 불가 →
+ *                  일반 FK substep 에서 제외하고, SfMigrationStage2Service.runUploadFilePolymorphicParent()
+ *                  가 (parent_type, record_sfid) → parent_id 로 전용 처리.
  *
  * 비고: product_code 는 과거 "code 기반 lookup(sfid 아님)" 으로 오분류돼 여기 있었으나,
  *      SF NewProduct__c.Product_Code__c describe = reference/18 → DKRetail__Product__c
@@ -266,6 +270,7 @@ internal val SKIP_FK_PREFIXES: Set<String> = setOf(
     "related",
     "user_or_group",
     "target",
+    "record",
 )
 
 /**

@@ -38,15 +38,23 @@ class UploadFile(
     @Column(name = "unique_key", length = 500)
     val uniqueKey: String? = null,
 
+    // SF RecordId__c = 부모 SObject 의 sfid (parent_type 별로 claim/notice/proposal/site_activity).
+    // *_sfid 패턴으로 명명 — Stage2 polymorphic-parent substep 이 (parent_type, record_sfid) → parent_id 변환.
     @SFField("RecordId__c")
-    @Column(name = "record_id", length = 40)
-    val recordId: String? = null,
+    @Column(name = "record_sfid", length = 40)
+    val recordSfid: String? = null,
 
     @SFField("Size__c")
     @Column(name = "size", length = 100)
     val fileSize: String? = null,
 
+    // SF Object__c 원본 (부모 SObject API 명). Stage1 이 직접 적재.
     @SFField("Object__c")
+    @Column(name = "object_type", length = 40)
+    val objectType: String? = null,
+
+    // 신규 시스템 parent_type — Stage2 가 object_type 기준으로 파생 (DB DEFAULT 'UNKNOWN').
+    // SF 직접 매핑 아님 (@SFField 미부착). 신규 INSERT 경로는 UploadFileParentTypes 상수 명시 지정.
     @Column(name = "parent_type", nullable = false, length = 40)
     val parentType: String = "UNKNOWN",
 
@@ -83,8 +91,10 @@ class UploadFile(
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 
-    // SystemModstamp: @SFField 부여 안 함 (§6.3 note)
+    // updated_at ← SF LastModifiedDate (BaseEntity / UserRole 동일 관행). 마이그레이션 row 는
+    // Stage1 이 SF LastModifiedDate 를 명시 적재, 신규 INSERT/UPDATE 는 @LastModifiedDate auditing.
     @LastModifiedDate
+    @SFField("LastModifiedDate")
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now(),
 

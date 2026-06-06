@@ -86,7 +86,7 @@ class SfMigrationStage2Controller(
     }
 
     /**
-     * UploadFile polymorphic parent resolve — record_id (SF Id text) → parent_id (Long FK).
+     * UploadFile polymorphic parent resolve — record_sfid (SF Id text) → parent_id (Long FK).
      *
      * fk substep 직후 1회 호출. 매핑 표는 [com.otoki.powersales.common.storage.UPLOAD_FILE_POLYMORPHIC_PARENTS].
      */
