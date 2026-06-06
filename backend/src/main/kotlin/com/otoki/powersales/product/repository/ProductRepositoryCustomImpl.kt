@@ -3,6 +3,9 @@ package com.otoki.powersales.product.repository
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.product.enums.ProductStatus
 import com.otoki.powersales.product.entity.QProduct.Companion.product
+import com.otoki.powersales.product.entity.QProductBarcode.Companion.productBarcode
+import com.querydsl.core.types.dsl.BooleanExpression
+import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -11,6 +14,34 @@ import org.springframework.data.support.PageableExecutionUtils
 class ProductRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : ProductRepositoryCustom {
+
+    companion object {
+        /** 레거시 제품검색 소분류(category3) 고정 필터 값 (label.properties: 가정/업소). */
+        private val ORDERABLE_CATEGORY3 = listOf("가정", "업소")
+    }
+
+    /**
+     * 모바일 제품검색(영업사원용) 고정 필터 — 레거시 productMapper.xml `selectProduct` 의
+     * 고정 WHERE 조건을 이식한다.
+     *  1) 발주 단위(product.unit)와 일치하는 바코드가 등록된 제품만
+     *     (레거시: `b.productbarcode__c IS NOT NULL AND a.dkretail__unit__c = b.productunit__c`)
+     *  2) 소분류(category3) = '가정' 또는 '업소'
+     *  3) productStatus IS NULL (활성 제품 — 단종/숨김 등 상태값이 찍힌 제품 제외)
+     */
+    private fun orderableProductFilter(): BooleanExpression {
+        val unitMatchedBarcodeExists = JPAExpressions.selectOne()
+            .from(productBarcode)
+            .where(
+                productBarcode.productId.eq(product.id),
+                productBarcode.unit.eq(product.unit),
+                productBarcode.barcode.isNotNull,
+            )
+            .exists()
+
+        return unitMatchedBarcodeExists
+            .and(product.productCategory3.`in`(ORDERABLE_CATEGORY3))
+            .and(product.productStatus.isNull)
+    }
 
     override fun searchForAdmin(
         keyword: String?,
@@ -93,8 +124,9 @@ class ProductRepositoryCustomImpl(
     override fun searchByText(query: String, pageable: Pageable): Page<Product> {
         val pattern = "%${query.lowercase()}%"
 
-        val where = product.name.lower().like(pattern)
+        val searchPredicate = product.name.lower().like(pattern)
             .or(product.productCode.lower().like(pattern))
+        val where = orderableProductFilter().and(searchPredicate)
 
         val content = queryFactory
             .selectFrom(product)
@@ -118,9 +150,10 @@ class ProductRepositoryCustomImpl(
         val lowerPattern = "%${query.lowercase()}%"
         val rawPattern = "%$query%"
 
-        val where = product.name.lower().like(lowerPattern)
+        val searchPredicate = product.name.lower().like(lowerPattern)
             .or(product.productCode.lower().like(lowerPattern))
             .or(product.logisticsBarcode.like(rawPattern))
+        val where = orderableProductFilter().and(searchPredicate)
 
         val content = queryFactory
             .selectFrom(product)

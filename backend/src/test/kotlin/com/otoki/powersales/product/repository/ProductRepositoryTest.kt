@@ -1,6 +1,8 @@
 package com.otoki.powersales.product.repository
 
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.entity.ProductBarcode
+import com.otoki.powersales.product.enums.ProductStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -44,7 +46,13 @@ class ProductRepositoryTest {
             createProduct("오뚜기카레_약간매운맛100G", "19110001", "8801045573001", "즉석식품", "카레"),
             createProduct("오뚜기마요네스500G", "20110001", "8801045575001", "소스", "마요네스")
         )
-        products.forEach { testEntityManager.persistAndFlush(it) }
+        products.forEach { product ->
+            val saved = testEntityManager.persistAndFlush(product)
+            // 모바일 제품검색 고정 필터(단위 일치 바코드 존재)를 만족시키기 위한 바코드 시드
+            testEntityManager.persistAndFlush(
+                createBarcode(productId = saved.id, unit = saved.unit, barcode = saved.logisticsBarcode)
+            )
+        }
         testEntityManager.clear()
     }
 
@@ -249,7 +257,10 @@ class ProductRepositoryTest {
         productCode: String,
         logisticsBarcode: String,
         category1: String? = null,
-        category2: String? = null
+        category2: String? = null,
+        category3: String? = "가정",
+        unit: String = "EA",
+        productStatus: ProductStatus? = null
     ): Product {
         return Product(
             name = productName,
@@ -258,7 +269,102 @@ class ProductRepositoryTest {
             storageCondition = StorageCondition.ROOM_TEMP,
             shelfLife = "7개월",
             productCategory1 = category1,
-            productCategory2 = category2
+            productCategory2 = category2,
+            productCategory3 = category3,
+            unit = unit,
+            productStatus = productStatus
         )
+    }
+
+    private fun createBarcode(
+        productId: Long,
+        unit: String?,
+        barcode: String?
+    ): ProductBarcode {
+        return ProductBarcode(
+            productId = productId,
+            unit = unit,
+            barcode = barcode
+        )
+    }
+
+    // ========== 모바일 제품검색 고정 필터 (레거시 selectProduct 이식) ==========
+
+    @Nested
+    @DisplayName("제품검색 고정 필터 - 단위 일치 바코드 / category3(가정·업소) / productStatus null")
+    inner class OrderableFilter {
+
+        @Test
+        @DisplayName("단위 일치 바코드가 없으면 검색 결과에서 제외된다")
+        fun excludesProductWithoutBarcode() {
+            testEntityManager.persistAndFlush(
+                createProduct("바코드없는라면", "99990001", "8801045579990")
+            )
+            // 바코드 미시드
+            testEntityManager.clear()
+
+            val result = productRepository.searchByText("바코드없는라면", PageRequest.of(0, 20))
+
+            assertThat(result.content).isEmpty()
+        }
+
+        @Test
+        @DisplayName("바코드 단위가 제품 단위와 다르면 제외된다")
+        fun excludesProductWithUnitMismatchedBarcode() {
+            val saved = testEntityManager.persistAndFlush(
+                createProduct("단위불일치라면", "99990002", "8801045579991", unit = "EA")
+            )
+            testEntityManager.persistAndFlush(createBarcode(saved.id, "BOX", "8801045579991"))
+            testEntityManager.clear()
+
+            val result = productRepository.searchByText("단위불일치라면", PageRequest.of(0, 20))
+
+            assertThat(result.content).isEmpty()
+        }
+
+        @Test
+        @DisplayName("소분류(category3)가 가정/업소가 아니면 제외된다")
+        fun excludesProductNotInOrderableCategory3() {
+            val saved = testEntityManager.persistAndFlush(
+                createProduct("기타카테고리라면", "99990003", "8801045579992", category3 = "기타")
+            )
+            testEntityManager.persistAndFlush(createBarcode(saved.id, "EA", "8801045579992"))
+            testEntityManager.clear()
+
+            val result = productRepository.searchByText("기타카테고리라면", PageRequest.of(0, 20))
+
+            assertThat(result.content).isEmpty()
+        }
+
+        @Test
+        @DisplayName("업소 소분류 제품도 검색된다")
+        fun includesEopsoCategory3() {
+            val saved = testEntityManager.persistAndFlush(
+                createProduct("업소용라면", "99990004", "8801045579993", category3 = "업소")
+            )
+            testEntityManager.persistAndFlush(createBarcode(saved.id, "EA", "8801045579993"))
+            testEntityManager.clear()
+
+            val result = productRepository.searchByText("업소용라면", PageRequest.of(0, 20))
+
+            assertThat(result.content).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("productStatus 가 설정된 제품(비활성)은 제외된다")
+        fun excludesProductWithNonNullStatus() {
+            val saved = testEntityManager.persistAndFlush(
+                createProduct(
+                    "단종라면", "99990005", "8801045579994",
+                    productStatus = ProductStatus.PLACEHOLDER
+                )
+            )
+            testEntityManager.persistAndFlush(createBarcode(saved.id, "EA", "8801045579994"))
+            testEntityManager.clear()
+
+            val result = productRepository.searchByText("단종라면", PageRequest.of(0, 20))
+
+            assertThat(result.content).isEmpty()
+        }
     }
 }
