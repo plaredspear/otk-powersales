@@ -2,17 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_router.dart';
-import '../../domain/entities/product.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
+import '../../core/utils/throttled_tap_mixin.dart';
 import '../providers/product_search_provider.dart';
+import '../providers/product_search_state.dart';
 import '../widgets/product_search/empty_search_guide.dart';
+import '../widgets/product_search/product_card.dart';
 import '../widgets/product_search/product_search_app_bar.dart';
 
 /// 제품검색 화면
 ///
-/// 검색어를 입력하고 검색을 실행하는 화면입니다.
-/// 검색 결과가 있으면 결과 화면으로 이동합니다.
+/// 검색어를 입력해 검색하고, 결과를 같은 화면에 그대로 표시한다.
+/// (별도 결과 화면으로 전환하지 않는다 — 레거시 단일 화면 UX와 동일.)
 class ProductSearchPage extends ConsumerStatefulWidget {
-  /// 제품 선택 모드 — 결과 화면에서 고른 제품을 호출부로 반환(pop)한다.
+  /// 제품 선택 모드 — 카드 탭 시 선택한 제품을 호출부로 반환(pop)한다.
+  /// 클레임/점검 등록 폼의 "제품 선택"에서 진입한 경우 true.
   final bool selectionMode;
 
   const ProductSearchPage({super.key, this.selectionMode = false});
@@ -21,12 +27,15 @@ class ProductSearchPage extends ConsumerStatefulWidget {
   ConsumerState<ProductSearchPage> createState() => _ProductSearchPageState();
 }
 
-class _ProductSearchPageState extends ConsumerState<ProductSearchPage> {
+class _ProductSearchPageState extends ConsumerState<ProductSearchPage>
+    with ThrottledTapMixin {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     // 이전 검색어가 있으면 복원
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = ref.read(productSearchProvider);
@@ -38,30 +47,24 @@ class _ProductSearchPageState extends ConsumerState<ProductSearchPage> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
+  /// 스크롤 감지 → 무한 스크롤 페이지네이션
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(productSearchProvider.notifier).loadNextPage();
+    }
+  }
+
+  /// 검색 실행 — 결과는 같은 화면에 표시한다 (화면 전환 없음).
   Future<void> _onSearch() async {
-    final notifier = ref.read(productSearchProvider.notifier);
-    await notifier.search();
-    if (!mounted) return;
-
-    final state = ref.read(productSearchProvider);
-    if (!state.hasSearched || state.isLoading || state.errorMessage != null) {
-      return;
-    }
-
-    // 결과 화면으로 이동 (선택 모드 전달)
-    final selected = await AppRouter.navigateTo<Product>(
-      context,
-      AppRouter.productSearchResult,
-      arguments: widget.selectionMode,
-    );
-    // 선택 모드: 결과에서 고른 제품을 다시 호출부로 반환
-    if (widget.selectionMode && selected != null && mounted) {
-      Navigator.of(context).pop(selected);
-    }
+    FocusScope.of(context).unfocus();
+    await ref.read(productSearchProvider.notifier).search();
   }
 
   void _onBarcodeTap() {
@@ -105,9 +108,99 @@ class _ProductSearchPageState extends ConsumerState<ProductSearchPage> {
         onChanged: (value) => notifier.updateQuery(value),
         onSearch: canSearch ? _onSearch : null,
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : EmptySearchGuide(hasSearched: false, onBarcodeTap: _onBarcodeTap),
+      body: _buildBody(state),
+    );
+  }
+
+  Widget _buildBody(ProductSearchState state) {
+    if (state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // 검색 전 안내 / 검색 후 결과 없음
+    if (!state.hasSearched) {
+      return EmptySearchGuide(hasSearched: false, onBarcodeTap: _onBarcodeTap);
+    }
+    if (state.isEmpty) {
+      return const EmptySearchGuide(hasSearched: true);
+    }
+
+    // 검색 결과
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 결과 건수 표시
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.sm,
+          ),
+          child: Text(
+            '제품 (${state.totalElements})',
+            style: AppTypography.labelLarge.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        const Divider(height: 1, color: AppColors.divider),
+        Expanded(child: _buildResultList(state)),
+      ],
+    );
+  }
+
+  Widget _buildResultList(ProductSearchState state) {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      itemCount: state.products.length + (state.isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        // 로딩 인디케이터 (마지막 아이템)
+        if (index == state.products.length) {
+          return const Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final product = state.products[index];
+        return ProductCard(
+          product: product,
+          showActions: !widget.selectionMode,
+          onTap: () => throttledTap(() {
+            // 선택 모드: 고른 제품을 호출부로 반환
+            if (widget.selectionMode) {
+              Navigator.of(context).pop(product);
+              return;
+            }
+            AppRouter.navigateTo(
+              context,
+              AppRouter.productDetail,
+              arguments: product.productCode,
+            );
+          }),
+          onClaimTap: widget.selectionMode
+              ? null
+              : () => throttledTap(
+                  () => AppRouter.navigateTo(
+                    context,
+                    AppRouter.claimRegister,
+                    arguments: (
+                      productCode: product.productCode,
+                      productName: product.productName,
+                    ),
+                  ),
+                ),
+          onOrderTap: widget.selectionMode
+              ? null
+              : () => throttledTap(
+                  () => AppRouter.navigateTo(
+                    context,
+                    AppRouter.orderForm,
+                    arguments: product.productCode,
+                  ),
+                ),
+        );
+      },
     );
   }
 }

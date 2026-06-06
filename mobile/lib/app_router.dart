@@ -23,7 +23,6 @@ import 'presentation/pages/order_form_page.dart';
 import 'presentation/pages/product_detail_page.dart';
 import 'presentation/pages/product_search_page.dart';
 import 'presentation/pages/my_accounts_page.dart';
-import 'presentation/pages/product_search_result_page.dart';
 import 'presentation/pages/product_expiration_list_page.dart';
 import 'presentation/pages/suggestion_detail_page.dart';
 import 'presentation/pages/suggestion_list_page.dart';
@@ -69,7 +68,6 @@ class AppRouter {
   static const String attendanceComplete = '/attendance/complete';
   static const String myAccounts = '/my-accounts';
   static const String productSearch = '/product-search';
-  static const String productSearchResult = '/product-search/result';
   static const String productDetail = '/product/detail';
   static const String orderList = '/order-list';
   static const String orderDetail = '/order-detail';
@@ -129,11 +127,6 @@ class AppRouter {
           final selectionMode =
               ModalRoute.of(context)?.settings.arguments as bool? ?? false;
           return ProductSearchPage(selectionMode: selectionMode);
-        },
-        productSearchResult: (context) {
-          final selectionMode =
-              ModalRoute.of(context)?.settings.arguments as bool? ?? false;
-          return ProductSearchResultPage(selectionMode: selectionMode);
         },
         productDetail: (context) {
           final productCode =
