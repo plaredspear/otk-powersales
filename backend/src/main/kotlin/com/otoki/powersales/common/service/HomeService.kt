@@ -106,6 +106,11 @@ class HomeService(
 
         val todaySchedules = eventInfos + displayInfos
 
+        // 출근/근태 영역 노출 대상 여부 (레거시 home.jsp: appauthority ∈ {여사원, 조장} 만 노출)
+        // 지점장 / AccountViewAll / null(미매핑) 은 출근 영역 비노출 — 모바일이 이 플래그로 카드 자체를 숨긴다.
+        val attendanceApplicable =
+            employee.role == AppAuthority.WOMAN || employee.role == AppAuthority.LEADER
+
         // 출근 현황 집계
         val attendanceSummary = HomeResponse.AttendanceSummaryInfo(
             totalCount = todaySchedules.size,
@@ -145,6 +150,7 @@ class HomeService(
         return HomeResponse(
             todaySchedules = todaySchedules,
             attendanceSummary = attendanceSummary,
+            attendanceApplicable = attendanceApplicable,
             safetyCheckRequired = safetyCheckRequired,
             expiryAlert = expiryAlert,
             notices = notices,

@@ -31,6 +31,7 @@ class HomeRepositoryImpl implements HomeRepository {
     return HomeData(
       todaySchedules: todaySchedules,
       attendanceSummary: attendanceSummary,
+      attendanceApplicable: response.attendanceApplicable,
       safetyCheckRequired: response.safetyCheckRequired,
       expiryAlert: expiryAlert,
       notices: notices,

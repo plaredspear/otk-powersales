@@ -130,35 +130,39 @@ class _HomePageState extends ConsumerState<HomePage>
             _buildAppBar(),
 
             // #1 스케줄 카드 (Transform.translate -55 로 노란 헤더 겹침)
-            Transform.translate(
-              offset: const Offset(0, -AppSpacing.homeCardOverlap),
-              child: Padding(
-                padding: horizontalGutter,
-                child: ScheduleCard(
-                  schedules: homeData.todaySchedules,
-                  currentDate: homeData.currentDate,
-                  attendanceSummary: homeData.attendanceSummary,
-                  userRole: userRole,
-                  onRegisterTap: () => throttledTapAsync(() async {
-                    await _handleRegisterTap(userRole);
-                    if (mounted) {
-                      ref.read(homeProvider.notifier).refresh();
-                    }
-                  }),
-                  onScheduleTap: (schedule) {
-                    final date =
-                        DateTime.tryParse(homeData.currentDate) ?? DateTime.now();
-                    AppRouter.navigateTo(
-                      context,
-                      AppRouter.myScheduleDetail,
-                      arguments: date,
-                    );
-                  },
+            // 출근/근태 대상(여사원/조장)만 노출. 지점장 등은 카드 자체를 숨김.
+            if (homeData.attendanceApplicable)
+              Transform.translate(
+                offset: const Offset(0, -AppSpacing.homeCardOverlap),
+                child: Padding(
+                  padding: horizontalGutter,
+                  child: ScheduleCard(
+                    schedules: homeData.todaySchedules,
+                    currentDate: homeData.currentDate,
+                    attendanceSummary: homeData.attendanceSummary,
+                    userRole: userRole,
+                    onRegisterTap: () => throttledTapAsync(() async {
+                      await _handleRegisterTap(userRole);
+                      if (mounted) {
+                        ref.read(homeProvider.notifier).refresh();
+                      }
+                    }),
+                    onScheduleTap: (schedule) {
+                      final date =
+                          DateTime.tryParse(homeData.currentDate) ??
+                              DateTime.now();
+                      AppRouter.navigateTo(
+                        context,
+                        AppRouter.myScheduleDetail,
+                        arguments: date,
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
 
             // 본문 그라데이션 배경 (스케줄 카드 이후 콘텐츠)
+            // 카드가 있을 때만 -55 겹침. 카드 미노출 시 헤더 바로 아래에서 시작.
             Container(
               width: double.infinity,
               decoration: const BoxDecoration(
@@ -172,7 +176,9 @@ class _HomePageState extends ConsumerState<HomePage>
                 ),
               ),
               child: Transform.translate(
-                offset: const Offset(0, -AppSpacing.homeCardOverlap),
+                offset: homeData.attendanceApplicable
+                    ? const Offset(0, -AppSpacing.homeCardOverlap)
+                    : Offset.zero,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

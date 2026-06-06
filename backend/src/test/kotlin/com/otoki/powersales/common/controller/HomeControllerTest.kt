@@ -50,6 +50,7 @@ class HomeControllerTest : MobileControllerTestSupport() {
                     )
                 ),
                 attendanceSummary = HomeResponse.AttendanceSummaryInfo(totalCount = 3, registeredCount = 1),
+                attendanceApplicable = true,
                 safetyCheckRequired = true,
                 expiryAlert = HomeResponse.ExpiryAlertInfo(
                     branchName = "부산1지점",
@@ -129,6 +130,7 @@ class HomeControllerTest : MobileControllerTestSupport() {
                     )
                 ),
                 attendanceSummary = HomeResponse.AttendanceSummaryInfo(totalCount = 5, registeredCount = 2),
+                attendanceApplicable = true,
                 safetyCheckRequired = false,
                 expiryAlert = null,
                 notices = listOf(
@@ -164,6 +166,7 @@ class HomeControllerTest : MobileControllerTestSupport() {
             val mockResponse = HomeResponse(
                 todaySchedules = emptyList(),
                 attendanceSummary = HomeResponse.AttendanceSummaryInfo(totalCount = 0, registeredCount = 0),
+                attendanceApplicable = true,
                 safetyCheckRequired = false,
                 expiryAlert = null,
                 notices = emptyList(),
