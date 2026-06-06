@@ -49,6 +49,8 @@ SF_ORG=""
 SF_API_VERSION="60.0"
 BUCKET=""
 IMAGE_PREFIX="uploads/claim/migrated"
+# 클레임 이미지만 적재 — 이미지 확장자 화이트리스트 (PDF 등 비이미지 첨부 제외).
+IMAGE_EXTS="jpg,jpeg,png,gif,bmp,webp,heic,heif"
 STAGE1_PREFIX=""
 OUT_DIR="$SCRIPT_DIR/output/claim-images"
 
@@ -73,6 +75,7 @@ while [[ $# -gt 0 ]]; do
         --api-version)   SF_API_VERSION="$2"; shift 2 ;;
         --bucket)        BUCKET="$2"; shift 2 ;;
         --image-prefix)  IMAGE_PREFIX="${2%/}"; shift 2 ;;
+        --image-exts)    IMAGE_EXTS="$2"; shift 2 ;;
         --stage1-prefix) STAGE1_PREFIX="${2%/}"; shift 2 ;;
         --out-dir)       OUT_DIR="$2"; shift 2 ;;
         --skip-query)       SKIP_QUERY=1; shift ;;
@@ -126,14 +129,18 @@ echo "[info] stage1 prefix : $STAGE1_PREFIX"
 echo "[info] sf org        : ${SF_ORG:-(default)}"
 echo "[info] api version   : $SF_API_VERSION"
 echo "[info] s3 upload      : $([[ "$AWS_UPLOAD" -eq 1 ]] && echo 'aws CLI (자동)' || echo '콘솔 수동 (안내만)')"
+echo "[info] image exts     : $IMAGE_EXTS"
 echo "[info] limit         : ${LIMIT:-(전체)}"
 echo
 
-# ContentVersion 추출 — 클레임 첨부만 (Type__c 3종 + RecordId__c 보유).
-CV_WHERE="WHERE Type__c IN ('클레임','일부인','영수증') AND RecordId__c != null"
-CV_SELECT="SELECT Id, RecordId__c, Type__c, Title, PathOnClient, FileExtension, ContentSize, CreatedDate, LastModifiedDate FROM ContentVersion $CV_WHERE"
+# 클레임 첨부 추출 — claim↔파일 연결은 ContentDocumentLink.LinkedEntityId = claim.Id 다.
+# (ContentVersion.RecordId__c / Type__c 는 운영 미사용. SF UI 의 Util.contentdocument 조회 경로와 동일.)
+# 각 ContentDocument 의 최신 버전(LatestPublishedVersionId)을 다운로드 단위로 쓴다.
+# 이미지 여부는 다운로드/build-csv 단계에서 ContentDocument.FileExtension(화이트리스트)로 거른다.
+CDL_WHERE="WHERE LinkedEntityId IN (SELECT Id FROM DKRetail__Claim__c)"
+CDL_SELECT="SELECT LinkedEntityId, ContentDocumentId, ContentDocument.LatestPublishedVersionId, ContentDocument.Title, ContentDocument.FileExtension, ContentDocument.ContentSize, ContentDocument.CreatedDate, ContentDocument.LastModifiedDate FROM ContentDocumentLink $CDL_WHERE"
 if [[ -n "$LIMIT" ]]; then
-    CV_SELECT="$CV_SELECT LIMIT $LIMIT"
+    CDL_SELECT="$CDL_SELECT LIMIT $LIMIT"
 fi
 
 # -----------------------------------------------------------------------------
@@ -142,11 +149,12 @@ fi
 
 echo "[count] 추출 대상 건수 확인 중..."
 total_target="$(sf data query \
-    --query "SELECT COUNT() FROM ContentVersion $CV_WHERE" \
+    --query "SELECT COUNT() FROM ContentDocumentLink $CDL_WHERE" \
     --result-format json \
     --api-version "$SF_API_VERSION" \
     ${SF_ORG_ARGS[@]+"${SF_ORG_ARGS[@]}"} | python3 -c 'import sys,json; print(json.load(sys.stdin).get("result",{}).get("totalSize",""))')"
-echo "[count] ContentVersion (클레임/일부인/영수증) 전체: ${total_target} 건"
+echo "[count] 클레임에 링크된 ContentDocumentLink 전체: ${total_target} 건"
+echo "[count] (이 중 이미지 확장자만 적재됨 — 비이미지 첨부는 build-csv 에서 제외)"
 if [[ -n "$LIMIT" ]]; then
     echo "[count] 이번 실행 추출 대상(--limit): $LIMIT 건 (전체 중 일부)"
 fi
@@ -158,7 +166,7 @@ if [[ "$COUNT_ONLY" -eq 1 ]]; then
 fi
 
 # -----------------------------------------------------------------------------
-# 1) query — ContentVersion 메타 CSV
+# 1) query — ContentDocumentLink 메타 CSV
 # -----------------------------------------------------------------------------
 
 if [[ "$SKIP_QUERY" -eq 1 ]]; then
@@ -167,9 +175,9 @@ if [[ "$SKIP_QUERY" -eq 1 ]]; then
         echo "[error] --skip-query 인데 메타 CSV 없음: $META_CSV" >&2; exit 1
     fi
 else
-    echo "[step 1/3] query ContentVersion 메타 → $META_CSV${LIMIT:+ (LIMIT $LIMIT)}"
+    echo "[step 1/3] query ContentDocumentLink 메타 → $META_CSV${LIMIT:+ (LIMIT $LIMIT)}"
     sf data query \
-        --query "$CV_SELECT" \
+        --query "$CDL_SELECT" \
         --result-format csv \
         --api-version "$SF_API_VERSION" \
         ${SF_ORG_ARGS[@]+"${SF_ORG_ARGS[@]}"} > "$META_CSV"
@@ -178,26 +186,41 @@ fi
 echo
 
 # -----------------------------------------------------------------------------
-# 2) download — VersionData 바이너리 (증분: 이미 있는 파일 skip)
+# 2) download — 최신 ContentVersion(VersionData) 바이너리 (이미지만, 증분)
 # -----------------------------------------------------------------------------
+# 이미지 확장자 화이트리스트 (download 필터 — build-csv 와 동일 기준).
+
+is_image_ext() {
+    local e="$1"
+    local IFS=','
+    for x in $IMAGE_EXTS; do
+        [[ "${e,,}" == "${x,,}" ]] && return 0
+    done
+    return 1
+}
 
 ext_of() {
-    # $1=FileExtension $2=PathOnClient
-    local fe="$1" poc="$2"
+    # $1=FileExtension $2=Title
+    local fe="$1" title="$2"
     fe="${fe#.}"
     if [[ -n "$fe" ]]; then echo "${fe,,}"; return; fi
-    if [[ "$poc" == *.* ]]; then echo "${poc##*.}" | tr '[:upper:]' '[:lower:]'; return; fi
+    if [[ "$title" == *.* ]]; then echo "${title##*.}" | tr '[:upper:]' '[:lower:]'; return; fi
     echo "jpg"
 }
 
 if [[ "$SKIP_DOWNLOAD" -eq 1 ]]; then
     echo "[skip] download"
 else
-    echo "[step 2/3] download VersionData → $IMG_DIR (증분)"
-    local_dl=0; local_skip=0
-    while IFS=$'\t' read -r cvId fileExt pathOnClient; do
+    echo "[step 2/3] download VersionData (이미지만) → $IMG_DIR (증분)"
+    local_dl=0; local_skip=0; local_nonimg=0
+    # CSV 행: LatestPublishedVersionId(=CV.Id), FileExtension, Title
+    while IFS=$'\t' read -r cvId fileExt title; do
         [[ -z "$cvId" ]] && continue
-        ext="$(ext_of "$fileExt" "$pathOnClient")"
+        ext="$(ext_of "$fileExt" "$title")"
+        if ! is_image_ext "$ext"; then
+            local_nonimg=$((local_nonimg + 1))
+            continue
+        fi
         outfile="$IMG_DIR/$cvId.$ext"
         if [[ -f "$outfile" ]]; then
             local_skip=$((local_skip + 1))
@@ -213,9 +236,13 @@ import csv, sys
 with open(sys.argv[1], newline="") as f:
     r = csv.DictReader(f)
     for row in r:
-        print("\t".join([row.get("Id","").strip(), row.get("FileExtension","").strip(), row.get("PathOnClient","").strip()]))
+        print("\t".join([
+            row.get("ContentDocument.LatestPublishedVersionId","").strip(),
+            row.get("ContentDocument.FileExtension","").strip(),
+            row.get("ContentDocument.Title","").strip(),
+        ]))
 ' "$META_CSV")
-    echo "[ok] downloaded=$local_dl  skipped(existing)=$local_skip"
+    echo "[ok] downloaded=$local_dl  skipped(existing)=$local_skip  skipped(non-image)=$local_nonimg"
 fi
 echo
 
