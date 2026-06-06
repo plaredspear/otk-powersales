@@ -104,9 +104,17 @@ class ProductSearchNotifier extends StateNotifier<ProductSearchState> {
         page: nextPage,
       );
 
+      // productCode 기준 중복 제거 — offset 페이지네이션 경계/동기화로 같은
+      // 제품이 다음 페이지에 다시 와도 화면에 중복 카드가 뜨지 않도록 방어.
+      final seen = state.products.map((p) => p.productCode).toSet();
+      final merged = [
+        ...state.products,
+        ...result.products.where((p) => seen.add(p.productCode)),
+      ];
+
       state = state.copyWith(
         isLoadingMore: false,
-        products: [...state.products, ...result.products],
+        products: merged,
         totalElements: result.totalElements,
         currentPage: nextPage,
         isLastPage: result.isLast,

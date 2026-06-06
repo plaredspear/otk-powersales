@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/theme/app_spacing.dart';
@@ -163,10 +164,10 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
 
                 const Divider(height: AppSpacing.xl, color: AppColors.border),
 
-                // 본문
-                Text(
+                // 본문 (HTML 렌더링)
+                HtmlWidget(
                   detail.content,
-                  style: AppTypography.bodyMedium.copyWith(
+                  textStyle: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textPrimary,
                     height: 1.6,
                   ),
