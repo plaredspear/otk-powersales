@@ -40,5 +40,9 @@ class EducationViewHistory(
 
     @HCColumn("empcode__c")
     @Column(name = "emp_code", length = 40)
-    val empCode: String? = null
+    val empCode: String? = null,
+
+    @HCColumn("costcentercode__c")
+    @Column(name = "cost_center_code", length = 40)
+    val costCenterCode: String? = null
 )

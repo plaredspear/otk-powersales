@@ -1,9 +1,11 @@
 package com.otoki.powersales.employee.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.entity.AuditedEntity
 import com.otoki.powersales.common.salesforce.HCColumn
 import com.otoki.powersales.common.salesforce.HerokuOnly
 import jakarta.persistence.*
+import org.springframework.data.annotation.CreatedDate
+import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
 
 /**
@@ -52,8 +54,27 @@ class EmployeeInfo(
     val gpsYnDate: LocalDateTime? = null,
 
     @Column(name = "last_agreement_number", length = 80)
-    var lastAgreementNumber: String? = null
-) : BaseEntity() {
+    var lastAgreementNumber: String? = null,
+
+    /**
+     * Heroku 원본 생성/수정 시각.
+     *
+     * BaseEntity 의 createdAt/updatedAt 은 SF 표준 컬럼명(`createddate`/`lastmodifieddate`)으로
+     * `@HCColumn` 이 고정돼 있어 Heroku `employee_mng` 의 `inst_date`/`upd_date` 와 매핑되지 않는다.
+     * BaseEntity 수정은 다른 엔티티에 영향을 주고, BaseEntity 상속 후 생성자 override 는
+     * QueryDSL APT 가 부모·자식 양쪽에 path 를 생성해 충돌한다. 따라서 EducationPost / Tmp* 와 동일하게
+     * audit 필드를 직접 소유하는 AuditedEntity 패턴을 사용해 `@HCColumn` 을 자유롭게 재지정한다.
+     */
+    @HCColumn("inst_date")
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    var createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @HCColumn("upd_date")
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    var updatedAt: LocalDateTime = LocalDateTime.now()
+) : AuditedEntity() {
 
     @Id
     @Column(name = "employee_id")
