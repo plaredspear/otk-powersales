@@ -27,7 +27,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   bool _rememberEmployeeNumber = false;
   bool _autoLogin = false;
-  bool _isInitialized = false;
+  bool _prefilledFromStorage = false;
 
   @override
   void dispose() {
@@ -38,17 +38,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   /// 저장된 사번과 설정을 로드
+  ///
+  /// 저장된 사번 로드(`initialize()`)는 비동기라 LoginScreen 첫 빌드 시점엔
+  /// 아직 `savedEmployeeNumber`가 null일 수 있다. 따라서 값이 실제로 채워졌을
+  /// 때에만 잠가서, 로드 완료로 상태가 갱신되면 그때 프리필되도록 한다.
   void _loadSavedSettings() {
-    if (_isInitialized) return;
-    _isInitialized = true;
+    if (_prefilledFromStorage) return;
 
     final authState = ref.read(authProvider);
-    if (authState.savedEmployeeNumber != null &&
-        authState.savedEmployeeNumber!.isNotEmpty) {
-      _employeeCodeController.text = authState.savedEmployeeNumber!;
+    final saved = authState.savedEmployeeNumber;
+    if (saved != null && saved.isNotEmpty) {
+      _employeeCodeController.text = saved;
       _rememberEmployeeNumber = true;
-    }
-    if (authState.rememberEmployeeNumber) {
+      _prefilledFromStorage = true;
+    } else if (authState.rememberEmployeeNumber) {
+      // 기억하기는 켜져 있으나 저장된 사번이 아직 없는 경우 체크박스만 반영
       _rememberEmployeeNumber = true;
     }
   }
