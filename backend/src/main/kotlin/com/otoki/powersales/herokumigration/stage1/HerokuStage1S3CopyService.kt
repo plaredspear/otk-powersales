@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 import java.io.InputStreamReader
 import javax.sql.DataSource
 
@@ -105,6 +106,7 @@ class HerokuStage1S3CopyService(
 
         var success = 0
         var failed = 0
+        var skipped = 0
         var totalInserted = 0L
 
         for (targetName in targets) {
@@ -134,6 +136,19 @@ class HerokuStage1S3CopyService(
                     "[heroku-stage1-copy-all] entity OK target={} inserted={} unmatched={} processed={}",
                     targetName, result.inserted, result.unmatched, processedDelta,
                 )
+            } catch (e: NoSuchKeyException) {
+                // S3 에 CSV 가 없는 entity (404) 는 batch 를 중단하지 않고 SKIPPED 후 다음 target 계속.
+                // cut-over 시 일부 테이블 CSV 가 아직 준비 안 된 경우에도 있는 것만 적재. (사용자 결정)
+                progress.skipEntity(
+                    targetName = targetName,
+                    s3Key = s3Key,
+                    reason = "S3 에 CSV 없음 (404): s3://$s3Bucket/$s3Key — 적재 건너뜀",
+                )
+                skipped++
+                log.warn(
+                    "[heroku-stage1-copy-all] entity SKIPPED target={} reason=S3 key 부재(404) s3=s3://{}/{} — batch 계속",
+                    targetName, s3Bucket, s3Key,
+                )
             } catch (e: Throwable) {
                 val msg = "${e.javaClass.simpleName}: ${e.message ?: "unknown"}"
                 val processedDelta = progress.processedRows - processedBefore
@@ -155,6 +170,7 @@ class HerokuStage1S3CopyService(
                     totalTargets = targets.size,
                     success = success,
                     failed = failed,
+                    // 실패로 batch 중단 — 아직 처리 못 한 PENDING + 그동안 404 로 건너뛴 entity 모두 skipped.
                     skipped = targets.size - success - failed,
                     totalInserted = totalInserted,
                 )
@@ -163,14 +179,14 @@ class HerokuStage1S3CopyService(
 
         progress.finishOk()
         log.info(
-            "[heroku-stage1-copy-all] done totalTargets={} success={} totalInserted={}",
-            targets.size, success, totalInserted,
+            "[heroku-stage1-copy-all] done totalTargets={} success={} skipped={} totalInserted={}",
+            targets.size, success, skipped, totalInserted,
         )
         return HerokuStage1BatchSummary(
             totalTargets = targets.size,
             success = success,
             failed = 0,
-            skipped = 0,
+            skipped = skipped,
             totalInserted = totalInserted,
         )
     }
