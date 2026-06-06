@@ -1,42 +1,54 @@
 #!/usr/bin/env kotlin
 
 /**
- * 클레임 이미지 마이그레이션 — ContentVersion 메타 CSV → upload_files.csv 변환기.
+ * 클레임 이미지 마이그레이션 — ContentDocumentLink 메타 CSV → upload_files.csv 변환기.
  *
  * 배경:
- *   클레임(DKRetail__Claim__c) 첨부 이미지는 레거시에서 SF Files(ContentVersion)에만 저장되었고
- *   (IF_REST_MOBILE_ClaimRegist), UploadFile__c 에는 적재된 적이 없다. 신규 시스템은 claim 이미지를
- *   upload_file (parent_type='Claim', unique_key=S3 key) 로 조회하므로, ContentVersion 을 추출해
- *   S3 에 재업로드하고 그 메타를 upload_file 로 적재해야 한다.
+ *   클레임(DKRetail__Claim__c) 첨부 이미지는 레거시에서 SF Files 에 저장되며, claim 과의 연결은
+ *   **ContentDocumentLink.LinkedEntityId = claim.Id** 다 (SF UI 의 Util.contentdocument 조회 경로).
+ *   ContentVersion.RecordId__c / Type__c 는 운영에서 미사용(전부 null)이라 신뢰할 수 없다.
+ *   신규 시스템은 claim 이미지를 upload_file (parent_type='Claim', unique_key=S3 key) 로 조회하므로,
+ *   ContentDocumentLink → 최신 ContentVersion 을 추출해 S3 에 재업로드하고 메타를 upload_file 로 적재한다.
  *
  *   본 스크립트는 그중 "메타 CSV → upload_files.csv 변환" 만 담당하는 오프라인 단계다 (AWS 접근 없음).
  *   바이너리 다운로드 / S3 업로드 / Stage1·Stage2 트리거는 migrate-claim-images.sh 가 오케스트레이션.
  *
- * 입력 (ContentVersion 메타 CSV — migrate-claim-images.sh 의 query 단계 산출):
- *   컬럼: Id, RecordId__c, Type__c, Title, PathOnClient, FileExtension, ContentSize,
- *         CreatedDate, LastModifiedDate
+ * 입력 (ContentDocumentLink 메타 CSV — migrate-claim-images.sh 의 query 단계 산출):
+ *   SOQL: SELECT LinkedEntityId, ContentDocumentId,
+ *                ContentDocument.LatestPublishedVersionId, ContentDocument.Title,
+ *                ContentDocument.FileExtension, ContentDocument.ContentSize,
+ *                ContentDocument.CreatedDate, ContentDocument.LastModifiedDate
+ *         FROM ContentDocumentLink WHERE LinkedEntityId IN (SELECT Id FROM DKRetail__Claim__c)
+ *   CSV 헤더(컬럼): LinkedEntityId, ContentDocumentId,
+ *                  ContentDocument.LatestPublishedVersionId, ContentDocument.Title,
+ *                  ContentDocument.FileExtension, ContentDocument.ContentSize,
+ *                  ContentDocument.CreatedDate, ContentDocument.LastModifiedDate
  *
  * 출력 (upload_files.csv — Stage1Targets.UPLOAD_FILE 헤더 정합):
  *   Id, Name, UniqueKey__c, RecordId__c, Size__c, Object__c, UploadKbn__c,
  *   Date__c, IsDeleted, CreatedDate, LastModifiedDate
  *   (Stage1 FieldMapping 에 없는 Url__c / FileId__c / Owner/Created/LastModifiedById 는 공란 — nullable)
  *
- * 매핑 규칙 (한 행/ContentVersion → upload_files.csv 한 행):
- *   Id            = ContentVersion.Id           (068... → upload_file.sfid, unique)
- *   Name          = Title
+ * 매핑 규칙 (한 행/ContentDocumentLink → upload_files.csv 한 행):
+ *   Id            = ContentDocument.LatestPublishedVersionId (=최신 ContentVersion.Id, 068... → sfid, unique)
+ *   Name          = ContentDocument.Title
  *   UniqueKey__c  = {image-prefix}/{CV.Id}.{ext}   (= unique_key, 신규 클레임 상세 조회 key)
- *   RecordId__c   = ContentVersion.RecordId__c  (= claim.Id, a01... → Stage2 record_sfid 조인 키)
- *   Size__c       = ContentSize
- *   Object__c     = DKRetail__Claim__c          (보존용. Stage2 record_sfid 조인이라 분기엔 미사용)
- *   UploadKbn__c  = claim|part|receipt          (Type__c: 클레임→claim/일부인→part/영수증→receipt)
- *   Date__c       = CreatedDate (date 부분)
+ *   RecordId__c   = LinkedEntityId               (= claim.Id, a01... → Stage2 record_sfid 조인 키)
+ *   Size__c       = ContentDocument.ContentSize
+ *   Object__c     = DKRetail__Claim__c           (보존용. Stage2 record_sfid 조인이라 분기엔 미사용)
+ *   UploadKbn__c  = (빈값)                         (Type__c 운영 미사용 — 클레임 상세는 사진 전체 노출이라 구분 불요)
+ *   Date__c       = ContentDocument.CreatedDate (date 부분)
  *   IsDeleted     = false
- *   CreatedDate / LastModifiedDate = SF 값 그대로
- *   · ext = FileExtension 우선, 없으면 PathOnClient 확장자, 둘 다 없으면 jpg.
+ *   CreatedDate / LastModifiedDate = ContentDocument 값
+ *   · ext = ContentDocument.FileExtension, 없으면 Title 확장자, 둘 다 없으면 jpg.
+ *
+ * 중복 처리: 한 ContentDocument 가 여러 claim 에 링크된 경우 같은 sfid(CV.Id) 가 여러 행에 나올 수
+ *   있다. 본 변환기는 sfid 기준 1회만 출력(첫 등장)하고 중복은 skip — Stage1 의 ON CONFLICT(sfid)
+ *   DO NOTHING 과 동일 의미. (클레임 이미지는 통상 claim 1:1.)
  *
  * 사용법:
  *   kotlinc -script build-claim-upload-files.main.kts -- \
- *       --meta-csv <ContentVersion 메타 CSV> \
+ *       --meta-csv <ContentDocumentLink 메타 CSV> \
  *       --out <upload_files.csv> \
  *       [--image-prefix uploads/claim/migrated]
  *
@@ -58,6 +70,8 @@ import java.io.FileWriter
 var metaCsvPath: String? = null
 var outPath: String? = null
 var imagePrefix = "uploads/claim/migrated"
+// 이미지 확장자 화이트리스트 (클레임 이미지만 적재 — PDF 등 비이미지 첨부 제외).
+var imageExts = "jpg,jpeg,png,gif,bmp,webp,heic,heif"
 
 run {
     val it = args.iterator()
@@ -66,8 +80,9 @@ run {
             "--meta-csv" -> metaCsvPath = it.next()
             "--out" -> outPath = it.next()
             "--image-prefix" -> imagePrefix = it.next().trimEnd('/')
+            "--image-exts" -> imageExts = it.next()
             "-h", "--help" -> {
-                println("Usage: kotlinc -script build-claim-upload-files.main.kts -- --meta-csv <in> --out <out> [--image-prefix uploads/claim/migrated]")
+                println("Usage: kotlinc -script build-claim-upload-files.main.kts -- --meta-csv <in> --out <out> [--image-prefix uploads/claim/migrated] [--image-exts jpg,jpeg,png,...]")
                 kotlin.system.exitProcess(0)
             }
             else -> {
@@ -93,16 +108,16 @@ if (!metaFile.isFile) {
     kotlin.system.exitProcess(1)
 }
 
-// -----------------------------------------------------------------------------
-// Type__c → upload_kbn 매핑 (UploadFileKbnTypes SoT 정합)
-// -----------------------------------------------------------------------------
+val imageExtSet = imageExts.split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet()
 
-// SF Type__c (한글) → 신규 upload_kbn 어간. UploadFileKbnTypes: claim/part/receipt.
-val typeToKbn = mapOf(
-    "클레임" to "claim",
-    "일부인" to "part",
-    "영수증" to "receipt",
-)
+// 입력 CSV 의 ContentDocumentLink (relationship) 컬럼명.
+val COL_LINKED = "LinkedEntityId"
+val COL_CVID = "ContentDocument.LatestPublishedVersionId"
+val COL_TITLE = "ContentDocument.Title"
+val COL_EXT = "ContentDocument.FileExtension"
+val COL_SIZE = "ContentDocument.ContentSize"
+val COL_CREATED = "ContentDocument.CreatedDate"
+val COL_MODIFIED = "ContentDocument.LastModifiedDate"
 
 // 출력 헤더 — Stage1Targets.UPLOAD_FILE 의 CSV 컬럼명 (SF 필드명) 과 정합.
 // Stage1 은 헤더명으로 매핑하므로 미사용 컬럼(Url__c 등)은 출력하지 않아도 무방 (nullable).
@@ -115,12 +130,13 @@ val outHeader = arrayOf(
 // 헬퍼
 // -----------------------------------------------------------------------------
 
-fun extOf(fileExtension: String, pathOnClient: String): String {
+// ext = FileExtension 우선, 없으면 Title 의 확장자, 둘 다 없으면 jpg.
+fun extOf(fileExtension: String, title: String): String {
     val fe = fileExtension.trim()
     if (fe.isNotEmpty()) return fe.trimStart('.').lowercase()
-    val dot = pathOnClient.lastIndexOf('.')
-    if (dot in 0 until pathOnClient.length - 1) {
-        return pathOnClient.substring(dot + 1).trim().lowercase()
+    val dot = title.lastIndexOf('.')
+    if (dot in 0 until title.length - 1) {
+        return title.substring(dot + 1).trim().lowercase()
     }
     return "jpg"
 }
@@ -139,8 +155,10 @@ File(out).parentFile?.mkdirs()
 
 var total = 0
 var written = 0
-var skippedNoRecordId = 0
-var skippedUnknownType = 0
+var skippedNoKey = 0
+var skippedNonImage = 0
+var skippedDup = 0
+val seenSfid = HashSet<String>()
 
 CSVReader(FileReader(metaFile)).use { reader ->
     val header = reader.readNext()
@@ -155,7 +173,7 @@ CSVReader(FileReader(metaFile)).use { reader ->
         return if (i < row.size) row[i].trim() else ""
     }
 
-    for (required in listOf("Id", "RecordId__c", "Type__c")) {
+    for (required in listOf(COL_LINKED, COL_CVID)) {
         if (!idx.containsKey(required)) {
             System.err.println("[error] 메타 CSV 에 필수 컬럼 없음: $required (헤더=${header.joinToString(",")})")
             kotlin.system.exitProcess(1)
@@ -168,40 +186,46 @@ CSVReader(FileReader(metaFile)).use { reader ->
         var row = reader.readNext()
         while (row != null) {
             total++
-            val cvId = col(row, "Id")
-            val recordId = col(row, "RecordId__c")
-            val type = col(row, "Type__c")
+            val cvId = col(row, COL_CVID)         // 최신 ContentVersion.Id → sfid + 파일명
+            val recordId = col(row, COL_LINKED)   // claim.Id (a01...) → record_sfid
 
             if (cvId.isEmpty() || recordId.isEmpty()) {
-                skippedNoRecordId++
-                row = reader.readNext()
-                continue
-            }
-            val kbn = typeToKbn[type]
-            if (kbn == null) {
-                // 클레임 첨부가 아닌 Type 은 건너뜀 (SOQL 에서 이미 필터하나 방어).
-                skippedUnknownType++
+                skippedNoKey++
                 row = reader.readNext()
                 continue
             }
 
-            val ext = extOf(col(row, "FileExtension"), col(row, "PathOnClient"))
+            val ext = extOf(col(row, COL_EXT), col(row, COL_TITLE))
+            if (ext !in imageExtSet) {
+                // 클레임에 링크됐어도 이미지가 아닌 첨부(PDF 등)는 제외.
+                skippedNonImage++
+                row = reader.readNext()
+                continue
+            }
+
+            if (!seenSfid.add(cvId)) {
+                // 한 ContentDocument 가 여러 claim 에 링크된 경우 — sfid 중복은 1회만.
+                skippedDup++
+                row = reader.readNext()
+                continue
+            }
+
             val uniqueKey = "$imagePrefix/$cvId.$ext"
-            val createdDate = col(row, "CreatedDate")
+            val createdDate = col(row, COL_CREATED)
 
             writer.writeNext(
                 arrayOf(
-                    cvId,                       // Id          → sfid
-                    col(row, "Title"),          // Name
+                    cvId,                       // Id          → sfid (최신 ContentVersion.Id)
+                    col(row, COL_TITLE),        // Name        → ContentDocument.Title
                     uniqueKey,                  // UniqueKey__c → unique_key
                     recordId,                   // RecordId__c  → record_sfid (=claim.Id)
-                    col(row, "ContentSize"),    // Size__c
+                    col(row, COL_SIZE),         // Size__c     → ContentDocument.ContentSize
                     "DKRetail__Claim__c",       // Object__c    → object_type (보존)
-                    kbn,                        // UploadKbn__c → upload_kbn
+                    "",                         // UploadKbn__c → 빈값 (Type__c 운영 미사용)
                     dateOf(createdDate),        // Date__c
                     "false",                    // IsDeleted
                     createdDate,                // CreatedDate
-                    col(row, "LastModifiedDate"), // LastModifiedDate
+                    col(row, COL_MODIFIED),     // LastModifiedDate
                 )
             )
             written++
@@ -213,6 +237,7 @@ CSVReader(FileReader(metaFile)).use { reader ->
 println("[done] build-claim-upload-files")
 println("  meta rows read : $total")
 println("  written        : $written  -> $out")
-println("  skipped (no Id/RecordId__c) : $skippedNoRecordId")
-println("  skipped (unknown Type__c)   : $skippedUnknownType")
+println("  skipped (no key)      : $skippedNoKey")
+println("  skipped (non-image)   : $skippedNonImage  (허용 확장자: ${imageExtSet.sorted().joinToString(",")})")
+println("  skipped (dup sfid)    : $skippedDup")
 println("  image prefix   : $imagePrefix")
