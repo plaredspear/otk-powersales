@@ -34,6 +34,7 @@
 #   ./migrate-claim-images.sh ... --skip-query --skip-download     # 변환만 재시도
 #   ./migrate-claim-images.sh ... --count-only                     # 추출 대상 건수만 확인
 #   ./migrate-claim-images.sh ... --limit 100                      # 샘플 100건만 추출
+#   ./migrate-claim-images.sh ... --parallel 12                    # 다운로드 12개 동시 (수십시간→수시간)
 #
 # SF/AWS CLI 자발 호출 금지 정책: 본 스크립트는 sf/aws 를 래핑하지만 실행 주체는 사용자다.
 
@@ -61,6 +62,8 @@ AWS_UPLOAD=0
 DO_TRIGGER=0
 COUNT_ONLY=0
 LIMIT=""
+# 다운로드 동시 실행 수 (1=순차). SF API rate limit 내에서 8~16 권장.
+PARALLEL=1
 
 API_BASE="${BACKEND_API_BASE:-}"
 TOKEN="${BACKEND_TOKEN:-}"
@@ -85,6 +88,7 @@ while [[ $# -gt 0 ]]; do
         --trigger)       DO_TRIGGER=1; shift ;;
         --count-only)    COUNT_ONLY=1; shift ;;
         --limit)         LIMIT="$2"; shift 2 ;;
+        --parallel)      PARALLEL="$2"; shift 2 ;;
         --api-base)      API_BASE="$2"; shift 2 ;;
         --token)         TOKEN="$2"; shift 2 ;;
         -h|--help)       usage; exit 0 ;;
@@ -98,6 +102,9 @@ done
 
 if [[ -n "$LIMIT" && ! "$LIMIT" =~ ^[0-9]+$ ]]; then
     echo "[error] --limit 은 양의 정수여야 함: $LIMIT" >&2; exit 1
+fi
+if [[ ! "$PARALLEL" =~ ^[0-9]+$ || "$PARALLEL" -lt 1 ]]; then
+    echo "[error] --parallel 은 1 이상의 정수여야 함: $PARALLEL" >&2; exit 1
 fi
 
 # bucket / stage1-prefix 는 콘솔 업로드 경로 안내 + (옵션) aws-upload / trigger 에 쓰인다.
@@ -130,6 +137,7 @@ echo "[info] sf org        : ${SF_ORG:-(default)}"
 echo "[info] api version   : $SF_API_VERSION"
 echo "[info] s3 upload      : $([[ "$AWS_UPLOAD" -eq 1 ]] && echo 'aws CLI (자동)' || echo '콘솔 수동 (안내만)')"
 echo "[info] image exts     : $IMAGE_EXTS"
+echo "[info] parallel      : $PARALLEL"
 echo "[info] limit         : ${LIMIT:-(전체)}"
 echo
 
@@ -186,63 +194,70 @@ fi
 echo
 
 # -----------------------------------------------------------------------------
-# 2) download — 최신 ContentVersion(VersionData) 바이너리 (이미지만, 증분)
+# 2) download — 최신 ContentVersion(VersionData) 바이너리 (이미지만, 증분, 병렬)
 # -----------------------------------------------------------------------------
-# 이미지 확장자 화이트리스트 (download 필터 — build-csv 와 동일 기준).
-
-is_image_ext() {
-    local e="$1"
-    local IFS=','
-    for x in $IMAGE_EXTS; do
-        [[ "${e,,}" == "${x,,}" ]] && return 0
-    done
-    return 1
-}
-
-ext_of() {
-    # $1=FileExtension $2=Title
-    local fe="$1" title="$2"
-    fe="${fe#.}"
-    if [[ -n "$fe" ]]; then echo "${fe,,}"; return; fi
-    if [[ "$title" == *.* ]]; then echo "${title##*.}" | tr '[:upper:]' '[:lower:]'; return; fi
-    echo "jpg"
-}
+# 이미지 판정/확장자 계산은 python 단계에서 수행하고 (build-csv 와 동일 기준), 다운로드는
+# xargs -P <PARALLEL> 로 동시 실행한다. 워커는 bash -c 라 환경변수로 컨텍스트를 전달한다.
+# 이미 받은 파일은 워커가 skip → 증분/재실행 안전. PARALLEL=1 이면 순차와 동일.
 
 if [[ "$SKIP_DOWNLOAD" -eq 1 ]]; then
     echo "[skip] download"
 else
-    echo "[step 2/3] download VersionData (이미지만) → $IMG_DIR (증분)"
-    local_dl=0; local_skip=0; local_nonimg=0
-    # CSV 행: LatestPublishedVersionId(=CV.Id), FileExtension, Title
-    while IFS=$'\t' read -r cvId fileExt title; do
-        [[ -z "$cvId" ]] && continue
-        ext="$(ext_of "$fileExt" "$title")"
-        if ! is_image_ext "$ext"; then
-            local_nonimg=$((local_nonimg + 1))
-            continue
-        fi
-        outfile="$IMG_DIR/$cvId.$ext"
-        if [[ -f "$outfile" ]]; then
-            local_skip=$((local_skip + 1))
-            continue
-        fi
-        sf api request rest \
-            "/services/data/v$SF_API_VERSION/sobjects/ContentVersion/$cvId/VersionData" \
-            --stream-to-file "$outfile" \
-            ${SF_ORG_ARGS[@]+"${SF_ORG_ARGS[@]}"} >/dev/null
-        local_dl=$((local_dl + 1))
-    done < <(python3 -c '
-import csv, sys
+    echo "[step 2/3] download VersionData (이미지만, parallel=$PARALLEL) → $IMG_DIR (증분)"
+
+    # 다운로드 워커가 참조할 컨텍스트 export.
+    export IMG_DIR SF_API_VERSION SF_ORG IMAGE_EXTS
+
+    # python: 메타 CSV → 이미지 대상만 "cvId.ext" 한 토큰/줄 출력 (공백 없음 → xargs 안전).
+    #         total/image/non-image 카운트는 stderr 로.
+    count_tmp="$(mktemp)"
+    targets="$(python3 -c '
+import csv, os, sys
+exts = set(e.strip().lower() for e in os.environ.get("IMAGE_EXTS","").split(",") if e.strip())
+total = img = nonimg = 0
+out = []
 with open(sys.argv[1], newline="") as f:
-    r = csv.DictReader(f)
-    for row in r:
-        print("\t".join([
-            row.get("ContentDocument.LatestPublishedVersionId","").strip(),
-            row.get("ContentDocument.FileExtension","").strip(),
-            row.get("ContentDocument.Title","").strip(),
-        ]))
-' "$META_CSV")
-    echo "[ok] downloaded=$local_dl  skipped(existing)=$local_skip  skipped(non-image)=$local_nonimg"
+    for row in csv.DictReader(f):
+        total += 1
+        cv = row.get("ContentDocument.LatestPublishedVersionId","").strip()
+        fe = row.get("ContentDocument.FileExtension","").strip().lstrip(".").lower()
+        title = row.get("ContentDocument.Title","").strip()
+        if not cv:
+            continue
+        ext = fe
+        if not ext:
+            ext = title.rsplit(".",1)[1].lower() if "." in title else "jpg"
+        if ext not in exts:
+            nonimg += 1
+            continue
+        img += 1
+        out.append(cv + "." + ext)
+sys.stderr.write("%d %d %d\n" % (total, img, nonimg))
+print("\n".join(out))
+' "$META_CSV" 2>"$count_tmp")"
+    read -r c_total c_img c_nonimg < "$count_tmp"; rm -f "$count_tmp"
+
+    before=$(find "$IMG_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
+    SECONDS=0
+    dl_rc=0
+    # 워커: 파일명(cvId.ext) → 존재 skip → VersionData 스트림 다운로드.
+    printf '%s\n' "$targets" | grep -v '^$' | xargs -P "$PARALLEL" -I {} bash -c '
+        f="$1"; cvId="${f%.*}"; out="$IMG_DIR/$f"
+        [ -f "$out" ] && exit 0
+        if [ -n "$SF_ORG" ]; then
+            sf api request rest "/services/data/v$SF_API_VERSION/sobjects/ContentVersion/$cvId/VersionData" --stream-to-file "$out" --target-org "$SF_ORG" >/dev/null
+        else
+            sf api request rest "/services/data/v$SF_API_VERSION/sobjects/ContentVersion/$cvId/VersionData" --stream-to-file "$out" >/dev/null
+        fi
+    ' _ {} || dl_rc=$?
+
+    after=$(find "$IMG_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
+    dl=$((after - before))
+    echo "[ok] meta=$c_total  image-target=$c_img  non-image=$c_nonimg"
+    echo "[ok] downloaded(new)=$dl  total-on-disk=$after  elapsed=${SECONDS}s  parallel=$PARALLEL"
+    if [[ "$dl_rc" -ne 0 ]]; then
+        echo "[warn] 일부 다운로드 실패 (xargs rc=$dl_rc). 증분이라 재실행하면 실패분만 다시 받습니다." >&2
+    fi
 fi
 echo
 
