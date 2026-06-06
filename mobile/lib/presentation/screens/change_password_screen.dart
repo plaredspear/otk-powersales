@@ -104,8 +104,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: AppSpacing.xxl),
-                  _buildGuideBanner(),
-                  const SizedBox(height: AppSpacing.xxxl),
                   _buildNewPasswordField(),
                   const SizedBox(height: AppSpacing.lg),
                   _buildConfirmPasswordField(),
@@ -120,37 +118,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  /// 안내 배너 — 운영자 리셋 사유 안내 (Q-F).
-  Widget _buildGuideBanner() {
-    return Container(
-      padding: AppSpacing.cardPadding,
-      decoration: BoxDecoration(
-        color: AppColors.secondaryLight.withAlpha(26),
-        borderRadius: AppSpacing.cardBorderRadius,
-        border: Border.all(color: AppColors.secondary.withAlpha(51)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.warning_amber_outlined,
-            color: AppColors.secondary,
-            size: AppSpacing.iconSize,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              '운영자가 비밀번호를 임시 비밀번호로 리셋했습니다.\n새 비밀번호를 설정해주세요.',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.secondary,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

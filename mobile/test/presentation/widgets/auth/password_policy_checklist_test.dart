@@ -16,14 +16,12 @@ void main() {
       required String password,
       required IconData lengthIcon,
       required IconData repeatIcon,
-      required IconData tempIcon,
     }) async {
       await tester.pumpWidget(buildHarness(password));
       final icons = tester.widgetList<Icon>(find.byType(Icon)).toList();
-      expect(icons.length, 3);
+      expect(icons.length, 2);
       expect(icons[0].icon, lengthIcon);
       expect(icons[1].icon, repeatIcon);
-      expect(icons[2].icon, tempIcon);
     }
 
     testWidgets('빈 입력 -> 모든 규칙 회색 (대기 상태)', (tester) async {
@@ -32,7 +30,6 @@ void main() {
         password: '',
         lengthIcon: Icons.circle_outlined,
         repeatIcon: Icons.circle_outlined,
-        tempIcon: Icons.circle_outlined,
       );
     });
 
@@ -42,7 +39,6 @@ void main() {
         password: 'abcd',
         lengthIcon: Icons.check_circle,
         repeatIcon: Icons.check_circle,
-        tempIcon: Icons.check_circle,
       );
     });
 
@@ -52,7 +48,6 @@ void main() {
         password: 'abc',
         lengthIcon: Icons.cancel,
         repeatIcon: Icons.check_circle,
-        tempIcon: Icons.check_circle,
       );
     });
 
@@ -62,7 +57,6 @@ void main() {
         password: 'aaaa',
         lengthIcon: Icons.check_circle,
         repeatIcon: Icons.cancel,
-        tempIcon: Icons.check_circle,
       );
     });
 
@@ -72,17 +66,6 @@ void main() {
         password: '가가가가',
         lengthIcon: Icons.check_circle,
         repeatIcon: Icons.cancel,
-        tempIcon: Icons.check_circle,
-      );
-    });
-
-    testWidgets('"1234" -> 임시 비밀번호 동일 위반', (tester) async {
-      await verifyIcons(
-        tester,
-        password: '1234',
-        lengthIcon: Icons.check_circle,
-        repeatIcon: Icons.check_circle,
-        tempIcon: Icons.cancel,
       );
     });
   });

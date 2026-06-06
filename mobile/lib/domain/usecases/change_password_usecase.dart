@@ -23,9 +23,6 @@ class ChangePasswordUseCase {
       if (!validation.isNotRepeating) {
         throw ArgumentError('같은 문자를 4번 연속 사용할 수 없습니다');
       }
-      if (!validation.isNotTemporary) {
-        throw ArgumentError('임시 비밀번호와 동일한 비밀번호는 사용할 수 없습니다');
-      }
     }
 
     return await _repository.changePassword(

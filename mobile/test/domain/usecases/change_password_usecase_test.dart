@@ -161,22 +161,6 @@ void main() {
       );
     });
 
-    test('새 비밀번호 "1234" (임시 비번 동일) → ArgumentError', () async {
-      expect(
-        () => changePasswordUseCase.call(
-          currentPassword: 'oldpass1234',
-          newPassword: '1234',
-        ),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('임시 비밀번호'),
-          ),
-        ),
-      );
-    });
-
     test('정상 4글자 비밀번호 "ab12" → 성공', () async {
       // Arrange
       const currentPassword = 'oldpass1234';
