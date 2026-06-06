@@ -7,7 +7,6 @@ void main() {
       const validation = PasswordValidation(
         isLengthValid: true,
         isNotRepeating: true,
-        isNotTemporary: true,
       );
 
       expect(validation.isValid, true);
@@ -17,7 +16,6 @@ void main() {
       const validation = PasswordValidation(
         isLengthValid: false,
         isNotRepeating: true,
-        isNotTemporary: true,
       );
 
       expect(validation.isValid, false);
@@ -27,17 +25,6 @@ void main() {
       const validation = PasswordValidation(
         isLengthValid: true,
         isNotRepeating: false,
-        isNotTemporary: true,
-      );
-
-      expect(validation.isValid, false);
-    });
-
-    test('임시 비밀번호 동일 -> isValid=false', () {
-      const validation = PasswordValidation(
-        isLengthValid: true,
-        isNotRepeating: true,
-        isNotTemporary: false,
       );
 
       expect(validation.isValid, false);
@@ -48,7 +35,6 @@ void main() {
         final v = PasswordValidation.fromPassword('abcd');
         expect(v.isLengthValid, true);
         expect(v.isNotRepeating, true);
-        expect(v.isNotTemporary, true);
         expect(v.isValid, true);
       });
 
@@ -84,12 +70,6 @@ void main() {
         expect(v.isNotRepeating, false);
       });
 
-      test('"1234" -> 임시 비밀번호 동일', () {
-        final v = PasswordValidation.fromPassword('1234');
-        expect(v.isNotTemporary, false);
-        expect(v.isValid, false);
-      });
-
       test('빈 문자열 -> 길이 부족', () {
         final v = PasswordValidation.fromPassword('');
         expect(v.isLengthValid, false);
@@ -105,13 +85,11 @@ void main() {
       const original = PasswordValidation(
         isLengthValid: true,
         isNotRepeating: false,
-        isNotTemporary: true,
       );
       final copied = original.copyWith(isNotRepeating: true);
 
       expect(copied.isLengthValid, true);
       expect(copied.isNotRepeating, true);
-      expect(copied.isNotTemporary, true);
       expect(copied.isValid, true);
     });
 
@@ -119,17 +97,14 @@ void main() {
       const a = PasswordValidation(
         isLengthValid: true,
         isNotRepeating: true,
-        isNotTemporary: true,
       );
       const b = PasswordValidation(
         isLengthValid: true,
         isNotRepeating: true,
-        isNotTemporary: true,
       );
       const c = PasswordValidation(
         isLengthValid: false,
         isNotRepeating: true,
-        isNotTemporary: true,
       );
 
       expect(a, b);

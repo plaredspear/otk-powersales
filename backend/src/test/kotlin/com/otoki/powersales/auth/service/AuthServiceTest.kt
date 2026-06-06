@@ -298,22 +298,6 @@ class AuthServiceTest {
             .isInstanceOf(NewPasswordPolicyViolationException::class.java)
     }
 
-    @Test
-    @DisplayName("정책 위반 - 임시 비밀번호(1234) 동일 -> NewPasswordSameAsTemporaryException")
-    fun changePassword_sameAsTemporary() {
-        // Given
-        val userId = 1L
-        val employee = createTestEmployee(id = userId, password = "encoded_old")
-        val request = ChangePasswordRequest(currentPassword = null, newPassword = "1234")
-        val principal = principal(userId, passwordChangeRequired = true)
-
-        every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-
-        // When & Then
-        assertThatThrownBy { authService.changePassword(principal, request) }
-            .isInstanceOf(NewPasswordSameAsTemporaryException::class.java)
-    }
-
     private fun principal(userId: Long, passwordChangeRequired: Boolean) = UserPrincipal(
         userId = userId,
         role = null,

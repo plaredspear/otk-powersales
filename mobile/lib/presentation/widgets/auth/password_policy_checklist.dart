@@ -7,10 +7,9 @@ import '../../../domain/entities/password_validation.dart';
 
 /// 비밀번호 정책 실시간 체크리스트 (Spec #584 P2-M).
 ///
-/// 입력된 비밀번호가 백엔드 정책의 3개 규칙을 충족하는지 실시간으로 표시한다.
+/// 입력된 비밀번호가 백엔드 정책 규칙을 충족하는지 실시간으로 표시한다.
 /// - 4자 이상 32자 이하
 /// - 같은 문자 4번 연속 사용 안함 (한글/특수문자 포함 모든 문자)
-/// - 임시 비밀번호 ("1234") 와 동일하지 않음
 ///
 /// 각 규칙은 충족 시 ✓ (녹색), 미충족 시 ✗ (빨강) 아이콘으로 표시한다. 빈 입력 상태에서는
 /// 모두 회색 (대기 상태) 으로 표시한다.
@@ -42,12 +41,6 @@ class PasswordPolicyChecklist extends StatelessWidget {
           _PolicyRule(
             label: '같은 문자 4번 연속 사용 안함',
             isValid: validation.isNotRepeating,
-            showStatus: showStatus,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          _PolicyRule(
-            label: '임시 비밀번호와 동일하지 않음',
-            isValid: validation.isNotTemporary,
             showStatus: showStatus,
           ),
         ],

@@ -18,13 +18,12 @@ void main() {
   });
 
   group('PasswordValidation (사용되는 로직)', () {
-    test('"1234" 는 임시 비밀번호와 동일 -> 무효 (Spec #584)', () {
+    test('"1234" -> 모두 충족 (Spec #584)', () {
       final validation = PasswordValidation.fromPassword('1234');
 
       expect(validation.isLengthValid, true);
       expect(validation.isNotRepeating, true);
-      expect(validation.isNotTemporary, false);
-      expect(validation.isValid, false);
+      expect(validation.isValid, true);
     });
 
     test('동일 문자 4연속 ("1111") -> 무효', () {
