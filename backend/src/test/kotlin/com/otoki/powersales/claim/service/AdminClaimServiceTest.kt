@@ -225,7 +225,7 @@ class AdminClaimServiceTest {
             )
             every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
             every {
-                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Claim__c", 1L)
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Claim", 1L)
             } returns files
 
             val result = adminClaimService.getClaimDetail(1L)
@@ -245,7 +245,7 @@ class AdminClaimServiceTest {
             val claim = createClaim(id = 1L)
             every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
             every {
-                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Claim__c", 1L)
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Claim", 1L)
             } returns emptyList()
 
             val result = adminClaimService.getClaimDetail(1L)
@@ -264,7 +264,7 @@ class AdminClaimServiceTest {
             )
             every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
             every {
-                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("DKRetail__Claim__c", 1L)
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Claim", 1L)
             } returns files
 
             val result = adminClaimService.getClaimDetail(1L)
@@ -353,7 +353,7 @@ class AdminClaimServiceTest {
         name = name,
         uniqueKey = uniqueKey,
         recordSfid = "a012x00000ABCDE",
-        parentType = "DKRetail__Claim__c",
+        parentType = "Claim",
         parentId = parentId,
         uploadKbn = uploadKbn
     ).apply {

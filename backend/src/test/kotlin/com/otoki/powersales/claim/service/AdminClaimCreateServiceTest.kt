@@ -220,7 +220,7 @@ class AdminClaimCreateServiceTest {
         val photos = savedSlot.captured
         assertThat(photos).hasSize(3)
         assertThat(photos.map { it.uploadKbn }).containsExactly("claim", "part", "receipt")
-        assertThat(photos.all { it.parentType == "DKRetail__Claim__c" }).isTrue
+        assertThat(photos.all { it.parentType == "Claim" }).isTrue
     }
 
     @Test

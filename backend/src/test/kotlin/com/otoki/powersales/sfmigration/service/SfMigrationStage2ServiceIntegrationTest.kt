@@ -247,7 +247,7 @@ class SfMigrationStage2ServiceIntegrationTest {
         em.createNativeQuery(
             "INSERT INTO powersales.upload_file (object_type, parent_id, record_sfid) VALUES ('DKRetail__Claim__c', NULL, 'a01XXXXXXXXXXXAAA')"
         ).executeUpdate()
-        // object_type 이 빈 모바일 등록 경로 row — parent_type 은 'UNKNOWN' 유지되어야 함.
+        // object_type 이 빈 모바일 등록 경로 row (claim) — object_type 무관하게 record_sfid 로 연결되어야 함.
         em.createNativeQuery(
             "INSERT INTO powersales.upload_file (object_type, parent_id, record_sfid) VALUES (NULL, NULL, 'a01CL000000001AAA')"
         ).executeUpdate()
@@ -256,28 +256,29 @@ class SfMigrationStage2ServiceIntegrationTest {
 
         assertThat(response.substep).isEqualTo("uploadFilePolymorphicParent")
 
-        // (1) object_type → parent_type 파생 — object_type 이 있는 6건 (빈 1건 제외).
-        assertThat(longOf("SELECT COUNT(*) FROM powersales.upload_file WHERE parent_type = object_type"))
-            .isEqualTo(6L)
-        // 빈 object_type row 는 parent_type 'UNKNOWN' 유지.
-        assertThat(longOf("SELECT COUNT(*) FROM powersales.upload_file WHERE object_type IS NULL AND parent_type = 'UNKNOWN'"))
+        // record_sfid 직접 조인 — object_type 무관하게 부모 sfid 매칭으로 parent_type + parent_id 동시 설정.
+        // claim 'a01CL...'(id=100) record_sfid 인 미연결 row 2건 (object_type='DKRetail__Claim__c' 1건 + NULL 1건).
+        assertThat(longOf("SELECT COUNT(*) FROM powersales.upload_file WHERE record_sfid = 'a01CL000000001AAA' AND parent_type = 'Claim' AND parent_id = 100"))
+            .isEqualTo(2L)
+        // object_type 이 NULL 이어도 record_sfid 로 Claim 연결됨 (핵심 — 모바일 등록 경로 복원).
+        assertThat(longOf("SELECT parent_id FROM powersales.upload_file WHERE object_type IS NULL"))
+            .isEqualTo(100L)
+        assertThat(longOf("SELECT COUNT(*) FROM powersales.upload_file WHERE object_type IS NULL AND parent_type = 'Claim'"))
             .isEqualTo(1L)
 
-        // (2) (parent_type, record_sfid) → parent_id.
-        assertThat(longOf("SELECT parent_id FROM powersales.upload_file WHERE object_type = 'DKRetail__Claim__c' AND record_sfid = 'a01CL000000001AAA' AND parent_id <> 999"))
-            .isEqualTo(100L)
-        assertThat(longOf("SELECT parent_id FROM powersales.upload_file WHERE record_sfid = 'a02NO000000001AAA'"))
+        // notice / suggestion / site_activity 도 record_sfid 조인으로 연결.
+        assertThat(longOf("SELECT parent_id FROM powersales.upload_file WHERE record_sfid = 'a02NO000000001AAA' AND parent_type = 'Notice'"))
             .isEqualTo(200L)
-        assertThat(longOf("SELECT parent_id FROM powersales.upload_file WHERE record_sfid = 'a03SU000000001AAA'"))
+        assertThat(longOf("SELECT parent_id FROM powersales.upload_file WHERE record_sfid = 'a03SU000000001AAA' AND parent_type = 'Suggestion'"))
             .isEqualTo(300L)
-        assertThat(longOf("SELECT parent_id FROM powersales.upload_file WHERE record_sfid = 'a0D5A000000001AAA'"))
+        assertThat(longOf("SELECT parent_id FROM powersales.upload_file WHERE record_sfid = 'a0D5A000000001AAA' AND parent_type = 'SiteActivity'"))
             .isEqualTo(400L)
+
+        // 이미 parent_id=999 로 연결된 row 는 멱등 (parent_id IS NULL 조건이라 안 건드림).
         assertThat(longOf("SELECT parent_id FROM powersales.upload_file WHERE record_sfid = 'a01CL000000001AAA' AND parent_id = 999"))
             .isEqualTo(999L)
+        // record_sfid 가 어느 부모와도 매칭 안 되는 dangling row → parent_id NULL 유지.
         assertThat(objOf("SELECT parent_id FROM powersales.upload_file WHERE record_sfid = 'a01XXXXXXXXXXXAAA'"))
-            .isNull()
-        // 빈 object_type row 는 parent_type='UNKNOWN' 이라 매칭 entry 없음 → parent_id NULL 유지.
-        assertThat(objOf("SELECT parent_id FROM powersales.upload_file WHERE object_type IS NULL"))
             .isNull()
     }
 
