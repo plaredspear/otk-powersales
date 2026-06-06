@@ -86,6 +86,39 @@ export async function runNaturalKeyFkResolve(): Promise<NaturalKeyFkResponse> {
 }
 
 /**
+ * Stage 2-A — UploadFile polymorphic parent resolve.
+ *
+ * Stage1 이 적재한 `object_type` (SF Object__c 원본) 기준으로 `parent_type` 을 파생하고,
+ * `(parent_type, record_sfid)` → `parent_id` (Long FK) 를 채운다. claim/notice/proposal/
+ * site_activity 4종 polymorphic. `record_sfid` 는 SKIP_FK_PREFIXES 라 일반 FK Resolve 가
+ * 건드리지 않으므로 본 substep 을 별도 1회 실행해야 첨부 이미지 조회가 연결된다.
+ *
+ * 동기 실행 — 보통 수 초 내 완료.
+ */
+export interface UploadFileParentSubstepResult {
+  label: string;
+  rowsAffected: number;
+}
+
+export interface UploadFileParentResponse {
+  substep: string;
+  results: UploadFileParentSubstepResult[];
+  totalRowsAffected: number;
+}
+
+export async function runUploadFilePolymorphicParent(): Promise<UploadFileParentResponse> {
+  const res = await client.post<ApiResponse<UploadFileParentResponse>>(
+    '/api/v1/admin/sf-migration/stage2/upload-file-polymorphic-parent',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(
+      res.data.message || 'UploadFile Parent Resolve 실행에 실패했습니다',
+    );
+  }
+  return res.data.data;
+}
+
+/**
  * Stage 2-B (derived 캐시 동기화) substep — User.cost_center_code 동기화 1건만 운영.
  *
  * Employee.role / Employee.professional_promotion_team / User.profile_type 변환은 폐기됨

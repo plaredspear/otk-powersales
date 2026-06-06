@@ -17,6 +17,7 @@ import {
   useFkResolveProgress,
   useRunNaturalKeyFkResolve,
   useRunPicklistColumn,
+  useRunUploadFilePolymorphicParent,
   useRunUserRoleHierarchyRecalc,
   useStartFkResolve,
 } from '@/hooks/admin/useSfMigration';
@@ -26,6 +27,7 @@ import type {
   FkResolveTableResult,
   NaturalKeyFkSubstepResult,
   PicklistSubstepResult,
+  UploadFileParentSubstepResult,
 } from '@/api/admin/sfMigration';
 import ResizableTable from '@/components/common/ResizableTable';
 
@@ -74,6 +76,7 @@ export default function SfMigrationPage() {
   const startMutation = useStartFkResolve();
   const runPicklistColumnMutation = useRunPicklistColumn();
   const runNaturalKeyFkMutation = useRunNaturalKeyFkResolve();
+  const runUploadFileParentMutation = useRunUploadFilePolymorphicParent();
   const runHierarchyRecalcMutation = useRunUserRoleHierarchyRecalc();
 
   const progress = progressQuery.data;
@@ -89,6 +92,10 @@ export default function SfMigrationPage() {
   const naturalKeyResult = runNaturalKeyFkMutation.data;
   const naturalKeyError = runNaturalKeyFkMutation.error as Error | null;
   const naturalKeyPending = runNaturalKeyFkMutation.isPending;
+
+  const uploadFileParentResult = runUploadFileParentMutation.data;
+  const uploadFileParentError = runUploadFileParentMutation.error as Error | null;
+  const uploadFileParentPending = runUploadFileParentMutation.isPending;
 
   const hierarchyResult = runHierarchyRecalcMutation.data;
   const hierarchyError = runHierarchyRecalcMutation.error as Error | null;
@@ -311,6 +318,76 @@ export default function SfMigrationPage() {
                 },
               ]}
               dataSource={naturalKeyResult.results}
+            />
+          </div>
+        )}
+      </Card>
+
+      <Card title="UploadFile Parent Resolve" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          Stage1 이 적재한 <Text code>object_type</Text> (SF Object__c 원본) 기준으로{' '}
+          <Text code>parent_type</Text> 을 파생하고, <Text code>(parent_type, record_sfid)</Text>{' '}
+          → <Text code>parent_id</Text> (Long FK) 를 채운다.{' '}
+          <Text code>claim</Text> / <Text code>notice</Text> / <Text code>proposal</Text> /{' '}
+          <Text code>site_activity</Text> 4종 polymorphic. <Text code>record_sfid</Text> 는 일반 FK
+          Resolve 가 건드리지 않으므로, <Text strong>Stage1 적재 완료 후</Text> 본 substep 을 1회
+          실행해야 첨부 이미지 조회가 연결된다. 동기 실행 — 보통 수 초 내 완료.
+        </Paragraph>
+
+        <Space>
+          <Button
+            type="primary"
+            loading={uploadFileParentPending}
+            disabled={uploadFileParentPending}
+            onClick={() => {
+              runUploadFileParentMutation.mutate();
+            }}
+          >
+            실행
+          </Button>
+        </Space>
+
+        {uploadFileParentError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="UploadFile Parent Resolve 실패"
+            description={uploadFileParentError.message}
+            closable
+            onClose={() => {
+              runUploadFileParentMutation.reset();
+            }}
+          />
+        )}
+
+        {uploadFileParentResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{uploadFileParentResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="누적 적용 row">
+                {uploadFileParentResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            <ResizableTable<UploadFileParentSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '대상', dataIndex: 'label', key: 'label' },
+                {
+                  title: '적용 row',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={uploadFileParentResult.results}
             />
           </div>
         )}
