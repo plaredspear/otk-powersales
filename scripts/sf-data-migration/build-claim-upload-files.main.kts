@@ -1,7 +1,7 @@
 #!/usr/bin/env kotlin
 
 /**
- * 클레임 이미지 마이그레이션 — ContentDocumentLink 메타 CSV → upload_files.csv 변환기.
+ * 클레임 이미지 마이그레이션 — ContentDocumentLink 메타 CSV → claim_upload_files.csv 변환기.
  *
  * 배경:
  *   클레임(DKRetail__Claim__c) 첨부 이미지는 레거시에서 SF Files 에 저장되며, claim 과의 연결은
@@ -10,8 +10,8 @@
  *   신규 시스템은 claim 이미지를 upload_file (parent_type='Claim', unique_key=S3 key) 로 조회하므로,
  *   ContentDocumentLink → 최신 ContentVersion 을 추출해 S3 에 재업로드하고 메타를 upload_file 로 적재한다.
  *
- *   본 스크립트는 그중 "메타 CSV → upload_files.csv 변환" 만 담당하는 오프라인 단계다 (AWS 접근 없음).
- *   바이너리 다운로드 / S3 업로드 / Stage1·Stage2 트리거는 migrate-claim-images.sh 가 오케스트레이션.
+ *   본 스크립트는 그중 "메타 CSV → claim_upload_files.csv 변환" 만 담당하는 오프라인 단계다 (AWS 접근 없음).
+ *   바이너리 다운로드 / S3 업로드 / Stage1·Stage2 는 migrate-claim-images.sh + web 화면이 처리.
  *
  * 입력 (ContentDocumentLink 메타 CSV — migrate-claim-images.sh 의 query 단계 산출):
  *   SOQL: SELECT LinkedEntityId, ContentDocumentId,
@@ -24,12 +24,13 @@
  *                  ContentDocument.FileExtension, ContentDocument.ContentSize,
  *                  ContentDocument.CreatedDate, ContentDocument.LastModifiedDate
  *
- * 출력 (upload_files.csv — Stage1Targets.UPLOAD_FILE 헤더 정합):
+ * 출력 (claim_upload_files.csv — Stage1Targets.ClaimImageUploadFile 헤더 정합. fields 는
+ *        레거시 UploadFile 타겟과 동일 컬럼이나 csvFileName 만 분리):
  *   Id, Name, UniqueKey__c, RecordId__c, Size__c, Object__c, UploadKbn__c,
  *   Date__c, IsDeleted, CreatedDate, LastModifiedDate
  *   (Stage1 FieldMapping 에 없는 Url__c / FileId__c / Owner/Created/LastModifiedById 는 공란 — nullable)
  *
- * 매핑 규칙 (한 행/ContentDocumentLink → upload_files.csv 한 행):
+ * 매핑 규칙 (한 행/ContentDocumentLink → claim_upload_files.csv 한 행):
  *   Id            = ContentDocument.LatestPublishedVersionId (=최신 ContentVersion.Id, 068... → sfid, unique)
  *   Name          = ContentDocument.Title
  *   UniqueKey__c  = {image-prefix}/{CV.Id}.{ext}   (= unique_key, 신규 클레임 상세 조회 key)
@@ -49,7 +50,7 @@
  * 사용법:
  *   kotlinc -script build-claim-upload-files.main.kts -- \
  *       --meta-csv <ContentDocumentLink 메타 CSV> \
- *       --out <upload_files.csv> \
+ *       --out <claim_upload_files.csv> \
  *       [--image-prefix uploads/claim/migrated]
  *
  * 멱등: 입력이 같으면 출력도 동일. 반복 실행 안전 (출력 파일 덮어씀).
