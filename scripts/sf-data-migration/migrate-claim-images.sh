@@ -32,6 +32,8 @@
 #   ./migrate-claim-images.sh --org <alias> --bucket <s3-bucket> --stage1-prefix <prefix> --aws-upload
 #       → aws CLI 로 S3 업로드까지 자동
 #   ./migrate-claim-images.sh ... --skip-query --skip-download     # 변환만 재시도
+#   ./migrate-claim-images.sh ... --count-only                     # 추출 대상 건수만 확인
+#   ./migrate-claim-images.sh ... --limit 100                      # 샘플 100건만 추출
 #
 # SF/AWS CLI 자발 호출 금지 정책: 본 스크립트는 sf/aws 를 래핑하지만 실행 주체는 사용자다.
 
@@ -55,6 +57,8 @@ SKIP_DOWNLOAD=0
 SKIP_BUILD_CSV=0
 AWS_UPLOAD=0
 DO_TRIGGER=0
+COUNT_ONLY=0
+LIMIT=""
 
 API_BASE="${BACKEND_API_BASE:-}"
 TOKEN="${BACKEND_TOKEN:-}"
@@ -76,6 +80,8 @@ while [[ $# -gt 0 ]]; do
         --skip-build-csv)   SKIP_BUILD_CSV=1; shift ;;
         --aws-upload)    AWS_UPLOAD=1; shift ;;
         --trigger)       DO_TRIGGER=1; shift ;;
+        --count-only)    COUNT_ONLY=1; shift ;;
+        --limit)         LIMIT="$2"; shift 2 ;;
         --api-base)      API_BASE="$2"; shift 2 ;;
         --token)         TOKEN="$2"; shift 2 ;;
         -h|--help)       usage; exit 0 ;;
@@ -87,12 +93,19 @@ done
 # 검증
 # -----------------------------------------------------------------------------
 
-# bucket / stage1-prefix 는 콘솔 업로드 경로 안내 + (옵션) aws-upload / trigger 에 쓰인다.
-if [[ -z "$BUCKET" ]]; then
-    echo "[error] --bucket 필수 (콘솔 업로드 경로 안내 + Stage1 s3Bucket)" >&2; exit 1
+if [[ -n "$LIMIT" && ! "$LIMIT" =~ ^[0-9]+$ ]]; then
+    echo "[error] --limit 은 양의 정수여야 함: $LIMIT" >&2; exit 1
 fi
-if [[ -z "$STAGE1_PREFIX" ]]; then
-    echo "[error] --stage1-prefix 필수 (upload_files.csv 를 둘 Stage1 CSV prefix)" >&2; exit 1
+
+# bucket / stage1-prefix 는 콘솔 업로드 경로 안내 + (옵션) aws-upload / trigger 에 쓰인다.
+# --count-only 는 건수 확인만이라 둘 다 불요.
+if [[ "$COUNT_ONLY" -eq 0 ]]; then
+    if [[ -z "$BUCKET" ]]; then
+        echo "[error] --bucket 필수 (콘솔 업로드 경로 안내 + Stage1 s3Bucket)" >&2; exit 1
+    fi
+    if [[ -z "$STAGE1_PREFIX" ]]; then
+        echo "[error] --stage1-prefix 필수 (upload_files.csv 를 둘 Stage1 CSV prefix)" >&2; exit 1
+    fi
 fi
 
 SF_ORG_ARGS=()
@@ -113,10 +126,36 @@ echo "[info] stage1 prefix : $STAGE1_PREFIX"
 echo "[info] sf org        : ${SF_ORG:-(default)}"
 echo "[info] api version   : $SF_API_VERSION"
 echo "[info] s3 upload      : $([[ "$AWS_UPLOAD" -eq 1 ]] && echo 'aws CLI (자동)' || echo '콘솔 수동 (안내만)')"
+echo "[info] limit         : ${LIMIT:-(전체)}"
 echo
 
-# ContentVersion 추출 SOQL — 클레임 첨부만 (Type__c 3종 + RecordId__c 보유).
-CONTENTVERSION_SOQL="SELECT Id, RecordId__c, Type__c, Title, PathOnClient, FileExtension, ContentSize, CreatedDate, LastModifiedDate FROM ContentVersion WHERE Type__c IN ('클레임','일부인','영수증') AND RecordId__c != null"
+# ContentVersion 추출 — 클레임 첨부만 (Type__c 3종 + RecordId__c 보유).
+CV_WHERE="WHERE Type__c IN ('클레임','일부인','영수증') AND RecordId__c != null"
+CV_SELECT="SELECT Id, RecordId__c, Type__c, Title, PathOnClient, FileExtension, ContentSize, CreatedDate, LastModifiedDate FROM ContentVersion $CV_WHERE"
+if [[ -n "$LIMIT" ]]; then
+    CV_SELECT="$CV_SELECT LIMIT $LIMIT"
+fi
+
+# -----------------------------------------------------------------------------
+# 추출 대상 건수 미리보기 (항상 출력)
+# -----------------------------------------------------------------------------
+
+echo "[count] 추출 대상 건수 확인 중..."
+total_target="$(sf data query \
+    --query "SELECT COUNT() FROM ContentVersion $CV_WHERE" \
+    --result-format json \
+    --api-version "$SF_API_VERSION" \
+    ${SF_ORG_ARGS[@]+"${SF_ORG_ARGS[@]}"} | python3 -c 'import sys,json; print(json.load(sys.stdin).get("result",{}).get("totalSize",""))')"
+echo "[count] ContentVersion (클레임/일부인/영수증) 전체: ${total_target} 건"
+if [[ -n "$LIMIT" ]]; then
+    echo "[count] 이번 실행 추출 대상(--limit): $LIMIT 건 (전체 중 일부)"
+fi
+echo
+
+if [[ "$COUNT_ONLY" -eq 1 ]]; then
+    echo "[done] --count-only — 건수만 확인하고 종료."
+    exit 0
+fi
 
 # -----------------------------------------------------------------------------
 # 1) query — ContentVersion 메타 CSV
@@ -128,12 +167,12 @@ if [[ "$SKIP_QUERY" -eq 1 ]]; then
         echo "[error] --skip-query 인데 메타 CSV 없음: $META_CSV" >&2; exit 1
     fi
 else
-    echo "[step 1/3] query ContentVersion 메타 → $META_CSV"
+    echo "[step 1/3] query ContentVersion 메타 → $META_CSV${LIMIT:+ (LIMIT $LIMIT)}"
     sf data query \
-        --query "$CONTENTVERSION_SOQL" \
+        --query "$CV_SELECT" \
         --result-format csv \
         --api-version "$SF_API_VERSION" \
-        "${SF_ORG_ARGS[@]}" > "$META_CSV"
+        ${SF_ORG_ARGS[@]+"${SF_ORG_ARGS[@]}"} > "$META_CSV"
     echo "[ok] meta rows: $(($(wc -l < "$META_CSV") - 1))"
 fi
 echo
@@ -167,7 +206,7 @@ else
         sf api request rest \
             "/services/data/v$SF_API_VERSION/sobjects/ContentVersion/$cvId/VersionData" \
             --stream-to-file "$outfile" \
-            "${SF_ORG_ARGS[@]}" >/dev/null
+            ${SF_ORG_ARGS[@]+"${SF_ORG_ARGS[@]}"} >/dev/null
         local_dl=$((local_dl + 1))
     done < <(python3 -c '
 import csv, sys
