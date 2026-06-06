@@ -104,6 +104,64 @@ class HomeServiceTest {
             assertThat(result.todaySchedules[0].accountName).isEqualTo("이마트 부산점")
         }
 
+        // ========== 출근/근태 영역 노출 대상 여부 (attendanceApplicable) ==========
+
+        @Test
+        @DisplayName("여사원 - attendanceApplicable=true (본인 출근 등록 노출)")
+        fun attendanceApplicable_woman_true() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, role = AppAuthority.WOMAN)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()) } returns emptyList()
+
+            val result = homeService.getHomeData(userId)
+
+            assertThat(result.attendanceApplicable).isTrue()
+        }
+
+        @Test
+        @DisplayName("조장 - attendanceApplicable=true (팀 출근 현황 노출)")
+        fun attendanceApplicable_leader_true() {
+            val userId = 1L
+            val leader = createEmployee(id = userId, orgName = "부산1지점", role = AppAuthority.LEADER)
+            every { employeeRepository.findById(userId) } returns Optional.of(leader)
+            every { employeeRepository.findByOrgName("부산1지점") } returns listOf(leader)
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()) } returns emptyList()
+
+            val result = homeService.getHomeData(userId)
+
+            assertThat(result.attendanceApplicable).isTrue()
+        }
+
+        @Test
+        @DisplayName("지점장 - attendanceApplicable=false (본인 스케줄이 잡혀도 근태 영역 비노출)")
+        fun attendanceApplicable_branchManager_false() {
+            val userId = 1L
+            val manager = createEmployee(id = userId, role = AppAuthority.BRANCH_MANAGER)
+            every { employeeRepository.findById(userId) } returns Optional.of(manager)
+            // 지점장 본인 스케줄이 잡혀 있어도(else 분기) 근태 영역은 노출하지 않는다.
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()) } returns
+                listOf(createTeamMemberSchedule(id = 1L, employeeId = userId, accountId = 8938, workingCategory1 = WorkingCategory1.EVENT))
+            every { accountRepository.findByIdIn(any()) } returns listOf(createAccount(id = 8938, name = "이마트 부산점"))
+
+            val result = homeService.getHomeData(userId)
+
+            assertThat(result.attendanceApplicable).isFalse()
+        }
+
+        @Test
+        @DisplayName("role 미매핑(null) - attendanceApplicable=false")
+        fun attendanceApplicable_nullRole_false() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, role = null)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(any(), any()) } returns emptyList()
+
+            val result = homeService.getHomeData(userId)
+
+            assertThat(result.attendanceApplicable).isFalse()
+        }
+
         @Test
         @DisplayName("조장 - 팀 전체 스케줄 조회 -> orgName 기반 팀원 전체 스케줄 반환")
         fun leader_teamSchedules() {

@@ -1,5 +1,6 @@
 import '../models/login_response_model.dart';
 import '../models/auth_token_model.dart';
+import '../models/user_model.dart';
 
 /// 인증 원격 데이터소스 인터페이스
 ///
@@ -11,6 +12,9 @@ abstract class AuthRemoteDataSource {
 
   /// 토큰 갱신 API 호출
   Future<AuthTokenModel> refreshToken(String refreshToken);
+
+  /// 현재 사용자 정보 조회 API 호출 (자동로그인 후 사용자 복원용)
+  Future<UserModel> getMe();
 
   /// 현재 비밀번호 검증 API 호출
   Future<bool> verifyCurrentPassword(String currentPassword);

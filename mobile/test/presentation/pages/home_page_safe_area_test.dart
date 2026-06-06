@@ -27,6 +27,7 @@ void main() {
     return const HomeData(
       todaySchedules: [],
       attendanceSummary: AttendanceSummary(totalCount: 0, registeredCount: 0),
+      attendanceApplicable: true,
       safetyCheckRequired: false,
       notices: [],
       currentDate: '2026-05-04',

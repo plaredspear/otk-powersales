@@ -7,6 +7,9 @@ import '../models/schedule_model.dart';
 class HomeResponseModel {
   final List<ScheduleModel> todaySchedules;
   final AttendanceSummaryModel attendanceSummary;
+
+  /// 출근/근태 영역 노출 대상 여부 (여사원/조장만 true, 지점장 등은 false).
+  final bool attendanceApplicable;
   final bool safetyCheckRequired;
   final ExpiryAlertModel? expiryAlert;
   final List<NoticeModel> notices;
@@ -15,6 +18,7 @@ class HomeResponseModel {
   const HomeResponseModel({
     required this.todaySchedules,
     required this.attendanceSummary,
+    required this.attendanceApplicable,
     required this.safetyCheckRequired,
     this.expiryAlert,
     required this.notices,
@@ -34,6 +38,10 @@ class HomeResponseModel {
     final attendanceSummary =
         AttendanceSummaryModel.fromJson(attendanceSummaryJson);
 
+    // 구버전 서버 호환: 필드 부재 시 기존 동작(노출)로 폴백
+    final attendanceApplicable =
+        data['attendanceApplicable'] as bool? ?? true;
+
     final safetyCheckRequired = data['safetyCheckRequired'] as bool;
 
     ExpiryAlertModel? expiryAlert;
@@ -52,6 +60,7 @@ class HomeResponseModel {
     return HomeResponseModel(
       todaySchedules: todaySchedules,
       attendanceSummary: attendanceSummary,
+      attendanceApplicable: attendanceApplicable,
       safetyCheckRequired: safetyCheckRequired,
       expiryAlert: expiryAlert,
       notices: notices,

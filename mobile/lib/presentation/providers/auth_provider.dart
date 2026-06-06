@@ -153,22 +153,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       state = state.toLoading();
 
-      // 토큰 갱신 시도
+      // 토큰 갱신 시도 (refresh token 회전 — 새 토큰 페어 발급)
       final newToken =
           await _autoLoginUseCase(refreshToken: refreshToken);
 
-      // 새 토큰 저장
+      // 새 토큰 저장 — 회전된 refresh token 을 반드시 저장해야 다음 실행 시
+      // 재사용 탐지(Token Family revoke)로 잠기지 않는다.
       await _localDataSource.saveAccessToken(newToken.accessToken);
       await _localDataSource.saveRefreshToken(newToken.refreshToken);
 
-      // 자동 로그인 성공 시에도 user 정보가 필요하나,
-      // refresh API는 token만 반환하므로 미인증 상태로 처리하지 않고
-      // 홈 화면으로 이동 (향후 /me API로 사용자 정보 조회 가능)
-      // 현재 Mock에서는 간단히 인증 완료 처리
-      state = state.toUnauthenticated();
-      // NOTE: 실제 API 연동 시에는 토큰으로 사용자 정보를 조회하여
-      // toAuthenticated(user)를 호출해야 합니다.
-      // 현재 Mock 단계에서는 자동 로그인 시 로그인 화면으로 이동합니다.
+      // refresh 응답은 토큰만 주므로 /me 로 사용자 정보를 조회해 인증을 완료한다.
+      // (방금 저장한 access token 이 인터셉터를 통해 자동 첨부됨)
+      final user = await _repository.getMe();
+      state = state.toAuthenticated(user);
+      _registerFcmToken();
     } catch (_) {
       // 자동 로그인 실패 → 토큰 삭제 → 로그인 화면
       await _localDataSource.clearTokens();

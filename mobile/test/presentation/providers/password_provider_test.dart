@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/auth_token.dart';
 import 'package:mobile/domain/entities/password_validation.dart';
+import 'package:mobile/domain/entities/user.dart';
 import 'package:mobile/domain/repositories/auth_repository.dart';
 import 'package:mobile/domain/repositories/password_repository.dart';
 import 'package:mobile/domain/usecases/change_password_usecase.dart';
@@ -205,6 +206,11 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<LoginResult> login(String employeeCode, String password) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<User> getMe() {
     throw UnimplementedError();
   }
 

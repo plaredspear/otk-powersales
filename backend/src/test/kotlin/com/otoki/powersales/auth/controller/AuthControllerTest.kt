@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.auth.dto.request.LoginRequest
 import com.otoki.powersales.auth.dto.response.*
 import com.otoki.powersales.common.dto.response.*
+import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
 import com.otoki.powersales.auth.exception.InvalidTokenException
@@ -201,6 +202,32 @@ class AuthControllerTest : MobileControllerTestSupport() {
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+    }
+
+    // ========== Get Me Tests ==========
+
+    @Test
+    @DisplayName("내 정보 조회 성공 - 200 OK, 사용자 정보 반환")
+    fun getMe_success() {
+        every { authService.getMe(1L) } returns UserInfo(1L, "12345678", "홍길동", "서울지점", "여사원")
+
+        mockMvc.perform(get("/api/v1/mobile/auth/me"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(1))
+            .andExpect(jsonPath("$.data.employeeCode").value("12345678"))
+            .andExpect(jsonPath("$.data.name").value("홍길동"))
+            .andExpect(jsonPath("$.data.role").value("여사원"))
+    }
+
+    @Test
+    @DisplayName("내 정보 조회 - 사원 없음 시 404 USER_NOT_FOUND")
+    fun getMe_notFound() {
+        every { authService.getMe(1L) } throws EmployeeNotFoundException()
+
+        mockMvc.perform(get("/api/v1/mobile/auth/me"))
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"))
     }
 
     // ========== Change Password Tests ==========

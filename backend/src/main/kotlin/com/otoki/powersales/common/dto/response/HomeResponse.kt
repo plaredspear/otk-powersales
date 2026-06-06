@@ -8,6 +8,15 @@ import java.time.LocalDateTime
 data class HomeResponse(
     val todaySchedules: List<TeamMemberScheduleInfo>,
     val attendanceSummary: AttendanceSummaryInfo,
+    /**
+     * 출근/근태 영역 노출 대상 여부.
+     *
+     * 레거시(home.jsp)는 `appauthority ∈ {여사원, 조장}` 일 때만 근태 영역을 렌더했다.
+     * 지점장 / AccountViewAll / null(미매핑) 은 출근 영역 자체를 표시하지 않는다.
+     * - 여사원: 본인 출근 등록
+     * - 조장: 팀 출근 현황
+     */
+    val attendanceApplicable: Boolean,
     val safetyCheckRequired: Boolean,
     val expiryAlert: ExpiryAlertInfo?,
     val notices: List<NoticeInfo>,

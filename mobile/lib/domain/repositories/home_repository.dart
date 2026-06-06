@@ -7,6 +7,9 @@ import '../entities/schedule.dart';
 class HomeData {
   final List<Schedule> todaySchedules;
   final AttendanceSummary attendanceSummary;
+
+  /// 출근/근태 영역 노출 대상 여부 (여사원/조장만 true, 지점장 등은 false).
+  final bool attendanceApplicable;
   final bool safetyCheckRequired;
   final ExpiryAlert? expiryAlert;
   final List<Notice> notices;
@@ -15,6 +18,7 @@ class HomeData {
   const HomeData({
     required this.todaySchedules,
     required this.attendanceSummary,
+    required this.attendanceApplicable,
     required this.safetyCheckRequired,
     this.expiryAlert,
     required this.notices,
@@ -37,6 +41,7 @@ class HomeData {
     }
 
     return attendanceSummary == other.attendanceSummary &&
+        attendanceApplicable == other.attendanceApplicable &&
         safetyCheckRequired == other.safetyCheckRequired &&
         expiryAlert == other.expiryAlert &&
         currentDate == other.currentDate;
@@ -47,6 +52,7 @@ class HomeData {
     return Object.hash(
       Object.hashAll(todaySchedules),
       attendanceSummary,
+      attendanceApplicable,
       safetyCheckRequired,
       expiryAlert,
       Object.hashAll(notices),
@@ -56,7 +62,7 @@ class HomeData {
 
   @override
   String toString() {
-    return 'HomeData(todaySchedules: $todaySchedules, attendanceSummary: $attendanceSummary, safetyCheckRequired: $safetyCheckRequired, expiryAlert: $expiryAlert, notices: $notices, currentDate: $currentDate)';
+    return 'HomeData(todaySchedules: $todaySchedules, attendanceSummary: $attendanceSummary, attendanceApplicable: $attendanceApplicable, safetyCheckRequired: $safetyCheckRequired, expiryAlert: $expiryAlert, notices: $notices, currentDate: $currentDate)';
   }
 }
 

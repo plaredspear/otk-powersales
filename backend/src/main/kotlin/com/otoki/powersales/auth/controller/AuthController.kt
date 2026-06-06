@@ -46,6 +46,18 @@ class AuthController(
     }
 
     /**
+     * 현재 사용자 정보 조회 (자동로그인 후 사용자 복원용)
+     * GET /api/v1/mobile/auth/me
+     */
+    @GetMapping("/me")
+    fun getMe(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<UserInfo>> {
+        val response = authService.getMe(principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(response, "사용자 정보 조회 성공"))
+    }
+
+    /**
      * 비밀번호 검증
      * POST /api/v1/mobile/auth/verify-password
      */

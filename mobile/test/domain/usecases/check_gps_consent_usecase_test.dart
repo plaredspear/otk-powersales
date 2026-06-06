@@ -123,6 +123,9 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<User> getMe() async => throw UnimplementedError();
+
+  @override
   Future<AuthToken> refreshToken(String refreshToken) async {
     throw UnimplementedError();
   }

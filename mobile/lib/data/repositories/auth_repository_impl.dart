@@ -1,4 +1,5 @@
 import '../../domain/entities/auth_token.dart';
+import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
 import '../datasources/auth_local_datasource.dart';
@@ -39,6 +40,12 @@ class AuthRepositoryImpl implements AuthRepository {
     await _localDataSource.saveAccessToken(token.accessToken);
 
     return token;
+  }
+
+  @override
+  Future<User> getMe() async {
+    final userModel = await _remoteDataSource.getMe();
+    return userModel.toEntity();
   }
 
   @override
