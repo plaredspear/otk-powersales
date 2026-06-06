@@ -3,12 +3,14 @@ import {
   getFkResolveProgress,
   runNaturalKeyFkResolve,
   runPicklistColumn,
+  runUploadFilePolymorphicParent,
   runUserRoleHierarchyRecalc,
   startFkResolve,
   type FkResolveProgress,
   type NaturalKeyFkResponse,
   type PicklistColumn,
   type PicklistResponse,
+  type UploadFileParentResponse,
   type UserRoleHierarchyRecalcResponse,
 } from '@/api/admin/sfMigration';
 
@@ -46,6 +48,12 @@ export function useRunPicklistColumn() {
 export function useRunNaturalKeyFkResolve() {
   return useMutation<NaturalKeyFkResponse>({
     mutationFn: runNaturalKeyFkResolve,
+  });
+}
+
+export function useRunUploadFilePolymorphicParent() {
+  return useMutation<UploadFileParentResponse>({
+    mutationFn: runUploadFilePolymorphicParent,
   });
 }
 
