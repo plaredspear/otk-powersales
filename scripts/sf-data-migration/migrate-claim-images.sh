@@ -13,6 +13,11 @@
 # 스크립트는 콘솔에 그대로 올릴 로컬 산출물을 준비하고, 업로드 대상 경로를 안내한다.
 # (aws CLI 로 자동 업로드까지 원하면 --aws-upload 플래그.)
 #
+# 산출물 위치 (<out> = input/claim-images/):
+#   기존 input/upload_files.csv (레거시 UploadFile__c 추출분) 과 파일명이 겹치므로, 클레임
+#   산출물은 input/claim-images/ 하위에 격리한다. Stage1 적재도 클레임 전용 별도 S3 prefix
+#   (--stage1-prefix) 로 독립 실행하여 레거시 upload_files.csv 와 섞이지 않게 한다.
+#
 # 파이프라인 (단계):
 #   1) query      sf data query (ContentVersion 메타) → <out>/contentversion-claim.csv
 #   2) download   메타 CSV 행별 sf api request (VersionData) → <out>/images/{CV.Id}.{ext} (증분)
@@ -53,7 +58,11 @@ IMAGE_PREFIX="uploads/claim/migrated"
 # 클레임 이미지만 적재 — 이미지 확장자 화이트리스트 (PDF 등 비이미지 첨부 제외).
 IMAGE_EXTS="jpg,jpeg,png,gif,bmp,webp,heic,heif"
 STAGE1_PREFIX=""
-OUT_DIR="$SCRIPT_DIR/output/claim-images"
+# 산출물(메타 CSV / 이미지 / upload_files.csv)을 두는 전용 하위폴더.
+# input/ 아래 두되, 기존 input/upload_files.csv (레거시 UploadFile__c 추출분) 과 파일명이
+# 겹치므로 반드시 claim-images/ 하위에 격리한다 (덮어쓰기 방지). Stage1 은 클레임 전용
+# 별도 S3 prefix 로 독립 실행하여 레거시 upload_files.csv 와 분리 적재한다.
+OUT_DIR="$SCRIPT_DIR/input/claim-images"
 
 SKIP_QUERY=0
 SKIP_DOWNLOAD=0
