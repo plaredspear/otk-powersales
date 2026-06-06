@@ -298,7 +298,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 _rememberEmployeeNumber = value ?? false;
               });
             },
-            activeColor: AppColors.secondary,
+            activeColor: AppColors.otokiYellow,
+            checkColor: AppColors.textPrimary,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: VisualDensity.compact,
             side: const BorderSide(color: Color(0xFFBBBBBB), width: 1.5),
@@ -331,7 +332,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 _autoLogin = value ?? false;
               });
             },
-            activeColor: AppColors.secondary,
+            activeColor: AppColors.otokiYellow,
+            checkColor: AppColors.textPrimary,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: VisualDensity.compact,
             side: const BorderSide(color: Color(0xFFBBBBBB), width: 1.5),
