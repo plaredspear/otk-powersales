@@ -276,7 +276,10 @@ class Employee(
     // --- employee_info @OneToOne 관계 (PK 공유) ---
     // employee_info.employee_id = employee.employee_id 공유 PK 1:1. EmployeeInfo 가 owning side(@MapsId).
     // 영속 시 부모(this) PK 가 자식 PK 로 전파된다.
-    // LAZY 동작은 build.gradle.kts 의 hibernate.enhancement.enableLazyInitialization 에 의존.
+    // 본 필드는 inverse(non-owning) side — JPA 명세상 fetch=LAZY 는 hint 라 표준 환경에선 EAGER 로
+    // fallback 될 수 있으나(IDE 경고), 본 프로젝트는 hibernate bytecode enhancement
+    // (enableLazyInitialization, build.gradle.kts)가 켜져 있어 실제로 LAZY 로 동작한다
+    // (EmployeeInfoSharedPkTest 가 isLoaded==false 로 검증). 제거하면 EAGER fallback → N+1. 유지 필수.
 
     @OneToOne(mappedBy = "employee", cascade = [CascadeType.ALL], fetch = FetchType.LAZY, orphanRemoval = true)
     // employeeCode 가 null(사번 미보유 사원)이면 인증/디바이스 정보 대상이 아니므로 EmployeeInfo 를 만들지 않는다.
@@ -323,7 +326,7 @@ class Employee(
     private fun ensureEmployeeInfo(): EmployeeInfo {
         if (employeeInfo == null) {
             // 사번 미보유 사원은 인증/디바이스 정보 대상이 아니므로 EmployeeInfo 를 가질 수 없다.
-            // EmployeeInfo.employeeId 는 @PrimaryKeyJoinColumn 으로 영속 시 employee.id 가 전파된다.
+            // EmployeeInfo.employeeId 는 @MapsId 로 영속 시 employee.id 가 자식 PK 로 전파된다.
             val code = employeeCode
                 ?: throw IllegalStateException("사번(employee_code) 미보유 사원은 EmployeeInfo(인증/디바이스 정보)를 가질 수 없습니다")
             employeeInfo = EmployeeInfo(employee = this, employeeCode = code)
