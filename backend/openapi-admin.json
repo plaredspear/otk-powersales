@@ -4566,6 +4566,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseHerokuFkResolveProgressResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/HerokuFkResolveProgressResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseHolidayMasterResponse" : {
         "properties" : {
           "data" : {
@@ -9796,6 +9825,88 @@
           },
           "year" : {
             "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "HerokuFkResolveProgressResponse" : {
+        "properties" : {
+          "completedTables" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "currentTable" : {
+            "type" : [ "string", "null" ]
+          },
+          "errors" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "finishedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "startedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "tableResults" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HerokuFkTableResult"
+            },
+            "type" : "array"
+          },
+          "totalRowsAffected" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalTables" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "unmatched" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HerokuFkUnmatched"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "HerokuFkTableResult" : {
+        "properties" : {
+          "column" : {
+            "type" : "string"
+          },
+          "rowsAffected" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "table" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HerokuFkUnmatched" : {
+        "properties" : {
+          "column" : {
+            "type" : "string"
+          },
+          "naturalKey" : {
+            "type" : "string"
+          },
+          "table" : {
+            "type" : "string"
+          },
+          "unmatchedCount" : {
+            "format" : "int64",
             "type" : "integer"
           }
         },
@@ -18538,6 +18649,42 @@
           }
         },
         "tags" : [ "admin-female-employee-placement-check-controller" ]
+      }
+    },
+    "/api/v1/admin/heroku-migration/stage2/fk" : {
+      "post" : {
+        "operationId" : "runFkResolve_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHerokuFkResolveProgressResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "heroku-migration-stage-2-controller" ]
+      }
+    },
+    "/api/v1/admin/heroku-migration/stage2/fk/progress" : {
+      "get" : {
+        "operationId" : "getFkProgress_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHerokuFkResolveProgressResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "heroku-migration-stage-2-controller" ]
       }
     },
     "/api/v1/admin/holiday-masters" : {

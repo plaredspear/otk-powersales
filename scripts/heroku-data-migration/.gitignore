@@ -1,0 +1,13 @@
+# export 데이터 / 산출물 일체 git 추적 금지 (민감 정보 누설 회피)
+input/*
+input-sample/*
+output/*
+!input/.gitkeep
+!input-sample/.gitkeep
+!output/.gitkeep
+
+# DB 연결 정보 (db.properties.template 만 커밋)
+db.properties
+
+# kotlin script 컴파일 캐시
+.kotlin/
