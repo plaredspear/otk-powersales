@@ -1447,15 +1447,19 @@ val UPLOAD_FILE_METADATA = EntityMetadata(
         FieldMapping("Id", "sfid", nullable = false),
         FieldMapping("Name", "name"),
         FieldMapping("UniqueKey__c", "unique_key"),
-        FieldMapping("RecordId__c", "record_id"),
+        FieldMapping("RecordId__c", "record_sfid"),
         FieldMapping("Size__c", "size"),
-        FieldMapping("Object__c", "parent_type", nullable = false),
+        // SF Object__c (= 부모 SObject API 명) 는 원본 그대로 object_type 에 적재.
+        // parent_type 은 Stage2 가 object_type 기준으로 파생 (record_sfid → parent_id 동일 패턴).
+        FieldMapping("Object__c", "object_type"),
         FieldMapping("Url__c", "url"),
         FieldMapping("UploadKbn__c", "upload_kbn"),
         FieldMapping("FileId__c", "file_id"),
         FieldMapping("Date__c", "file_date", isString = false),
         FieldMapping("IsDeleted", "is_deleted", isString = false),
         FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        // SF LastModifiedDate → updated_at (네이티브 COPY 라 JPA auditing 미작동, 명시 매핑 필요).
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
         FieldMapping("OwnerId", "owner_sfid"),
         FieldMapping("CreatedById", "created_by_sfid"),
         FieldMapping("LastModifiedById", "last_modified_by_sfid")

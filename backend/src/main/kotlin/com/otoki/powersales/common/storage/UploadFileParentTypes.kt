@@ -8,7 +8,7 @@ package com.otoki.powersales.common.storage
  * (NoticeService / SuggestionService 등) 도 같은 값을 사용하여 마이그레이션 row 와 신규 row 의
  * `parent_type` 값이 정합한다.
  *
- * Stage2 polymorphic-parent substep 이 `(parent_type, record_id)` → `parent_id` 변환 시
+ * Stage2 polymorphic-parent substep 이 `(parent_type, record_sfid)` → `parent_id` 변환 시
  * [PARENT_TYPE_TO_TABLE] 를 참조.
  */
 object UploadFileParentTypes {
@@ -28,7 +28,7 @@ object UploadFileParentTypes {
  * UPDATE powersales.upload_file uf
  * SET parent_id = c.<idColumn>
  * FROM powersales.<table> c
- * WHERE uf.parent_type = '<sfObject>' AND uf.record_id = c.sfid AND uf.parent_id IS NULL;
+ * WHERE uf.parent_type = '<sfObject>' AND uf.record_sfid = c.sfid AND uf.parent_id IS NULL;
  * ```
  *
  * 신규 polymorphic 대상 entity 추가 시 본 표에 1줄 추가.

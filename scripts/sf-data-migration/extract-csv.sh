@@ -746,8 +746,8 @@ EOF
 UPLOAD_FILE_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, UniqueKey__c, RecordId__c, Size__c, Object__c, Url__c,
-    UploadKbn__c, FileId__c, Date__c, IsDeleted, CreatedDate, OwnerId,
-    CreatedById, LastModifiedById
+    UploadKbn__c, FileId__c, Date__c, IsDeleted, CreatedDate, LastModifiedDate,
+    OwnerId, CreatedById, LastModifiedById
 FROM UploadFile__c
 EOF
 )

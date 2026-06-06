@@ -77,6 +77,7 @@ class SfFkResolveInventoryTest {
         "commute_log_sfid" to Expectation(FkResolutionKind.MAPPED, "attendance_log"),
         "theme_sfid" to Expectation(FkResolutionKind.MAPPED, "inspection_theme"),
         "category_sfid" to Expectation(FkResolutionKind.MAPPED, "account_category_master"),
+        "last_monthly_sales_history_sfid" to Expectation(FkResolutionKind.MAPPED, "monthly_sales_history"),
 
         // ── prefix == table 자동추론 (정확) ──
         // group_sfid: group_member.group_sfid → group.group_id. FK_PREFIX_MAPPING 미등록이나
@@ -87,6 +88,9 @@ class SfFkResolveInventoryTest {
         "related_sfid" to Expectation(FkResolutionKind.SKIP, null),
         "user_or_group_sfid" to Expectation(FkResolutionKind.SKIP, null),
         "target_sfid" to Expectation(FkResolutionKind.SKIP, null),
+        // upload_file.record_sfid: parent_type 분기 polymorphic (claim/notice/proposal/site_activity).
+        // 일반 substep 제외 ("record" ∈ SKIP_FK_PREFIXES) → runUploadFilePolymorphicParent() 전용 처리.
+        "record_sfid" to Expectation(FkResolutionKind.SKIP, null),
 
         // permission_set_sfid: SKIP_FK_PREFIXES 에 없어 sfid prefix 경로상 AUTO_INFERRED (ref permission_set).
         // 실제 해소는 NaturalKey FK Service 가 permission_set_assignment.permission_set_sfid →
@@ -96,11 +100,12 @@ class SfFkResolveInventoryTest {
     )
 
     @Test
-    @DisplayName("인벤토리 크기 = 39 (backend entity 의 @Column(name=..._sfid) 전수, Spec #849 dk_account_sfid 추가)")
+    @DisplayName("인벤토리 크기 = 41 (backend entity 의 @Column(name=..._sfid) 전수)")
     fun inventorySizeTripwire() {
         // 신규 *_sfid 컬럼 추가 시 이 숫자가 어긋나 사람이 EXPECTED 를 갱신하도록 강제.
-        // 갱신 명령은 클래스 KDoc 참조. 39 = 권위 목록 (sfid 단독 PK 컬럼은 제외).
-        assertThat(expected).hasSize(39)
+        // 갱신 명령은 클래스 KDoc 참조. 41 = 권위 목록 (sfid 단독 PK 컬럼은 제외).
+        // record_sfid (upload_file polymorphic SKIP) + last_monthly_sales_history_sfid (기존 누락분) 반영.
+        assertThat(expected).hasSize(41)
     }
 
     @Test

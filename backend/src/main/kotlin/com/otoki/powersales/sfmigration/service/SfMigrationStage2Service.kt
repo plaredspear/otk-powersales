@@ -91,10 +91,15 @@ class SfMigrationStage2Service(
      * 운영 backend 의 PasswordEncoder (BCrypt strength 10) 빈을 재사용한다.
      */
     /**
-     * Stage 2-A (polymorphic parent) — UploadFile.record_id (= SF Id text) → parent_id (Long FK) 채움.
+     * Stage 2-A (polymorphic parent) — UploadFile 의 SF 원본 → 신규 시스템 값 파생.
+     *
+     * 2단계로 처리한다 (record_sfid → parent_id 와 동일한 "SF 원본 보존 → Stage2 파생" 패턴):
+     *  1. object_type (SF Object__c 원본) → parent_type 복사. object_type 이 비어 있던 row
+     *     (모바일 등록 경로) 는 DB DEFAULT 'UNKNOWN' 유지.
+     *  2. (parent_type, record_sfid) → parent_id (Long FK) 채움.
      *
      * 일반 FK resolve (`SfMigrationStage2FkService`) 는 `*_sfid` → `*_id` 1:1 패턴만 처리하므로,
-     * UploadFile 처럼 한 `record_id` 컬럼이 `parent_type` 분기로 여러 entity 를 가리키는 polymorphic
+     * UploadFile 처럼 한 `record_sfid` 컬럼이 `parent_type` 분기로 여러 entity 를 가리키는 polymorphic
      * 케이스는 본 substep 이 별도 처리한다.
      *
      * 매핑 표는 [UPLOAD_FILE_POLYMORPHIC_PARENTS] (SoT) — SF Object 명 → (refTable, refIdColumn).
@@ -103,6 +108,23 @@ class SfMigrationStage2Service(
     @Transactional
     fun runUploadFilePolymorphicParent(): SfMigrationStage2Response {
         val results = mutableListOf<SubstepResult>()
+
+        // (1) object_type → parent_type 파생. 아직 미파생 (parent_type = 'UNKNOWN') 인 row 한정 (멱등).
+        val parentTypeRows = em.createNativeQuery(
+            """
+            UPDATE powersales.upload_file
+            SET parent_type = object_type
+            WHERE object_type IS NOT NULL
+              AND object_type <> ''
+              AND parent_type = 'UNKNOWN'
+            """.trimIndent()
+        ).executeUpdate()
+        results += SubstepResult(
+            label = "upload_file.parent_type (object_type → parent_type)",
+            rowsAffected = parentTypeRows,
+        )
+
+        // (2) (parent_type, record_sfid) → parent_id.
         for ((sfObjectName, spec) in UPLOAD_FILE_POLYMORPHIC_PARENTS) {
             val rows = em.createNativeQuery(
                 """
@@ -110,7 +132,7 @@ class SfMigrationStage2Service(
                 SET parent_id = c.${spec.refIdColumn}
                 FROM powersales.${spec.refTable} c
                 WHERE uf.parent_type = :sfObject
-                  AND uf.record_id = c.sfid
+                  AND uf.record_sfid = c.sfid
                   AND uf.parent_id IS NULL
                 """.trimIndent()
             )

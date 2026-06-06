@@ -352,7 +352,7 @@ class AdminClaimServiceTest {
         sfid = "a0O%012d".format(id),
         name = name,
         uniqueKey = uniqueKey,
-        recordId = "a012x00000ABCDE",
+        recordSfid = "a012x00000ABCDE",
         parentType = "DKRetail__Claim__c",
         parentId = parentId,
         uploadKbn = uploadKbn
