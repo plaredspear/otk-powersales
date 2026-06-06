@@ -1,7 +1,6 @@
 package com.otoki.powersales.auth.policy
 
 import com.otoki.powersales.auth.exception.NewPasswordPolicyViolationException
-import com.otoki.powersales.auth.exception.NewPasswordSameAsTemporaryException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -28,6 +27,12 @@ class PasswordPolicyValidatorTest {
         @DisplayName("한글/특수문자 혼합 - 정책 위반 없음 -> 통과")
         fun pass_mixedKoreanSpecial() {
             assertThatCode { validator.validate("abcd1234!@한") }.doesNotThrowAnyException()
+        }
+
+        @Test
+        @DisplayName("\"1234\" 입력 - 임시 비밀번호 동일 차단 제거됨 -> 통과")
+        fun pass_temporaryPasswordAllowed() {
+            assertThatCode { validator.validate("1234") }.doesNotThrowAnyException()
         }
 
         @Test
@@ -131,24 +136,12 @@ class PasswordPolicyValidatorTest {
     }
 
     @Nested
-    @DisplayName("validate - 임시 비밀번호 동일")
-    inner class TemporaryPasswordSame {
-
-        @Test
-        @DisplayName("정확히 \"1234\" 입력 -> NewPasswordSameAsTemporaryException")
-        fun sameAsTemporary() {
-            assertThatThrownBy { validator.validate("1234") }
-                .isInstanceOf(NewPasswordSameAsTemporaryException::class.java)
-        }
-    }
-
-    @Nested
     @DisplayName("validate - 위반 우선순위")
     inner class PriorityRules {
 
         @Test
-        @DisplayName("\"123\" 입력 -> 길이 위반 우선 (SAME_AS_TEMPORARY 미발생)")
-        fun shortNotTemp() {
+        @DisplayName("\"123\" 입력 -> 길이 위반")
+        fun shortPassword() {
             assertThatThrownBy { validator.validate("123") }
                 .isInstanceOf(NewPasswordPolicyViolationException::class.java)
                 .satisfies({

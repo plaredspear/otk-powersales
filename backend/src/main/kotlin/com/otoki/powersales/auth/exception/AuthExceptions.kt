@@ -46,15 +46,6 @@ class NewPasswordPolicyViolationException(
 )
 
 /**
- * 새 비밀번호가 임시 비밀번호("1234") 와 동일.
- */
-class NewPasswordSameAsTemporaryException : BusinessException(
-    errorCode = "AUTH_NEW_PASSWORD_SAME_AS_TEMP",
-    message = "임시 비밀번호와 동일한 비밀번호는 사용할 수 없습니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
-/**
  * 강제 변경 미완료 사원이 화이트리스트 외 API 호출.
  *
  * 화이트리스트: change-password / logout / refresh-token.

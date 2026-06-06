@@ -9,7 +9,6 @@ import com.otoki.powersales.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.auth.exception.InvalidCurrentPasswordException
 import com.otoki.powersales.auth.exception.InvalidTokenException
 import com.otoki.powersales.auth.exception.NewPasswordPolicyViolationException
-import com.otoki.powersales.auth.exception.NewPasswordSameAsTemporaryException
 import com.otoki.powersales.auth.exception.TermsNotFoundException
 import com.otoki.powersales.auth.exception.TokenReuseDetectedException
 import com.otoki.powersales.common.security.PasswordChangeRequiredFilter
@@ -450,12 +449,6 @@ class AuthControllerTest : MobileControllerTestSupport() {
                 InvalidCurrentPasswordException(),
                 401,
                 "AUTH_CURRENT_PASSWORD_MISMATCH",
-            ),
-            Arguments.of(
-                "sameAsTemporary -> 400 AUTH_NEW_PASSWORD_SAME_AS_TEMP",
-                NewPasswordSameAsTemporaryException(),
-                400,
-                "AUTH_NEW_PASSWORD_SAME_AS_TEMP",
             ),
         )
     }
