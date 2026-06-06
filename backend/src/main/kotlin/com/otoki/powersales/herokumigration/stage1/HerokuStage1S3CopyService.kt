@@ -270,7 +270,7 @@ class HerokuStage1S3CopyService(
                     if (meta.requiresPkResolve) {
                         insertWithPkResolve(conn, meta, stagingTable, fullyQualified, mappedColumns, columnsList, reset)
                     } else {
-                        val ins = insertPlain(conn, fullyQualified, stagingTable, columnsList, reset)
+                        val ins = insertPlain(conn, fullyQualified, stagingTable, mappedColumns, columnsList, reset)
                         ins to 0
                     }
 
@@ -302,18 +302,23 @@ class HerokuStage1S3CopyService(
      *
      * reset=true 면 TRUNCATE 후라 충돌 없음. reset=false 면 ON CONFLICT DO NOTHING 으로 최소 안전
      * (serial PK 라 자연 키 UNIQUE 가 있는 entity 만 실제 충돌 매칭. 없으면 누적되므로 reset 권장).
+     *
+     * audit 컬럼(created_at/updated_at) 은 [buildSelectClause] 가 `COALESCE(s.<col>, now())` 로 감싸
+     * Heroku 원본에 audit 컬럼이 없는 entity (BaseEntity 상속 4종) 의 NULL → now() fallback 을 보장한다.
      */
     private fun insertPlain(
         conn: java.sql.Connection,
         fullyQualified: String,
         stagingTable: String,
+        mappedColumns: List<String>,
         columnsList: String,
         reset: Boolean,
     ): Int {
         val conflict = if (reset) "" else " ON CONFLICT DO NOTHING"
+        val selectClause = buildSelectClause(mappedColumns, "")
         val sql =
             "INSERT INTO $fullyQualified ($columnsList) " +
-                "SELECT $columnsList FROM $stagingTable$conflict"
+                "SELECT $selectClause FROM $stagingTable$conflict"
         return conn.createStatement().use { st -> st.executeUpdate(sql) }
     }
 
@@ -336,7 +341,8 @@ class HerokuStage1S3CopyService(
             "${meta.targetName} requires employee_code column for shared-PK resolve"
         }
         // INNER JOIN employee → employee_id 채움. employee_code 컬럼은 staging(자연 키)에 그대로 잔류.
-        val selectCols = mappedColumns.joinToString(", ") { "s.${quoteIdent(it)}" }
+        // audit 컬럼은 buildSelectClause 가 COALESCE(..., now()) 로 감싼다.
+        val selectCols = buildSelectClause(mappedColumns, "s")
         val conflict = if (reset) "" else " ON CONFLICT DO NOTHING"
         val sql =
             "INSERT INTO $fullyQualified (employee_id, $columnsList) " +
@@ -389,11 +395,40 @@ class HerokuStage1S3CopyService(
     }
 
     /** PG reserved keyword 대응 — Heroku 대상 테이블/컬럼에는 reserved 가 없으나 안전 차원. */
-    private fun quoteIdent(name: String): String =
-        if (name in PG_RESERVED) "\"$name\"" else name
+    private fun quoteIdent(name: String): String = Companion.quoteIdent(name)
 
     companion object {
         private val PG_RESERVED = setOf("user", "group", "order", "desc")
+
+        /**
+         * Heroku 원본에 대응 컬럼이 없을 때 now() 로 fallback 할 audit 컬럼 (BaseEntity NOT NULL).
+         * BaseEntity.createdAt → created_at, BaseEntity.updatedAt → updated_at.
+         */
+        private val AUDIT_NOW_FALLBACK_COLUMNS = setOf("created_at", "updated_at")
+
+        /** PG reserved keyword 대응 — Heroku 대상 테이블/컬럼에는 reserved 가 없으나 안전 차원. */
+        internal fun quoteIdent(name: String): String =
+            if (name in PG_RESERVED) "\"$name\"" else name
+
+        /**
+         * INSERT-SELECT 의 SELECT 절 생성 — audit 컬럼(created_at/updated_at)은 `COALESCE(<col>, now())`,
+         * 그 외 컬럼은 그대로 select.
+         *
+         * Heroku 원본에 audit 컬럼이 없는 entity (BaseEntity 상속 4종: EducationCode / SafetyCheckItem /
+         * EmployeeAdmin / SafetyCheckSubmission) 는 CSV 에 createddate/lastmodifieddate 헤더가 없어 staging
+         * 에 NULL 로 남는다. created_at/updated_at 이 NOT NULL 이므로 그대로 INSERT 하면 위반 → 마이그레이션
+         * 실행 시각(now())으로 fallback. CSV 에 audit 값이 있는 AuditedEntity (inst_date/upd_date 매핑) 는
+         * COALESCE 가 staging 값을 그대로 통과시켜 원본 시각 보존.
+         *
+         * @param alias staging 테이블 alias (예: "s"). 빈 문자열이면 alias 없이 컬럼명만.
+         */
+        internal fun buildSelectClause(mappedColumns: List<String>, alias: String): String {
+            val prefix = if (alias.isBlank()) "" else "$alias."
+            return mappedColumns.joinToString(", ") { col ->
+                val ref = "$prefix${quoteIdent(col)}"
+                if (col in AUDIT_NOW_FALLBACK_COLUMNS) "COALESCE($ref, now())" else ref
+            }
+        }
     }
 }
 
