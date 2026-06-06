@@ -91,55 +91,43 @@ class SfMigrationStage2Service(
      * 운영 backend 의 PasswordEncoder (BCrypt strength 10) 빈을 재사용한다.
      */
     /**
-     * Stage 2-A (polymorphic parent) — UploadFile 의 SF 원본 → 신규 시스템 값 파생.
+     * Stage 2-A (polymorphic parent) — UploadFile 의 record_sfid 로 부모 entity 를 찾아
+     * parent_type (엔티티명) + parent_id (Long FK) 를 동시에 채운다.
      *
-     * 2단계로 처리한다 (record_sfid → parent_id 와 동일한 "SF 원본 보존 → Stage2 파생" 패턴):
-     *  1. object_type (SF Object__c 원본) → parent_type 복사. object_type 이 비어 있던 row
-     *     (모바일 등록 경로) 는 DB DEFAULT 'UNKNOWN' 유지.
-     *  2. (parent_type, record_sfid) → parent_id (Long FK) 채움.
+     * **record_sfid 직접 조인 방식**: SF Object__c (object_type) 는 모바일 등록 경로(claim /
+     * site_activity)에서 미설정(NULL)이라 신뢰할 수 없다. 대신 record_sfid (부모 SObject Id)
+     * 를 각 부모 테이블의 sfid 와 조인해 **실제 매칭되는 테이블**을 부모로 확정한다. SF Id 는
+     * 전역 유니크라 한 record_sfid 는 최대 한 부모 테이블에만 매칭된다 (충돌 없음).
+     * object_type 은 SF 원본 보존용으로만 유지하며 본 resolve 의 분기 키로 쓰지 않는다.
      *
      * 일반 FK resolve (`SfMigrationStage2FkService`) 는 `*_sfid` → `*_id` 1:1 패턴만 처리하므로,
-     * UploadFile 처럼 한 `record_sfid` 컬럼이 `parent_type` 분기로 여러 entity 를 가리키는 polymorphic
-     * 케이스는 본 substep 이 별도 처리한다.
+     * UploadFile 처럼 한 `record_sfid` 컬럼이 여러 entity 를 가리키는 polymorphic 케이스는 본
+     * substep 이 별도 처리한다.
      *
-     * 매핑 표는 [UPLOAD_FILE_POLYMORPHIC_PARENTS] (SoT) — SF Object 명 → (refTable, refIdColumn).
+     * 매핑 표는 [UPLOAD_FILE_POLYMORPHIC_PARENTS] (SoT) — entityName → (refTable, refIdColumn).
      * 한 entry 당 한 UPDATE 실행하며, 재호출 시 `parent_id IS NULL` 조건으로 멱등성 확보.
      */
     @Transactional
     fun runUploadFilePolymorphicParent(): SfMigrationStage2Response {
         val results = mutableListOf<SubstepResult>()
 
-        // (1) object_type → parent_type 파생. 아직 미파생 (parent_type = 'UNKNOWN') 인 row 한정 (멱등).
-        val parentTypeRows = em.createNativeQuery(
-            """
-            UPDATE powersales.upload_file
-            SET parent_type = object_type
-            WHERE object_type IS NOT NULL
-              AND object_type <> ''
-              AND parent_type = 'UNKNOWN'
-            """.trimIndent()
-        ).executeUpdate()
-        results += SubstepResult(
-            label = "upload_file.parent_type (object_type → parent_type)",
-            rowsAffected = parentTypeRows,
-        )
-
-        // (2) (parent_type, record_sfid) → parent_id.
-        for ((sfObjectName, spec) in UPLOAD_FILE_POLYMORPHIC_PARENTS) {
+        // record_sfid ↔ 부모 sfid 조인으로 parent_type (엔티티명) + parent_id 동시 설정.
+        // object_type 무관. parent_id IS NULL 한정 (멱등) — 이미 연결된 row 는 건드리지 않는다.
+        for ((entityName, spec) in UPLOAD_FILE_POLYMORPHIC_PARENTS) {
             val rows = em.createNativeQuery(
                 """
                 UPDATE powersales.upload_file uf
-                SET parent_id = c.${spec.refIdColumn}
+                SET parent_type = :entityName,
+                    parent_id = c.${spec.refIdColumn}
                 FROM powersales.${spec.refTable} c
-                WHERE uf.parent_type = :sfObject
-                  AND uf.record_sfid = c.sfid
+                WHERE uf.record_sfid = c.sfid
                   AND uf.parent_id IS NULL
                 """.trimIndent()
             )
-                .setParameter("sfObject", sfObjectName)
+                .setParameter("entityName", entityName)
                 .executeUpdate()
             results += SubstepResult(
-                label = "upload_file.parent_id ($sfObjectName → ${spec.refTable}.${spec.refIdColumn})",
+                label = "upload_file ($entityName ← record_sfid = ${spec.refTable}.sfid)",
                 rowsAffected = rows,
             )
         }
