@@ -1,10 +1,10 @@
-.PHONY: run run-ios run-android build-apk build-ios test setup clean
+.PHONY: setup test clean \
+	run-local run-local-ios run-local-android \
+	run-dev run-dev-ios run-dev-android \
+	run-prod run-prod-ios run-prod-android \
+	build-apk-dev build-apk-prod build-ios-dev build-ios-prod
 
-## STAGE: local | dev | prod (기본 local)
-STAGE ?= local
-CONFIG := config/$(STAGE).json
-
-## Flutter 실행기 (기본 fvm). fvm 미사용 시: make run FLUTTER=flutter
+## Flutter 실행기 (기본 fvm). fvm 미사용 시: make run-local FLUTTER=flutter
 FLUTTER ?= fvm flutter
 
 ## 초기 설정: config/<stage>.json 생성 (최초 1회)
@@ -17,25 +17,44 @@ setup:
 	done
 	$(FLUTTER) pub get
 
-## 앱 실행 (자동 디바이스 선택). 예: make run STAGE=dev
-run: setup
-	$(FLUTTER) run --dart-define-from-file=$(CONFIG)
+## ───────────── local 실행 ─────────────
+## 자동 디바이스 선택
+run-local: setup
+	$(FLUTTER) run --dart-define-from-file=config/local.json
+## iOS 시뮬레이터
+run-local-ios: setup
+	$(FLUTTER) run -d iPhone --dart-define-from-file=config/local.json
+## Android 에뮬레이터
+run-local-android: setup
+	$(FLUTTER) run -d android --dart-define-from-file=config/local.json
 
-## iOS 시뮬레이터에서 실행. 예: make run-ios STAGE=local
-run-ios: setup
-	$(FLUTTER) run -d iPhone --dart-define-from-file=$(CONFIG)
+## ───────────── dev 실행 ─────────────
+run-dev: setup
+	$(FLUTTER) run --dart-define-from-file=config/dev.json
+run-dev-ios: setup
+	$(FLUTTER) run -d iPhone --dart-define-from-file=config/dev.json
+run-dev-android: setup
+	$(FLUTTER) run -d android --dart-define-from-file=config/dev.json
 
-## Android 에뮬레이터에서 실행. 예: make run-android STAGE=dev
-run-android: setup
-	$(FLUTTER) run -d android --dart-define-from-file=$(CONFIG)
+## ───────────── prod 실행 ─────────────
+run-prod: setup
+	$(FLUTTER) run --dart-define-from-file=config/prod.json
+run-prod-ios: setup
+	$(FLUTTER) run -d iPhone --dart-define-from-file=config/prod.json
+run-prod-android: setup
+	$(FLUTTER) run -d android --dart-define-from-file=config/prod.json
 
-## APK 빌드 (release). 예: make build-apk STAGE=prod
-build-apk: setup
-	$(FLUTTER) build apk --release --dart-define-from-file=$(CONFIG)
-
-## iOS 빌드 (release). 예: make build-ios STAGE=prod
-build-ios: setup
-	$(FLUTTER) build ios --release --dart-define-from-file=$(CONFIG)
+## ───────────── 빌드 (release) ─────────────
+## APK 빌드
+build-apk-dev: setup
+	$(FLUTTER) build apk --release --dart-define-from-file=config/dev.json
+build-apk-prod: setup
+	$(FLUTTER) build apk --release --dart-define-from-file=config/prod.json
+## iOS 빌드
+build-ios-dev: setup
+	$(FLUTTER) build ios --release --dart-define-from-file=config/dev.json
+build-ios-prod: setup
+	$(FLUTTER) build ios --release --dart-define-from-file=config/prod.json
 
 ## 테스트 실행
 test:
