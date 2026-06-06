@@ -311,15 +311,21 @@ class AppRouter {
   }
 
   /// 네비게이션 헬퍼 메서드
+  ///
+  /// 라우트는 `routes:` 테이블로 정의되어 항상 `MaterialPageRoute<dynamic>`로
+  /// 생성된다. 따라서 `pushNamed<T>`에 구체 타입(T=Product 등)을 넘기면
+  /// `Route<dynamic>` → `Route<T?>` 캐스트가 실패한다.
+  /// route 는 dynamic 으로 push 하고 pop 결과값만 T 로 캐스트한다.
   static Future<T?> navigateTo<T>(
     BuildContext context,
     String routeName, {
     Object? arguments,
-  }) {
-    return Navigator.of(context).pushNamed<T>(
+  }) async {
+    final result = await Navigator.of(context).pushNamed<dynamic>(
       routeName,
       arguments: arguments,
     );
+    return result as T?;
   }
 
   /// 네비게이션 교체 (뒤로가기 불가)
