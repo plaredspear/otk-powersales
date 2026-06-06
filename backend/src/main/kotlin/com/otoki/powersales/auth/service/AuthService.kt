@@ -321,6 +321,19 @@ class AuthService(
     }
 
     /**
+     * 현재 사용자 정보 조회 (자동로그인 후 사용자 복원용 — Spec #B-me)
+     *
+     * Access Token 의 subject(userId) 로 사원을 조회하여 로그인 응답과 동일한
+     * [UserInfo] 를 반환한다. refresh 응답은 토큰만 주므로, 모바일이 자동로그인
+     * 직후 이 엔드포인트로 사용자 정보를 확보해 인증 완료 상태로 전환한다.
+     */
+    fun getMe(userId: Long): UserInfo {
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
+        return UserInfo.from(employee)
+    }
+
+    /**
      * GPS 동의 상태 조회
      */
     fun getGpsConsentStatus(userId: Long): GpsConsentStatusResponse {

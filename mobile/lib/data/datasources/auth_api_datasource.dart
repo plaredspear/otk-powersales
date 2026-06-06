@@ -3,6 +3,7 @@ import '../models/change_password_request.dart';
 import '../models/login_response_model.dart';
 import '../models/auth_token_model.dart';
 import '../models/password_verification_response.dart';
+import '../models/user_model.dart';
 import 'auth_remote_datasource.dart';
 
 /// 인증 API 데이터소스 구현체
@@ -39,6 +40,14 @@ class AuthApiDataSource implements AuthRemoteDataSource {
       },
     );
     return AuthTokenModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
+  }
+
+  @override
+  Future<UserModel> getMe() async {
+    final response = await _dio.get('/api/v1/mobile/auth/me');
+    return UserModel.fromJson(
       response.data['data'] as Map<String, dynamic>,
     );
   }

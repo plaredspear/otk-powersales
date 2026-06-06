@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/auth_token.dart';
+import 'package:mobile/domain/entities/user.dart';
 import 'package:mobile/domain/repositories/auth_repository.dart';
 import 'package:mobile/domain/usecases/change_password_usecase.dart';
 
@@ -24,6 +25,9 @@ class MockAuthRepository implements AuthRepository {
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return loginResult!;
   }
+
+  @override
+  Future<User> getMe() async => throw UnimplementedError();
 
   @override
   Future<AuthToken> refreshToken(String refreshToken) async {

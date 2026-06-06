@@ -72,6 +72,14 @@ abstract class AuthRepository {
   /// Returns: 새로운 인증 토큰
   Future<AuthToken> refreshToken(String refreshToken);
 
+  /// 현재 사용자 정보 조회
+  ///
+  /// Access Token 으로 서버에서 현재 사용자 정보를 조회합니다.
+  /// 자동로그인 직후 토큰만으로는 복원할 수 없는 사용자 정보를 확보하는 데 사용합니다.
+  ///
+  /// Returns: 사용자 정보
+  Future<User> getMe();
+
   /// 비밀번호 변경 (강제/자발 통합 — Spec #584).
   ///
   /// 강제 변경 (토큰 클레임 `passwordChangeRequired=true`) 시 [currentPassword] 는 무시되므로
