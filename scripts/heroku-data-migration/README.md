@@ -31,6 +31,7 @@ Stage 2-C (SF 마이그레이션 web 화면 /admin/tools/sf-migration-2 의 FK R
 3. **S3 업로드** — `s3://<S3_BUCKET>/heroku-migration/input/<heroku원본테이블명>.csv` 로 업로드.
 4. **Stage 1 적재** — web `/admin/tools/heroku-migration-1` 에서 "일괄 적재 (19개 전체)". Reset 모드 체크 권장.
    - EmployeeInfo 는 employee 미적재 고아 row 가 `unmatched` 로 집계된다(INSERT 제외).
+   - 일괄 적재 시 S3 에 CSV 가 없는 entity(404)는 **SKIPPED 로 건너뛰고 다음 entity 를 계속 적재**한다(batch 중단 안 함). 아직 export 안 된 테이블이 있어도 있는 것만 적재 가능. 단건 적재(SINGLE)는 지정 파일이 없으면 그대로 실패. (실패 FAILED 는 여전히 batch 중단)
 5. **Stage 2 FK Resolve** — web `/admin/tools/heroku-migration-2` 에서 "FK Resolve 실행". 패턴 A+B 일괄.
 6. **Stage 2-C sfid FK** — SF 마이그레이션 web `/admin/tools/sf-migration-2` 의 FK Resolve 재실행(ProductExpiration / SafetyCheckSubmission 의 *_sfid → *_id).
 7. **PII 정리** — cut-over 완료 후 S3 의 `employee_mng.csv`(사번/비밀번호/디바이스 UUID/FCM 토큰) 등 객체 삭제.

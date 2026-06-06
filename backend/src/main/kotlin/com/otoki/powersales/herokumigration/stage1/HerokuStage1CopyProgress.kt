@@ -170,6 +170,21 @@ class HerokuStage1CopyProgress {
         }
     }
 
+    /**
+     * 단건 entity 를 SKIPPED 로 마크 — batch 모드에서 S3 에 CSV 가 없는(404) entity 를 건너뛸 때 사용.
+     * 실패(FAILED)와 달리 batch 를 중단시키지 않으며, 사유는 errorMessage 에 기록해 UI 가 구분 가능.
+     */
+    fun skipEntity(targetName: String, s3Key: String, reason: String) {
+        updateEntity(targetName) {
+            it.copy(
+                status = EntityStatus.SKIPPED,
+                s3Key = s3Key,
+                errorMessage = reason,
+                finishedAt = Instant.now(),
+            )
+        }
+    }
+
     /** 즉시 중단 모드: 실패 발생 시 나머지 PENDING entity 들을 SKIPPED 로 일괄 마크. */
     fun markRemainingAsSkipped() {
         synchronized(entityResultsRef) {
