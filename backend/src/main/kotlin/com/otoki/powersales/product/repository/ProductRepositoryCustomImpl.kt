@@ -52,7 +52,7 @@ class ProductRepositoryCustomImpl(
         val content = queryFactory
             .selectFrom(product)
             .where(builder)
-            .orderBy(product.name.asc())
+            .orderBy(product.name.asc(), product.productCode.asc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
@@ -99,7 +99,7 @@ class ProductRepositoryCustomImpl(
         val content = queryFactory
             .selectFrom(product)
             .where(where)
-            .orderBy(product.name.asc())
+            .orderBy(product.name.asc(), product.productCode.asc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
@@ -125,7 +125,7 @@ class ProductRepositoryCustomImpl(
         val content = queryFactory
             .selectFrom(product)
             .where(where)
-            .orderBy(product.name.asc())
+            .orderBy(product.name.asc(), product.productCode.asc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()

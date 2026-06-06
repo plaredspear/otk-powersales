@@ -164,6 +164,7 @@ class _ProductSearchPageState extends ConsumerState<ProductSearchPage>
 
         final product = state.products[index];
         return ProductCard(
+          key: ValueKey(product.productCode),
           product: product,
           showActions: !widget.selectionMode,
           onTap: () => throttledTap(() {
