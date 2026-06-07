@@ -106,6 +106,16 @@ val out = outPath ?: run {
     kotlin.system.exitProcess(1)
 }
 
+// 가드 — image-prefix 는 public/ 으로 시작할 수 없다. PublicUrlResolver 의 prefix
+// (S3_PUBLIC_URL_PREFIX) 가 .../public/ 로 끝나 조회 시 unique_key 가 그 뒤에 붙으므로,
+// public/ 을 넣으면 .../public/public/uploads/... 로 중복된다. (과거 사고 재발 방지)
+if (imagePrefix.trimStart('/').lowercase().startsWith("public/")) {
+    System.err.println("[error] --image-prefix 는 public/ 으로 시작할 수 없습니다: $imagePrefix")
+    System.err.println("        PublicUrlResolver prefix 가 .../public/ 로 끝나 중복됩니다.")
+    System.err.println("        예: uploads/claim/migrated (public 없이)")
+    kotlin.system.exitProcess(1)
+}
+
 val metaFile = File(metaCsv)
 if (!metaFile.isFile) {
     System.err.println("[error] 메타 CSV 없음: $metaCsv")
