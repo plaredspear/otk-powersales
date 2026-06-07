@@ -7,6 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/menu_item.dart' as domain;
 import '../../providers/auth_provider.dart';
+import '../home/activity_registration_popup.dart';
 import 'menu_group_widget.dart';
 import 'menu_header.dart';
 import 'quick_action_bar.dart';
@@ -58,7 +59,15 @@ class FullMenuDrawer extends ConsumerWidget {
                 },
                 onActivityRegisterTap: () {
                   Navigator.of(context).pop();
-                  _navigateToRoute(context, '/activity-register');
+                  // 홈 빠른 메뉴 "활동 등록"과 동일하게 활동등록 바텀시트를 띄운다.
+                  ActivityRegistrationPopup.show(
+                    context,
+                    onMenuTap: (item) {
+                      if (item.route != null) {
+                        AppRouter.navigateTo(context, item.route!);
+                      }
+                    },
+                  );
                 },
               ),
               const Divider(
