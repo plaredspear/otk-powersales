@@ -15,6 +15,18 @@ enum class NoticeCategory(
     BRANCH("지점공지", "영업부/지점공지", "BRANCH"),
     EDUCATION("교육", "교육", "EDUCATION");
 
+    /**
+     * 홈 화면 공지 카드 표시용 라벨.
+     *
+     * 레거시(home.jsp)는 홈 공지 카드를 2분류로 묶어 표시했다.
+     * 회사공지·교육은 "전체 공지", 영업부/지점공지는 "지점 공지"로 노출한다.
+     */
+    val homeDisplayName: String
+        get() = when (this) {
+            BRANCH -> "지점 공지"
+            COMPANY, EDUCATION -> "전체 공지"
+        }
+
     companion object {
         fun fromApiCode(code: String): NoticeCategory {
             return entries.find { it.apiCode == code }
