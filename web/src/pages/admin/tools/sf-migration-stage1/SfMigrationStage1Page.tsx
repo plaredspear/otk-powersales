@@ -67,6 +67,18 @@ const CLAIM_IMAGE_TARGET_NAME = 'ClaimImageUploadFile';
 const CLAIM_IMAGE_CSV_FILE_NAME = 'claim_upload_files.csv';
 const CLAIM_IMAGE_DEFAULT_PREFIX = 'sf-migration/claim-images';
 
+/**
+ * 공지 본문 rtaImage 인라인 이미지 전용 적재 — 클레임 이미지 카드와 동일 패턴.
+ *
+ * 공지 본문 이미지는 SF rich text area 의 인라인 blob 으로 본문 HTML 에 rtaImage URL 로 박혀 있어
+ * UploadFile__c / ContentDocumentLink 어디에도 행이 없다. SF 서블릿에서 직접 다운로드 → S3 재업로드 후
+ * upload_file 에 적재한다. backend Stage1Targets 의 NoticeImageUploadFile 타겟
+ * (csvFileName=notice_image_upload_files.csv)을 직접 지정해 single copy-from-s3 로 호출한다.
+ */
+const NOTICE_IMAGE_TARGET_NAME = 'NoticeImageUploadFile';
+const NOTICE_IMAGE_CSV_FILE_NAME = 'notice_image_upload_files.csv';
+const NOTICE_IMAGE_DEFAULT_PREFIX = 'sf-migration/notice-images';
+
 function sampleModeToMaxRows(mode: SampleMode): number | undefined {
   return mode === 'sample100k' ? SAMPLE_ROW_LIMIT : undefined;
 }
@@ -104,6 +116,7 @@ export default function SfMigrationStage1Page() {
   const [singleForm] = Form.useForm<{ targetName: string; s3Bucket: string; s3KeyPrefix: string }>();
   const [batchForm] = Form.useForm<{ s3Bucket: string; s3KeyPrefix: string }>();
   const [claimForm] = Form.useForm<{ s3KeyPrefix: string }>();
+  const [noticeImageForm] = Form.useForm<{ s3KeyPrefix: string }>();
   const [runMode, setRunMode] = useState<RunMode>('single');
   const [sampleMode, setSampleMode] = useState<SampleMode>('all');
 
@@ -129,8 +142,10 @@ export default function SfMigrationStage1Page() {
     });
     // 클레임 이미지 카드는 prefix 만 입력 — 레거시와 다른 전용 prefix 로 프리필.
     claimForm.setFieldsValue({ s3KeyPrefix: CLAIM_IMAGE_DEFAULT_PREFIX });
+    // 공지 본문 이미지 카드도 prefix 만 입력 — 전용 prefix 로 프리필.
+    noticeImageForm.setFieldsValue({ s3KeyPrefix: NOTICE_IMAGE_DEFAULT_PREFIX });
     setDefaultsApplied(true);
-  }, [defaults, defaultsApplied, singleForm, batchForm, claimForm]);
+  }, [defaults, defaultsApplied, singleForm, batchForm, claimForm, noticeImageForm]);
 
   // 진행 중 row 표시 갱신을 위해 force render 1초 간격 (Statistic 의 elapsed 가 client clock 의존).
   const [, setTick] = useState(0);
@@ -158,6 +173,12 @@ export default function SfMigrationStage1Page() {
   const watchedClaimPrefix = Form.useWatch('s3KeyPrefix', claimForm);
   const claimPreviewS3Key = watchedClaimPrefix
     ? `${watchedClaimPrefix.replace(/\/+$/, '')}/${CLAIM_IMAGE_CSV_FILE_NAME}`
+    : null;
+
+  // 공지 본문 이미지 카드 — 최종 S3 key 미리보기 (prefix + 고정 csvFileName).
+  const watchedNoticeImagePrefix = Form.useWatch('s3KeyPrefix', noticeImageForm);
+  const noticeImagePreviewS3Key = watchedNoticeImagePrefix
+    ? `${watchedNoticeImagePrefix.replace(/\/+$/, '')}/${NOTICE_IMAGE_CSV_FILE_NAME}`
     : null;
 
   const resetSubmitState = () => {
@@ -207,6 +228,28 @@ export default function SfMigrationStage1Page() {
     startSingleMutation.mutate(
       {
         targetName: CLAIM_IMAGE_TARGET_NAME,
+        s3Bucket: defaults?.s3Bucket ?? '',
+        s3KeyPrefix: values.s3KeyPrefix,
+        maxRows: sampleModeToMaxRows(sampleMode),
+      },
+      {
+        onError: (err) => {
+          if (err instanceof Stage1AlreadyRunningError) {
+            setAlreadyRunning(true);
+            return;
+          }
+          setSubmitError(err.message);
+        },
+      },
+    );
+  };
+
+  // 공지 본문 이미지 적재 — targetName 하드코딩(NoticeImageUploadFile), bucket 은 defaults 프리필 사용.
+  const onSubmitNoticeImage = (values: { s3KeyPrefix: string }) => {
+    resetSubmitState();
+    startSingleMutation.mutate(
+      {
+        targetName: NOTICE_IMAGE_TARGET_NAME,
         s3Bucket: defaults?.s3Bucket ?? '',
         s3KeyPrefix: values.s3KeyPrefix,
         maxRows: sampleModeToMaxRows(sampleMode),
@@ -543,6 +586,53 @@ export default function SfMigrationStage1Page() {
               disabled={isRunning}
             >
               {isRunning ? '진행 중…' : '클레임 이미지 적재'}
+            </Button>
+            <Tag color={statusTag.color} style={{ fontSize: 14, padding: '4px 12px' }}>
+              상태: {statusTag.label}
+            </Tag>
+          </Space>
+        </Form>
+      </Card>
+
+      <Card style={{ marginBottom: 16 }} title="공지 본문 이미지 적재">
+        <Paragraph type="secondary">
+          공지 본문(rich text) 인라인 이미지는 SF 표준 rtaImage 서블릿 URL 로 본문에 박혀 있어 레거시{' '}
+          <Text code>UploadFile__c</Text> 추출(위 드롭다운의 <Text code>UploadFile</Text>)에도, 클레임
+          이미지(ContentDocumentLink 경유)에도 포함되지 않는다. SF 서블릿에서 직접 추출해 S3 업로드한 뒤{' '}
+          <Text code>{NOTICE_IMAGE_CSV_FILE_NAME}</Text> 를 같은 <Text code>upload_file</Text> 테이블에
+          적재한다(전용 타겟 <Text code>{NOTICE_IMAGE_TARGET_NAME}</Text>). 적재 후 Stage 2 의{' '}
+          <Text code>UploadFile Parent Resolve</Text> 로 부모(공지)를 연결하고, 본문 HTML 의 rtaImage URL
+          치환은 별도 스크립트로 수행한다.
+        </Paragraph>
+        <Form
+          form={noticeImageForm}
+          layout="vertical"
+          onFinish={onSubmitNoticeImage}
+          disabled={isRunning || startMutationPending}
+        >
+          <Form.Item
+            label="S3 Key Prefix"
+            name="s3KeyPrefix"
+            tooltip={`파일명은 ${NOTICE_IMAGE_CSV_FILE_NAME} 으로 고정됩니다 (<prefix>/${NOTICE_IMAGE_CSV_FILE_NAME}).`}
+            rules={[{ required: true, message: 'S3 key prefix 를 입력하세요' }]}
+            extra={
+              noticeImagePreviewS3Key ? (
+                <Text type="secondary">
+                  최종 S3 key: <Text code>{noticeImagePreviewS3Key}</Text>
+                </Text>
+              ) : undefined
+            }
+          >
+            <Input placeholder={NOTICE_IMAGE_DEFAULT_PREFIX} />
+          </Form.Item>
+          <Space>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={startSingleMutation.isPending}
+              disabled={isRunning}
+            >
+              {isRunning ? '진행 중…' : '공지 본문 이미지 적재'}
             </Button>
             <Tag color={statusTag.color} style={{ fontSize: 14, padding: '4px 12px' }}>
               상태: {statusTag.label}
