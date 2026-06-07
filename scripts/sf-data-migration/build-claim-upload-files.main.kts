@@ -51,7 +51,7 @@
  *   kotlinc -script build-claim-upload-files.main.kts -- \
  *       --meta-csv <ContentDocumentLink 메타 CSV> \
  *       --out <claim_upload_files.csv> \
- *       [--image-prefix uploads/claim/migrated]   (public/ 없음 — PublicUrlResolver prefix 가 .../public/)
+ *       [--image-prefix uploads/claim/migrated]   (segment 없음 — backend 가 조회 시 private/ 합성)
  *
  * 멱등: 입력이 같으면 출력도 동일. 반복 실행 안전 (출력 파일 덮어씀).
  */
@@ -70,9 +70,10 @@ import java.io.FileWriter
 
 var metaCsvPath: String? = null
 var outPath: String? = null
-// unique_key 의 prefix. public/ 을 포함하지 않는다 — 조회 시 PublicUrlResolver 가 prefix
-// (S3_PUBLIC_URL_PREFIX, .../public/ 로 끝남) 에 unique_key 를 이어붙이므로, public/ 을 넣으면
-// public/ 이 중복된다. S3 실제 객체 key = public/ + unique_key.
+// unique_key 의 prefix. segment(private/·public/) 를 포함하지 않는다 — 클레임 이미지는 private/
+// 저장 + presigned 조회이고, 조회 시 backend(StorageConstants.privateKey)가 unique_key 앞에
+// private/ 를 합성한다. segment 를 넣으면 private/private/... 로 중복된다.
+// S3 실제 객체 key = private/ + unique_key.
 var imagePrefix = "uploads/claim/migrated"
 // 이미지 확장자 화이트리스트 (클레임 이미지만 적재 — PDF 등 비이미지 첨부 제외).
 var imageExts = "jpg,jpeg,png,gif,bmp,webp,heic,heif"
@@ -106,13 +107,14 @@ val out = outPath ?: run {
     kotlin.system.exitProcess(1)
 }
 
-// 가드 — image-prefix 는 public/ 으로 시작할 수 없다. PublicUrlResolver 의 prefix
-// (S3_PUBLIC_URL_PREFIX) 가 .../public/ 로 끝나 조회 시 unique_key 가 그 뒤에 붙으므로,
-// public/ 을 넣으면 .../public/public/uploads/... 로 중복된다. (과거 사고 재발 방지)
-if (imagePrefix.trimStart('/').lowercase().startsWith("public/")) {
-    System.err.println("[error] --image-prefix 는 public/ 으로 시작할 수 없습니다: $imagePrefix")
-    System.err.println("        PublicUrlResolver prefix 가 .../public/ 로 끝나 중복됩니다.")
-    System.err.println("        예: uploads/claim/migrated (public 없이)")
+// 가드 — image-prefix 는 segment(private/·public/) 로 시작할 수 없다. backend 가 조회 시
+// StorageConstants.privateKey 로 unique_key 앞에 private/ 를 합성하므로, segment 를 넣으면
+// private/private/... (또는 private/public/...) 로 어긋난다. (과거 사고 재발 방지)
+val imagePrefixLc = imagePrefix.trimStart('/').lowercase()
+if (imagePrefixLc.startsWith("private/") || imagePrefixLc.startsWith("public/")) {
+    System.err.println("[error] --image-prefix 는 private/ 또는 public/ 으로 시작할 수 없습니다: $imagePrefix")
+    System.err.println("        backend 가 조회 시 private/ 를 자동 합성하므로 unique_key 는 segment 없이 둡니다.")
+    System.err.println("        예: uploads/claim/migrated")
     kotlin.system.exitProcess(1)
 }
 
