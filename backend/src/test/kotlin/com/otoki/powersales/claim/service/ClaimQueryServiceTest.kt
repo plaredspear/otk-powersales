@@ -13,7 +13,8 @@ import com.otoki.powersales.claim.exception.InvalidDateRangeException
 import com.otoki.powersales.claim.repository.ClaimRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageConstants
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.claim.entity.sfpicklist.PurchaseMethod
 import com.otoki.powersales.claim.entity.sfpicklist.RequestType
@@ -38,13 +39,13 @@ class ClaimQueryServiceTest {
     private val claimRepository: ClaimRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
     private val uploadFileRepository: UploadFileRepository = mockk()
-    private val publicUrlResolver: PublicUrlResolver = mockk()
+    private val storageService: StorageService = mockk()
 
     private val claimQueryService = ClaimQueryService(
         claimRepository,
         employeeRepository,
         uploadFileRepository,
-        publicUrlResolver,
+        storageService,
     )
 
     @Nested
@@ -153,8 +154,11 @@ class ClaimQueryServiceTest {
                     UploadFileParentTypes.CLAIM, 1L
                 )
             } returns listOf(photo)
-            every { publicUrlResolver.resolve("uploads/claim/2026/01/01/x.jpg") } returns
-                "https://cdn.example.com/uploads/claim/2026/01/01/x.jpg"
+            every {
+                storageService.getPresignedUrl(
+                    "uploads/claim/2026/01/01/x.jpg", StorageConstants.CLAIM_PRESIGN_TTL_SECONDS
+                )
+            } returns "https://s3.example.com/private/uploads/claim/2026/01/01/x.jpg?X-Amz-Signature=abc"
 
             val result = claimQueryService.getClaimDetail(1L, 1L)
 
@@ -164,7 +168,7 @@ class ClaimQueryServiceTest {
             assertThat(result.dateType).isEqualTo("EXPIRY_DATE")
             assertThat(result.dateTypeLabel).isEqualTo("유통기한")
             assertThat(result.photos).hasSize(1)
-            assertThat(result.photos[0].url).isEqualTo("https://cdn.example.com/uploads/claim/2026/01/01/x.jpg")
+            assertThat(result.photos[0].url).isEqualTo("https://s3.example.com/private/uploads/claim/2026/01/01/x.jpg?X-Amz-Signature=abc")
             assertThat(result.photos[0].originalFileName).isEqualTo("IMG_001.jpg")
         }
 

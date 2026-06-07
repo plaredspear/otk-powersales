@@ -10,7 +10,8 @@ import com.otoki.powersales.claim.exception.InvalidDateFormatException
 import com.otoki.powersales.claim.exception.InvalidDateRangeException
 import com.otoki.powersales.claim.repository.ClaimRepository
 import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageConstants
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.data.repository.findByIdOrNull
@@ -27,7 +28,7 @@ class ClaimQueryService(
     private val claimRepository: ClaimRepository,
     private val employeeRepository: EmployeeRepository,
     private val uploadFileRepository: UploadFileRepository,
-    private val publicUrlResolver: PublicUrlResolver
+    private val storageService: StorageService
 ) {
 
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -86,7 +87,11 @@ class ClaimQueryService(
 
         val photos = uploadFileRepository
             .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.CLAIM, claimId)
-        return ClaimDetailResponse.from(claim, photos) { publicUrlResolver.resolve(it) }
+        // 클레임 이미지는 private/ 저장 → presigned URL 로만 조회 가능 (인증 기반 접근).
+        return ClaimDetailResponse.from(claim, photos) { key ->
+            key?.takeIf { it.isNotBlank() }
+                ?.let { storageService.getPresignedUrl(it, StorageConstants.CLAIM_PRESIGN_TTL_SECONDS) }
+        }
     }
 
     private fun parseDate(dateStr: String): LocalDate {

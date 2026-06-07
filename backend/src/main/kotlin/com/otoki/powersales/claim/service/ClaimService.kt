@@ -198,7 +198,7 @@ class ClaimService(
         val photos = uploadFileRepository
             .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.CLAIM, claimId)
         photos.forEach { photo ->
-            photo.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.delete(it) }
+            photo.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.deletePrivate(it) }
             photo.isDeleted = true
         }
 
@@ -217,7 +217,7 @@ class ClaimService(
             .findByIdAndParentTypeAndParentIdAndIsDeletedFalse(photoId, UploadFileParentTypes.CLAIM, claimId)
             ?: throw ClaimPhotoNotFoundException(photoId)
 
-        photo.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.delete(it) }
+        photo.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.deletePrivate(it) }
         photo.isDeleted = true
     }
 

@@ -209,9 +209,9 @@ class AdminClaimCreateService(
         receiptPhotoFilename: String?,
         receiptPhotoContentType: String?,
     ): SfPushResult {
-        val claimBytes = storageService.download(claimKey)
-        val partBytes = storageService.download(partKey)
-        val receiptBytes = receiptKey?.let { storageService.download(it) }
+        val claimBytes = storageService.downloadPrivate(claimKey)
+        val partBytes = storageService.downloadPrivate(partKey)
+        val receiptBytes = receiptKey?.let { storageService.downloadPrivate(it) }
         val apiMap = buildApiMapFromBytes(
             employeeCode = employeeCode,
             sapAccountCode = sapAccountCode,

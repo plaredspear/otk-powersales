@@ -29,6 +29,41 @@ class S3StorageService(
 	private val presigner: S3Presigner by lazy { S3Presigner.create() }
 
 	override fun upload(domain: String, originalName: String, bytes: ByteArray, contentType: String): UploadResult {
+		val key = buildKey(domain, originalName)
+		putObject(key, bytes, contentType)
+		return UploadResult(
+			key = key,
+			contentType = contentType,
+			originalName = originalName,
+			sizeBytes = bytes.size.toLong()
+		)
+	}
+
+	override fun download(key: String): ByteArray = getObjectBytes(key)
+
+	override fun getUrl(key: String, expiresInSeconds: Int): String = presignGet(key, expiresInSeconds)
+
+	override fun delete(key: String) = deleteObject(key)
+
+	override fun uploadPrivate(domain: String, originalName: String, bytes: ByteArray, contentType: String): UploadResult {
+		val uniqueKey = buildKey(domain, originalName)
+		putObject(StorageConstants.privateKey(uniqueKey), bytes, contentType)
+		return UploadResult(
+			key = uniqueKey,
+			contentType = contentType,
+			originalName = originalName,
+			sizeBytes = bytes.size.toLong()
+		)
+	}
+
+	override fun getPresignedUrl(uniqueKey: String, expiresInSeconds: Int): String =
+		presignGet(StorageConstants.privateKey(uniqueKey), expiresInSeconds)
+
+	override fun downloadPrivate(uniqueKey: String): ByteArray = getObjectBytes(StorageConstants.privateKey(uniqueKey))
+
+	override fun deletePrivate(uniqueKey: String) = deleteObject(StorageConstants.privateKey(uniqueKey))
+
+	private fun putObject(key: String, bytes: ByteArray, contentType: String) {
 		if (contentType !in StorageConstants.ALLOWED_CONTENT_TYPES) {
 			throw UnsupportedMediaTypeException(contentType)
 		}
@@ -36,7 +71,6 @@ class S3StorageService(
 			throw FileTooLargeException(bytes.size.toLong(), StorageConstants.MAX_FILE_BYTES)
 		}
 
-		val key = buildKey(domain, originalName)
 		val request = PutObjectRequest.builder()
 			.bucket(bucket)
 			.key(key)
@@ -49,16 +83,9 @@ class S3StorageService(
 		} catch (ex: S3Exception) {
 			throw StorageWriteFailedException(reason = ex.awsErrorDetails().errorMessage(), cause = ex)
 		}
-
-		return UploadResult(
-			key = key,
-			contentType = contentType,
-			originalName = originalName,
-			sizeBytes = bytes.size.toLong()
-		)
 	}
 
-	override fun download(key: String): ByteArray {
+	private fun getObjectBytes(key: String): ByteArray {
 		val request = GetObjectRequest.builder().bucket(bucket).key(key).build()
 		try {
 			return s3Client.getObjectAsBytes(request).asByteArray()
@@ -67,7 +94,7 @@ class S3StorageService(
 		}
 	}
 
-	override fun getUrl(key: String, expiresInSeconds: Int): String {
+	private fun presignGet(key: String, expiresInSeconds: Int): String {
 		val getRequest = GetObjectRequest.builder().bucket(bucket).key(key).build()
 		val presignRequest = GetObjectPresignRequest.builder()
 			.signatureDuration(Duration.ofSeconds(expiresInSeconds.toLong()))
@@ -76,7 +103,7 @@ class S3StorageService(
 		return presigner.presignGetObject(presignRequest).url().toString()
 	}
 
-	override fun delete(key: String) {
+	private fun deleteObject(key: String) {
 		try {
 			s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build())
 		} catch (_: NoSuchKeyException) {

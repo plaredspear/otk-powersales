@@ -10,7 +10,8 @@ import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageConstants
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.product.entity.Product
 import io.mockk.every
@@ -32,13 +33,21 @@ class AdminClaimServiceTest {
 
     private val adminClaimRepository: AdminClaimRepository = mockk()
     private val uploadFileRepository: UploadFileRepository = mockk()
-    private val publicUrlResolver = PublicUrlResolver(prefix = "https://bucket.s3.ap-northeast-2.amazonaws.com/public")
+    private val storageService: StorageService = mockk()
 
     private val adminClaimService = AdminClaimService(
         adminClaimRepository,
         uploadFileRepository,
-        publicUrlResolver,
+        storageService,
     )
+
+    init {
+        // 클레임 이미지는 private/ presigned 조회. 테스트에선 key → 결정적 presigned URL 로 스텁
+        // (실 presigned 는 서명 timestamp 가 비결정적이라 mock 으로 고정).
+        every { storageService.getPresignedUrl(any(), StorageConstants.CLAIM_PRESIGN_TTL_SECONDS) } answers {
+            "https://signed.example.com/private/${firstArg<String>()}?sig=test"
+        }
+    }
 
     @Nested
     @DisplayName("getClaims - 클레임 목록 조회")
@@ -120,7 +129,7 @@ class AdminClaimServiceTest {
             val result = adminClaimService.getClaims(null, null, null, null, null, 0, 20)
 
             assertThat(result.content[0].representativeImageUrl)
-                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/claim_001.jpg")
+                .isEqualTo("https://signed.example.com/private/claim_001.jpg?sig=test")
         }
 
         @Test
@@ -146,7 +155,7 @@ class AdminClaimServiceTest {
 
             // 불량 없음 -> createdAt 최소인 part_001 선택
             assertThat(result.content[0].representativeImageUrl)
-                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/part_001.jpg")
+                .isEqualTo("https://signed.example.com/private/part_001.jpg?sig=test")
         }
 
         @Test
@@ -180,7 +189,7 @@ class AdminClaimServiceTest {
             val result = adminClaimService.getClaims(null, null, null, null, null, 0, 20)
 
             assertThat(result.content[0].representativeImageUrl)
-                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/part_001.jpg")
+                .isEqualTo("https://signed.example.com/private/part_001.jpg?sig=test")
         }
 
         @Test
@@ -202,9 +211,9 @@ class AdminClaimServiceTest {
 
             val byId = result.content.associateBy { it.claimId }
             assertThat(byId[1L]?.representativeImageUrl)
-                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/c1.jpg")
+                .isEqualTo("https://signed.example.com/private/c1.jpg?sig=test")
             assertThat(byId[2L]?.representativeImageUrl)
-                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/c2.jpg")
+                .isEqualTo("https://signed.example.com/private/c2.jpg?sig=test")
             verify(exactly = 1) {
                 uploadFileRepository.findByParentTypeAndParentIdInAndIsDeletedFalse(any(), any())
             }
@@ -233,10 +242,10 @@ class AdminClaimServiceTest {
             assertThat(result.claimId).isEqualTo(1L)
             assertThat(result.photos).hasSize(2)
             assertThat(result.photos[0].photoId).isEqualTo(11L)
-            assertThat(result.photos[0].url).isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/26may2026claim_001jpg")
+            assertThat(result.photos[0].url).isEqualTo("https://signed.example.com/private/26may2026claim_001jpg?sig=test")
             assertThat(result.photos[0].originalFileName).isEqualTo("claim_001.jpg")
             assertThat(result.photos[0].photoType).isNull()
-            assertThat(result.photos[1].url).isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/public/26may2026part_001jpg")
+            assertThat(result.photos[1].url).isEqualTo("https://signed.example.com/private/26may2026part_001jpg?sig=test")
         }
 
         @Test
