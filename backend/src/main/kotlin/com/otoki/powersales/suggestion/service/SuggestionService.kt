@@ -4,7 +4,8 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageConstants
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.service.OrgCostCenterMatchService
@@ -63,7 +64,7 @@ class SuggestionService(
     private val orgCostCenterMatchService: OrgCostCenterMatchService,
     private val fileStorageService: FileStorageService,
     private val validator: SuggestionValidator,
-    private val publicUrlResolver: PublicUrlResolver
+    private val storageService: StorageService
 ) {
 
     companion object {
@@ -311,8 +312,12 @@ class SuggestionService(
         }
     }
 
+    /**
+     * 제안(물류 클레임) 첨부 이미지는 private/ 저장 → presigned URL 로만 조회 가능 (인증 기반 접근).
+     * 제품 클레임(Claim)과 동일하게 실 객체 key = private/ + uniqueKey 로 합성된다.
+     */
     internal fun composeS3Url(key: String): String =
-        publicUrlResolver.resolve(key)!!
+        storageService.getPresignedUrl(key, StorageConstants.CLAIM_PRESIGN_TTL_SECONDS)
 
     internal fun formatFileSize(bytes: Long): String =
         when {
