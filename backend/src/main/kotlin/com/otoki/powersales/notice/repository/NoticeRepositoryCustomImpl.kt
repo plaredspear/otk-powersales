@@ -17,13 +17,13 @@ class NoticeRepositoryCustomImpl(
     override fun findNotices(
         category: NoticeCategory?,
         search: String?,
-        branch: String,
+        branchCode: String,
         pageable: Pageable
     ): Page<Notice> {
         val where = BooleanBuilder()
             .and(buildDeletedCondition())
             .and(buildScopeCondition())
-            .and(buildCategoryCondition(category, branch))
+            .and(buildCategoryCondition(category, branchCode))
             .and(buildSearchCondition(search))
 
         val content = queryFactory
@@ -77,7 +77,7 @@ class NoticeRepositoryCustomImpl(
     }
 
     override fun findRecentNotices(
-        branch: String
+        branchCode: String
     ): List<Notice> {
         return queryFactory
             .selectFrom(notice)
@@ -85,7 +85,7 @@ class NoticeRepositoryCustomImpl(
                 buildDeletedCondition(),
                 buildScopeCondition(),
                 notice.category.eq(NoticeCategory.COMPANY)
-                    .or(notice.category.eq(NoticeCategory.BRANCH).and(notice.branch.eq(branch)))
+                    .or(notice.category.eq(NoticeCategory.BRANCH).and(notice.branchCode.eq(branchCode)))
                     .or(notice.category.eq(NoticeCategory.EDUCATION))
             )
             .orderBy(notice.createdAt.desc())
@@ -118,13 +118,25 @@ class NoticeRepositoryCustomImpl(
         }
     }
 
-    private fun buildCategoryCondition(category: NoticeCategory?, branch: String): Predicate {
+    /**
+     * 분류/지점 노출 조건 — 레거시 `communityMapper.xml#selectNotice` 재현.
+     *
+     * 레거시는 지점공지를 지점**코드**로 필터한다:
+     *   `dkretail__category__c = '영업부/지점공지' AND dkretail__jeejumcode__c = #{branch}`
+     * 이때 `#{branch}` 는 로그인 사용자의 `costcentercode__c` 다.
+     *
+     * 따라서 신규에서도 지점명(`notice.branch` = `DKRetail__Jeejum__c`)이 아니라
+     * 지점코드(`notice.branchCode` = `DKRetail__JeejumCode__c`)를 사용자
+     * `employee.costCenterCode`(= `CostCenterCode__c`)와 매칭한다. 지점명/조직명 포맷이
+     * 달라 매칭 실패(지점공지 누락)하던 문제를 코드 기반 매칭으로 해소.
+     */
+    private fun buildCategoryCondition(category: NoticeCategory?, branchCode: String): Predicate {
         return when (category) {
             null -> notice.category.eq(NoticeCategory.COMPANY)
-                .or(notice.category.eq(NoticeCategory.BRANCH).and(notice.branch.eq(branch)))
+                .or(notice.category.eq(NoticeCategory.BRANCH).and(notice.branchCode.eq(branchCode)))
             else -> {
                 if (category == NoticeCategory.BRANCH) {
-                    notice.category.eq(NoticeCategory.BRANCH).and(notice.branch.eq(branch))
+                    notice.category.eq(NoticeCategory.BRANCH).and(notice.branchCode.eq(branchCode))
                 } else {
                     notice.category.eq(category)
                 }

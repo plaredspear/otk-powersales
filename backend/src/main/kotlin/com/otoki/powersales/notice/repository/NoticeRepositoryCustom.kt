@@ -9,7 +9,7 @@ interface NoticeRepositoryCustom {
     fun findNotices(
         category: NoticeCategory?,
         search: String?,
-        branch: String,
+        branchCode: String,
         pageable: Pageable
     ): Page<Notice>
 
@@ -20,6 +20,6 @@ interface NoticeRepositoryCustom {
     ): Page<Notice>
 
     fun findRecentNotices(
-        branch: String
+        branchCode: String
     ): List<Notice>
 }

@@ -80,13 +80,15 @@ class NoticeService(
     fun getPosts(userId: Long, category: String?, search: String?, page: Int, size: Int): NoticePostListResponse {
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
-        val branch = employee.orgName ?: ""
+        // 레거시는 지점공지를 지점코드(costcentercode__c)로 필터한다. 지점명/조직명 포맷 불일치로
+        // 지점공지가 누락되던 문제를 코드 기반 매칭으로 해소. (communityMapper.xml#selectNotice 참조)
+        val branchCode = employee.costCenterCode ?: ""
 
         val parsedCategory = if (category != null) parseCategory(category) else null
 
         val truncatedSearch = search?.take(100)?.ifBlank { null }
         val pageable = PageRequest.of(page - 1, size)
-        val noticePage = noticeRepository.findNotices(parsedCategory, truncatedSearch, branch, pageable)
+        val noticePage = noticeRepository.findNotices(parsedCategory, truncatedSearch, branchCode, pageable)
 
         val content = noticePage.content.map { it.toSummaryResponse() }
 
