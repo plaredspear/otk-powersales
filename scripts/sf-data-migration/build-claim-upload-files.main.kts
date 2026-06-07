@@ -51,7 +51,7 @@
  *   kotlinc -script build-claim-upload-files.main.kts -- \
  *       --meta-csv <ContentDocumentLink 메타 CSV> \
  *       --out <claim_upload_files.csv> \
- *       [--image-prefix public/uploads/claim/migrated]
+ *       [--image-prefix uploads/claim/migrated]   (public/ 없음 — PublicUrlResolver prefix 가 .../public/)
  *
  * 멱등: 입력이 같으면 출력도 동일. 반복 실행 안전 (출력 파일 덮어씀).
  */
@@ -70,7 +70,10 @@ import java.io.FileWriter
 
 var metaCsvPath: String? = null
 var outPath: String? = null
-var imagePrefix = "public/uploads/claim/migrated"
+// unique_key 의 prefix. public/ 을 포함하지 않는다 — 조회 시 PublicUrlResolver 가 prefix
+// (S3_PUBLIC_URL_PREFIX, .../public/ 로 끝남) 에 unique_key 를 이어붙이므로, public/ 을 넣으면
+// public/ 이 중복된다. S3 실제 객체 key = public/ + unique_key.
+var imagePrefix = "uploads/claim/migrated"
 // 이미지 확장자 화이트리스트 (클레임 이미지만 적재 — PDF 등 비이미지 첨부 제외).
 var imageExts = "jpg,jpeg,png,gif,bmp,webp,heic,heif"
 
@@ -83,7 +86,7 @@ run {
             "--image-prefix" -> imagePrefix = it.next().trimEnd('/')
             "--image-exts" -> imageExts = it.next()
             "-h", "--help" -> {
-                println("Usage: kotlinc -script build-claim-upload-files.main.kts -- --meta-csv <in> --out <out> [--image-prefix public/uploads/claim/migrated] [--image-exts jpg,jpeg,png,...]")
+                println("Usage: kotlinc -script build-claim-upload-files.main.kts -- --meta-csv <in> --out <out> [--image-prefix uploads/claim/migrated] [--image-exts jpg,jpeg,png,...]")
                 kotlin.system.exitProcess(0)
             }
             else -> {
