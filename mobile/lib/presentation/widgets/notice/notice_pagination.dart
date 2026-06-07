@@ -93,11 +93,21 @@ class NoticePagination extends StatelessWidget {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
-            child: Text(
-              '$currentPage',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
+            child: Text.rich(
+              TextSpan(
+                style: AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                children: [
+                  TextSpan(
+                    text: '$currentPage',
+                    style: const TextStyle(color: AppColors.primary),
+                  ),
+                  TextSpan(
+                    text: ' / ${totalPages == 0 ? 1 : totalPages}',
+                    style: const TextStyle(color: AppColors.textTertiary),
+                  ),
+                ],
               ),
             ),
           ),

@@ -47,7 +47,18 @@ class _NoticeListPageState extends ConsumerState<NoticeListPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('공지사항'),
+        title: Text.rich(
+          TextSpan(
+            children: [
+              const TextSpan(text: '공지사항'),
+              if (state.hasSearched)
+                TextSpan(
+                  text: ' (${state.totalCount})',
+                  style: const TextStyle(color: AppColors.otokiRed),
+                ),
+            ],
+          ),
+        ),
         backgroundColor: AppColors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -69,35 +80,6 @@ class _NoticeListPageState extends ConsumerState<NoticeListPage> {
               notifier.search(keyword);
             },
           ),
-
-          // 건수 표시
-          if (state.hasSearched)
-            Container(
-              width: double.infinity,
-              color: AppColors.white,
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.md,
-              ),
-              child: Text.rich(
-                TextSpan(
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.legacyTextSub,
-                  ),
-                  children: [
-                    const TextSpan(text: '공지사항 '),
-                    TextSpan(
-                      text: '(${state.totalCount})',
-                      style: const TextStyle(color: AppColors.otokiRed),
-                    ),
-                  ],
-                ),
-              ),
-            ),
 
           const Divider(height: 1, color: AppColors.divider),
 
@@ -158,34 +140,51 @@ class _NoticeListPageState extends ConsumerState<NoticeListPage> {
       );
     }
 
-    // 빈 목록
+    // 빈 목록 (당겨서 새로고침 가능하도록 스크롤 가능 영역으로 구성)
     if (state.isEmpty) {
-      return const Center(
-        child: Text(
-          '공지사항이 없습니다',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-          ),
+      return RefreshIndicator(
+        onRefresh: () => notifier.refresh(),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: const Center(
+                  child: Text(
+                    '공지사항이 없습니다',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       );
     }
 
     // 목록 표시
-    return ListView.builder(
-      itemCount: state.posts.length,
-      itemBuilder: (context, index) {
-        final post = state.posts[index];
-        return NoticePostItem(
-          post: post,
-          onTap: () {
-            AppRouter.navigateTo(
-              context,
-              AppRouter.noticeDetail,
-              arguments: post.id,
-            );
-          },
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: () => notifier.refresh(),
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: state.posts.length,
+        itemBuilder: (context, index) {
+          final post = state.posts[index];
+          return NoticePostItem(
+            post: post,
+            onTap: () {
+              AppRouter.navigateTo(
+                context,
+                AppRouter.noticeDetail,
+                arguments: post.id,
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

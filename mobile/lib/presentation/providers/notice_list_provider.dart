@@ -72,6 +72,8 @@ class NoticeListNotifier extends StateNotifier<NoticeListState> {
   Future<void> setCategory(NoticeCategory? category) async {
     state = state.copyWith(
       selectedCategory: category,
+      // null(분류 전체) 선택 시 copyWith의 `?? this` 폴백을 우회해 명시적으로 해제
+      clearCategoryFilter: category == null,
       currentPage: 1, // 페이지 리셋
     );
     await loadPosts(page: 1);
@@ -88,8 +90,11 @@ class NoticeListNotifier extends StateNotifier<NoticeListState> {
 
   /// 검색 키워드 설정 및 검색
   Future<void> search(String keyword) async {
+    final trimmed = keyword.trim();
     state = state.copyWith(
-      searchKeyword: keyword.trim().isEmpty ? null : keyword.trim(),
+      searchKeyword: trimmed.isEmpty ? null : trimmed,
+      // 빈 키워드 검색 시 copyWith의 `?? this` 폴백을 우회해 명시적으로 해제
+      clearSearchKeyword: trimmed.isEmpty,
       currentPage: 1, // 페이지 리셋
     );
     await loadPosts(page: 1);
