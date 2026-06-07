@@ -112,6 +112,16 @@ done
 if [[ -n "$LIMIT" && ! "$LIMIT" =~ ^[0-9]+$ ]]; then
     echo "[error] --limit 은 양의 정수여야 함: $LIMIT" >&2; exit 1
 fi
+# 가드 — IMAGE_PREFIX 는 public/ 으로 시작할 수 없다. PublicUrlResolver 의 prefix 가
+# .../public/ 로 끝나 조회 시 unique_key 가 그 뒤에 붙으므로, public/ 을 넣으면
+# .../public/public/uploads/... 로 중복된다. (과거 사고 재발 방지)
+prefix_lc="$(printf '%s' "${IMAGE_PREFIX#/}" | tr '[:upper:]' '[:lower:]')"
+if [[ "$prefix_lc" == public/* ]]; then
+    echo "[error] --image-prefix 는 public/ 으로 시작할 수 없습니다: $IMAGE_PREFIX" >&2
+    echo "        PublicUrlResolver prefix 가 .../public/ 로 끝나 중복됩니다." >&2
+    echo "        예: uploads/claim/migrated (public 없이). S3 객체 폴더는 PUBLIC_SEGMENT 가 자동 부여." >&2
+    exit 1
+fi
 if [[ ! "$PARALLEL" =~ ^[0-9]+$ || "$PARALLEL" -lt 1 ]]; then
     echo "[error] --parallel 은 1 이상의 정수여야 함: $PARALLEL" >&2; exit 1
 fi
