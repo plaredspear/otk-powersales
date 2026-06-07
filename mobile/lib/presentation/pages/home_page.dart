@@ -223,7 +223,8 @@ class _HomePageState extends ConsumerState<HomePage>
                         },
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    // 레거시(common.css): 검색창 ~ 메뉴 그리드 간격 20px
+                    const SizedBox(height: AppSpacing.xl),
 
                     // #5 빠른 메뉴
                     Padding(

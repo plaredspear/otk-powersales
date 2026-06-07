@@ -120,6 +120,11 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
       // 초기화 완료 전에는 무시
       if (!next.isInitialized) return;
 
+      // 진행 중(로딩) 상태에는 화면 전환하지 않음 — 동일 화면 재진입(깜빡임) 방지.
+      // 네비게이션 대상은 모두 종료 상태(authenticated/passwordChangeRequired/gpsConsent/login)이며,
+      // 로딩은 항상 종료 상태로 이어지는 과도 상태이므로 건너뛰어도 안전하다.
+      if (next.isLoading) return;
+
       if (next.isAuthenticated) {
         // 인증 완료 → 메인 화면
         navigator.pushNamedAndRemoveUntil(

@@ -142,7 +142,7 @@ class HomeService(
                     id = notice.id,
                     title = notice.name ?: "",
                     category = notice.category?.apiCode ?: "",
-                    categoryName = notice.category?.displayName ?: "",
+                    categoryName = notice.category?.homeDisplayName ?: "",
                     createdAt = notice.createdAt ?: LocalDateTime.MIN
                 )
             }
