@@ -209,7 +209,8 @@ class NoticeServiceTest {
     inner class GetPostsTests {
 
         private val userId = 1L
-        private val testEmployee = Employee(id = userId, employeeCode = "20030117", name = "테스트사원", orgName = "테스트지점")
+        // 지점공지 필터는 지점코드(costCenterCode) 기준 — 레거시 jeejumcode = costcentercode 정합
+        private val testEmployee = Employee(id = userId, employeeCode = "20030117", name = "테스트사원", orgName = "테스트지점", costCenterCode = "테스트지점")
 
         @BeforeEach
         fun setUpUser() {

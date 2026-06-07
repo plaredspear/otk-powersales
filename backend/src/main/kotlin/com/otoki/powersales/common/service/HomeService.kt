@@ -136,7 +136,7 @@ class HomeService(
 
         // 최근 공지사항 조회 (최신 5건)
         val notices = noticeRepository
-            .findRecentNotices(branch = employee.orgName ?: "")
+            .findRecentNotices(branchCode = employee.costCenterCode ?: "")
             .map { notice ->
                 HomeResponse.NoticeInfo(
                     id = notice.id,
