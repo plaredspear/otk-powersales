@@ -4,6 +4,7 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.inspection.entity.InspectionTheme
@@ -34,8 +35,7 @@ class AdminSiteActivityServiceTest {
         siteActivityRepository = siteActivityRepository,
         uploadFileRepository = uploadFileRepository,
         policyEvaluator = policyEvaluator,
-        s3BucketName = "otoki-bucket",
-        s3Region = "ap-northeast-2"
+        publicUrlResolver = PublicUrlResolver(prefix = "")
     )
 
     private val allowAllScope = DataScope(branchCodes = emptyList(), isAllBranches = true)

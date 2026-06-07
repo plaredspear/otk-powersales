@@ -4,6 +4,7 @@ import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -29,7 +30,6 @@ import com.otoki.powersales.notice.exception.InvalidNoticeScopeException
 import com.otoki.powersales.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.notice.repository.NoticeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -44,8 +44,7 @@ class NoticeService(
     private val organizationRepository: OrganizationRepository,
     private val fileStorageService: FileStorageService,
     private val storageService: StorageService,
-    @Value("\${app.aws.s3.bucket:otoki-bucket}")
-    private val s3BucketName: String
+    private val publicUrlResolver: PublicUrlResolver
 ) {
 
     fun getNoticeDetail(noticeId: Long): NoticePostDetailResponse {
@@ -59,7 +58,7 @@ class NoticeService(
             .mapIndexed { index, file ->
                 NoticeImageResponse(
                     id = file.id,
-                    url = "https://${s3BucketName}.s3.ap-northeast-2.amazonaws.com/${file.uniqueKey}",
+                    url = publicUrlResolver.resolve(file.uniqueKey)!!,
                     sortOrder = index
                 )
             }
@@ -227,7 +226,7 @@ class NoticeService(
 
         return NoticeImageResponse(
             id = saved.id,
-            url = "https://${s3BucketName}.s3.ap-northeast-2.amazonaws.com/${saved.uniqueKey}",
+            url = publicUrlResolver.resolve(saved.uniqueKey)!!,
             sortOrder = 0
         )
     }
