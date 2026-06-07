@@ -284,6 +284,16 @@ export const menuRoute: MenuRoute = {
           ],
         },
         {
+          path: '/proposal',
+          name: '제안사항',
+          entity: 'suggestion',
+          operation: 'READ',
+          subRoutes: [
+            { path: '/proposal/new', name: '제안사항 등록' },
+            { path: '/proposal/:id', name: '제안사항 상세' },
+          ],
+        },
+        {
           path: '/suggestion',
           name: '물류 클레임',
           entity: 'suggestion',
