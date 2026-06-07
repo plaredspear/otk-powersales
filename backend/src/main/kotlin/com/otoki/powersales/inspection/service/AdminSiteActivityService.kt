@@ -3,6 +3,7 @@ package com.otoki.powersales.inspection.service
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityDetailResponse
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityFilter
@@ -14,7 +15,6 @@ import com.otoki.powersales.inspection.enums.InspectionCategory
 import com.otoki.powersales.inspection.enums.InspectionFieldType
 import com.otoki.powersales.inspection.repository.SiteActivityRepository
 import java.time.LocalDate
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -36,10 +36,7 @@ class AdminSiteActivityService(
     private val siteActivityRepository: SiteActivityRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val policyEvaluator: SharingRulePolicyEvaluator,
-    @Value("\${app.aws.s3.bucket:otoki-bucket}")
-    private val s3BucketName: String,
-    @Value("\${app.aws.s3.region:ap-northeast-2}")
-    private val s3Region: String
+    private val publicUrlResolver: PublicUrlResolver
 ) {
 
     companion object {
@@ -123,5 +120,5 @@ class AdminSiteActivityService(
     }
 
     private fun composeS3Url(key: String): String =
-        "https://$s3BucketName.s3.$s3Region.amazonaws.com/$key"
+        publicUrlResolver.resolve(key)!!
 }

@@ -4,6 +4,7 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -49,8 +50,7 @@ class SuggestionServiceDeletePhotoTest {
         orgCostCenterMatchService,
         fileStorageService,
         validator,
-        s3BucketName = "test-bucket",
-        s3Region = "ap-northeast-2"
+        publicUrlResolver = PublicUrlResolver(prefix = "")
     )
 
     private val employeeId = 100L

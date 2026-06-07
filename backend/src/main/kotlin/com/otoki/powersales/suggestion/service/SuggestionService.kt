@@ -4,6 +4,7 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.service.OrgCostCenterMatchService
@@ -25,7 +26,6 @@ import com.otoki.powersales.suggestion.exception.SuggestionAccessDeniedException
 import com.otoki.powersales.suggestion.exception.SuggestionNotFoundException
 import com.otoki.powersales.suggestion.exception.SuggestionPhotoNotFoundException
 import com.otoki.powersales.suggestion.repository.SuggestionRepository
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -63,10 +63,7 @@ class SuggestionService(
     private val orgCostCenterMatchService: OrgCostCenterMatchService,
     private val fileStorageService: FileStorageService,
     private val validator: SuggestionValidator,
-    @Value("\${app.aws.s3.bucket:otoki-bucket}")
-    private val s3BucketName: String,
-    @Value("\${app.aws.s3.region:ap-northeast-2}")
-    private val s3Region: String
+    private val publicUrlResolver: PublicUrlResolver
 ) {
 
     companion object {
@@ -315,7 +312,7 @@ class SuggestionService(
     }
 
     internal fun composeS3Url(key: String): String =
-        "https://$s3BucketName.s3.$s3Region.amazonaws.com/$key"
+        publicUrlResolver.resolve(key)!!
 
     internal fun formatFileSize(bytes: Long): String =
         when {

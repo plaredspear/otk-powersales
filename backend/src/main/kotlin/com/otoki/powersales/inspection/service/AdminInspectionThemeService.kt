@@ -2,6 +2,7 @@ package com.otoki.powersales.inspection.service
 
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.admin.AdminThemeDetailResponse
@@ -17,7 +18,6 @@ import com.otoki.powersales.inspection.repository.SiteActivityRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import java.time.LocalDate
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -44,10 +44,7 @@ class AdminInspectionThemeService(
     private val employeeRepository: EmployeeRepository,
     private val userRepository: UserRepository,
     private val uploadFileRepository: UploadFileRepository,
-    @Value("\${app.aws.s3.bucket:otoki-bucket}")
-    private val s3BucketName: String,
-    @Value("\${app.aws.s3.region:ap-northeast-2}")
-    private val s3Region: String,
+    private val publicUrlResolver: PublicUrlResolver,
 ) {
 
     companion object {
@@ -241,5 +238,5 @@ class AdminInspectionThemeService(
     }
 
     internal fun composeS3Url(key: String): String =
-        "https://$s3BucketName.s3.$s3Region.amazonaws.com/$key"
+        publicUrlResolver.resolve(key)!!
 }

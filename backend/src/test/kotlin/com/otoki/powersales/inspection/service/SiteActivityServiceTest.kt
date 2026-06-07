@@ -5,6 +5,7 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -47,8 +48,7 @@ class SiteActivityServiceTest {
         productRepository = productRepository,
         uploadFileRepository = uploadFileRepository,
         fileStorageService = fileStorageService,
-        s3BucketName = "otoki-bucket",
-        s3Region = "ap-northeast-2"
+        publicUrlResolver = PublicUrlResolver(prefix = "")
     )
 
     private fun account(id: Long = 1L, name: String = "테스트마트") =

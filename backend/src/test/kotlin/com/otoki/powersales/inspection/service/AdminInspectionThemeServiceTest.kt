@@ -2,6 +2,7 @@ package com.otoki.powersales.inspection.service
 
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.admin.CreateThemeRequest
@@ -40,8 +41,7 @@ class AdminInspectionThemeServiceTest {
         employeeRepository = employeeRepository,
         userRepository = userRepository,
         uploadFileRepository = uploadFileRepository,
-        s3BucketName = "otoki-bucket",
-        s3Region = "ap-northeast-2",
+        publicUrlResolver = PublicUrlResolver(prefix = ""),
     )
 
     private fun theme(id: Long = 1L, deleted: Boolean = false) = InspectionTheme(
