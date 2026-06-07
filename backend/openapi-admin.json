@@ -24679,6 +24679,33 @@
         "tags" : [ "sf-migration-stage-2-controller" ]
       }
     },
+    "/api/v1/admin/sf-migration/stage2/notice-rta-placeholder" : {
+      "post" : {
+        "operationId" : "runNoticeRtaPlaceholder",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "dryRun",
+          "required" : false,
+          "schema" : {
+            "default" : true,
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sf-migration-stage-2-controller" ]
+      }
+    },
     "/api/v1/admin/sf-migration/stage2/password" : {
       "post" : {
         "operationId" : "runPasswordHash",
