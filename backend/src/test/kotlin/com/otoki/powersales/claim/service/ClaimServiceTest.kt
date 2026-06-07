@@ -335,7 +335,7 @@ class ClaimServiceTest {
 
             claimService.deleteClaim(userId, claimId)
 
-            verify { storageService.delete("uploads/claim/2026/01/01/x.jpg") }
+            verify { storageService.deletePrivate("uploads/claim/2026/01/01/x.jpg") }
             verify { claimRepository.delete(claim) }
             assertThat(photo.isDeleted).isTrue
         }
@@ -385,7 +385,7 @@ class ClaimServiceTest {
 
             claimService.deletePhoto(userId, claimId, 7L)
 
-            verify { storageService.delete("uploads/claim/2026/01/01/receipt.jpg") }
+            verify { storageService.deletePrivate("uploads/claim/2026/01/01/receipt.jpg") }
             assertThat(photo.isDeleted).isTrue
         }
 

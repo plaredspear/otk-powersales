@@ -8,7 +8,8 @@ import com.otoki.powersales.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.claim.repository.AdminClaimRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageConstants
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileKbnTypes
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import org.springframework.data.domain.PageRequest
@@ -22,7 +23,7 @@ import java.time.LocalTime
 class AdminClaimService(
     private val adminClaimRepository: AdminClaimRepository,
     private val uploadFileRepository: UploadFileRepository,
-    private val publicUrlResolver: PublicUrlResolver
+    private val storageService: StorageService
 ) {
 
     fun getClaims(
@@ -84,13 +85,15 @@ class AdminClaimService(
      * - 후보가 없으면 null.
      */
     private fun resolveRepresentativeImageUrl(files: List<UploadFile>): String? {
-        val candidate = files
+        val uniqueKey = files
             .filter { !it.uniqueKey.isNullOrBlank() }
             .minWithOrNull(
                 compareByDescending<UploadFile> { it.uploadKbn == UploadFileKbnTypes.CLAIM_DEFECT }
                     .thenBy { it.createdAt }
-            ) ?: return null
-        return publicUrlResolver.resolve(candidate.uniqueKey)
+            )
+            ?.uniqueKey ?: return null
+        // 클레임 이미지는 private/ 저장 → presigned URL 로만 조회 가능 (인증 기반 접근).
+        return storageService.getPresignedUrl(uniqueKey, StorageConstants.CLAIM_PRESIGN_TTL_SECONDS)
     }
 
     fun getClaimDetail(claimId: Long): AdminClaimDetailResponse {
@@ -98,6 +101,9 @@ class AdminClaimService(
             .orElseThrow { ClaimNotFoundException(claimId) }
         val uploadFiles: List<UploadFile> = uploadFileRepository
             .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.CLAIM, claim.id)
-        return AdminClaimDetailResponse.Companion.from(claim, uploadFiles) { publicUrlResolver.resolve(it) }
+        return AdminClaimDetailResponse.Companion.from(claim, uploadFiles) { key ->
+            key?.takeIf { it.isNotBlank() }
+                ?.let { storageService.getPresignedUrl(it, StorageConstants.CLAIM_PRESIGN_TTL_SECONDS) }
+        }
     }
 }

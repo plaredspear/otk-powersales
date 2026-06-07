@@ -67,11 +67,13 @@ class FileStorageService(
 	}
 
 	/**
-	 * 클레임 사진 업로드. 신규 객체는 S3 키 형식(`uploads/claim/<yyyy>/<mm>/<dd>/<uuid>.<ext>`)으로 저장된다.
+	 * 클레임 사진 업로드. 권한 통제 대상이므로 S3 private/ 폴더에 저장된다(조회 시 presigned URL).
+	 * 반환 key(= DB uniqueKey)는 segment 없는 `uploads/claim/<yyyy>/<mm>/<dd>/<uuid>.<ext>` 형식이며,
+	 * 실제 S3 객체는 `private/` + key 에 위치한다.
 	 */
 	fun uploadClaimPhoto(file: MultipartFile, userId: Long, claimId: Long, photoType: String): String {
 		validateNotEmpty(file)
-		val result = storageService.upload(
+		val result = storageService.uploadPrivate(
 			domain = "claim",
 			originalName = file.originalFilename ?: "unknown",
 			bytes = file.bytes,

@@ -62,7 +62,7 @@ data class ClaimDetailResponse(
  * 클레임 첨부 이미지 응답.
  *
  * 데이터 소스: UploadFile (SF UploadFile__c 마이그레이션 entity).
- * - url: UploadFile.uniqueKey (= S3 객체 key) 를 PublicUrlResolver 가 완전 URL 로 변환.
+ * - url: UploadFile.uniqueKey (= S3 객체 key) 를 presigned URL 로 변환 (private/ 저장, 인증 기반 조회).
  *   resolver 가 null 을 반환하면 (uniqueKey 부재) 응답에서 제외.
  */
 data class ClaimPhotoItem(

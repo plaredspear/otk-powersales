@@ -140,4 +140,49 @@ class S3StorageServiceTest {
 			service.delete("uploads/x/y.jpg")
 		}
 	}
+
+	@Nested
+	@DisplayName("private 연산 - 실 S3 key 에 private/ segment 합성")
+	inner class PrivateTests {
+
+		@Test
+		@DisplayName("uploadPrivate - PUT key 는 private/ + uniqueKey, 반환 key 는 segment 없는 uniqueKey")
+		fun uploadPrivate_putsUnderPrivateSegment() {
+			val captured: CapturingSlot<PutObjectRequest> = slot()
+			every { s3Client.putObject(capture(captured), any<RequestBody>()) } returns
+				PutObjectResponse.builder().build()
+
+			val result = service.uploadPrivate("claim", "photo.jpg", byteArrayOf(1, 2, 3), "image/jpeg")
+
+			val putKey = captured.captured.key()
+			assertThat(putKey).startsWith("private/uploads/claim/")
+			assertThat(result.key).isEqualTo(putKey.removePrefix("private/"))
+			assertThat(result.key).startsWith("uploads/claim/")
+		}
+
+		@Test
+		@DisplayName("downloadPrivate - GetObject key 에 private/ segment 합성")
+		fun downloadPrivate_readsFromPrivateSegment() {
+			val captured: CapturingSlot<GetObjectRequest> = slot()
+			val bytes = byteArrayOf(4, 5, 6)
+			every { s3Client.getObjectAsBytes(capture(captured)) } returns
+				ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), bytes)
+
+			val result = service.downloadPrivate("uploads/claim/2026/01/01/x.jpg")
+
+			assertThat(result).isEqualTo(bytes)
+			assertThat(captured.captured.key()).isEqualTo("private/uploads/claim/2026/01/01/x.jpg")
+		}
+
+		@Test
+		@DisplayName("deletePrivate - DeleteObject key 에 private/ segment 합성")
+		fun deletePrivate_deletesFromPrivateSegment() {
+			val captured: CapturingSlot<DeleteObjectRequest> = slot()
+			every { s3Client.deleteObject(capture(captured)) } returns DeleteObjectResponse.builder().build()
+
+			service.deletePrivate("uploads/claim/2026/01/01/x.jpg")
+
+			assertThat(captured.captured.key()).isEqualTo("private/uploads/claim/2026/01/01/x.jpg")
+		}
+	}
 }

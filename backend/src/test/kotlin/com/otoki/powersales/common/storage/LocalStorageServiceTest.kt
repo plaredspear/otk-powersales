@@ -105,4 +105,53 @@ class LocalStorageServiceTest {
 			assertThat(url).isEqualTo("local://uploads/x/y.jpg")
 		}
 	}
+
+	@Nested
+	@DisplayName("private 연산 - 인증 기반 객체")
+	inner class PrivateTests {
+
+		@Test
+		@DisplayName("uploadPrivate - 반환 key 는 segment 없는 uniqueKey")
+		fun uploadPrivate_returnsSegmentFreeKey() {
+			val result = storage.uploadPrivate("claim", "photo.jpg", "hi".toByteArray(), "image/jpeg")
+
+			assertThat(result.key).startsWith("uploads/claim/")
+			assertThat(result.key).doesNotStartWith("private/")
+		}
+
+		@Test
+		@DisplayName("uploadPrivate 후 downloadPrivate 로 동일 바이트 회수 (segment 합성 정합)")
+		fun uploadPrivate_then_downloadPrivate() {
+			val bytes = byteArrayOf(9, 8, 7)
+			val result = storage.uploadPrivate("claim", "photo.jpg", bytes, "image/jpeg")
+
+			assertThat(storage.downloadPrivate(result.key)).isEqualTo(bytes)
+		}
+
+		@Test
+		@DisplayName("private 객체는 public download 로 회수 불가 (segment 격리)")
+		fun privateObject_notAccessibleViaPublicDownload() {
+			val result = storage.uploadPrivate("claim", "photo.jpg", byteArrayOf(1), "image/jpeg")
+
+			assertThatThrownBy { storage.download(result.key) }
+				.isInstanceOf(StorageNotFoundException::class.java)
+		}
+
+		@Test
+		@DisplayName("deletePrivate 후 downloadPrivate 시 NotFound")
+		fun deletePrivate_then_downloadPrivate() {
+			val result = storage.uploadPrivate("claim", "photo.jpg", byteArrayOf(1), "image/jpeg")
+			storage.deletePrivate(result.key)
+
+			assertThatThrownBy { storage.downloadPrivate(result.key) }
+				.isInstanceOf(StorageNotFoundException::class.java)
+		}
+
+		@Test
+		@DisplayName("getPresignedUrl - 로컬 구현은 local:// 스킴 반환")
+		fun getPresignedUrl_localScheme() {
+			val url = storage.getPresignedUrl("uploads/claim/x.jpg", 600)
+			assertThat(url).isEqualTo("local://uploads/claim/x.jpg")
+		}
+	}
 }
