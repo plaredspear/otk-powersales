@@ -16,6 +16,11 @@ object StorageConstants {
 	// 제품 클레임 이미지 presigned URL 만료 시간(초). 목록/상세 공통. 짧은 세션 내 소비 + 클라이언트
 	// 자동 복구로 만료 마찰을 흡수하므로 보수적으로 10분.
 	const val CLAIM_PRESIGN_TTL_SECONDS: Int = 600
+
+	// 공지 본문 인라인 이미지 + 첨부 이미지 presigned URL 만료 시간(초). 본문은 긴 글을 천천히 스크롤하며
+	// 읽으므로 클레임(600s)보다 길게 30분. web 은 페이지 로드 시 1회 소비, mobile 은 cacheKey(refid)로
+	// 재요청을 흡수하므로 만료 마찰이 작다.
+	const val NOTICE_PRESIGN_TTL_SECONDS: Int = 1800
 	val ALLOWED_CONTENT_TYPES: Set<String> = setOf(
 		"image/jpeg",
 		"image/png",

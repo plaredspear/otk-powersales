@@ -1272,6 +1272,35 @@ object Stage1Targets {
         fields = UPLOAD_FILE.fields,
     )
 
+    /**
+     * 공지사항 본문(rich text) 인라인 이미지 전용 upload_file 적재 타겟.
+     *
+     * 공지(DKRetail__Notice__c) 본문 이미지는 레거시에서 SF 표준 rich text area 의 인라인 blob 으로
+     * 저장되어 본문 HTML 에 rtaImage 서블릿 URL(otoki.file.force.com/servlet/rtaImage?...refid=0EM...)로
+     * 박힌다. ContentDocumentLink / ContentVersion / UploadFile__c 어디에도 행이 없어 [UPLOAD_FILE]
+     * (레거시 UploadFile__c 추출) 에도, [CLAIM_IMAGE_UPLOAD_FILE] (ContentDocumentLink 경유) 에도 잡히지
+     * 않는다. SF 서블릿에서 바이트를 직접 다운로드 → S3 재업로드 후 같은 upload_file 테이블에 적재하되
+     * CSV 는 독립 파일명을 쓴다 (claim_upload_files.csv / upload_files.csv 와 분리).
+     *
+     * 적재 후 parent 연결은 [UPLOAD_FILE] / [CLAIM_IMAGE_UPLOAD_FILE] 과 동일하게 Stage2
+     * upload-file-polymorphic-parent (record_sfid=notice SFID 직접 조인) 가 자동 처리한다. 본문 HTML 의
+     * rtaImage URL → 신규 public URL 치환은 별도 스크립트(replace-notice-rta-urls)가 적재 완료 후 수행.
+     *
+     * 본 타겟은 [ALL] 에만 등록하고 [DEPENDENCY_ORDER] 에는 등록하지 않는다 — UI 드롭다운 / copy-all
+     * 일괄에 노출되지 않고, 공지 본문 이미지 전용 UI 가 targetName 을 직접 지정해 single copy-from-s3 로만
+     * 호출한다 ([CLAIM_IMAGE_UPLOAD_FILE] 과 동일 패턴).
+     *
+     * fields 는 [UPLOAD_FILE] 과 동일 (같은 테이블/컬럼). sObjectName 은 null — SOQL 추출 대상이 아니라
+     * rtaImage 서블릿 경유이므로 verify-metadata @SFField 정합 검사에서 skip 된다.
+     */
+    private val NOTICE_IMAGE_UPLOAD_FILE = EntityMetadata(
+        targetName = "NoticeImageUploadFile",
+        sObjectName = null,
+        tableName = "upload_file",
+        csvFileName = "notice_image_upload_files.csv",
+        fields = UPLOAD_FILE.fields,
+    )
+
     private val SUGGESTION = EntityMetadata(
         targetName = "Suggestion",
         sObjectName = "DKRetail__Proposal__c",
@@ -1708,6 +1737,9 @@ object Stage1Targets {
         // 클레임 이미지 전용 — ALL 에만 등록 (DEPENDENCY_ORDER 미등록 → 드롭다운/copy-all 제외).
         // 클레임 이미지 전용 UI 가 single copy-from-s3 로만 호출한다.
         CLAIM_IMAGE_UPLOAD_FILE,
+        // 공지 본문 rtaImage 인라인 이미지 전용 — ALL 에만 등록 (DEPENDENCY_ORDER 미등록).
+        // 공지 본문 이미지 전용 UI 가 single copy-from-s3 로만 호출한다.
+        NOTICE_IMAGE_UPLOAD_FILE,
         USER_ROLE,
         PROFILE,
         // spec #790 — SF Sharing 메타
