@@ -4,7 +4,7 @@ import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageConstants
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -43,22 +43,50 @@ class NoticeService(
     private val employeeRepository: EmployeeRepository,
     private val organizationRepository: OrganizationRepository,
     private val fileStorageService: FileStorageService,
-    private val storageService: StorageService,
-    private val publicUrlResolver: PublicUrlResolver
+    private val storageService: StorageService
 ) {
 
+    companion object {
+        // data-refid 속성을 가진 placeholder <img> 태그 전체. group(1) = refid.
+        private val INLINE_IMG_REGEX =
+            Regex("""<img\b[^>]*\bdata-refid\s*=\s*"([^"]+)"[^>]*>""", RegexOption.IGNORE_CASE)
+        // <img> 태그 안의 src 속성 (presigned 로 교체 대상).
+        private val SRC_ATTR_REGEX =
+            Regex("""\bsrc\s*=\s*"[^"]*"""", RegexOption.IGNORE_CASE)
+    }
+
+    /**
+     * 공지 상세 조회 (web admin + mobile 공통).
+     *
+     * 공지 이미지는 본문 인라인(rich text rtaImage 마이그레이션분)과 첨부(images[]) 두 종류 모두 private S3 에
+     * 저장되어 presigned URL 로만 조회 가능하다 (Spec #854 재설계). upload_file 을 1회 조회해 두 용도로 재사용한다:
+     * 1. 본문 content 의 placeholder `<img data-refid="{refid}">` 를 presigned URL 로 rewrite ([rewriteInlineImages]).
+     *    매핑 키는 refid = upload_file.sfid (Stage1 이 build CSV 의 Id=refid 를 sfid 로 적재).
+     * 2. 첨부 images[] 의 url 을 presigned 로 발급.
+     * presigned 는 만료(NOTICE_PRESIGN_TTL_SECONDS)되므로 본문 DB 에는 placeholder 만 영구 저장하고 조회 시점에 발급한다.
+     */
     fun getNoticeDetail(noticeId: Long): NoticePostDetailResponse {
         val notice = noticeRepository.findById(noticeId)
             .filter { it.isDeleted != true }
             .orElseThrow { NoticePostNotFoundException() }
 
-        val images = uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.NOTICE, notice.id)
+        val uploadFiles = uploadFileRepository
+            .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.NOTICE, notice.id)
             .filter { !it.uniqueKey.isNullOrBlank() }
+
+        // 본문 rewrite 용 refid(=sfid) → uniqueKey 맵 (1회 조회 재사용, N+1 없음).
+        val uniqueKeyByRefid: Map<String, String> = uploadFiles
+            .filter { !it.sfid.isNullOrBlank() }
+            .associate { it.sfid!! to it.uniqueKey!! }
+
+        val content = rewriteInlineImages(notice.contents ?: "", uniqueKeyByRefid)
+
+        val images = uploadFiles
             .sortedBy { it.createdAt }
             .mapIndexed { index, file ->
                 NoticeImageResponse(
                     id = file.id,
-                    url = publicUrlResolver.resolve(file.uniqueKey)!!,
+                    url = storageService.getPresignedUrl(file.uniqueKey!!, StorageConstants.NOTICE_PRESIGN_TTL_SECONDS),
                     sortOrder = index
                 )
             }
@@ -69,12 +97,32 @@ class NoticeService(
             category = notice.category?.apiCode ?: "",
             categoryName = notice.category?.displayName ?: "",
             title = notice.name ?: "",
-            content = notice.contents ?: "",
+            content = content,
             branch = notice.branch,
             branchCode = notice.branchCode,
             createdAt = notice.createdAt,
             images = images
         )
+    }
+
+    /**
+     * 공지 본문 HTML 의 placeholder 인라인 이미지(`<img ... data-refid="{refid}" ...>`)의 src 를 presigned URL 로 치환.
+     *
+     * 마이그레이션이 본문에 `<img src="notice-image://{refid}" data-refid="{refid}">` 형태로 영구 저장하고,
+     * 조회 시점에 본 함수가 refid → uniqueKey → presigned 로 src 만 교체한다 (data-refid 는 mobile cacheKey 용으로 보존).
+     * 미적재 refid(다운로드 실패분 등)는 placeholder 유지 → 클라이언트에서 깨진 이미지로 노출되되 본문 오염 없음.
+     * data-refid 미포함 본문(이미지 없는 공지)은 즉시 반환.
+     */
+    private fun rewriteInlineImages(html: String, uniqueKeyByRefid: Map<String, String>): String {
+        if (!html.contains("data-refid")) return html
+        return INLINE_IMG_REGEX.replace(html) { match ->
+            val refid = match.groupValues[1]
+            val uniqueKey = uniqueKeyByRefid[refid] ?: return@replace match.value
+            val presigned = storageService.getPresignedUrl(uniqueKey, StorageConstants.NOTICE_PRESIGN_TTL_SECONDS)
+            // src 속성만 presigned 로 교체 (data-refid 보존). presigned URL 은 &, =, %, $ 등을 포함하므로
+            // 람다 기반 replace 로 치환 문자열을 literal 로 넣어 그룹 참조($1 등) 오해석을 방지한다.
+            SRC_ATTR_REGEX.replace(match.value) { "src=\"$presigned\"" }
+        }
     }
 
     fun getPosts(userId: Long, category: String?, search: String?, page: Int, size: Int): NoticePostListResponse {
@@ -228,7 +276,7 @@ class NoticeService(
 
         return NoticeImageResponse(
             id = saved.id,
-            url = publicUrlResolver.resolve(saved.uniqueKey)!!,
+            url = storageService.getPresignedUrl(saved.uniqueKey!!, StorageConstants.NOTICE_PRESIGN_TTL_SECONDS),
             sortOrder = 0
         )
     }
@@ -260,7 +308,7 @@ class NoticeService(
             .findByIdAndParentTypeAndParentIdAndIsDeletedFalse(imageId, UploadFileParentTypes.NOTICE, noticeId)
             ?: throw InvalidImageIdException()
 
-        uploadFile.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.delete(it) }
+        uploadFile.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.deletePrivate(it) }
         uploadFile.isDeleted = true
     }
 

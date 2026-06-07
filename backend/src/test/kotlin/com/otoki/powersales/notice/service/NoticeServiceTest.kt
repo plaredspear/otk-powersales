@@ -3,7 +3,6 @@ package com.otoki.powersales.notice.service
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -56,9 +55,12 @@ class NoticeServiceTest {
             employeeRepository,
             organizationRepository,
             fileStorageService,
-            storageService,
-            PublicUrlResolver(prefix = "https://test-bucket.s3.ap-northeast-2.amazonaws.com")
+            storageService
         )
+        // 공지 이미지는 private presigned 조회 — uniqueKey 를 받아 presigned 형태 URL 반환 stub.
+        every { storageService.getPresignedUrl(any(), any()) } answers {
+            "https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/${firstArg<String>()}?X-Amz-Signature=test"
+        }
     }
 
     @Nested
@@ -93,7 +95,8 @@ class NoticeServiceTest {
             assertThat(result.createdAt).isEqualTo(java.time.LocalDateTime.parse("2026-02-28T10:30:00"))
             assertThat(result.images).hasSize(2)
             assertThat(result.images[0].id).isEqualTo(101L)
-            assertThat(result.images[0].url).isEqualTo("https://test-bucket.s3.ap-northeast-2.amazonaws.com/notices/img1.jpg")
+            assertThat(result.images[0].url)
+                .isEqualTo("https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/notices/img1.jpg?X-Amz-Signature=test")
             assertThat(result.images[0].sortOrder).isEqualTo(0)
             assertThat(result.images[1].sortOrder).isEqualTo(1)
         }
@@ -189,6 +192,77 @@ class NoticeServiceTest {
 
             assertThat(result.category).isEqualTo("EDUCATION")
             assertThat(result.categoryName).isEqualTo("교육")
+        }
+
+        @Test
+        @DisplayName("본문 placeholder 이미지 - data-refid 의 src 를 presigned 로 치환 + data-refid 보존")
+        fun getNoticeDetail_rewriteInlineImage() {
+            val notice = createNotice(
+                id = 1L, category = NoticeCategory.COMPANY,
+                contents = """<p>안내</p><img src="notice-image://0EM001" data-refid="0EM001" alt="신년사.png">"""
+            )
+            every { noticeRepository.findById(1L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns listOf(
+                createUploadFile(id = 1L, sfid = "0EM001", uniqueKey = "uploads/notice/migrated/0EM001.png")
+            )
+
+            val result = noticeService.getNoticeDetail(1L)
+
+            // src 는 presigned 로 교체, data-refid 는 보존 (mobile cacheKey 용), placeholder/rtaImage 잔존 없음
+            assertThat(result.content).contains("""src="https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/uploads/notice/migrated/0EM001.png?X-Amz-Signature=test"""")
+            assertThat(result.content).contains("""data-refid="0EM001"""")
+            assertThat(result.content).doesNotContain("notice-image://")
+        }
+
+        @Test
+        @DisplayName("본문 이미지 다수 - 각 refid 별 올바른 uniqueKey 의 presigned 로 치환")
+        fun getNoticeDetail_rewriteMultipleImages() {
+            val notice = createNotice(
+                id = 1L, category = NoticeCategory.COMPANY,
+                contents = """<img src="notice-image://A" data-refid="A"><p>중간</p><img src="notice-image://B" data-refid="B">"""
+            )
+            every { noticeRepository.findById(1L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns listOf(
+                createUploadFile(id = 1L, sfid = "A", uniqueKey = "uploads/notice/migrated/A.png"),
+                createUploadFile(id = 2L, sfid = "B", uniqueKey = "uploads/notice/migrated/B.jpg")
+            )
+
+            val result = noticeService.getNoticeDetail(1L)
+
+            assertThat(result.content).contains("private/uploads/notice/migrated/A.png")
+            assertThat(result.content).contains("private/uploads/notice/migrated/B.jpg")
+            assertThat(result.content).doesNotContain("notice-image://")
+        }
+
+        @Test
+        @DisplayName("미적재 refid - 매칭 uploadFile 없으면 placeholder 유지 (치환 안 함)")
+        fun getNoticeDetail_rewriteMissingRefid() {
+            val notice = createNotice(
+                id = 1L, category = NoticeCategory.COMPANY,
+                contents = """<img src="notice-image://MISSING" data-refid="MISSING">"""
+            )
+            every { noticeRepository.findById(1L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns emptyList()
+
+            val result = noticeService.getNoticeDetail(1L)
+
+            // 미적재 refid → placeholder 그대로 (깨진 이미지로 노출되되 본문 오염 없음)
+            assertThat(result.content).isEqualTo("""<img src="notice-image://MISSING" data-refid="MISSING">""")
+        }
+
+        @Test
+        @DisplayName("data-refid 없는 본문 - 무변경 (빠른 경로)")
+        fun getNoticeDetail_rewriteNoPlaceholder() {
+            val notice = createNotice(
+                id = 1L, category = NoticeCategory.COMPANY,
+                contents = "<p>이미지 없는 본문</p>"
+            )
+            every { noticeRepository.findById(1L) } returns Optional.of(notice)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns emptyList()
+
+            val result = noticeService.getNoticeDetail(1L)
+
+            assertThat(result.content).isEqualTo("<p>이미지 없는 본문</p>")
         }
 
         @Test
@@ -706,7 +780,8 @@ class NoticeServiceTest {
             val result = noticeService.uploadNoticeImage(100L, mockImage())
 
             assertThat(result.id).isEqualTo(555L)
-            assertThat(result.url).isEqualTo("https://test-bucket.s3.ap-northeast-2.amazonaws.com/uploads/notice/2026/05/11/abc-uuid.png")
+            assertThat(result.url)
+                .isEqualTo("https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/uploads/notice/2026/05/11/abc-uuid.png?X-Amz-Signature=test")
             assertThat(result.sortOrder).isEqualTo(0)
         }
 
@@ -748,7 +823,7 @@ class NoticeServiceTest {
             every {
                 uploadFileRepository.findByIdAndParentTypeAndParentIdAndIsDeletedFalse(200L, "Notice", 42L)
             } returns uploadFile
-            every { storageService.delete(any()) } just Runs
+            every { storageService.deletePrivate(any()) } just Runs
 
             noticeService.deleteNoticeImage(42L, 200L)
 
@@ -831,12 +906,14 @@ class NoticeServiceTest {
 
     private fun createUploadFile(
         id: Long = 1L,
+        sfid: String? = null,
         uniqueKey: String? = "test/file.jpg",
         parentType: String = "Notice",
         parentId: Long? = null,
         createdDate: LocalDateTime? = java.time.LocalDateTime.of(2026, 1, 1, 0, 0, 0)
     ): UploadFile = UploadFile(
         id = id,
+        sfid = sfid,
         uniqueKey = uniqueKey,
         parentType = parentType,
         parentId = parentId

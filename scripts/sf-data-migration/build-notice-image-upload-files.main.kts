@@ -58,7 +58,7 @@ import java.io.FileWriter
 var scanCsvPath: String? = null
 var imgDirPath: String? = null
 var outPath: String? = null
-// unique_key prefix. public/ 을 포함하지 않는다 (PublicUrlResolver prefix 가 .../public/ 로 끝남).
+// unique_key prefix. segment(private/·public/) 를 포함하지 않는다 (backend 가 조회 시 private/ 합성).
 var imagePrefix = "uploads/notice/migrated"
 
 run {
@@ -91,11 +91,14 @@ val out = outPath ?: run {
     System.err.println("[error] --out 필수"); kotlin.system.exitProcess(1)
 }
 
-// 가드 — image-prefix 는 public/ 으로 시작할 수 없다 (PublicUrlResolver prefix 중복 방지).
-if (imagePrefix.trimStart('/').lowercase().startsWith("public/")) {
-    System.err.println("[error] --image-prefix 는 public/ 으로 시작할 수 없습니다: $imagePrefix")
-    System.err.println("        PublicUrlResolver prefix 가 .../public/ 로 끝나 중복됩니다.")
-    System.err.println("        예: uploads/notice/migrated (public 없이)")
+// 가드 — image-prefix 는 segment(private/·public/) 로 시작할 수 없다. backend 조회 시
+// StorageConstants.privateKey 가 unique_key 앞에 private/ 를 합성하므로, segment 를 넣으면
+// private/private/... 로 어긋난다.
+val imagePrefixLc = imagePrefix.trimStart('/').lowercase()
+if (imagePrefixLc.startsWith("private/") || imagePrefixLc.startsWith("public/")) {
+    System.err.println("[error] --image-prefix 는 private/ 또는 public/ 으로 시작할 수 없습니다: $imagePrefix")
+    System.err.println("        backend 가 조회 시 private/ 를 자동 합성하므로 unique_key 는 segment 없이 둡니다.")
+    System.err.println("        예: uploads/notice/migrated")
     kotlin.system.exitProcess(1)
 }
 

@@ -32,9 +32,15 @@ class FileStorageService(
 	/**
 	 * 공지사항 첨부 이미지 업로드. 신규 객체는 S3 키 형식(`uploads/notice/<yyyy>/<mm>/<dd>/<uuid>.<ext>`)으로 저장된다.
 	 */
+	/**
+	 * 공지 첨부/본문 이미지 업로드. 권한 통제 대상이므로 S3 private/ 폴더에 저장된다(조회 시 presigned URL).
+	 * 반환 key(= DB uniqueKey)는 segment 없는 `uploads/notice/<yyyy>/<mm>/<dd>/<uuid>.<ext>` 형식이며,
+	 * 실제 S3 객체는 `private/` + key 에 위치한다. (레거시 공지 첨부는 public 이었으나, 본문 인라인 이미지의
+	 * private 전환과 일관되게 첨부도 private 로 통일 — Spec #854 재설계.)
+	 */
 	fun uploadNoticeImage(file: MultipartFile, noticeId: Long): String {
 		validateNotEmpty(file)
-		val result = storageService.upload(
+		val result = storageService.uploadPrivate(
 			domain = "notice",
 			originalName = file.originalFilename ?: "unknown",
 			bytes = file.bytes,

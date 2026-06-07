@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
@@ -165,49 +166,64 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
                 const Divider(height: AppSpacing.xl, color: AppColors.border),
 
                 // 본문 (HTML 렌더링)
+                // 본문 인라인 이미지는 backend 가 presigned URL 로 rewrite 해서 내려준다(만료/매 조회 변동).
+                // <img> 를 가로채 CachedNetworkImage 로 렌더하되 cacheKey 를 data-refid(안정 식별자)로 지정해
+                // presigned URL 변동과 무관하게 캐시를 재사용한다.
                 HtmlWidget(
                   detail.content,
                   textStyle: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textPrimary,
                     height: 1.6,
                   ),
+                  customWidgetBuilder: (element) {
+                    if (element.localName != 'img') return null;
+                    final src = element.attributes['src'];
+                    // placeholder(notice-image://) 잔존 = rewrite 미적용/실패분 → 깨진 이미지 박스.
+                    if (src == null || !src.startsWith('http')) {
+                      return _brokenImageBox();
+                    }
+                    final refid = element.attributes['data-refid'];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                        child: CachedNetworkImage(
+                          imageUrl: src,
+                          cacheKey: refid, // null 이면 imageUrl 로 fallback
+                          fit: BoxFit.fitWidth,
+                          placeholder: (context, url) => const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(AppSpacing.lg),
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => _brokenImageBox(),
+                        ),
+                      ),
+                    );
+                  },
                 ),
 
                 // 이미지 목록
                 if (detail.images.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
+                  // 첨부 이미지도 presigned URL → cacheKey 를 안정적 id 로 지정해 캐싱.
                   ...detail.images.map((image) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                        child: Image.network(
-                          image.url,
+                        child: CachedNetworkImage(
+                          imageUrl: image.url,
+                          cacheKey: 'notice-image-${image.id}',
                           fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                    : null,
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              height: 200,
-                              color: AppColors.surface,
-                              child: const Center(
-                                child: Icon(
-                                  Icons.broken_image,
-                                  size: 48,
-                                  color: AppColors.textTertiary,
-                                ),
-                              ),
-                            );
-                          },
+                          placeholder: (context, url) => const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(AppSpacing.lg),
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => _brokenImageBox(),
                         ),
                       ),
                     );
@@ -249,6 +265,21 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
           ),
         ),
       ],
+    );
+  }
+
+  /// 이미지 로드 실패 / placeholder 잔존 시 표시할 깨진 이미지 박스.
+  Widget _brokenImageBox() {
+    return Container(
+      height: 200,
+      color: AppColors.surface,
+      child: const Center(
+        child: Icon(
+          Icons.broken_image,
+          size: 48,
+          color: AppColors.textTertiary,
+        ),
+      ),
     );
   }
 }
