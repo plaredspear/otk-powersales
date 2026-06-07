@@ -71,19 +71,35 @@ class QuickMenuGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = _menuItems;
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.homeGutter),
-      child: GridView.count(
-        crossAxisCount: 3,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 15,
-        crossAxisSpacing: 0,
-        childAspectRatio: 1.0,
-        children: items.map((item) {
-          return _buildMenuItem(item);
-        }).toList(),
-      ),
+    // 레거시(common.css .main_quick_nav): 3열, 행 간 15px, 셀 높이는 콘텐츠
+    // (아이콘+라벨) 높이를 그대로 따른다. 정사각형(childAspectRatio:1.0)으로
+    // 강제하지 않아 셀 위아래에 불필요한 여백이 생기지 않는다.
+    const rowGap = 15.0;
+    final rows = <Widget>[];
+    for (var start = 0; start < items.length; start += 3) {
+      final rowItems = items.skip(start).take(3).toList();
+      rows.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List.generate(
+            3,
+            (col) => Expanded(
+              child: col < rowItems.length
+                  ? _buildMenuItem(rowItems[col])
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ),
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) const SizedBox(height: rowGap),
+          rows[i],
+        ],
+      ],
     );
   }
 
