@@ -83,11 +83,13 @@ class FileStorageService(
 	}
 
 	/**
-	 * 제안 첨부 사진 업로드 (Spec #664). 신규 객체는 S3 키 형식(`uploads/suggestion/<yyyy>/<mm>/<dd>/<uuid>.<ext>`)으로 저장된다.
+	 * 제안(물류 클레임) 첨부 사진 업로드 (Spec #664). 권한 통제 대상이므로 제품 클레임과 동일하게 S3 private/ 폴더에
+	 * 저장된다(조회 시 presigned URL). 반환 key(= DB uniqueKey)는 segment 없는
+	 * `uploads/suggestion/<yyyy>/<mm>/<dd>/<uuid>.<ext>` 형식이며, 실제 S3 객체는 `private/` + key 에 위치한다.
 	 */
 	fun uploadSuggestionPhoto(file: MultipartFile, suggestionId: Long): String {
 		validateNotEmpty(file)
-		val result = storageService.upload(
+		val result = storageService.uploadPrivate(
 			domain = "suggestion",
 			originalName = file.originalFilename ?: "unknown",
 			bytes = file.bytes,
@@ -97,12 +99,11 @@ class FileStorageService(
 	}
 
 	/**
-	 * 제안 첨부 사진 삭제 (Spec #828). fileKey 가 신규 S3 키이면 그대로 삭제, 레거시 UUID 형식이면 no-op (마이그레이션 데이터 보호).
+	 * 제안(물류 클레임) 첨부 사진 삭제 (Spec #828). private/ 객체로 저장되므로 deletePrivate 로 삭제한다
+	 * (실 객체 key = private/ + uniqueKey). 레거시 마이그레이션 키(segment·uploads 미포함)도 private/ 합성으로 처리.
 	 */
 	fun deleteSuggestionPhoto(fileKey: String) {
-		if (fileKey.startsWith("uploads/")) {
-			storageService.delete(fileKey)
-		}
+		storageService.deletePrivate(fileKey)
 	}
 
 	fun uploadSiteActivityPhoto(file: MultipartFile, siteActivityId: Long): String {

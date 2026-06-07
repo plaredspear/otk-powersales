@@ -4,7 +4,7 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -40,6 +40,7 @@ class SuggestionServiceDeletePhotoTest {
     private val orgCostCenterMatchService: OrgCostCenterMatchService = mockk()
     private val fileStorageService: FileStorageService = mockk(relaxUnitFun = true)
     private val validator: SuggestionValidator = mockk()
+    private val storageService: StorageService = mockk(relaxUnitFun = true)
 
     private val suggestionService = SuggestionService(
         suggestionRepository,
@@ -50,7 +51,7 @@ class SuggestionServiceDeletePhotoTest {
         orgCostCenterMatchService,
         fileStorageService,
         validator,
-        publicUrlResolver = PublicUrlResolver(prefix = "")
+        storageService
     )
 
     private val employeeId = 100L
@@ -124,9 +125,9 @@ class SuggestionServiceDeletePhotoTest {
     }
 
     @Test
-    @DisplayName("정상 - 레거시 UUID 형식 키 → FileStorageService 호출되나 S3 no-op (deleteSuggestionPhoto 내부 분기)")
+    @DisplayName("정상 - 레거시 마이그레이션 키(segment 없음) → FileStorageService 호출 (private/ 합성 삭제)")
     fun callsServiceForLegacyUuidKey() {
-        val key = "abc-uuid-legacy-key"
+        val key = "178003103039220240015"
         val suggestion = suggestionOf(owner)
         val photo = photoOf(key)
         every { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) } returns suggestion
