@@ -39,34 +39,36 @@ class ActivityRegistrationPopup extends StatelessWidget {
   });
 
   /// 기본 메뉴 목록 (6개, 레거시 GNB "활동 등록" 순서 정합)
+  ///
+  /// 아이콘은 레거시 노랑 솔리드 실루엣에 맞춰 채움(filled) 변형을 사용한다.
   static const List<ActivityMenuItem> defaultMenuItems = [
     ActivityMenuItem(
-      icon: Icons.notifications_none,
+      icon: Icons.notifications,
       label: '유통기한 관리',
       route: AppRouter.productExpiration,
     ),
     ActivityMenuItem(
-      icon: Icons.assignment_ind_outlined,
+      icon: Icons.person_pin_circle,
       label: '현장 점검',
       route: AppRouter.inspectionRegister,
     ),
     ActivityMenuItem(
-      icon: Icons.campaign_outlined,
+      icon: Icons.feedback,
       label: '제안하기(물류클레임, 신제품 제안 등)',
       route: AppRouter.suggestionRegister,
     ),
     ActivityMenuItem(
-      icon: Icons.chat_bubble_outline,
+      icon: Icons.chat,
       label: '클레임 등록',
       route: AppRouter.claimRegister,
     ),
     ActivityMenuItem(
-      icon: Icons.receipt_long_outlined,
+      icon: Icons.assignment,
       label: '내 클레임 조회',
       route: AppRouter.claimList,
     ),
     ActivityMenuItem(
-      icon: Icons.receipt_long_outlined,
+      icon: Icons.assignment,
       label: '내 물류클레임 조회',
       route: AppRouter.suggestionList,
     ),
@@ -94,25 +96,32 @@ class ActivityRegistrationPopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      color: AppColors.background,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 핸들 바
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.divider,
-              borderRadius: BorderRadius.circular(2),
+          // 우측 상단 X 닫기 버튼 (레거시 정합)
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(
+                top: AppSpacing.sm,
+                right: AppSpacing.sm,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                color: AppColors.textTertiary,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
 
-          // 메뉴 리스트
-          ...defaultMenuItems.map(
-            (item) => _buildMenuItem(context, item),
-          ),
+          // 메뉴 리스트 (항목 사이 구분선)
+          for (var i = 0; i < defaultMenuItems.length; i++) ...[
+            _buildMenuItem(context, defaultMenuItems[i]),
+            if (i < defaultMenuItems.length - 1)
+              const Divider(height: 1, thickness: 1, color: AppColors.divider),
+          ],
 
           // SafeArea 하단 여백
           SizedBox(height: MediaQuery.of(context).padding.bottom),
@@ -121,38 +130,34 @@ class ActivityRegistrationPopup extends StatelessWidget {
     );
   }
 
-  /// 개별 메뉴 아이템 UI
+  /// 개별 메뉴 아이템 UI - 레거시 노랑 아이콘 + 라벨, 화살표 없음
   Widget _buildMenuItem(BuildContext context, ActivityMenuItem item) {
     return InkWell(
       onTap: () {
         Navigator.of(context).pop();
         onMenuTap?.call(item);
       },
-      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.md,
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.lg,
         ),
         child: Row(
           children: [
             Icon(
               item.icon,
               size: AppSpacing.iconSize,
-              color: AppColors.textPrimary,
+              color: AppColors.legacyYellow,
             ),
             const SizedBox(width: AppSpacing.md),
-            Text(
-              item.label,
-              style: AppTypography.bodyLarge.copyWith(
-                fontWeight: FontWeight.w500,
+            Expanded(
+              child: Text(
+                item.label,
+                style: AppTypography.bodyLarge.copyWith(
+                  color: AppColors.legacyTextSub,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            const Spacer(),
-            const Icon(
-              Icons.chevron_right,
-              size: AppSpacing.iconSize,
-              color: AppColors.textTertiary,
             ),
           ],
         ),

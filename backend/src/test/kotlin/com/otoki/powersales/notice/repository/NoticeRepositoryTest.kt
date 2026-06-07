@@ -43,7 +43,7 @@ class NoticeRepositoryTest {
     private fun persistNotice(
         name: String = "테스트 공지",
         category: NoticeCategory? = NoticeCategory.COMPANY,
-        branch: String? = null,
+        branchCode: String? = null,
         contents: String? = null,
         isDeleted: Boolean? = null,
         scope: NoticeScope? = null,
@@ -52,7 +52,7 @@ class NoticeRepositoryTest {
         val notice = Notice(
             name = name,
             category = category,
-            branch = branch,
+            branchCode = branchCode,
             contents = contents,
             isDeleted = isDeleted,
             scope = scope
@@ -78,9 +78,9 @@ class NoticeRepositoryTest {
         fun branchAndAll() {
             // Given
             val now = LocalDateTime.now()
-            persistNotice(name = "부산1지점 공지", category = NoticeCategory.BRANCH, branch = "부산1지점", createdDate = now.minus(1, java.time.temporal.ChronoUnit.HOURS))
+            persistNotice(name = "부산1지점 공지", category = NoticeCategory.BRANCH, branchCode = "부산1지점", createdDate = now.minus(1, java.time.temporal.ChronoUnit.HOURS))
             persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY, createdDate = now.minus(2, java.time.temporal.ChronoUnit.HOURS))
-            persistNotice(name = "서울1지점 공지", category = NoticeCategory.BRANCH, branch = "서울1지점", createdDate = now.minus(3, java.time.temporal.ChronoUnit.HOURS))
+            persistNotice(name = "서울1지점 공지", category = NoticeCategory.BRANCH, branchCode = "서울1지점", createdDate = now.minus(3, java.time.temporal.ChronoUnit.HOURS))
 
             // When
             val result = noticeRepository.findRecentNotices("부산1지점")
@@ -173,7 +173,7 @@ class NoticeRepositoryTest {
         fun otherBranchExcluded() {
             // Given
             val now = LocalDateTime.now()
-            persistNotice(name = "서울1지점 전용 공지", category = NoticeCategory.BRANCH, branch = "서울1지점", createdDate = now.minus(1, java.time.temporal.ChronoUnit.HOURS))
+            persistNotice(name = "서울1지점 전용 공지", category = NoticeCategory.BRANCH, branchCode = "서울1지점", createdDate = now.minus(1, java.time.temporal.ChronoUnit.HOURS))
 
             // When
             val result = noticeRepository.findRecentNotices("부산1지점")
@@ -210,8 +210,8 @@ class NoticeRepositoryTest {
         fun findAll() {
             // Given
             persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY)
-            persistNotice(name = "서울지점 공지", category = NoticeCategory.BRANCH, branch = "서울지점")
-            persistNotice(name = "부산지점 공지", category = NoticeCategory.BRANCH, branch = "부산지점")
+            persistNotice(name = "서울지점 공지", category = NoticeCategory.BRANCH, branchCode = "서울지점")
+            persistNotice(name = "부산지점 공지", category = NoticeCategory.BRANCH, branchCode = "부산지점")
             persistNotice(name = "삭제된 공지", category = NoticeCategory.COMPANY, isDeleted = true)
 
             // When
@@ -227,7 +227,7 @@ class NoticeRepositoryTest {
         fun filterCompany() {
             // Given
             persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY)
-            persistNotice(name = "서울지점 공지", category = NoticeCategory.BRANCH, branch = "서울지점")
+            persistNotice(name = "서울지점 공지", category = NoticeCategory.BRANCH, branchCode = "서울지점")
 
             // When
             val result = noticeRepository.findNotices(NoticeCategory.COMPANY, null, "서울지점", pageable)
@@ -242,8 +242,8 @@ class NoticeRepositoryTest {
         fun filterBranch() {
             // Given
             persistNotice(name = "전체 공지", category = NoticeCategory.COMPANY)
-            persistNotice(name = "서울지점 공지", category = NoticeCategory.BRANCH, branch = "서울지점")
-            persistNotice(name = "부산지점 공지", category = NoticeCategory.BRANCH, branch = "부산지점")
+            persistNotice(name = "서울지점 공지", category = NoticeCategory.BRANCH, branchCode = "서울지점")
+            persistNotice(name = "부산지점 공지", category = NoticeCategory.BRANCH, branchCode = "부산지점")
 
             // When
             val result = noticeRepository.findNotices(NoticeCategory.BRANCH, null, "서울지점", pageable)
