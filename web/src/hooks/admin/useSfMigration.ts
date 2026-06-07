@@ -2,12 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getFkResolveProgress,
   runNaturalKeyFkResolve,
+  runNoticeRtaPlaceholder,
   runPicklistColumn,
   runUploadFilePolymorphicParent,
   runUserRoleHierarchyRecalc,
   startFkResolve,
   type FkResolveProgress,
   type NaturalKeyFkResponse,
+  type NoticeRtaPlaceholderResponse,
   type PicklistColumn,
   type PicklistResponse,
   type UploadFileParentResponse,
@@ -60,5 +62,17 @@ export function useRunUploadFilePolymorphicParent() {
 export function useRunUserRoleHierarchyRecalc() {
   return useMutation<UserRoleHierarchyRecalcResponse>({
     mutationFn: runUserRoleHierarchyRecalc,
+  });
+}
+
+/**
+ * 공지 본문 rtaImage <img> → placeholder 치환 Mutation 훅.
+ *
+ * `mutate(dryRun)` 의 boolean 인자로 dry-run(true) / apply(false) 를 분기한다. 1회성 cut-over 도구라
+ * 무효화할 캐시 화면이 없어 onSuccess invalidate 없이 결과를 mutation data 로 직접 표시한다.
+ */
+export function useRunNoticeRtaPlaceholder() {
+  return useMutation<NoticeRtaPlaceholderResponse, Error, boolean>({
+    mutationFn: runNoticeRtaPlaceholder,
   });
 }

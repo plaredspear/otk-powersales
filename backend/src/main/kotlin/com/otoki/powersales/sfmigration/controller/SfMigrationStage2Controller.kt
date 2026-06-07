@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.Executors
 
@@ -93,6 +94,24 @@ class SfMigrationStage2Controller(
     @PostMapping("/api/v1/admin/sf-migration/stage2/upload-file-polymorphic-parent")
     fun runUploadFilePolymorphicParent(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = service.runUploadFilePolymorphicParent()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 공지 본문 rtaImage <img> → placeholder 치환 (notice.contents UPDATE).
+     *
+     * 공지 본문에 박힌 SF rtaImage 서블릿 URL 을 만료 없는 placeholder
+     * (`<img src="notice-image://{refid}" data-refid="{refid}">`) 로 치환한다. 조회 시점에
+     * NoticeService 가 data-refid 로 presigned URL 을 rewrite 하므로, 본문에는 placeholder 만 영구 저장한다.
+     *
+     * 공지 본문 이미지 적재(Stage1 NoticeImageUploadFile) + UploadFile Parent Resolve 완료 후 1회 실행.
+     * 기본 dryRun=true (변경 대상 집계만). 실제 UPDATE 는 dryRun=false 명시 시에만. 멱등 (이미 치환된 본문 skip).
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/notice-rta-placeholder")
+    fun runNoticeRtaPlaceholder(
+        @RequestParam(name = "dryRun", defaultValue = "true") dryRun: Boolean,
+    ): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = service.runNoticeRtaPlaceholderRewrite(dryRun)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
