@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -6,6 +6,7 @@ import {
   Descriptions,
   Empty,
   Progress,
+  Radio,
   Space,
   Statistic,
   Tag,
@@ -16,6 +17,7 @@ import dayjs from 'dayjs';
 import {
   useFkResolveProgress,
   useRunNaturalKeyFkResolve,
+  useRunNoticeRtaPlaceholder,
   useRunPicklistColumn,
   useRunUploadFilePolymorphicParent,
   useRunUserRoleHierarchyRecalc,
@@ -26,6 +28,7 @@ import type {
   FkResolveStatus,
   FkResolveTableResult,
   NaturalKeyFkSubstepResult,
+  NoticeRtaPlaceholderSubstepResult,
   PicklistSubstepResult,
   UploadFileParentSubstepResult,
 } from '@/api/admin/sfMigration';
@@ -78,6 +81,10 @@ export default function SfMigrationPage() {
   const runNaturalKeyFkMutation = useRunNaturalKeyFkResolve();
   const runUploadFileParentMutation = useRunUploadFilePolymorphicParent();
   const runHierarchyRecalcMutation = useRunUserRoleHierarchyRecalc();
+  const runNoticeRtaMutation = useRunNoticeRtaPlaceholder();
+
+  // 공지 본문 placeholder 치환은 비가역 UPDATE — 기본 dry-run, apply 명시 선택 시에만 실제 변경.
+  const [noticeRtaApply, setNoticeRtaApply] = useState(false);
 
   const progress = progressQuery.data;
   const isRunning = progress?.status === 'RUNNING';
@@ -100,6 +107,10 @@ export default function SfMigrationPage() {
   const hierarchyResult = runHierarchyRecalcMutation.data;
   const hierarchyError = runHierarchyRecalcMutation.error as Error | null;
   const hierarchyPending = runHierarchyRecalcMutation.isPending;
+
+  const noticeRtaResult = runNoticeRtaMutation.data;
+  const noticeRtaError = runNoticeRtaMutation.error as Error | null;
+  const noticeRtaPending = runNoticeRtaMutation.isPending;
 
   const tableColumns: ColumnsType<FkResolveTableResult> = useMemo(
     () => [
@@ -388,6 +399,91 @@ export default function SfMigrationPage() {
                 },
               ]}
               dataSource={uploadFileParentResult.results}
+            />
+          </div>
+        )}
+      </Card>
+
+      <Card title="공지 본문 이미지 placeholder 치환" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          공지 본문(<Text code>notice.contents</Text>)에 박힌 SF rtaImage 서블릿 URL{' '}
+          <Text code>&lt;img&gt;</Text> 태그를 만료 없는 placeholder{' '}
+          <Text code>&lt;img src="notice-image://{'{refid}'}" data-refid="{'{refid}'}"&gt;</Text> 로
+          치환한다. 조회 시점에 백엔드가 <Text code>data-refid</Text> 로 presigned URL 을 rewrite
+          하므로 본문엔 placeholder 만 영구 저장된다. <Text strong>공지 본문 이미지 적재(Stage1
+          NoticeImageUploadFile) + UploadFile Parent Resolve 완료 후</Text> 1회 실행. 멱등 — 이미
+          치환된 본문은 skip. <Text strong>비가역 UPDATE</Text> 이므로 먼저 dry-run 으로 변경 규모를
+          확인한 뒤 apply 한다.
+        </Paragraph>
+
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <Radio.Group
+            optionType="button"
+            buttonStyle="solid"
+            value={noticeRtaApply ? 'apply' : 'dry-run'}
+            onChange={(e) => setNoticeRtaApply(e.target.value === 'apply')}
+            disabled={noticeRtaPending}
+          >
+            <Radio.Button value="dry-run">Dry-run (변경 대상만 집계)</Radio.Button>
+            <Radio.Button value="apply">Apply (실제 UPDATE)</Radio.Button>
+          </Radio.Group>
+
+          <Space>
+            <Button
+              type="primary"
+              danger={noticeRtaApply}
+              loading={noticeRtaPending}
+              disabled={noticeRtaPending}
+              onClick={() => {
+                runNoticeRtaMutation.mutate(!noticeRtaApply);
+              }}
+            >
+              {noticeRtaApply ? '실행 (Apply)' : '실행 (Dry-run)'}
+            </Button>
+          </Space>
+        </Space>
+
+        {noticeRtaError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="공지 본문 placeholder 치환 실패"
+            description={noticeRtaError.message}
+            closable
+            onClose={() => {
+              runNoticeRtaMutation.reset();
+            }}
+          />
+        )}
+
+        {noticeRtaResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{noticeRtaResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="치환 이미지 수">
+                {noticeRtaResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            <ResizableTable<NoticeRtaPlaceholderSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '항목', dataIndex: 'label', key: 'label' },
+                {
+                  title: '건수',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={noticeRtaResult.results}
             />
           </div>
         )}

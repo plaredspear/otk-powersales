@@ -151,24 +151,28 @@ echo "[info] limit             : ${LIMIT:-(전체)}"
 echo "[info] sid fallback      : ${SID_COOKIE:+설정됨}"
 echo
 
-# 본문에 rtaImage 가 박힌 공지만 대상. (첨부 위젯 이미지만 있는 공지는 이미 upload_file 에 적재됨 — 제외.)
-NOTICE_WHERE="WHERE DKRetail__Contents__c LIKE '%rtaImage%'"
-NOTICE_SELECT="SELECT Id, DKRetail__Contents__c FROM DKRetail__Notice__c $NOTICE_WHERE"
+# 본문에 rtaImage 가 박힌 공지만 실제 대상이지만, DKRetail__Contents__c 는 long text area 라
+# SOQL WHERE 필터(LIKE)에 사용할 수 없다 (SF 플랫폼 제약: long/rich text 는 미인덱싱 → 필터 불가).
+# 따라서 전체 공지를 SELECT 하고, 본문에 rtaImage 가 박힌 공지만 scan 단계 Python 파서에서 거른다
+# (첨부 위젯 이미지만 있는 공지는 이미 upload_file 에 적재됨 — 파서가 자동 제외).
+NOTICE_SELECT="SELECT Id, DKRetail__Contents__c FROM DKRetail__Notice__c"
 if [[ -n "$LIMIT" ]]; then
     NOTICE_SELECT="$NOTICE_SELECT LIMIT $LIMIT"
 fi
 
 # -----------------------------------------------------------------------------
-# 추출 대상 건수 미리보기 (항상 출력)
+# 전체 공지 건수 미리보기 (항상 출력)
 # -----------------------------------------------------------------------------
+# DKRetail__Contents__c (long text) 는 WHERE 필터 불가라 "rtaImage 포함 공지 수" 를 SOQL 로 못 구한다.
+# 전체 공지 수만 미리 보여주고, 실제 추출 대상(본문 rtaImage <img>) 건수는 scan 후 [ok] scan rows 로 확인.
 
-echo "[count] 본문 rtaImage 포함 공지 건수 확인 중..."
-total_target="$(sf data query \
-    --query "SELECT COUNT() FROM DKRetail__Notice__c $NOTICE_WHERE" \
+echo "[count] 전체 공지 건수 확인 중..."
+total_notice="$(sf data query \
+    --query "SELECT COUNT() FROM DKRetail__Notice__c" \
     --result-format json \
     --api-version "$SF_API_VERSION" \
     ${SF_ORG_ARGS[@]+"${SF_ORG_ARGS[@]}"} | python3 -c 'import sys,json; print(json.load(sys.stdin).get("result",{}).get("totalSize",""))')"
-echo "[count] 본문에 rtaImage 가 박힌 공지: ${total_target} 건 (한 공지에 여러 이미지 가능)"
+echo "[count] 전체 공지: ${total_notice} 건 (이 중 본문에 rtaImage 가 박힌 공지만 실제 추출 — scan 후 확인)"
 if [[ -n "$LIMIT" ]]; then
     echo "[count] 이번 실행 scan 대상(--limit): $LIMIT 건 (전체 중 일부)"
 fi

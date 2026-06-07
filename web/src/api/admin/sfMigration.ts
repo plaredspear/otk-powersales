@@ -119,6 +119,43 @@ export async function runUploadFilePolymorphicParent(): Promise<UploadFileParent
 }
 
 /**
+ * Stage 2 — 공지 본문 rtaImage <img> → placeholder 치환 (notice.contents UPDATE).
+ *
+ * 공지 본문에 박힌 SF rtaImage 서블릿 URL 을 만료 없는 placeholder
+ * (`<img src="notice-image://{refid}" data-refid="{refid}">`) 로 치환한다. 조회 시점에 NoticeService
+ * 가 data-refid 로 presigned URL 을 rewrite 하므로, 본문에는 placeholder 만 영구 저장한다.
+ *
+ * 공지 본문 이미지 적재(Stage1 NoticeImageUploadFile) + UploadFile Parent Resolve 완료 후 1회 실행.
+ * `dryRun=true` (기본) 면 변경 대상만 집계, `false` 면 실제 UPDATE. 멱등 (이미 치환된 본문 skip).
+ */
+export interface NoticeRtaPlaceholderSubstepResult {
+  label: string;
+  rowsAffected: number;
+}
+
+export interface NoticeRtaPlaceholderResponse {
+  substep: string;
+  results: NoticeRtaPlaceholderSubstepResult[];
+  totalRowsAffected: number;
+}
+
+export async function runNoticeRtaPlaceholder(
+  dryRun: boolean,
+): Promise<NoticeRtaPlaceholderResponse> {
+  const res = await client.post<ApiResponse<NoticeRtaPlaceholderResponse>>(
+    '/api/v1/admin/sf-migration/stage2/notice-rta-placeholder',
+    undefined,
+    { params: { dryRun } },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(
+      res.data.message || '공지 본문 placeholder 치환 실행에 실패했습니다',
+    );
+  }
+  return res.data.data;
+}
+
+/**
  * Stage 2-B (derived 캐시 동기화) substep — User.cost_center_code 동기화 1건만 운영.
  *
  * Employee.role / Employee.professional_promotion_team / User.profile_type 변환은 폐기됨

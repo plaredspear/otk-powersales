@@ -47,12 +47,10 @@ class NoticeService(
 ) {
 
     companion object {
-        // data-refid 속성을 가진 placeholder <img> 태그 전체. group(1) = refid.
-        private val INLINE_IMG_REGEX =
-            Regex("""<img\b[^>]*\bdata-refid\s*=\s*"([^"]+)"[^>]*>""", RegexOption.IGNORE_CASE)
-        // <img> 태그 안의 src 속성 (presigned 로 교체 대상).
-        private val SRC_ATTR_REGEX =
-            Regex("""\bsrc\s*=\s*"[^"]*"""", RegexOption.IGNORE_CASE)
+        // placeholder <img> 의 생성/파싱 형식은 NoticeImagePlaceholder (SoT) 가 소유한다.
+        // 조회측 rewrite 는 그 정규식 2개를 그대로 참조 — 생성측(마이그레이션 치환)과 형식 정합 보장.
+        private val INLINE_IMG_REGEX = NoticeImagePlaceholder.PLACEHOLDER_IMG_REGEX
+        private val SRC_ATTR_REGEX = NoticeImagePlaceholder.SRC_ATTR_REGEX
     }
 
     /**
