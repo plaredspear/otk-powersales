@@ -54,50 +54,52 @@ class _NoticeListPageState extends ConsumerState<NoticeListPage> {
       ),
       body: Column(
         children: [
-          // 필터 및 검색 영역
-          Container(
-            color: AppColors.white,
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              children: [
-                // 분류 필터
-                NoticeCategoryFilter(
-                  selectedCategory: state.selectedCategory,
-                  onCategoryChanged: (category) {
-                    notifier.setCategory(category);
-                  },
-                ),
-
-                const SizedBox(height: AppSpacing.md),
-
-                // 검색 바
-                NoticeSearchBar(
-                  controller: _searchController,
-                  onSearch: (keyword) {
-                    notifier.search(keyword);
-                  },
-                ),
-
-                const SizedBox(height: AppSpacing.sm),
-
-                // 건수 표시
-                if (state.hasSearched)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      '공지사항 (${state.totalCount})',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          // 분류 필터 (전체 너비)
+          NoticeCategoryFilter(
+            selectedCategory: state.selectedCategory,
+            onCategoryChanged: (category) {
+              notifier.setCategory(category);
+            },
           ),
 
-          const Divider(height: 1, color: AppColors.border),
+          // 검색 바 (전체 너비)
+          NoticeSearchBar(
+            controller: _searchController,
+            onSearch: (keyword) {
+              notifier.search(keyword);
+            },
+          ),
+
+          // 건수 표시
+          if (state.hasSearched)
+            Container(
+              width: double.infinity,
+              color: AppColors.white,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
+              child: Text.rich(
+                TextSpan(
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.legacyTextSub,
+                  ),
+                  children: [
+                    const TextSpan(text: '공지사항 '),
+                    TextSpan(
+                      text: '(${state.totalCount})',
+                      style: const TextStyle(color: AppColors.otokiRed),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          const Divider(height: 1, color: AppColors.divider),
 
           // 목록 영역
           Expanded(

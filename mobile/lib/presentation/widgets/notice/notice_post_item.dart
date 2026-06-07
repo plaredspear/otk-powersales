@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/theme/app_spacing.dart';
-import 'package:mobile/core/theme/app_typography.dart';
 
-import '../../../domain/entities/notice_category.dart';
 import '../../../domain/entities/notice_post.dart';
 
 /// 공지사항 목록 항목 위젯
 ///
-/// 분류 태그, 제목, 등록일을 표시합니다.
+/// 레거시 디자인: "[분류] 제목" 한 줄 + 등록일.
 class NoticePostItem extends StatelessWidget {
   /// 공지사항 게시물
   final NoticePost post;
@@ -34,78 +32,44 @@ class NoticePostItem extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         decoration: const BoxDecoration(
           color: AppColors.white,
           border: Border(
             bottom: BorderSide(
-              color: AppColors.border,
+              color: AppColors.divider,
               width: 1,
             ),
           ),
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 분류 태그
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
+            // 제목 ([분류] 제목)
+            Text(
+              '[${post.categoryName}] ${post.title}',
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.legacyTextSub,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
               ),
-              decoration: BoxDecoration(
-                color: post.category == NoticeCategory.company
-                    ? AppColors.primaryLight
-                    : AppColors.secondaryLight,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              ),
-              child: Text(
-                post.categoryName,
-                style: AppTypography.labelSmall.copyWith(
-                  color: post.category == NoticeCategory.company
-                      ? AppColors.primary
-                      : AppColors.secondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
 
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
 
-            // 제목 + 날짜
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 제목
-                  Text(
-                    post.title,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  const SizedBox(height: AppSpacing.xs),
-
-                  // 등록일
-                  Text(
-                    _formatDate(post.createdAt),
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ],
+            // 등록일
+            Text(
+              _formatDate(post.createdAt),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.legacyTextMute,
               ),
-            ),
-
-            // 화살표 아이콘
-            const Icon(
-              Icons.chevron_right,
-              color: AppColors.textTertiary,
-              size: 20,
             ),
           ],
         ),
