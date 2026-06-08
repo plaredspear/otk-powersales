@@ -339,12 +339,15 @@ for row in csv.reader(sys.stdin):
             mv "$tmp" "$IMG_DIR/$refid.$ext"
             rm -f "$tmp.hdr" "$err"
         else
-            # 실패 사유: curl exit code + http + content-type + stderr 첫 줄 (CSV 안전하게 따옴표/콤마 정리)
-            errline=$(head -1 "$err" 2>/dev/null | tr -d "\r" | tr ',\"' ';　')
+            # 실패 사유: curl exit code + http + content-type + stderr 첫 줄.
+            # CSV 안전: 콤마/따옴표는 세미콜론·공백으로 치환(tr 의 SET 은 double-quote 안에서
+            # \x2c \x22 \x20 16진 이스케이프로 표기 — single-quote bash -c 컨텍스트 깨짐 방지).
+            errline=$(head -1 "$err" 2>/dev/null | tr -d "\r" | tr "\x2c\x22" "\x3b\x20")
             reason="rc=$curl_rc http=$http_code ctype=${ctype:-none} err=${errline:-none}"
             if [ "$http_code" = "200" ]; then reason="not-image ($reason)"; fi
             rm -f "$tmp" "$tmp.hdr" "$err"
-            printf '%s,"%s"\n' "$refid" "$reason" >> "$FAILED_CSV"
+            # printf 의 format 은 double-quote 로 — single-quote 는 바깥 bash -c 컨텍스트를 조기 종료시킴
+            printf "%s,%s\n" "$refid" "$reason" >> "$FAILED_CSV"
         fi
     ' _ {}
 
