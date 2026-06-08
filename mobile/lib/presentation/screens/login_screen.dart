@@ -47,7 +47,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     final authState = ref.read(authProvider);
     final saved = authState.savedEmployeeNumber;
-    if (saved != null && saved.isNotEmpty) {
+    if (authState.rememberEmployeeNumber && saved != null && saved.isNotEmpty) {
       _employeeCodeController.text = saved;
       _rememberEmployeeNumber = true;
       _prefilledFromStorage = true;

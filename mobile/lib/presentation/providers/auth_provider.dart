@@ -207,6 +207,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await _localDataSource.clearSavedEmployeeNumber();
       }
 
+      // 저장소(Hive)와 메모리 상태를 동기화한다.
+      // 동기화하지 않으면 같은 세션에서 로그인 → 로그아웃 후 로그인 화면 재진입 시
+      // 앱 시작 시점에 읽어둔 옛 사번이 그대로 프리필되는 문제가 있다.
+      // (rememberEmployeeNumber=false 인 경우 화면 프리필은 아래 _loadSavedSettings 가
+      //  rememberEmployeeNumber 플래그로 걸러낸다.)
+      state = state.copyWith(
+        savedEmployeeNumber:
+            rememberEmployeeNumber ? employeeCode : state.savedEmployeeNumber,
+        rememberEmployeeNumber: rememberEmployeeNumber,
+      );
+
       // 자동 로그인 설정
       await _localDataSource.setAutoLogin(autoLogin);
 
