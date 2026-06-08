@@ -76,8 +76,10 @@ class _ProductExpirationRegisterPageState
                 }
               },
               onSelectProduct: () async {
-                final result =
-                    await ProductExpirationAddProductSheet.show(context);
+                final result = await ProductExpirationAddProductSheet.show(
+                  context,
+                  accountCode: state.selectedAccountCode,
+                );
                 if (result != null) {
                   ref.read(productExpirationFormProvider.notifier).selectProduct(
                         result.productCode,

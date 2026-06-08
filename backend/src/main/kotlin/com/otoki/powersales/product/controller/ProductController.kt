@@ -1,6 +1,7 @@
 package com.otoki.powersales.product.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.product.dto.response.ProductCategoryGroup
 import com.otoki.powersales.product.dto.response.ProductDetail
 import com.otoki.powersales.product.dto.response.ProductDto
 import com.otoki.powersales.common.security.UserPrincipal
@@ -41,6 +42,47 @@ class ProductController(
         @RequestParam(defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<Page<ProductDto>>> {
         val result = productService.searchProducts(query, type, page, size)
+        return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
+    }
+
+    /**
+     * 제품 필터 검색 (레거시 제품추가 팝업 정합)
+     * GET /api/v1/mobile/products/search/filter
+     *
+     * 제품명/바코드/중분류/소분류 조합 검색. 모든 조건 선택적이며 비어 있으면 전체 orderable 제품 반환.
+     *
+     * @param productName 제품명 (부분일치)
+     * @param barcode 제품바코드 (부분일치)
+     * @param category2 중분류
+     * @param category3 소분류
+     * @param page 페이지 번호 (기본: 0)
+     * @param size 페이지 크기 (기본: 20)
+     */
+    @GetMapping("/search/filter")
+    fun searchProductsByFilter(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestParam(required = false) productName: String?,
+        @RequestParam(required = false) barcode: String?,
+        @RequestParam(required = false) category2: String?,
+        @RequestParam(required = false) category3: String?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int
+    ): ResponseEntity<ApiResponse<Page<ProductDto>>> {
+        val result = productService.searchProductsByFilter(productName, barcode, category2, category3, page, size)
+        return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
+    }
+
+    /**
+     * 제품 카테고리(중분류→소분류) 목록 조회
+     * GET /api/v1/mobile/products/categories
+     *
+     * 제품추가 팝업의 중분류/소분류 드롭다운 소스.
+     */
+    @GetMapping("/categories")
+    fun getProductCategories(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<List<ProductCategoryGroup>>> {
+        val result = productService.getOrderableCategories()
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 

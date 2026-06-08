@@ -4,6 +4,7 @@ import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.product.enums.StorageCondition
 import com.otoki.powersales.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.product.exception.InvalidSearchTypeException
+import com.otoki.powersales.product.repository.OrderableCategoryRow
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.product.repository.ProductSearchRow
 import io.mockk.every
@@ -210,6 +211,84 @@ class ProductServiceTest {
                 productService.searchProducts("열라면", "text", 0, 101)
             }.isInstanceOf(InvalidSearchParameterException::class.java)
                 .hasMessageContaining("페이지 크기")
+        }
+    }
+
+    @Nested
+    @DisplayName("필터 검색 (searchProductsByFilter)")
+    inner class FilterSearch {
+
+        @Test
+        @DisplayName("제품명/바코드/중분류/소분류 trim 후 repository 위임, 결과 매핑")
+        fun filterSearch_delegatesAndMaps() {
+            val products = listOf(
+                createTestProduct("18110014", "열라면_용기105G", "18110014", "8801045570716")
+            )
+            val page = rowPage(products, PageRequest.of(0, 20), 1)
+            every {
+                productRepository.searchByFilter("열라면", "8801", "라면", "가정", any())
+            } returns page
+
+            val result = productService.searchProductsByFilter(
+                productName = " 열라면 ",
+                barcode = " 8801 ",
+                category2 = "라면",
+                category3 = "가정",
+                page = 0,
+                size = 20
+            )
+
+            assertThat(result.content).hasSize(1)
+            assertThat(result.content[0].productName).isEqualTo("열라면_용기105G")
+            verify { productRepository.searchByFilter("열라면", "8801", "라면", "가정", any()) }
+        }
+
+        @Test
+        @DisplayName("모든 조건 공백/null → null 로 정규화하여 위임 (전체 조회)")
+        fun filterSearch_blankParamsNormalizedToNull() {
+            val page = PageImpl<ProductSearchRow>(emptyList(), PageRequest.of(0, 20), 0)
+            every {
+                productRepository.searchByFilter(null, null, null, null, any())
+            } returns page
+
+            val result = productService.searchProductsByFilter(" ", "", null, "  ", 0, 20)
+
+            assertThat(result.content).isEmpty()
+            verify { productRepository.searchByFilter(null, null, null, null, any()) }
+        }
+
+        @Test
+        @DisplayName("페이지 크기 초과 - INVALID_PARAMETER 예외")
+        fun filterSearch_oversize_throwsException() {
+            assertThatThrownBy {
+                productService.searchProductsByFilter(null, null, null, null, 0, 101)
+            }.isInstanceOf(InvalidSearchParameterException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("카테고리 조회 (getOrderableCategories)")
+    inner class Categories {
+
+        @Test
+        @DisplayName("중분류로 그룹핑, 소분류 중복제거/정렬, 중분류 정렬")
+        fun categories_groupedSortedDeduped() {
+            every { productRepository.findOrderableCategories() } returns listOf(
+                OrderableCategoryRow("스낵", "가정"),
+                OrderableCategoryRow("라면", "업소"),
+                OrderableCategoryRow("라면", "가정"),
+                OrderableCategoryRow("라면", "가정"),
+            )
+
+            val result = productService.getOrderableCategories()
+
+            assertThat(result).hasSize(2)
+            // 중분류 정렬 (라면 < 스낵)
+            assertThat(result[0].middle).isEqualTo("라면")
+            // 소분류 중복제거 + 정렬 (가정 < 업소)
+            assertThat(result[0].subs).containsExactly("가정", "업소")
+            assertThat(result[1].middle).isEqualTo("스낵")
+            assertThat(result[1].subs).containsExactly("가정")
         }
     }
 

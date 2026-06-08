@@ -13,6 +13,18 @@ interface ProductRepositoryCustom {
     /** 바코드 정확 일치 검색 (logistics_barcode). */
     fun findByLogisticsBarcode(logisticsBarcode: String, pageable: Pageable): Page<ProductSearchRow>
 
+    /**
+     * 레거시 제품추가 팝업(productMapper.xml `selectProduct`) 정합 — 제품명/바코드/중분류/소분류 조합 검색.
+     * 모든 조건은 선택적이며, 모두 비어 있으면 orderable 제품 전체를 페이지로 반환한다.
+     */
+    fun searchByFilter(
+        productName: String?,
+        barcode: String?,
+        category2: String?,
+        category3: String?,
+        pageable: Pageable
+    ): Page<ProductSearchRow>
+
     fun searchForAdmin(
         keyword: String?,
         category1: String?,
@@ -23,10 +35,22 @@ interface ProductRepositoryCustom {
     ): Page<Product>
 
     fun findDistinctCategories(): List<CategoryRow>
+
+    /**
+     * 모바일 제품추가 팝업의 중분류(category2)→소분류(category3) 드롭다운 소스.
+     * orderable 필터를 통과하는 제품의 (category2, category3) distinct 조합만 반환한다.
+     */
+    fun findOrderableCategories(): List<OrderableCategoryRow>
 }
 
 data class CategoryRow(
     val category1: String,
+    val category2: String,
+    val category3: String
+)
+
+/** 모바일 제품추가 드롭다운용 중분류(category2)/소분류(category3) 조합. */
+data class OrderableCategoryRow(
     val category2: String,
     val category3: String
 )

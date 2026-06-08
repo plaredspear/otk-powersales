@@ -10,6 +10,7 @@ import com.otoki.powersales.order.exception.InvalidSapOrderNumberException
 import com.otoki.powersales.order.exception.SapOrderNotFoundException
 import com.otoki.powersales.order.repository.ErpOrderProductRepository
 import com.otoki.powersales.order.repository.ErpOrderRepository
+import com.otoki.powersales.order.repository.OrderHistoryRow
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -176,6 +177,61 @@ class ClientOrderQueryServiceTest {
             assertThat(DeliveryStatus.fromKoreanLabel("알수없음")).isEqualTo(DeliveryStatus.PENDING)
             assertThat(DeliveryStatus.fromKoreanLabel(null)).isEqualTo(DeliveryStatus.PENDING)
             assertThat(DeliveryStatus.fromKoreanLabel("")).isEqualTo(DeliveryStatus.PENDING)
+        }
+    }
+
+    @Nested
+    @DisplayName("getAccountOrderHistory - 거래처 주문이력")
+    inner class AccountOrderHistoryCases {
+
+        private val accountCode = "0001234567"
+        private val from = LocalDate.of(2026, 5, 4)
+        private val to = LocalDate.of(2026, 5, 6)
+
+        @Test
+        @DisplayName("정상 - 주문일 내림차순 그룹 + 그룹내 제품코드 중복제거")
+        fun success() {
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every {
+                erpOrderProductRepository.findOrderHistory(accountCode, employeeCode, from, to)
+            } returns listOf(
+                OrderHistoryRow(LocalDate.of(2026, 5, 6), "P001", "참깨라면"),
+                OrderHistoryRow(LocalDate.of(2026, 5, 6), "P001", "참깨라면"), // 중복
+                OrderHistoryRow(LocalDate.of(2026, 5, 6), "P002", "진라면"),
+                OrderHistoryRow(LocalDate.of(2026, 5, 4), "P003", "열라면"),
+            )
+
+            val result = service.getAccountOrderHistory(userId, accountCode, from, to)
+
+            assertThat(result).hasSize(2)
+            // 주문일 내림차순
+            assertThat(result[0].orderDate).isEqualTo("2026-05-06")
+            assertThat(result[1].orderDate).isEqualTo("2026-05-04")
+            // 제품코드 중복제거 (P001 1건)
+            assertThat(result[0].products).hasSize(2)
+            assertThat(result[0].products[0].productCode).isEqualTo("P001")
+            assertThat(result[1].products).hasSize(1)
+            assertThat(result[1].products[0].productCode).isEqualTo("P003")
+        }
+
+        @Test
+        @DisplayName("정상 - 결과 없음 → 빈 목록")
+        fun empty() {
+            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every {
+                erpOrderProductRepository.findOrderHistory(accountCode, employeeCode, from, to)
+            } returns emptyList()
+
+            assertThat(service.getAccountOrderHistory(userId, accountCode, from, to)).isEmpty()
+        }
+
+        @Test
+        @DisplayName("실패 - 사용자 미존재 → ClientOrderForbiddenException")
+        fun forbiddenUserMissing() {
+            every { employeeRepository.findById(userId) } returns Optional.empty()
+
+            assertThatThrownBy { service.getAccountOrderHistory(userId, accountCode, from, to) }
+                .isInstanceOf(ClientOrderForbiddenException::class.java)
         }
     }
 
