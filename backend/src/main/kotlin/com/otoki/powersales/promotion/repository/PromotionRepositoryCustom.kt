@@ -49,6 +49,7 @@ interface PromotionRepositoryCustom {
         keyword: String?,
         startDate: String?,
         endDate: String?,
+        accountId: Long?,
         pageable: Pageable
     ): Page<Promotion>
 }

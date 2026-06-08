@@ -126,6 +126,7 @@ class PromotionRepositoryCustomImpl(
         keyword: String?,
         startDate: String?,
         endDate: String?,
+        accountId: Long?,
         pageable: Pageable
     ): Page<Promotion> {
         val builder = BooleanBuilder()
@@ -156,6 +157,11 @@ class PromotionRepositoryCustomImpl(
                 promotion.promotionNumber.lower().like(lowerPattern)
                     .or(account.name.lower().like(lowerPattern))
             )
+        }
+
+        // 거래처 필터 (레거시 SAPAccountCode → account PK)
+        if (accountId != null) {
+            builder.and(promotion.account.id.eq(accountId))
         }
 
         // 날짜 필터 (기간 겹침)

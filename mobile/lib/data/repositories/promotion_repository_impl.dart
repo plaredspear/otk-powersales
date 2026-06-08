@@ -15,6 +15,7 @@ class PromotionRepositoryImpl implements PromotionRepository {
     String? startDate,
     String? endDate,
     String? keyword,
+    int? accountId,
     int page = 0,
     int size = 20,
   }) async {
@@ -22,6 +23,7 @@ class PromotionRepositoryImpl implements PromotionRepository {
       startDate: startDate,
       endDate: endDate,
       keyword: keyword,
+      accountId: accountId,
       page: page,
       size: size,
     );

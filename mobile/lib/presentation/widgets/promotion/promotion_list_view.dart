@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +6,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/throttled_tap_mixin.dart';
+import '../../../domain/entities/my_account.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/promotion_list_provider.dart';
 import '../../providers/promotion_list_state.dart';
 import '../common/loading_indicator.dart';
@@ -17,6 +17,11 @@ import 'promotion_card.dart';
 ///
 /// `PromotionListPage`(독립 화면) 와 `SalesOverviewScreen` 의 행사 매출 탭에서
 /// 공통으로 사용한다.
+///
+/// 레거시(heroku `promotion/event/list.jsp`) 정합:
+/// - 거래처 전체 드롭다운 + 기간 + 검색 버튼 (버튼 트리거 검색)
+/// - 권한 분기: 여사원(member)은 단일 날짜, 조장/지점장(leader)은 기간 범위 + 행사명 검색어
+/// - "내 행사 현황 (N)" 카운트 헤더
 class PromotionListView extends ConsumerStatefulWidget {
   const PromotionListView({super.key});
 
@@ -28,7 +33,6 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
     with ThrottledTapMixin {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
-  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -43,8 +47,17 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
-    _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  /// 현재 사용자가 조장/지점장(leader) 권한인지 여부.
+  ///
+  /// 레거시는 `appauthority__c` 가 `조장`(group_leader) 이면 기간 범위 + 행사명 검색,
+  /// `여사원`(group_member) 이면 단일 날짜 + 검색 버튼만 노출한다.
+  /// 모바일 도메인 role 은 `여사원→USER`, `조장→LEADER`, `지점장→ADMIN` 로 번역된다.
+  bool get _isLeader {
+    final role = ref.read(authProvider).user?.role;
+    return role == 'LEADER' || role == 'ADMIN';
   }
 
   void _onScroll() {
@@ -54,38 +67,50 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
     }
   }
 
-  void _onSearchChanged(String value) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      ref.read(promotionListProvider.notifier).updateKeyword(value.trim());
-      ref.read(promotionListProvider.notifier).searchPromotions();
-    });
+  /// 검색 실행 (레거시: 검색 버튼 클릭 시에만 조회).
+  void _onSearch() {
+    final notifier = ref.read(promotionListProvider.notifier);
+    if (_isLeader) {
+      notifier.updateKeyword(_searchController.text.trim());
+    }
+    notifier.searchPromotions();
   }
 
   Future<void> _onRefresh() async {
     await ref.read(promotionListProvider.notifier).searchPromotions();
   }
 
-  Future<void> _pickDate(BuildContext context, bool isStart) async {
+  Future<void> _pickSingleDate(BuildContext context) async {
     final state = ref.read(promotionListProvider);
-    final initial = DateTime.parse(isStart ? state.startDate : state.endDate);
+    final picked = await _showPicker(context, state.startDate);
+    if (picked != null) {
+      ref.read(promotionListProvider.notifier).updateSingleDate(picked);
+    }
+  }
+
+  Future<void> _pickRangeDate(BuildContext context, bool isStart) async {
+    final state = ref.read(promotionListProvider);
+    final picked =
+        await _showPicker(context, isStart ? state.startDate : state.endDate);
+    if (picked != null) {
+      final notifier = ref.read(promotionListProvider.notifier);
+      if (isStart) {
+        notifier.updateDateRange(picked, state.endDate);
+      } else {
+        notifier.updateDateRange(state.startDate, picked);
+      }
+    }
+  }
+
+  Future<String?> _showPicker(BuildContext context, String current) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: initial,
+      initialDate: DateTime.parse(current),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
-    if (picked != null) {
-      final formatted =
-          '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-      final notifier = ref.read(promotionListProvider.notifier);
-      if (isStart) {
-        notifier.updateDateRange(formatted, state.endDate);
-      } else {
-        notifier.updateDateRange(state.startDate, formatted);
-      }
-      notifier.searchPromotions();
-    }
+    if (picked == null) return null;
+    return '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -105,57 +130,126 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
 
     return Column(
       children: [
-        _buildSearchBar(),
-        _buildDateFilter(state),
+        _buildAccountDropdown(state),
+        const Divider(height: 1, color: AppColors.border),
+        if (_isLeader) _buildLeaderFilter(state) else _buildMemberFilter(state),
+        const Divider(height: 1, thickness: 8, color: AppColors.surfaceVariant),
+        _buildCountHeader(state),
+        const Divider(height: 1, color: AppColors.border),
         Expanded(child: _buildBody(state)),
       ],
     );
   }
 
-  Widget _buildSearchBar() {
+  /// 거래처 전체 드롭다운 (레거시 `#accountCode` select).
+  Widget _buildAccountDropdown(PromotionListState state) {
+    final accountsAsync = ref.watch(promotionAccountOptionsProvider);
+    final accounts = accountsAsync.asData?.value ?? const <MyAccount>[];
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.sm),
-      child: TextField(
-        controller: _searchController,
-        onChanged: _onSearchChanged,
-        decoration: InputDecoration(
-          hintText: '행사명/거래처 검색',
-          hintStyle:
-              AppTypography.bodyMedium.copyWith(color: AppColors.textTertiary),
-          prefixIcon:
-              const Icon(Icons.search, color: AppColors.textTertiary),
-          filled: true,
-          fillColor: AppColors.surfaceVariant,
-          border: OutlineInputBorder(
-            borderRadius: AppSpacing.inputBorderRadius,
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int?>(
+          value: state.accountId,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down,
+              color: AppColors.textSecondary),
+          style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+          items: [
+            const DropdownMenuItem<int?>(
+              value: null,
+              child: Text('거래처 전체'),
+            ),
+            ...accounts.map(
+              (a) => DropdownMenuItem<int?>(
+                value: a.accountId,
+                child: Text(
+                  '${a.accountName}(${a.accountCode})',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            ref.read(promotionListProvider.notifier).updateAccount(value);
+            ref.read(promotionListProvider.notifier).searchPromotions();
+          },
         ),
       ),
     );
   }
 
-  Widget _buildDateFilter(PromotionListState state) {
+  /// 여사원: 기간(단일 날짜, 기본 오늘) + 검색 버튼.
+  Widget _buildMemberFilter(PromotionListState state) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+          horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
       child: Row(
         children: [
-          Text('기간: ',
-              style: AppTypography.bodySmall
+          Text('기간  ',
+              style: AppTypography.bodyMedium
                   .copyWith(color: AppColors.textSecondary)),
           _buildDateButton(
-              state.startDate, () => throttledTap(() => _pickDate(context, true))),
-          Text(' ~ ',
-              style: AppTypography.bodySmall
-                  .copyWith(color: AppColors.textSecondary)),
-          _buildDateButton(
-              state.endDate, () => throttledTap(() => _pickDate(context, false))),
+              state.startDate, () => throttledTap(() => _pickSingleDate(context))),
+          const Spacer(),
+          _buildSearchButton(),
+        ],
+      ),
+    );
+  }
+
+  /// 조장/지점장: 행사명 검색어 + 검색 버튼 + 기간 범위.
+  Widget _buildLeaderFilter(PromotionListState state) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _onSearch(),
+                  decoration: InputDecoration(
+                    hintText: '행사명 입력',
+                    hintStyle: AppTypography.bodyMedium
+                        .copyWith(color: AppColors.textTertiary),
+                    isDense: true,
+                    filled: true,
+                    fillColor: AppColors.surfaceVariant,
+                    border: OutlineInputBorder(
+                      borderRadius: AppSpacing.inputBorderRadius,
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              _buildSearchButton(),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Text('기간  ',
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textSecondary)),
+              _buildDateButton(state.startDate,
+                  () => throttledTap(() => _pickRangeDate(context, true))),
+              Text(' ~ ',
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textSecondary)),
+              _buildDateButton(state.endDate,
+                  () => throttledTap(() => _pickRangeDate(context, false))),
+            ],
+          ),
         ],
       ),
     );
@@ -167,7 +261,7 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
+          horizontal: AppSpacing.md,
           vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
@@ -177,8 +271,52 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
         child: Text(
           date,
           style:
-              AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
+              AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
         ),
+      ),
+    );
+  }
+
+  /// 노란색 검색 버튼 (레거시 `#btn_search`).
+  Widget _buildSearchButton() {
+    return ElevatedButton(
+      onPressed: () => throttledTap(_onSearch),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        ),
+      ),
+      child: Text('검색',
+          style: AppTypography.labelLarge
+              .copyWith(color: AppColors.onPrimary)),
+    );
+  }
+
+  /// "내 행사 현황 (N)" 카운트 헤더 (레거시 `.sect_top`).
+  Widget _buildCountHeader(PromotionListState state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      child: Row(
+        children: [
+          Text('내 행사 현황 ',
+              style: AppTypography.bodyLarge
+                  .copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            '(${state.totalElements})',
+            style: AppTypography.bodyLarge.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.otokiRed,
+            ),
+          ),
+        ],
       ),
     );
   }

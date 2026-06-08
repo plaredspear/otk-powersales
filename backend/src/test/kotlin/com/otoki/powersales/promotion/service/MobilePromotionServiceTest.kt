@@ -153,12 +153,12 @@ class MobilePromotionServiceTest {
             every {
                 promotionRepository.searchForMobile(
                     employeeId = 10L, costCenterCode = "1234", isWoman = false,
-                    keyword = null, startDate = null, endDate = null, pageable = any()
+                    keyword = null, startDate = null, endDate = null, accountId = null, pageable = any()
                 )
             } returns page
             every { accountRepository.findByIdIn(listOf(100)) } returns listOf(account)
 
-            val result = service.getPromotions(userId = 10L, startDate = null, endDate = null, keyword = null, page = 0, size = 20)
+            val result = service.getPromotions(userId = 10L, startDate = null, endDate = null, keyword = null, accountId = null, page = 0, size = 20)
 
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].id).isEqualTo(1L)
@@ -185,13 +185,13 @@ class MobilePromotionServiceTest {
             every {
                 promotionRepository.searchForMobile(
                     employeeId = 20L, costCenterCode = "1234", isWoman = true,
-                    keyword = null, startDate = null, endDate = null, pageable = any()
+                    keyword = null, startDate = null, endDate = null, accountId = null, pageable = any()
                 )
             } returns page
             every { accountRepository.findByIdIn(listOf(100)) } returns listOf(account)
             every { promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeId(1L, 20L) } returns myScheduleDate
 
-            val result = service.getPromotions(userId = 20L, startDate = null, endDate = null, keyword = null, page = 0, size = 20)
+            val result = service.getPromotions(userId = 20L, startDate = null, endDate = null, keyword = null, accountId = null, page = 0, size = 20)
 
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].myScheduleDate).isEqualTo(myScheduleDate)
@@ -210,7 +210,7 @@ class MobilePromotionServiceTest {
             every {
                 promotionRepository.searchForMobile(
                     employeeId = 10L, costCenterCode = "1234", isWoman = false,
-                    keyword = null, startDate = "2026-03-01", endDate = "2026-03-31", pageable = any()
+                    keyword = null, startDate = "2026-03-01", endDate = "2026-03-31", accountId = null, pageable = any()
                 )
             } returns page
 
@@ -219,6 +219,7 @@ class MobilePromotionServiceTest {
                 startDate = "2026-03-01",
                 endDate = "2026-03-31",
                 keyword = null,
+                accountId = null,
                 page = 0,
                 size = 20
             )
@@ -227,7 +228,41 @@ class MobilePromotionServiceTest {
             verify {
                 promotionRepository.searchForMobile(
                     employeeId = 10L, costCenterCode = "1234", isWoman = false,
-                    keyword = null, startDate = "2026-03-01", endDate = "2026-03-31", pageable = any()
+                    keyword = null, startDate = "2026-03-01", endDate = "2026-03-31", accountId = null, pageable = any()
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("거래처 필터 - accountId 전달 (레거시 SAPAccountCode 정합)")
+        fun getPromotions_withAccountId_passesToRepository() {
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = AppAuthority.LEADER, costCenterCode = "1234")
+            val pageable = PageRequest.of(0, 20)
+            val page = PageImpl<Promotion>(emptyList(), pageable, 0)
+
+            every { employeeRepository.findById(10L) } returns Optional.of(leader)
+            every {
+                promotionRepository.searchForMobile(
+                    employeeId = 10L, costCenterCode = "1234", isWoman = false,
+                    keyword = null, startDate = null, endDate = null, accountId = 100L, pageable = any()
+                )
+            } returns page
+
+            val result = service.getPromotions(
+                userId = 10L,
+                startDate = null,
+                endDate = null,
+                keyword = null,
+                accountId = 100L,
+                page = 0,
+                size = 20
+            )
+
+            assertThat(result.content).isEmpty()
+            verify {
+                promotionRepository.searchForMobile(
+                    employeeId = 10L, costCenterCode = "1234", isWoman = false,
+                    keyword = null, startDate = null, endDate = null, accountId = 100L, pageable = any()
                 )
             }
         }
@@ -243,7 +278,7 @@ class MobilePromotionServiceTest {
             every {
                 promotionRepository.searchForMobile(
                     employeeId = 10L, costCenterCode = "1234", isWoman = false,
-                    keyword = "이마트", startDate = null, endDate = null, pageable = any()
+                    keyword = "이마트", startDate = null, endDate = null, accountId = null, pageable = any()
                 )
             } returns page
 
@@ -252,6 +287,7 @@ class MobilePromotionServiceTest {
                 startDate = null,
                 endDate = null,
                 keyword = "이마트",
+                accountId = null,
                 page = 0,
                 size = 20
             )
@@ -260,7 +296,7 @@ class MobilePromotionServiceTest {
             verify {
                 promotionRepository.searchForMobile(
                     employeeId = 10L, costCenterCode = "1234", isWoman = false,
-                    keyword = "이마트", startDate = null, endDate = null, pageable = any()
+                    keyword = "이마트", startDate = null, endDate = null, accountId = null, pageable = any()
                 )
             }
         }
@@ -274,13 +310,14 @@ class MobilePromotionServiceTest {
                     startDate = "2026/03/01",
                     endDate = null,
                     keyword = null,
+                    accountId = null,
                     page = 0,
                     size = 20
                 )
             }.isInstanceOf(PromotionInvalidParameterException::class.java)
 
             verify(exactly = 0) {
-                promotionRepository.searchForMobile(any(), any(), any(), any(), any(), any(), any())
+                promotionRepository.searchForMobile(any(), any(), any(), any(), any(), any(), any(), any())
             }
         }
 
@@ -295,13 +332,14 @@ class MobilePromotionServiceTest {
                     startDate = null,
                     endDate = null,
                     keyword = longKeyword,
+                    accountId = null,
                     page = 0,
                     size = 20
                 )
             }.isInstanceOf(PromotionInvalidParameterException::class.java)
 
             verify(exactly = 0) {
-                promotionRepository.searchForMobile(any(), any(), any(), any(), any(), any(), any())
+                promotionRepository.searchForMobile(any(), any(), any(), any(), any(), any(), any(), any())
             }
         }
     }

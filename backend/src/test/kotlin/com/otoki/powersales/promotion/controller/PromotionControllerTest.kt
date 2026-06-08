@@ -79,7 +79,7 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                 totalElements = 2L,
                 totalPages = 1
             )
-            every { mobilePromotionService.getPromotions(1L, null, null, null, 0, 20) } returns response
+            every { mobilePromotionService.getPromotions(1L, null, null, null, null, 0, 20) } returns response
 
             mockMvc.perform(get("/api/v1/mobile/promotions"))
                 .andExpect(status().isOk)
@@ -111,7 +111,7 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                 totalElements = 0L,
                 totalPages = 0
             )
-            every { mobilePromotionService.getPromotions(1L, "2026-03-01", "2026-03-31", null, 0, 20) } returns response
+            every { mobilePromotionService.getPromotions(1L, "2026-03-01", "2026-03-31", null, null, 0, 20) } returns response
 
             mockMvc.perform(
                 get("/api/v1/mobile/promotions")
@@ -148,7 +148,7 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                 totalElements = 1L,
                 totalPages = 1
             )
-            every { mobilePromotionService.getPromotions(1L, null, null, "봄맞이", 0, 20) } returns response
+            every { mobilePromotionService.getPromotions(1L, null, null, "봄맞이", null, 0, 20) } returns response
 
             mockMvc.perform(
                 get("/api/v1/mobile/promotions")
@@ -163,7 +163,7 @@ class PromotionControllerTest : MobileControllerTestSupport() {
         @Test
         @DisplayName("실패 - 잘못된 날짜 형식")
         fun getPromotions_invalidDateFormat() {
-            every { mobilePromotionService.getPromotions(1L, "invalid-date", null, null, 0, 20) } throws
+            every { mobilePromotionService.getPromotions(1L, "invalid-date", null, null, null, 0, 20) } throws
                 PromotionInvalidParameterException()
 
             mockMvc.perform(

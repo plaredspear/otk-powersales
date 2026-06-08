@@ -21,12 +21,13 @@ class PromotionController(
         @RequestParam(required = false) startDate: String?,
         @RequestParam(required = false) endDate: String?,
         @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false) accountId: Long?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<MobilePromotionListResponse>> {
         val effectiveSize = size.coerceAtMost(100)
         val result = mobilePromotionService.getPromotions(
-            principal.userId, startDate, endDate, keyword, page, effectiveSize
+            principal.userId, startDate, endDate, keyword, accountId, page, effectiveSize
         )
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }

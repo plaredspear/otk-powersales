@@ -14,6 +14,7 @@ class PromotionApiDataSource {
     String? startDate,
     String? endDate,
     String? keyword,
+    int? accountId,
     int page = 0,
     int size = 20,
   }) async {
@@ -26,6 +27,7 @@ class PromotionApiDataSource {
     if (keyword != null && keyword.isNotEmpty) {
       queryParameters['keyword'] = keyword;
     }
+    if (accountId != null) queryParameters['accountId'] = accountId;
 
     final response = await _dio.get(
       '/api/v1/mobile/promotions',
