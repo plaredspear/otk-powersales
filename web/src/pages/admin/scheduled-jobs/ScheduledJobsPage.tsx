@@ -41,6 +41,26 @@ const STATUS_OPTIONS: { label: string; value: ScheduledJobStatus }[] = [
   { label: 'RUNNING', value: 'RUNNING' },
 ];
 
+/** 잡 이름 → 탭에 표시할 10자 이내 한글 라벨. 미매핑 잡은 원본 jobName 으로 폴백. */
+const JOB_LABELS: Record<string, string> = {
+  'agreement-word-cycle-batch': '약관단어 리셋',
+  'attendance-sap-batch': '근태 SAP전송',
+  'display-master-sap-batch': '진열 SAP전송',
+  'display-master-last-month-revenue-batch': '진열 전월매출',
+  'mfeis-this-month-revenue-batch': '일정 전월매출',
+  'account-naver-geocode-batch': '거래처 좌표변환',
+  'pptMaster.expire': '행사조 만료',
+  'pptMaster.syncValid': '행사조 sync',
+  'sap.processPostponedAppointments': '연기예약 처리',
+  'salesProgressRateMaster.sync': '목표마스터 sync',
+  'sap-outbox-worker': 'SAP outbox',
+  'scheduledJobRun.cleanup': '이력 정리',
+};
+
+function jobLabel(jobName: string): string {
+  return JOB_LABELS[jobName] ?? jobName;
+}
+
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return '-';
   return dayjs(value).format('YYYY-MM-DD HH:mm:ss');
@@ -193,7 +213,7 @@ export default function ScheduledJobsPage() {
     },
     ...jobNames.map((name) => ({
       key: name,
-      label: name,
+      label: <span title={name}>{jobLabel(name)}</span>,
       children: runsHistoryNode,
     })),
     {
@@ -266,6 +286,7 @@ export default function ScheduledJobsPage() {
       )}
 
       <Tabs
+        tabPosition="left"
         style={{ marginTop: 24 }}
         activeKey={activeTab}
         onChange={(key) => {
