@@ -270,15 +270,24 @@ if [[ "$SKIP_DOWNLOAD" -eq 1 ]]; then
 else
     echo "[step 2/3] download rtaImage (parallel=$PARALLEL) → $IMG_DIR (증분)"
 
-    # access token + instance url 추출 (sf 실행 주체는 사용자 — 자발 호출 정책 위배 아님).
-    org_json="$(sf org display --verbose --json ${SF_ORG_ARGS[@]+"${SF_ORG_ARGS[@]}"})"
-    ACCESS_TOKEN="$(printf '%s' "$org_json" | python3 -c 'import sys,json; print(json.load(sys.stdin)["result"].get("accessToken",""))')"
-    INSTANCE_URL="$(printf '%s' "$org_json" | python3 -c 'import sys,json; print(json.load(sys.stdin)["result"].get("instanceUrl",""))')"
-    if [[ -z "$ACCESS_TOKEN" || -z "$INSTANCE_URL" ]]; then
-        echo "[error] sf org display 에서 accessToken/instanceUrl 추출 실패 — sf 인증 상태 확인" >&2
-        exit 1
+    # rtaImage 서블릿(file.force.com)은 콘텐츠 도메인이라 API access token(Bearer)을 거부하고 세션 페이지로
+    # 리다이렉트한다 → Bearer 로는 이미지 다운로드 불가. 브라우저 세션 sid 쿠키(--sid)로만 받을 수 있다.
+    # 따라서 --sid 가 주어지면 sid 쿠키 단독 사용(Bearer 미전송), 없으면 Bearer 시도(대개 실패 → --sid 안내).
+    ACCESS_TOKEN=""
+    INSTANCE_URL=""
+    if [[ -z "$SID_COOKIE" ]]; then
+        # sid 미지정 — access token + instance url 추출 시도 (sf 실행 주체는 사용자).
+        org_json="$(sf org display --verbose --json ${SF_ORG_ARGS[@]+"${SF_ORG_ARGS[@]}"})"
+        ACCESS_TOKEN="$(printf '%s' "$org_json" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("result",{}).get("accessToken",""))')"
+        INSTANCE_URL="$(printf '%s' "$org_json" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("result",{}).get("instanceUrl",""))')"
+        if [[ -z "$ACCESS_TOKEN" ]]; then
+            echo "[error] sf org display 에서 accessToken 추출 실패 — sf 인증 상태 확인" >&2
+            exit 1
+        fi
+        echo "[info] auth mode      : Bearer (file.force.com 에서 실패 가능 — 실패 시 --sid <쿠키> 재실행)"
+    else
+        echo "[info] auth mode      : sid 쿠키 (file.force.com 세션 인증)"
     fi
-    echo "[info] instance url   : $INSTANCE_URL"
 
     export IMG_DIR ACCESS_TOKEN INSTANCE_URL SID_COOKIE IMAGE_EXTS FAILED_CSV
 
@@ -311,9 +320,13 @@ for row in csv.reader(sys.stdin):
             *)     full="${INSTANCE_URL%/}/$url" ;;
         esac
         tmp="$IMG_DIR/.$refid.tmp"
-        # Bearer 우선, sid 쿠키 있으면 함께 전송.
-        hdr=(-H "Authorization: Bearer $ACCESS_TOKEN")
-        [ -n "$SID_COOKIE" ] && hdr+=(--cookie "sid=$SID_COOKIE")
+        # 인증: sid 쿠키가 있으면 sid 단독(Bearer 미전송 — file.force.com 은 Bearer 시 세션 페이지로
+        # 리다이렉트해 실패). sid 없으면 Bearer 시도.
+        if [ -n "$SID_COOKIE" ]; then
+            hdr=(--cookie "sid=$SID_COOKIE")
+        else
+            hdr=(-H "Authorization: Bearer $ACCESS_TOKEN")
+        fi
         http_code=$(curl -sS -L -o "$tmp" -w "%{http_code}" -D "$tmp.hdr" "${hdr[@]}" "$full" 2>/dev/null || echo 000)
         ctype=$(grep -i "^content-type:" "$tmp.hdr" 2>/dev/null | tail -1 | tr -d "\r" | sed "s/.*: *//;s/;.*//" | tr "[:upper:]" "[:lower:]")
         rm -f "$tmp.hdr"
