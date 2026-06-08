@@ -15,8 +15,7 @@ import 'promotion_card.dart';
 
 /// 행사 목록 본문 위젯 (AppBar 없는 임베드 가능 형태).
 ///
-/// `PromotionListPage`(독립 화면) 와 `SalesOverviewScreen` 의 행사 매출 탭에서
-/// 공통으로 사용한다.
+/// `PromotionListPage`(독립 화면) 에서 사용한다.
 ///
 /// 레거시(heroku `promotion/event/list.jsp`) 정합:
 /// - 거래처 전체 드롭다운 + 기간 + 검색 버튼 (버튼 트리거 검색)

@@ -51,18 +51,8 @@ abstract final class MenuConstants {
       iconAsset: 'assets/images/icon_nav4.png',
       label: '매출 현황',
       items: [
-        MenuItem(
-          id: 'event-sales',
-          label: '행사 매출',
-          route: '/sales-overview',
-          arguments: 0, // 매출 현황 허브 - 행사 매출 탭 (index 0)
-        ),
-        MenuItem(
-          id: 'monthly-sales',
-          label: '월 매출',
-          route: '/sales-overview',
-          arguments: 1, // 매출 현황 허브 - 월 매출 탭 (index 1)
-        ),
+        MenuItem(id: 'event-sales', label: '행사 매출', route: '/promotions'),
+        MenuItem(id: 'monthly-sales', label: '월 매출', route: '/monthly-sales'),
         MenuItem(id: 'logistics-sales', label: '물류 매출', route: '/logistics-sales'),
       ],
     ),
