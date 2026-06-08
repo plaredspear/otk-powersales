@@ -130,12 +130,23 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
           _buildClientOrdersTab(),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      // 레거시 .btn_add_order(노란 원형 "+주문")에 정합
+      floatingActionButton: FloatingActionButton(
         onPressed: _onFabTap,
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.legacyYellow,
         foregroundColor: AppColors.onPrimary,
-        icon: const Icon(Icons.edit),
-        label: const Text('주문'),
+        shape: const CircleBorder(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.add, size: 22),
+            SizedBox(height: 1),
+            Text(
+              '주문',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -188,9 +199,17 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '주문 현황 (${state.allOrderRequests.length})',
-            style: AppTypography.headlineSmall,
+          Text.rich(
+            TextSpan(
+              style: AppTypography.headlineSmall,
+              children: [
+                const TextSpan(text: '주문 현황 '),
+                TextSpan(
+                  text: '(${state.allOrderRequests.length})',
+                  style: const TextStyle(color: AppColors.otokiRed),
+                ),
+              ],
+            ),
           ),
           InkWell(
             onTap: _onSortTap,
@@ -386,9 +405,17 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '주문 현황 (${state.totalElements})',
-            style: AppTypography.headlineSmall,
+          Text.rich(
+            TextSpan(
+              style: AppTypography.headlineSmall,
+              children: [
+                const TextSpan(text: '주문 현황 '),
+                TextSpan(
+                  text: '(${state.totalElements})',
+                  style: const TextStyle(color: AppColors.otokiRed),
+                ),
+              ],
+            ),
           ),
         ],
       ),

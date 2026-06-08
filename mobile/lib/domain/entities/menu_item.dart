@@ -7,8 +7,13 @@ class MenuGroup {
   /// 그룹 식별자 (예: 'trade', 'order')
   final String id;
 
-  /// 그룹 아이콘
+  /// 그룹 아이콘 (iconAsset 미지정 시 폴백)
   final IconData icon;
+
+  /// 그룹 아이콘 이미지 에셋 경로 (레거시 Heroku icon_navN.png 정합)
+  ///
+  /// 지정 시 [icon] 대신 이 이미지를 렌더링한다.
+  final String? iconAsset;
 
   /// 그룹 표시명 (예: "거래처", "주문")
   final String label;
@@ -19,6 +24,7 @@ class MenuGroup {
   const MenuGroup({
     required this.id,
     required this.icon,
+    this.iconAsset,
     required this.label,
     required this.items,
   });
@@ -29,12 +35,14 @@ class MenuGroup {
     if (other is! MenuGroup) return false;
     return other.id == id &&
         other.icon == icon &&
+        other.iconAsset == iconAsset &&
         other.label == label &&
         _listEquals(other.items, items);
   }
 
   @override
-  int get hashCode => Object.hash(id, icon, label, Object.hashAll(items));
+  int get hashCode =>
+      Object.hash(id, icon, iconAsset, label, Object.hashAll(items));
 
   @override
   String toString() =>

@@ -6,7 +6,7 @@ import '../../../core/theme/app_typography.dart';
 /// 전체메뉴 헤더 위젯
 ///
 /// 사용자명, 소속/직군 정보, 닫기(X) 버튼을 표시한다.
-/// 사용자명 영역의 ">" 화살표를 탭하면 마이페이지로 이동한다.
+/// 사용자명 영역의 ">" 화살표를 탭하면 내 정보(프로필) 화면으로 이동한다.
 class MenuHeader extends StatelessWidget {
   /// 사용자 이름
   final String userName;
@@ -17,7 +17,7 @@ class MenuHeader extends StatelessWidget {
   /// 닫기 버튼 콜백
   final VoidCallback onClose;
 
-  /// 사용자명 영역 탭 콜백 (마이페이지로 이동)
+  /// 사용자명 영역 탭 콜백 (내 정보/프로필로 이동)
   final VoidCallback? onProfileTap;
 
   const MenuHeader({
@@ -37,12 +37,8 @@ class MenuHeader extends StatelessWidget {
         AppSpacing.lg,
         AppSpacing.lg,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        border: Border(
-          bottom: BorderSide(color: AppColors.divider, width: 1),
-        ),
-      ),
+      // 레거시 Heroku top_info 정합: 노란 배경
+      color: AppColors.legacyYellow,
       child: SafeArea(
         bottom: false,
         child: Row(
@@ -52,31 +48,51 @@ class MenuHeader extends StatelessWidget {
             Expanded(
               child: GestureDetector(
                 onTap: onProfileTap,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                behavior: HitTestBehavior.opaque,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          '$userName님',
-                          style: AppTypography.headlineMedium.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        if (onProfileTap != null)
-                          const Icon(
-                            Icons.chevron_right,
-                            size: 22,
-                            color: AppColors.textPrimary,
-                          ),
-                      ],
+                    // 여사원 프로필 일러스트 (레거시 정합)
+                    Image.asset(
+                      'assets/images/img_profile.png',
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.contain,
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      userInfo,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  '$userName님',
+                                  style:
+                                      AppTypography.headlineMedium.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              if (onProfileTap != null)
+                                const Icon(
+                                  Icons.chevron_right,
+                                  size: 22,
+                                  color: AppColors.textPrimary,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            userInfo,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

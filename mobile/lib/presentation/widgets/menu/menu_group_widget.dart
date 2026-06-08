@@ -40,10 +40,24 @@ class MenuGroupWidget extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                group.icon,
-                size: 20,
-                color: AppColors.textPrimary,
+              // 레거시 Heroku 정합 아이콘(icon_navN.png) 우선, 없으면 Material 폴백
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: Center(
+                  child: group.iconAsset != null
+                      ? Image.asset(
+                          group.iconAsset!,
+                          width: 18,
+                          height: 18,
+                          fit: BoxFit.contain,
+                        )
+                      : Icon(
+                          group.icon,
+                          size: 20,
+                          color: AppColors.textPrimary,
+                        ),
+                ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
