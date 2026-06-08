@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
+import '../claim/claim_form_row.dart';
+import 'product_expiration_date_row.dart';
 
 /// 유통기한 수정 폼 위젯
 ///
-/// 거래처/제품은 읽기 전용, 유통기한/알림일/설명만 수정 가능합니다.
+/// 레거시(otg_PowerSales product/expiration/write.jsp, type='U') UI 기준 정합.
+/// 거래처/제품은 읽기 전용(회색 배경), 유통기한/마감 전 푸시 메세지 알림/설명만
+/// 수정 가능하다.
 class ProductExpirationEditForm extends StatelessWidget {
   /// 거래처명 (읽기 전용)
   final String accountName;
@@ -21,20 +21,20 @@ class ProductExpirationEditForm extends StatelessWidget {
   /// 유통기한
   final DateTime expiryDate;
 
-  /// 마감 전 알림 날짜
+  /// 마감 전 푸시 메세지 알림 날짜
   final DateTime alertDate;
 
   /// 설명
   final String description;
 
   /// 유통기한 변경 콜백
-  final void Function(DateTime date) onExpiryDateChanged;
+  final ValueChanged<DateTime> onExpiryDateChanged;
 
-  /// 알림일 변경 콜백
-  final void Function(DateTime date) onAlertDateChanged;
+  /// 마감 전 푸시 메세지 알림 변경 콜백
+  final ValueChanged<DateTime> onAlertDateChanged;
 
   /// 설명 변경 콜백
-  final void Function(String text) onDescriptionChanged;
+  final ValueChanged<String> onDescriptionChanged;
 
   const ProductExpirationEditForm({
     super.key,
@@ -51,149 +51,81 @@ class ProductExpirationEditForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('yyyy-MM-dd');
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 거래처 (읽기 전용)
+          ClaimFormRow(
+            label: '거래처',
+            enabled: false,
+            below: _ReadOnlyValue(accountName),
+          ),
 
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      children: [
-        // 거래처 (읽기 전용)
-        _buildLabel('거래처'),
-        const SizedBox(height: AppSpacing.xs),
-        _buildReadOnlyField(accountName),
+          // 제품 (읽기 전용)
+          ClaimFormRow(
+            label: '제품',
+            enabled: false,
+            below: _ReadOnlyValue(
+              productCode.isNotEmpty
+                  ? '$productName ($productCode)'
+                  : productName,
+            ),
+          ),
 
-        const SizedBox(height: AppSpacing.lg),
+          // 유통기한
+          ProductExpirationDateRow(
+            label: '유통기한',
+            date: expiryDate,
+            onDateChanged: onExpiryDateChanged,
+          ),
 
-        // 제품 (읽기 전용)
-        _buildLabel('제품'),
-        const SizedBox(height: AppSpacing.xs),
-        _buildReadOnlyField('$productName ($productCode)'),
+          // 마감 전 푸시 메세지 알림
+          ProductExpirationDateRow(
+            label: '마감 전 푸시 메세지 알림',
+            date: alertDate,
+            onDateChanged: onAlertDateChanged,
+          ),
 
-        const SizedBox(height: AppSpacing.lg),
+          // 설명
+          ClaimFormRow(
+            label: '설명',
+            showDivider: false,
+            below: TextFormField(
+              initialValue: description,
+              style: const TextStyle(fontSize: 14, color: ClaimFormColors.value),
+              decoration: const InputDecoration(
+                isCollapsed: true,
+                hintText: '설명 입력',
+                hintStyle:
+                    TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
+                border: InputBorder.none,
+              ),
+              onChanged: onDescriptionChanged,
+            ),
+          ),
 
-        // 유통기한 (수정 가능)
-        _buildLabel('유통기한', required: true),
-        const SizedBox(height: AppSpacing.xs),
-        _buildDateField(
-          context: context,
-          date: expiryDate,
-          dateFormat: dateFormat,
-          onChanged: onExpiryDateChanged,
-        ),
-
-        const SizedBox(height: AppSpacing.lg),
-
-        // 마감 전 알림 (수정 가능)
-        _buildLabel('마감 전 알림', required: true),
-        const SizedBox(height: AppSpacing.xs),
-        _buildDateField(
-          context: context,
-          date: alertDate,
-          dateFormat: dateFormat,
-          onChanged: onAlertDateChanged,
-        ),
-
-        const SizedBox(height: AppSpacing.lg),
-
-        // 설명 (수정 가능)
-        _buildLabel('설명'),
-        const SizedBox(height: AppSpacing.xs),
-        _buildDescriptionField(),
-
-        const SizedBox(height: AppSpacing.xl),
-      ],
-    );
-  }
-
-  Widget _buildLabel(String text, {bool required = false}) {
-    return Row(
-      children: [
-        Text(text, style: AppTypography.headlineSmall),
-        if (required) ...[
-          const SizedBox(width: 4),
-          Text('*', style: AppTypography.bodyMedium.copyWith(color: AppColors.error)),
+          const SizedBox(height: 24),
         ],
-      ],
-    );
-  }
-
-  Widget _buildReadOnlyField(String value) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.md,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.divider),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-      ),
-      child: Text(
-        value,
-        style: AppTypography.bodyMedium.copyWith(
-          color: AppColors.textSecondary,
-        ),
       ),
     );
   }
+}
 
-  Widget _buildDateField({
-    required BuildContext context,
-    required DateTime date,
-    required DateFormat dateFormat,
-    required void Function(DateTime) onChanged,
-  }) {
-    return InkWell(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: date,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2030),
-        );
-        if (picked != null) {
-          onChanged(picked);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.divider),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(dateFormat.format(date), style: AppTypography.bodyMedium),
-            const Icon(Icons.calendar_today, size: 18, color: AppColors.textSecondary),
-          ],
-        ),
-      ),
-    );
-  }
+/// 읽기 전용 값 텍스트 (비활성 회색)
+class _ReadOnlyValue extends StatelessWidget {
+  const _ReadOnlyValue(this.value);
 
-  Widget _buildDescriptionField() {
-    return TextFormField(
-      initialValue: description,
-      maxLines: 3,
-      decoration: InputDecoration(
-        hintText: '설명을 입력해주세요 (선택)',
-        hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textTertiary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        contentPadding: const EdgeInsets.all(AppSpacing.md),
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      value,
+      style: const TextStyle(
+        fontSize: 14,
+        color: ClaimFormColors.labelDisabled,
       ),
-      style: AppTypography.bodyMedium,
-      onChanged: onDescriptionChanged,
     );
   }
 }

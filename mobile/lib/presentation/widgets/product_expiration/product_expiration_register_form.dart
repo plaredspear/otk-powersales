@@ -1,37 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
+import '../claim/claim_form_row.dart';
+import '../claim/claim_product_field.dart';
+import 'product_expiration_date_row.dart';
 
 /// 유통기한 등록 폼 위젯
 ///
-/// 거래처 선택, 제품 선택, 유통기한, 알림일, 설명 입력을 제공합니다.
+/// 레거시(otg_PowerSales product/expiration/write.jsp) UI 기준 정합.
+/// 테두리 박스 없이 라벨 + 하단 값/플레이스홀더 행으로 구성하고 행마다 얇은
+/// 구분선을 둔다. 거래처/제품/유통기한/마감 전 푸시 메세지 알림/설명 순.
 class ProductExpirationRegisterForm extends StatelessWidget {
-  /// 거래처 목록
-  final Map<String, String> accounts;
-
-  /// 선택된 거래처 코드
-  final String? selectedAccountCode;
+  /// 선택된 거래처명
+  final String? accountName;
 
   /// 선택된 제품 코드
-  final String? selectedProductCode;
+  final String? productCode;
 
   /// 선택된 제품명
-  final String? selectedProductName;
+  final String? productName;
 
   /// 유통기한
   final DateTime expiryDate;
 
-  /// 마감 전 알림 날짜
+  /// 마감 전 푸시 메세지 알림 날짜
   final DateTime alertDate;
 
   /// 설명
   final String description;
 
-  /// 거래처 선택 콜백
-  final void Function(String accountCode, String accountName) onAccountChanged;
+  /// 거래처 선택 버튼/행 콜백
+  final VoidCallback onSelectAccount;
 
   /// 제품 선택 버튼 콜백
   final VoidCallback onSelectProduct;
@@ -40,24 +38,23 @@ class ProductExpirationRegisterForm extends StatelessWidget {
   final VoidCallback onScanBarcode;
 
   /// 유통기한 변경 콜백
-  final void Function(DateTime date) onExpiryDateChanged;
+  final ValueChanged<DateTime> onExpiryDateChanged;
 
-  /// 알림일 변경 콜백
-  final void Function(DateTime date) onAlertDateChanged;
+  /// 마감 전 푸시 메세지 알림 변경 콜백
+  final ValueChanged<DateTime> onAlertDateChanged;
 
   /// 설명 변경 콜백
-  final void Function(String text) onDescriptionChanged;
+  final ValueChanged<String> onDescriptionChanged;
 
   const ProductExpirationRegisterForm({
     super.key,
-    required this.accounts,
-    this.selectedAccountCode,
-    this.selectedProductCode,
-    this.selectedProductName,
+    required this.accountName,
+    required this.productCode,
+    required this.productName,
     required this.expiryDate,
     required this.alertDate,
     required this.description,
-    required this.onAccountChanged,
+    required this.onSelectAccount,
     required this.onSelectProduct,
     required this.onScanBarcode,
     required this.onExpiryDateChanged,
@@ -67,216 +64,65 @@ class ProductExpirationRegisterForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('yyyy-MM-dd');
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 거래처
+          ClaimFormRow(
+            label: '거래처',
+            isRequired: true,
+            onTap: onSelectAccount,
+            trailing: const ClaimRowChevron(),
+            below: ClaimValueText(
+              value: accountName,
+              placeholder: '거래처 선택',
+            ),
+          ),
 
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      children: [
-        // 거래처 선택
-        _buildLabel('거래처', required: true),
-        const SizedBox(height: AppSpacing.xs),
-        _buildAccountDropdown(),
+          // 제품
+          ClaimProductField(
+            productName: productName,
+            productCode: productCode,
+            onBarcodePressed: onScanBarcode,
+            onProductSelectPressed: onSelectProduct,
+          ),
 
-        const SizedBox(height: AppSpacing.lg),
+          // 유통기한
+          ProductExpirationDateRow(
+            label: '유통기한',
+            date: expiryDate,
+            onDateChanged: onExpiryDateChanged,
+          ),
 
-        // 제품 선택
-        _buildLabel('제품', required: true),
-        const SizedBox(height: AppSpacing.xs),
-        _buildProductSelector(),
+          // 마감 전 푸시 메세지 알림
+          ProductExpirationDateRow(
+            label: '마감 전 푸시 메세지 알림',
+            date: alertDate,
+            onDateChanged: onAlertDateChanged,
+          ),
 
-        const SizedBox(height: AppSpacing.lg),
+          // 설명
+          ClaimFormRow(
+            label: '설명',
+            showDivider: false,
+            below: TextFormField(
+              initialValue: description,
+              style: const TextStyle(fontSize: 14, color: ClaimFormColors.value),
+              decoration: const InputDecoration(
+                isCollapsed: true,
+                hintText: '설명 입력',
+                hintStyle:
+                    TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
+                border: InputBorder.none,
+              ),
+              onChanged: onDescriptionChanged,
+            ),
+          ),
 
-        // 유통기한
-        _buildLabel('유통기한', required: true),
-        const SizedBox(height: AppSpacing.xs),
-        _buildDateField(
-          context: context,
-          date: expiryDate,
-          dateFormat: dateFormat,
-          onChanged: onExpiryDateChanged,
-        ),
-
-        const SizedBox(height: AppSpacing.lg),
-
-        // 마감 전 알림
-        _buildLabel('마감 전 알림', required: true),
-        const SizedBox(height: AppSpacing.xs),
-        _buildDateField(
-          context: context,
-          date: alertDate,
-          dateFormat: dateFormat,
-          onChanged: onAlertDateChanged,
-        ),
-
-        const SizedBox(height: AppSpacing.lg),
-
-        // 설명
-        _buildLabel('설명'),
-        const SizedBox(height: AppSpacing.xs),
-        _buildDescriptionField(),
-
-        const SizedBox(height: AppSpacing.xl),
-      ],
-    );
-  }
-
-  Widget _buildLabel(String text, {bool required = false}) {
-    return Row(
-      children: [
-        Text(text, style: AppTypography.headlineSmall),
-        if (required) ...[
-          const SizedBox(width: 4),
-          Text('*', style: AppTypography.bodyMedium.copyWith(color: AppColors.error)),
+          const SizedBox(height: 24),
         ],
-      ],
-    );
-  }
-
-  Widget _buildAccountDropdown() {
-    final sortedEntries = accounts.entries.toList()
-      ..sort((a, b) => a.value.compareTo(b.value));
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.divider),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selectedAccountCode,
-          hint: Text('거래처 선택', style: AppTypography.bodyMedium.copyWith(color: AppColors.textTertiary)),
-          isExpanded: true,
-          items: sortedEntries.map((entry) {
-            return DropdownMenuItem<String>(
-              value: entry.key,
-              child: Text(entry.value, style: AppTypography.bodyMedium),
-            );
-          }).toList(),
-          onChanged: (accountCode) {
-            if (accountCode != null) {
-              onAccountChanged(accountCode, accounts[accountCode]!);
-            }
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProductSelector() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.md,
-            ),
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.divider),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              color: AppColors.background,
-            ),
-            child: Text(
-              selectedProductName ?? '제품을 선택해주세요',
-              style: AppTypography.bodyMedium.copyWith(
-                color: selectedProductName != null
-                    ? AppColors.textPrimary
-                    : AppColors.textTertiary,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        SizedBox(
-          height: AppSpacing.buttonHeight,
-          child: OutlinedButton(
-            onPressed: onSelectProduct,
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              ),
-            ),
-            child: Text('선택', style: AppTypography.bodyMedium.copyWith(color: AppColors.primary)),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.xs),
-        SizedBox(
-          height: AppSpacing.buttonHeight,
-          child: OutlinedButton.icon(
-            onPressed: onScanBarcode,
-            icon: const Icon(Icons.qr_code_scanner, size: 18),
-            label: Text('바코드', style: AppTypography.bodySmall.copyWith(color: AppColors.primary)),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateField({
-    required BuildContext context,
-    required DateTime date,
-    required DateFormat dateFormat,
-    required void Function(DateTime) onChanged,
-  }) {
-    return InkWell(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: date,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2030),
-        );
-        if (picked != null) {
-          onChanged(picked);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.divider),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(dateFormat.format(date), style: AppTypography.bodyMedium),
-            const Icon(Icons.calendar_today, size: 18, color: AppColors.textSecondary),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDescriptionField() {
-    return TextFormField(
-      initialValue: description,
-      maxLines: 3,
-      decoration: InputDecoration(
-        hintText: '설명을 입력해주세요 (선택)',
-        hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textTertiary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        contentPadding: const EdgeInsets.all(AppSpacing.md),
-      ),
-      style: AppTypography.bodyMedium,
-      onChanged: onDescriptionChanged,
     );
   }
 }

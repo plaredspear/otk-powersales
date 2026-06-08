@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../domain/entities/product_expiration_item.dart';
 import '../providers/product_expiration_form_provider.dart';
 import '../widgets/product_expiration/product_expiration_edit_form.dart';
@@ -67,15 +66,6 @@ class _ProductExpirationEditPageState extends ConsumerState<ProductExpirationEdi
           icon: const Icon(Icons.arrow_back),
           onPressed: () => AppRouter.goBack(context),
         ),
-        actions: [
-          // 삭제 버튼
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppColors.error),
-            onPressed: state.isLoading
-                ? null
-                : () => _showDeleteConfirmDialog(context),
-          ),
-        ],
       ),
       body: ProductExpirationEditForm(
         accountName: state.selectedAccountName ?? widget.item.accountName,
@@ -97,44 +87,44 @@ class _ProductExpirationEditPageState extends ConsumerState<ProductExpirationEdi
         },
       ),
 
-      // 저장 버튼
-      bottomNavigationBar: _buildSaveButton(state),
+      // 하단 버튼 (삭제 + 저장) — 레거시(fix_bottom_wrap btn_red/btn_yellow) 전폭 2분할
+      bottomNavigationBar: _buildBottomButtons(state),
     );
   }
 
-  Widget _buildSaveButton(dynamic state) {
+  Widget _buildBottomButtons(dynamic state) {
+    final loading = state.isLoading as bool;
+    final canSave = state.canSave as bool;
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: SizedBox(
-          width: double.infinity,
-          height: AppSpacing.buttonHeight,
-          child: ElevatedButton(
-            onPressed: state.canSave
-                ? () {
-                    ref.read(productExpirationFormProvider.notifier).update();
-                  }
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.white,
-              disabledBackgroundColor: AppColors.divider,
-              disabledForegroundColor: AppColors.textTertiary,
-              shape: RoundedRectangleBorder(
-                borderRadius: AppSpacing.buttonBorderRadius,
+      top: false,
+      child: SizedBox(
+        height: 56,
+        child: Row(
+          children: [
+            // 삭제 버튼
+            Expanded(
+              child: _BottomBarButton(
+                label: '삭제',
+                backgroundColor: AppColors.otokiRed,
+                textColor: AppColors.white,
+                onPressed: loading ? null : () => _showDeleteConfirmDialog(context),
               ),
             ),
-            child: state.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.white,
-                    ),
-                  )
-                : const Text('저장'),
-          ),
+            // 저장 버튼
+            Expanded(
+              child: _BottomBarButton(
+                label: '저장',
+                backgroundColor: AppColors.legacyYellow,
+                textColor: AppColors.textPrimary,
+                disabledBackgroundColor: AppColors.divider,
+                disabledTextColor: AppColors.textTertiary,
+                isLoading: loading,
+                onPressed: canSave
+                    ? () => ref.read(productExpirationFormProvider.notifier).update()
+                    : null,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -160,6 +150,59 @@ class _ProductExpirationEditPageState extends ConsumerState<ProductExpirationEdi
             child: const Text('삭제'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 하단 바 버튼 (전폭 무여백)
+class _BottomBarButton extends StatelessWidget {
+  const _BottomBarButton({
+    required this.label,
+    required this.backgroundColor,
+    required this.textColor,
+    required this.onPressed,
+    this.disabledBackgroundColor,
+    this.disabledTextColor,
+    this.isLoading = false,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color textColor;
+  final Color? disabledBackgroundColor;
+  final Color? disabledTextColor;
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    return Material(
+      color: enabled
+          ? backgroundColor
+          : (disabledBackgroundColor ?? backgroundColor),
+      child: InkWell(
+        onTap: onPressed,
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.textPrimary,
+                  ),
+                )
+              : Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: enabled ? textColor : (disabledTextColor ?? textColor),
+                  ),
+                ),
+        ),
       ),
     );
   }
