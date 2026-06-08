@@ -56,8 +56,11 @@ function formatDuration(ms: number | null | undefined): string {
   return `${minutes}m ${remainSec}s`;
 }
 
+const ALL_JOBS_KEY = '__all__';
+const CATALOG_KEY = '__catalog__';
+
 export default function ScheduledJobsPage() {
-  const [jobName, setJobName] = useState<string | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<string>(ALL_JOBS_KEY);
   const [status, setStatus] = useState<ScheduledJobStatus | undefined>(undefined);
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [page, setPage] = useState(1);
@@ -66,6 +69,10 @@ export default function ScheduledJobsPage() {
 
   const from = range?.[0]?.toISOString() ?? undefined;
   const to = range?.[1]?.toISOString() ?? undefined;
+
+  // 잡 이름별 탭: '전체' 탭이면 jobName 필터 없음, 잡 탭이면 해당 잡 이름으로 필터.
+  const jobName =
+    activeTab === ALL_JOBS_KEY || activeTab === CATALOG_KEY ? undefined : activeTab;
 
   const summaryQuery = useScheduledJobSummary(24);
   const catalogQuery = useScheduledJobCatalog();
@@ -78,12 +85,11 @@ export default function ScheduledJobsPage() {
     size,
   });
 
-  const jobNameOptions = useMemo(() => {
-    const fromSummary = summaryQuery.data?.distinctJobNames ?? [];
-    const fromCatalog = catalogQuery.data?.map((entry) => entry.jobName) ?? [];
-    const merged = Array.from(new Set([...fromCatalog, ...fromSummary])).sort();
-    return merged.map((name) => ({ label: name, value: name }));
-  }, [summaryQuery.data, catalogQuery.data]);
+  // 등록된 작업(catalog) 기준으로 잡 이름 탭 목록 구성.
+  const jobNames = useMemo(
+    () => (catalogQuery.data ?? []).map((entry) => entry.jobName),
+    [catalogQuery.data],
+  );
 
   const runColumns: ColumnsType<ScheduledJobRun> = [
     {
@@ -128,6 +134,81 @@ export default function ScheduledJobsPage() {
     { title: '잡 이름', dataIndex: 'jobName', key: 'jobName', width: 240 },
     { title: 'cron 표현식', dataIndex: 'cron', key: 'cron', width: 280 },
     { title: '설명', dataIndex: 'description', key: 'description' },
+  ];
+
+  // 잡 탭에서는 '잡 이름' 컬럼이 중복이므로 제외하고, '전체' 탭에서만 노출.
+  const visibleRunColumns =
+    jobName === undefined
+      ? runColumns
+      : runColumns.filter((col) => col.key !== 'jobName');
+
+  const runsHistoryNode = (
+    <>
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Select
+          allowClear
+          placeholder="상태"
+          style={{ width: 140 }}
+          value={status}
+          onChange={(value) => {
+            setStatus(value ?? undefined);
+            setPage(1);
+          }}
+          options={STATUS_OPTIONS}
+        />
+        <RangePicker
+          showTime
+          value={range as [Dayjs, Dayjs] | null}
+          onChange={(value) => {
+            setRange(value as [Dayjs | null, Dayjs | null] | null);
+            setPage(1);
+          }}
+        />
+      </Space>
+      <ResizableTable<ScheduledJobRun>
+        rowKey="id"
+        loading={runsQuery.isLoading}
+        dataSource={runsQuery.data?.items ?? []}
+        columns={visibleRunColumns}
+        pagination={{
+          current: page,
+          pageSize: size,
+          total: runsQuery.data?.totalCount ?? 0,
+          onChange: setPage,
+          showSizeChanger: false,
+        }}
+        onRow={(record) => ({
+          onClick: () => setSelectedRun(record),
+          style: { cursor: 'pointer' },
+        })}
+      />
+    </>
+  );
+
+  const tabItems = [
+    {
+      key: ALL_JOBS_KEY,
+      label: '전체',
+      children: runsHistoryNode,
+    },
+    ...jobNames.map((name) => ({
+      key: name,
+      label: name,
+      children: runsHistoryNode,
+    })),
+    {
+      key: CATALOG_KEY,
+      label: '등록된 작업',
+      children: (
+        <ResizableTable<RegisteredScheduledJob>
+          rowKey="jobName"
+          loading={catalogQuery.isLoading}
+          dataSource={catalogQuery.data ?? []}
+          columns={catalogColumns}
+          pagination={false}
+        />
+      ),
+    },
   ];
 
   return (
@@ -186,81 +267,12 @@ export default function ScheduledJobsPage() {
 
       <Tabs
         style={{ marginTop: 24 }}
-        defaultActiveKey="runs"
-        items={[
-          {
-            key: 'runs',
-            label: '실행 이력',
-            children: (
-              <>
-                <Space wrap style={{ marginBottom: 16 }}>
-                  <Select
-                    allowClear
-                    placeholder="잡 이름"
-                    style={{ width: 240 }}
-                    value={jobName}
-                    onChange={(value) => {
-                      setJobName(value ?? undefined);
-                      setPage(1);
-                    }}
-                    options={jobNameOptions}
-                    showSearch
-                    optionFilterProp="label"
-                  />
-                  <Select
-                    allowClear
-                    placeholder="상태"
-                    style={{ width: 140 }}
-                    value={status}
-                    onChange={(value) => {
-                      setStatus(value ?? undefined);
-                      setPage(1);
-                    }}
-                    options={STATUS_OPTIONS}
-                  />
-                  <RangePicker
-                    showTime
-                    value={range as [Dayjs, Dayjs] | null}
-                    onChange={(value) => {
-                      setRange(value as [Dayjs | null, Dayjs | null] | null);
-                      setPage(1);
-                    }}
-                  />
-                </Space>
-                <ResizableTable<ScheduledJobRun>
-                  rowKey="id"
-                  loading={runsQuery.isLoading}
-                  dataSource={runsQuery.data?.items ?? []}
-                  columns={runColumns}
-                  pagination={{
-                    current: page,
-                    pageSize: size,
-                    total: runsQuery.data?.totalCount ?? 0,
-                    onChange: setPage,
-                    showSizeChanger: false,
-                  }}
-                  onRow={(record) => ({
-                    onClick: () => setSelectedRun(record),
-                    style: { cursor: 'pointer' },
-                  })}
-                />
-              </>
-            ),
-          },
-          {
-            key: 'catalog',
-            label: '등록된 작업',
-            children: (
-              <ResizableTable<RegisteredScheduledJob>
-                rowKey="jobName"
-                loading={catalogQuery.isLoading}
-                dataSource={catalogQuery.data ?? []}
-                columns={catalogColumns}
-                pagination={false}
-              />
-            ),
-          },
-        ]}
+        activeKey={activeTab}
+        onChange={(key) => {
+          setActiveTab(key);
+          setPage(1);
+        }}
+        items={tabItems}
       />
 
       <JobRunDetailModal
