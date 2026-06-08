@@ -4,9 +4,11 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.sales.dto.response.ElectronicSalesResponse
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
+import com.otoki.powersales.sales.dto.response.PosSalesResponse
 import com.otoki.powersales.sales.service.ElectronicSalesService
 import com.otoki.powersales.sales.service.LogisticsSalesService
 import com.otoki.powersales.sales.service.MonthlySalesService
+import com.otoki.powersales.sales.service.PosSalesService
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.DisplayName
@@ -35,6 +37,9 @@ class MonthlySalesControllerTest : MobileControllerTestSupport() {
 
     @MockkBean
     private lateinit var electronicSalesService: ElectronicSalesService
+
+    @MockkBean
+    private lateinit var posSalesService: PosSalesService
 
     // ========== getMonthlySales Tests ==========
 
@@ -161,6 +166,57 @@ class MonthlySalesControllerTest : MobileControllerTestSupport() {
     fun getElectronicSales_invalidYearMonth() {
         mockMvc.perform(
             get("/api/v1/mobile/sales/electronic")
+                .param("customerId", "1")
+                .param("yearMonth", "2026-02")
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    // ========== getPosSales Tests ==========
+
+    @Test
+    @DisplayName("POS매출 조회 - 200 OK (제품별 실적)")
+    fun getPosSales_success() {
+        val mockResponse = PosSalesResponse(
+            customerId = 1,
+            customerName = "이마트 강남점",
+            sapAccountCode = "12345",
+            yearMonth = "202602",
+            items = listOf(
+                PosSalesResponse.ProductSales(
+                    productCode = "01101123",
+                    productName = "진라면 매운맛 120g",
+                    barcode = "8801234567890",
+                    amount = 45000,
+                    quantity = 30,
+                ),
+            ),
+        )
+
+        every { posSalesService.getPosSales(1, "202602") } returns mockResponse
+
+        mockMvc.perform(
+            get("/api/v1/mobile/sales/pos")
+                .param("customerId", "1")
+                .param("yearMonth", "202602")
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.customerId").value(1))
+            .andExpect(jsonPath("$.data.customerName").value("이마트 강남점"))
+            .andExpect(jsonPath("$.data.items[0].productCode").value("01101123"))
+            .andExpect(jsonPath("$.data.items[0].barcode").value("8801234567890"))
+            .andExpect(jsonPath("$.data.items[0].amount").value(45000))
+            .andExpect(jsonPath("$.data.items[0].quantity").value(30))
+    }
+
+    @Test
+    @DisplayName("POS매출 조회 - 잘못된 yearMonth 형식 시 400 BAD REQUEST")
+    fun getPosSales_invalidYearMonth() {
+        mockMvc.perform(
+            get("/api/v1/mobile/sales/pos")
                 .param("customerId", "1")
                 .param("yearMonth", "2026-02")
                 .contentType(MediaType.APPLICATION_JSON)

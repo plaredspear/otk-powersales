@@ -17483,6 +17483,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "barcode" : {
+            "type" : [ "string", "null" ]
+          },
           "productCode" : {
             "type" : "string"
           },
@@ -28462,7 +28465,7 @@
     },
     "/api/v1/admin/sales/pos" : {
       "get" : {
-        "operationId" : "getPosSales",
+        "operationId" : "getPosSales_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "request",
@@ -34005,6 +34008,32 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseMonthlySalesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "monthly-sales-controller" ]
+      }
+    },
+    "/api/v1/mobile/sales/pos" : {
+      "get" : {
+        "operationId" : "getPosSales",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/PosSalesRequest"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePosSalesResponse"
                 }
               }
             },
