@@ -34,6 +34,7 @@ import 'presentation/pages/change_password_page.dart';
 import 'presentation/pages/verify_password_page.dart';
 import 'presentation/pages/my_schedule_calendar_page.dart';
 import 'presentation/pages/my_schedule_detail_page.dart';
+import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/promotion_list_page.dart';
 import 'presentation/pages/promotion_detail_page.dart';
 import 'presentation/pages/promotion_daily_sales_page.dart';
@@ -101,6 +102,7 @@ class AppRouter {
   static const String leaderTeamMembers = '/leader/team-members'; // #554: 조장 — 팀원 일정 관리
   static const String leaderDailyStatus = '/leader/daily-status'; // P6: 조장 — 여사원 일별현황(조회 전용)
   static const String appInfo = '/app-info'; // 앱 정보 / 오픈소스 라이선스
+  static const String profile = '/profile'; // 내 정보(프로필)
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -235,6 +237,7 @@ class AppRouter {
         leaderTeamMembers: (context) => const LeaderTeamMembersScreen(), // #554: 조장 팀원 일정 관리
         leaderDailyStatus: (context) => const LeaderDailyStatusScreen(), // P6: 여사원 일별현황(조회 전용)
         appInfo: (context) => const AppInfoPage(),
+        profile: (context) => const ProfilePage(), // 내 정보(프로필)
         myScheduleCalendar: (context) => const MyScheduleCalendarPage(), // F56: 일정 캘린더
         myScheduleDetail: (context) {
           // F56: 일정 상세

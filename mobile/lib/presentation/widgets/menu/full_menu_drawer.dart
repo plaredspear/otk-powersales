@@ -48,7 +48,7 @@ class FullMenuDrawer extends ConsumerWidget {
                 onClose: () => Navigator.of(context).pop(),
                 onProfileTap: () {
                   Navigator.of(context).pop();
-                  _navigateToRoute(context, '/my-schedule');
+                  _navigateToRoute(context, AppRouter.profile);
                 },
               ),
               // 빠른 액션 바

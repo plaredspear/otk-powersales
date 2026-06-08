@@ -6,7 +6,7 @@ import '../../../core/theme/app_typography.dart';
 /// 전체메뉴 헤더 위젯
 ///
 /// 사용자명, 소속/직군 정보, 닫기(X) 버튼을 표시한다.
-/// 사용자명 영역의 ">" 화살표를 탭하면 마이페이지로 이동한다.
+/// 사용자명 영역의 ">" 화살표를 탭하면 내 정보(프로필) 화면으로 이동한다.
 class MenuHeader extends StatelessWidget {
   /// 사용자 이름
   final String userName;
@@ -17,7 +17,7 @@ class MenuHeader extends StatelessWidget {
   /// 닫기 버튼 콜백
   final VoidCallback onClose;
 
-  /// 사용자명 영역 탭 콜백 (마이페이지로 이동)
+  /// 사용자명 영역 탭 콜백 (내 정보/프로필로 이동)
   final VoidCallback? onProfileTap;
 
   const MenuHeader({
