@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/datasources/suggestion_remote_datasource.dart';
+import 'package:mobile/data/models/suggestion_detail_model.dart';
+import 'package:mobile/data/models/suggestion_list_item_model.dart';
 import 'package:mobile/data/models/suggestion_register_request.dart';
 import 'package:mobile/data/models/suggestion_register_result_model.dart';
 import 'package:mobile/data/repositories/suggestion_repository_impl.dart';
@@ -16,6 +18,16 @@ class _MockSuggestionRemoteDataSource implements SuggestionRemoteDataSource {
     capturedRequest = request;
     if (error != null) throw error!;
     return result!;
+  }
+
+  @override
+  Future<SuggestionListPageModel> getSuggestions({int page = 0, int size = 20}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<SuggestionDetailModel> getSuggestionDetail(int suggestionId) {
+    throw UnimplementedError();
   }
 }
 

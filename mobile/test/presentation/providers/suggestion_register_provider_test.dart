@@ -42,7 +42,7 @@ void main() {
     });
 
     group('초기 상태', () {
-      test('초기 상태는 신제품 제안이다', () {
+      test('초기 상태는 물류 클레임이다 (레거시 기본값 정합)', () {
         // When
         final state = notifier.state;
 
@@ -50,16 +50,16 @@ void main() {
         expect(state.isLoading, false);
         expect(state.isSubmitting, false);
         expect(state.errorMessage, null);
-        expect(state.form.category, SuggestionCategory.newProduct);
+        expect(state.form.category, SuggestionCategory.logisticsClaim);
         expect(state.form.title, '');
         expect(state.form.content, '');
         expect(state.form.photos, isEmpty);
       });
 
-      test('초기 상태는 isNewProduct가 true이다', () {
+      test('초기 상태는 isLogisticsClaim이 true이다', () {
         // When & Then
-        expect(notifier.state.isNewProduct, true);
-        expect(notifier.state.isExistingProduct, false);
+        expect(notifier.state.isLogisticsClaim, true);
+        expect(notifier.state.isNewProduct, false);
       });
     });
 
@@ -108,7 +108,8 @@ void main() {
       });
 
       test('신제품 선택 시 제품 선택이 무시된다', () {
-        // Given - 초기 상태는 신제품
+        // Given - 신제품 제안 전환
+        notifier.changeCategory(SuggestionCategory.newProduct);
 
         // When
         notifier.selectProduct('12345678', '진라면');
@@ -116,6 +117,19 @@ void main() {
         // Then
         expect(notifier.state.form.productCode, null);
         expect(notifier.state.hasProduct, false);
+      });
+
+      test('물류 클레임 선택 시 대표 제품을 설정한다', () {
+        // Given
+        notifier.changeCategory(SuggestionCategory.logisticsClaim);
+
+        // When
+        notifier.selectProduct('12345678', '진라면');
+
+        // Then
+        expect(notifier.state.form.productCode, '12345678');
+        expect(notifier.state.form.productName, '진라면');
+        expect(notifier.state.hasProduct, true);
       });
     });
 
@@ -195,6 +209,7 @@ void main() {
     group('제안 등록', () {
       test('유효한 신제품 제안을 등록한다', () async {
         // Given
+        notifier.changeCategory(SuggestionCategory.newProduct);
         notifier.updateTitle('신제품 제안');
         notifier.updateContent('제안 내용');
 
@@ -223,7 +238,8 @@ void main() {
       });
 
       test('필수 항목 누락 시 에러가 발생한다 (제목)', () async {
-        // Given - 제목 없음
+        // Given - 신제품 제안 + 제목 없음
+        notifier.changeCategory(SuggestionCategory.newProduct);
         notifier.updateContent('제안 내용');
 
         // When
@@ -235,7 +251,8 @@ void main() {
       });
 
       test('필수 항목 누락 시 에러가 발생한다 (내용)', () async {
-        // Given - 내용 없음
+        // Given - 신제품 제안 + 내용 없음
+        notifier.changeCategory(SuggestionCategory.newProduct);
         notifier.updateTitle('신제품 제안');
 
         // When
@@ -261,6 +278,7 @@ void main() {
 
       test('UseCase에서 에러 발생 시 에러 상태가 된다', () async {
         // Given
+        notifier.changeCategory(SuggestionCategory.newProduct);
         notifier.updateTitle('신제품 제안');
         notifier.updateContent('제안 내용');
         mockUseCase.shouldFail = true;
@@ -290,7 +308,7 @@ void main() {
         expect(notifier.state.form.title, '');
         expect(notifier.state.form.content, '');
         expect(notifier.state.form.photos, isEmpty);
-        expect(notifier.state.category, SuggestionCategory.newProduct);
+        expect(notifier.state.category, SuggestionCategory.logisticsClaim);
       });
 
       test('clearError()로 에러를 지운다', () {
@@ -309,6 +327,7 @@ void main() {
 
       test('clearSuccess()로 성공 메시지를 지운다', () async {
         // Given
+        notifier.changeCategory(SuggestionCategory.newProduct);
         notifier.updateTitle('제목');
         notifier.updateContent('내용');
         await notifier.submit();
@@ -323,7 +342,7 @@ void main() {
     });
 
     group('물류 클레임 카테고리 분기', () {
-      test('물류 클레임으로 전환하면 제품 정보가 초기화된다', () {
+      test('기존제품 ↔ 물류 클레임 전환 시 대표 제품은 유지된다 (레거시 정합)', () {
         // Given
         notifier.changeCategory(SuggestionCategory.existingProduct);
         notifier.selectProduct('12345678', '진라면');
@@ -332,43 +351,43 @@ void main() {
         // When
         notifier.changeCategory(SuggestionCategory.logisticsClaim);
 
-        // Then
+        // Then — 대표 제품은 공통 개념이라 유지
         expect(notifier.state.isLogisticsClaim, true);
-        expect(notifier.state.form.productCode, null);
-        expect(notifier.state.form.productName, null);
+        expect(notifier.state.form.productCode, '12345678');
+        expect(notifier.state.form.productName, '진라면');
       });
 
-      test('물류 클레임에서 신제품으로 전환하면 6 분기 입력이 초기화된다', () {
+      test('물류 클레임에서 신제품으로 전환하면 분기 입력이 초기화된다', () {
         // Given
         notifier.changeCategory(SuggestionCategory.logisticsClaim);
+        notifier.selectProduct('12345678', '진라면');
         notifier.selectAccount(
           accountId: 100,
           accountName: '오뚜기 농협',
           sapAccountCode: 'SAP-0001',
         );
-        notifier.updateClaimType('파손');
+        notifier.updateClaimType('취급부주의 제품 파손');
         notifier.updateClaimDate(DateTime(2026, 5, 22));
         notifier.updateCarNumber('12가1234');
-        notifier.updateLogisticsResponsibility('운송사');
-        notifier.updateDuplicateProposalNum('PROP-001');
 
         // When
         notifier.changeCategory(SuggestionCategory.newProduct);
 
-        // Then
+        // Then — 신제품 제안은 제품 + 물류 클레임 필드 모두 제거
         expect(notifier.state.isNewProduct, true);
+        expect(notifier.state.form.productCode, null);
+        expect(notifier.state.form.productName, null);
         expect(notifier.state.form.accountId, null);
         expect(notifier.state.form.accountName, null);
         expect(notifier.state.form.sapAccountCode, null);
         expect(notifier.state.form.claimType, null);
         expect(notifier.state.form.claimDate, null);
         expect(notifier.state.form.carNumber, null);
-        expect(notifier.state.form.logisticsResponsibility, null);
-        expect(notifier.state.form.duplicateProposalNum, null);
       });
 
       test('selectAccount는 물류 클레임 카테고리에서만 동작한다', () {
         // Given — 신제품 카테고리
+        notifier.changeCategory(SuggestionCategory.newProduct);
         notifier.selectAccount(
           accountId: 100,
           accountName: '오뚜기 농협',
@@ -391,23 +410,19 @@ void main() {
         expect(notifier.state.form.sapAccountCode, 'SAP-0001');
       });
 
-      test('updateClaimType / updateClaimDate / 나머지 4 메서드가 form 에 반영된다', () {
+      test('updateClaimType / updateClaimDate / updateCarNumber 가 form 에 반영된다', () {
         // Given
         notifier.changeCategory(SuggestionCategory.logisticsClaim);
 
         // When
-        notifier.updateClaimType('파손');
+        notifier.updateClaimType('취급부주의 제품 파손');
         notifier.updateClaimDate(DateTime(2026, 5, 22));
         notifier.updateCarNumber('12가1234');
-        notifier.updateLogisticsResponsibility('운송사');
-        notifier.updateDuplicateProposalNum('PROP-001');
 
         // Then
-        expect(notifier.state.form.claimType, '파손');
+        expect(notifier.state.form.claimType, '취급부주의 제품 파손');
         expect(notifier.state.form.claimDate, DateTime(2026, 5, 22));
         expect(notifier.state.form.carNumber, '12가1234');
-        expect(notifier.state.form.logisticsResponsibility, '운송사');
-        expect(notifier.state.form.duplicateProposalNum, 'PROP-001');
       });
     });
   });
