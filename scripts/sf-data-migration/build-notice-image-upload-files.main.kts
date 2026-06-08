@@ -29,7 +29,8 @@
  *   UploadKbn__c  = (빈값)
  *   Date__c       = (빈값 — 본문 이미지 생성일 메타 없음)
  *   IsDeleted     = false
- *   CreatedDate / LastModifiedDate = (빈값 — Stage1 이 DB DEFAULT now() 로 채움)
+ *   CreatedDate / LastModifiedDate = 마이그레이션 고정 timestamp (Stage1 메타가 nullable=false 라 빈값이면
+ *     requiredFields 필터로 전량 걸러져 inserted=0 — rtaImage 는 원본 생성일 메타가 없어 상수로 박음)
  *   · ext = img-dir 의 {refid}.* 파일 확장자. 다운로드 안 된 refid 는 skip (실패분).
  *
  * 중복 처리: 같은 refid 가 여러 본문/여러 <img> 에 나오면 1회만 출력 (sfid=refid 기준 dedup).
@@ -132,6 +133,15 @@ val COL_NOTICE = "notice_sfid"
 val COL_REFID = "refid"
 val COL_ALT = "alt_name"
 
+// CreatedDate / LastModifiedDate 적재값.
+// Stage1 메타(UPLOAD_FILE.fields)에서 created_at/updated_at 은 nullable=false (requiredFields) 라,
+// 빈값이면 Stage1 이 "DB DEFAULT now()" 가 아니라 requiredFields 필터로 행 전체를 걸러 inserted=0 이 된다.
+// rtaImage 본문 이미지는 SF ContentDocument 가 없어 원본 생성일 메타가 없으므로, 마이그레이션 기준
+// 고정 timestamp 를 박는다 (now() 대신 상수 — build 재실행 시 동일 CSV 가 나오게 결정론적 유지).
+// 형식은 클레임 CSV (이미 적재 성공) 와 동일한 SF timestamp 표기 (밀리초 + +0000 오프셋) — Stage1 은
+// normalize 변환 없이 staging COPY → INSERT 로 PG timestamptz 에 그대로 캐스팅한다.
+val MIGRATION_TIMESTAMP = "2026-06-08T00:00:00.000+0000"
+
 File(out).parentFile?.mkdirs()
 
 var total = 0
@@ -194,8 +204,8 @@ CSVReader(FileReader(scanFile)).use { reader ->
                     "",                     // UploadKbn__c
                     "",                     // Date__c
                     "false",                // IsDeleted
-                    "",                     // CreatedDate  → Stage1 DB DEFAULT now()
-                    "",                     // LastModifiedDate → Stage1 DB DEFAULT now()
+                    MIGRATION_TIMESTAMP,    // CreatedDate  → 마이그레이션 고정 timestamp (nullable=false 필수)
+                    MIGRATION_TIMESTAMP,    // LastModifiedDate → 동일 (nullable=false 필수)
                 )
             )
             written++
