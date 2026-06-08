@@ -4,10 +4,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/order_request.dart';
+import 'order_filter_styles.dart';
 
 /// 주문 필터 바 위젯
 ///
 /// 거래처 드롭다운, 상태 드롭다운, 납기일 범위, 검색 버튼을 포함합니다.
+/// Heroku 레거시(order/list.jsp - 내 주문 탭)의 플랫 검색 영역 디자인에 정합합니다.
 class OrderRequestFilterBar extends StatelessWidget {
   /// 거래처 목록 (id -> name)
   final Map<int, String> clients;
@@ -52,96 +54,68 @@ class OrderRequestFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      color: AppColors.surface,
+      color: AppColors.white,
       child: Column(
         children: [
-          // 1행: 거래처 + 상태 드롭다운
-          Row(
-            children: [
-              // 거래처 드롭다운
-              Expanded(
-                child: _buildClientDropdown(context),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              // 상태 드롭다운
-              Expanded(
-                child: _buildStatusDropdown(context),
-              ),
-            ],
+          // 1행: 거래처 + 상태 드롭다운 (세로 구분선으로 2분할)
+          SizedBox(
+            height: OrderFilterStyles.rowHeight,
+            child: Row(
+              children: [
+                Expanded(child: _buildClientDropdown(context)),
+                const OrderFilterVerticalDivider(),
+                Expanded(child: _buildStatusDropdown(context)),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const OrderFilterRowDivider(),
           // 2행: 납기일 범위 + 검색 버튼
-          Row(
-            children: [
-              Expanded(
-                child: _buildDateRangeSelector(context),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              SizedBox(
-                height: 40,
-                child: ElevatedButton(
-                  onPressed: onSearch,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.otokiBlue,
-                    foregroundColor: AppColors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusMd),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                    ),
-                  ),
-                  child: const Text('검색'),
+          SizedBox(
+            height: OrderFilterStyles.rowHeight,
+            child: Row(
+              children: [
+                Expanded(child: _buildDateRangeSelector(context)),
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.lg),
+                  child: OrderSearchButton(onPressed: onSearch),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          // 필터 영역과 목록 사이의 굵은 회색 밴드 (레거시 .bline)
+          const OrderFilterBand(),
         ],
       ),
     );
   }
 
   Widget _buildClientDropdown(BuildContext context) {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: AppColors.border),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int?>(
           value: selectedClientId,
           isExpanded: true,
-          icon: const Icon(Icons.arrow_drop_down, size: 20),
-          style: AppTypography.bodySmall.copyWith(
+          icon: const Icon(
+            Icons.arrow_drop_down,
+            size: 22,
+            color: AppColors.textSecondary,
+          ),
+          style: AppTypography.bodyMedium.copyWith(
             color: AppColors.textPrimary,
           ),
-          hint: Text(
-            '거래처 전체',
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
+          hint: Text('거래처 전체', style: OrderFilterStyles.valueText),
           items: [
             DropdownMenuItem<int?>(
               value: null,
-              child: Text(
-                '거래처 전체',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              child: Text('거래처 전체', style: OrderFilterStyles.valueText),
             ),
             ...clients.entries.map((entry) {
               return DropdownMenuItem<int?>(
                 value: entry.key,
                 child: Text(
                   entry.value,
-                  style: AppTypography.bodySmall,
+                  style: OrderFilterStyles.valueText,
                   overflow: TextOverflow.ellipsis,
                 ),
               );
@@ -156,44 +130,32 @@ class OrderRequestFilterBar extends StatelessWidget {
   }
 
   Widget _buildStatusDropdown(BuildContext context) {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: AppColors.border),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           value: selectedStatus,
           isExpanded: true,
-          icon: const Icon(Icons.arrow_drop_down, size: 20),
-          style: AppTypography.bodySmall.copyWith(
+          icon: const Icon(
+            Icons.arrow_drop_down,
+            size: 22,
+            color: AppColors.textSecondary,
+          ),
+          style: AppTypography.bodyMedium.copyWith(
             color: AppColors.textPrimary,
           ),
-          hint: Text(
-            '상태 전체',
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
+          hint: Text('상태 전체', style: OrderFilterStyles.valueText),
           items: [
             DropdownMenuItem<String?>(
               value: null,
-              child: Text(
-                '상태 전체',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              child: Text('상태 전체', style: OrderFilterStyles.valueText),
             ),
             ...OrderRequestStatus.values.map((status) {
               return DropdownMenuItem<String?>(
                 value: status.code,
                 child: Text(
                   status.displayName,
-                  style: AppTypography.bodySmall,
+                  style: OrderFilterStyles.valueText,
                 ),
               );
             }),
@@ -205,36 +167,23 @@ class OrderRequestFilterBar extends StatelessWidget {
   }
 
   Widget _buildDateRangeSelector(BuildContext context) {
-    final fromDisplay = deliveryDateFrom ?? '';
-    final toDisplay = deliveryDateTo ?? '';
-    final displayText = fromDisplay.isNotEmpty || toDisplay.isNotEmpty
-        ? '납기일 $fromDisplay~$toDisplay'
-        : '납기일 선택';
+    final from = deliveryDateFrom ?? '';
+    final to = deliveryDateTo ?? '';
+    final hasRange = from.isNotEmpty || to.isNotEmpty;
 
     return InkWell(
       onTap: () => _showDateRangePicker(context),
-      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          border: Border.all(color: AppColors.border),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Row(
           children: [
-            const Icon(
-              Icons.calendar_today,
-              size: 16,
-              color: AppColors.textTertiary,
-            ),
-            const SizedBox(width: AppSpacing.xs),
+            Text('납기일', style: OrderFilterStyles.labelText),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
-                displayText,
-                style: AppTypography.bodySmall.copyWith(
-                  color: fromDisplay.isNotEmpty
+                hasRange ? '$from ~ $to' : '선택',
+                style: OrderFilterStyles.valueText.copyWith(
+                  color: hasRange
                       ? AppColors.textPrimary
                       : AppColors.textTertiary,
                 ),
@@ -279,7 +228,7 @@ class OrderRequestFilterBar extends StatelessWidget {
     );
 
     if (picked != null) {
-      // 최대 7일 범위 제한
+      // 최대 7일 범위 제한 (레거시 daterangepicker maxSpan: 7d)
       var start = picked.start;
       var end = picked.end;
       if (end.difference(start).inDays > 7) {
