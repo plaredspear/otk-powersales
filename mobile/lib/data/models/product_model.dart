@@ -19,6 +19,7 @@ class ProductModel {
   final String? logisticsBarcode;
   final String? storageCondition;
   final String? shelfLife;
+  final String? shelfLifeUnit;
   final String? category1;
   final String? category2;
 
@@ -29,6 +30,7 @@ class ProductModel {
     this.logisticsBarcode,
     this.storageCondition,
     this.shelfLife,
+    this.shelfLifeUnit,
     this.category1,
     this.category2,
   });
@@ -41,6 +43,7 @@ class ProductModel {
       logisticsBarcode: json['logisticsBarcode'] as String?,
       storageCondition: json['storageCondition'] as String?,
       shelfLife: json['shelfLife'] as String?,
+      shelfLifeUnit: json['shelfLifeUnit'] as String?,
       category1: json['category1'] as String?,
       category2: json['category2'] as String?,
     );
@@ -56,10 +59,19 @@ class ProductModel {
       productCode: code,
       barcode: displayBarcode,
       storageType: storageCondition ?? '',
-      shelfLife: shelfLife ?? '',
+      shelfLife: _composeShelfLife(),
       categoryMid: category1,
       categorySub: category2,
     );
+  }
+
+  /// 유통기한 표시값: 숫자(shelfLife) + 단위(shelfLifeUnit) 결합 → "9개월".
+  /// 레거시 selectProduct 의 expiration + shelflifeunit 결합 표시와 동일.
+  String _composeShelfLife() {
+    final value = shelfLife ?? '';
+    final unit = shelfLifeUnit ?? '';
+    if (value.isEmpty) return '';
+    return '$value$unit';
   }
 }
 

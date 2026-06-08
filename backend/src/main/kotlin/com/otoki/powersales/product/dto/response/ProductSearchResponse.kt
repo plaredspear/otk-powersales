@@ -13,6 +13,8 @@ data class ProductDto(
     val logisticsBarcode: String?,
     val storageCondition: String?,
     val shelfLife: String?,
+    /** 유통기한 단위 (예: "개월"). 화면에서 shelfLife 와 결합해 "9개월"로 표시. */
+    val shelfLifeUnit: String?,
     val category1: String?,
     val category2: String?
 ) {
@@ -25,6 +27,7 @@ data class ProductDto(
                 logisticsBarcode = product.logisticsBarcode,
                 storageCondition = product.storageCondition?.displayName,
                 shelfLife = product.shelfLife,
+                shelfLifeUnit = product.shelfLifeUnit,
                 category1 = product.productCategory1,
                 category2 = product.productCategory2
             )
