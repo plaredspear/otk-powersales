@@ -21,35 +21,41 @@ class QuickActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xl,
-        vertical: AppSpacing.md,
-      ),
-      child: Row(
-        children: [
-          // 제품 검색 버튼
-          Expanded(
-            child: _ActionButton(
-              icon: Icons.search,
-              label: '제품 검색',
-              backgroundColor: AppColors.otokiBlue,
-              textColor: AppColors.white,
-              onTap: onProductSearchTap,
+    // 레거시 Heroku top_info 정합: 노란 배경 위 네이비 버튼 2개
+    return ColoredBox(
+      color: AppColors.legacyYellow,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          0,
+          AppSpacing.xl,
+          AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            // 제품 검색 버튼
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.search,
+                label: '제품 검색',
+                backgroundColor: AppColors.otokiBlue,
+                textColor: AppColors.white,
+                onTap: onProductSearchTap,
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          // 활동 등록 버튼
-          Expanded(
-            child: _ActionButton(
-              icon: Icons.add,
-              label: '활동 등록',
-              backgroundColor: AppColors.otokiYellow,
-              textColor: AppColors.textPrimary,
-              onTap: onActivityRegisterTap,
+            const SizedBox(width: AppSpacing.sm),
+            // 활동 등록 버튼 (제품 검색과 동일 네이비)
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.add,
+                label: '활동 등록',
+                backgroundColor: AppColors.otokiBlue,
+                textColor: AppColors.white,
+                onTap: onActivityRegisterTap,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

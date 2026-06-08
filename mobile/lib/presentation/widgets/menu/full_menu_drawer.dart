@@ -69,11 +69,6 @@ class FullMenuDrawer extends ConsumerWidget {
                   );
                 },
               ),
-              const Divider(
-                height: 1,
-                thickness: 1,
-                color: AppColors.divider,
-              ),
               // 스크롤 가능한 메뉴 영역
               Expanded(
                 child: SingleChildScrollView(
