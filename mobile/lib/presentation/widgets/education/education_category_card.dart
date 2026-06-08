@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/theme/app_spacing.dart';
-import 'package:mobile/core/theme/app_typography.dart';
 import 'package:mobile/domain/entities/education_category.dart';
 
-/// 교육 자료 카테고리 카드 위젯
+/// 교육 카테고리 카드 위젯
 ///
-/// 카테고리 아이콘과 이름을 표시하는 카드입니다.
-/// 선택된 카테고리는 하이라이트 표시됩니다.
+/// Heroku 레거시 교육 메인(.edu_main .nav_wrap li a) 디자인에 정합.
+/// 흰 배경 + 드롭섀도 카드 안에 원형 일러스트 아이콘과 카테고리명을 표시한다.
+/// (회색 원형 배경은 PNG 에셋 자체에 포함되어 있다.)
 class EducationCategoryCard extends StatelessWidget {
   /// 카테고리
   final EducationCategory category;
-
-  /// 선택 여부
-  final bool isSelected;
 
   /// 카드 탭 콜백
   final VoidCallback? onTap;
@@ -21,59 +18,64 @@ class EducationCategoryCard extends StatelessWidget {
   const EducationCategoryCard({
     super.key,
     required this.category,
-    this.isSelected = false,
     this.onTap,
   });
 
+  /// 레거시 ico_edu*.png 표시 크기 (CSS width:72px)
+  static const double _iconSize = 72;
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.lg,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryLight : AppColors.white,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 2 : 1,
+    return Material(
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
+            boxShadow: AppSpacing.cardShadow,
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 카테고리 아이콘
-            Image.asset(
-              category.iconPath,
-              width: AppSpacing.iconSizeMenu,
-              height: AppSpacing.iconSizeMenu,
-              errorBuilder: (context, error, stackTrace) {
-                // 아이콘 로드 실패 시 기본 아이콘 표시
-                return Icon(
-                  Icons.folder_outlined,
-                  size: AppSpacing.iconSizeMenu,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.sm),
-
-            // 카테고리 이름
-            Text(
-              category.displayName,
-              style: AppTypography.bodySmall.copyWith(
-                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          // 레거시 padding: 28px 0 20px
+          padding: const EdgeInsets.only(top: 28, bottom: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 카테고리 아이콘 (회색 원형 배경 포함 일러스트)
+              Image.asset(
+                category.iconPath,
+                width: _iconSize,
+                height: _iconSize,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.folder_outlined,
+                    size: _iconSize,
+                    color: AppColors.textSecondary,
+                  );
+                },
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              // 레거시 span padding-top: 12px
+              const SizedBox(height: 12),
+
+              // 카테고리 이름 (레거시 #333, 16px)
+              Text(
+                category.displayName,
+                style: const TextStyle(
+                  color: AppColors.legacyTextSub,
+                  fontSize: 16,
+                  height: 18 / 16,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: -0.8,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
