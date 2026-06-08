@@ -2,9 +2,9 @@ import 'dart:io';
 
 /// 클레임 임시저장(draft) Entity
 ///
-/// GET /api/v1/mobile/claims/draft 응답을 담는다. 등록 폼 prefill 용.
-/// 종류1/2·구매방법·요청사항은 코드(value)만 보관하고, 이름은 화면이 form-data 로 해석한다.
-/// 거래처명/제품명은 form-data 에 없으므로 함께 보관한다.
+/// 진입 폼 `GET /api/v1/mobile/claims/form` 의 `draft` 를 담는다. 등록 폼 prefill 용.
+/// 종류1/2·구매방법·요청사항은 코드(value)만 보관하고, 이름은 화면이 metadata 로 해석한다.
+/// 거래처명/제품명은 metadata 에 없으므로 함께 보관한다.
 /// 사진은 서버 presigned URL 을 임시 파일로 내려받아 [File] 로 보관한다(없으면 null).
 class ClaimDraft {
   const ClaimDraft({

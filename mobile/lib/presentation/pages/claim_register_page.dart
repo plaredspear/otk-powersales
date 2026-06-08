@@ -60,10 +60,11 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
     });
   }
 
-  /// 폼 데이터 로드 → (제품 지정 진입이면 선택) / (아니면 임시저장 이어쓰기 확인)
+  /// 진입 폼 로드(메타데이터 + 임시저장) → (제품 지정 진입이면 선택) / (아니면 임시저장 이어쓰기 확인)
   Future<void> _initialize() async {
     final notifier = ref.read(claimRegisterProvider.notifier);
-    await notifier.loadFormData();
+    // 진입 1콜: 메타데이터는 state 에 채워지고, 이어쓰기용 임시저장(있으면)이 반환된다.
+    final draft = await notifier.loadForm();
     if (!mounted) return;
 
     // 제품검색 결과에서 전달된 제품이 있으면 미리 선택 (임시저장 복원은 생략)
@@ -75,7 +76,6 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
     }
 
     // 임시저장이 있으면 이어쓰기 여부 확인
-    final draft = await notifier.loadDraft();
     if (draft == null || !mounted) return;
 
     final resume = await showDialog<bool>(

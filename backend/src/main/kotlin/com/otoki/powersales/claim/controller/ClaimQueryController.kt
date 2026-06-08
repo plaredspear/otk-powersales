@@ -1,8 +1,7 @@
 package com.otoki.powersales.claim.controller
 
 import com.otoki.powersales.claim.dto.response.ClaimDetailResponse
-import com.otoki.powersales.claim.dto.response.ClaimDraftResponse
-import com.otoki.powersales.claim.dto.response.ClaimFormDataResponse
+import com.otoki.powersales.claim.dto.response.ClaimFormResponse
 import com.otoki.powersales.claim.dto.response.ClaimListItemResponse
 import com.otoki.powersales.claim.service.ClaimDraftService
 import com.otoki.powersales.claim.service.ClaimQueryService
@@ -30,27 +29,22 @@ class ClaimQueryController(
     }
 
     /**
-     * 클레임 등록 폼 초기화 데이터 조회 (클레임 종류1/2, 구매 방법, 요청사항).
-     * GET /api/v1/mobile/claims/form-data
+     * 클레임 등록 화면 진입 폼 조회. 폼 메타데이터(종류1/2·구매방법·요청사항)와
+     * 이어쓰기용 임시저장(없으면 null)을 한 번에 내려준다.
+     * GET /api/v1/mobile/claims/form — literal path 가 `/{claimId}` 패턴보다 우선 매칭된다.
      *
-     * literal path 가 `/{claimId}` 패턴보다 우선 매칭된다.
+     * 일매출 마감 폼([com.otoki.powersales.promotion.controller.MobileDailySalesController.getForm])
+     * 의 "진입 1콜 + draft 동봉" 컨벤션과 정합.
      */
-    @GetMapping("/form-data")
-    fun getClaimFormData(
+    @GetMapping("/form")
+    fun getClaimForm(
         @AuthenticationPrincipal principal: UserPrincipal
-    ): ResponseEntity<ApiResponse<ClaimFormDataResponse>> {
-        return ResponseEntity.ok(ApiResponse.success(claimQueryService.getClaimFormData()))
-    }
-
-    /**
-     * 클레임 임시저장 조회 (등록 폼 prefill 용). 없으면 data=null.
-     * GET /api/v1/mobile/claims/draft — literal path 가 `/{claimId}` 패턴보다 우선 매칭된다.
-     */
-    @GetMapping("/draft")
-    fun getDraft(
-        @AuthenticationPrincipal principal: UserPrincipal
-    ): ResponseEntity<ApiResponse<ClaimDraftResponse?>> {
-        return ResponseEntity.ok(ApiResponse.success(claimDraftService.getDraft(principal.userId)))
+    ): ResponseEntity<ApiResponse<ClaimFormResponse>> {
+        val response = ClaimFormResponse(
+            metadata = claimQueryService.getClaimFormData(),
+            draft = claimDraftService.getDraft(principal.userId)
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @GetMapping("/{claimId}")

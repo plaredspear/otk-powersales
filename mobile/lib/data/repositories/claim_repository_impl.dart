@@ -1,7 +1,6 @@
 import '../../domain/entities/claim_detail.dart';
-import '../../domain/entities/claim_draft.dart';
 import '../../domain/entities/claim_form.dart';
-import '../../domain/entities/claim_form_data.dart';
+import '../../domain/entities/claim_form_entry.dart';
 import '../../domain/entities/claim_list_item.dart';
 import '../../domain/entities/claim_result.dart';
 import '../../domain/repositories/claim_repository.dart';
@@ -23,8 +22,8 @@ class ClaimRepositoryImpl implements ClaimRepository {
   }
 
   @override
-  Future<ClaimFormData> getFormData() async {
-    final model = await _dataSource.getFormData();
+  Future<ClaimFormEntry> getForm() async {
+    final model = await _dataSource.getForm();
     return model.toEntity();
   }
 
@@ -49,12 +48,6 @@ class ClaimRepositoryImpl implements ClaimRepository {
   @override
   Future<void> saveDraft(ClaimRegisterForm? form) async {
     await _dataSource.saveDraft(ClaimDraftRequest.fromForm(form));
-  }
-
-  @override
-  Future<ClaimDraft?> getDraft() async {
-    final model = await _dataSource.getDraft();
-    return model?.toEntity();
   }
 
   @override

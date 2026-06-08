@@ -2,7 +2,7 @@ import 'dart:io';
 
 import '../../domain/entities/claim_draft.dart';
 
-/// 클레임 임시저장 조회 응답 Model (GET /api/v1/mobile/claims/draft)
+/// 클레임 임시저장 Model (진입 폼 `GET /api/v1/mobile/claims/form` 의 `draft` 필드)
 ///
 /// scalar 필드는 [fromJson] 으로 파싱하고, 사진은 URL 만 담는다.
 /// 데이터소스가 URL 을 임시 파일로 내려받아 [withPhotos] 로 [File] 을 채운 뒤 [toEntity] 한다.

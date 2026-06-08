@@ -4,7 +4,7 @@ import 'package:mobile/domain/entities/claim_list_item.dart';
 import 'package:mobile/domain/entities/claim_photo.dart';
 import 'package:mobile/domain/repositories/claim_repository.dart';
 import 'package:mobile/domain/entities/claim_form.dart';
-import 'package:mobile/domain/entities/claim_form_data.dart';
+import 'package:mobile/domain/entities/claim_form_entry.dart';
 import 'package:mobile/domain/entities/claim_result.dart';
 import 'package:mobile/domain/usecases/get_claim_detail_usecase.dart';
 import 'package:mobile/presentation/providers/claim_detail_provider.dart';
@@ -82,9 +82,14 @@ class FakeClaimRepository implements ClaimRepository {
   }
 
   @override
-  Future<ClaimFormData> getFormData() async {
-    throw UnimplementedError();
-  }
+  Future<ClaimFormEntry> getForm() async => throw UnimplementedError();
+
+  @override
+  Future<void> saveDraft(ClaimRegisterForm? form) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> deleteDraft() async => throw UnimplementedError();
 }
 
 final _sampleDetail = ClaimDetail(

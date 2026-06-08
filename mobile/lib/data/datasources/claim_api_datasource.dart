@@ -5,6 +5,7 @@ import '../models/claim_detail_model.dart';
 import '../models/claim_draft_model.dart';
 import '../models/claim_draft_request.dart';
 import '../models/claim_form_data_model.dart';
+import '../models/claim_form_model.dart';
 import '../models/claim_list_item_model.dart';
 import '../models/claim_register_request.dart';
 import '../models/claim_register_result_model.dart';
@@ -31,11 +32,28 @@ class ClaimApiDataSource implements ClaimRemoteDataSource {
   }
 
   @override
-  Future<ClaimFormDataModel> getFormData() async {
-    final response = await _dio.get('/api/v1/mobile/claims/form-data');
+  Future<ClaimFormModel> getForm() async {
+    final response = await _dio.get('/api/v1/mobile/claims/form');
+    final data = response.data['data'] as Map<String, dynamic>;
 
-    return ClaimFormDataModel.fromJson(
-      response.data['data'] as Map<String, dynamic>,
+    final metadata = ClaimFormDataModel.fromJson(
+      data['metadata'] as Map<String, dynamic>,
+    );
+
+    final draftJson = data['draft'];
+    if (draftJson == null) {
+      return ClaimFormModel(metadata: metadata, draft: null);
+    }
+
+    final draft = ClaimDraftModel.fromJson(draftJson as Map<String, dynamic>);
+    // presigned URL 사진을 임시 파일로 내려받아 폼에 표시할 수 있게 한다(실패 시 해당 사진만 생략).
+    return ClaimFormModel(
+      metadata: metadata,
+      draft: draft.withPhotos(
+        defectPhoto: await _downloadToTemp(draft.defectPhotoUrl, 'defect'),
+        labelPhoto: await _downloadToTemp(draft.labelPhotoUrl, 'label'),
+        receiptPhoto: await _downloadToTemp(draft.receiptPhotoUrl, 'receipt'),
+      ),
     );
   }
 
@@ -72,22 +90,6 @@ class ClaimApiDataSource implements ClaimRemoteDataSource {
   Future<void> saveDraft(ClaimDraftRequest request) async {
     final formData = await request.toFormData();
     await _dio.post('/api/v1/mobile/claims/draft', data: formData);
-  }
-
-  @override
-  Future<ClaimDraftModel?> getDraft() async {
-    final response = await _dio.get('/api/v1/mobile/claims/draft');
-    final data = response.data['data'];
-    if (data == null) return null;
-
-    final model = ClaimDraftModel.fromJson(data as Map<String, dynamic>);
-
-    // presigned URL 사진을 임시 파일로 내려받아 폼에 표시할 수 있게 한다(실패 시 해당 사진만 생략).
-    return model.withPhotos(
-      defectPhoto: await _downloadToTemp(model.defectPhotoUrl, 'defect'),
-      labelPhoto: await _downloadToTemp(model.labelPhotoUrl, 'label'),
-      receiptPhoto: await _downloadToTemp(model.receiptPhotoUrl, 'receipt'),
-    );
   }
 
   @override

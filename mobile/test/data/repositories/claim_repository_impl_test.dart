@@ -8,6 +8,7 @@ import 'package:mobile/data/models/claim_detail_model.dart';
 import 'package:mobile/data/models/claim_draft_model.dart';
 import 'package:mobile/data/models/claim_draft_request.dart';
 import 'package:mobile/data/models/claim_form_data_model.dart';
+import 'package:mobile/data/models/claim_form_model.dart';
 import 'package:mobile/data/models/claim_list_item_model.dart';
 import 'package:mobile/data/models/claim_register_request.dart';
 import 'package:mobile/data/models/claim_register_result_model.dart';
@@ -123,8 +124,8 @@ void main() {
       });
     });
 
-    group('getFormData', () {
-      test('폼 데이터 조회가 성공한다', () async {
+    group('getForm', () {
+      test('진입 폼(메타데이터) 조회가 성공한다', () async {
         // Given
         fakeDataSource.formDataToReturn = ClaimFormDataModel(
           categories: [
@@ -155,17 +156,41 @@ void main() {
         );
 
         // When
-        final result = await repository.getFormData();
+        final result = await repository.getForm();
 
         // Then
-        expect(fakeDataSource.getFormDataCalls, 1);
-        expect(result, isA<ClaimFormData>());
-        expect(result.categories.length, 2);
-        expect(result.categories[0].name, '이물');
-        expect(result.categories[0].subcategories.length, 2);
-        expect(result.categories[1].name, '변질/변패');
-        expect(result.purchaseMethods.length, 2);
-        expect(result.requestTypes.length, 2);
+        expect(fakeDataSource.getFormCalls, 1);
+        expect(result.formData, isA<ClaimFormData>());
+        expect(result.draft, isNull);
+        expect(result.formData.categories.length, 2);
+        expect(result.formData.categories[0].name, '이물');
+        expect(result.formData.categories[0].subcategories.length, 2);
+        expect(result.formData.categories[1].name, '변질/변패');
+        expect(result.formData.purchaseMethods.length, 2);
+        expect(result.formData.requestTypes.length, 2);
+      });
+
+      test('임시저장(draft)이 있으면 함께 반환한다', () async {
+        // Given
+        fakeDataSource.formDataToReturn = ClaimFormDataModel(
+          categories: [],
+          purchaseMethods: const [],
+          requestTypes: const [],
+        );
+        fakeDataSource.draftToReturn = const ClaimDraftModel(
+          accountId: 1025,
+          accountName: '미광종합물류',
+          claimType1: 'A',
+        );
+
+        // When
+        final result = await repository.getForm();
+
+        // Then
+        expect(result.draft, isNotNull);
+        expect(result.draft!.accountId, 1025);
+        expect(result.draft!.accountName, '미광종합물류');
+        expect(result.draft!.claimType1, 'A');
       });
 
       test('빈 폼 데이터를 처리할 수 있다', () async {
@@ -177,13 +202,13 @@ void main() {
         );
 
         // When
-        final result = await repository.getFormData();
+        final result = await repository.getForm();
 
         // Then
-        expect(result, isA<ClaimFormData>());
-        expect(result.categories, isEmpty);
-        expect(result.purchaseMethods, isEmpty);
-        expect(result.requestTypes, isEmpty);
+        expect(result.formData, isA<ClaimFormData>());
+        expect(result.formData.categories, isEmpty);
+        expect(result.formData.purchaseMethods, isEmpty);
+        expect(result.formData.requestTypes, isEmpty);
       });
     });
   });
@@ -196,7 +221,7 @@ void main() {
 class FakeClaimRemoteDataSource implements ClaimRemoteDataSource {
   // ─── Call counters ─────────────────────────────────────────────
   int registerClaimCalls = 0;
-  int getFormDataCalls = 0;
+  int getFormCalls = 0;
 
   // ─── Return values ─────────────────────────────────────────────
   ClaimRegisterResultModel? registerResultToReturn;
@@ -215,9 +240,9 @@ class FakeClaimRemoteDataSource implements ClaimRemoteDataSource {
   }
 
   @override
-  Future<ClaimFormDataModel> getFormData() async {
-    getFormDataCalls++;
-    return formDataToReturn!;
+  Future<ClaimFormModel> getForm() async {
+    getFormCalls++;
+    return ClaimFormModel(metadata: formDataToReturn!, draft: draftToReturn);
   }
 
   @override
@@ -234,7 +259,6 @@ class FakeClaimRemoteDataSource implements ClaimRemoteDataSource {
   }
 
   int saveDraftCalls = 0;
-  int getDraftCalls = 0;
   int deleteDraftCalls = 0;
   ClaimDraftModel? draftToReturn;
   ClaimDraftRequest? lastDraftRequest;
@@ -243,12 +267,6 @@ class FakeClaimRemoteDataSource implements ClaimRemoteDataSource {
   Future<void> saveDraft(ClaimDraftRequest request) async {
     saveDraftCalls++;
     lastDraftRequest = request;
-  }
-
-  @override
-  Future<ClaimDraftModel?> getDraft() async {
-    getDraftCalls++;
-    return draftToReturn;
   }
 
   @override

@@ -10,7 +10,6 @@ import '../../domain/entities/claim_code.dart';
 import '../../domain/entities/claim_draft.dart';
 import '../../domain/entities/claim_form.dart';
 import '../../domain/repositories/claim_repository.dart';
-import '../../domain/usecases/get_claim_form_data_usecase.dart';
 import '../../domain/usecases/register_claim_usecase.dart';
 import 'claim_register_state.dart';
 
@@ -35,13 +34,6 @@ final registerClaimUseCaseProvider = Provider<RegisterClaimUseCase>((ref) {
   return RegisterClaimUseCase(repository);
 });
 
-/// GetClaimFormDataUseCase Provider
-final getClaimFormDataUseCaseProvider =
-    Provider<GetClaimFormDataUseCase>((ref) {
-  final repository = ref.watch(claimRepositoryProvider);
-  return GetClaimFormDataUseCase(repository);
-});
-
 // ============================================
 // 2. StateNotifier Implementation
 // ============================================
@@ -49,35 +41,36 @@ final getClaimFormDataUseCaseProvider =
 /// 클레임 등록 상태 관리 Notifier
 class ClaimRegisterNotifier extends StateNotifier<ClaimRegisterState> {
   final RegisterClaimUseCase _registerClaimUseCase;
-  final GetClaimFormDataUseCase _getClaimFormDataUseCase;
   final ClaimRepository _claimRepository;
 
   ClaimRegisterNotifier({
     required RegisterClaimUseCase registerClaimUseCase,
-    required GetClaimFormDataUseCase getClaimFormDataUseCase,
     required ClaimRepository claimRepository,
   })  : _registerClaimUseCase = registerClaimUseCase,
-        _getClaimFormDataUseCase = getClaimFormDataUseCase,
         _claimRepository = claimRepository,
         super(ClaimRegisterState.initial());
 
   // ──────────────────────────────────────────────────────────────────
-  // 폼 초기화 데이터 로드
+  // 진입 폼 로드
   // ──────────────────────────────────────────────────────────────────
 
-  /// 폼 초기화 데이터 로드 (categories, purchaseMethods, requestTypes)
-  Future<void> loadFormData() async {
+  /// 진입 폼 로드 — 메타데이터(categories, purchaseMethods, requestTypes)를
+  /// state 에 채우고, 이어쓰기용 임시저장(있으면)을 반환한다. 없으면 null.
+  /// 진입 1콜로 `GET /api/v1/mobile/claims/form` 을 호출한다.
+  Future<ClaimDraft?> loadForm() async {
     state = state.toLoading();
 
     try {
-      final formData = await _getClaimFormDataUseCase();
+      final entry = await _claimRepository.getForm();
 
       state = state.copyWith(
-        formData: formData,
+        formData: entry.formData,
         loading: false,
       );
+      return entry.draft;
     } catch (e) {
       state = state.toError(e.toString());
+      return null;
     }
   }
 
@@ -296,15 +289,6 @@ class ClaimRegisterNotifier extends StateNotifier<ClaimRegisterState> {
     }
   }
 
-  /// 임시저장 조회 — 진입 시 이어쓰기 여부를 묻기 위해 호출. 없으면 null.
-  Future<ClaimDraft?> loadDraft() async {
-    try {
-      return await _claimRepository.getDraft();
-    } catch (_) {
-      return null;
-    }
-  }
-
   /// 임시저장 폐기.
   Future<void> discardDraft() async {
     try {
@@ -434,7 +418,6 @@ final claimRegisterProvider =
     StateNotifierProvider<ClaimRegisterNotifier, ClaimRegisterState>((ref) {
   return ClaimRegisterNotifier(
     registerClaimUseCase: ref.watch(registerClaimUseCaseProvider),
-    getClaimFormDataUseCase: ref.watch(getClaimFormDataUseCaseProvider),
     claimRepository: ref.watch(claimRepositoryProvider),
   );
 });
