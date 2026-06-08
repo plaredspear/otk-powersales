@@ -16,6 +16,7 @@ import com.otoki.powersales.claim.exception.ClaimTypeHierarchyMismatchException
 import com.otoki.powersales.claim.exception.InvalidClaimDateException
 import com.otoki.powersales.claim.exception.InvalidClaimType1Exception
 import com.otoki.powersales.claim.exception.RequestTypeMaxExceededException
+import com.otoki.powersales.claim.repository.ClaimDraftRepository
 import com.otoki.powersales.claim.repository.ClaimRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
@@ -45,6 +46,7 @@ import java.math.BigDecimal
 class ClaimServiceTest {
 
     private val claimRepository: ClaimRepository = mockk(relaxUnitFun = true)
+    private val claimDraftRepository: ClaimDraftRepository = mockk(relaxed = true)
     private val uploadFileRepository: UploadFileRepository = mockk(relaxUnitFun = true)
     private val employeeRepository: EmployeeRepository = mockk()
     private val accountRepository: AccountRepository = mockk()
@@ -54,6 +56,7 @@ class ClaimServiceTest {
 
     private val claimService = ClaimService(
         claimRepository,
+        claimDraftRepository,
         uploadFileRepository,
         employeeRepository,
         accountRepository,

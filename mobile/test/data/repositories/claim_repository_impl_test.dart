@@ -5,6 +5,8 @@ import 'package:mobile/data/datasources/claim_remote_datasource.dart';
 import 'package:mobile/data/models/claim_category_model.dart';
 import 'package:mobile/data/models/claim_code_model.dart';
 import 'package:mobile/data/models/claim_detail_model.dart';
+import 'package:mobile/data/models/claim_draft_model.dart';
+import 'package:mobile/data/models/claim_draft_request.dart';
 import 'package:mobile/data/models/claim_form_data_model.dart';
 import 'package:mobile/data/models/claim_list_item_model.dart';
 import 'package:mobile/data/models/claim_register_request.dart';
@@ -229,5 +231,28 @@ class FakeClaimRemoteDataSource implements ClaimRemoteDataSource {
   @override
   Future<ClaimDetailModel> getClaimDetail(int claimId) async {
     throw UnimplementedError();
+  }
+
+  int saveDraftCalls = 0;
+  int getDraftCalls = 0;
+  int deleteDraftCalls = 0;
+  ClaimDraftModel? draftToReturn;
+  ClaimDraftRequest? lastDraftRequest;
+
+  @override
+  Future<void> saveDraft(ClaimDraftRequest request) async {
+    saveDraftCalls++;
+    lastDraftRequest = request;
+  }
+
+  @override
+  Future<ClaimDraftModel?> getDraft() async {
+    getDraftCalls++;
+    return draftToReturn;
+  }
+
+  @override
+  Future<void> deleteDraft() async {
+    deleteDraftCalls++;
   }
 }

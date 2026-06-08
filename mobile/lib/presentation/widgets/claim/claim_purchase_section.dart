@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../domain/entities/claim_code.dart';
+import 'claim_form_row.dart';
 import 'claim_photo_field.dart';
 
 /// 클레임 구매 정보 섹션
@@ -37,16 +38,11 @@ class ClaimPurchaseSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 섹션 구분선
-        const _SectionDivider(),
-        const SizedBox(height: 16),
-
         // 구매 금액 입력
         _PurchaseAmountField(
           amount: purchaseAmount,
           onChanged: onPurchaseAmountChanged,
         ),
-        const SizedBox(height: 16),
 
         // 구매 방법 선택 (구매금액 입력 시 필수)
         _PurchaseMethodField(
@@ -55,45 +51,14 @@ class ClaimPurchaseSection extends StatelessWidget {
           selectedMethod: selectedPurchaseMethod,
           onSelected: onPurchaseMethodSelected,
         ),
-        const SizedBox(height: 16),
 
         // 구매 영수증 사진 (구매금액 입력 시 필수)
         ClaimPhotoField(
-          label: '구매 영수증 사진',
+          label: '구매 영수증 사진 (최대 1장)',
           photo: receiptPhoto,
           onPhotoSelected: onReceiptPhotoSelected,
           onPhotoRemoved: onReceiptPhotoRemoved,
           isRequired: hasPurchaseAmount,
-        ),
-      ],
-    );
-  }
-}
-
-/// 섹션 구분선
-class _SectionDivider extends StatelessWidget {
-  const _SectionDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Divider(color: Colors.grey.shade400, thickness: 1),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            '구매 정보 (선택)',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.black54,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Divider(color: Colors.grey.shade400, thickness: 1),
         ),
       ],
     );
@@ -116,37 +81,32 @@ class _PurchaseAmountField extends StatelessWidget {
       text: amount != null && amount! > 0 ? amount.toString() : '',
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '구매 금액',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+    return ClaimFormRow(
+      label: '구매 금액',
+      trailing: const Text(
+        '원',
+        style: TextStyle(fontSize: 14, color: ClaimFormColors.unit),
+      ),
+      below: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        style: const TextStyle(fontSize: 14, color: ClaimFormColors.value),
+        decoration: const InputDecoration(
+          isCollapsed: true,
+          hintText: '숫자 입력',
+          hintStyle: TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
+          border: InputBorder.none,
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(
-            hintText: '금액 입력',
-            suffixText: '원',
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-          onChanged: (value) {
-            if (value.isEmpty) {
-              onChanged(null);
-            } else {
-              final parsed = int.tryParse(value);
-              onChanged(parsed);
-            }
-          },
-        ),
-      ],
+        onChanged: (value) {
+          if (value.isEmpty) {
+            onChanged(null);
+          } else {
+            final parsed = int.tryParse(value);
+            onChanged(parsed);
+          }
+        },
+      ),
     );
   }
 }
@@ -167,36 +127,15 @@ class _PurchaseMethodField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          isRequired ? '구매 방법 *' : '구매 방법',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-            side: BorderSide(color: Colors.grey.shade300),
-          ),
-          title: Text(
-            selectedMethod?.name ?? '구매 방법 선택',
-            style: TextStyle(
-              fontSize: 14,
-              color: selectedMethod == null
-                  ? Colors.grey.shade600
-                  : Colors.black87,
-            ),
-          ),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () => _showMethodSelector(context),
-        ),
-      ],
+    return ClaimFormRow(
+      label: '구매 방법',
+      isRequired: isRequired,
+      onTap: () => _showMethodSelector(context),
+      trailing: const ClaimRowChevron(),
+      below: ClaimValueText(
+        value: selectedMethod?.name,
+        placeholder: '구매 방법 선택',
+      ),
     );
   }
 

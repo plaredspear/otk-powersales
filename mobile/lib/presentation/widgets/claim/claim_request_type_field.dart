@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../domain/entities/claim_code.dart';
+import 'claim_form_row.dart';
 
 /// 클레임 요청사항 선택 필드
 class ClaimRequestTypeField extends StatelessWidget {
@@ -17,39 +18,14 @@ class ClaimRequestTypeField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 필드 라벨 (선택사항)
-        const Text(
-          '요청사항',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // 요청사항 선택 ListTile
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-            side: BorderSide(color: Colors.grey.shade300),
-          ),
-          title: Text(
-            selectedRequestType?.name ?? '요청사항 선택',
-            style: TextStyle(
-              fontSize: 14,
-              color: selectedRequestType == null
-                  ? Colors.grey.shade600
-                  : Colors.black87,
-            ),
-          ),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () => _showRequestTypeSelector(context),
-        ),
-      ],
+    return ClaimFormRow(
+      label: '요청사항',
+      onTap: () => _showRequestTypeSelector(context),
+      trailing: const ClaimRowChevron(),
+      below: ClaimValueText(
+        value: selectedRequestType?.name,
+        placeholder: '요청사항 선택',
+      ),
     );
   }
 

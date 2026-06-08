@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import '../models/claim_detail_model.dart';
+import '../models/claim_draft_model.dart';
+import '../models/claim_draft_request.dart';
 import '../models/claim_form_data_model.dart';
 import '../models/claim_list_item_model.dart';
 import '../models/claim_register_request.dart';
@@ -62,5 +66,53 @@ class ClaimApiDataSource implements ClaimRemoteDataSource {
     return ClaimDetailModel.fromJson(
       response.data['data'] as Map<String, dynamic>,
     );
+  }
+
+  @override
+  Future<void> saveDraft(ClaimDraftRequest request) async {
+    final formData = await request.toFormData();
+    await _dio.post('/api/v1/mobile/claims/draft', data: formData);
+  }
+
+  @override
+  Future<ClaimDraftModel?> getDraft() async {
+    final response = await _dio.get('/api/v1/mobile/claims/draft');
+    final data = response.data['data'];
+    if (data == null) return null;
+
+    final model = ClaimDraftModel.fromJson(data as Map<String, dynamic>);
+
+    // presigned URL 사진을 임시 파일로 내려받아 폼에 표시할 수 있게 한다(실패 시 해당 사진만 생략).
+    return model.withPhotos(
+      defectPhoto: await _downloadToTemp(model.defectPhotoUrl, 'defect'),
+      labelPhoto: await _downloadToTemp(model.labelPhotoUrl, 'label'),
+      receiptPhoto: await _downloadToTemp(model.receiptPhotoUrl, 'receipt'),
+    );
+  }
+
+  @override
+  Future<void> deleteDraft() async {
+    await _dio.delete('/api/v1/mobile/claims/draft');
+  }
+
+  /// presigned URL 을 시스템 임시 디렉터리에 내려받는다. 실패하면 null.
+  Future<File?> _downloadToTemp(String? url, String tag) async {
+    if (url == null || url.isEmpty) return null;
+    try {
+      // S3 presigned URL 은 절대 URL 이므로 인증 인터셉터가 없는 별도 Dio 로 받는다.
+      final response = await Dio().get<List<int>>(
+        url,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final bytes = response.data;
+      if (bytes == null || bytes.isEmpty) return null;
+
+      final dir = await Directory.systemTemp.createTemp('claim_draft_');
+      final file = File('${dir.path}/$tag.jpg');
+      await file.writeAsBytes(bytes);
+      return file;
+    } catch (_) {
+      return null;
+    }
   }
 }

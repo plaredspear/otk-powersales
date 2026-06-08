@@ -1,8 +1,10 @@
 package com.otoki.powersales.claim.controller
 
 import com.otoki.powersales.claim.dto.response.ClaimDetailResponse
+import com.otoki.powersales.claim.dto.response.ClaimDraftResponse
 import com.otoki.powersales.claim.dto.response.ClaimFormDataResponse
 import com.otoki.powersales.claim.dto.response.ClaimListItemResponse
+import com.otoki.powersales.claim.service.ClaimDraftService
 import com.otoki.powersales.claim.service.ClaimQueryService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
@@ -13,7 +15,8 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/v1/mobile/claims")
 class ClaimQueryController(
-    private val claimQueryService: ClaimQueryService
+    private val claimQueryService: ClaimQueryService,
+    private val claimDraftService: ClaimDraftService
 ) {
 
     @GetMapping
@@ -37,6 +40,17 @@ class ClaimQueryController(
         @AuthenticationPrincipal principal: UserPrincipal
     ): ResponseEntity<ApiResponse<ClaimFormDataResponse>> {
         return ResponseEntity.ok(ApiResponse.success(claimQueryService.getClaimFormData()))
+    }
+
+    /**
+     * 클레임 임시저장 조회 (등록 폼 prefill 용). 없으면 data=null.
+     * GET /api/v1/mobile/claims/draft — literal path 가 `/{claimId}` 패턴보다 우선 매칭된다.
+     */
+    @GetMapping("/draft")
+    fun getDraft(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<ClaimDraftResponse?>> {
+        return ResponseEntity.ok(ApiResponse.success(claimDraftService.getDraft(principal.userId)))
     }
 
     @GetMapping("/{claimId}")

@@ -1,4 +1,5 @@
 import '../entities/claim_detail.dart';
+import '../entities/claim_draft.dart';
 import '../entities/claim_form.dart';
 import '../entities/claim_form_data.dart';
 import '../entities/claim_list_item.dart';
@@ -20,4 +21,13 @@ abstract class ClaimRepository {
 
   /// 클레임 상세 조회
   Future<ClaimDetail> getClaimDetail(int claimId);
+
+  /// 클레임 임시저장 (upsert)
+  Future<void> saveDraft(ClaimRegisterForm? form);
+
+  /// 클레임 임시저장 조회 (없으면 null)
+  Future<ClaimDraft?> getDraft();
+
+  /// 클레임 임시저장 폐기
+  Future<void> deleteDraft();
 }

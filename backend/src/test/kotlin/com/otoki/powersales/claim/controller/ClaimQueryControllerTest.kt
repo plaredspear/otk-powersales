@@ -6,6 +6,7 @@ import com.otoki.powersales.claim.dto.response.ClaimPhotoItem
 import com.otoki.powersales.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.claim.exception.InvalidDateFormatException
 import com.otoki.powersales.claim.exception.InvalidDateRangeException
+import com.otoki.powersales.claim.service.ClaimDraftService
 import com.otoki.powersales.claim.service.ClaimQueryService
 import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
@@ -31,6 +32,9 @@ class ClaimQueryControllerTest : MobileControllerTestSupport() {
 
     @MockkBean
     private lateinit var claimQueryService: ClaimQueryService
+
+    @MockkBean
+    private lateinit var claimDraftService: ClaimDraftService
 
     @Nested
     @DisplayName("GET /api/v1/mobile/claims - 클레임 목록 조회")

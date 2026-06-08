@@ -24,6 +24,7 @@ import com.otoki.powersales.claim.exception.InvalidDateTypeException
 import com.otoki.powersales.claim.exception.InvalidPurchaseMethodException
 import com.otoki.powersales.claim.exception.InvalidRequestTypeException
 import com.otoki.powersales.claim.exception.RequestTypeMaxExceededException
+import com.otoki.powersales.claim.repository.ClaimDraftRepository
 import com.otoki.powersales.claim.repository.ClaimRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.exception.ProductNotFoundException
@@ -46,6 +47,7 @@ import java.math.BigDecimal
 @Transactional(readOnly = true)
 class ClaimService(
     private val claimRepository: ClaimRepository,
+    private val claimDraftRepository: ClaimDraftRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
@@ -124,6 +126,9 @@ class ClaimService(
         if (receiptPhoto != null) {
             uploadPhoto(savedClaim, userId, receiptPhoto, UploadFileKbnTypes.CLAIM_RECEIPT)
         }
+
+        // 레거시 정합: 정식 등록 성공 시 해당 사원의 임시저장 row 삭제.
+        claimDraftRepository.findByEmployeeId(userId)?.let { claimDraftRepository.delete(it) }
 
         return ClaimCreateResponse.from(savedClaim)
     }
