@@ -100,31 +100,30 @@ class ActivityRegistrationPopup extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 우측 상단 X 닫기 버튼 (레거시 정합)
+          // 우측 상단 X 닫기 버튼 (레거시 정합: 진한 색, 큰 크기)
           Align(
             alignment: Alignment.centerRight,
             child: Padding(
               padding: const EdgeInsets.only(
-                top: AppSpacing.sm,
-                right: AppSpacing.sm,
+                top: AppSpacing.md,
+                right: AppSpacing.md,
               ),
               child: IconButton(
-                icon: const Icon(Icons.close),
-                color: AppColors.textTertiary,
+                icon: const Icon(Icons.close, size: AppSpacing.iconSizeMenu),
+                color: AppColors.textPrimary,
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
           ),
 
-          // 메뉴 리스트 (항목 사이 구분선)
-          for (var i = 0; i < defaultMenuItems.length; i++) ...[
-            _buildMenuItem(context, defaultMenuItems[i]),
-            if (i < defaultMenuItems.length - 1)
-              const Divider(height: 1, thickness: 1, color: AppColors.divider),
-          ],
+          // 메뉴 리스트 (레거시 정합: 구분선 없이 넉넉한 간격)
+          for (final item in defaultMenuItems)
+            _buildMenuItem(context, item),
 
           // SafeArea 하단 여백
-          SizedBox(height: MediaQuery.of(context).padding.bottom),
+          SizedBox(
+            height: AppSpacing.xl + MediaQuery.of(context).padding.bottom,
+          ),
         ],
       ),
     );
@@ -140,7 +139,7 @@ class ActivityRegistrationPopup extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.xl,
-          vertical: AppSpacing.lg,
+          vertical: AppSpacing.lg + AppSpacing.xs,
         ),
         child: Row(
           children: [
@@ -149,12 +148,12 @@ class ActivityRegistrationPopup extends StatelessWidget {
               size: AppSpacing.iconSize,
               color: AppColors.legacyYellow,
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.lg),
             Expanded(
               child: Text(
                 item.label,
                 style: AppTypography.bodyLarge.copyWith(
-                  color: AppColors.legacyTextSub,
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),

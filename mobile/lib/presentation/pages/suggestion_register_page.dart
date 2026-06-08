@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../domain/entities/suggestion_form.dart';
 import '../providers/suggestion_register_provider.dart';
 import '../providers/suggestion_register_state.dart';
 import '../widgets/suggestion/suggestion_category_selector.dart';
@@ -14,15 +13,16 @@ import '../widgets/suggestion/suggestion_product_field.dart';
 
 const int _maxPhotoSizeBytes = 20 * 1024 * 1024;
 
-/// 제안하기 등록 페이지
+/// 제안하기 등록 페이지 (레거시 suggestWrite.jsp 정합)
 ///
 /// 기능:
-/// - 분류 선택 (신제품 제안 / 기존제품 상품가치향상 / 물류 클레임)
-/// - 카테고리 분기 입력 (제품 선택 또는 물류 클레임 6 필드)
-/// - 제목 입력
-/// - 내용 입력
+/// - 분류 선택 (물류 클레임 / 신제품 제안 / 기존제품 상품가치향상, 기본 물류 클레임)
+/// - 카테고리 분기 입력
+///   - 물류 클레임: 거래처 → 대표 제품 → 제목 → 클레임 항목 → 발생일자 →
+///     클레임 상세 내용 → 차량 번호 → 사진(필수)
+///   - 신제품/기존제품: 제품 → 제목 → 제안 내용 → 사진
 /// - 사진 첨부 (최대 2장, 20MB 가드)
-/// - 제출
+/// - 임시저장(별 스펙 — 안내) / 전송
 class SuggestionRegisterPage extends ConsumerStatefulWidget {
   const SuggestionRegisterPage({super.key});
 
@@ -86,62 +86,101 @@ class _SuggestionRegisterPageState
                     onCategoryChanged: notifier.changeCategory,
                   ),
                   const SizedBox(height: 16),
-
-                  if (state.category == SuggestionCategory.logisticsClaim)
-                    SuggestionLogisticsClaimFields(
-                      accountName: state.form.accountName,
-                      claimType: state.form.claimType,
-                      claimDate: state.form.claimDate,
-                      carNumber: state.form.carNumber,
-                      logisticsResponsibility:
-                          state.form.logisticsResponsibility,
-                      duplicateProposalNum: state.form.duplicateProposalNum,
-                      onSelectAccount: _showAccountSelector,
-                      onClaimTypeChanged: notifier.updateClaimType,
-                      onClaimDateChanged: notifier.updateClaimDate,
-                      onCarNumberChanged: notifier.updateCarNumber,
-                      onLogisticsResponsibilityChanged:
-                          notifier.updateLogisticsResponsibility,
-                      onDuplicateProposalNumChanged:
-                          notifier.updateDuplicateProposalNum,
-                    )
-                  else
-                    SuggestionProductField(
-                      enabled: state.form.isExistingProduct,
-                      productName: state.form.productName,
-                      productCode: state.form.productCode,
-                      onBarcodePressed: _handleBarcodeScan,
-                      onSelectPressed: () => _showProductSelector(context),
-                    ),
-                  const SizedBox(height: 16),
-
-                  _TitleField(
-                    controller: _titleController,
-                    onChanged: notifier.updateTitle,
-                  ),
-                  const SizedBox(height: 16),
-
-                  _ContentField(
-                    controller: _contentController,
-                    onChanged: notifier.updateContent,
-                  ),
-                  const SizedBox(height: 16),
-
-                  SuggestionPhotoField(
-                    photos: state.form.photos,
-                    onAddPhoto: _handleAddPhoto,
-                    onRemovePhoto: notifier.removePhoto,
-                  ),
-
+                  ..._buildCategoryFields(state, notifier),
                   const SizedBox(height: 80),
                 ],
               ),
             ),
-      bottomNavigationBar: _buildBottomButton(context, state, notifier),
+      bottomNavigationBar: _buildBottomBar(context, state, notifier),
     );
   }
 
-  Widget _buildBottomButton(
+  /// 카테고리별 분기 필드 — 레거시 필드 순서 정합
+  List<Widget> _buildCategoryFields(
+    SuggestionRegisterState state,
+    SuggestionRegisterNotifier notifier,
+  ) {
+    if (state.isLogisticsClaim) {
+      return [
+        SuggestionAccountField(
+          accountName: state.form.accountName,
+          onSelect: _showAccountSelector,
+        ),
+        const SizedBox(height: 16),
+        SuggestionProductField(
+          enabled: true,
+          label: '대표 제품',
+          required: true,
+          guideText: '제안내용과 관련된 당사 유사제품을 선택해주세요.',
+          productName: state.form.productName,
+          productCode: state.form.productCode,
+          onBarcodePressed: _handleBarcodeScan,
+          onSelectPressed: () => _showProductSelector(context),
+        ),
+        const SizedBox(height: 16),
+        _TitleField(controller: _titleController, onChanged: notifier.updateTitle),
+        const SizedBox(height: 16),
+        SuggestionClaimTypeField(
+          value: state.form.claimType,
+          onChanged: notifier.updateClaimType,
+        ),
+        const SizedBox(height: 16),
+        SuggestionClaimDateField(
+          value: state.form.claimDate,
+          onChanged: notifier.updateClaimDate,
+        ),
+        const SizedBox(height: 16),
+        _ContentField(
+          controller: _contentController,
+          label: '클레임 상세 내용',
+          hint: '클레임 내용을 상세하게 입력하세요',
+          onChanged: notifier.updateContent,
+        ),
+        const SizedBox(height: 16),
+        SuggestionCarNumberField(
+          value: state.form.carNumber,
+          onChanged: notifier.updateCarNumber,
+        ),
+        const SizedBox(height: 16),
+        SuggestionPhotoField(
+          photos: state.form.photos,
+          required: true,
+          onAddPhoto: _handleAddPhoto,
+          onRemovePhoto: notifier.removePhoto,
+        ),
+      ];
+    }
+
+    // 신제품 제안 / 기존제품 상품가치향상
+    return [
+      SuggestionProductField(
+        enabled: state.isExistingProduct,
+        required: state.isExistingProduct,
+        productName: state.form.productName,
+        productCode: state.form.productCode,
+        onBarcodePressed: _handleBarcodeScan,
+        onSelectPressed: () => _showProductSelector(context),
+      ),
+      const SizedBox(height: 16),
+      _TitleField(controller: _titleController, onChanged: notifier.updateTitle),
+      const SizedBox(height: 16),
+      _ContentField(
+        controller: _contentController,
+        label: '제안 내용',
+        hint: '제안 내용을 상세하게 입력하세요',
+        onChanged: notifier.updateContent,
+      ),
+      const SizedBox(height: 16),
+      SuggestionPhotoField(
+        photos: state.form.photos,
+        onAddPhoto: _handleAddPhoto,
+        onRemovePhoto: notifier.removePhoto,
+      ),
+    ];
+  }
+
+  /// 하단 버튼 — 레거시 정합 (임시저장 | 전송)
+  Widget _buildBottomBar(
     BuildContext context,
     SuggestionRegisterState state,
     SuggestionRegisterNotifier notifier,
@@ -158,25 +197,46 @@ class _SuggestionRegisterPageState
           ),
         ],
       ),
-      child: ElevatedButton(
-        onPressed: state.isSubmitting ? null : () => _handleSubmit(notifier),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.yellow[700],
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        child: state.isSubmitting
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Text(
-                '제출',
-                style: TextStyle(fontSize: 16, color: Colors.black),
+      child: Row(
+        children: [
+          // 임시저장 — 신규 모바일 백엔드 미지원(별 스펙), 안내만 노출
+          Expanded(
+            child: OutlinedButton(
+              onPressed: state.isSubmitting ? null : _handleTempSave,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.grey.shade700,
+                side: BorderSide(color: Colors.grey.shade400),
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
+              child: const Text('임시저장', style: TextStyle(fontSize: 16)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // 전송
+          Expanded(
+            child: ElevatedButton(
+              onPressed:
+                  state.isSubmitting ? null : () => _handleSubmit(notifier),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.yellow[700],
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: state.isSubmitting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      '전송',
+                      style: TextStyle(fontSize: 16, color: Colors.black),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -205,6 +265,14 @@ class _SuggestionRegisterPageState
     }
   }
 
+  void _handleTempSave() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('임시저장은 추후 지원 예정입니다')),
+      );
+    }
+  }
+
   Future<void> _handleAddPhoto() async {
     final notifier = ref.read(suggestionRegisterProvider.notifier);
     final XFile? picked = await _imagePicker.pickImage(
@@ -229,6 +297,33 @@ class _SuggestionRegisterPageState
   }
 
   Future<void> _handleSubmit(SuggestionRegisterNotifier notifier) async {
+    // 유효성 선검증 — 통과 시에만 전송 확인 (레거시 confirm 정합)
+    final errors = ref.read(suggestionRegisterProvider).form.validate();
+    if (errors.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errors.first)),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: const Text('제안 내용을 전송하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('전송'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     await notifier.submit();
   }
 }
@@ -248,13 +343,7 @@ class _TitleField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '제목 *',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        const SuggestionFieldLabel(text: '제목', required: true),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -275,10 +364,14 @@ class _TitleField extends StatelessWidget {
 class _ContentField extends StatelessWidget {
   const _ContentField({
     required this.controller,
+    required this.label,
+    required this.hint,
     required this.onChanged,
   });
 
   final TextEditingController controller;
+  final String label;
+  final String hint;
   final ValueChanged<String> onChanged;
 
   @override
@@ -286,22 +379,16 @@ class _ContentField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '내용 *',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        SuggestionFieldLabel(text: label, required: true),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           maxLines: 5,
           maxLength: 2000,
-          decoration: const InputDecoration(
-            hintText: '제안 내용을 상세하게 입력하세요',
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.all(12),
+          decoration: InputDecoration(
+            hintText: hint,
+            border: const OutlineInputBorder(),
+            contentPadding: const EdgeInsets.all(12),
           ),
           onChanged: onChanged,
         ),

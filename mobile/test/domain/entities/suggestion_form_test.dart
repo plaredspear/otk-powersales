@@ -245,7 +245,7 @@ void main() {
         expect(form.isValid, false);
       });
 
-      test('물류 클레임 카테고리 — 거래처/클레임항목/클레임일자 미입력 시 에러', () {
+      test('물류 클레임 카테고리 — 대표제품/거래처/클레임항목/발생일자/사진 미입력 시 에러', () {
         // Given
         final form = createValidForm(
           category: SuggestionCategory.logisticsClaim,
@@ -254,23 +254,28 @@ void main() {
         // When
         final errors = form.validate();
 
-        // Then
+        // Then — 레거시 정합: 대표 제품/거래처/클레임 항목/발생일자/사진 모두 필수
+        expect(errors, contains('제품을 선택해주세요'));
         expect(errors, contains('거래처를 선택해주세요'));
-        expect(errors, contains('클레임 항목을 입력해주세요'));
-        expect(errors, contains('클레임 일자를 선택해주세요'));
+        expect(errors, contains('클레임 항목을 선택해주세요'));
+        expect(errors, contains('물류 클레임 발생일자를 선택해주세요'));
+        expect(errors, contains('물류 클레임은 사진을 1장 이상 첨부해주세요'));
         expect(form.isValid, false);
       });
 
-      test('물류 클레임 카테고리 — 3 필수 필드 채우면 유효', () {
-        // Given
+      test('물류 클레임 카테고리 — 필수 필드 모두 채우면 유효', () {
+        // Given — 레거시 정합: 대표 제품 + 사진 1장 포함 필수
         final form = SuggestionRegisterForm(
           category: SuggestionCategory.logisticsClaim,
+          productCode: '12345678',
+          productName: '진라면',
           title: '물류 클레임 제안',
           content: '오배송이 자주 발생합니다',
+          photos: [testPhoto1],
           accountId: 100,
           accountName: '오뚜기 농협 하나로마트',
           sapAccountCode: 'SAP-0001',
-          claimType: '파손',
+          claimType: '취급부주의 제품 파손',
           claimDate: DateTime(2026, 5, 22),
         );
 

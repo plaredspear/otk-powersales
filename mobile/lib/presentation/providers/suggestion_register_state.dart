@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import '../../domain/entities/suggestion_form.dart';
 
 /// 제안하기 등록 화면 상태
@@ -36,10 +34,12 @@ class SuggestionRegisterState {
   });
 
   /// 초기 상태
+  ///
+  /// 레거시 suggestWrite.jsp 정합 — 진입 시 기본 분류는 물류 클레임.
   factory SuggestionRegisterState.initial() {
     return SuggestionRegisterState(
       form: SuggestionRegisterForm(
-        category: SuggestionCategory.newProduct,
+        category: SuggestionCategory.logisticsClaim,
         title: '',
         content: '',
         photos: const [],

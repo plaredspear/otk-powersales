@@ -24,8 +24,6 @@ class SuggestionRegisterRequest {
     this.claimType,
     this.claimDate,
     this.carNumber,
-    this.logisticsResponsibility,
-    this.duplicateProposalNum,
   });
 
   final String category;
@@ -38,8 +36,6 @@ class SuggestionRegisterRequest {
   final String? claimType;
   final DateTime? claimDate;
   final String? carNumber;
-  final String? logisticsResponsibility;
-  final String? duplicateProposalNum;
 
   /// Entity에서 변환
   factory SuggestionRegisterRequest.fromEntity(SuggestionRegisterForm form) {
@@ -54,8 +50,6 @@ class SuggestionRegisterRequest {
       claimType: form.claimType,
       claimDate: form.claimDate,
       carNumber: form.carNumber,
-      logisticsResponsibility: form.logisticsResponsibility,
-      duplicateProposalNum: form.duplicateProposalNum,
     );
   }
 
@@ -86,13 +80,6 @@ class SuggestionRegisterRequest {
     }
     if (carNumber != null && carNumber!.isNotEmpty) {
       json['carNumber'] = carNumber;
-    }
-    if (logisticsResponsibility != null &&
-        logisticsResponsibility!.isNotEmpty) {
-      json['logisticsResponsibility'] = logisticsResponsibility;
-    }
-    if (duplicateProposalNum != null && duplicateProposalNum!.isNotEmpty) {
-      json['duplicateProposalNum'] = duplicateProposalNum;
     }
     return json;
   }

@@ -56,35 +56,35 @@ class SuggestionRegisterNotifier
   /// 분류 변경
   ///
   /// 카테고리 전환 시 다른 카테고리 전용 입력 필드를 초기화한다.
-  /// - 신제품: 제품 정보 / 물류 클레임 6 필드 제거
-  /// - 기존제품: 물류 클레임 6 필드 제거
-  /// - 물류 클레임: 제품 정보 제거
+  /// 대표 제품은 신제품/기존제품/물류 클레임 공통 개념이라(레거시 정합) 신제품
+  /// 제안으로 전환할 때만 제거하고, 기존제품 ↔ 물류 클레임 전환 시에는 유지한다.
+  /// 물류 클레임 전용 필드(거래처/클레임항목/발생일자/차량번호)는 물류 클레임이
+  /// 아닌 분류로 전환 시 제거한다.
   void changeCategory(SuggestionCategory category) {
     final updatedForm = state.form.copyWith(category: category);
 
+    final clearProduct = category == SuggestionCategory.newProduct;
     final cleared = updatedForm.copyWithNull(
-      productCode: category != SuggestionCategory.existingProduct,
-      productName: category != SuggestionCategory.existingProduct,
+      productCode: clearProduct,
+      productName: clearProduct,
       accountId: category != SuggestionCategory.logisticsClaim,
       accountName: category != SuggestionCategory.logisticsClaim,
       sapAccountCode: category != SuggestionCategory.logisticsClaim,
       claimType: category != SuggestionCategory.logisticsClaim,
       claimDate: category != SuggestionCategory.logisticsClaim,
       carNumber: category != SuggestionCategory.logisticsClaim,
-      logisticsResponsibility: category != SuggestionCategory.logisticsClaim,
-      duplicateProposalNum: category != SuggestionCategory.logisticsClaim,
     );
 
     state = state.copyWith(
       form: cleared,
-      clearProductName: category != SuggestionCategory.existingProduct,
+      clearProductName: clearProduct,
       clearErrorMessage: true,
     );
   }
 
-  /// 제품 선택
+  /// 제품 선택 (신제품 제안 외 분류에서 대표 제품 지정)
   void selectProduct(String productCode, String productName) {
-    if (!state.isExistingProduct) return;
+    if (state.isNewProduct) return;
 
     final updatedForm = state.form.copyWith(
       productCode: productCode,
@@ -174,18 +174,6 @@ class SuggestionRegisterNotifier
   /// 차량번호 변경
   void updateCarNumber(String value) {
     final updatedForm = state.form.copyWith(carNumber: value);
-    state = state.copyWith(form: updatedForm, clearErrorMessage: true);
-  }
-
-  /// 물류책임 변경
-  void updateLogisticsResponsibility(String value) {
-    final updatedForm = state.form.copyWith(logisticsResponsibility: value);
-    state = state.copyWith(form: updatedForm, clearErrorMessage: true);
-  }
-
-  /// 중복 제안번호 변경
-  void updateDuplicateProposalNum(String value) {
-    final updatedForm = state.form.copyWith(duplicateProposalNum: value);
     state = state.copyWith(form: updatedForm, clearErrorMessage: true);
   }
 

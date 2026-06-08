@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import 'suggestion_logistics_claim_fields.dart';
+
 /// 제안하기 사진 첨부 필드 (최대 2장)
 class SuggestionPhotoField extends StatelessWidget {
   const SuggestionPhotoField({
@@ -9,11 +11,15 @@ class SuggestionPhotoField extends StatelessWidget {
     required this.photos,
     required this.onAddPhoto,
     required this.onRemovePhoto,
+    this.required = false,
   });
 
   final List<File> photos;
   final VoidCallback onAddPhoto;
   final ValueChanged<int> onRemovePhoto;
+
+  /// 물류 클레임 등 사진 필수 분류 여부 — 라벨에 `*` 표기
+  final bool required;
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +28,7 @@ class SuggestionPhotoField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '사진 (최대 2장)',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        SuggestionFieldLabel(text: '사진 (최대 2장)', required: required),
         const SizedBox(height: 8),
 
         // 사진 목록 + 추가 버튼

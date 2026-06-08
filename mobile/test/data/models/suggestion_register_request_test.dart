@@ -35,29 +35,25 @@ void main() {
       expect(json['productCode'], '12345678');
     });
 
-    test('물류 클레임 — 7 필드 모두 직렬화 + claimDate ISO 포맷', () {
+    test('물류 클레임 — 클레임 필드 직렬화 + claimDate ISO 포맷', () {
       final request = SuggestionRegisterRequest(
         category: SuggestionCategory.logisticsClaim.code,
         title: '물류 클레임 제안',
         content: '오배송 발생',
         accountId: 100,
         sapAccountCode: 'SAP-0001',
-        claimType: '파손',
+        claimType: '취급부주의 제품 파손',
         claimDate: DateTime(2026, 5, 22),
         carNumber: '12가1234',
-        logisticsResponsibility: '운송사',
-        duplicateProposalNum: 'PROP-001',
       );
 
       final json = request.toJson();
 
       expect(json['accountId'], 100);
       expect(json['sapAccountCode'], 'SAP-0001');
-      expect(json['claimType'], '파손');
+      expect(json['claimType'], '취급부주의 제품 파손');
       expect(json['claimDate'], '2026-05-22');
       expect(json['carNumber'], '12가1234');
-      expect(json['logisticsResponsibility'], '운송사');
-      expect(json['duplicateProposalNum'], 'PROP-001');
     });
 
     test('빈 문자열 필드는 키 자체를 제외한다', () {
@@ -69,8 +65,6 @@ void main() {
         sapAccountCode: '',
         claimType: '',
         carNumber: '',
-        logisticsResponsibility: '',
-        duplicateProposalNum: '',
       );
 
       final json = request.toJson();
@@ -79,8 +73,6 @@ void main() {
       expect(json.containsKey('sapAccountCode'), false);
       expect(json.containsKey('claimType'), false);
       expect(json.containsKey('carNumber'), false);
-      expect(json.containsKey('logisticsResponsibility'), false);
-      expect(json.containsKey('duplicateProposalNum'), false);
     });
 
     test('claimDate 한자리 월/일 zero-padded', () {
@@ -125,7 +117,7 @@ void main() {
       expect(decoded['content'], '저당 라면');
     });
 
-    test('fromEntity 변환 — Form 의 7 필드가 그대로 매핑된다', () {
+    test('fromEntity 변환 — Form 의 클레임 필드가 그대로 매핑된다', () {
       final form = SuggestionRegisterForm(
         category: SuggestionCategory.logisticsClaim,
         title: '제목',
@@ -133,11 +125,9 @@ void main() {
         accountId: 100,
         accountName: '오뚜기 농협',
         sapAccountCode: 'SAP-0001',
-        claimType: '파손',
+        claimType: '취급부주의 제품 파손',
         claimDate: DateTime(2026, 5, 22),
         carNumber: '12가1234',
-        logisticsResponsibility: '운송사',
-        duplicateProposalNum: 'PROP-001',
       );
 
       final request = SuggestionRegisterRequest.fromEntity(form);
@@ -145,11 +135,9 @@ void main() {
       expect(request.category, 'LOGISTICS_CLAIM');
       expect(request.accountId, 100);
       expect(request.sapAccountCode, 'SAP-0001');
-      expect(request.claimType, '파손');
+      expect(request.claimType, '취급부주의 제품 파손');
       expect(request.claimDate, DateTime(2026, 5, 22));
       expect(request.carNumber, '12가1234');
-      expect(request.logisticsResponsibility, '운송사');
-      expect(request.duplicateProposalNum, 'PROP-001');
     });
   });
 }

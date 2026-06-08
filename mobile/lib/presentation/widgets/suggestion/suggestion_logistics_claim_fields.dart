@@ -1,108 +1,48 @@
 import 'package:flutter/material.dart';
 
-/// 물류 클레임 카테고리 분기 입력 필드 (6 필드)
-///
-/// 거래처 / 클레임 항목 / 클레임 일자 / 차량번호 / 물류책임 / 중복 제안번호.
-/// 거래처 선택 화면 / 물류책임 드롭다운은 별 스펙에서 lookup API 연결 시
-/// onSelectAccount / onPickLogisticsResponsibility 콜백을 통해 결선된다.
-class SuggestionLogisticsClaimFields extends StatelessWidget {
-  const SuggestionLogisticsClaimFields({
+import '../../../domain/entities/suggestion_form.dart';
+
+/// 제안하기 필드 공용 라벨 (필수 항목은 빨간 `*` 표기 — 레거시 정합)
+class SuggestionFieldLabel extends StatelessWidget {
+  const SuggestionFieldLabel({
     super.key,
-    required this.accountName,
-    required this.claimType,
-    required this.claimDate,
-    required this.carNumber,
-    required this.logisticsResponsibility,
-    required this.duplicateProposalNum,
-    required this.onSelectAccount,
-    required this.onClaimTypeChanged,
-    required this.onClaimDateChanged,
-    required this.onCarNumberChanged,
-    required this.onLogisticsResponsibilityChanged,
-    required this.onDuplicateProposalNumChanged,
+    required this.text,
+    this.required = false,
   });
 
-  final String? accountName;
-  final String? claimType;
-  final DateTime? claimDate;
-  final String? carNumber;
-  final String? logisticsResponsibility;
-  final String? duplicateProposalNum;
-
-  final VoidCallback onSelectAccount;
-  final ValueChanged<String> onClaimTypeChanged;
-  final ValueChanged<DateTime> onClaimDateChanged;
-  final ValueChanged<String> onCarNumberChanged;
-  final ValueChanged<String> onLogisticsResponsibilityChanged;
-  final ValueChanged<String> onDuplicateProposalNumChanged;
+  final String text;
+  final bool required;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '물류 클레임 상세',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+    return RichText(
+      text: TextSpan(
+        text: text,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.black87,
         ),
-        const SizedBox(height: 12),
-
-        _AccountField(
-          accountName: accountName,
-          onSelect: onSelectAccount,
-        ),
-        const SizedBox(height: 12),
-
-        _TextField(
-          label: '클레임 항목 *',
-          hint: '예) 파손, 누락, 오배송',
-          value: claimType,
-          maxLength: 200,
-          onChanged: onClaimTypeChanged,
-        ),
-        const SizedBox(height: 12),
-
-        _ClaimDateField(
-          value: claimDate,
-          onChanged: onClaimDateChanged,
-        ),
-        const SizedBox(height: 12),
-
-        _TextField(
-          label: '차량번호',
-          hint: '예) 12가1234',
-          value: carNumber,
-          maxLength: 20,
-          onChanged: onCarNumberChanged,
-        ),
-        const SizedBox(height: 12),
-
-        _TextField(
-          label: '물류책임',
-          hint: '예) 본사, 물류센터, 운송사',
-          value: logisticsResponsibility,
-          maxLength: 20,
-          onChanged: onLogisticsResponsibilityChanged,
-        ),
-        const SizedBox(height: 12),
-
-        _TextField(
-          label: '중복 제안번호',
-          hint: '연관된 기존 제안번호 (선택)',
-          value: duplicateProposalNum,
-          maxLength: 255,
-          onChanged: onDuplicateProposalNumChanged,
-        ),
-      ],
+        children: required
+            ? const [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ]
+            : null,
+      ),
     );
   }
 }
 
-class _AccountField extends StatelessWidget {
-  const _AccountField({
+/// 거래처 선택 필드 (물류 클레임 필수)
+///
+/// 레거시는 담당 거래처 select2 드롭다운. 신규에서는 거래처 선택 화면(별 스펙)
+/// 진입용 탭 박스로 구성한다.
+class SuggestionAccountField extends StatelessWidget {
+  const SuggestionAccountField({
+    super.key,
     required this.accountName,
     required this.onSelect,
   });
@@ -112,51 +52,37 @@ class _AccountField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final selected = accountName != null && accountName!.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Text(
-              '거래처 *',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const Spacer(),
-            OutlinedButton.icon(
-              onPressed: onSelect,
-              icon: const Icon(Icons.search, size: 18),
-              label: const Text('선택'),
-              style: OutlinedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: const Size(0, 36),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          ],
-        ),
+        const SuggestionFieldLabel(text: '거래처', required: true),
         const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            accountName ?? '거래처 선택',
-            style: TextStyle(
-              fontSize: 14,
-              color: accountName != null
-                  ? Colors.black87
-                  : Colors.grey.shade600,
-              fontWeight: accountName != null
-                  ? FontWeight.w500
-                  : FontWeight.normal,
+        InkWell(
+          onTap: onSelect,
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    selected ? accountName! : '거래처 선택',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: selected ? Colors.black87 : Colors.grey.shade600,
+                      fontWeight: selected ? FontWeight.w500 : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                Icon(Icons.expand_more, size: 20, color: Colors.grey.shade600),
+              ],
             ),
           ),
         ),
@@ -165,8 +91,68 @@ class _AccountField extends StatelessWidget {
   }
 }
 
-class _ClaimDateField extends StatelessWidget {
-  const _ClaimDateField({
+/// 클레임 항목 선택 필드 (물류 클레임 필수)
+///
+/// 레거시 suggestWrite.jsp 하드코딩 6 옵션 드롭다운 ([kSuggestionClaimTypeOptions]).
+class SuggestionClaimTypeField extends StatelessWidget {
+  const SuggestionClaimTypeField({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String? value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    // 임의 입력값(레거시 임시저장 복원 등)이 옵션에 없을 수 있으므로 가드
+    final selected = (value != null && kSuggestionClaimTypeOptions.contains(value))
+        ? value
+        : null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SuggestionFieldLabel(text: '클레임 항목', required: true),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: selected,
+          isExpanded: true,
+          hint: Text(
+            '항목 선택',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          ),
+          icon: Icon(Icons.expand_more, color: Colors.grey.shade600),
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          ),
+          items: kSuggestionClaimTypeOptions
+              .map(
+                (option) => DropdownMenuItem<String>(
+                  value: option,
+                  child: Text(
+                    option,
+                    style: const TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// 물류 클레임 발생일자 필드 (물류 클레임 필수)
+class SuggestionClaimDateField extends StatelessWidget {
+  const SuggestionClaimDateField({
+    super.key,
     required this.value,
     required this.onChanged,
   });
@@ -177,18 +163,12 @@ class _ClaimDateField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = value == null
-        ? '클레임 일자 선택'
+        ? '발생일자 선택'
         : '${value!.year}-${value!.month.toString().padLeft(2, '0')}-${value!.day.toString().padLeft(2, '0')}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '클레임 일자 *',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        const SuggestionFieldLabel(text: '물류 클레임 발생일자', required: true),
         const SizedBox(height: 8),
         InkWell(
           onTap: () async {
@@ -203,6 +183,7 @@ class _ClaimDateField extends StatelessWidget {
               onChanged(picked);
             }
           },
+          borderRadius: BorderRadius.circular(4),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -218,12 +199,8 @@ class _ClaimDateField extends StatelessWidget {
                     label,
                     style: TextStyle(
                       fontSize: 14,
-                      color: value != null
-                          ? Colors.black87
-                          : Colors.grey.shade600,
-                      fontWeight: value != null
-                          ? FontWeight.w500
-                          : FontWeight.normal,
+                      color: value != null ? Colors.black87 : Colors.grey.shade600,
+                      fontWeight: value != null ? FontWeight.w500 : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -237,26 +214,23 @@ class _ClaimDateField extends StatelessWidget {
   }
 }
 
-class _TextField extends StatefulWidget {
-  const _TextField({
-    required this.label,
-    required this.hint,
+/// 차량 번호 입력 필드 (물류 클레임 선택 — 선택 입력)
+class SuggestionCarNumberField extends StatefulWidget {
+  const SuggestionCarNumberField({
+    super.key,
     required this.value,
-    required this.maxLength,
     required this.onChanged,
   });
 
-  final String label;
-  final String hint;
   final String? value;
-  final int maxLength;
   final ValueChanged<String> onChanged;
 
   @override
-  State<_TextField> createState() => _TextFieldState();
+  State<SuggestionCarNumberField> createState() =>
+      _SuggestionCarNumberFieldState();
 }
 
-class _TextFieldState extends State<_TextField> {
+class _SuggestionCarNumberFieldState extends State<SuggestionCarNumberField> {
   late final TextEditingController _controller;
 
   @override
@@ -266,7 +240,7 @@ class _TextFieldState extends State<_TextField> {
   }
 
   @override
-  void didUpdateWidget(_TextField oldWidget) {
+  void didUpdateWidget(SuggestionCarNumberField oldWidget) {
     super.didUpdateWidget(oldWidget);
     final next = widget.value ?? '';
     if (_controller.text != next) {
@@ -288,20 +262,14 @@ class _TextFieldState extends State<_TextField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        const SuggestionFieldLabel(text: '차량 번호'),
         const SizedBox(height: 8),
         TextField(
           controller: _controller,
-          maxLength: widget.maxLength,
-          decoration: InputDecoration(
-            hintText: widget.hint,
-            border: const OutlineInputBorder(),
+          maxLength: 20,
+          decoration: const InputDecoration(
+            hintText: '내용 입력',
+            border: OutlineInputBorder(),
             isDense: true,
             counterText: '',
           ),

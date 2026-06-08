@@ -27,6 +27,19 @@ class SuggestionCategorySelector extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
+        // 레거시 suggestWrite.jsp 정합 — 물류 클레임 / 신제품 제안 / 기존제품 순
+        // 물류 클레임
+        RadioListTile<SuggestionCategory>(
+          contentPadding: EdgeInsets.zero,
+          visualDensity: VisualDensity.compact,
+          title: const Text('물류 클레임'),
+          value: SuggestionCategory.logisticsClaim,
+          groupValue: selectedCategory,
+          onChanged: (value) {
+            if (value != null) onCategoryChanged(value);
+          },
+        ),
+
         // 신제품 제안
         RadioListTile<SuggestionCategory>(
           contentPadding: EdgeInsets.zero,
@@ -45,18 +58,6 @@ class SuggestionCategorySelector extends StatelessWidget {
           visualDensity: VisualDensity.compact,
           title: const Text('기존제품 상품가치향상'),
           value: SuggestionCategory.existingProduct,
-          groupValue: selectedCategory,
-          onChanged: (value) {
-            if (value != null) onCategoryChanged(value);
-          },
-        ),
-
-        // 물류 클레임
-        RadioListTile<SuggestionCategory>(
-          contentPadding: EdgeInsets.zero,
-          visualDensity: VisualDensity.compact,
-          title: const Text('물류 클레임'),
-          value: SuggestionCategory.logisticsClaim,
           groupValue: selectedCategory,
           onChanged: (value) {
             if (value != null) onCategoryChanged(value);

@@ -28,11 +28,25 @@ enum SuggestionCategory {
   }
 }
 
+/// 물류 클레임 항목 (레거시 suggestWrite.jsp 하드코딩 6 옵션)
+///
+/// 레거시 Controller `suggest()` 가 `Arrays.asList(...)` 로 내려주던 고정 목록.
+/// backend `claimType` 은 자유 텍스트(`@Size(max=200)`) 라서 선택값 문자열을
+/// 그대로 전송한다.
+const List<String> kSuggestionClaimTypeOptions = [
+  '배송기준 미준수(검수/창고적치 미실시)',
+  '취급부주의 제품 파손',
+  '배송시간 지연',
+  '실물 미입고 / 오입고',
+  '용차배송 거래처 트러블',
+  '기타',
+];
+
 /// 제안하기 등록 폼 Entity
 ///
 /// 제안하기 등록 시 사용자가 입력한 모든 정보를 담습니다. 카테고리에 따라
 /// 입력 필드가 분기됩니다 — 신제품/기존제품은 제품 정보, 물류 클레임은
-/// 거래처/클레임 항목/일자 등 6 필드.
+/// 거래처/클레임 항목/발생일자/차량번호.
 class SuggestionRegisterForm {
   const SuggestionRegisterForm({
     required this.category,
@@ -47,14 +61,12 @@ class SuggestionRegisterForm {
     this.claimType,
     this.claimDate,
     this.carNumber,
-    this.logisticsResponsibility,
-    this.duplicateProposalNum,
   });
 
   /// 분류 (필수)
   final SuggestionCategory category;
 
-  /// 제품 코드 (기존제품 선택 시 필수)
+  /// 제품 코드 (신제품 외 분류에서 필수)
   final String? productCode;
 
   /// 제품명 (로컬 표시용)
@@ -63,10 +75,10 @@ class SuggestionRegisterForm {
   /// 제안 제목 (필수)
   final String title;
 
-  /// 제안 내용 (필수)
+  /// 제안 내용 / 클레임 상세 내용 (필수)
   final String content;
 
-  /// 사진 (최대 2장, 선택)
+  /// 사진 (최대 2장, 물류 클레임 시 1장 이상 필수)
   final List<File> photos;
 
   /// 거래처 PK (물류 클레임 선택 시 필수)
@@ -81,17 +93,11 @@ class SuggestionRegisterForm {
   /// 클레임 항목 (물류 클레임 선택 시 필수, max 200)
   final String? claimType;
 
-  /// 클레임 일자 (물류 클레임 선택 시 필수)
+  /// 클레임 발생일자 (물류 클레임 선택 시 필수)
   final DateTime? claimDate;
 
   /// 차량번호 (물류 클레임 선택 시 선택, max 20)
   final String? carNumber;
-
-  /// 물류책임 (물류 클레임 선택 시 선택, max 20)
-  final String? logisticsResponsibility;
-
-  /// 중복 제안번호 (물류 클레임 선택 시 선택, max 255)
-  final String? duplicateProposalNum;
 
   /// 신제품 제안 여부
   bool get isNewProduct => category == SuggestionCategory.newProduct;
@@ -101,6 +107,9 @@ class SuggestionRegisterForm {
 
   /// 물류 클레임 여부
   bool get isLogisticsClaim => category == SuggestionCategory.logisticsClaim;
+
+  /// 대표 제품 선택 필수 여부 — 신제품 제안 외 분류는 필수 (레거시 정합)
+  bool get requiresProduct => !isNewProduct;
 
   /// 제품 선택 여부
   bool get hasProduct =>
@@ -115,22 +124,23 @@ class SuggestionRegisterForm {
   /// 사진 첨부 여부
   bool get hasPhotos => photos.isNotEmpty;
 
-  /// 유효성 검증
+  /// 유효성 검증 (레거시 suggestWrite.jsp 검증 규칙 정합)
   ///
   /// Returns: 에러 메시지 리스트 (빈 리스트면 유효)
   List<String> validate() {
     final errors = <String>[];
+
+    // 대표 제품 — 신제품 제안 외에는 필수 (레거시 step1)
+    if (requiresProduct && !hasProduct) {
+      errors.add('제품을 선택해주세요');
+    }
 
     if (title.isEmpty) {
       errors.add('제목을 입력해주세요');
     }
 
     if (content.isEmpty) {
-      errors.add('제안 내용을 입력해주세요');
-    }
-
-    if (isExistingProduct && !hasProduct) {
-      errors.add('제품을 선택해주세요');
+      errors.add(isLogisticsClaim ? '클레임 상세 내용을 입력해주세요' : '제안 내용을 입력해주세요');
     }
 
     if (isLogisticsClaim) {
@@ -138,10 +148,14 @@ class SuggestionRegisterForm {
         errors.add('거래처를 선택해주세요');
       }
       if (claimType == null || claimType!.isEmpty) {
-        errors.add('클레임 항목을 입력해주세요');
+        errors.add('클레임 항목을 선택해주세요');
       }
       if (claimDate == null) {
-        errors.add('클레임 일자를 선택해주세요');
+        errors.add('물류 클레임 발생일자를 선택해주세요');
+      }
+      // 레거시 step5 — 물류 클레임 시 사진 필수
+      if (!hasPhotos) {
+        errors.add('물류 클레임은 사진을 1장 이상 첨부해주세요');
       }
     }
 
@@ -169,8 +183,6 @@ class SuggestionRegisterForm {
     String? claimType,
     DateTime? claimDate,
     String? carNumber,
-    String? logisticsResponsibility,
-    String? duplicateProposalNum,
   }) {
     return SuggestionRegisterForm(
       category: category ?? this.category,
@@ -185,9 +197,6 @@ class SuggestionRegisterForm {
       claimType: claimType ?? this.claimType,
       claimDate: claimDate ?? this.claimDate,
       carNumber: carNumber ?? this.carNumber,
-      logisticsResponsibility:
-          logisticsResponsibility ?? this.logisticsResponsibility,
-      duplicateProposalNum: duplicateProposalNum ?? this.duplicateProposalNum,
     );
   }
 
@@ -201,8 +210,6 @@ class SuggestionRegisterForm {
     bool claimType = false,
     bool claimDate = false,
     bool carNumber = false,
-    bool logisticsResponsibility = false,
-    bool duplicateProposalNum = false,
   }) {
     return SuggestionRegisterForm(
       category: this.category,
@@ -217,10 +224,6 @@ class SuggestionRegisterForm {
       claimType: claimType ? null : this.claimType,
       claimDate: claimDate ? null : this.claimDate,
       carNumber: carNumber ? null : this.carNumber,
-      logisticsResponsibility:
-          logisticsResponsibility ? null : this.logisticsResponsibility,
-      duplicateProposalNum:
-          duplicateProposalNum ? null : this.duplicateProposalNum,
     );
   }
 
@@ -240,9 +243,7 @@ class SuggestionRegisterForm {
         other.sapAccountCode == sapAccountCode &&
         other.claimType == claimType &&
         other.claimDate == claimDate &&
-        other.carNumber == carNumber &&
-        other.logisticsResponsibility == logisticsResponsibility &&
-        other.duplicateProposalNum == duplicateProposalNum;
+        other.carNumber == carNumber;
   }
 
   bool _listEquals(List<File> a, List<File> b) {
@@ -267,8 +268,6 @@ class SuggestionRegisterForm {
         claimType,
         claimDate,
         carNumber,
-        logisticsResponsibility,
-        duplicateProposalNum,
       );
 
   @override
@@ -285,9 +284,7 @@ class SuggestionRegisterForm {
         'sapAccountCode: $sapAccountCode, '
         'claimType: $claimType, '
         'claimDate: $claimDate, '
-        'carNumber: $carNumber, '
-        'logisticsResponsibility: $logisticsResponsibility, '
-        'duplicateProposalNum: $duplicateProposalNum'
+        'carNumber: $carNumber'
         ')';
   }
 }
