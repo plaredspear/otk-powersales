@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/theme/app_spacing.dart';
+import 'package:mobile/core/theme/app_typography.dart';
 
 /// 교육 자료 검색 바 위젯
 ///
-/// 게시물 제목 검색을 위한 입력 필드를 제공합니다.
+/// 레거시 edu/list 정합: "타이틀, 내용 입력" 입력 필드 + 노란색 "검색" 버튼.
 class EducationSearchBar extends StatelessWidget {
   /// 텍스트 컨트롤러
   final TextEditingController controller;
@@ -24,48 +25,64 @@ class EducationSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        onSubmitted: onSearch,
-        decoration: InputDecoration(
-          hintText: '게시물 제목 검색',
-          hintStyle: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textTertiary,
+    return Row(
+      children: [
+        // 검색어 입력
+        Expanded(
+          child: TextField(
+            controller: controller,
+            onChanged: onChanged,
+            onSubmitted: onSearch,
+            textInputAction: TextInputAction.search,
+            decoration: const InputDecoration(
+              hintText: '타이틀, 내용 입력',
+              hintStyle: TextStyle(
+                fontSize: 16,
+                color: AppColors.textTertiary,
+              ),
+              border: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.textPrimary),
+              ),
+              contentPadding: EdgeInsets.symmetric(vertical: 10),
+            ),
+            style: const TextStyle(
+              fontSize: 16,
+              color: AppColors.textPrimary,
+            ),
           ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: AppColors.secondary,
+        ),
+        const SizedBox(width: AppSpacing.md),
+
+        // 노란색 검색 버튼
+        SizedBox(
+          height: 40,
+          child: ElevatedButton(
+            onPressed: () => onSearch(controller.text),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.otokiYellow,
+              foregroundColor: AppColors.textPrimary,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+              ),
+            ),
+            child: Text(
+              '검색',
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
-          suffixIcon: controller.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(
-                    Icons.clear,
-                    size: 20,
-                    color: AppColors.textTertiary,
-                  ),
-                  onPressed: () {
-                    controller.clear();
-                    onSearch('');
-                  },
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
-        style: const TextStyle(
-          fontSize: 14,
-          color: AppColors.textPrimary,
-        ),
-      ),
+      ],
     );
   }
 }

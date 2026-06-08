@@ -1,48 +1,18 @@
 import '../entities/pos_sales.dart';
 
-/// POS 매출 Repository 인터페이스
+/// POS 매출 Repository 인터페이스.
 ///
-/// 대형마트 EDI 연동을 통한 POS 매출 데이터 조회를 추상화합니다.
-/// 구현체는 Mock Repository 또는 실제 API Repository가 될 수 있습니다.
+/// 거래처 1곳 + 연월 기준 제품별 POS 매출(POS DB `live_pos_sales_dh`) 을 조회한다.
+/// 레거시 `promotion/month/posmain.jsp` 동등 — 단일 거래처 필수.
 abstract class PosSalesRepository {
-  /// POS 매출 데이터 조회
+  /// POS 매출 조회.
   ///
-  /// [startDate]: 조회 시작일
-  /// [endDate]: 조회 종료일
-  /// [accountName]: 매장명 필터 (선택적)
-  /// [productName]: 제품명 필터 (선택적)
-  ///
-  /// Returns: 조건에 맞는 POS 매출 목록
-  Future<List<PosSales>> getPosSales({
-    required DateTime startDate,
-    required DateTime endDate,
-    String? accountName,
-    String? productName,
-  });
-
-  /// 특정 제품의 POS 매출 조회
-  ///
-  /// [productCode]: 제품 코드
-  /// [startDate]: 조회 시작일
-  /// [endDate]: 조회 종료일
+  /// [customerId]: 거래처(매장) ID (내 거래처 목록의 accountId)
+  /// [yearMonth]: 조회 년월 (예: '202601')
   ///
   /// Returns: 제품별 POS 매출 목록
-  Future<List<PosSales>> getPosSalesByProduct({
-    required String productCode,
-    required DateTime startDate,
-    required DateTime endDate,
-  });
-
-  /// 특정 매장의 POS 매출 조회
-  ///
-  /// [accountName]: 매장명
-  /// [startDate]: 조회 시작일
-  /// [endDate]: 조회 종료일
-  ///
-  /// Returns: 매장별 POS 매출 목록
-  Future<List<PosSales>> getPosSalesByAccount({
-    required String accountName,
-    required DateTime startDate,
-    required DateTime endDate,
+  Future<List<PosSales>> getPosSales({
+    required int customerId,
+    required String yearMonth,
   });
 }

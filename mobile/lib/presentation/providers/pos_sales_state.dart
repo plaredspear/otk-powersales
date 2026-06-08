@@ -1,50 +1,20 @@
 import '../../domain/entities/pos_sales.dart';
 
-/// POS 매출 조회 필터 조건
-class PosSalesFilter {
-  final DateTime startDate;
-  final DateTime endDate;
-  final String? accountName;
-  final String? productName;
-
-  const PosSalesFilter({
-    required this.startDate,
-    required this.endDate,
-    this.accountName,
-    this.productName,
-  });
-
-  /// 기본 필터 (최근 30일)
-  factory PosSalesFilter.defaultFilter() {
-    final now = DateTime.now();
-    return PosSalesFilter(
-      startDate: DateTime(now.year, now.month - 1, now.day),
-      endDate: now,
-    );
-  }
-
-  PosSalesFilter copyWith({
-    DateTime? startDate,
-    DateTime? endDate,
-    String? accountName,
-    String? productName,
-  }) {
-    return PosSalesFilter(
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      accountName: accountName ?? this.accountName,
-      productName: productName ?? this.productName,
-    );
-  }
-}
-
-/// POS 매출 조회 상태
+/// POS 매출 조회 상태.
+///
+/// 거래처 1곳 + 연월 기준 제품별 POS 매출. 거래처 미선택 시 미조회 상태.
 class PosSalesState {
-  /// 조회된 POS 매출 목록
+  /// 조회된 제품별 POS 매출 목록
   final List<PosSales> sales;
 
-  /// 현재 적용된 필터
-  final PosSalesFilter filter;
+  /// 조회 년월 (예: "202601")
+  final String yearMonth;
+
+  /// 선택된 거래처 ID (없으면 미조회 상태)
+  final int? selectedCustomerId;
+
+  /// 선택된 거래처명
+  final String? selectedCustomerName;
 
   /// 로딩 상태
   final bool isLoading;
@@ -52,42 +22,49 @@ class PosSalesState {
   /// 에러 메시지
   final String? errorMessage;
 
-  /// 총 판매금액
+  /// 총 금액
   final int totalAmount;
 
-  /// 총 판매수량
+  /// 총 수량
   final int totalQuantity;
 
   const PosSalesState({
     required this.sales,
-    required this.filter,
+    required this.yearMonth,
+    this.selectedCustomerId,
+    this.selectedCustomerName,
     this.isLoading = false,
     this.errorMessage,
     this.totalAmount = 0,
     this.totalQuantity = 0,
   });
 
-  /// 초기 상태
+  /// 초기 상태 (현재 월, 거래처 미선택)
   factory PosSalesState.initial() {
-    return PosSalesState(
-      sales: const [],
-      filter: PosSalesFilter.defaultFilter(),
-    );
+    final now = DateTime.now();
+    final yearMonth = '${now.year}${now.month.toString().padLeft(2, '0')}';
+    return PosSalesState(sales: const [], yearMonth: yearMonth);
   }
 
   PosSalesState copyWith({
     List<PosSales>? sales,
-    PosSalesFilter? filter,
+    String? yearMonth,
+    int? selectedCustomerId,
+    String? selectedCustomerName,
     bool? isLoading,
     String? errorMessage,
+    bool clearErrorMessage = false,
     int? totalAmount,
     int? totalQuantity,
   }) {
     return PosSalesState(
       sales: sales ?? this.sales,
-      filter: filter ?? this.filter,
+      yearMonth: yearMonth ?? this.yearMonth,
+      selectedCustomerId: selectedCustomerId ?? this.selectedCustomerId,
+      selectedCustomerName: selectedCustomerName ?? this.selectedCustomerName,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
+      errorMessage:
+          clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       totalAmount: totalAmount ?? this.totalAmount,
       totalQuantity: totalQuantity ?? this.totalQuantity,
     );

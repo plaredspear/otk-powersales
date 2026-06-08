@@ -1759,6 +1759,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePosSalesResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PosSalesResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseProductDetail" : {
         "properties" : {
           "data" : {
@@ -4945,6 +4974,45 @@
         },
         "type" : "object"
       },
+      "PosSalesRequest" : {
+        "properties" : {
+          "customerId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "yearMonth" : {
+            "minLength" : 1,
+            "pattern" : "^\\d{6}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "customerId", "yearMonth" ],
+        "type" : "object"
+      },
+      "PosSalesResponse" : {
+        "properties" : {
+          "customerId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProductSales"
+            },
+            "type" : "array"
+          },
+          "sapAccountCode" : {
+            "type" : "string"
+          },
+          "yearMonth" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ProcessingItemResponse" : {
         "properties" : {
           "completeTime" : {
@@ -5295,6 +5363,9 @@
           "amount" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "barcode" : {
+            "type" : [ "string", "null" ]
           },
           "productCode" : {
             "type" : "string"
@@ -8144,6 +8215,32 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseMonthlySalesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "monthly-sales-controller" ]
+      }
+    },
+    "/api/v1/mobile/sales/pos" : {
+      "get" : {
+        "operationId" : "getPosSales",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/PosSalesRequest"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePosSalesResponse"
                 }
               }
             },

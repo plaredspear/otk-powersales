@@ -1,171 +1,84 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/repositories/mock/pos_sales_mock_repository.dart';
+
+import '../../core/network/dio_provider.dart';
+import '../../core/utils/error_utils.dart';
+import '../../data/datasources/pos_sales_api_datasource.dart';
+import '../../data/repositories/pos_sales_repository_impl.dart';
 import '../../domain/repositories/pos_sales_repository.dart';
 import '../../domain/usecases/get_pos_sales.dart';
 import 'pos_sales_state.dart';
 
-/// POS 매출 Repository Provider
+/// POS 매출 DataSource Provider (실 API)
+final posSalesRemoteDataSourceProvider =
+    Provider<PosSalesApiDataSource>((ref) {
+  return PosSalesApiDataSource(ref.watch(dioProvider));
+});
+
+/// POS 매출 Repository Provider (실 API — MonthlySalesController)
 final posSalesRepositoryProvider = Provider<PosSalesRepository>((ref) {
-  return PosSalesMockRepository();
+  return PosSalesRepositoryImpl(
+    remoteDataSource: ref.watch(posSalesRemoteDataSourceProvider),
+  );
 });
 
 /// POS 매출 UseCase Provider
 final getPosSalesUseCaseProvider = Provider<GetPosSalesUseCase>((ref) {
-  final repository = ref.watch(posSalesRepositoryProvider);
-  return GetPosSalesUseCase(repository);
+  return GetPosSalesUseCase(ref.watch(posSalesRepositoryProvider));
 });
 
-/// POS 매출 상태 관리 Provider
+/// POS 매출 상태 관리 Notifier
 class PosSalesNotifier extends StateNotifier<PosSalesState> {
   PosSalesNotifier(this._getPosSales) : super(PosSalesState.initial());
 
   final GetPosSalesUseCase _getPosSales;
 
-  /// POS 매출 조회
+  /// POS 매출 조회 (거래처 + 연월).
   Future<void> fetchSales({
-    DateTime? startDate,
-    DateTime? endDate,
-    String? accountName,
-    String? productName,
+    required int customerId,
+    required String customerName,
+    required String yearMonth,
   }) async {
-    // 로딩 상태로 전환
     state = state.copyWith(
       isLoading: true,
-      errorMessage: null,
+      clearErrorMessage: true,
+      selectedCustomerId: customerId,
+      selectedCustomerName: customerName,
+      yearMonth: yearMonth,
     );
 
     try {
-      // 필터 업데이트
-      final filter = PosSalesFilter(
-        startDate: startDate ?? state.filter.startDate,
-        endDate: endDate ?? state.filter.endDate,
-        accountName: accountName,
-        productName: productName,
-      );
-
-      // UseCase 호출
       final sales = await _getPosSales.call(
-        startDate: filter.startDate,
-        endDate: filter.endDate,
-        accountName: filter.accountName,
-        productName: filter.productName,
+        customerId: customerId,
+        yearMonth: yearMonth,
       );
-
-      // 합계 계산
-      final totalAmount = _getPosSales.calculateTotalAmount(sales);
-      final totalQuantity = _getPosSales.calculateTotalQuantity(sales);
-
-      // 성공 상태로 전환
-      state = state.copyWith(
-        sales: sales,
-        filter: filter,
-        isLoading: false,
-        totalAmount: totalAmount,
-        totalQuantity: totalQuantity,
-      );
-    } catch (e) {
-      // 에러 상태로 전환
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
-    }
-  }
-
-  /// 매장별 POS 매출 조회
-  Future<void> fetchSalesByAccount({
-    required DateTime startDate,
-    required DateTime endDate,
-    required String accountName,
-  }) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
-
-    try {
-      final sales = await _getPosSales.getByAccount(
-        startDate: startDate,
-        endDate: endDate,
-        accountName: accountName,
-      );
-
-      final totalAmount = _getPosSales.calculateTotalAmount(sales);
-      final totalQuantity = _getPosSales.calculateTotalQuantity(sales);
 
       state = state.copyWith(
         sales: sales,
-        filter: PosSalesFilter(
-          startDate: startDate,
-          endDate: endDate,
-          accountName: accountName,
-        ),
         isLoading: false,
-        totalAmount: totalAmount,
-        totalQuantity: totalQuantity,
+        totalAmount: _getPosSales.calculateTotalAmount(sales),
+        totalQuantity: _getPosSales.calculateTotalQuantity(sales),
       );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: e.toString(),
+        errorMessage: extractErrorMessage(e),
       );
     }
   }
 
-  /// 제품별 POS 매출 조회
-  Future<void> fetchSalesByProduct({
-    required DateTime startDate,
-    required DateTime endDate,
-    required String productName,
-  }) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
-
-    try {
-      final sales = await _getPosSales.getByProduct(
-        startDate: startDate,
-        endDate: endDate,
-        productName: productName,
-      );
-
-      final totalAmount = _getPosSales.calculateTotalAmount(sales);
-      final totalQuantity = _getPosSales.calculateTotalQuantity(sales);
-
-      state = state.copyWith(
-        sales: sales,
-        filter: PosSalesFilter(
-          startDate: startDate,
-          endDate: endDate,
-          productName: productName,
-        ),
-        isLoading: false,
-        totalAmount: totalAmount,
-        totalQuantity: totalQuantity,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
-    }
+  /// 에러 메시지 제거.
+  void clearError() {
+    state = state.copyWith(clearErrorMessage: true);
   }
 
-  /// 필터 업데이트 및 재조회
-  Future<void> updateFilter(PosSalesFilter filter) async {
-    await fetchSales(
-      startDate: filter.startDate,
-      endDate: filter.endDate,
-      accountName: filter.accountName,
-      productName: filter.productName,
-    );
-  }
-
-  /// 필터 초기화
-  Future<void> resetFilter() async {
-    final defaultFilter = PosSalesFilter.defaultFilter();
-    await updateFilter(defaultFilter);
+  /// 조회 결과 초기화 (거래처 선택 해제 포함).
+  void reset() {
+    state = PosSalesState.initial();
   }
 }
 
 /// POS 매출 StateNotifier Provider
 final posSalesProvider =
     StateNotifierProvider<PosSalesNotifier, PosSalesState>((ref) {
-  final useCase = ref.watch(getPosSalesUseCaseProvider);
-  return PosSalesNotifier(useCase);
+  return PosSalesNotifier(ref.watch(getPosSalesUseCaseProvider));
 });

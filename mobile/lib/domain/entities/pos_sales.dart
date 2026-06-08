@@ -1,81 +1,83 @@
 /// POS 매출 엔티티
-/// 대형마트 3대 (이마트, 홈플러스, 롯데마트) EDI 연동 데이터
+///
+/// 레거시 Heroku `promotion/month/posmain.jsp` (POS DB `live_pos_sales_dh`) 동등.
+/// 거래처 1곳 + 연월 기준 제품별 POS 스캔 실적(금액/수량)을 표현한다.
 class PosSales {
-  /// 매장명
-  final String accountName;
+  /// 년월 (예: 202601)
+  final String yearMonth;
+
+  /// 거래처(매장)명
+  final String customerName;
 
   /// 제품명
   final String productName;
 
-  /// 판매일자
-  final DateTime salesDate;
+  /// 제품 코드
+  final String productCode;
 
-  /// 판매수량
-  final int quantity;
+  /// 대표 바코드 (없을 수 있음)
+  final String? barcode;
 
-  /// 판매금액 (원)
+  /// 매출 금액 (원)
   final int amount;
 
-  /// 제품 코드 (선택적)
-  final String? productCode;
-
-  /// 카테고리 (선택적)
-  final String? category;
+  /// 매출 수량 (EA)
+  final int quantity;
 
   const PosSales({
-    required this.accountName,
+    required this.yearMonth,
+    required this.customerName,
     required this.productName,
-    required this.salesDate,
-    required this.quantity,
+    required this.productCode,
+    this.barcode,
     required this.amount,
-    this.productCode,
-    this.category,
+    required this.quantity,
   });
 
-  /// 엔티티 복사 (불변성 유지)
+  /// 불변성을 유지하며 일부 필드를 변경한 새 인스턴스 생성
   PosSales copyWith({
-    String? accountName,
+    String? yearMonth,
+    String? customerName,
     String? productName,
-    DateTime? salesDate,
-    int? quantity,
-    int? amount,
     String? productCode,
-    String? category,
+    String? barcode,
+    int? amount,
+    int? quantity,
   }) {
     return PosSales(
-      accountName: accountName ?? this.accountName,
+      yearMonth: yearMonth ?? this.yearMonth,
+      customerName: customerName ?? this.customerName,
       productName: productName ?? this.productName,
-      salesDate: salesDate ?? this.salesDate,
-      quantity: quantity ?? this.quantity,
-      amount: amount ?? this.amount,
       productCode: productCode ?? this.productCode,
-      category: category ?? this.category,
+      barcode: barcode ?? this.barcode,
+      amount: amount ?? this.amount,
+      quantity: quantity ?? this.quantity,
     );
   }
 
-  /// JSON으로 직렬화
+  /// JSON으로 변환
   Map<String, dynamic> toJson() {
     return {
-      'accountName': accountName,
+      'yearMonth': yearMonth,
+      'customerName': customerName,
       'productName': productName,
-      'salesDate': salesDate.toIso8601String(),
-      'quantity': quantity,
-      'amount': amount,
       'productCode': productCode,
-      'category': category,
+      'barcode': barcode,
+      'amount': amount,
+      'quantity': quantity,
     };
   }
 
-  /// JSON에서 역직렬화
+  /// JSON에서 엔티티 생성
   factory PosSales.fromJson(Map<String, dynamic> json) {
     return PosSales(
-      accountName: json['accountName'] as String,
+      yearMonth: json['yearMonth'] as String,
+      customerName: json['customerName'] as String,
       productName: json['productName'] as String,
-      salesDate: DateTime.parse(json['salesDate'] as String),
-      quantity: json['quantity'] as int,
+      productCode: json['productCode'] as String,
+      barcode: json['barcode'] as String?,
       amount: json['amount'] as int,
-      productCode: json['productCode'] as String?,
-      category: json['category'] as String?,
+      quantity: json['quantity'] as int,
     );
   }
 
@@ -84,32 +86,32 @@ class PosSales {
     if (identical(this, other)) return true;
 
     return other is PosSales &&
-        other.accountName == accountName &&
+        other.yearMonth == yearMonth &&
+        other.customerName == customerName &&
         other.productName == productName &&
-        other.salesDate == salesDate &&
-        other.quantity == quantity &&
-        other.amount == amount &&
         other.productCode == productCode &&
-        other.category == category;
+        other.barcode == barcode &&
+        other.amount == amount &&
+        other.quantity == quantity;
   }
 
   @override
   int get hashCode {
     return Object.hash(
-      accountName,
+      yearMonth,
+      customerName,
       productName,
-      salesDate,
-      quantity,
-      amount,
       productCode,
-      category,
+      barcode,
+      amount,
+      quantity,
     );
   }
 
   @override
   String toString() {
-    return 'PosSales(accountName: $accountName, productName: $productName, '
-        'salesDate: $salesDate, quantity: $quantity, amount: $amount, '
-        'productCode: $productCode, category: $category)';
+    return 'PosSales(yearMonth: $yearMonth, customerName: $customerName, '
+        'productName: $productName, productCode: $productCode, '
+        'barcode: $barcode, amount: $amount, quantity: $quantity)';
   }
 }

@@ -36,6 +36,8 @@ import 'presentation/pages/my_schedule_calendar_page.dart';
 import 'presentation/pages/my_schedule_detail_page.dart';
 import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/promotion_list_page.dart';
+import 'presentation/pages/monthly_sales_page.dart';
+import 'presentation/screens/electronic_sales_screen.dart';
 import 'presentation/pages/promotion_detail_page.dart';
 import 'presentation/pages/promotion_daily_sales_page.dart';
 import 'presentation/pages/safety_check_page.dart';
@@ -92,6 +94,8 @@ class AppRouter {
   static const String notices = '/notices';
   static const String noticeDetail = '/notices/detail';
   static const String salesOverview = '/sales-overview';
+  static const String electronicSales = '/electronic-sales';
+  static const String monthlySales = '/monthly-sales';
   static const String safetyCheck = '/safety-check';
   static const String promotionList = '/promotions';
   static const String promotionDetail = '/promotions/detail';
@@ -215,11 +219,9 @@ class AppRouter {
           final noticeId = ModalRoute.of(context)!.settings.arguments as int;
           return NoticeDetailPage(noticeId: noticeId);
         },
-        salesOverview: (context) {
-          final initialTabIndex =
-              ModalRoute.of(context)?.settings.arguments as int?;
-          return SalesOverviewScreen(initialTabIndex: initialTabIndex);
-        },
+        salesOverview: (context) => const SalesOverviewScreen(),
+        electronicSales: (context) => const ElectronicSalesScreen(),
+        monthlySales: (context) => const MonthlySalesPage(),
         safetyCheck: (context) => const SafetyCheckPage(),
         safetyCheckStatus: (context) => const SafetyCheckStatusPage(),
         promotionList: (context) => const PromotionListPage(),
