@@ -8,19 +8,20 @@ import '../../../domain/entities/validation_error.dart';
 
 /// 주문서 제품 카드
 class OrderProductCard extends StatelessWidget {
+  /// 라인 순번 (레거시 "N. (코드) 제품명" 표기용, 0-based).
+  final int index;
   final OrderDraftItem item;
   final ValidationError? validationError;
   final ValueChanged<bool?> onSelectionChanged;
   final Function(double boxes, int pieces) onQuantityChanged;
-  final VoidCallback onRemove;
 
   const OrderProductCard({
     super.key,
+    required this.index,
     required this.item,
     required this.validationError,
     required this.onSelectionChanged,
     required this.onQuantityChanged,
-    required this.onRemove,
   });
 
   String _formatNumber(int value) {
@@ -33,6 +34,9 @@ class OrderProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasError = validationError != null;
+    // 레거시 write.jsp: 총 EA = 박스 × 1박스당 EA + 낱개.
+    final totalEach =
+        (item.quantityBoxes * item.boxSize).round() + item.quantityPieces;
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -45,36 +49,36 @@ class OrderProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CheckboxListTile(
-            value: item.isSelected,
-            onChanged: onSelectionChanged,
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            title: Column(
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.productName,
-                  style: AppTypography.headlineSmall,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '제품코드: ${item.productCode}',
-                  style: AppTypography.bodySmall,
-                ),
-                const SizedBox(height: AppSpacing.sm),
+                // 레거시: "N. (제품코드) 제품명" + 우측 체크박스 (라인별 X 버튼 없음).
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '박스',
-                      style: AppTypography.bodyMedium,
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.sm),
+                        child: Text(
+                          '${index + 1}. (${item.productCode}) ${item.productName}',
+                          style: AppTypography.headlineSmall,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    SizedBox(
-                      width: 80,
+                    Checkbox(
+                      value: item.isSelected,
+                      onChanged: onSelectionChanged,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                // 레거시: [박스] [낱개(개)] 입력 + 총 EA 표시.
+                Row(
+                  children: [
+                    Expanded(
                       child: TextField(
                         controller: TextEditingController(
                           text: item.quantityBoxes > 0
@@ -91,6 +95,8 @@ class OrderProductCard extends StatelessWidget {
                         ],
                         decoration: InputDecoration(
                           isDense: true,
+                          hintText: '0',
+                          suffixText: '박스',
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.sm,
                             vertical: AppSpacing.sm,
@@ -108,18 +114,7 @@ class OrderProductCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      '개',
-                      style: AppTypography.bodyMedium,
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Text(
-                      '낱개',
-                      style: AppTypography.bodyMedium,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    SizedBox(
-                      width: 80,
+                    Expanded(
                       child: TextField(
                         controller: TextEditingController(
                           text: item.quantityPieces > 0
@@ -132,6 +127,8 @@ class OrderProductCard extends StatelessWidget {
                         ],
                         decoration: InputDecoration(
                           isDense: true,
+                          hintText: '0',
+                          suffixText: '개',
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.sm,
                             vertical: AppSpacing.sm,
@@ -148,29 +145,32 @@ class OrderProductCard extends StatelessWidget {
                         },
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
+                    const SizedBox(width: AppSpacing.md),
                     Text(
-                      '개',
-                      style: AppTypography.bodyMedium,
+                      '총 ${_formatNumber(totalEach)}개',
+                      style: AppTypography.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '1박스 = ${item.boxSize}개',
-                  style: AppTypography.bodySmall,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '소계: ${_formatNumber(item.totalPrice)}원',
-                  style: AppTypography.labelLarge,
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '1박스 = ${item.boxSize}개',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      '소계: ${_formatNumber(item.totalPrice)}원',
+                      style: AppTypography.labelLarge,
+                    ),
+                  ],
                 ),
               ],
-            ),
-            secondary: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: onRemove,
-              color: AppColors.textSecondary,
             ),
           ),
           if (hasError)

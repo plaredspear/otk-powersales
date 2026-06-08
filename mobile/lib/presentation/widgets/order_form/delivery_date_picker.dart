@@ -57,16 +57,25 @@ class DeliveryDatePicker extends StatelessWidget {
               vertical: AppSpacing.md,
             ),
           ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              selectedDate != null ? _formatDate(selectedDate!) : '선택하세요',
-              style: AppTypography.bodyMedium.copyWith(
-                color: selectedDate != null
-                    ? AppColors.textPrimary
-                    : AppColors.textSecondary,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  selectedDate != null ? _formatDate(selectedDate!) : '선택하세요',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: selectedDate != null
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ),
+                ),
               ),
-            ),
+              // 레거시 HTML5 date input 의 캘린더 아이콘 외형 정합.
+              Icon(
+                Icons.calendar_today_outlined,
+                size: AppSpacing.iconSize,
+                color: AppColors.textSecondary,
+              ),
+            ],
           ),
         ),
       ],
