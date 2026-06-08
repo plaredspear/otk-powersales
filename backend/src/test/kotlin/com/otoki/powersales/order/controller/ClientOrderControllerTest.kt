@@ -3,8 +3,6 @@ package com.otoki.powersales.order.controller
 import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.order.dto.response.ClientOrderDetailResponse
 import com.otoki.powersales.order.dto.response.ClientOrderItemResponse
-import com.otoki.powersales.order.dto.response.OrderHistoryGroupResponse
-import com.otoki.powersales.order.dto.response.OrderHistoryProductResponse
 import com.otoki.powersales.order.enums.DeliveryStatus
 import com.otoki.powersales.order.exception.ClientOrderForbiddenException
 import com.otoki.powersales.order.exception.InvalidSapOrderNumberException
@@ -102,77 +100,6 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
             mockMvc.perform(get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("ORD_SAP_NOT_FOUND"))
-        }
-    }
-
-    @Nested
-    @DisplayName("GET /api/v1/mobile/client-orders/product-history")
-    inner class GetAccountOrderHistoryTests {
-
-        @Test
-        @DisplayName("성공 - 주문일별 제품 그룹 200 OK")
-        fun success() {
-            val groups = listOf(
-                OrderHistoryGroupResponse(
-                    orderDate = "2026-05-06",
-                    products = listOf(
-                        OrderHistoryProductResponse("P001", "참깨라면"),
-                        OrderHistoryProductResponse("P002", "진라면순한맛")
-                    )
-                ),
-                OrderHistoryGroupResponse(
-                    orderDate = "2026-05-04",
-                    products = listOf(OrderHistoryProductResponse("P003", "열라면"))
-                )
-            )
-            every {
-                clientOrderQueryService.getAccountOrderHistory(
-                    eq(1L), eq("0001234567"),
-                    eq(LocalDate.of(2026, 5, 4)), eq(LocalDate.of(2026, 5, 6))
-                )
-            } returns groups
-
-            mockMvc.perform(
-                get("/api/v1/mobile/client-orders/product-history")
-                    .param("accountCode", "0001234567")
-                    .param("startDate", "2026-05-04")
-                    .param("endDate", "2026-05-06")
-            )
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].orderDate").value("2026-05-06"))
-                .andExpect(jsonPath("$.data[0].products[0].productCode").value("P001"))
-                .andExpect(jsonPath("$.data[0].products[0].productName").value("참깨라면"))
-                .andExpect(jsonPath("$.data[1].orderDate").value("2026-05-04"))
-        }
-
-        @Test
-        @DisplayName("실패 - 필수 파라미터(accountCode) 누락 시 400")
-        fun missingAccountCode() {
-            mockMvc.perform(
-                get("/api/v1/mobile/client-orders/product-history")
-                    .param("startDate", "2026-05-04")
-                    .param("endDate", "2026-05-06")
-            )
-                .andExpect(status().isBadRequest)
-        }
-
-        @Test
-        @DisplayName("실패 - 권한 없음(사번 없음) 시 403 ORD_FORBIDDEN")
-        fun forbidden() {
-            every {
-                clientOrderQueryService.getAccountOrderHistory(eq(1L), any(), any(), any())
-            } throws ClientOrderForbiddenException()
-
-            mockMvc.perform(
-                get("/api/v1/mobile/client-orders/product-history")
-                    .param("accountCode", "0001234567")
-                    .param("startDate", "2026-05-04")
-                    .param("endDate", "2026-05-06")
-            )
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("ORD_FORBIDDEN"))
         }
     }
 }

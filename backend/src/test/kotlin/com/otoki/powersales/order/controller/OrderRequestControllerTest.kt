@@ -3,6 +3,8 @@ package com.otoki.powersales.order.controller
 import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.order.dto.response.CancelledLineResponse
 import com.otoki.powersales.order.dto.response.OrderCancelResponse
+import com.otoki.powersales.order.dto.response.OrderHistoryGroupResponse
+import com.otoki.powersales.order.dto.response.OrderHistoryProductResponse
 import com.otoki.powersales.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.order.dto.response.OrderRequestSummaryResponse
 import com.otoki.powersales.order.enums.DeliveryStatus
@@ -245,6 +247,60 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
             mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/cancel"))
                 .andExpect(status().`is`(expectedStatus))
                 .andExpect(jsonPath("$.error.code").value(expectedCode))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/mobile/me/order-requests/product-history - 거래처 주문이력")
+    inner class GetAccountOrderHistoryTests {
+
+        @Test
+        @DisplayName("성공 - 주문일별 제품 그룹 200 OK")
+        fun success() {
+            val groups = listOf(
+                OrderHistoryGroupResponse(
+                    orderDate = "2026-05-06",
+                    products = listOf(
+                        OrderHistoryProductResponse("P001", "참깨라면"),
+                        OrderHistoryProductResponse("P002", "진라면순한맛"),
+                    ),
+                ),
+                OrderHistoryGroupResponse(
+                    orderDate = "2026-05-04",
+                    products = listOf(OrderHistoryProductResponse("P003", "열라면")),
+                ),
+            )
+            every {
+                orderRequestService.getAccountOrderHistory(
+                    eq(1L), eq("0001234567"),
+                    eq(LocalDate.of(2026, 5, 4)), eq(LocalDate.of(2026, 5, 6)),
+                )
+            } returns groups
+
+            mockMvc.perform(
+                get("/api/v1/mobile/me/order-requests/product-history")
+                    .param("accountCode", "0001234567")
+                    .param("startDate", "2026-05-04")
+                    .param("endDate", "2026-05-06"),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].orderDate").value("2026-05-06"))
+                .andExpect(jsonPath("$.data[0].products[0].productCode").value("P001"))
+                .andExpect(jsonPath("$.data[0].products[0].productName").value("참깨라면"))
+                .andExpect(jsonPath("$.data[1].orderDate").value("2026-05-04"))
+        }
+
+        @Test
+        @DisplayName("실패 - 필수 파라미터(accountCode) 누락 시 400")
+        fun missingAccountCode() {
+            mockMvc.perform(
+                get("/api/v1/mobile/me/order-requests/product-history")
+                    .param("startDate", "2026-05-04")
+                    .param("endDate", "2026-05-06"),
+            )
+                .andExpect(status().isBadRequest)
         }
     }
 

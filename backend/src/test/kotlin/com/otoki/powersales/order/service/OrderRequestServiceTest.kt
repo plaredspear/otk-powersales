@@ -7,6 +7,7 @@ import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.exception.InvalidDateRangeException
 import com.otoki.powersales.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.order.exception.OrderDateRangeTooWideException
+import com.otoki.powersales.order.repository.OrderHistoryRow
 import com.otoki.powersales.order.repository.OrderRequestRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -46,6 +47,60 @@ class OrderRequestServiceTest {
             orderRequestDetailMapper,
             fixedClock,
         )
+    }
+
+    @Nested
+    @DisplayName("getAccountOrderHistory - 거래처 주문이력")
+    inner class AccountOrderHistoryTests {
+
+        private val accountCode = "0001234567"
+        private val from = LocalDate.of(2026, 5, 4)
+        private val to = LocalDate.of(2026, 5, 6)
+
+        @Test
+        @DisplayName("정상 - 주문일 내림차순 그룹 + 그룹내 제품코드 중복제거 + EndDate +1일 적용")
+        fun success() {
+            every {
+                orderRequestRepository.findOrderHistory(
+                    employeeId = 1L,
+                    accountCode = accountCode,
+                    orderDateFrom = from.atStartOfDay(),
+                    orderDateToExclusive = to.plusDays(1).atStartOfDay(),
+                )
+            } returns listOf(
+                OrderHistoryRow(java.time.LocalDateTime.of(2026, 5, 6, 9, 30), "P001", "참깨라면"),
+                OrderHistoryRow(java.time.LocalDateTime.of(2026, 5, 6, 14, 0), "P001", "참깨라면"), // 중복
+                OrderHistoryRow(java.time.LocalDateTime.of(2026, 5, 6, 14, 0), "P002", "진라면"),
+                OrderHistoryRow(java.time.LocalDateTime.of(2026, 5, 4, 11, 0), "P003", "열라면"),
+            )
+
+            val result = service.getAccountOrderHistory(1L, accountCode, from, to)
+
+            assertThat(result).hasSize(2)
+            assertThat(result[0].orderDate).isEqualTo("2026-05-06")
+            assertThat(result[1].orderDate).isEqualTo("2026-05-04")
+            // 제품코드 중복제거 (P001 1건)
+            assertThat(result[0].products).hasSize(2)
+            assertThat(result[0].products[0].productCode).isEqualTo("P001")
+            assertThat(result[1].products).hasSize(1)
+            assertThat(result[1].products[0].productCode).isEqualTo("P003")
+        }
+
+        @Test
+        @DisplayName("정상 - 결과 없음 → 빈 목록")
+        fun empty() {
+            every { orderRequestRepository.findOrderHistory(any(), any(), any(), any()) } returns emptyList()
+
+            assertThat(service.getAccountOrderHistory(1L, accountCode, from, to)).isEmpty()
+        }
+
+        @Test
+        @DisplayName("실패 - 종료일이 시작일보다 빠르면 InvalidDateRangeException")
+        fun invalidRange() {
+            assertThatThrownBy {
+                service.getAccountOrderHistory(1L, accountCode, to, from)
+            }.isInstanceOf(InvalidDateRangeException::class.java)
+        }
     }
 
     @Nested

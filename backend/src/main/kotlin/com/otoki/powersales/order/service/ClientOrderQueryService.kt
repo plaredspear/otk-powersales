@@ -2,14 +2,11 @@ package com.otoki.powersales.order.service
 
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.order.dto.response.ClientOrderDetailResponse
-import com.otoki.powersales.order.dto.response.OrderHistoryGroupResponse
-import com.otoki.powersales.order.dto.response.OrderHistoryProductResponse
 import com.otoki.powersales.order.exception.ClientOrderForbiddenException
 import com.otoki.powersales.order.exception.InvalidSapOrderNumberException
 import com.otoki.powersales.order.exception.SapOrderNotFoundException
 import com.otoki.powersales.order.repository.ErpOrderProductRepository
 import com.otoki.powersales.order.repository.ErpOrderRepository
-import java.time.LocalDate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -51,49 +48,5 @@ class ClientOrderQueryService(
 
         val products = erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber)
         return ClientOrderDetailResponse.from(order, products)
-    }
-
-    /**
-     * 거래처 주문이력(제품 선택용) 조회 — 레거시 SF `OrderHistory` 정합.
-     *
-     * 요청 사용자의 사번으로 게이트하여, 해당 거래처에 본인이 등록한 주문의 제품을 주문일별로 그룹핑한다.
-     *
-     * @param userId JWT 사용자 ID
-     * @param accountCode 거래처 SAP 코드 (erp_order.sap_account_code)
-     * @param startDate 주문일 시작
-     * @param endDate 주문일 종료
-     * @return 주문일 내림차순 그룹 목록 (각 그룹 내 제품은 제품코드 기준 중복제거)
-     */
-    fun getAccountOrderHistory(
-        userId: Long,
-        accountCode: String,
-        startDate: LocalDate,
-        endDate: LocalDate
-    ): List<OrderHistoryGroupResponse> {
-        val requesterEmployeeCode = employeeRepository.findById(userId)
-            .map { it.employeeCode }
-            .orElseThrow { ClientOrderForbiddenException() }
-
-        if (requesterEmployeeCode.isNullOrBlank()) {
-            throw ClientOrderForbiddenException()
-        }
-
-        val rows = erpOrderProductRepository.findOrderHistory(
-            accountCode = accountCode,
-            employeeCode = requesterEmployeeCode,
-            startDate = startDate,
-            endDate = endDate
-        )
-
-        return rows
-            .filter { it.orderDate != null && it.productCode != null }
-            .groupBy { it.orderDate!! }
-            .toSortedMap(reverseOrder())
-            .map { (date, groupRows) ->
-                val products = groupRows
-                    .distinctBy { it.productCode }
-                    .map { OrderHistoryProductResponse(it.productCode!!, it.productName) }
-                OrderHistoryGroupResponse(orderDate = date.toString(), products = products)
-            }
     }
 }

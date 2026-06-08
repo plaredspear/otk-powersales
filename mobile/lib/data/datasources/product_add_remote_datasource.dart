@@ -5,7 +5,7 @@ import 'package:dio/dio.dart';
 /// 레거시 제품추가 팝업(productPop.jsp)의 3개 호출을 묶는다.
 ///  - 중분류/소분류 카테고리 목록 (`/products/categories`)
 ///  - 제품 필터 검색 (`/products/search/filter`)
-///  - 거래처 주문이력 (`/client-orders/product-history`)
+///  - 거래처 주문이력 (`/me/order-requests/product-history`)
 class ProductAddRemoteDataSource {
   final Dio _dio;
 
@@ -58,7 +58,7 @@ class ProductAddRemoteDataSource {
     required String endDate,
   }) async {
     final response = await _dio.get(
-      '/api/v1/mobile/client-orders/product-history',
+      '/api/v1/mobile/me/order-requests/product-history',
       queryParameters: {
         'accountCode': accountCode,
         'startDate': startDate,
