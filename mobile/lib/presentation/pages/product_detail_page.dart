@@ -54,6 +54,28 @@ class ProductDetailPage extends ConsumerWidget {
   }
 
   Widget _buildContent(ProductDetail detail) {
+    final entries = <_InfoEntry>[
+      _InfoEntry('코드', detail.productCode ?? '-'),
+      _InfoEntry('품목 그룹명', detail.categoryPath),
+      _InfoEntry('단위', detail.unit ?? '-'),
+      _InfoEntry('출시일', detail.launchDate ?? '-'),
+      _InfoEntry('유통기한', detail.shelfLifeDisplay),
+      _InfoEntry('바코드', detail.barcode ?? '-'),
+      _InfoEntry('박스규격', _formatNumber(detail.boxReceivingQuantity)),
+      _InfoEntry('출고가', _formatNumber(detail.standardUnitPrice)),
+      // 설명형 정보 — 값이 있을 때만 노출
+      if (detail.sellingPoint?.isNotEmpty ?? false)
+        _InfoEntry('셀링포인트', detail.sellingPoint!),
+      if (detail.purpose?.isNotEmpty ?? false)
+        _InfoEntry('용도', detail.purpose!),
+      if (detail.targetAccountType?.isNotEmpty ?? false)
+        _InfoEntry('타겟거래유형', detail.targetAccountType!),
+      if (detail.allergen?.isNotEmpty ?? false)
+        _InfoEntry('알러지 유발물질', detail.allergen!),
+      if (detail.crossContamination?.isNotEmpty ?? false)
+        _InfoEntry('교차오염', detail.crossContamination!),
+    ];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -73,22 +95,8 @@ class ProductDetailPage extends ConsumerWidget {
           _ImageSection(detail: detail),
           const SizedBox(height: AppSpacing.lg),
 
-          // 기본 정보
-          _InfoRow(label: '코드', value: detail.productCode ?? '-'),
-          _InfoRow(label: '품목 그룹명', value: detail.categoryPath),
-          _InfoRow(label: '단위', value: detail.unit ?? '-'),
-          _InfoRow(label: '출시일', value: detail.launchDate ?? '-'),
-          _InfoRow(label: '유통기한', value: detail.shelfLifeDisplay),
-          _InfoRow(label: '바코드', value: detail.barcode ?? '-'),
-          _InfoRow(label: '박스규격', value: _formatNumber(detail.boxReceivingQuantity)),
-          _InfoRow(label: '출고가', value: _formatNumber(detail.standardUnitPrice)),
-
-          // 설명형 정보 (멀티라인)
-          _MultilineRow(label: '셀링포인트', value: detail.sellingPoint),
-          _MultilineRow(label: '용도', value: detail.purpose),
-          _MultilineRow(label: '타겟거래유형', value: detail.targetAccountType),
-          _MultilineRow(label: '알러지 유발물질', value: detail.allergen),
-          _MultilineRow(label: '교차오염', value: detail.crossContamination),
+          // 기본 정보 — 보더 테이블
+          _InfoTable(entries: entries),
         ],
       ),
     );
@@ -161,74 +169,92 @@ class _ImageSection extends StatelessWidget {
   }
 }
 
-/// 라벨(좌) + 값(우) 한 줄 정보 행
-class _InfoRow extends StatelessWidget {
+/// 정보 테이블 한 행의 라벨·값 데이터
+class _InfoEntry {
   final String label;
   final String value;
 
-  const _InfoRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 96,
-            child: Text(
-              label,
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value.isEmpty ? '-' : value,
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  const _InfoEntry(this.label, this.value);
 }
 
-/// 라벨(상) + 멀티라인 값(하) — 셀링포인트/용도 등 긴 설명용
-class _MultilineRow extends StatelessWidget {
-  final String label;
-  final String? value;
+/// 라벨(좌) + 값(우) 셀을 보더로 구분한 정보 테이블
+///
+/// 외곽 보더 + 행/열 구분선으로 각 항목의 경계를 명확히 하여 시인성을 높인다.
+/// 값이 길면 우측 셀 안에서 자동 줄바꿈된다.
+class _InfoTable extends StatelessWidget {
+  static const double _labelWidth = 110;
 
-  const _MultilineRow({required this.label, required this.value});
+  final List<_InfoEntry> entries;
+
+  const _InfoTable({required this.entries});
 
   @override
   Widget build(BuildContext context) {
-    if (value == null || value!.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            value!,
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
-              height: 1.5,
-            ),
-          ),
-        ],
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.divider),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        child: Column(
+          children: [
+            for (var i = 0; i < entries.length; i++) ...[
+              if (i > 0)
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppColors.border,
+                ),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 라벨 셀
+                    Container(
+                      width: _labelWidth,
+                      color: AppColors.surface,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm + 2,
+                      ),
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        entries[i].label,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const VerticalDivider(
+                      width: 1,
+                      thickness: 1,
+                      color: AppColors.border,
+                    ),
+                    // 값 셀
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm + 2,
+                        ),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          entries[i].value.isEmpty ? '-' : entries[i].value,
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
