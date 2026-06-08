@@ -44,7 +44,7 @@ class NoticeListState {
     this.totalCount = 0,
     this.totalPages = 0,
     this.currentPage = 1,
-    this.pageSize = 10,
+    this.pageSize = 20,
     this.hasSearched = false,
     this.selectedCategory,
     this.searchKeyword,

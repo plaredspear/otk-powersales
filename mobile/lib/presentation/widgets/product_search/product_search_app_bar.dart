@@ -59,7 +59,13 @@ class ProductSearchAppBar extends StatelessWidget
             color: AppColors.textTertiary,
             fontSize: 16,
           ),
+          // 전역 inputDecorationTheme 의 회색 채움/포커스 테두리를 끄고
+          // 레거시처럼 깔끔한 보더리스 입력으로 표시한다.
+          filled: false,
+          isCollapsed: true,
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
           contentPadding: EdgeInsets.zero,
         ),
         style: const TextStyle(
