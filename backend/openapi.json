@@ -5939,6 +5939,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseListOrderHistoryGroupResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OrderHistoryGroupResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListOrganizationResponse" : {
         "properties" : {
           "data" : {
@@ -5972,6 +6000,34 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/PermissionSetSummary"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListProductCategoryGroup" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProductCategoryGroup"
             },
             "type" : [ "array", "null" ]
           },
@@ -7289,6 +7345,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/PageAdminAttendanceLogListItemResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePageClientOrderSummaryResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PageClientOrderSummaryResponse"
             }, {
               "type" : "null"
             } ]
@@ -11047,6 +11132,25 @@
           },
           "productName" : {
             "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "ClientOrderSummaryResponse" : {
+        "properties" : {
+          "clientId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "clientName" : {
+            "type" : "string"
+          },
+          "sapOrderNumber" : {
+            "type" : "string"
+          },
+          "totalAmount" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -15276,6 +15380,31 @@
         },
         "type" : "object"
       },
+      "OrderHistoryGroupResponse" : {
+        "properties" : {
+          "orderDate" : {
+            "type" : "string"
+          },
+          "products" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OrderHistoryProductResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "OrderHistoryProductResponse" : {
+        "properties" : {
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "OrderProcessingStatusResponse" : {
         "properties" : {
           "items" : {
@@ -16090,6 +16219,52 @@
         },
         "type" : "object"
       },
+      "PageClientOrderSummaryResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ClientOrderSummaryResponse"
+            },
+            "type" : "array"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "number" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numberOfElements" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "PageInfo" : {
         "properties" : {
           "page" : {
@@ -16810,6 +16985,20 @@
           },
           "unit" : {
             "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "ProductCategoryGroup" : {
+        "properties" : {
+          "middle" : {
+            "type" : "string"
+          },
+          "subs" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -32147,6 +32336,57 @@
         "tags" : [ "claim-controller" ]
       }
     },
+    "/api/v1/mobile/client-orders" : {
+      "get" : {
+        "operationId" : "getClientOrders",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "clientId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "deliveryDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePageClientOrderSummaryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "client-order-controller" ]
+      }
+    },
     "/api/v1/mobile/client-orders/{sapOrderNumber}" : {
       "get" : {
         "operationId" : "getClientOrderDetail",
@@ -32741,6 +32981,48 @@
         "tags" : [ "order-request-controller" ]
       }
     },
+    "/api/v1/mobile/me/order-requests/product-history" : {
+      "get" : {
+        "operationId" : "getAccountOrderHistory",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "accountCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListOrderHistoryGroupResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "order-request-controller" ]
+      }
+    },
     "/api/v1/mobile/me/order-requests/{orderRequestId}" : {
       "get" : {
         "operationId" : "getOrderRequestDetail",
@@ -33188,6 +33470,24 @@
         "tags" : [ "product-expiration-controller" ]
       }
     },
+    "/api/v1/mobile/products/categories" : {
+      "get" : {
+        "operationId" : "getProductCategories",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListProductCategoryGroup"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "product-controller" ]
+      }
+    },
     "/api/v1/mobile/products/search" : {
       "get" : {
         "operationId" : "searchProducts",
@@ -33204,6 +33504,71 @@
           "required" : false,
           "schema" : {
             "default" : "text",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePageProductDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "product-controller" ]
+      }
+    },
+    "/api/v1/mobile/products/search/filter" : {
+      "get" : {
+        "operationId" : "searchProductsByFilter",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "productName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "barcode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category2",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category3",
+          "required" : false,
+          "schema" : {
             "type" : "string"
           }
         }, {
