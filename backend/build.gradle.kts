@@ -148,9 +148,15 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 	systemProperty("spring.profiles.active", "test")
 	systemProperty("user.timezone", "Asia/Seoul")
-	maxHeapSize = "3g"
+	maxHeapSize = "2g"
 	jvmArgs = listOf("-XX:MaxMetaspaceSize=512m")
 	forkEvery = 100
+
+	// 테스트를 다중 JVM fork 로 병렬 실행한다 (기존 단일 fork 순차 실행 → 코어 활용).
+	// fork 당 heap 2g + Metaspace 0.5g 를 쓰므로, 16GB 머신 기준 4 fork (~10GB) 면
+	// 스왑 (역효과) 없이 안전하다. 코어가 적은 환경에서는 (코어-2) 로 자동 축소.
+	val cpuLimit = (Runtime.getRuntime().availableProcessors() - 2).coerceAtLeast(1)
+	maxParallelForks = minOf(cpuLimit, 4)
 }
 
 tasks.named<Jar>("jar") {
