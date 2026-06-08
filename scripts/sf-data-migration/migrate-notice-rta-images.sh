@@ -297,31 +297,27 @@ else
     before=$(find "$IMG_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
     SECONDS=0
 
-    # scan CSV (헤더 제외) → 워커. 워커: 이미 받은 파일 skip → curl GET → Content-Type 으로 확장자/성공 판정.
-    tail -n +2 "$SCAN_CSV" | python3 -c '
-import csv, sys
-# scan CSV 컬럼: 0=notice_sfid 1=refid 2=eid 3=source_tag 4=source_url 5=alt_name
-for row in csv.reader(sys.stdin):
-    if len(row) >= 5:
-        # refid \t source_url(src 원본 문자열) → 워커로 전달 (탭 구분, source_url 은 디코딩해 GET).
-        sys.stdout.write(row[1] + "\t" + row[4] + "\n")
-' | sort -u | xargs -P "$PARALLEL" -I {} bash -c '
-        line="$1"
-        refid="${line%%	*}"
-        src="${line#*	}"
-        [ -z "$refid" ] && exit 0
+    # 워커 함수: refid + src(원본 src 문자열) 1건 다운로드.
+    # xargs -I {} 는 탭을 공백으로 뭉개 split 을 깨뜨리므로 사용하지 않는다. 대신 줄 단위
+    # read 로 탭 split 한 뒤 백그라운드 잡(&)으로 병렬화한다. 함수로 빼서 bash -c 인용 지옥도 제거.
+    download_one() {
+        local refid="$1" src="$2"
+        [ -z "$refid" ] && return 0
         # 이미 받은 파일 있으면 skip (확장자 무관 — refid.* 존재 검사).
-        if ls "$IMG_DIR/$refid".* >/dev/null 2>&1; then exit 0; fi
+        if ls "$IMG_DIR/$refid".* >/dev/null 2>&1; then return 0; fi
         # source_url 의 &amp; → & 디코딩 + 절대 URL 화 (instanceUrl 의 file 도메인으로).
-        url=$(printf "%s" "$src" | python3 -c "import sys,html; u=html.unescape(sys.stdin.read().strip()); print(u)")
+        local url
+        url=$(printf '%s' "$src" | python3 -c 'import sys,html; print(html.unescape(sys.stdin.read().strip()))')
+        local full
         case "$url" in
             http*) full="$url" ;;
             /*)    full="${INSTANCE_URL%/}$url" ;;
             *)     full="${INSTANCE_URL%/}/$url" ;;
         esac
-        tmp="$IMG_DIR/.$refid.tmp"
+        local tmp="$IMG_DIR/.$refid.tmp"
         # 인증: sid 쿠키가 있으면 sid 단독(Bearer 미전송 — file.force.com 은 Bearer 시 세션 페이지로
         # 리다이렉트해 실패). sid 없으면 Bearer 시도.
+        local hdr
         if [ -n "$SID_COOKIE" ]; then
             hdr=(--cookie "sid=$SID_COOKIE")
         else
@@ -330,26 +326,42 @@ for row in csv.reader(sys.stdin):
         # curl: 최종 HTTP 코드만(%{http_code}) stdout 으로, stderr 는 캡처해 실패 사유에 남긴다
         # (-f 미사용 — 본문/헤더로 image 판정하므로). curl exit code 와 stderr 를 함께 기록해
         # 1회 실행으로 전수 실패 원인이 드러나게 한다.
-        err="$tmp.err"
-        http_code=$(curl -sS -L -o "$tmp" -w "%{http_code}" -D "$tmp.hdr" "${hdr[@]}" "$full" 2>"$err")
+        local err="$tmp.err" http_code curl_rc ctype
+        http_code=$(curl -sS -L -o "$tmp" -w '%{http_code}' -D "$tmp.hdr" "${hdr[@]}" "$full" 2>"$err")
         curl_rc=$?
-        ctype=$(grep -i "^content-type:" "$tmp.hdr" 2>/dev/null | tail -1 | tr -d "\r" | sed "s/.*: *//;s/;.*//" | tr "[:upper:]" "[:lower:]")
-        if [ "$http_code" = "200" ] && printf "%s" "$ctype" | grep -q "^image/"; then
-            ext="${ctype#image/}"; [ "$ext" = "jpeg" ] && ext="jpg"
+        ctype=$(grep -i '^content-type:' "$tmp.hdr" 2>/dev/null | tail -1 | tr -d '\r' | sed 's/.*: *//;s/;.*//' | tr '[:upper:]' '[:lower:]')
+        if [ "$http_code" = "200" ] && printf '%s' "$ctype" | grep -q '^image/'; then
+            local ext="${ctype#image/}"; [ "$ext" = "jpeg" ] && ext="jpg"
             mv "$tmp" "$IMG_DIR/$refid.$ext"
             rm -f "$tmp.hdr" "$err"
         else
-            # 실패 사유: curl exit code + http + content-type + stderr 첫 줄.
-            # CSV 안전: 콤마/따옴표는 세미콜론·공백으로 치환(tr 의 SET 은 double-quote 안에서
-            # \x2c \x22 \x20 16진 이스케이프로 표기 — single-quote bash -c 컨텍스트 깨짐 방지).
-            errline=$(head -1 "$err" 2>/dev/null | tr -d "\r" | tr "\x2c\x22" "\x3b\x20")
+            # 실패 사유: curl exit code + http + content-type + stderr 첫 줄 (콤마/따옴표는 CSV 안전 치환).
+            local errline reason
+            errline=$(head -1 "$err" 2>/dev/null | tr -d '\r' | tr ',"' '; ')
             reason="rc=$curl_rc http=$http_code ctype=${ctype:-none} err=${errline:-none}"
             if [ "$http_code" = "200" ]; then reason="not-image ($reason)"; fi
             rm -f "$tmp" "$tmp.hdr" "$err"
-            # printf 의 format 은 double-quote 로 — single-quote 는 바깥 bash -c 컨텍스트를 조기 종료시킴
-            printf "%s,%s\n" "$refid" "$reason" >> "$FAILED_CSV"
+            printf '%s,%s\n' "$refid" "$reason" >> "$FAILED_CSV"
         fi
-    ' _ {}
+    }
+
+    # scan CSV (헤더 제외) → refid<TAB>src 줄. 줄 단위 read + 백그라운드 잡으로 PARALLEL 동시성 제어.
+    tail -n +2 "$SCAN_CSV" | python3 -c '
+import csv, sys
+# scan CSV 컬럼: 0=notice_sfid 1=refid 2=eid 3=source_tag 4=source_url 5=alt_name
+for row in csv.reader(sys.stdin):
+    if len(row) >= 5:
+        sys.stdout.write(row[1] + "\t" + row[4] + "\n")
+' | sort -u | {
+        # PARALLEL 개씩 배치로 띄우고 배치 단위로 wait — bash 3.2 호환 (wait -n 미사용).
+        n=0
+        while IFS=$'\t' read -r refid src; do
+            download_one "$refid" "$src" &
+            n=$((n + 1))
+            if [ "$n" -ge "$PARALLEL" ]; then wait; n=0; fi
+        done
+        wait
+    }
 
     after=$(find "$IMG_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
     dl=$((after - before))
