@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app_router.dart';
 import '../../../core/constants/menu_constants.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/menu_item.dart' as domain;
 import '../../providers/auth_provider.dart';
 import '../home/activity_registration_popup.dart';
@@ -21,7 +19,8 @@ import 'quick_action_bar.dart';
 /// - 헤더: 사용자명, 소속/직군, 닫기 버튼
 /// - 빠른 액션: 제품 검색, 활동 등록
 /// - 메뉴 그룹: 7개 그룹, 13개 아이템
-/// - 로그아웃 버튼
+///
+/// 로그아웃은 프로필(내 정보) 화면에 있으므로 여기서는 제공하지 않는다.
 class FullMenuDrawer extends ConsumerWidget {
   const FullMenuDrawer({super.key});
 
@@ -85,16 +84,6 @@ class FullMenuDrawer extends ConsumerWidget {
                     ],
                   ),
                 ),
-              ),
-              // 하단 구분선
-              const Divider(
-                height: 1,
-                thickness: 1,
-                color: AppColors.divider,
-              ),
-              // 로그아웃 버튼
-              _LogoutButton(
-                onTap: () => _handleLogout(context, ref),
               ),
             ],
           ),
@@ -168,68 +157,4 @@ class FullMenuDrawer extends ConsumerWidget {
     }
   }
 
-  /// 로그아웃 처리
-  void _handleLogout(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('로그아웃'),
-        content: const Text('로그아웃 하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(
-              '취소',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(dialogContext).pop(); // 다이얼로그 닫기
-              Navigator.of(context).pop(); // Drawer 닫기
-              await ref.read(authProvider.notifier).logout();
-              if (context.mounted) {
-                AppRouter.navigateToAndRemoveAll(context, AppRouter.login);
-              }
-            },
-            child: Text(
-              '확인',
-              style: TextStyle(color: AppColors.otokiRed),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 로그아웃 버튼 위젯
-class _LogoutButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _LogoutButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.lg,
-          ),
-          child: Text(
-            '로그아웃',
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
