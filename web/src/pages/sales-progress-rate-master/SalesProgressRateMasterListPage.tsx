@@ -12,8 +12,8 @@ function formatAmount(value: number | null): string {
 }
 
 function formatRate(value: number | null): string {
-  // SF ProgressRate__c (Percent) — 서버는 비율(예: 0.85)을 전달, 화면은 % 표기.
-  return value != null ? `${(value * 100).toFixed(1)}%` : '-';
+  // SF ProgressRate__c (Percent, scale=0) — 서버는 비율(예: 0.85)을 전달, 화면은 소수점 없이 반올림한 정수 % 표기.
+  return value != null ? `${Math.round(value * 100)}%` : '-';
 }
 
 export default function SalesProgressRateMasterListPage() {
