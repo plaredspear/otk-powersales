@@ -2,14 +2,20 @@ import { useState } from 'react';
 import { Tabs, Typography } from 'antd';
 import type { TabsProps } from 'antd';
 import SapInboundAuditsTab from '../sap-inbound/SapInboundAuditsTab';
-import SapInboundCatalogTab from '../sap-inbound/SapInboundCatalogTab';
+import SapInboundCatalogDetail from '../sap-inbound/SapInboundCatalogDetail';
 import SapOutboundLogsTab from '../sap-outbound/SapOutboundLogsTab';
 import SapOutboundOutboxTab from '../sap-outbound/SapOutboundOutboxTab';
-import SapOutboundCatalogTab from '../sap-outbound/SapOutboundCatalogTab';
+import SapOutboundCatalogDetail from '../sap-outbound/SapOutboundCatalogDetail';
 import SapOutboundTestTab from '../sap-outbound/SapOutboundTestTab';
-import { useSapOutboundOutboxPending } from '@/hooks/admin/useSapOutbound';
+import { useSapInboundCatalog } from '@/hooks/admin/useSapInbound';
+import {
+  useSapOutboundCatalog,
+  useSapOutboundOutboxPending,
+} from '@/hooks/admin/useSapOutbound';
 
 const { Title, Text } = Typography;
+
+type TabItem = NonNullable<TabsProps['items']>[number];
 
 /**
  * 왼쪽 세로 탭에서 Inbound / Outbound 방향을 구분하는 그룹 헤더 탭.
@@ -17,10 +23,7 @@ const { Title, Text } = Typography;
  * antd Tabs 는 Menu 와 달리 `type: 'group'` 을 지원하지 않으므로, 선택 불가(`disabled`)한
  * 헤더 탭으로 시각적 섹션 구분을 표현한다. `children` 이 없어 본문은 렌더링되지 않는다.
  */
-function groupHeader(
-  key: string,
-  label: string,
-): NonNullable<TabsProps['items']>[number] {
+function groupHeader(key: string, label: string): TabItem {
   return {
     key,
     disabled: true,
@@ -37,31 +40,47 @@ function groupHeader(
  *
  * 기존 분리되어 있던 'SAP Inbound' / 'SAP Outbound' 두 페이지를 하나로 통합한다.
  * 스케줄 잡 실행 이력 화면(`ScheduledJobsPage`)과 동일하게 왼쪽 세로 탭
- * (`tabPosition="left"`)으로 구성하며, antd Tabs 의 `type: 'group'` 으로
- * Inbound / Outbound 방향을 시각적으로 구분한다.
+ * (`tabPosition="left"`)으로 구성하며, 선택 불가 헤더 탭으로 Inbound / Outbound
+ * 방향을 시각적으로 구분한다.
  *
- * - Inbound: 호출 이력 / API 목록
- * - Outbound: 호출 이력 / 대기 중(Outbox) / API 목록 / 테스트
+ * API 카탈로그는 하나의 목록 표가 아니라 API(엔드포인트/인터페이스) 1건당 개별 탭으로
+ * 나누어, 각 탭에서 해당 API 의 상세(스코프/적재 대상/sender 등)를 카드로 보여준다.
+ * 탭 목록은 카탈로그 조회 결과로부터 동적으로 구성된다.
+ *
+ * - Inbound: 호출 이력 / (API 별 상세 탭 N개)
+ * - Outbound: 호출 이력 / 대기 중(Outbox) / (API 별 상세 탭 N개) / 테스트
  */
 export default function SapIntegrationPage() {
   const [activeKey, setActiveKey] = useState('inbound-audits');
+
+  const inboundCatalogQuery = useSapInboundCatalog();
+  const outboundCatalogQuery = useSapOutboundCatalog();
 
   // 대기 큐 건수를 탭 라벨에 표기. TanStack Query 캐시 공유로 Outbox 탭과 중복 호출 비용 없음.
   const outboxQuery = useSapOutboundOutboxPending(1, 20);
   const outboxCount = outboxQuery.data?.totalCount ?? 0;
 
-  const tabItems: NonNullable<TabsProps['items']> = [
+  // 카탈로그 각 항목을 API 별 개별 탭으로 변환 (key 는 식별자로 유일하게).
+  const inboundApiTabs: TabItem[] = (inboundCatalogQuery.data ?? []).map((item) => ({
+    key: `inbound-api:${item.endpointPath}`,
+    label: item.koreanName,
+    children: <SapInboundCatalogDetail item={item} />,
+  }));
+
+  const outboundApiTabs: TabItem[] = (outboundCatalogQuery.data ?? []).map((item) => ({
+    key: `outbound-api:${item.interfaceId}`,
+    label: item.koreanName,
+    children: <SapOutboundCatalogDetail item={item} />,
+  }));
+
+  const tabItems: TabItem[] = [
     groupHeader('inbound-header', 'Inbound'),
     {
       key: 'inbound-audits',
       label: '호출 이력',
       children: <SapInboundAuditsTab />,
     },
-    {
-      key: 'inbound-catalog',
-      label: 'API 목록',
-      children: <SapInboundCatalogTab />,
-    },
+    ...inboundApiTabs,
     groupHeader('outbound-header', 'Outbound'),
     {
       key: 'outbound-logs',
@@ -73,11 +92,7 @@ export default function SapIntegrationPage() {
       label: `대기 중 (Outbox)${outboxCount ? ` · ${outboxCount}` : ''}`,
       children: <SapOutboundOutboxTab />,
     },
-    {
-      key: 'outbound-catalog',
-      label: 'API 목록',
-      children: <SapOutboundCatalogTab />,
-    },
+    ...outboundApiTabs,
     {
       key: 'outbound-test',
       label: '테스트',

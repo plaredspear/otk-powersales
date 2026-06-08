@@ -5,12 +5,9 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SapIntegrationPage from './SapIntegrationPage';
 
-// 자식 탭 컴포넌트는 stub 으로 대체 — 본 테스트는 통합 페이지의 탭 구조/레이아웃만 검증한다.
+// 호출 이력/대기/테스트 탭은 stub — 본 테스트는 통합 페이지 탭 구조와 API 별 탭 분리를 검증한다.
 vi.mock('../sap-inbound/SapInboundAuditsTab', () => ({
   default: () => <div data-testid="inbound-audits-tab">inbound-audits</div>,
-}));
-vi.mock('../sap-inbound/SapInboundCatalogTab', () => ({
-  default: () => <div data-testid="inbound-catalog-tab">inbound-catalog</div>,
 }));
 vi.mock('../sap-outbound/SapOutboundLogsTab', () => ({
   default: () => <div data-testid="outbound-logs-tab">outbound-logs</div>,
@@ -18,15 +15,46 @@ vi.mock('../sap-outbound/SapOutboundLogsTab', () => ({
 vi.mock('../sap-outbound/SapOutboundOutboxTab', () => ({
   default: () => <div data-testid="outbound-outbox-tab">outbound-outbox</div>,
 }));
-vi.mock('../sap-outbound/SapOutboundCatalogTab', () => ({
-  default: () => <div data-testid="outbound-catalog-tab">outbound-catalog</div>,
-}));
 vi.mock('../sap-outbound/SapOutboundTestTab', () => ({
   default: () => <div data-testid="outbound-test-tab">outbound-test</div>,
 }));
 
+const inboundCatalog = [
+  {
+    endpointPath: '/api/v1/sap/organization',
+    koreanName: '조직 마스터 수신',
+    requiredScope: 'sap.org.write',
+    targetEntity: 'OrganizeMaster',
+    controllerClass: 'SapOrganizationController',
+    description: '조직 마스터를 수신한다.',
+  },
+  {
+    endpointPath: '/api/v1/sap/employee',
+    koreanName: '사원 마스터 수신',
+    requiredScope: 'sap.employee.write',
+    targetEntity: 'Employee',
+    controllerClass: 'SapEmployeeController',
+    description: '사원 마스터를 수신한다.',
+  },
+];
+
+const outboundCatalog = [
+  {
+    interfaceId: 'SD03300',
+    koreanName: '전문행사조 마스터',
+    triggerType: 'BATCH' as const,
+    senderClass: 'com.otoki.PptMasterSender',
+    description: '전문행사조 마스터를 송신한다.',
+  },
+];
+
 const outboxState = { totalCount: 0 };
+
+vi.mock('@/hooks/admin/useSapInbound', () => ({
+  useSapInboundCatalog: () => ({ data: inboundCatalog }),
+}));
 vi.mock('@/hooks/admin/useSapOutbound', () => ({
+  useSapOutboundCatalog: () => ({ data: outboundCatalog }),
   useSapOutboundOutboxPending: () => ({ data: { totalCount: outboxState.totalCount } }),
 }));
 
@@ -48,33 +76,53 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
     outboxState.totalCount = 0;
   });
 
-  it('H1 - Inbound/Outbound 방향별 그룹 헤더와 6개 실제 탭이 모두 노출', () => {
+  it('H1 - Inbound/Outbound 방향별 그룹 헤더와 고정 탭이 노출', () => {
     renderPage();
 
-    // 방향 그룹 헤더 (disabled 탭)
     expect(screen.getByText('Inbound')).toBeInTheDocument();
     expect(screen.getByText('Outbound')).toBeInTheDocument();
-
-    // 실제 탭 라벨 (호출 이력/API 목록은 양 방향에 중복되므로 개수로 검증)
     expect(screen.getAllByRole('tab', { name: '호출 이력' })).toHaveLength(2);
-    expect(screen.getAllByRole('tab', { name: 'API 목록' })).toHaveLength(2);
     expect(screen.getByRole('tab', { name: /대기 중 \(Outbox\)/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '테스트' })).toBeInTheDocument();
   });
 
-  it('H2 - 진입 시 Inbound 호출 이력 탭이 기본 활성', () => {
+  it('H2 - API 목록 대신 카탈로그의 각 API 가 한글명 라벨의 개별 탭으로 노출', () => {
+    renderPage();
+
+    // 단일 'API 목록' 탭은 더 이상 존재하지 않음
+    expect(screen.queryByRole('tab', { name: 'API 목록' })).not.toBeInTheDocument();
+
+    // 카탈로그 항목마다 한글명 탭
+    expect(screen.getByRole('tab', { name: '조직 마스터 수신' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '사원 마스터 수신' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '전문행사조 마스터' })).toBeInTheDocument();
+  });
+
+  it('H3 - 진입 시 Inbound 호출 이력 탭이 기본 활성', () => {
     renderPage();
     expect(screen.getByTestId('inbound-audits-tab')).toBeInTheDocument();
   });
 
-  it('H3 - Outbound 테스트 탭으로 전환 시 해당 콘텐츠 노출', async () => {
+  it('H4 - Inbound API 탭 클릭 시 해당 API 상세(Endpoint/Scope/적재 대상)가 표시', async () => {
     renderPage();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('tab', { name: '테스트' }));
-    expect(await screen.findByTestId('outbound-test-tab')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: '조직 마스터 수신' }));
+
+    expect(await screen.findByText('/api/v1/sap/organization')).toBeInTheDocument();
+    expect(screen.getByText('sap.org.write')).toBeInTheDocument();
+    expect(screen.getByText('OrganizeMaster')).toBeInTheDocument();
   });
 
-  it('H4 - 대기 큐 건수가 있으면 Outbox 탭 라벨에 건수 표기', () => {
+  it('H5 - Outbound API 탭 클릭 시 Interface ID 와 트리거가 표시', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('tab', { name: '전문행사조 마스터' }));
+
+    expect(await screen.findByText('SD03300')).toBeInTheDocument();
+    expect(screen.getByText('BATCH')).toBeInTheDocument();
+  });
+
+  it('H6 - 대기 큐 건수가 있으면 Outbox 탭 라벨에 건수 표기', () => {
     outboxState.totalCount = 7;
     renderPage();
     expect(
@@ -82,7 +130,7 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
     ).toBeInTheDocument();
   });
 
-  it('H5 - 그룹 헤더 탭은 클릭 불가(disabled)', () => {
+  it('H7 - 그룹 헤더 탭은 클릭 불가(disabled)', () => {
     renderPage();
     const inboundHeader = screen.getByText('Inbound').closest('[role="tab"]');
     expect(inboundHeader).toHaveAttribute('aria-disabled', 'true');
