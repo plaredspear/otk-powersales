@@ -327,17 +327,24 @@ for row in csv.reader(sys.stdin):
         else
             hdr=(-H "Authorization: Bearer $ACCESS_TOKEN")
         fi
-        http_code=$(curl -sS -L -o "$tmp" -w "%{http_code}" -D "$tmp.hdr" "${hdr[@]}" "$full" 2>/dev/null || echo 000)
+        # curl: 최종 HTTP 코드만(%{http_code}) stdout 으로, stderr 는 캡처해 실패 사유에 남긴다
+        # (-f 미사용 — 본문/헤더로 image 판정하므로). curl exit code 와 stderr 를 함께 기록해
+        # 1회 실행으로 전수 실패 원인이 드러나게 한다.
+        err="$tmp.err"
+        http_code=$(curl -sS -L -o "$tmp" -w "%{http_code}" -D "$tmp.hdr" "${hdr[@]}" "$full" 2>"$err")
+        curl_rc=$?
         ctype=$(grep -i "^content-type:" "$tmp.hdr" 2>/dev/null | tail -1 | tr -d "\r" | sed "s/.*: *//;s/;.*//" | tr "[:upper:]" "[:lower:]")
-        rm -f "$tmp.hdr"
         if [ "$http_code" = "200" ] && printf "%s" "$ctype" | grep -q "^image/"; then
             ext="${ctype#image/}"; [ "$ext" = "jpeg" ] && ext="jpg"
             mv "$tmp" "$IMG_DIR/$refid.$ext"
+            rm -f "$tmp.hdr" "$err"
         else
-            rm -f "$tmp"
-            reason="http=$http_code ctype=$ctype"
-            if [ "$http_code" = "200" ]; then reason="session-expired ($reason)"; fi
-            printf "%s,%s\n" "$refid" "$reason" >> "$FAILED_CSV"
+            # 실패 사유: curl exit code + http + content-type + stderr 첫 줄 (CSV 안전하게 따옴표/콤마 정리)
+            errline=$(head -1 "$err" 2>/dev/null | tr -d "\r" | tr ',\"' ';　')
+            reason="rc=$curl_rc http=$http_code ctype=${ctype:-none} err=${errline:-none}"
+            if [ "$http_code" = "200" ]; then reason="not-image ($reason)"; fi
+            rm -f "$tmp" "$tmp.hdr" "$err"
+            printf '%s,"%s"\n' "$refid" "$reason" >> "$FAILED_CSV"
         fi
     ' _ {}
 
