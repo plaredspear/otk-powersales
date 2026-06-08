@@ -11,13 +11,13 @@ function formatAmount(value: number | null | undefined): string {
 }
 
 function formatRate(value: number | null | undefined): string {
-  // 매출 진도율(서버 산출 비율 current/sum, 예: 0.85) — 화면은 % 표기 위해 ×100.
-  return value != null ? `${(value * 100).toFixed(1)}%` : '-';
+  // 매출 진도율(서버 산출 비율 current/sum, 예: 0.85) — SF ProgressRate__c(scale=0)와 동일하게 소수점 없이 반올림한 정수 % 표기.
+  return value != null ? `${Math.round(value * 100)}%` : '-';
 }
 
 function formatBusinessRate(value: number | null | undefined): string {
-  // 영업일 기준 진도율(SF BusinessRate__c) — Trigger 가 이미 (영업일/전체)*100 한 값을 저장. 그대로 % 표기.
-  return value != null ? `${value}%` : '-';
+  // 영업일 기준 진도율(SF BusinessRate__c, scale=0) — Trigger 가 이미 (영업일/전체)*100 한 값을 저장. SF 와 동일하게 소수점 없이 반올림한 정수 % 표기.
+  return value != null ? `${Math.round(value)}%` : '-';
 }
 
 function formatDateTime(value: string | null | undefined): string {
