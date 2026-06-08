@@ -40,6 +40,7 @@ class ProductListSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 레거시 write.jsp: "제품 *" 라벨 우측에 바코드 / +추가 버튼 배치.
         Row(
           children: [
             RichText(
@@ -55,27 +56,87 @@ class ProductListSection extends StatelessWidget {
                       color: AppColors.error,
                     ),
                   ),
-                  TextSpan(
-                    text: ' (수량: ${items.length}개)',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
                 ],
               ),
             ),
             const Spacer(),
+            OutlinedButton.icon(
+              onPressed: onBarcodeScan,
+              icon: const Icon(Icons.qr_code_scanner, size: 18),
+              label: const Text('바코드'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
+                side: BorderSide(color: AppColors.textSecondary),
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                ),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: onAddProduct,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('추가'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
+                side: BorderSide(color: AppColors.textSecondary),
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                ),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: AppSpacing.xs),
-        // Spec #598 P3-M §2.4 — 100개 안내 (회색, 단순 안내)
+        const SizedBox(height: AppSpacing.sm),
+        // 레거시 write.jsp: 100개 권장 안내 (빨강, 2줄).
         Text(
-          'ⓘ 제품은 100개 이하로 추가해주세요',
-          style: AppTypography.bodySmall.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          '품목 추가는 100개 이하로 하시는 것을 권장합니다.',
+          style: AppTypography.bodySmall.copyWith(color: AppColors.error),
         ),
-        const SizedBox(height: AppSpacing.md),
+        Text(
+          '주문 품목이 100개를 초과하는 경우 분할하여 주문요청 부탁드립니다.',
+          style: AppTypography.bodySmall.copyWith(color: AppColors.error),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        // 레거시 write.jsp: 선택 삭제(좌, 빨강 버튼) / 전체 선택(우, 체크박스).
+        Row(
+          children: [
+            ElevatedButton(
+              onPressed: hasSelectedItems ? onRemoveSelected : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: AppColors.white,
+                // ignore: deprecated_member_use
+                disabledBackgroundColor: AppColors.error.withOpacity(0.4),
+                disabledForegroundColor: AppColors.white,
+                elevation: 0,
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                ),
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Text('선택 삭제'),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: onToggleSelectAll,
+              child: Text(
+                '전체 선택',
+                style: AppTypography.bodyMedium,
+              ),
+            ),
+            Checkbox(
+              value: allItemsSelected,
+              onChanged: (value) => onToggleSelectAll(),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
         ListView.builder(
           controller: scrollController,
           shrinkWrap: true,
@@ -86,6 +147,7 @@ class ProductListSection extends StatelessWidget {
             final error = validationErrors[item.productCode];
 
             return OrderProductCard(
+              index: index,
               item: item,
               validationError: error,
               onSelectionChanged: (selected) {
@@ -94,76 +156,8 @@ class ProductListSection extends StatelessWidget {
               onQuantityChanged: (boxes, pieces) {
                 onQuantityChanged(item.productCode, boxes, pieces);
               },
-              onRemove: () {
-                onToggleSelection(item.productCode);
-                onRemoveSelected();
-              },
             );
           },
-        ),
-        const Divider(height: AppSpacing.lg),
-        Row(
-          children: [
-            Checkbox(
-              value: allItemsSelected,
-              onChanged: (value) => onToggleSelectAll(),
-            ),
-            GestureDetector(
-              onTap: onToggleSelectAll,
-              child: Text(
-                '전체 선택 / 해제',
-                style: AppTypography.bodyMedium,
-              ),
-            ),
-            const Spacer(),
-            TextButton(
-              onPressed: hasSelectedItems ? onRemoveSelected : null,
-              child: Text(
-                '선택 삭제',
-                style: AppTypography.labelMedium.copyWith(
-                  color: hasSelectedItems
-                      ? AppColors.error
-                      : AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: onBarcodeScan,
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('바코드'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 48),
-                  side: BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              flex: 2,
-              child: ElevatedButton.icon(
-                onPressed: onAddProduct,
-                icon: const Icon(Icons.add),
-                label: const Text('추가'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(0, 48),
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
       ],
     );

@@ -42,7 +42,7 @@ class ClientSelector extends StatelessWidget {
           // ignore: deprecated_member_use
           value: selectedClientId,
           hint: Text(
-            '선택하세요',
+            '거래처 선택',
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),

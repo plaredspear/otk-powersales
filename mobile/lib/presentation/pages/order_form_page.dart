@@ -232,25 +232,31 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                       onQuantityChanged: notifier.updateProductQuantity,
                       scrollController: _scrollController,
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    TotalAmountDisplay(
-                      totalAmount: state.totalAmount,
-                      creditBalance: state.creditBalance,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    OrderFormActionButtons(
-                      onDelete: () => DraftDeleteDialog.show(
-                        context,
-                        onConfirm: () => notifier.deleteDraft(),
-                      ),
-                      onSaveDraft: () => notifier.saveDraft(),
-                      onSubmit: () => notifier.validateAndSubmitOrder(),
-                      isSubmitting: state.isSubmitting,
-                      hasItems: state.hasItems,
-                    ),
                     const SizedBox(height: AppSpacing.xxxl),
                   ],
                 ),
+              ),
+        // 레거시 write.jsp: 총 주문금액 + 삭제/임시저장/승인요청 하단 고정 바.
+        bottomNavigationBar: state.isLoading
+            ? null
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TotalAmountDisplay(
+                    totalAmount: state.totalAmount,
+                    creditBalance: state.creditBalance,
+                  ),
+                  OrderFormActionButtons(
+                    onDelete: () => DraftDeleteDialog.show(
+                      context,
+                      onConfirm: () => notifier.deleteDraft(),
+                    ),
+                    onSaveDraft: () => notifier.saveDraft(),
+                    onSubmit: () => notifier.validateAndSubmitOrder(),
+                    isSubmitting: state.isSubmitting,
+                    hasItems: state.hasItems,
+                  ),
+                ],
               ),
       ),
     );
