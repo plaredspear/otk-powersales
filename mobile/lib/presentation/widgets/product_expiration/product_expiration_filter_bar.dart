@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
 /// 유통기한 검색 필터 바
 ///
-/// 거래처 드롭다운 + 유통기한 날짜 범위 + 검색 버튼
+/// 레거시(otg_PowerSales `product/expiration/list.jsp`)의 `search_top` 정합:
+/// - 거래처 전체 선택 (flat full-width 행 + 우측 chevron)
+/// - "유통기한 [기간]" 한 줄 + 우측 노란 pill `검색` 버튼
 class ProductExpirationFilterBar extends StatelessWidget {
   /// 거래처 목록 {accountCode: accountName}
   final Map<String, String> accounts;
@@ -49,33 +50,133 @@ class ProductExpirationFilterBar extends StatelessWidget {
     required this.onSearch,
   });
 
+  // 레거시 search_top 의 행 구분선/높이
+  static const Color _rowBorder = AppColors.surfaceVariant; // #F0F0F0
+  static const double _rowHeight = 50;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      color: AppColors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 거래처 드롭다운
-          _buildAccountDropdown(),
-          const SizedBox(height: AppSpacing.sm),
+          // 거래처 전체 (flat 행 + 우측 chevron)
+          _buildAccountRow(),
+          // 유통기한 기간 + 검색 (한 줄, 상단 구분선)
+          _buildDateSearchRow(context),
+        ],
+      ),
+    );
+  }
 
-          // 유통기한 날짜 범위
-          _buildDateRange(context),
-          const SizedBox(height: AppSpacing.md),
+  Widget _buildAccountRow() {
+    if (isAccountsLoading) {
+      return Container(
+        height: _rowHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        alignment: Alignment.centerLeft,
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '거래처 로딩 중...',
+              style: AppTypography.bodyLarge
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      );
+    }
 
-          // 검색 버튼
+    return Container(
+      height: _rowHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      alignment: Alignment.center,
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String?>(
+          value: selectedAccountCode,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down,
+              color: AppColors.textPrimary),
+          style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+          hint: Text(
+            '거래처 전체',
+            style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+          ),
+          items: [
+            DropdownMenuItem<String?>(
+              value: null,
+              child: Text('거래처 전체', style: AppTypography.bodyLarge),
+            ),
+            ...accounts.entries.map((entry) {
+              return DropdownMenuItem<String?>(
+                value: entry.key,
+                child: Text(
+                  entry.value,
+                  style: AppTypography.bodyLarge,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }),
+          ],
+          onChanged: (value) {
+            onAccountChanged(value, value != null ? accounts[value] : null);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateSearchRow(BuildContext context) {
+    final dateFormat = DateFormat('yyyy-MM-dd');
+
+    return Container(
+      height: _rowHeight,
+      padding: const EdgeInsets.only(left: 20, right: 12),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: _rowBorder)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            '유통기한',
+            style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+          ),
+          const SizedBox(width: 12),
+          // 기간 (단일 행, 탭 시 기간 선택)
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _selectDateRange(context),
+              child: Text(
+                '${dateFormat.format(fromDate)} - ${dateFormat.format(toDate)}',
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.textPrimary),
+              ),
+            ),
+          ),
+          // 검색 pill (레거시 #FFE40C, 57x32, radius 50)
           SizedBox(
-            height: AppSpacing.buttonHeight,
+            width: 57,
+            height: 32,
             child: ElevatedButton(
               onPressed: onSearch,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
+                backgroundColor: AppColors.legacyYellow,
+                foregroundColor: AppColors.black,
+                elevation: 0,
+                padding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
-                  borderRadius: AppSpacing.buttonBorderRadius,
+                  borderRadius: BorderRadius.circular(50),
                 ),
+                textStyle:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
               ),
               child: const Text('검색'),
             ),
@@ -85,140 +186,16 @@ class ProductExpirationFilterBar extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: AppSpacing.inputBorderRadius,
-        border: Border.all(color: AppColors.border),
-      ),
-      child: isAccountsLoading
-          ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  SizedBox(width: 8),
-                  Text('거래처 로딩 중...'),
-                ],
-              ),
-            )
-          : DropdownButtonHideUnderline(
-              child: DropdownButton<String?>(
-                value: selectedAccountCode,
-                isExpanded: true,
-                hint: Text(
-                  '거래처 전체',
-                  style: AppTypography.bodyMedium
-                      .copyWith(color: AppColors.textSecondary),
-                ),
-                items: [
-                  DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text(
-                      '거래처 전체',
-                      style: AppTypography.bodyMedium,
-                    ),
-                  ),
-                  ...accounts.entries.map((entry) {
-                    return DropdownMenuItem<String?>(
-                      value: entry.key,
-                      child: Text(
-                        entry.value,
-                        style: AppTypography.bodyMedium,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }),
-                ],
-                onChanged: (value) {
-                  onAccountChanged(value, value != null ? accounts[value] : null);
-                },
-              ),
-            ),
-    );
-  }
-
-  Widget _buildDateRange(BuildContext context) {
-    final dateFormat = DateFormat('yyyy-MM-dd');
-
-    return Row(
-      children: [
-        Text(
-          '유통기한',
-          style: AppTypography.labelLarge.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => _selectDate(context, fromDate, onFromDateChanged),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: AppSpacing.inputBorderRadius,
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(
-                dateFormat.format(fromDate),
-                style: AppTypography.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-          child: Text('~'),
-        ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => _selectDate(context, toDate, onToDateChanged),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: AppSpacing.inputBorderRadius,
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(
-                dateFormat.format(toDate),
-                style: AppTypography.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _selectDate(
-    BuildContext context,
-    DateTime initialDate,
-    void Function(DateTime) onChanged,
-  ) async {
-    final picked = await showDatePicker(
+  Future<void> _selectDateRange(BuildContext context) async {
+    final picked = await showDateRangePicker(
       context: context,
-      initialDate: initialDate,
+      initialDateRange: DateTimeRange(start: fromDate, end: toDate),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
     if (picked != null) {
-      onChanged(picked);
+      onFromDateChanged(picked.start);
+      onToDateChanged(picked.end);
     }
   }
 }
