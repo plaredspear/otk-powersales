@@ -4,16 +4,16 @@
 /// 앱 내 상수로 관리하며 서버 API 호출 없이 사용한다.
 enum EducationCategory {
   /// 시식 매뉴얼
-  tastingManual('TASTING_MANUAL', '시식 매뉴얼', 'assets/icons/education/tasting_manual.png'),
+  tastingManual('TASTING_MANUAL', '시식 매뉴얼', 'assets/images/education/tasting_manual.png'),
 
-  /// CS/안전
-  csSafety('CS_SAFETY', 'CS/안전', 'assets/icons/education/cs_safety.png'),
+  /// CS / 안전
+  csSafety('CS_SAFETY', 'CS / 안전', 'assets/images/education/cs_safety.png'),
 
   /// 교육 평가
-  evaluation('EVALUATION', '교육 평가', 'assets/icons/education/evaluation.png'),
+  evaluation('EVALUATION', '교육 평가', 'assets/images/education/evaluation.png'),
 
   /// 신제품 소개
-  newProduct('NEW_PRODUCT', '신제품 소개', 'assets/icons/education/new_product.png');
+  newProduct('NEW_PRODUCT', '신제품 소개', 'assets/images/education/new_product.png');
 
   /// API 호출 시 사용할 코드 값
   final String code;

@@ -3,7 +3,9 @@ package com.otoki.powersales.order.controller
 import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.order.dto.response.ClientOrderDetailResponse
 import com.otoki.powersales.order.dto.response.ClientOrderItemResponse
+import com.otoki.powersales.order.dto.response.ClientOrderSummaryResponse
 import com.otoki.powersales.order.enums.DeliveryStatus
+import com.otoki.powersales.order.exception.ClientNotFoundException
 import com.otoki.powersales.order.exception.ClientOrderForbiddenException
 import com.otoki.powersales.order.exception.InvalidSapOrderNumberException
 import com.otoki.powersales.order.exception.SapOrderNotFoundException
@@ -15,6 +17,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import io.mockk.every
 import com.ninjasquad.springmockk.MockkBean
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -28,6 +32,69 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
 
     @MockkBean
     private lateinit var clientOrderQueryService: ClientOrderQueryService
+
+    @Nested
+    @DisplayName("GET /api/v1/mobile/client-orders")
+    inner class GetClientOrdersTests {
+
+        @Test
+        @DisplayName("성공 - 거래처별 주문 목록 페이지 200 OK")
+        fun success() {
+            val page = PageImpl(
+                listOf(
+                    ClientOrderSummaryResponse(
+                        sapOrderNumber = "0300011396",
+                        clientId = 10L,
+                        clientName = "홍길동마트",
+                        totalAmount = 1_250_000L
+                    )
+                ),
+                PageRequest.of(0, 20),
+                1
+            )
+            every {
+                clientOrderQueryService.getClientOrders(eq(10L), eq(LocalDate.of(2026, 5, 6)), null, null)
+            } returns page
+
+            mockMvc.perform(
+                get("/api/v1/mobile/client-orders")
+                    .param("clientId", "10")
+                    .param("deliveryDate", "2026-05-06")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content[0].sapOrderNumber").value("0300011396"))
+                .andExpect(jsonPath("$.data.content[0].clientId").value(10))
+                .andExpect(jsonPath("$.data.content[0].clientName").value("홍길동마트"))
+                .andExpect(jsonPath("$.data.content[0].totalAmount").value(1_250_000))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.first").value(true))
+                .andExpect(jsonPath("$.data.last").value(true))
+        }
+
+        @Test
+        @DisplayName("실패 - 거래처 미존재 시 404 CLIENT_NOT_FOUND")
+        fun clientNotFound() {
+            every {
+                clientOrderQueryService.getClientOrders(eq(99L), any(), null, null)
+            } throws ClientNotFoundException()
+
+            mockMvc.perform(
+                get("/api/v1/mobile/client-orders").param("clientId", "99")
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.error.code").value("CLIENT_NOT_FOUND"))
+        }
+
+        @Test
+        @DisplayName("실패 - clientId 누락 시 400")
+        fun missingClientId() {
+            mockMvc.perform(get("/api/v1/mobile/client-orders"))
+                .andExpect(status().isBadRequest)
+        }
+    }
 
     @Nested
     @DisplayName("GET /api/v1/mobile/client-orders/{sapOrderNumber}")

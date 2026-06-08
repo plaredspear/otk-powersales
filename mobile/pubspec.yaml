@@ -108,6 +108,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/education/
 
   fonts:
     - family: NanumSquareNeo
