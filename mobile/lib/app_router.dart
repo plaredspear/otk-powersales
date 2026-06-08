@@ -32,8 +32,6 @@ import 'presentation/pages/product_expiration_register_page.dart';
 import 'presentation/pages/product_expiration_edit_page.dart';
 import 'presentation/pages/change_password_page.dart';
 import 'presentation/pages/verify_password_page.dart';
-import 'presentation/pages/alt_holiday_history_page.dart';
-import 'presentation/pages/alt_holiday_request_page.dart';
 import 'presentation/pages/my_schedule_calendar_page.dart';
 import 'presentation/pages/my_schedule_detail_page.dart';
 import 'presentation/pages/promotion_list_page.dart';
@@ -100,8 +98,6 @@ class AppRouter {
   static const String safetyCheckStatus = '/safety-check-status'; // #278: 안전점검 현황
   static const String myScheduleCalendar = '/my-schedule'; // F56: 마이페이지 일정 캘린더
   static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
-  static const String altHolidayRequest = '/alt-holiday/request'; // #285: 대체휴무 신청
-  static const String altHolidayHistory = '/alt-holiday/history'; // #285: 대체휴무 이력
   static const String leaderTeamMembers = '/leader/team-members'; // #554: 조장 — 팀원 일정 관리
   static const String leaderDailyStatus = '/leader/daily-status'; // P6: 조장 — 여사원 일별현황(조회 전용)
   static const String appInfo = '/app-info'; // 앱 정보 / 오픈소스 라이선스
@@ -236,8 +232,6 @@ class AppRouter {
           return PromotionDailySalesPage(
               promotionEmployeeId: promotionEmployeeId);
         },
-        altHolidayRequest: (context) => const AltHolidayRequestPage(), // #285: 대체휴무 신청
-        altHolidayHistory: (context) => const AltHolidayHistoryPage(), // #285: 대체휴무 이력
         leaderTeamMembers: (context) => const LeaderTeamMembersScreen(), // #554: 조장 팀원 일정 관리
         leaderDailyStatus: (context) => const LeaderDailyStatusScreen(), // P6: 여사원 일별현황(조회 전용)
         appInfo: (context) => const AppInfoPage(),
