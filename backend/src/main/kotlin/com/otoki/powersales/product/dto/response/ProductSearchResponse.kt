@@ -8,6 +8,8 @@ import com.otoki.powersales.product.entity.Product
 data class ProductDto(
     val productCode: String?,
     val productName: String?,
+    /** 발주 단위(product.unit) 매칭 대표 바코드 (레거시 productbarcode__c). 목록 화면 "바코드" 표시값. */
+    val barcode: String?,
     val logisticsBarcode: String?,
     val storageCondition: String?,
     val shelfLife: String?,
@@ -15,10 +17,11 @@ data class ProductDto(
     val category2: String?
 ) {
     companion object {
-        fun from(product: Product): ProductDto {
+        fun from(product: Product, barcode: String? = null): ProductDto {
             return ProductDto(
                 productCode = product.productCode,
                 productName = product.name,
+                barcode = barcode,
                 logisticsBarcode = product.logisticsBarcode,
                 storageCondition = product.storageCondition?.displayName,
                 shelfLife = product.shelfLife,

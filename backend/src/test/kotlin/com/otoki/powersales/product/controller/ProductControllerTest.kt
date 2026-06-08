@@ -157,6 +157,7 @@ class ProductControllerTest : MobileControllerTestSupport() {
         return ProductDto(
             productCode = productCode,
             productName = productName,
+            barcode = barcode,
             logisticsBarcode = barcode,
             storageCondition = "상온",
             shelfLife = "7개월",

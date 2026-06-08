@@ -4,6 +4,7 @@ import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.product.enums.ProductStatus
 import com.otoki.powersales.product.entity.QProduct.Companion.product
 import com.otoki.powersales.product.entity.QProductBarcode.Companion.productBarcode
+import com.querydsl.core.types.Expression
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -41,6 +42,56 @@ class ProductRepositoryCustomImpl(
         return unitMatchedBarcodeExists
             .and(product.productCategory3.`in`(ORDERABLE_CATEGORY3))
             .and(product.productStatus.isNull)
+    }
+
+    /**
+     * 발주 단위(product.unit)와 일치하는 대표 바코드 1건을 SELECT 절 상관 서브쿼리로 가져온다.
+     * (레거시 selectProduct: `a.dkretail__unit__c = b.productunit__c AND b.productbarcode__c IS NOT NULL`)
+     *
+     * N+1 회피: @OneToMany fetch join 대신 단일 쿼리에서 함께 조회한다. 단위별 바코드가 복수일
+     * 가능성에 대비해 min() 으로 단일 스칼라를 보장한다(행 증식 / count 불일치 방지).
+     */
+    private fun unitMatchedBarcode(): Expression<String> =
+        JPAExpressions
+            .select(productBarcode.barcode.min())
+            .from(productBarcode)
+            .where(
+                productBarcode.productId.eq(product.id),
+                productBarcode.unit.eq(product.unit),
+                productBarcode.barcode.isNotNull,
+            )
+
+    /**
+     * 제품 + 단위 매칭 바코드를 단일 쿼리로 조회하는 공통 페이지 실행기.
+     * count 는 EXISTS 기반 [where] 로 제품 단위(distinct)로 집계되어 본문 행 수와 일치한다.
+     */
+    private fun pagedSearch(where: BooleanExpression, pageable: Pageable): Page<ProductSearchRow> {
+        val matchedBarcode = unitMatchedBarcode()
+
+        val rows = queryFactory
+            .select(product, matchedBarcode)
+            .from(product)
+            .where(where)
+            .orderBy(product.name.asc(), product.productCode.asc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+
+        val content = rows.map { tuple ->
+            ProductSearchRow(
+                product = tuple.get(product)!!,
+                barcode = tuple.get(matchedBarcode)
+            )
+        }
+
+        val countQuery = queryFactory
+            .select(product.count())
+            .from(product)
+            .where(where)
+
+        return PageableExecutionUtils.getPage(content, pageable) {
+            countQuery.fetchOne() ?: 0L
+        }
     }
 
     override fun searchForAdmin(
@@ -121,55 +172,27 @@ class ProductRepositoryCustomImpl(
     }
 
 
-    override fun searchByText(query: String, pageable: Pageable): Page<Product> {
+    override fun searchByText(query: String, pageable: Pageable): Page<ProductSearchRow> {
         val pattern = "%${query.lowercase()}%"
 
         val searchPredicate = product.name.lower().like(pattern)
             .or(product.productCode.lower().like(pattern))
-        val where = orderableProductFilter().and(searchPredicate)
 
-        val content = queryFactory
-            .selectFrom(product)
-            .where(where)
-            .orderBy(product.name.asc(), product.productCode.asc())
-            .offset(pageable.offset)
-            .limit(pageable.pageSize.toLong())
-            .fetch()
-
-        val countQuery = queryFactory
-            .select(product.count())
-            .from(product)
-            .where(where)
-
-        return PageableExecutionUtils.getPage(content, pageable) {
-            countQuery.fetchOne() ?: 0L
-        }
+        return pagedSearch(orderableProductFilter().and(searchPredicate), pageable)
     }
 
-    override fun searchByTextIncludingBarcode(query: String, pageable: Pageable): Page<Product> {
+    override fun searchByTextIncludingBarcode(query: String, pageable: Pageable): Page<ProductSearchRow> {
         val lowerPattern = "%${query.lowercase()}%"
         val rawPattern = "%$query%"
 
         val searchPredicate = product.name.lower().like(lowerPattern)
             .or(product.productCode.lower().like(lowerPattern))
             .or(product.logisticsBarcode.like(rawPattern))
-        val where = orderableProductFilter().and(searchPredicate)
 
-        val content = queryFactory
-            .selectFrom(product)
-            .where(where)
-            .orderBy(product.name.asc(), product.productCode.asc())
-            .offset(pageable.offset)
-            .limit(pageable.pageSize.toLong())
-            .fetch()
+        return pagedSearch(orderableProductFilter().and(searchPredicate), pageable)
+    }
 
-        val countQuery = queryFactory
-            .select(product.count())
-            .from(product)
-            .where(where)
-
-        return PageableExecutionUtils.getPage(content, pageable) {
-            countQuery.fetchOne() ?: 0L
-        }
+    override fun findByLogisticsBarcode(logisticsBarcode: String, pageable: Pageable): Page<ProductSearchRow> {
+        return pagedSearch(product.logisticsBarcode.eq(logisticsBarcode), pageable)
     }
 }

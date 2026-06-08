@@ -54,7 +54,7 @@ class ProductService(
         // 검색어 검증 및 실행
         val pageable = PageRequest.of(page, size)
 
-        val productPage = when (type) {
+        val rowPage = when (type) {
             "barcode" -> {
                 validateBarcodeQuery(query)
                 productRepository.findByLogisticsBarcode(query.trim(), pageable)
@@ -70,7 +70,7 @@ class ProductService(
             }
         }
 
-        return productPage.map { ProductDto.from(it) }
+        return rowPage.map { ProductDto.from(it.product, it.barcode) }
     }
 
     /**

@@ -73,8 +73,8 @@ class ProductRepositoryTest {
 
             // Then
             assertThat(result.content).hasSize(3)
-            assertThat(result.content).allSatisfy { product ->
-                assertThat(product.name).containsIgnoringCase("열라면")
+            assertThat(result.content).allSatisfy { row ->
+                assertThat(row.product.name).containsIgnoringCase("열라면")
             }
         }
 
@@ -89,8 +89,8 @@ class ProductRepositoryTest {
 
             // Then
             assertThat(result.content).hasSize(2)
-            assertThat(result.content).allSatisfy { product ->
-                assertThat(product.name).containsIgnoringCase("진라면")
+            assertThat(result.content).allSatisfy { row ->
+                assertThat(row.product.name).containsIgnoringCase("진라면")
             }
         }
 
@@ -105,8 +105,8 @@ class ProductRepositoryTest {
 
             // Then
             assertThat(result.content).hasSize(3)
-            assertThat(result.content).allSatisfy { product ->
-                assertThat(product.productCode).contains("18110")
+            assertThat(result.content).allSatisfy { row ->
+                assertThat(row.product.productCode).contains("18110")
             }
         }
 
@@ -135,7 +135,7 @@ class ProductRepositoryTest {
 
             // Then
             assertThat(result.content).hasSizeGreaterThan(1)
-            val names = result.content.map { it.name }
+            val names = result.content.map { it.product.name }
             assertThat(names).isSorted()
         }
     }
@@ -157,7 +157,9 @@ class ProductRepositoryTest {
 
             // Then
             assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].logisticsBarcode).isEqualTo("8801045570716")
+            assertThat(result.content[0].product.logisticsBarcode).isEqualTo("8801045570716")
+            // 단위 매칭 대표 바코드(레거시 productbarcode__c)가 함께 내려온다 (시드: barcode == logisticsBarcode)
+            assertThat(result.content[0].barcode).isEqualTo("8801045570716")
         }
 
         @Test
@@ -171,8 +173,8 @@ class ProductRepositoryTest {
 
             // Then
             assertThat(result.content).isNotEmpty()
-            assertThat(result.content).anySatisfy { product ->
-                assertThat(product.productCode).isEqualTo("18110014")
+            assertThat(result.content).anySatisfy { row ->
+                assertThat(row.product.productCode).isEqualTo("18110014")
             }
         }
     }
@@ -194,8 +196,9 @@ class ProductRepositoryTest {
 
             // Then
             assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].logisticsBarcode).isEqualTo("8801045570716")
-            assertThat(result.content[0].name).isEqualTo("열라면_용기105G")
+            assertThat(result.content[0].product.logisticsBarcode).isEqualTo("8801045570716")
+            assertThat(result.content[0].product.name).isEqualTo("열라면_용기105G")
+            assertThat(result.content[0].barcode).isEqualTo("8801045570716")
         }
 
         @Test

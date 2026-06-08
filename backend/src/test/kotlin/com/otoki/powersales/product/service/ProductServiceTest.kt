@@ -5,6 +5,7 @@ import com.otoki.powersales.product.enums.StorageCondition
 import com.otoki.powersales.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.product.exception.InvalidSearchTypeException
 import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.product.repository.ProductSearchRow
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -36,7 +37,7 @@ class ProductServiceTest {
                 createTestProduct("18110014", "열라면_용기105G", "18110014", "8801045570716"),
                 createTestProduct("18110007", "열라면_용기115G", "18110007", "8801045570723")
             )
-            val page = PageImpl(products, PageRequest.of(0, 20), 2)
+            val page = rowPage(products, PageRequest.of(0, 20), 2)
             every { productRepository.searchByText("열라면", any()) } returns page
 
             val result = productService.searchProducts("열라면", "text", 0, 20)
@@ -54,7 +55,7 @@ class ProductServiceTest {
             val products = listOf(
                 createTestProduct("18110014", "열라면_용기105G", "18110014", "8801045570716")
             )
-            val page = PageImpl(products, PageRequest.of(0, 20), 1)
+            val page = rowPage(products, PageRequest.of(0, 20), 1)
             every { productRepository.searchByTextIncludingBarcode("18110014", any()) } returns page
 
             val result = productService.searchProducts("18110014", "text", 0, 20)
@@ -66,7 +67,7 @@ class ProductServiceTest {
         @Test
         @DisplayName("빈 결과 - 빈 Page 반환")
         fun searchProducts_noResults_returnsEmptyPage() {
-            val page = PageImpl<Product>(emptyList(), PageRequest.of(0, 20), 0)
+            val page = PageImpl<ProductSearchRow>(emptyList(), PageRequest.of(0, 20), 0)
             every { productRepository.searchByText("존재하지않는제품", any()) } returns page
 
             val result = productService.searchProducts("존재하지않는제품", "text", 0, 20)
@@ -111,12 +112,13 @@ class ProductServiceTest {
             val products = listOf(
                 createTestProduct("18110014", "열라면_용기105G", "18110014", "8801045570716")
             )
-            val page = PageImpl(products, PageRequest.of(0, 20), 1)
+            val page = rowPage(products, PageRequest.of(0, 20), 1)
             every { productRepository.findByLogisticsBarcode("8801045570716", any()) } returns page
 
             val result = productService.searchProducts("8801045570716", "barcode", 0, 20)
 
             assertThat(result.content).hasSize(1)
+            assertThat(result.content[0].barcode).isEqualTo("8801045570716")
             assertThat(result.content[0].logisticsBarcode).isEqualTo("8801045570716")
             verify { productRepository.findByLogisticsBarcode("8801045570716", any()) }
         }
@@ -171,7 +173,7 @@ class ProductServiceTest {
             val products = listOf(
                 createTestProduct("18130001", "참깨라면_봉지115G", "18130001", "8801045572001")
             )
-            val page = PageImpl(products, PageRequest.of(1, 5), 6)
+            val page = rowPage(products, PageRequest.of(1, 5), 6)
             every { productRepository.searchByText("라면", any()) } returns page
 
             val result = productService.searchProducts("라면", "text", 1, 5)
@@ -210,6 +212,10 @@ class ProductServiceTest {
                 .hasMessageContaining("페이지 크기")
         }
     }
+
+    /** 제품 목록을 검색 결과 행(ProductSearchRow) 페이지로 감싼다. 바코드는 logisticsBarcode 로 시드. */
+    private fun rowPage(products: List<Product>, pageable: PageRequest, total: Long) =
+        PageImpl(products.map { ProductSearchRow(it, it.logisticsBarcode) }, pageable, total)
 
     private fun createTestProduct(
         productId: String,
