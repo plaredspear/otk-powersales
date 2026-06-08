@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/image_picker_helper.dart';
+import 'claim_form_row.dart';
 
 /// 클레임 사진 첨부 필드
 class ClaimPhotoField extends StatelessWidget {
@@ -25,35 +26,22 @@ class ClaimPhotoField extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasPhoto = photo != null && photo!.path.isNotEmpty;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 라벨
-        Text(
-          isRequired ? '$label *' : label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // 사진 영역
-        if (hasPhoto)
-          _PhotoPreview(
-            photo: photo!,
-            onRemove: onPhotoRemoved,
-          )
-        else
-          _PhotoPickerButton(
-            onPhotoSelected: onPhotoSelected,
-          ),
-      ],
+    return ClaimFormRow(
+      label: label,
+      isRequired: isRequired,
+      alignTrailingTop: true,
+      trailing: _PhotoPickerButton(onPhotoSelected: onPhotoSelected),
+      below: hasPhoto
+          ? _PhotoPreview(
+              photo: photo!,
+              onRemove: onPhotoRemoved,
+            )
+          : const ClaimValueText(value: null, placeholder: '사진 선택'),
     );
   }
 }
 
-/// 사진 선택 버튼
+/// 사진 선택 버튼 (알약형)
 class _PhotoPickerButton extends StatelessWidget {
   const _PhotoPickerButton({
     required this.onPhotoSelected,
@@ -63,13 +51,10 @@ class _PhotoPickerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
+    return ClaimPillButton(
+      icon: Icons.add,
+      label: '사진 선택',
       onPressed: () => _showImageSourceSelector(context),
-      icon: const Icon(Icons.add_photo_alternate),
-      label: const Text('사진 선택'),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 48),
-      ),
     );
   }
 
@@ -98,9 +83,9 @@ class _PhotoPreview extends StatelessWidget {
         // 사진 썸네일
         Container(
           width: double.infinity,
-          height: 200,
+          height: 160,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: ClaimFormColors.divider),
             borderRadius: BorderRadius.circular(4),
           ),
           child: ClipRRect(

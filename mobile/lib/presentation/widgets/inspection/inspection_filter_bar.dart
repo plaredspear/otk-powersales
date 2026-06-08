@@ -72,25 +72,8 @@ class InspectionFilterBar extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
 
-          // 점검일 날짜 범위
+          // 점검일 날짜 범위 + 검색 버튼 (한 줄에 배치, 레거시 정렬)
           _buildDateRange(context),
-          const SizedBox(height: AppSpacing.md),
-
-          // 검색 버튼
-          SizedBox(
-            height: AppSpacing.buttonHeight,
-            child: ElevatedButton(
-              onPressed: onSearch,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppSpacing.buttonBorderRadius,
-                ),
-              ),
-              child: const Text('검색'),
-            ),
-          ),
         ],
       ),
     );
@@ -243,6 +226,28 @@ class InspectionFilterBar extends StatelessWidget {
                 style: AppTypography.bodySmall,
                 textAlign: TextAlign.center,
               ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        // 검색 버튼 (노란 pill - 레거시 .type_btn button 정렬)
+        SizedBox(
+          height: AppSpacing.buttonHeightSmall,
+          child: ElevatedButton(
+            onPressed: onSearch,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              minimumSize: const Size(57, AppSpacing.buttonHeightSmall),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),
+              ),
+            ),
+            child: const Text(
+              '검색',
+              style: TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
         ),

@@ -1,6 +1,7 @@
 package com.otoki.powersales.product.controller
 
 import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.product.dto.response.ProductCategoryGroup
 import com.otoki.powersales.product.dto.response.ProductDto
 import com.otoki.powersales.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.product.exception.InvalidSearchTypeException
@@ -145,6 +146,74 @@ class ProductControllerTest : MobileControllerTestSupport() {
                     .contentType(MediaType.APPLICATION_JSON)
             )
                 .andExpect(status().isBadRequest)
+        }
+    }
+
+    @Nested
+    @DisplayName("필터 검색 GET /search/filter")
+    inner class FilterSearchCases {
+
+        @Test
+        @DisplayName("제품명+중분류+소분류 조합 검색 성공 - 200 OK")
+        fun filterSearch_returnsOk() {
+            val products = listOf(
+                createProductDto("18110014", "열라면_용기105G", "18110014", "8801045570716")
+            )
+            val page = PageImpl(products, PageRequest.of(0, 20), 1)
+            every {
+                productService.searchProductsByFilter("열라면", null, "라면", "가정", 0, 20)
+            } returns page
+
+            mockMvc.perform(
+                get("/api/v1/mobile/products/search/filter")
+                    .param("productName", "열라면")
+                    .param("category2", "라면")
+                    .param("category3", "가정")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.content[0].productCode").value("18110014"))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+        }
+
+        @Test
+        @DisplayName("파라미터 전부 생략(빈 검색) 성공 - 200 OK")
+        fun filterSearch_noParams_returnsOk() {
+            val page = PageImpl(emptyList<ProductDto>(), PageRequest.of(0, 20), 0)
+            every {
+                productService.searchProductsByFilter(null, null, null, null, 0, 20)
+            } returns page
+
+            mockMvc.perform(
+                get("/api/v1/mobile/products/search/filter")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.content").isEmpty)
+        }
+    }
+
+    @Nested
+    @DisplayName("카테고리 GET /categories")
+    inner class CategoryCases {
+
+        @Test
+        @DisplayName("중분류→소분류 트리 조회 성공 - 200 OK")
+        fun getCategories_returnsOk() {
+            every { productService.getOrderableCategories() } returns listOf(
+                ProductCategoryGroup(middle = "라면", subs = listOf("가정", "업소")),
+                ProductCategoryGroup(middle = "스낵", subs = listOf("가정"))
+            )
+
+            mockMvc.perform(
+                get("/api/v1/mobile/products/categories")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].middle").value("라면"))
+                .andExpect(jsonPath("$.data[0].subs.length()").value(2))
+                .andExpect(jsonPath("$.data[0].subs[0]").value("가정"))
         }
     }
 

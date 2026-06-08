@@ -1,6 +1,8 @@
 package com.otoki.powersales.order.service
 
 import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.order.dto.response.OrderHistoryGroupResponse
+import com.otoki.powersales.order.dto.response.OrderHistoryProductResponse
 import com.otoki.powersales.order.dto.response.OrderRequestDetailResponse
 import com.otoki.powersales.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.order.dto.response.OrderRequestSummaryResponse
@@ -106,6 +108,48 @@ class OrderRequestService(
             truncated = truncated,
             fetchedAt = fetchedAt,
         )
+    }
+
+    /**
+     * 거래처 주문이력(제품 선택용) 조회 — 레거시 SF `OrderHistory`(IF_REST_MOBILE_OrderHistory) 정합.
+     *
+     * 본인이 해당 거래처(account.externalKey = accountCode)에 등록한 주문요청의 제품을
+     * 주문일(orderDate) 범위로 조회하여 주문일별로 그룹핑한다.
+     * 레거시와 동일하게 종료일은 해당일 전체 포함(EndDate +1일), 그룹 내 제품코드는 중복제거.
+     *
+     * @param userId JWT 사용자 ID (= employee.id)
+     * @param accountCode 거래처 SAP 코드 (Account.externalKey)
+     * @param startDate 주문일 시작
+     * @param endDate 주문일 종료 (inclusive)
+     * @return 주문일 내림차순 그룹 목록
+     */
+    fun getAccountOrderHistory(
+        userId: Long,
+        accountCode: String,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): List<OrderHistoryGroupResponse> {
+        if (endDate.isBefore(startDate)) {
+            throw InvalidDateRangeException()
+        }
+
+        val rows = orderRequestRepository.findOrderHistory(
+            employeeId = userId,
+            accountCode = accountCode,
+            orderDateFrom = startDate.atStartOfDay(),
+            orderDateToExclusive = endDate.plusDays(1).atStartOfDay(),
+        )
+
+        return rows
+            .filter { it.orderDate != null && !it.productCode.isNullOrBlank() }
+            .groupBy { it.orderDate!!.toLocalDate() }
+            .toSortedMap(reverseOrder())
+            .map { (date, groupRows) ->
+                val products = groupRows
+                    .distinctBy { it.productCode }
+                    .map { OrderHistoryProductResponse(it.productCode!!, it.productName) }
+                OrderHistoryGroupResponse(orderDate = date.toString(), products = products)
+            }
     }
 
     /**

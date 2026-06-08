@@ -1,10 +1,11 @@
 import '../../domain/entities/claim_detail.dart';
 import '../../domain/entities/claim_form.dart';
-import '../../domain/entities/claim_form_data.dart';
+import '../../domain/entities/claim_form_entry.dart';
 import '../../domain/entities/claim_list_item.dart';
 import '../../domain/entities/claim_result.dart';
 import '../../domain/repositories/claim_repository.dart';
 import '../datasources/claim_remote_datasource.dart';
+import '../models/claim_draft_request.dart';
 import '../models/claim_register_request.dart';
 
 /// ClaimRepository 구현체
@@ -21,8 +22,8 @@ class ClaimRepositoryImpl implements ClaimRepository {
   }
 
   @override
-  Future<ClaimFormData> getFormData() async {
-    final model = await _dataSource.getFormData();
+  Future<ClaimFormEntry> getForm() async {
+    final model = await _dataSource.getForm();
     return model.toEntity();
   }
 
@@ -42,5 +43,15 @@ class ClaimRepositoryImpl implements ClaimRepository {
   Future<ClaimDetail> getClaimDetail(int claimId) async {
     final model = await _dataSource.getClaimDetail(claimId);
     return model.toEntity();
+  }
+
+  @override
+  Future<void> saveDraft(ClaimRegisterForm? form) async {
+    await _dataSource.saveDraft(ClaimDraftRequest.fromForm(form));
+  }
+
+  @override
+  Future<void> deleteDraft() async {
+    await _dataSource.deleteDraft();
   }
 }

@@ -1,5 +1,6 @@
 package com.otoki.powersales.product.service
 
+import com.otoki.powersales.product.dto.response.ProductCategoryGroup
 import com.otoki.powersales.product.dto.response.ProductDetail
 import com.otoki.powersales.product.dto.response.ProductDto
 import com.otoki.powersales.product.exception.InvalidSearchParameterException
@@ -71,6 +72,54 @@ class ProductService(
         }
 
         return rowPage.map { ProductDto.from(it.product, it.barcode) }
+    }
+
+    /**
+     * 제품 필터 검색 — 레거시 제품추가 팝업(`selectProduct`) 정합.
+     *
+     * 제품명/바코드/중분류/소분류 조합으로 검색하며 모든 조건은 선택적이다.
+     * 모든 조건이 비어 있으면 orderable 제품 전체를 페이지로 반환한다(레거시 빈 검색 동작).
+     *
+     * @param productName 제품명(부분일치, 제품코드 포함)
+     * @param barcode 제품바코드(부분일치)
+     * @param category2 중분류
+     * @param category3 소분류
+     */
+    fun searchProductsByFilter(
+        productName: String?,
+        barcode: String?,
+        category2: String?,
+        category3: String?,
+        page: Int,
+        size: Int
+    ): Page<ProductDto> {
+        validatePagination(page, size)
+
+        val pageable = PageRequest.of(page, size)
+        val rowPage = productRepository.searchByFilter(
+            productName = productName?.trim()?.ifBlank { null },
+            barcode = barcode?.trim()?.ifBlank { null },
+            category2 = category2?.trim()?.ifBlank { null },
+            category3 = category3?.trim()?.ifBlank { null },
+            pageable = pageable
+        )
+
+        return rowPage.map { ProductDto.from(it.product, it.barcode) }
+    }
+
+    /**
+     * 모바일 제품추가 팝업 중분류→소분류 드롭다운 소스 조회.
+     */
+    fun getOrderableCategories(): List<ProductCategoryGroup> {
+        return productRepository.findOrderableCategories()
+            .groupBy { it.category2 }
+            .map { (middle, rows) ->
+                ProductCategoryGroup(
+                    middle = middle,
+                    subs = rows.map { it.category3 }.distinct().sorted()
+                )
+            }
+            .sortedBy { it.middle }
     }
 
     /**

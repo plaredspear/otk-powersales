@@ -45,9 +45,6 @@ class ProductExpirationFormState {
   /// 삭제 완료 여부 (수정 화면에서 삭제)
   final bool isDeleted;
 
-  /// 거래처 목록 (드롭다운용)
-  final Map<String, String> accounts;
-
   const ProductExpirationFormState({
     required this.isLoading,
     this.errorMessage,
@@ -61,7 +58,6 @@ class ProductExpirationFormState {
     this.editSeq,
     this.isSaved = false,
     this.isDeleted = false,
-    this.accounts = const {},
   });
 
   /// 등록 모드 초기 상태
@@ -134,7 +130,6 @@ class ProductExpirationFormState {
     int? editSeq,
     bool? isSaved,
     bool? isDeleted,
-    Map<String, String>? accounts,
   }) {
     return ProductExpirationFormState(
       isLoading: isLoading ?? this.isLoading,
@@ -153,7 +148,6 @@ class ProductExpirationFormState {
       editSeq: editSeq ?? this.editSeq,
       isSaved: isSaved ?? this.isSaved,
       isDeleted: isDeleted ?? this.isDeleted,
-      accounts: accounts ?? this.accounts,
     );
   }
 }

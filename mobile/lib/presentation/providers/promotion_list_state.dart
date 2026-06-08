@@ -19,6 +19,9 @@ class PromotionListState {
   /// 검색어
   final String keyword;
 
+  /// 거래처 필터 (null = 거래처 전체)
+  final int? accountId;
+
   const PromotionListState({
     this.isLoading = false,
     this.isLoadingMore = false,
@@ -32,17 +35,18 @@ class PromotionListState {
     required this.startDate,
     required this.endDate,
     this.keyword = '',
+    this.accountId,
   });
 
-  /// 초기 상태 (당월 1일 ~ 말일)
+  /// 초기 상태 (레거시 정합: 기본 기간 = 오늘)
+  ///
+  /// 여사원은 단일 날짜(start == end), 조장/지점장은 기간 범위를 사용하지만
+  /// 두 경우 모두 기본값은 오늘 하루로 진입한다.
   factory PromotionListState.initial() {
-    final now = DateTime.now();
-    final firstDay = DateTime(now.year, now.month, 1);
-    final lastDay = DateTime(now.year, now.month + 1, 0);
-
+    final today = _formatDate(DateTime.now());
     return PromotionListState(
-      startDate: _formatDate(firstDay),
-      endDate: _formatDate(lastDay),
+      startDate: today,
+      endDate: today,
     );
   }
 
@@ -83,6 +87,8 @@ class PromotionListState {
     String? startDate,
     String? endDate,
     String? keyword,
+    int? accountId,
+    bool clearAccount = false,
   }) {
     return PromotionListState(
       isLoading: isLoading ?? this.isLoading,
@@ -97,6 +103,7 @@ class PromotionListState {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       keyword: keyword ?? this.keyword,
+      accountId: clearAccount ? null : (accountId ?? this.accountId),
     );
   }
 }

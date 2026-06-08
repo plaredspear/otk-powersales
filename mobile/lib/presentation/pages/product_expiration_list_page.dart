@@ -114,42 +114,72 @@ class _ProductExpirationListPageState extends ConsumerState<ProductExpirationLis
             },
           ),
 
-          // 결과 헤더 (전체 개수 + 삭제 버튼)
-          if (state.hasSearched) _buildResultHeader(state),
+          // 검색 영역 하단 구분 띠 (레거시 bline)
+          _band(),
 
           // 목록
           Expanded(child: _buildBody(state)),
         ],
       ),
+      // 제품 추가 (레거시 btn_add_product — 주황 원형 "+제품")
       floatingActionButton: FloatingActionButton(
         onPressed: _onRegisterTap,
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        child: const Icon(Icons.add),
+        backgroundColor: AppColors.warning,
+        foregroundColor: AppColors.white,
+        shape: const CircleBorder(),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add, size: 18),
+            Text(
+              '제품',
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w600, height: 1.1),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildResultHeader(ProductExpirationListState state) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
+  /// 레거시 bline (높이 10px, #F0F0F0 구분 띠)
+  Widget _band({bool marginTop = false}) {
+    return Container(
+      margin: marginTop ? const EdgeInsets.only(top: AppSpacing.md) : EdgeInsets.zero,
+      height: 10,
+      color: AppColors.surfaceVariant,
+    );
+  }
+
+  /// 레거시 sect_top — "전체 (N)" (N 빨강) + 삭제
+  Widget _buildSectTop(ProductExpirationListState state) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      alignment: Alignment.center,
       child: Row(
         children: [
-          Text(
-            '전체 (${state.totalCount})',
-            style: AppTypography.headlineSmall,
+          Text.rich(
+            TextSpan(
+              children: [
+                const TextSpan(text: '전체 '),
+                TextSpan(
+                  text: '(${state.totalCount})',
+                  style: const TextStyle(color: AppColors.legacyDanger),
+                ),
+              ],
+              style: AppTypography.headlineSmall,
+            ),
           ),
           const Spacer(),
           if (state.hasResults)
             TextButton.icon(
               onPressed: _onDeleteTap,
-              icon: const Icon(Icons.close, size: 16),
+              icon: const Icon(Icons.delete_outline, size: 16),
               label: const Text('삭제'),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.error,
+                foregroundColor: AppColors.textSecondary,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               ),
             ),
         ],
@@ -189,57 +219,41 @@ class _ProductExpirationListPageState extends ConsumerState<ProductExpirationLis
       );
     }
 
-    // 검색 결과 없음
-    if (state.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_outlined,
-                size: 64, color: AppColors.textTertiary),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              '조회된 유통기한이 없습니다',
-              style: AppTypography.bodyLarge
-                  .copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
-    }
-
     // 검색 전 초기 상태
     if (!state.hasSearched) {
       return const SizedBox.shrink();
     }
 
-    // 그룹별 목록
+    // 레거시 정합: 검색 후에는 전체 카운트와 두 그룹 헤더(지남/전)를 항상 표시.
+    // 항목이 0개여도 헤더는 (0)으로 노출된다.
     return ListView(
       children: [
+        // 전체 (N)
+        _buildSectTop(state),
+        _band(),
+
         // 유통기한 지남 그룹
-        if (state.expiredItems.isNotEmpty) ...[
-          ProductExpirationGroupHeader(
-            isExpired: true,
-            count: state.expiredItems.length,
-          ),
-          ...state.expiredItems.map((item) => ProductExpirationProductCard(
-                item: item,
-                onTap: () => _onItemTap(item),
-              )),
-          const SizedBox(height: AppSpacing.md),
-        ],
+        ProductExpirationGroupHeader(
+          isExpired: true,
+          count: state.expiredItems.length,
+        ),
+        ...state.expiredItems.map((item) => ProductExpirationProductCard(
+              item: item,
+              onTap: () => _onItemTap(item),
+            )),
+
+        // 그룹 구분 띠 (레거시 bline mt20)
+        _band(marginTop: true),
 
         // 유통기한 전 그룹
-        if (state.activeItems.isNotEmpty) ...[
-          ProductExpirationGroupHeader(
-            isExpired: false,
-            count: state.activeItems.length,
-          ),
-          ...state.activeItems.map((item) => ProductExpirationProductCard(
-                item: item,
-                onTap: () => _onItemTap(item),
-              )),
-        ],
+        ProductExpirationGroupHeader(
+          isExpired: false,
+          count: state.activeItems.length,
+        ),
+        ...state.activeItems.map((item) => ProductExpirationProductCard(
+              item: item,
+              onTap: () => _onItemTap(item),
+            )),
 
         // 하단 여백 (FAB과 겹치지 않도록)
         const SizedBox(height: 80),

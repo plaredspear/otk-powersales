@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/claim_code.dart';
+import 'package:mobile/domain/entities/claim_detail.dart';
 import 'package:mobile/domain/entities/claim_form.dart';
-import 'package:mobile/domain/entities/claim_form_data.dart';
+import 'package:mobile/domain/entities/claim_form_entry.dart';
+import 'package:mobile/domain/entities/claim_list_item.dart';
 import 'package:mobile/domain/entities/claim_result.dart';
 import 'package:mobile/domain/repositories/claim_repository.dart';
 import 'package:mobile/domain/usecases/register_claim_usecase.dart';
@@ -32,9 +34,24 @@ class MockClaimRepository implements ClaimRepository {
   }
 
   @override
-  Future<ClaimFormData> getFormData() async {
-    throw UnimplementedError();
-  }
+  Future<ClaimFormEntry> getForm() async => throw UnimplementedError();
+
+  @override
+  Future<List<ClaimListItem>> getClaims({
+    String? startDate,
+    String? endDate,
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<ClaimDetail> getClaimDetail(int claimId) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> saveDraft(ClaimRegisterForm? form) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> deleteDraft() async => throw UnimplementedError();
 }
 
 void main() {

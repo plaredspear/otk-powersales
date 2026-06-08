@@ -22,6 +22,7 @@ abstract class PromotionRepository {
     String? startDate,
     String? endDate,
     String? keyword,
+    int? accountId,
     int page = 0,
     int size = 20,
   });

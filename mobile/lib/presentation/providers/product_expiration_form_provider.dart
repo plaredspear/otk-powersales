@@ -1,8 +1,6 @@
-import 'package:dio/dio.dart';
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/network/dio_provider.dart';
 import '../../domain/entities/product_expiration_form.dart';
 import '../../domain/entities/product_expiration_item.dart';
 import '../../domain/usecases/delete_product_expiration_usecase.dart';
@@ -42,37 +40,23 @@ class ProductExpirationFormNotifier extends StateNotifier<ProductExpirationFormS
   final RegisterProductExpiration _registerProductExpiration;
   final UpdateProductExpiration _updateProductExpiration;
   final DeleteProductExpiration _deleteProductExpiration;
-  final Dio _dio;
 
   ProductExpirationFormNotifier({
     required RegisterProductExpiration registerProductExpiration,
     required UpdateProductExpiration updateProductExpiration,
     required DeleteProductExpiration deleteProductExpiration,
-    required Dio dio,
   })  : _registerProductExpiration = registerProductExpiration,
         _updateProductExpiration = updateProductExpiration,
         _deleteProductExpiration = deleteProductExpiration,
-        _dio = dio,
         super(ProductExpirationFormState.initial());
 
-  /// 등록 모드 초기화 (거래처 목록 로드)
-  Future<void> initializeForRegister() async {
-    try {
-      final response = await _dio.get('/api/v1/mobile/accounts/my');
-      final data = response.data['data'] as Map<String, dynamic>;
-      final accountsList = data['accounts'] as List<dynamic>;
-      final accountsMap = <String, String>{};
-      for (final account in accountsList) {
-        final accountMap = account as Map<String, dynamic>;
-        final code = accountMap['accountCode'] as String;
-        final name = accountMap['accountName'] as String;
-        accountsMap[code] = name;
-      }
-      state = ProductExpirationFormState.initial().copyWith(accounts: accountsMap);
-    } catch (e) {
-      // 거래처 로딩 실패 시 빈 목록으로 초기화
-      state = ProductExpirationFormState.initial();
-    }
+  /// 등록 모드 초기화
+  ///
+  /// 공유 Notifier 가 직전 수정 모드의 상태를 들고 있을 수 있으므로 등록 화면
+  /// 진입 시 깨끗한 초기 상태로 되돌린다. 거래처는 [AccountSelectorSheet] 가
+  /// 직접 조회하므로 여기서 미리 불러오지 않는다.
+  void initializeForRegister() {
+    state = ProductExpirationFormState.initial();
   }
 
   /// 수정 모드 초기화 (기존 데이터 로드)
@@ -208,12 +192,10 @@ final productExpirationFormProvider =
   final registerUseCase = ref.watch(registerProductExpirationUseCaseProvider);
   final updateUseCase = ref.watch(updateProductExpirationUseCaseProvider);
   final deleteUseCase = ref.watch(deleteProductExpirationUseCaseProvider);
-  final dio = ref.watch(dioProvider);
 
   return ProductExpirationFormNotifier(
     registerProductExpiration: registerUseCase,
     updateProductExpiration: updateUseCase,
     deleteProductExpiration: deleteUseCase,
-    dio: dio,
   );
 });

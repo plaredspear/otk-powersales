@@ -104,12 +104,26 @@ class _InspectionListPageState extends ConsumerState<InspectionListPage> {
           Expanded(child: _buildBody(state.isLoading, state.items)),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _onRegisterTap,
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        icon: const Icon(Icons.add),
-        label: const Text('점검'),
+      // 점검 추가 FAB (레거시 .btn_add_check - 파란 원형 48x48)
+      floatingActionButton: SizedBox(
+        width: 56,
+        height: 56,
+        child: FloatingActionButton(
+          onPressed: _onRegisterTap,
+          backgroundColor: AppColors.secondary,
+          foregroundColor: AppColors.onSecondary,
+          shape: const CircleBorder(),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add, size: 20),
+              Text(
+                '점검',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -122,9 +136,17 @@ class _InspectionListPageState extends ConsumerState<InspectionListPage> {
       ),
       child: Row(
         children: [
-          Text(
-            '내 현장 점검 ($totalCount)',
-            style: AppTypography.headlineSmall,
+          Text.rich(
+            TextSpan(
+              style: AppTypography.headlineSmall,
+              children: [
+                const TextSpan(text: '내 현장 점검 '),
+                TextSpan(
+                  text: '($totalCount)',
+                  style: TextStyle(color: AppColors.legacyDanger),
+                ),
+              ],
+            ),
           ),
         ],
       ),

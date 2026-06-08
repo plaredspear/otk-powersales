@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
+import '../widgets/account/account_selector_sheet.dart';
 import '../providers/product_expiration_form_provider.dart';
 import '../widgets/product_expiration/product_expiration_add_product_sheet.dart';
 import '../widgets/product_expiration/product_expiration_register_form.dart';
@@ -61,21 +61,25 @@ class _ProductExpirationRegisterPageState
       body: state.isLoading && !state.hasAccount
           ? const Center(child: CircularProgressIndicator())
           : ProductExpirationRegisterForm(
-              accounts: state.accounts,
-              selectedAccountCode: state.selectedAccountCode,
-              selectedProductCode: state.selectedProductCode,
-              selectedProductName: state.selectedProductName,
+              accountName: state.selectedAccountName,
+              productCode: state.selectedProductCode,
+              productName: state.selectedProductName,
               expiryDate: state.expiryDate,
               alertDate: state.alertDate,
               description: state.description,
-              onAccountChanged: (accountCode, accountName) {
-                ref
-                    .read(productExpirationFormProvider.notifier)
-                    .selectAccount(accountCode, accountName);
+              onSelectAccount: () async {
+                final account = await AccountSelectorSheet.show(context);
+                if (account != null) {
+                  ref
+                      .read(productExpirationFormProvider.notifier)
+                      .selectAccount(account.accountCode, account.accountName);
+                }
               },
               onSelectProduct: () async {
-                final result =
-                    await ProductExpirationAddProductSheet.show(context);
+                final result = await ProductExpirationAddProductSheet.show(
+                  context,
+                  accountCode: state.selectedAccountCode,
+                );
                 if (result != null) {
                   ref.read(productExpirationFormProvider.notifier).selectProduct(
                         result.productCode,
@@ -111,38 +115,40 @@ class _ProductExpirationRegisterPageState
     );
   }
 
+  /// 하단 등록 버튼 — 레거시(fix_bottom_wrap btn_yellow)처럼 전폭 무여백.
   Widget _buildRegisterButton(dynamic state) {
+    final enabled = state.canSave as bool;
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: SizedBox(
-          width: double.infinity,
-          height: AppSpacing.buttonHeight,
-          child: ElevatedButton(
-            onPressed: state.canSave
-                ? () {
-                    ref.read(productExpirationFormProvider.notifier).register();
-                  }
+      top: false,
+      child: SizedBox(
+        height: 56,
+        child: Material(
+          color: enabled ? AppColors.legacyYellow : AppColors.divider,
+          child: InkWell(
+            onTap: enabled
+                ? () => ref.read(productExpirationFormProvider.notifier).register()
                 : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.white,
-              disabledBackgroundColor: AppColors.divider,
-              disabledForegroundColor: AppColors.textTertiary,
-              shape: RoundedRectangleBorder(
-                borderRadius: AppSpacing.buttonBorderRadius,
-              ),
-            ),
-            child: state.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.white,
+            child: Center(
+              child: state.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.textPrimary,
+                      ),
+                    )
+                  : Text(
+                      '등록',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: enabled
+                            ? AppColors.textPrimary
+                            : AppColors.textTertiary,
+                      ),
                     ),
-                  )
-                : const Text('등록'),
+            ),
           ),
         ),
       ),

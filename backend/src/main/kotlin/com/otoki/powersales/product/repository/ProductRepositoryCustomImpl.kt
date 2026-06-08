@@ -172,6 +172,67 @@ class ProductRepositoryCustomImpl(
     }
 
 
+    override fun searchByFilter(
+        productName: String?,
+        barcode: String?,
+        category2: String?,
+        category3: String?,
+        pageable: Pageable
+    ): Page<ProductSearchRow> {
+        var where = orderableProductFilter()
+
+        if (!productName.isNullOrBlank()) {
+            val pattern = "%${productName.lowercase()}%"
+            where = where.and(
+                product.name.lower().like(pattern)
+                    .or(product.productCode.lower().like(pattern))
+            )
+        }
+
+        if (!barcode.isNullOrBlank()) {
+            // 레거시: `b.productbarcode__c LIKE '%?%' AND a.dkretail__unit__c = b.productunit__c`.
+            // 발주 단위와 일치하는 바코드(목록에 표시되는 대표 바코드)에 대한 부분일치.
+            val barcodePattern = "%$barcode%"
+            val barcodeLikeExists = JPAExpressions.selectOne()
+                .from(productBarcode)
+                .where(
+                    productBarcode.productId.eq(product.id),
+                    productBarcode.unit.eq(product.unit),
+                    productBarcode.barcode.like(barcodePattern),
+                )
+                .exists()
+            where = where.and(barcodeLikeExists)
+        }
+
+        if (!category2.isNullOrBlank()) {
+            where = where.and(product.productCategory2.eq(category2))
+        }
+        if (!category3.isNullOrBlank()) {
+            where = where.and(product.productCategory3.eq(category3))
+        }
+
+        return pagedSearch(where, pageable)
+    }
+
+    override fun findOrderableCategories(): List<OrderableCategoryRow> {
+        val results = queryFactory
+            .select(product.productCategory2, product.productCategory3)
+            .from(product)
+            .where(
+                orderableProductFilter(),
+                product.productCategory2.isNotNull,
+            )
+            .distinct()
+            .orderBy(product.productCategory2.asc(), product.productCategory3.asc())
+            .fetch()
+
+        return results.mapNotNull { tuple ->
+            val c2 = tuple.get(product.productCategory2) ?: return@mapNotNull null
+            val c3 = tuple.get(product.productCategory3) ?: return@mapNotNull null
+            OrderableCategoryRow(category2 = c2, category3 = c3)
+        }
+    }
+
     override fun searchByText(query: String, pageable: Pageable): Page<ProductSearchRow> {
         val pattern = "%${query.lowercase()}%"
 

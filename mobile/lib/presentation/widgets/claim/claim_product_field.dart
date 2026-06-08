@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'claim_form_row.dart';
+
 /// 클레임 제품 선택 필드
 class ClaimProductField extends StatelessWidget {
   const ClaimProductField({
@@ -19,65 +21,37 @@ class ClaimProductField extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasProduct = productName != null && productName!.isNotEmpty;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 필드 라벨 + 버튼들
-        Row(
-          children: [
-            const Text(
-              '제품 *',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const Spacer(),
-            // 바코드 스캔 버튼
-            OutlinedButton.icon(
-              onPressed: onBarcodePressed,
-              icon: const Icon(Icons.qr_code_scanner, size: 18),
-              label: const Text('바코드'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: const Size(0, 32),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // 제품 선택 버튼
-            OutlinedButton.icon(
-              onPressed: onProductSelectPressed,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('선택'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: const Size(0, 32),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-
-        // 제품 정보 표시 영역
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(4),
+    return ClaimFormRow(
+      label: '제품',
+      isRequired: true,
+      alignTrailingTop: true,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClaimPillButton(
+            icon: Icons.qr_code_scanner,
+            label: '바코드',
+            onPressed: onBarcodePressed,
           ),
-          child: hasProduct
-              ? _ProductInfo(
-                  productName: productName!,
-                  productCode: productCode!,
-                )
-              : const _ProductPlaceholder(),
-        ),
-      ],
+          const SizedBox(width: 8),
+          ClaimPillButton(
+            icon: Icons.add,
+            label: '선택',
+            onPressed: onProductSelectPressed,
+          ),
+        ],
+      ),
+      below: hasProduct
+          ? _ProductInfo(
+              productName: productName!,
+              productCode: productCode ?? '',
+            )
+          : const ClaimValueText(value: null, placeholder: '제품 선택'),
     );
   }
 }
 
-/// 제품 정보 표시
+/// 제품 정보 표시 (제품명 + 코드)
 class _ProductInfo extends StatelessWidget {
   const _ProductInfo({
     required this.productName,
@@ -96,34 +70,20 @@ class _ProductInfo extends StatelessWidget {
           productName,
           style: const TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w500,
+            color: ClaimFormColors.value,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          productCode,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
+        if (productCode.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            productCode,
+            style: const TextStyle(
+              fontSize: 12,
+              color: ClaimFormColors.placeholder,
+            ),
           ),
-        ),
+        ],
       ],
-    );
-  }
-}
-
-/// 제품 미선택 플레이스홀더
-class _ProductPlaceholder extends StatelessWidget {
-  const _ProductPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      '[제품 선택]',
-      style: TextStyle(
-        fontSize: 14,
-        color: Colors.grey.shade600,
-      ),
     );
   }
 }

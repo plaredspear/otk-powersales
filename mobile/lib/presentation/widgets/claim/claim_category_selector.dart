@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../domain/entities/claim_category.dart';
+import 'claim_form_row.dart';
 
 /// 클레임 종류 선택 위젯 (종류1 + 종류2)
 class ClaimCategorySelector extends StatelessWidget {
@@ -28,43 +29,52 @@ class ClaimCategorySelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 클레임 종류1 선택
-        _CategoryField(
-          label: '클레임 종류1 *',
-          selectedName: selectedCategory?.name,
-          placeholder: '종류선택',
+        ClaimFormRow(
+          label: '클레임 종류1',
+          isRequired: true,
           onTap: () => _showCategorySelector(context),
+          trailing: const ClaimRowChevron(),
+          below: ClaimValueText(
+            value: selectedCategory?.name,
+            placeholder: '종류선택',
+          ),
         ),
-        const SizedBox(height: 16),
 
         // 클레임 종류2 선택
-        _CategoryField(
-          label: '클레임 종류2 *',
-          selectedName: selectedSubcategory?.name,
-          placeholder: hasCategory ? '종류선택' : '종류1을 먼저 선택하세요',
+        ClaimFormRow(
+          label: '클레임 종류2',
+          isRequired: true,
           enabled: hasCategory,
           onTap: hasCategory
               ? () => _showSubcategorySelector(context, subcategories)
               : null,
+          trailing: hasCategory ? const ClaimRowChevron() : null,
+          below: hasCategory
+              ? ClaimValueText(
+                  value: selectedSubcategory?.name,
+                  placeholder: '종류선택',
+                )
+              : const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '종류1을 먼저 선택하세요',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ClaimFormColors.value,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      '종류선택',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ClaimFormColors.placeholder,
+                      ),
+                    ),
+                  ],
+                ),
         ),
-
-        // 선택된 종류 라벨 표시
-        if (selectedCategory != null && selectedSubcategory != null) ...[
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              '${selectedCategory!.name} > ${selectedSubcategory!.name}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -102,63 +112,6 @@ class ClaimCategorySelector extends StatelessWidget {
     if (selected != null) {
       onSubcategorySelected(selected);
     }
-  }
-}
-
-/// 종류 선택 필드
-class _CategoryField extends StatelessWidget {
-  const _CategoryField({
-    required this.label,
-    required this.selectedName,
-    required this.placeholder,
-    this.enabled = true,
-    this.onTap,
-  });
-
-  final String label;
-  final String? selectedName;
-  final String placeholder;
-  final bool enabled;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-            side: BorderSide(
-              color: enabled ? Colors.grey.shade300 : Colors.grey.shade200,
-            ),
-          ),
-          title: Text(
-            selectedName ?? placeholder,
-            style: TextStyle(
-              fontSize: 14,
-              color: selectedName == null
-                  ? Colors.grey.shade600
-                  : Colors.black87,
-            ),
-          ),
-          trailing: enabled
-              ? const Icon(Icons.arrow_forward_ios, size: 16)
-              : null,
-          enabled: enabled,
-          onTap: onTap,
-        ),
-      ],
-    );
   }
 }
 

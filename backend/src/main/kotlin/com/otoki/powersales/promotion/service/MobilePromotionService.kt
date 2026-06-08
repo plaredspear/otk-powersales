@@ -31,6 +31,7 @@ class MobilePromotionService(
         startDate: String?,
         endDate: String?,
         keyword: String?,
+        accountId: Long?,
         page: Int,
         size: Int
     ): MobilePromotionListResponse {
@@ -53,6 +54,7 @@ class MobilePromotionService(
             keyword = keyword,
             startDate = startDate,
             endDate = endDate,
+            accountId = accountId,
             pageable = pageable
         )
 

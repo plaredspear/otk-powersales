@@ -21,6 +21,7 @@ class _FakePromotionRepository implements PromotionRepository {
     String? startDate,
     String? endDate,
     String? keyword,
+    int? accountId,
     int page = 0,
     int size = 20,
   }) async {
@@ -49,22 +50,20 @@ void main() {
     // ----------------------------------------
     // 1. 초기 상태
     // ----------------------------------------
-    test('초기 상태는 당월 1일~말일, 빈 목록이다', () {
+    test('초기 상태는 오늘(단일 날짜), 빈 목록이다 (레거시 정합)', () {
       final now = DateTime.now();
-      final expectedStart =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-01';
-      final lastDay = DateTime(now.year, now.month + 1, 0);
-      final expectedEnd =
-          '${lastDay.year}-${lastDay.month.toString().padLeft(2, '0')}-${lastDay.day.toString().padLeft(2, '0')}';
+      final today =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
       expect(notifier.state.isLoading, false);
       expect(notifier.state.isLoadingMore, false);
       expect(notifier.state.errorMessage, isNull);
       expect(notifier.state.items, isEmpty);
       expect(notifier.state.hasSearched, false);
-      expect(notifier.state.startDate, expectedStart);
-      expect(notifier.state.endDate, expectedEnd);
+      expect(notifier.state.startDate, today);
+      expect(notifier.state.endDate, today);
       expect(notifier.state.keyword, '');
+      expect(notifier.state.accountId, isNull);
       expect(notifier.state.currentPage, 0);
       expect(notifier.state.isLastPage, false);
     });
@@ -220,6 +219,33 @@ void main() {
     });
 
     // ----------------------------------------
+    // 8-1. updateSingleDate (여사원 단일 날짜)
+    // ----------------------------------------
+    test('updateSingleDate로 start/end가 동일 날짜로 설정된다', () {
+      // When
+      notifier.updateSingleDate('2025-06-08');
+
+      // Then
+      expect(notifier.state.startDate, '2025-06-08');
+      expect(notifier.state.endDate, '2025-06-08');
+    });
+
+    // ----------------------------------------
+    // 8-2. updateAccount (거래처 필터)
+    // ----------------------------------------
+    test('updateAccount로 거래처 필터가 설정/해제된다', () {
+      // When: 거래처 선택
+      notifier.updateAccount(100);
+      // Then
+      expect(notifier.state.accountId, 100);
+
+      // When: 거래처 전체(null)로 해제
+      notifier.updateAccount(null);
+      // Then
+      expect(notifier.state.accountId, isNull);
+    });
+
+    // ----------------------------------------
     // 9. clearError 동작
     // ----------------------------------------
     test('clearError는 에러 메시지를 초기화한다', () async {
@@ -289,7 +315,7 @@ const _sampleItem1 = PromotionItem(
   id: 1,
   promotionNumber: 'P-2025-001',
   promotionName: '이마트 죽전점 행사',
-  promotionTypeName: '시식행사',
+  promotionType: '시식행사',
   accountName: '이마트 죽전점',
   startDate: '2025-03-01',
   endDate: '2025-03-15',
@@ -305,7 +331,7 @@ const _sampleItem2 = PromotionItem(
   id: 2,
   promotionNumber: 'P-2025-002',
   promotionName: '홈플러스 수지점 행사',
-  promotionTypeName: '엔드매대',
+  promotionType: '엔드매대',
   accountName: '홈플러스 수지점',
   startDate: '2025-03-05',
   endDate: '2025-03-20',

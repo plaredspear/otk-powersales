@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/domain/entities/claim_category.dart';
 import 'package:mobile/domain/entities/claim_code.dart';
 import 'package:mobile/domain/entities/claim_detail.dart';
+import 'package:mobile/domain/entities/claim_draft.dart';
 import 'package:mobile/domain/entities/claim_form.dart';
 import 'package:mobile/domain/entities/claim_form_data.dart';
+import 'package:mobile/domain/entities/claim_form_entry.dart';
 import 'package:mobile/domain/entities/claim_list_item.dart';
 import 'package:mobile/domain/entities/claim_result.dart';
 import 'package:mobile/domain/repositories/claim_repository.dart';
-import 'package:mobile/domain/usecases/get_claim_form_data_usecase.dart';
-import 'package:mobile/domain/usecases/register_claim_usecase.dart';
 import 'package:mobile/presentation/providers/claim_register_provider.dart';
 
 void main() {
@@ -41,17 +41,19 @@ void main() {
       expect(state.error, isNull);
     });
 
-    group('loadFormData', () {
-      test('폼 초기화 데이터를 로드한다', () async {
+    group('loadForm', () {
+      test('진입 폼 메타데이터를 state 에 채우고 임시저장 없으면 null 을 반환한다', () async {
         // Given
         fakeRepository.formDataToReturn = _sampleFormData;
 
         final notifier = container.read(claimRegisterProvider.notifier);
 
         // When
-        await notifier.loadFormData();
+        final draft = await notifier.loadForm();
 
         // Then
+        expect(draft, isNull);
+        expect(fakeRepository.getFormCalls, 1);
         final state = container.read(claimRegisterProvider);
         expect(state.formData, isNotNull);
         expect(state.formData!.categories.length, 2);
@@ -61,6 +63,26 @@ void main() {
         expect(state.error, isNull);
       });
 
+      test('임시저장이 있으면 메타데이터를 채우고 draft 를 반환한다', () async {
+        // Given
+        fakeRepository.formDataToReturn = _sampleFormData;
+        fakeRepository.draftToReturn = const ClaimDraft(
+          accountId: 1025,
+          accountName: '미광종합물류',
+          claimType1: 'A',
+        );
+
+        final notifier = container.read(claimRegisterProvider.notifier);
+
+        // When
+        final draft = await notifier.loadForm();
+
+        // Then
+        expect(draft, isNotNull);
+        expect(draft!.accountName, '미광종합물류');
+        expect(container.read(claimRegisterProvider).formData, isNotNull);
+      });
+
       test('로드 실패 시 에러를 설정한다', () async {
         // Given
         fakeRepository.shouldThrowError = true;
@@ -68,9 +90,10 @@ void main() {
         final notifier = container.read(claimRegisterProvider.notifier);
 
         // When
-        await notifier.loadFormData();
+        final draft = await notifier.loadForm();
 
         // Then
+        expect(draft, isNull);
         final state = container.read(claimRegisterProvider);
         expect(state.formData, isNull);
         expect(state.loading, false);
@@ -329,6 +352,62 @@ void main() {
       expect(state.form, isNull);
       expect(state.error, isNull);
     });
+
+    group('임시저장 (draft)', () {
+      test('saveDraft 성공 시 true 를 반환하고 repository 를 호출한다', () async {
+        final notifier = container.read(claimRegisterProvider.notifier);
+        notifier.selectAccount(1025, '미광종합물류');
+
+        final result = await notifier.saveDraft();
+
+        expect(result, true);
+        expect(fakeRepository.saveDraftCalls, 1);
+      });
+
+      test('saveDraft 실패 시 false 를 반환하고 에러를 설정한다', () async {
+        fakeRepository.shouldThrowError = true;
+        final notifier = container.read(claimRegisterProvider.notifier);
+
+        final result = await notifier.saveDraft();
+
+        expect(result, false);
+        expect(container.read(claimRegisterProvider).error, isNotNull);
+      });
+
+      test('applyDraft 는 임시저장 값을 폼에 반영하고 종류명을 metadata 로 해석한다', () async {
+        fakeRepository.formDataToReturn = _sampleFormData;
+        final notifier = container.read(claimRegisterProvider.notifier);
+        await notifier.loadForm();
+
+        notifier.applyDraft(const ClaimDraft(
+          accountId: 1025,
+          accountName: '미광종합물류',
+          productCode: '12345678',
+          productName: '맛있는부대찌개',
+          dateType: 'MANUFACTURE_DATE',
+          date: '2026-06-01',
+          claimType1: 'A',
+          claimType2: 'AA',
+          defectDescription: '벌레 발견',
+          defectQuantity: 3,
+          purchaseAmount: 5000,
+          purchaseMethodCode: 'PM01',
+          requestTypeCode: 'RT01',
+        ));
+
+        final form = container.read(claimRegisterProvider).form!;
+        expect(form.accountId, 1025);
+        expect(form.productName, '맛있는부대찌개');
+        expect(form.dateType, ClaimDateType.manufactureDate);
+        expect(form.categoryId, 'A');
+        expect(form.categoryName, '이물'); // form-data 해석
+        expect(form.subcategoryName, '벌레');
+        expect(form.defectDescription, '벌레 발견');
+        expect(form.defectQuantity, 3);
+        expect(form.purchaseMethodName, '대형마트');
+        expect(form.requestTypeName, '교환');
+      });
+    });
   });
 }
 
@@ -338,7 +417,7 @@ void main() {
 
 class FakeClaimRepository implements ClaimRepository {
   int registerClaimCalls = 0;
-  int getFormDataCalls = 0;
+  int getFormCalls = 0;
 
   ClaimRegisterResult? registerResultToReturn;
   ClaimFormData? formDataToReturn;
@@ -357,14 +436,14 @@ class FakeClaimRepository implements ClaimRepository {
   }
 
   @override
-  Future<ClaimFormData> getFormData() async {
-    getFormDataCalls++;
+  Future<ClaimFormEntry> getForm() async {
+    getFormCalls++;
 
     if (shouldThrowError) {
-      throw Exception('폼 데이터 로드 실패');
+      throw Exception('폼 로드 실패');
     }
 
-    return formDataToReturn!;
+    return ClaimFormEntry(formData: formDataToReturn!, draft: draftToReturn);
   }
 
   @override
@@ -378,6 +457,23 @@ class FakeClaimRepository implements ClaimRepository {
   @override
   Future<ClaimDetail> getClaimDetail(int claimId) async {
     throw UnimplementedError();
+  }
+
+  int saveDraftCalls = 0;
+  int deleteDraftCalls = 0;
+  ClaimDraft? draftToReturn;
+
+  @override
+  Future<void> saveDraft(ClaimRegisterForm? form) async {
+    saveDraftCalls++;
+    if (shouldThrowError) {
+      throw Exception('임시저장 실패');
+    }
+  }
+
+  @override
+  Future<void> deleteDraft() async {
+    deleteDraftCalls++;
   }
 }
 

@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/product_expiration_form.dart';
 import 'package:mobile/domain/entities/product_expiration_item.dart';
@@ -21,13 +20,10 @@ void main() {
       registerUseCase = RegisterProductExpiration(fakeRepository);
       updateUseCase = UpdateProductExpiration(fakeRepository);
       deleteUseCase = DeleteProductExpiration(fakeRepository);
-      // Constructor now requires Dio. Pass a plain Dio() for tests that don't
-      // call initializeForRegister() — _dio is only used inside that method.
       notifier = ProductExpirationFormNotifier(
         registerProductExpiration: registerUseCase,
         updateProductExpiration: updateUseCase,
         deleteProductExpiration: deleteUseCase,
-        dio: Dio(),
       );
     });
 

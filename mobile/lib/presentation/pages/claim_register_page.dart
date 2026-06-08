@@ -12,6 +12,7 @@ import '../../domain/entities/product.dart';
 import '../providers/claim_register_provider.dart';
 import '../widgets/claim/claim_category_selector.dart';
 import '../widgets/claim/claim_date_field.dart';
+import '../widgets/claim/claim_form_row.dart';
 import '../widgets/claim/claim_photo_field.dart';
 import '../widgets/claim/claim_product_field.dart';
 import '../widgets/claim/claim_purchase_section.dart';
@@ -53,17 +54,51 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
   @override
   void initState() {
     super.initState();
-    // 페이지 로드 시 폼 데이터 로드
+    // 페이지 로드 시 폼 데이터 로드 + 임시저장 이어쓰기 확인
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final notifier = ref.read(claimRegisterProvider.notifier);
-      notifier.loadFormData();
-      // 제품검색 결과에서 전달된 제품이 있으면 미리 선택
-      final code = widget.presetProductCode;
-      final name = widget.presetProductName;
-      if (code != null && name != null) {
-        notifier.selectProduct(code, name);
-      }
+      _initialize();
     });
+  }
+
+  /// 진입 폼 로드(메타데이터 + 임시저장) → (제품 지정 진입이면 선택) / (아니면 임시저장 이어쓰기 확인)
+  Future<void> _initialize() async {
+    final notifier = ref.read(claimRegisterProvider.notifier);
+    // 진입 1콜: 메타데이터는 state 에 채워지고, 이어쓰기용 임시저장(있으면)이 반환된다.
+    final draft = await notifier.loadForm();
+    if (!mounted) return;
+
+    // 제품검색 결과에서 전달된 제품이 있으면 미리 선택 (임시저장 복원은 생략)
+    final code = widget.presetProductCode;
+    final name = widget.presetProductName;
+    if (code != null && name != null) {
+      notifier.selectProduct(code, name);
+      return;
+    }
+
+    // 임시저장이 있으면 이어쓰기 여부 확인
+    if (draft == null || !mounted) return;
+
+    final resume = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('임시저장 불러오기'),
+        content: const Text('이전에 작성 중인 내용이 있습니다.\n이어서 작성하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('새로 작성'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('이어서 작성'),
+          ),
+        ],
+      ),
+    );
+
+    if (resume == true && mounted) {
+      notifier.applyDraft(draft);
+    }
   }
 
   @override
@@ -82,16 +117,14 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
       body: state.loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 거래처 선택
                   _AccountField(
                     accountName: state.form?.accountName,
                     onTap: () => _showAccountSelector(context),
                   ),
-                  const SizedBox(height: 16),
 
                   // 제품 선택
                   ClaimProductField(
@@ -100,7 +133,6 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
                     onBarcodePressed: () => _handleBarcodeScan(),
                     onProductSelectPressed: () => _showProductSelector(context),
                   ),
-                  const SizedBox(height: 16),
 
                   // 기한 입력
                   ClaimDateField(
@@ -109,7 +141,6 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
                     onDateTypeChanged: notifier.selectDateType,
                     onDateSelected: notifier.selectDate,
                   ),
-                  const SizedBox(height: 16),
 
                   // 클레임 종류 선택
                   ClaimCategorySelector(
@@ -130,14 +161,12 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
 
                   // 불량 내역
                   _DefectDescriptionField(
                     description: state.form?.defectDescription,
                     onChanged: notifier.updateDefectDescription,
                   ),
-                  const SizedBox(height: 16),
 
                   // 불량 수량
                   _DefectQuantityField(
@@ -149,27 +178,24 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
 
                   // 불량 사진
                   ClaimPhotoField(
-                    label: '불량 사진',
+                    label: '불량 사진 (최대 1장)',
                     photo: _getValidPhoto(state.form?.defectPhoto),
                     onPhotoSelected: notifier.attachDefectPhoto,
                     onPhotoRemoved: notifier.removeDefectPhoto,
                     isRequired: true,
                   ),
-                  const SizedBox(height: 16),
 
                   // 일부인 사진
                   ClaimPhotoField(
-                    label: '일부인 사진',
+                    label: '일부인 (최대 1장)',
                     photo: _getValidPhoto(state.form?.labelPhoto),
                     onPhotoSelected: notifier.attachLabelPhoto,
                     onPhotoRemoved: notifier.removeLabelPhoto,
                     isRequired: true,
                   ),
-                  const SizedBox(height: 16),
 
                   // 구매 정보 섹션
                   ClaimPurchaseSection(
@@ -188,7 +214,6 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
                     onReceiptPhotoSelected: notifier.attachReceiptPhoto,
                     onReceiptPhotoRemoved: notifier.removeReceiptPhoto,
                   ),
-                  const SizedBox(height: 16),
 
                   // 요청사항
                   ClaimRequestTypeField(
@@ -206,7 +231,7 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
                     },
                   ),
 
-                  const SizedBox(height: 80), // 하단 버튼 공간
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -214,56 +239,37 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
     );
   }
 
-  /// 하단 버튼 (임시저장 + 전송)
+  /// 하단 버튼 (임시저장 + 전송) — 레거시처럼 전폭 무여백 2분할
   Widget _buildBottomButtons(
     BuildContext context,
     state,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // 임시저장 버튼
-          Expanded(
-            child: ElevatedButton(
-              onPressed: state.loading ? null : () => _handleDraftSave(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                '임시저장',
-                style: TextStyle(fontSize: 16),
+    return SafeArea(
+      top: false,
+      child: SizedBox(
+        height: 60,
+        child: Row(
+          children: [
+            // 임시저장 버튼
+            Expanded(
+              child: _BottomBarButton(
+                label: '임시저장',
+                backgroundColor: const Color(0xFF38434F),
+                textColor: Colors.white,
+                onPressed: state.loading ? null : () => _handleDraftSave(),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          // 전송 버튼
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              onPressed: state.loading ? null : () => _handleSubmit(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.yellow[700],
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                '전송',
-                style: TextStyle(fontSize: 16, color: Colors.black),
+            // 전송 버튼
+            Expanded(
+              child: _BottomBarButton(
+                label: '전송',
+                backgroundColor: const Color(0xFFFFE000),
+                textColor: Colors.black,
+                onPressed: state.loading ? null : () => _handleSubmit(),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -302,12 +308,23 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
     );
   }
 
-  /// 임시 저장
-  void _handleDraftSave() {
-    // TODO: 로컬 저장 구현
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('임시 저장되었습니다')),
-    );
+  /// 임시 저장 — 현재 폼 상태를 서버에 임시저장(upsert)
+  Future<void> _handleDraftSave() async {
+    final success = await ref.read(claimRegisterProvider.notifier).saveDraft();
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('임시저장되었습니다')),
+      );
+    } else {
+      final errorMessage =
+          ref.read(claimRegisterProvider).error ?? '임시저장 실패';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    }
   }
 
   /// 등록 전송
@@ -391,6 +408,41 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
   }
 }
 
+/// 하단 바 버튼 (전폭 무여백)
+class _BottomBarButton extends StatelessWidget {
+  const _BottomBarButton({
+    required this.label,
+    required this.backgroundColor,
+    required this.textColor,
+    required this.onPressed,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color textColor;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: backgroundColor,
+      child: InkWell(
+        onTap: onPressed,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 거래처 선택 필드
 class _AccountField extends StatelessWidget {
   const _AccountField({
@@ -403,34 +455,15 @@ class _AccountField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '거래처 *',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-            side: BorderSide(color: Colors.grey.shade300),
-          ),
-          title: Text(
-            accountName ?? '거래처 선택',
-            style: TextStyle(
-              fontSize: 14,
-              color: accountName == null ? Colors.grey.shade600 : Colors.black87,
-            ),
-          ),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: onTap,
-        ),
-      ],
+    return ClaimFormRow(
+      label: '거래처',
+      isRequired: true,
+      onTap: onTap,
+      trailing: const ClaimRowChevron(),
+      below: ClaimValueText(
+        value: accountName,
+        placeholder: '거래처 선택',
+      ),
     );
   }
 }
@@ -447,28 +480,21 @@ class _DefectDescriptionField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '불량 내역 *',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+    return ClaimFormRow(
+      label: '불량 내역',
+      isRequired: true,
+      below: TextField(
+        controller: TextEditingController(text: description ?? ''),
+        maxLines: null,
+        style: const TextStyle(fontSize: 14, color: ClaimFormColors.value),
+        decoration: const InputDecoration(
+          isCollapsed: true,
+          hintText: '내용 입력',
+          hintStyle: TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
+          border: InputBorder.none,
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: TextEditingController(text: description ?? ''),
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: '불량 내역을 입력하세요',
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.all(12),
-          ),
-          onChanged: onChanged,
-        ),
-      ],
+        onChanged: onChanged,
+      ),
     );
   }
 }
@@ -485,32 +511,28 @@ class _DefectQuantityField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '불량 수량 *',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+    return ClaimFormRow(
+      label: '불량 수량',
+      isRequired: true,
+      trailing: const Text(
+        '개',
+        style: TextStyle(fontSize: 14, color: ClaimFormColors.unit),
+      ),
+      below: TextField(
+        controller: TextEditingController(
+          text: quantity != null && quantity! > 0 ? quantity.toString() : '',
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: TextEditingController(
-            text: quantity != null && quantity! > 0 ? quantity.toString() : '',
-          ),
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(
-            hintText: '수량 입력',
-            suffixText: '개',
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-          onChanged: onChanged,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        style: const TextStyle(fontSize: 14, color: ClaimFormColors.value),
+        decoration: const InputDecoration(
+          isCollapsed: true,
+          hintText: '숫자 입력',
+          hintStyle: TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
+          border: InputBorder.none,
         ),
-      ],
+        onChanged: onChanged,
+      ),
     );
   }
 }

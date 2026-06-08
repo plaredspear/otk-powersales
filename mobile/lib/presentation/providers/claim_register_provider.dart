@@ -7,9 +7,9 @@ import '../../data/datasources/claim_api_datasource.dart';
 import '../../data/repositories/claim_repository_impl.dart';
 import '../../data/datasources/claim_remote_datasource.dart';
 import '../../domain/entities/claim_code.dart';
+import '../../domain/entities/claim_draft.dart';
 import '../../domain/entities/claim_form.dart';
 import '../../domain/repositories/claim_repository.dart';
-import '../../domain/usecases/get_claim_form_data_usecase.dart';
 import '../../domain/usecases/register_claim_usecase.dart';
 import 'claim_register_state.dart';
 
@@ -34,13 +34,6 @@ final registerClaimUseCaseProvider = Provider<RegisterClaimUseCase>((ref) {
   return RegisterClaimUseCase(repository);
 });
 
-/// GetClaimFormDataUseCase Provider
-final getClaimFormDataUseCaseProvider =
-    Provider<GetClaimFormDataUseCase>((ref) {
-  final repository = ref.watch(claimRepositoryProvider);
-  return GetClaimFormDataUseCase(repository);
-});
-
 // ============================================
 // 2. StateNotifier Implementation
 // ============================================
@@ -48,32 +41,36 @@ final getClaimFormDataUseCaseProvider =
 /// 클레임 등록 상태 관리 Notifier
 class ClaimRegisterNotifier extends StateNotifier<ClaimRegisterState> {
   final RegisterClaimUseCase _registerClaimUseCase;
-  final GetClaimFormDataUseCase _getClaimFormDataUseCase;
+  final ClaimRepository _claimRepository;
 
   ClaimRegisterNotifier({
     required RegisterClaimUseCase registerClaimUseCase,
-    required GetClaimFormDataUseCase getClaimFormDataUseCase,
+    required ClaimRepository claimRepository,
   })  : _registerClaimUseCase = registerClaimUseCase,
-        _getClaimFormDataUseCase = getClaimFormDataUseCase,
+        _claimRepository = claimRepository,
         super(ClaimRegisterState.initial());
 
   // ──────────────────────────────────────────────────────────────────
-  // 폼 초기화 데이터 로드
+  // 진입 폼 로드
   // ──────────────────────────────────────────────────────────────────
 
-  /// 폼 초기화 데이터 로드 (categories, purchaseMethods, requestTypes)
-  Future<void> loadFormData() async {
+  /// 진입 폼 로드 — 메타데이터(categories, purchaseMethods, requestTypes)를
+  /// state 에 채우고, 이어쓰기용 임시저장(있으면)을 반환한다. 없으면 null.
+  /// 진입 1콜로 `GET /api/v1/mobile/claims/form` 을 호출한다.
+  Future<ClaimDraft?> loadForm() async {
     state = state.toLoading();
 
     try {
-      final formData = await _getClaimFormDataUseCase();
+      final entry = await _claimRepository.getForm();
 
       state = state.copyWith(
-        formData: formData,
+        formData: entry.formData,
         loading: false,
       );
+      return entry.draft;
     } catch (e) {
       state = state.toError(e.toString());
+      return null;
     }
   }
 
@@ -278,6 +275,111 @@ class ClaimRegisterNotifier extends StateNotifier<ClaimRegisterState> {
   }
 
   // ──────────────────────────────────────────────────────────────────
+  // 임시저장 (draft)
+  // ──────────────────────────────────────────────────────────────────
+
+  /// 임시저장 — 현재 폼 상태를 검증 없이 서버에 upsert.
+  Future<bool> saveDraft() async {
+    try {
+      await _claimRepository.saveDraft(state.form);
+      return true;
+    } catch (e) {
+      state = state.toError(e.toString());
+      return false;
+    }
+  }
+
+  /// 임시저장 폐기.
+  Future<void> discardDraft() async {
+    try {
+      await _claimRepository.deleteDraft();
+    } catch (_) {
+      // 폐기 실패는 무시 (다음 저장/등록 시 덮어쓰기/삭제됨)
+    }
+  }
+
+  /// 임시저장 내용을 폼에 반영(이어쓰기). 이름은 form-data 로 해석한다.
+  void applyDraft(ClaimDraft draft) {
+    final base = _createInitialForm();
+
+    final categoryId = draft.claimType1 ?? '';
+    final subcategoryId = draft.claimType2 ?? '';
+
+    final form = ClaimRegisterForm(
+      accountId: draft.accountId ?? 0,
+      accountName: draft.accountName ?? '',
+      productCode: draft.productCode ?? '',
+      productName: draft.productName ?? '',
+      dateType: draft.dateType != null
+          ? ClaimDateType.fromJson(draft.dateType!)
+          : base.dateType,
+      date: _parseDraftDate(draft.date) ?? base.date,
+      categoryId: categoryId,
+      categoryName: _resolveCategoryName(categoryId),
+      subcategoryId: subcategoryId,
+      subcategoryName: _resolveSubcategoryName(categoryId, subcategoryId),
+      defectDescription: draft.defectDescription ?? '',
+      defectQuantity: draft.defectQuantity ?? 0,
+      defectPhoto: draft.defectPhoto ?? File(''),
+      labelPhoto: draft.labelPhoto ?? File(''),
+      purchaseAmount: draft.purchaseAmount,
+      purchaseMethodCode: draft.purchaseMethodCode,
+      purchaseMethodName: _resolvePurchaseMethodName(draft.purchaseMethodCode),
+      receiptPhoto: draft.receiptPhoto,
+      requestTypeCode: draft.requestTypeCode,
+      requestTypeName: _resolveRequestTypeName(draft.requestTypeCode),
+    );
+
+    state = state.copyWith(form: form, clearError: true);
+  }
+
+  DateTime? _parseDraftDate(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  /// 종류1 코드 → 이름 (form-data 기준, 미해석 시 코드 그대로 사용해 비어있지 않게 한다)
+  String _resolveCategoryName(String categoryId) {
+    if (categoryId.isEmpty) return '';
+    final categories = state.formData?.categories ?? [];
+    for (final c in categories) {
+      if (c.id == categoryId) return c.name;
+    }
+    return categoryId;
+  }
+
+  String _resolveSubcategoryName(String categoryId, String subcategoryId) {
+    if (subcategoryId.isEmpty) return '';
+    final categories = state.formData?.categories ?? [];
+    for (final c in categories) {
+      if (c.id != categoryId) continue;
+      for (final s in c.subcategories) {
+        if (s.id == subcategoryId) return s.name;
+      }
+    }
+    return subcategoryId;
+  }
+
+  String? _resolvePurchaseMethodName(String? code) {
+    if (code == null || code.isEmpty) return null;
+    final methods = state.formData?.purchaseMethods ?? [];
+    for (final m in methods) {
+      if (m.code == code) return m.name;
+    }
+    return code;
+  }
+
+  String? _resolveRequestTypeName(String? code) {
+    if (code == null || code.isEmpty) return null;
+    final firstCode = code.split(';').first.trim();
+    final types = state.formData?.requestTypes ?? [];
+    for (final t in types) {
+      if (t.code == firstCode) return t.name;
+    }
+    return firstCode;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
   // 유틸리티
   // ──────────────────────────────────────────────────────────────────
 
@@ -316,6 +418,6 @@ final claimRegisterProvider =
     StateNotifierProvider<ClaimRegisterNotifier, ClaimRegisterState>((ref) {
   return ClaimRegisterNotifier(
     registerClaimUseCase: ref.watch(registerClaimUseCaseProvider),
-    getClaimFormDataUseCase: ref.watch(getClaimFormDataUseCaseProvider),
+    claimRepository: ref.watch(claimRepositoryProvider),
   );
 });

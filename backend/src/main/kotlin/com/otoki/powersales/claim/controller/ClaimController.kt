@@ -1,7 +1,10 @@
 package com.otoki.powersales.claim.controller
 
 import com.otoki.powersales.claim.dto.request.ClaimCreateRequest
+import com.otoki.powersales.claim.dto.request.ClaimDraftRequest
 import com.otoki.powersales.claim.dto.response.ClaimCreateResponse
+import com.otoki.powersales.claim.dto.response.ClaimDraftResponse
+import com.otoki.powersales.claim.service.ClaimDraftService
 import com.otoki.powersales.claim.service.ClaimService
 import com.otoki.powersales.claim.service.ClaimUpdateRequest
 import com.otoki.powersales.common.dto.ApiResponse
@@ -28,7 +31,8 @@ import org.springframework.web.multipart.MultipartFile
 @RestController
 @RequestMapping("/api/v1/mobile/claims")
 class ClaimController(
-    private val claimService: ClaimService
+    private val claimService: ClaimService,
+    private val claimDraftService: ClaimDraftService
 ) {
 
     /**
@@ -52,6 +56,37 @@ class ClaimController(
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse.success(result, "클레임이 등록되었습니다"))
+    }
+
+    /**
+     * 클레임 임시저장 (upsert). 검증 없이 사원 1건의 draft 를 갱신한다.
+     * 레거시 FieldTalkController.tempClaimProc 대응.
+     */
+    @PostMapping("/draft", consumes = ["multipart/form-data"])
+    fun saveDraft(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @ModelAttribute request: ClaimDraftRequest,
+        @RequestParam(required = false) defectPhoto: MultipartFile?,
+        @RequestParam(required = false) labelPhoto: MultipartFile?,
+        @RequestParam(required = false) receiptPhoto: MultipartFile?
+    ): ResponseEntity<ApiResponse<ClaimDraftResponse>> {
+        val result = claimDraftService.saveDraft(
+            userId = principal.userId,
+            request = request,
+            defectPhoto = defectPhoto,
+            labelPhoto = labelPhoto,
+            receiptPhoto = receiptPhoto
+        )
+        return ResponseEntity.ok(ApiResponse.success(result, "임시저장되었습니다"))
+    }
+
+    /** 클레임 임시저장 폐기. */
+    @DeleteMapping("/draft")
+    fun deleteDraft(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<Unit>> {
+        claimDraftService.deleteDraft(principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(Unit, "임시저장이 삭제되었습니다"))
     }
 
     /**
