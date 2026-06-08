@@ -45,7 +45,7 @@ class EducationPostsNotifier extends StateNotifier<EducationPostsState> {
         category: state.category,
         search: state.searchKeyword,
         page: state.currentPage,
-        size: 10,
+        size: 20, // 레거시 edu/list pageSize=20 정합
       );
       state = state.toData(postPage);
     } catch (e) {

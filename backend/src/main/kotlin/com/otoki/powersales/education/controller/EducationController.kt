@@ -20,9 +20,9 @@ class EducationController(
 
     /**
      * 교육 게시물 목록 조회
-     * GET /api/v1/mobile/education/posts?category=TASTING_MANUAL&search=시식&page=1&size=10
+     * GET /api/v1/mobile/education/posts?category=c00001&search=시식&page=1&size=10
      *
-     * @param category 카테고리 (필수, edu_code 값)
+     * @param category 카테고리 (필수, edu_code 값: c00001=시식매뉴얼, c00002=CS/안전, c00003=교육평가, c00004=신제품소개)
      * @param search 검색 키워드 (선택)
      * @param page 페이지 번호 (선택, 기본 1)
      * @param size 페이지 크기 (선택, 기본 10)

@@ -123,14 +123,45 @@ class _EducationListPageState extends ConsumerState<EducationListPage>
     return Column(
       children: [
         // 검색 바
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+        Container(
+          color: AppColors.surface,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
           child: EducationSearchBar(
             controller: _searchController,
             onSearch: _onSearch,
             onChanged: (value) {
-              setState(() {}); // suffixIcon 업데이트를 위해
+              setState(() {}); // 검색 버튼 상태 업데이트를 위해
             },
+          ),
+        ),
+
+        // "교육 자료 (N)" 헤더 (레거시 정합 — 건수 빨강)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text.rich(
+              TextSpan(
+                style: AppTypography.headlineMedium.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+                children: [
+                  const TextSpan(text: '교육 자료 '),
+                  TextSpan(
+                    text: '(${state.totalCount})',
+                    style: const TextStyle(color: AppColors.error),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
 
