@@ -4808,6 +4808,9 @@
       },
       "ProductDto" : {
         "properties" : {
+          "barcode" : {
+            "type" : [ "string", "null" ]
+          },
           "category1" : {
             "type" : [ "string", "null" ]
           },
@@ -4824,6 +4827,9 @@
             "type" : [ "string", "null" ]
           },
           "shelfLife" : {
+            "type" : [ "string", "null" ]
+          },
+          "shelfLifeUnit" : {
             "type" : [ "string", "null" ]
           },
           "storageCondition" : {
