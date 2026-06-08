@@ -59,7 +59,7 @@ const DOMAINS: DomainRow[] = [
   { key: 'auth', pkg: 'auth', name: '인증/권한', responsibility: '로그인, JWT 발급, SF Profile/PermissionSet 권한 산출', entities: 'Profile · AppAuthority', webMenu: '시스템 > 사용자/프로파일 관리', mobileArea: '(로그인)', kind: 'infra' },
   { key: 'user', pkg: 'user', name: '사용자', responsibility: 'User 엔티티 관리, 프로비저닝 이벤트 발행', entities: 'User', webMenu: '시스템 > 사용자 관리', mobileArea: '—', kind: 'infra' },
   { key: 'agreement', pkg: 'agreement', name: '약관/동의', responsibility: '모바일 앱 약관 순환(cycle)·버전 관리', entities: 'AgreementWord · AgreementHistory', webMenu: '모바일앱 > 동의 약관 등록', mobileArea: '(약관 동의)', kind: 'infra' },
-  { key: 'sap', pkg: 'sap', name: 'SAP 연동', responsibility: 'SAP OAuth + Inbound(마스터 수신) / Outbound(Outbox 전송)', entities: 'SapOutbox', webMenu: '개발자 도구 > SAP Inbound/Outbound', mobileArea: '—', kind: 'infra' },
+  { key: 'sap', pkg: 'sap', name: 'SAP 연동', responsibility: 'SAP OAuth + Inbound(마스터 수신) / Outbound(Outbox 전송)', entities: 'SapOutbox', webMenu: '개발자 도구 > SAP 연동', mobileArea: '—', kind: 'infra' },
   { key: 'orora', pkg: 'orora', name: 'Orora 연동', responsibility: '영업시스템(Orora) 매출 데이터 조회·적재', entities: 'OroraDailySalesHistory · OroraMonthlySalesHistory', webMenu: '—', mobileArea: '—', kind: 'infra' },
   { key: 'sf', pkg: 'sf', name: 'Salesforce 연동', responsibility: 'SF OAuth, 권한/데이터 인바운드 동기, 헬스체크', entities: '(연동 전용)', webMenu: '개발자 도구 > SF Migration', mobileArea: '—', kind: 'infra' },
   { key: 'sfmigration', pkg: 'sfmigration', name: 'SF 마이그레이션', responsibility: 'SF 데이터 복제(Stage 1) → FK 정합(Stage 2)', entities: '(임시 단계 도구)', webMenu: '개발자 도구 > SF Migration', mobileArea: '—', kind: 'infra' },

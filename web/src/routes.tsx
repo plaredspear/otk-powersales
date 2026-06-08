@@ -80,8 +80,7 @@ const AdminAccountRegisterPage = lazy(() => import('@/pages/settings/AdminAccoun
 const NaverGeocodeTestPage = lazy(() => import('@/pages/admin/NaverGeocodeTestPage'));
 const ExternalApiTestPage = lazy(() => import('@/pages/admin/tools/external-api/ExternalApiTestPage'));
 const ScheduledJobsPage = lazy(() => import('@/pages/admin/scheduled-jobs/ScheduledJobsPage'));
-const SapInboundPage = lazy(() => import('@/pages/admin/tools/sap-inbound/SapInboundPage'));
-const SapOutboundPage = lazy(() => import('@/pages/admin/tools/sap-outbound/SapOutboundPage'));
+const SapIntegrationPage = lazy(() => import('@/pages/admin/tools/sap-integration/SapIntegrationPage'));
 const SfMigrationPage = lazy(() => import('@/pages/admin/tools/sf-migration/SfMigrationPage'));
 const SfMigrationStage1Page = lazy(() => import('@/pages/admin/tools/sf-migration-stage1/SfMigrationStage1Page'));
 const HerokuMigrationPage = lazy(() => import('@/pages/admin/tools/heroku-migration/HerokuMigrationPage'));
@@ -335,8 +334,7 @@ export const router = createBrowserRouter(
             {
               element: <PermissionRoute systemPermission="VIEW_ALL_DATA" />,
               children: [
-                { path: '/admin/tools/sap-inbound', element: <LazyWrapper><SapInboundPage /></LazyWrapper> },
-                { path: '/admin/tools/sap-outbound', element: <LazyWrapper><SapOutboundPage /></LazyWrapper> },
+                { path: '/admin/tools/sap-integration', element: <LazyWrapper><SapIntegrationPage /></LazyWrapper> },
               ],
             },
             {

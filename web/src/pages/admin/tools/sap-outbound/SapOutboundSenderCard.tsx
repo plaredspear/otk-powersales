@@ -195,7 +195,7 @@ export default function SapOutboundSenderCard({ config }: { config: SenderCardCo
               </>
             )}
             <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-              상세 로그는 SAP Outbound 페이지의 '호출 이력' 또는 '대기 중 (Outbox)' 탭에서 확인할 수 있습니다.
+              상세 로그는 SAP 연동 페이지 Outbound 의 '호출 이력' 또는 '대기 중 (Outbox)' 탭에서 확인할 수 있습니다.
             </Text>
           </>
         )}
