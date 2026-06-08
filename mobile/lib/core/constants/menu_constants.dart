@@ -12,6 +12,7 @@ abstract final class MenuConstants {
     MenuGroup(
       id: 'trade',
       icon: Icons.store,
+      iconAsset: 'assets/images/icon_nav1.png',
       label: '거래처',
       items: [
         MenuItem(id: 'my-accounts', label: '내 거래처', route: '/my-accounts'),
@@ -21,6 +22,7 @@ abstract final class MenuConstants {
     MenuGroup(
       id: 'order',
       icon: Icons.shopping_cart,
+      iconAsset: 'assets/images/icon_nav2.png',
       label: '주문',
       items: [
         MenuItem(id: 'orders', label: '내 주문 현황', route: '/order-list'),
@@ -36,6 +38,7 @@ abstract final class MenuConstants {
     MenuGroup(
       id: 'product',
       icon: Icons.inventory_2,
+      iconAsset: 'assets/images/icon_nav3.png',
       label: '제품',
       items: [
         MenuItem(id: 'expiry', label: '유통기한 관리', route: '/product-expiration'),
@@ -45,6 +48,7 @@ abstract final class MenuConstants {
     MenuGroup(
       id: 'sales',
       icon: Icons.monetization_on,
+      iconAsset: 'assets/images/icon_nav4.png',
       label: '매출 현황',
       items: [
         MenuItem(
@@ -66,6 +70,7 @@ abstract final class MenuConstants {
     MenuGroup(
       id: 'field',
       icon: Icons.assignment,
+      iconAsset: 'assets/images/icon_nav5.png',
       label: '현장톡',
       items: [
         MenuItem(id: 'field-check', label: '현장 점검', route: '/inspection-list'),
@@ -87,6 +92,7 @@ abstract final class MenuConstants {
     MenuGroup(
       id: 'community',
       icon: Icons.campaign,
+      iconAsset: 'assets/images/icon_nav6.png',
       label: '커뮤니티',
       items: [
         MenuItem(id: 'education', label: '교육', route: '/education'),
@@ -97,6 +103,7 @@ abstract final class MenuConstants {
     MenuGroup(
       id: 'mypage',
       icon: Icons.person,
+      iconAsset: 'assets/images/icon_nav8.png',
       label: '마이페이지',
       items: [
         MenuItem(id: 'my-schedule', label: '내 일정/등록', route: '/my-schedule'),
