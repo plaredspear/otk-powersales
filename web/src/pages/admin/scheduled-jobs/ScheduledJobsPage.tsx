@@ -62,6 +62,22 @@ function jobLabel(jobName: string): string {
   return JOB_LABELS[jobName] ?? jobName;
 }
 
+/** 잡 이름 → 사람이 읽기 쉬운 실행 주기. cron placeholder(override 가능) 잡은 "기본" 표기. */
+const JOB_SCHEDULES: Record<string, string> = {
+  'agreement-word-cycle-batch': '매일 09시',
+  'attendance-sap-batch': '기본 매일 01시',
+  'display-master-sap-batch': '기본 매일 01시',
+  'display-master-last-month-revenue-batch': '기본 매일 02시',
+  'mfeis-this-month-revenue-batch': '기본 매월 1일 03시',
+  'account-naver-geocode-batch': '매일 02시',
+  'pptMaster.expire': '매일 23시',
+  'pptMaster.syncValid': '매일 05시',
+  'sap.processPostponedAppointments': '매일 자정',
+  'salesProgressRateMaster.sync': '기본 1시간 주기',
+  'sap-outbox-worker': '기본 30초 주기',
+  'scheduledJobRun.cleanup': '매일 04시',
+};
+
 /** 잡 이름 → 해당 스케줄 작업이 무슨 일을 하는지에 대한 자연어 설명. */
 const JOB_DESCRIPTIONS: Record<string, string> = {
   'agreement-word-cycle-batch':
@@ -251,7 +267,16 @@ export default function ScheduledJobsPage() {
     },
     ...jobNames.map((name) => ({
       key: name,
-      label: <span title={name}>{jobLabel(name)}</span>,
+      label: (
+        <span title={name} style={{ display: 'inline-block', lineHeight: 1.3 }}>
+          {jobLabel(name)}
+          {JOB_SCHEDULES[name] && (
+            <span style={{ display: 'block', fontSize: 11, color: '#999' }}>
+              {JOB_SCHEDULES[name]}
+            </span>
+          )}
+        </span>
+      ),
       children: (
         <>
           <Alert
