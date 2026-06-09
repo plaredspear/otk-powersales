@@ -1759,6 +1759,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePosSalesRangeResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PosSalesRangeResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePosSalesResponse" : {
         "properties" : {
           "data" : {
@@ -4970,6 +4999,64 @@
           },
           "unpaged" : {
             "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "PosSalesRangeRequest" : {
+        "properties" : {
+          "barcodes" : {
+            "type" : [ "string", "null" ]
+          },
+          "customerId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "endDate" : {
+            "minLength" : 1,
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$",
+            "type" : "string"
+          },
+          "startDate" : {
+            "minLength" : 1,
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "customerId", "endDate", "startDate" ],
+        "type" : "object"
+      },
+      "PosSalesRangeResponse" : {
+        "properties" : {
+          "customerId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "endDate" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProductSales"
+            },
+            "type" : "array"
+          },
+          "sapAccountCode" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "type" : "string"
+          },
+          "totalAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalQuantity" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -8241,6 +8328,32 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePosSalesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "monthly-sales-controller" ]
+      }
+    },
+    "/api/v1/mobile/sales/pos/by-range" : {
+      "get" : {
+        "operationId" : "getPosSalesByRange",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/PosSalesRangeRequest"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePosSalesRangeResponse"
                 }
               }
             },
