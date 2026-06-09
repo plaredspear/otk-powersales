@@ -420,6 +420,9 @@ class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
                 horizontal: AppSpacing.lg,
                 vertical: AppSpacing.sm,
               ),
+              // 전역 테마의 full-width 기본값 무시 → Row 무한 너비 크래시 방지.
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: const Text('매출 조회'),
           ),
@@ -541,6 +544,10 @@ class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
+      // 전역 테마의 full-width(minimumSize width=infinity) 기본값을 무시하고
+      // 콘텐츠 크기에 맞춘다. Row 안에서 무한 너비 제약 크래시 방지.
+      minimumSize: Size.zero,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
     if (icon == null) {
       return OutlinedButton(
