@@ -5,6 +5,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../app_router.dart';
 import '../providers/order_form_provider.dart';
 import '../providers/order_form_state.dart';
+import '../screens/barcode_scanner_screen.dart';
 import '../widgets/order_form/client_selector.dart';
 import '../widgets/order_form/credit_balance_display.dart';
 import '../widgets/order_form/delivery_date_picker.dart';
@@ -72,6 +73,16 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     if (picked != null) {
       notifier.setDeliveryDate(picked);
     }
+  }
+
+  /// 바코드 스캔 — 카메라로 제품 바코드를 스캔해 주문 라인에 추가한다.
+  ///
+  /// 스캐너에서 받은 바코드를 [OrderFormNotifier.addProductByBarcode] 로 넘긴다.
+  /// 추가 성공/실패 메시지는 build 의 success/error listener 가 SnackBar 로 노출한다.
+  Future<void> _handleBarcodeScan(OrderFormNotifier notifier) async {
+    final barcode = await BarcodeScannerScreen.show(context);
+    if (barcode == null || !mounted) return;
+    await notifier.addProductByBarcode(barcode);
   }
 
   /// 페이지 이탈 시 호출. 라인/거래처 입력 있으면 다이얼로그.
@@ -225,9 +236,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                       onAddProduct: () {
                         AddProductBottomSheet.show(context);
                       },
-                      onBarcodeScan: () {
-                        // TODO: 바코드 스캔 기능 (향후 구현)
-                      },
+                      onBarcodeScan: () => _handleBarcodeScan(notifier),
                       onRemoveSelected: notifier.removeSelectedProducts,
                       onQuantityChanged: notifier.updateProductQuantity,
                       scrollController: _scrollController,

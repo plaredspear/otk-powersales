@@ -8,6 +8,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/utils/throttled_tap_mixin.dart';
 import '../providers/product_search_provider.dart';
 import '../providers/product_search_state.dart';
+import '../screens/barcode_scanner_screen.dart';
 import '../widgets/product_search/empty_search_guide.dart';
 import '../widgets/product_search/product_card.dart';
 import '../widgets/product_search/product_search_app_bar.dart';
@@ -67,15 +68,12 @@ class _ProductSearchPageState extends ConsumerState<ProductSearchPage>
     await ref.read(productSearchProvider.notifier).search();
   }
 
-  void _onBarcodeTap() {
-    // TODO: 바코드 스캐너 실행 후 결과로 검색
-    // 현재는 Mock으로 동작
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('바코드 스캐너는 추후 구현 예정입니다'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  /// 바코드 스캔 — 카메라로 스캔한 바코드로 제품을 검색한다(검색 결과는 같은 화면에 표시).
+  Future<void> _onBarcodeTap() async {
+    final barcode = await BarcodeScannerScreen.show(context);
+    if (barcode == null || !mounted) return;
+    FocusScope.of(context).unfocus();
+    await ref.read(productSearchProvider.notifier).searchByBarcode(barcode);
   }
 
   @override

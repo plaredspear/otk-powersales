@@ -334,6 +334,32 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     }
   }
 
+  /// 바코드 스캔으로 제품을 조회해 주문 라인에 추가한다.
+  ///
+  /// 스캐너에서 받은 [barcode] 로 제품 검색을 수행하고, 바코드/제품코드가 일치하는 제품
+  /// (없으면 첫 결과)을 [addProductLine] 으로 추가한다. 성공/차단/조회실패는
+  /// successMessage / errorMessage 로 표시되며 페이지 listener 가 SnackBar 로 노출한다.
+  Future<void> addProductByBarcode(String barcode) async {
+    final code = barcode.trim();
+    if (code.isEmpty) return;
+    try {
+      final results = await _searchProductsForOrder.call(query: code);
+      if (results.isEmpty) {
+        state = state.copyWith(errorMessage: '바코드에 해당하는 제품이 없습니다.');
+        return;
+      }
+      final match = results.firstWhere(
+        (p) => p.barcode == code || p.productCode == code,
+        orElse: () => results.first,
+      );
+      if (addProductLine(match)) {
+        state = state.copyWith(successMessage: '${match.productName} 추가됨');
+      }
+    } catch (e) {
+      state = state.copyWith(errorMessage: extractErrorMessage(e));
+    }
+  }
+
   /// 제품 추가 (Legacy — OrderDraftItem 직접 전달, 회귀 호환).
   void addProductToOrder(OrderDraftItem item) {
     final isDuplicate = state.orderDraft.items
