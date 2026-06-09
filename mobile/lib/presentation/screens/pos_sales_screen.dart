@@ -245,6 +245,9 @@ class PosSalesScreen extends ConsumerWidget {
           foregroundColor: AppColors.white,
           disabledBackgroundColor: AppColors.surface,
           disabledForegroundColor: AppColors.textSecondary,
+          // 전역 테마의 full-width(minimumSize width=infinity) 기본값을 무시하고
+          // 콘텐츠 크기에 맞춘다. Row 안에서 무한 너비 제약 크래시 방지.
+          minimumSize: Size.zero,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

@@ -37,13 +37,10 @@ enum OrderRequestStatus {
 /// 주문 정렬 타입 열거형
 ///
 /// 주문 목록의 정렬 기준을 나타내며, API 요청 시 사용되는 sortBy/sortDir 값을 포함합니다.
+/// 레거시(Heroku) 주문 현황과 동일하게 2개 옵션만 제공합니다.
 enum OrderSortType {
   latestOrder('최신주문일순', 'orderDate', 'DESC'),
-  oldestOrder('오래된주문일순', 'orderDate', 'ASC'),
-  latestDelivery('최신납기일순', 'deliveryDate', 'DESC'),
-  oldestDelivery('오래된납기일순', 'deliveryDate', 'ASC'),
-  amountHigh('금액높은순', 'totalAmount', 'DESC'),
-  amountLow('금액낮은순', 'totalAmount', 'ASC');
+  latestDelivery('최근납기일순', 'deliveryDate', 'DESC');
 
   const OrderSortType(this.displayName, this.sortBy, this.sortDir);
 
