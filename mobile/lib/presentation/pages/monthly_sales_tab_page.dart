@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../domain/repositories/my_account_repository.dart';
 import '../providers/monthly_sales_provider.dart';
 import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/sales/monthly_sales_chart_widget.dart';
@@ -32,7 +33,10 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
 
   /// 거래처 선택 — 내 거래처 선택 바텀시트에서 고른 거래처로 필터링
   Future<void> _selectAccount() async {
-    final account = await AccountSelectorSheet.show(context);
+    final account = await AccountSelectorSheet.show(
+      context,
+      scope: MyAccountScope.sales,
+    );
     if (account == null || !mounted) return;
     setState(() => _selectedAccountName = account.accountName);
     await ref

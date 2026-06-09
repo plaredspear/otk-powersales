@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../widgets/account/account_selector_sheet.dart';
+import '../providers/pos_sales_provider.dart';
 import '../providers/product_expiration_form_provider.dart';
+import '../screens/barcode_scanner_screen.dart';
 import '../widgets/product_expiration/product_expiration_add_product_sheet.dart';
 import '../widgets/product_expiration/product_expiration_register_form.dart';
 
@@ -87,12 +89,7 @@ class _ProductExpirationRegisterPageState
                       );
                 }
               },
-              onScanBarcode: () {
-                // TODO: 바코드 스캔 기능 (P5 이후 구현)
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('바코드 스캔 기능은 준비 중입니다')),
-                );
-              },
+              onScanBarcode: _handleBarcodeScan,
               onExpiryDateChanged: (date) {
                 ref
                     .read(productExpirationFormProvider.notifier)
@@ -113,6 +110,35 @@ class _ProductExpirationRegisterPageState
       // 등록 버튼
       bottomNavigationBar: _buildRegisterButton(state),
     );
+  }
+
+  /// 바코드 스캔 — 카메라로 제품 바코드를 스캔해 유통기한 등록 대상 제품을 선택한다.
+  Future<void> _handleBarcodeScan() async {
+    final barcode = await BarcodeScannerScreen.show(context);
+    if (barcode == null || !mounted) return;
+
+    try {
+      final product =
+          await ref.read(posProductUseCaseProvider).findByBarcode(barcode);
+      if (!mounted) return;
+      if (product == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('해당 제품이 없습니다')),
+        );
+        return;
+      }
+      ref
+          .read(productExpirationFormProvider.notifier)
+          .selectProduct(product.productCode, product.productName);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${product.productName} 선택됨')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('제품 조회에 실패했습니다')),
+      );
+    }
   }
 
   /// 하단 등록 버튼 — 레거시(fix_bottom_wrap btn_yellow)처럼 전폭 무여백.

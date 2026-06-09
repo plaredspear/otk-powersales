@@ -1,4 +1,3 @@
-import '../../domain/entities/my_account.dart';
 import '../../domain/repositories/my_account_repository.dart';
 import '../datasources/my_account_remote_datasource.dart';
 
@@ -13,8 +12,12 @@ class MyAccountRepositoryImpl implements MyAccountRepository {
   }) : _remoteDataSource = remoteDataSource;
 
   @override
-  Future<MyAccountListResult> getMyAccounts({String? keyword}) async {
-    final response = await _remoteDataSource.getMyAccounts(keyword: keyword);
+  Future<MyAccountListResult> getMyAccounts({
+    String? keyword,
+    MyAccountScope scope = MyAccountScope.field,
+  }) async {
+    final response =
+        await _remoteDataSource.getMyAccounts(keyword: keyword, scope: scope);
 
     final accounts = response.stores.map((model) => model.toEntity()).toList();
 

@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/my_account.dart';
+import '../../../domain/repositories/my_account_repository.dart';
 import '../../providers/my_accounts_provider.dart';
 
 /// 거래처 선택 바텀시트
@@ -12,10 +13,16 @@ import '../../providers/my_accounts_provider.dart';
 /// "내 거래처" 목록(`GET /accounts/my`)을 검색·선택하여 선택된 [MyAccount]를 반환한다.
 /// 클레임 등록·월매출 등 폼/필터의 거래처 선택에서 공용으로 사용한다.
 class AccountSelectorSheet extends ConsumerStatefulWidget {
-  const AccountSelectorSheet({super.key});
+  const AccountSelectorSheet({super.key, this.scope = MyAccountScope.field});
+
+  /// 거래처 조회 범위 — 매출 계열(POS/전산/월매출)은 [MyAccountScope.sales] 전달.
+  final MyAccountScope scope;
 
   /// 바텀시트로 표시하고 선택된 거래처를 반환한다 (취소 시 null).
-  static Future<MyAccount?> show(BuildContext context) {
+  static Future<MyAccount?> show(
+    BuildContext context, {
+    MyAccountScope scope = MyAccountScope.field,
+  }) {
     return showModalBottomSheet<MyAccount>(
       context: context,
       isScrollControlled: true,
@@ -25,7 +32,7 @@ class AccountSelectorSheet extends ConsumerStatefulWidget {
           top: Radius.circular(AppSpacing.radiusXl),
         ),
       ),
-      builder: (_) => const AccountSelectorSheet(),
+      builder: (_) => AccountSelectorSheet(scope: scope),
     );
   }
 
@@ -58,8 +65,9 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
       _error = null;
     });
     try {
-      final result =
-          await ref.read(getMyAccountsUseCaseProvider).call(keyword: keyword);
+      final result = await ref
+          .read(getMyAccountsUseCaseProvider)
+          .call(keyword: keyword, scope: widget.scope);
       if (!mounted) return;
       setState(() {
         _accounts = result.accounts;

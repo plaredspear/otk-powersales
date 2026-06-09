@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/error_utils.dart';
+import '../../domain/repositories/my_account_repository.dart';
 import '../providers/electronic_sales_provider.dart';
 import '../providers/electronic_sales_state.dart';
 import '../providers/product_add_provider.dart';
@@ -15,6 +16,7 @@ import '../widgets/common/error_view.dart';
 import '../widgets/common/loading_indicator.dart';
 import '../widgets/electronic/electronic_product_picker_sheet.dart';
 import '../widgets/electronic/electronic_sales_result_list.dart';
+import 'barcode_scanner_screen.dart';
 
 /// 매출 조회 제품(추가된 제품) 1건.
 class _PickedProduct {
@@ -83,7 +85,10 @@ class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
   }
 
   Future<void> _selectCustomer() async {
-    final account = await AccountSelectorSheet.show(context);
+    final account = await AccountSelectorSheet.show(
+      context,
+      scope: MyAccountScope.sales,
+    );
     if (account == null || !mounted) return;
     setState(() {
       _customerId = account.accountId;
@@ -109,12 +114,12 @@ class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
     );
   }
 
-  /// 바코드 번호 입력 → 제품 조회 후 매출 조회 제품에 추가
+  /// 바코드 스캔 → 제품 조회 후 매출 조회 제품에 추가
   ///
-  /// 레거시는 네이티브 카메라 스캔(`powersales://barcode`)이나, 신규 앱은 카메라 스캐너가 없어
-  /// 바코드 번호 직접 입력으로 대체한다(`barcodeValue()` 동등 — 조회 후 제품 추가).
+  /// 레거시 네이티브 카메라 스캔(`powersales://barcode`) 동등 — 카메라로 스캔한 바코드로
+  /// 제품을 조회해 매출 조회 제품에 추가한다(`barcodeValue()` 동등).
   Future<void> _addByBarcode() async {
-    final barcode = await _promptBarcode();
+    final barcode = await BarcodeScannerScreen.show(context);
     if (barcode == null || barcode.isEmpty || !mounted) return;
 
     try {
@@ -150,34 +155,6 @@ class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
     } catch (e) {
       if (mounted) _showSnack(extractErrorMessage(e));
     }
-  }
-
-  Future<String?> _promptBarcode() async {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('바코드 번호 입력'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(hintText: '바코드를 입력하세요'),
-          onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () =>
-                Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _addProduct(_PickedProduct product) {

@@ -14,7 +14,10 @@ class _FakeMyAccountRepository implements MyAccountRepository {
   ];
 
   @override
-  Future<MyAccountListResult> getMyAccounts({String? keyword}) async {
+  Future<MyAccountListResult> getMyAccounts({
+    String? keyword,
+    MyAccountScope scope = MyAccountScope.field,
+  }) async {
     final filtered = keyword == null
         ? _all
         : _all

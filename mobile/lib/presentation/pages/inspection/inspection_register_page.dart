@@ -9,6 +9,8 @@ import '../../../domain/entities/product.dart';
 import '../../../domain/entities/inspection_theme.dart';
 import '../../providers/inspection_register_provider.dart';
 import '../../providers/inspection_register_state.dart';
+import '../../providers/pos_sales_provider.dart';
+import '../../screens/barcode_scanner_screen.dart';
 import '../../widgets/inspection/inspection_common_form.dart';
 import '../../widgets/inspection/inspection_competitor_form.dart';
 import '../../widgets/inspection/inspection_own_form.dart';
@@ -299,13 +301,36 @@ class _InspectionRegisterPageState
         .selectProduct(selected.productCode, selected.productName);
   }
 
-  /// 바코드 스캔 (임시 구현)
-  void _handleBarcodeScan() {
-    // TODO: 바코드 스캐너 실행
-    // 임시로 샘플 제품 선택
-    ref
-        .read(inspectionRegisterProvider.notifier)
-        .selectProduct('P002', '진라면 매운맛');
+  /// 바코드 스캔 — 카메라로 제품 바코드를 스캔해 자사 제품을 선택한다.
+  ///
+  /// 스캐너에서 받은 바코드로 POS 제품 검색(`findByBarcode`)을 호출해 제품을 찾고,
+  /// 찾으면 자사 활동 폼의 선택 제품으로 반영한다.
+  Future<void> _handleBarcodeScan() async {
+    final barcode = await BarcodeScannerScreen.show(context);
+    if (barcode == null || !mounted) return;
+
+    try {
+      final product =
+          await ref.read(posProductUseCaseProvider).findByBarcode(barcode);
+      if (!mounted) return;
+      if (product == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('해당 제품이 없습니다')),
+        );
+        return;
+      }
+      ref
+          .read(inspectionRegisterProvider.notifier)
+          .selectProduct(product.productCode, product.productName);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${product.productName} 선택됨')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('제품 조회에 실패했습니다')),
+      );
+    }
   }
 
   /// 사진 추가 — 카메라/갤러리에서 선택한 이미지를 첨부

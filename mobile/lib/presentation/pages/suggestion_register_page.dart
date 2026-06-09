@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../providers/pos_sales_provider.dart';
 import '../providers/suggestion_register_provider.dart';
 import '../providers/suggestion_register_state.dart';
+import '../screens/barcode_scanner_screen.dart';
 import '../widgets/suggestion/suggestion_category_selector.dart';
 import '../widgets/suggestion/suggestion_logistics_claim_fields.dart';
 import '../widgets/suggestion/suggestion_photo_field.dart';
@@ -241,10 +243,31 @@ class _SuggestionRegisterPageState
     );
   }
 
+  /// 바코드 스캔 — 카메라로 제품 바코드를 스캔해 대표 제품을 선택한다.
   Future<void> _handleBarcodeScan() async {
-    if (mounted) {
+    final barcode = await BarcodeScannerScreen.show(context);
+    if (barcode == null || !mounted) return;
+
+    try {
+      final product =
+          await ref.read(posProductUseCaseProvider).findByBarcode(barcode);
+      if (!mounted) return;
+      if (product == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('해당 제품이 없습니다')),
+        );
+        return;
+      }
+      ref
+          .read(suggestionRegisterProvider.notifier)
+          .selectProduct(product.productCode, product.productName);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('바코드 스캔 기능은 별 스펙에서 구현됩니다')),
+        SnackBar(content: Text('${product.productName} 선택됨')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('제품 조회에 실패했습니다')),
       );
     }
   }

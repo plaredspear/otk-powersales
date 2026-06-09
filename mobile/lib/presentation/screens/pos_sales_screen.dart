@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../domain/entities/pos_product.dart';
 import '../../domain/entities/pos_sales.dart';
+import '../../domain/repositories/my_account_repository.dart';
 import '../providers/pos_sales_provider.dart';
 import '../providers/pos_sales_state.dart';
 import '../widgets/account/account_selector_sheet.dart';
@@ -123,7 +124,10 @@ class PosSalesScreen extends ConsumerWidget {
       required: true,
       trailing: const Icon(Icons.expand_more, color: AppColors.textSecondary),
       onTap: () async {
-        final account = await AccountSelectorSheet.show(context);
+        final account = await AccountSelectorSheet.show(
+          context,
+          scope: MyAccountScope.sales,
+        );
         if (account == null) return;
         await ref
             .read(posSalesProvider.notifier)
