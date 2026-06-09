@@ -316,6 +316,26 @@ class LeaderScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - keyword 거래처코드(externalKey) 일치, 주소는 미검색 (레거시 teamleaderAccList 정합)")
+        fun getAccounts_keywordMatchesCodeNotAddress() {
+            val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
+            // a1: 거래처코드에 키워드 포함 → 매칭
+            val a1 = createAccount(id = 100, branchCode = "C001", accountGroup = "1000", name = "ZebraMart", address1 = "Seoul", externalKey = "1000777")
+            // a2: 주소에만 키워드 포함 → 레거시는 주소 미검색이므로 제외
+            val a2 = createAccount(id = 101, branchCode = "C001", accountGroup = "1010", name = "AlphaMart", address1 = "777번지", externalKey = "1000111")
+
+            every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
+            every { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(
+                "C001", listOf("1000", "1010"), true
+            ) } returns listOf(a1, a2)
+
+            val result = leaderScheduleService.getAccounts(leader.id, "777")
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].name).isEqualTo("ZebraMart")
+        }
+
+        @Test
         @DisplayName("실패 - 비조장 -> NOT_LEADER")
         fun getAccounts_notLeader() {
             val nonLeader = createEmployee(id = 4001, authority = AppAuthority.WOMAN, costCenterCode = "C001")
@@ -350,13 +370,15 @@ class LeaderScheduleServiceTest {
         branchCode: String?,
         accountGroup: String?,
         name: String? = "거래처$id",
-        address1: String? = null
+        address1: String? = null,
+        externalKey: String? = null
     ): Account = Account(
         id = id,
         name = name,
         branchCode = branchCode,
         accountGroup = accountGroup,
-        address1 = address1
+        address1 = address1,
+        externalKey = externalKey
     )
 
     private fun createRequest(

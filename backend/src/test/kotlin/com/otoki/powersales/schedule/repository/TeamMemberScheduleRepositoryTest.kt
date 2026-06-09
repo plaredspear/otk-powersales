@@ -2,6 +2,7 @@ package com.otoki.powersales.schedule.repository
 
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.schedule.entity.AttendanceLog
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.employee.entity.Employee
@@ -403,6 +404,72 @@ class TeamMemberScheduleRepositoryTest {
             val result = teamMemberScheduleRepository
                 .aggregateDailySummaryByEmployeeIds(emptyList(), LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30))
             assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("findDistinctScheduledAccounts - 부서장 전체조회(레거시 selectAllAccount)")
+    inner class FindDistinctScheduledAccounts {
+
+        private fun scheduleFor(account: Account, date: LocalDate = LocalDate.now()) {
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    account = account,
+                    workingDate = date,
+                    workingType = WorkingType.WORK
+                )
+            )
+        }
+
+        @Test
+        @DisplayName("일정 잡힌 거래처만 반환하고, 동일 거래처가 여러 일정이어도 1건으로 중복 제거한다")
+        fun distinct_only_scheduled() {
+            val scheduled = testEntityManager.persistAndFlush(Account(name = "스케줄거래처", externalKey = "1000001"))
+            val unscheduled = testEntityManager.persistAndFlush(Account(name = "미스케줄거래처", externalKey = "1000002"))
+            // 같은 거래처에 일정 2건 → distinct 검증
+            scheduleFor(scheduled)
+            scheduleFor(scheduled, LocalDate.now().minusDays(1))
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findDistinctScheduledAccounts(null, 100)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].name).isEqualTo("스케줄거래처")
+            assertThat(result.map { it.id }).doesNotContain(unscheduled.id)
+        }
+
+        @Test
+        @DisplayName("keyword 는 거래처명 + 거래처코드(externalKey)로 검색한다")
+        fun keyword_matches_name_and_code() {
+            val byName = testEntityManager.persistAndFlush(Account(name = "이마트월배점", externalKey = "1000091"))
+            val byCode = testEntityManager.persistAndFlush(Account(name = "GS더프레시동탄점", externalKey = "1090298"))
+            val noMatch = testEntityManager.persistAndFlush(Account(name = "롯데프레시향동점", externalKey = "1079385"))
+            scheduleFor(byName)
+            scheduleFor(byCode)
+            scheduleFor(noMatch)
+            testEntityManager.clear()
+
+            // 거래처명 일부
+            assertThat(teamMemberScheduleRepository.findDistinctScheduledAccounts("이마트", 100).map { it.name })
+                .containsExactly("이마트월배점")
+            // 거래처코드 일부
+            assertThat(teamMemberScheduleRepository.findDistinctScheduledAccounts("1090298", 100).map { it.name })
+                .containsExactly("GS더프레시동탄점")
+        }
+
+        @Test
+        @DisplayName("limit 만큼만 반환하고 거래처명 오름차순 정렬한다")
+        fun limit_and_order() {
+            val c = testEntityManager.persistAndFlush(Account(name = "C거래처", externalKey = "3"))
+            val a = testEntityManager.persistAndFlush(Account(name = "A거래처", externalKey = "1"))
+            val b = testEntityManager.persistAndFlush(Account(name = "B거래처", externalKey = "2"))
+            scheduleFor(c); scheduleFor(a); scheduleFor(b)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findDistinctScheduledAccounts(null, 2)
+
+            assertThat(result.map { it.name }).containsExactly("A거래처", "B거래처")
         }
     }
 }

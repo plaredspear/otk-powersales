@@ -319,9 +319,10 @@ class LeaderScheduleService(
             accounts
         } else {
             val needle = trimmedKeyword.lowercase()
+            // 레거시 teamleaderAccList 정합: 거래처명 + 거래처코드(externalKey) LIKE 검색
             accounts.filter {
                 (it.name?.lowercase()?.contains(needle) == true) ||
-                    (it.address1?.lowercase()?.contains(needle) == true)
+                    (it.externalKey?.lowercase()?.contains(needle) == true)
             }
         }
 
