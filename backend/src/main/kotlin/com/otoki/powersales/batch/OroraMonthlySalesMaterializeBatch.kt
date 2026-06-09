@@ -29,6 +29,7 @@ class OroraMonthlySalesMaterializeBatch(
             val result = facade.materializeMonthly()
             ctx.metadata(
                 mapOf(
+                    "trigger" to "scheduled",
                     "salesMonth" to result.salesMonth,
                     "fetchedCount" to result.fetchedCount,
                     "upsertedCount" to result.upsertedCount,
