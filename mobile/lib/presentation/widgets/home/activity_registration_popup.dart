@@ -7,8 +7,8 @@ import '../../../core/theme/app_typography.dart';
 
 /// 활동등록 메뉴 아이템 데이터
 class ActivityMenuItem {
-  /// 메뉴 아이콘
-  final IconData icon;
+  /// 메뉴 아이콘 자산 경로 (레거시 GNB와 동일한 PNG)
+  final String iconAsset;
 
   /// 메뉴 이름
   final String label;
@@ -17,7 +17,7 @@ class ActivityMenuItem {
   final String? route;
 
   const ActivityMenuItem({
-    required this.icon,
+    required this.iconAsset,
     required this.label,
     this.route,
   });
@@ -40,35 +40,37 @@ class ActivityRegistrationPopup extends StatelessWidget {
 
   /// 기본 메뉴 목록 (6개, 레거시 GNB "활동 등록" 순서 정합)
   ///
-  /// 아이콘은 레거시 노랑 솔리드 실루엣에 맞춰 채움(filled) 변형을 사용한다.
+  /// 아이콘은 레거시 GNB(gnb.jsp `.active_navN`)의 PNG(ico_activeN.png)를
+  /// 그대로 가져와 적용한다. (active_nav 매핑: 유통기한=2, 현장점검=4,
+  /// 제안하기=5, 클레임등록=3, 내클레임/내물류클레임=1)
   static const List<ActivityMenuItem> defaultMenuItems = [
     ActivityMenuItem(
-      icon: Icons.notifications,
+      iconAsset: 'assets/images/ico_active2.png',
       label: '유통기한 관리',
       route: AppRouter.productExpiration,
     ),
     ActivityMenuItem(
-      icon: Icons.person_pin_circle,
+      iconAsset: 'assets/images/ico_active4.png',
       label: '현장 점검',
       route: AppRouter.inspectionRegister,
     ),
     ActivityMenuItem(
-      icon: Icons.feedback,
+      iconAsset: 'assets/images/ico_active5.png',
       label: '제안하기(물류클레임, 신제품 제안 등)',
       route: AppRouter.suggestionRegister,
     ),
     ActivityMenuItem(
-      icon: Icons.chat,
+      iconAsset: 'assets/images/ico_active3.png',
       label: '클레임 등록',
       route: AppRouter.claimRegister,
     ),
     ActivityMenuItem(
-      icon: Icons.assignment,
+      iconAsset: 'assets/images/ico_active1.png',
       label: '내 클레임 조회',
       route: AppRouter.claimList,
     ),
     ActivityMenuItem(
-      icon: Icons.assignment,
+      iconAsset: 'assets/images/ico_active1.png',
       label: '내 물류클레임 조회',
       route: AppRouter.suggestionList,
     ),
@@ -143,10 +145,11 @@ class ActivityRegistrationPopup extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              item.icon,
-              size: AppSpacing.iconSize,
-              color: AppColors.legacyYellow,
+            Image.asset(
+              item.iconAsset,
+              width: AppSpacing.iconSize,
+              height: AppSpacing.iconSize,
+              fit: BoxFit.contain,
             ),
             const SizedBox(width: AppSpacing.lg),
             Expanded(
