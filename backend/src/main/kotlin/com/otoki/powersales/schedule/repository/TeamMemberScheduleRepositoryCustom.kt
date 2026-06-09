@@ -84,11 +84,12 @@ interface TeamMemberScheduleRepositoryCustom {
     fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Long>
 
     /**
-     * 팀멤버스케줄에 등록된 모든 거래처 ID (중복 제거).
-     * 레거시 `accountMapper.selectAllAccount` 정합 — 부서장(AppAuthority.ACCOUNT_VIEW_ALL) 매출 조회 시
-     * 본인/기간 필터 없이 일정이 잡힌 전체 거래처를 노출한다.
+     * 팀멤버스케줄에 등록된 거래처 (중복 제거) — 거래처명/코드 keyword 필터 + 결과 상한(limit).
+     * 레거시 `accountMapper.selectAllAccount` 정합 — 부서장(AppAuthority.ACCOUNT_VIEW_ALL) 매출 조회.
+     * 레거시 드롭다운이 `keyvalue` 검색 + `LIMIT/OFFSET` 페이지네이션을 쓰던 것과 동일하게,
+     * 전사 일정 거래처 전체(수천 건)를 한 번에 반환하지 않도록 DB 레벨에서 필터·제한한다.
      */
-    fun findAllDistinctAccountIds(): List<Long>
+    fun findDistinctScheduledAccounts(keyword: String?, limit: Int): List<com.otoki.powersales.account.entity.Account>
 
     /**
      * 팀장(teamLeader) 기준 거래처 ID (중복 제거).
