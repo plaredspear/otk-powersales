@@ -1,4 +1,4 @@
-import '../../domain/entities/pos_sales.dart';
+import '../../domain/entities/pos_sales_result.dart';
 import '../../domain/repositories/pos_sales_repository.dart';
 import '../datasources/pos_sales_api_datasource.dart';
 
@@ -11,13 +11,17 @@ class PosSalesRepositoryImpl implements PosSalesRepository {
   }) : _remoteDataSource = remoteDataSource;
 
   @override
-  Future<List<PosSales>> getPosSales({
+  Future<PosSalesResult> getPosSalesByRange({
     required int customerId,
-    required String yearMonth,
+    required String startDate,
+    required String endDate,
+    List<String> barcodes = const [],
   }) {
-    return _remoteDataSource.getPosSales(
+    return _remoteDataSource.getPosSalesByRange(
       customerId: customerId,
-      yearMonth: yearMonth,
+      startDate: startDate,
+      endDate: endDate,
+      barcodes: barcodes,
     );
   }
 }

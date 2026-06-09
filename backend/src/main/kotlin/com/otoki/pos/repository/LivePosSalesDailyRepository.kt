@@ -50,6 +50,43 @@ interface LivePosSalesDailyRepository : Repository<LivePosSalesDaily, LivePosSal
 		@Param("startDate") startDate: String,
 		@Param("endDate") endDate: String,
 	): List<PosSalesRow>
+
+	/**
+	 * 거래처 1곳 + 기간 + 선택 바코드 목록의 제품별 POS매출 집계 (레거시 `selectPosData` 의
+	 * `BARCODE IN (...)` 필터 동등).
+	 *
+	 * 레거시 posmain.jsp 는 매출 조회 제품(`#add-prd-list`) 에서 체크한 제품의 `BARCODE` 목록으로
+	 * 필터해 품목별 명세를 조회했다. [barcodes] 가 비어 있으면 호출하지 말 것(빈 `IN ()` 은 SQL
+	 * 오류) — 미지정 조회는 [aggregateByProduct] 를 사용한다.
+	 *
+	 * @param custCd 거래처 코드 (legacy 패딩 `"000" + accountCode` 적용된 값)
+	 * @param startDate 조회 시작일 `YYYY-MM-DD`
+	 * @param endDate 조회 종료일 `YYYY-MM-DD`
+	 * @param barcodes 필터할 바코드 목록 (1건 이상)
+	 */
+	@Query(
+		nativeQuery = true,
+		value = """
+			SELECT "ITEM_CD"            AS "itemCd",
+			       "ITEM_NM"            AS "itemNm",
+			       MAX("BARCODE")       AS "barcode",
+			       SUM("SALES_AMT")     AS "salesAmt",
+			       SUM("SALES_QTY")     AS "salesQty"
+			FROM public.live_pos_sales_dh
+			WHERE "DATE" BETWEEN to_date(:startDate, 'YYYY-MM-DD')
+			                 AND to_date(:endDate,   'YYYY-MM-DD')
+			  AND "CUST_CD" = :custCd
+			  AND "BARCODE" IN (:barcodes)
+			GROUP BY "ITEM_CD", "ITEM_NM"
+			ORDER BY SUM("SALES_AMT") DESC
+		"""
+	)
+	fun aggregateByProductAndBarcodes(
+		@Param("custCd") custCd: String,
+		@Param("startDate") startDate: String,
+		@Param("endDate") endDate: String,
+		@Param("barcodes") barcodes: List<String>,
+	): List<PosSalesRow>
 }
 
 /**

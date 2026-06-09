@@ -4,6 +4,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <!-- FCM: Android 13(API 33)+ 알림 표시 런타임 권한 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- 제품 바코드 스캔 (mobile_scanner) -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application
         android:label="mobile"
         android:name="${applicationName}"
