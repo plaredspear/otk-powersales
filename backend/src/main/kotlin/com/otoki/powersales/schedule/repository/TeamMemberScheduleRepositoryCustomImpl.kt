@@ -16,6 +16,7 @@ import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.CaseBuilder
 import com.querydsl.core.types.dsl.NumberExpression
+import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -300,14 +301,21 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         keyword: String?,
         limit: Int
     ): List<com.otoki.powersales.account.entity.Account> {
+        // JOIN + DISTINCT 는 LIMIT 가 무용지물(전체 176만 TMS 스캔 → 70여 컬럼 DISTINCT/SORT 후에야 절단).
+        // account 를 name 순으로 훑으며 EXISTS 세미조인으로 TMS 를 account_id 로 probe(LIMIT 즉시 단락) —
+        // V207 idx_team_member_schedule_account_id_working_date (account_id 선두) 인덱스가 probe 를 가속.
         return queryFactory
-            .select(account).distinct()
-            .from(teamMemberSchedule)
-            .join(teamMemberSchedule.account, account)
+            .selectFrom(account)
             .where(
-                isNotDeleted(),
                 account.isDeleted.isNull.or(account.isDeleted.eq(false)),
-                accountKeywordMatch(keyword)
+                accountKeywordMatch(keyword),
+                JPAExpressions.selectOne()
+                    .from(teamMemberSchedule)
+                    .where(
+                        teamMemberSchedule.account.eq(account),
+                        isNotDeleted()
+                    )
+                    .exists()
             )
             .orderBy(account.name.asc())
             .limit(limit.toLong())
