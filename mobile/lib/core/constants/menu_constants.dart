@@ -3,7 +3,7 @@ import '../../domain/entities/menu_item.dart';
 
 /// 전체메뉴 상수 데이터
 ///
-/// 7개 그룹, 15개 메뉴 아이템으로 구성.
+/// 7개 그룹, 16개 메뉴 아이템으로 구성.
 /// route가 null인 항목은 미구현 상태(탭 시 "준비 중입니다" 안내).
 abstract final class MenuConstants {
   /// 전체 메뉴 그룹 목록
@@ -53,8 +53,6 @@ abstract final class MenuConstants {
       items: [
         MenuItem(id: 'event-sales', label: '행사 매출', route: '/promotions'),
         MenuItem(id: 'monthly-sales', label: '월 매출', route: '/monthly-sales'),
-        MenuItem(id: 'logistics-sales', label: '물류 매출', route: '/logistics-sales'),
-        MenuItem(id: 'electronic-sales', label: '전산 매출', route: '/electronic-sales'),
       ],
     ),
     // 5. 현장톡
