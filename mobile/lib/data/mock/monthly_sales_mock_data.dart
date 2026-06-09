@@ -12,6 +12,7 @@ class MonthlySalesMockData {
       targetAmount: 100000000,
       achievedAmount: 95000000,
       achievementRate: 95.0,
+      baseRate: 0.0,
       categorySales: const [
         CategorySales(
           category: '상온',
@@ -41,6 +42,7 @@ class MonthlySalesMockData {
       targetAmount: 80000000,
       achievedAmount: 65000000,
       achievementRate: 81.25,
+      baseRate: 0.0,
       categorySales: const [
         CategorySales(
           category: '상온',
@@ -72,6 +74,7 @@ class MonthlySalesMockData {
       targetAmount: 70000000,
       achievedAmount: 72000000,
       achievementRate: 102.9,
+      baseRate: 0.0,
       categorySales: const [
         CategorySales(
           category: '상온',
@@ -101,6 +104,7 @@ class MonthlySalesMockData {
       targetAmount: 60000000,
       achievedAmount: 50000000,
       achievementRate: 83.3,
+      baseRate: 0.0,
       categorySales: const [
         CategorySales(
           category: '상온',
@@ -132,6 +136,7 @@ class MonthlySalesMockData {
       targetAmount: 50000000,
       achievedAmount: 48000000,
       achievementRate: 96.0,
+      baseRate: 0.0,
       categorySales: const [
         CategorySales(
           category: '상온',
@@ -161,6 +166,7 @@ class MonthlySalesMockData {
       targetAmount: 55000000,
       achievedAmount: 40000000,
       achievementRate: 72.7,
+      baseRate: 0.0,
       categorySales: const [
         CategorySales(
           category: '상온',
@@ -192,6 +198,7 @@ class MonthlySalesMockData {
       targetAmount: 220000000,
       achievedAmount: 215000000,
       achievementRate: 97.7,
+      baseRate: 0.0,
       categorySales: const [
         CategorySales(
           category: '상온',
@@ -221,6 +228,7 @@ class MonthlySalesMockData {
       targetAmount: 195000000,
       achievedAmount: 155000000,
       achievementRate: 79.5,
+      baseRate: 0.0,
       categorySales: const [
         CategorySales(
           category: '상온',

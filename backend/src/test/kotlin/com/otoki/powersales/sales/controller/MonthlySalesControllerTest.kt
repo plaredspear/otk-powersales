@@ -54,6 +54,7 @@ class MonthlySalesControllerTest : MobileControllerTestSupport() {
             targetAmount = 28900000,
             achievedAmount = 30089000,
             achievementRate = 104.11,
+            baseRate = 50.0,
             categorySales = listOf(
                 MonthlySalesResponse.CategorySalesInfo(
                     category = "상온",
@@ -96,6 +97,7 @@ class MonthlySalesControllerTest : MobileControllerTestSupport() {
             .andExpect(jsonPath("$.data.yearMonth").value("202602"))
             .andExpect(jsonPath("$.data.targetAmount").value(28900000))
             .andExpect(jsonPath("$.data.achievedAmount").value(30089000))
+            .andExpect(jsonPath("$.data.baseRate").value(50.0))
             .andExpect(jsonPath("$.data.categorySales[0].category").value("상온"))
             .andExpect(jsonPath("$.data.yearComparison.currentYear").value(30089000))
             .andExpect(jsonPath("$.data.monthlyAverage.currentYearAverage").value(28500000))
@@ -245,6 +247,7 @@ class MonthlySalesControllerTest : MobileControllerTestSupport() {
             targetAmount = 100000000,
             achievedAmount = 120000000,
             achievementRate = 120.0,
+            baseRate = 0.0,
             categorySales = emptyList(),
             yearComparison = MonthlySalesResponse.YearComparisonInfo(0, 0),
             monthlyAverage = MonthlySalesResponse.MonthlyAverageInfo(0, 0, 1, 2)

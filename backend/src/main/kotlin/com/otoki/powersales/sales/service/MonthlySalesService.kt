@@ -1,40 +1,74 @@
 package com.otoki.powersales.sales.service
 
+import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.sales.dto.request.MonthlySalesRequest
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
+import com.otoki.powersales.sales.entity.SalesProgressRateMaster
+import com.otoki.powersales.sales.repository.SalesProgressRateMasterRepository
+import com.otoki.powersales.sales.repository.WorkingDayMasterRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import java.time.LocalDate
 
 /**
  * 월매출 조회 service.
  *
- * ## 데이터 source
- * RDS `MonthlySalesHistory` (SF `MonthlySalesHistory__c` 복제 적재) 의 실측 마감실적만 사용
- * ([MonthlySalesHistoryQueryGateway] 경유). SF 레거시도 모바일 `IF_REST_MOBILE_MonthlySalesHistory.cls`
- * 가 ORORA 직접이 아닌 `MonthlySalesHistory__c` SObject 를 조회한 것과 동등.
- * 목표 (`thisMonthTarget`) / 확정 상태 (`isConfirmed`) 는 폐기 — 응답 필드 호환성 유지를 위해
- * `targetAmount = 0`, `achievementRate = 0.0` 로 고정 반환.
+ * ## 레거시 매핑
+ * - 진입점: 레거시 `POST /sales/monthlylistapi` → `promotion/month/list.jsp` (월 매출 현황)
+ * - flow-legacy: SF Apex `IF_REST_MOBILE_MonthlySalesHistory.cls` 1회 호출이 화면 데이터 전부
+ *   (Heroku PG mirror 조회 결과는 JSP 미참조) — 거래처(SAP 코드) 1곳 + 연월 기준
  *
- * ## 응답 산출
- * - `achievedAmount` = 카테고리 4종 ABC + Ship 합산 ([MonthlySalesRow.closingAmountSum] 동등)
- * - `categorySales` = 카테고리별 ABC + Ship 합산 — SF Apex `IF_REST_MOBILE_MonthlySalesHistory.cls` 정합
- * - `yearComparison` = 당년 / 전년 동월 ABC+Ship 합산
- * - `monthlyAverage` = 1월~조회월 누적 ABC+Ship 합산 / 월수 (당년 / 전년)
+ * ## 거래처 키 규약 (achieved=0 회귀 방지)
+ * 모바일/물류매출 화면과 동일하게 `customerId` 는 **신규 내부 `account.id`** 를 전달받는다
+ * ([LogisticsSalesService] 와 동일 규약). 숫자면 [AccountRepository] 로 resolve 하여 SAP 코드
+ * (`Account.externalKey`) 를 얻고, RDS 조회는 SAP 코드로 수행한다. 숫자가 아니면 레거시 SAP 코드
+ * 직접 호출(관리/테스트) 로 보고 그대로 사용한다.
+ *
+ * ## 데이터 source
+ * - 실적: RDS `MonthlySalesHistory` (SF `MonthlySalesHistory__c` 복제) 실측 마감실적
+ *   ([MonthlySalesHistoryQueryGateway] 경유).
+ * - 목표: RDS `SalesProgressRateMaster` (SF `SalesProgressRateMaster__c` 복제) — 조회 거래처의
+ *   해당 (연, 월) 1행. SF Apex SOQL `TargetYear__c = year AND TargetMonth__c = month AND
+ *   Account__r.ExternalKey__c = SAPAccountCode` 정합.
+ *
+ * ## 응답 산출 (레거시 list.jsp 정합)
+ * - `achievedAmount` = 조회월 `ClosingAmountSum` (ABC합 + Ship합) — "마감 합계 실적"
+ * - `targetAmount` = `RT + FR + RM + FO` 목표 합계 (SF `TargetSum__c` 동등) — "목표 금액"
+ * - `achievementRate` = `round(achieved / targetSum * 100)` — 진도율 바 + "(N% 달성)".
+ *   목표 미등록(targetSum=0) 월은 0 (레거시 `isNoTargetMonth` 분기 정합). 레거시 SF `ProgressRate__c`
+ *   (= `CurrentMonthSalesAmount__c / TargetSum__c`) 와 `CurrentMonthSalesAmount == ClosingAmountSum`
+ *   인 정상 케이스에서 동등하며, 화면 "(N% 달성)" 표기(실적÷목표) 와도 일치.
+ * - `categorySales` = 카테고리별 목표(RT/RM/FR/FO) + 실적(ABC+Ship) + 달성률(round(실적÷목표×100))
+ * - `baseRate` = 기준 진도율(영업일 경과 비율). 레거시 `calcBusinessRateOnlyThisMonth` 동등 — 상세는 [baseRate]
+ * - `yearComparison` = 당년 / 전년 동월 ClosingAmountSum
+ * - `monthlyAverage` = 1월~조회월 누적 ClosingAmountSum / 월수 (당년 / 전년)
  */
 @Service
 @Transactional(readOnly = true)
 class MonthlySalesService(
+    private val accountRepository: AccountRepository,
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
+    private val salesProgressRateMasterRepository: SalesProgressRateMasterRepository,
+    private val workingDayMasterRepository: WorkingDayMasterRepository,
 ) {
 
     fun getMonthlySales(request: MonthlySalesRequest): MonthlySalesResponse {
-        val customerId = request.customerId
+        val customerIdRaw = request.customerId
         val year = request.getYear()
         val month = request.getMonth()
-        val sapCode = customerId ?: ""
+        if (customerIdRaw.isNullOrBlank()) {
+            return emptyResponse("ALL", request.yearMonth, month)
+        }
+
+        // customerId(=내부 account.id) → SAP 코드 resolve. 숫자 아닌 값은 SAP 코드 직접 취급.
+        val account = customerIdRaw.toLongOrNull()
+            ?.let { accountRepository.findByIdInAndIsDeletedNot(listOf(it), true).firstOrNull() }
+            ?: accountRepository.findByExternalKey(customerIdRaw)
+        val sapCode = account?.externalKey ?: customerIdRaw
+        val customerName = account?.name ?: customerIdRaw
         if (sapCode.isBlank()) {
-            return emptyResponse(customerId ?: "ALL", request.yearMonth, year, month)
+            return emptyResponse(customerIdRaw, request.yearMonth, month)
         }
 
         val currentRangeSalesDates = (1..month).map { toSalesDate(year, it) }
@@ -54,14 +88,19 @@ class MonthlySalesService(
         val previousAvg = previousRangeSalesDates
             .sumOf { rowsByDate[it]?.closingAmountSum?.toLong() ?: 0L } / month
 
+        // 목표: 조회 거래처의 (연, 월) 1행. account 미resolve 시 목표 없음 (전체 0).
+        val target = account?.let { findTarget(it.id, year, month) }
+        val targetSum = target?.let { targetSumOf(it) } ?: 0L
+
         return MonthlySalesResponse(
-            customerId = customerId ?: sapCode,
-            customerName = customerId ?: sapCode,
+            customerId = customerIdRaw,
+            customerName = customerName,
             yearMonth = request.yearMonth,
-            targetAmount = 0L,
+            targetAmount = targetSum,
             achievedAmount = achieved,
-            achievementRate = 0.0,
-            categorySales = buildCategorySales(currentRow),
+            achievementRate = rate(achieved, targetSum),
+            baseRate = baseRate(year, month),
+            categorySales = buildCategorySales(currentRow, target),
             yearComparison = MonthlySalesResponse.YearComparisonInfo(achieved, previousAchieved),
             monthlyAverage = MonthlySalesResponse.MonthlyAverageInfo(
                 currentYearAverage = currentAvg,
@@ -72,7 +111,7 @@ class MonthlySalesService(
         )
     }
 
-    private fun emptyResponse(customerId: String, yearMonth: String, year: Int, month: Int) =
+    private fun emptyResponse(customerId: String, yearMonth: String, month: Int) =
         MonthlySalesResponse(
             customerId = customerId,
             customerName = customerId,
@@ -80,19 +119,36 @@ class MonthlySalesService(
             targetAmount = 0L,
             achievedAmount = 0L,
             achievementRate = 0.0,
+            baseRate = 0.0,
             categorySales = emptyList(),
             yearComparison = MonthlySalesResponse.YearComparisonInfo(0L, 0L),
             monthlyAverage = MonthlySalesResponse.MonthlyAverageInfo(0L, 0L, 1, month),
         )
 
-    private fun buildCategorySales(oro: MonthlySalesRow?): List<MonthlySalesResponse.CategorySalesInfo> {
-        if (oro == null) return emptyList()
+    /**
+     * 조회 거래처의 (연, 월) 목표 1행. `targetYear` 는 `"YYYY"` 문자열, `targetMonth` 는 SF 적재
+     * 포맷(zero-pad 비보장) 이라 정수 파싱 후 월 일치로 매칭. soft-delete row 제외.
+     */
+    private fun findTarget(accountId: Long, year: Int, month: Int): SalesProgressRateMaster? =
+        salesProgressRateMasterRepository
+            .findByAccountIdAndTargetYear(accountId, year.toString())
+            .asSequence()
+            .filter { it.isDeleted != true }
+            .firstOrNull { it.targetMonth?.trim()?.toIntOrNull() == month }
+
+    private fun buildCategorySales(
+        oro: MonthlySalesRow?,
+        target: SalesProgressRateMaster?,
+    ): List<MonthlySalesResponse.CategorySalesInfo> {
+        if (oro == null && target == null) return emptyList()
         return SalesCategory.entries.map { category ->
+            val achievedAmount = oro?.let { categoryAchieved(it, category) } ?: 0L
+            val targetAmount = target?.let { categoryTarget(it, category) } ?: 0L
             MonthlySalesResponse.CategorySalesInfo(
                 category = category.name,
-                targetAmount = 0L,
-                achievedAmount = categoryAchieved(oro, category),
-                achievementRate = 0.0,
+                targetAmount = targetAmount,
+                achievedAmount = achievedAmount,
+                achievementRate = rate(achievedAmount, targetAmount),
             )
         }
     }
@@ -113,5 +169,55 @@ class MonthlySalesService(
         return (abc ?: BigDecimal.ZERO).toLong() + (ship ?: BigDecimal.ZERO).toLong()
     }
 
+    /** 카테고리별 목표 — SF `RT/RM/FR/FO TargetAmount__c` 정합. */
+    private fun categoryTarget(target: SalesProgressRateMaster, category: SalesCategory): Long {
+        val amount = when (category) {
+            SalesCategory.AMBIENT -> target.rtTargetAmount
+            SalesCategory.NOODLE -> target.rmTargetAmount
+            SalesCategory.FROZEN_REFRIGERATED -> target.frTargetAmount
+            SalesCategory.OIL_FAT -> target.foTargetAmount
+        }
+        return amount?.toLong() ?: 0L
+    }
+
+    /** 목표 합계 — SF `TargetSum__c` (= RT + FR + RM + FO) 동등. */
+    private fun targetSumOf(target: SalesProgressRateMaster): Long =
+        ((target.rtTargetAmount ?: 0.0) +
+            (target.frTargetAmount ?: 0.0) +
+            (target.rmTargetAmount ?: 0.0) +
+            (target.foTargetAmount ?: 0.0)).toLong()
+
+    /** 달성률 — `round(실적 / 목표 × 100)`. 목표 0 이면 0 (NaN/Infinity 방지, 레거시 정합). */
+    private fun rate(achieved: Long, target: Long): Double =
+        if (target <= 0L) 0.0 else Math.round(achieved.toDouble() / target * 100).toDouble()
+
+    /**
+     * 기준 진도율 (영업일 기준, %) — 레거시 SF `calcBusinessRateOnlyThisMonth` **byte 단위 정합**.
+     *
+     * 조회월이 시스템 당월일 때만 `(월초~오늘 영업일) / (월초~월말 영업일) × 100`, 그 외(과거/미래)
+     * 월은 0 (레거시 JSP 동일 — `MonthlySalesAdminQueryService.referenceAchievementRate` 의 admin
+     * 정책(과거 100) 과 다름).
+     *
+     * **영업일 source = `WorkingDayMaster`** (SF `WorkingDayMaster__c` 복제) 의 `workingDateCheck = 1`
+     * row 를 기간 count — 레거시 SF SOQL 과 동일 소스/조건. 평일·공휴일을 코드로 유추하지 않고 운영
+     * 영업일 달력 그대로 사용하므로 토요일 영업일 지정 등 운영 규칙까지 정확히 반영된다.
+     * 마스터 미적재(빈 테이블) 시 `total <= 0` → 0 반환 (graceful, 레거시 `fromEndDayCnt <= 0` 정합).
+     */
+    private fun baseRate(year: Int, month: Int): Double {
+        val today = LocalDate.now()
+        if (today.year != year || today.monthValue != month) return 0.0
+        val firstDay = LocalDate.of(year, month, 1)
+        val lastDay = firstDay.withDayOfMonth(firstDay.lengthOfMonth())
+        val totalWorkingDays = workingDayMasterRepository.countWorkingDays(firstDay, lastDay, WORKING_DAY_CHECK)
+        if (totalWorkingDays <= 0L) return 0.0
+        val elapsedWorkingDays = workingDayMasterRepository.countWorkingDays(firstDay, today, WORKING_DAY_CHECK)
+        return elapsedWorkingDays.toDouble() / totalWorkingDays.toDouble() * 100.0
+    }
+
     private fun toSalesDate(year: Int, month: Int): String = "%04d%02d".format(year, month)
+
+    private companion object {
+        /** SF `WorkingDateCheck__c` 의 영업일 값. */
+        const val WORKING_DAY_CHECK = 1
+    }
 }

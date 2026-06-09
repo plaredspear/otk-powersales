@@ -174,7 +174,7 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
                         backgroundColor: AppColors.surface,
                         // 진도율 >= 기준 진도율이면 상승(녹색), 미달이면 하락(적색) — 레거시 is-up/is-down 정합
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          monthlySales.achievementRate >= _baseRate
+                          monthlySales.achievementRate >= monthlySales.baseRate
                               ? AppColors.success
                               : AppColors.legacyDanger,
                         ),
@@ -191,7 +191,7 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    '기준 진도율 : ${_baseRate.toStringAsFixed(0)}%',
+                    '기준 진도율 : ${monthlySales.baseRate.toStringAsFixed(0)}%',
                     style: const TextStyle(
                         fontSize: 12, color: AppColors.legacyDanger),
                   ),
@@ -247,9 +247,6 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
       ),
     );
   }
-
-  /// 기준 진도율(영업일 기준). 신규 백엔드가 미제공이라 레거시 0% 상태와 동일하게 0 고정.
-  static const double _baseRate = 0;
 
   /// 원 → 만원 환산 (1만원 미만 절사) + 천단위 콤마. 레거시 list.jsp 단위 변환 정합.
   String _man(int won) =>
