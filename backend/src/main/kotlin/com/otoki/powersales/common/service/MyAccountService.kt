@@ -45,8 +45,9 @@ class MyAccountService(
 
         val accounts = when {
             // C형(매출 계열) 부서장: 일정이 잡힌 전체 거래처 (레거시 selectAllAccount)
+            // 전사 거래처는 수천 건이라 keyword 필터 + 상한을 DB 레벨로 푸시다운 (레거시 검색+페이지네이션 정합).
             scope == MyAccountScope.SALES && employee.role == AppAuthority.ACCOUNT_VIEW_ALL ->
-                getAllScheduledAccounts()
+                getAllScheduledAccounts(keyword)
 
             // 조장 중 레거시 person-specific 예외(yang_sfid): 팀장 기준 스케줄 거래처 (레거시 selectMyAccount 조장 분기)
             employee.role == AppAuthority.LEADER && employee.sfid == LEGACY_SCHEDULE_LEADER_SFID ->
@@ -117,11 +118,13 @@ class MyAccountService(
     }
 
     /**
-     * 부서장(매출 계열) 거래처 조회: 일정이 잡힌 전체 거래처 (레거시 selectAllAccount — 본인/기간 필터 없음)
+     * 부서장(매출 계열) 거래처 조회: 일정이 잡힌 거래처 (레거시 selectAllAccount — 본인/기간 필터 없음).
+     * 전사 거래처가 수천 건이므로 keyword 필터 + 상한([ALL_ACCOUNTS_LIMIT])을 DB 레벨에서 적용한다.
      */
-    private fun getAllScheduledAccounts(): List<MyAccountInfo> {
-        val accountIds = teamMemberScheduleRepository.findAllDistinctAccountIds()
-        return toAccounts(accountIds)
+    private fun getAllScheduledAccounts(keyword: String?): List<MyAccountInfo> {
+        return teamMemberScheduleRepository
+            .findDistinctScheduledAccounts(keyword, ALL_ACCOUNTS_LIMIT)
+            .map { MyAccountInfo.from(it) }
     }
 
     private fun toAccounts(accountIds: List<Long>): List<MyAccountInfo> {
@@ -145,5 +148,8 @@ class MyAccountService(
         // 레거시 label.properties `yang_sfid` — 조장이지만 거래처 조회만 팀장 스케줄 기반(selectMyAccount)으로
         // 우회하는 person-specific 예외 1인. 레거시 PromotionController/ProductController 등 다수 화면 동일 처리.
         private const val LEGACY_SCHEDULE_LEADER_SFID = "a0c1y0000005452AAA"
+
+        // 부서장 전체조회 결과 상한 — 모바일 드롭다운 과대 응답(broken pipe) 방지. keyword 검색과 함께 사용.
+        private const val ALL_ACCOUNTS_LIMIT = 100
     }
 }

@@ -296,16 +296,28 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
-    override fun findAllDistinctAccountIds(): List<Long> {
+    override fun findDistinctScheduledAccounts(
+        keyword: String?,
+        limit: Int
+    ): List<com.otoki.powersales.account.entity.Account> {
         return queryFactory
-            .select(teamMemberSchedule.account.id).distinct()
+            .select(account).distinct()
             .from(teamMemberSchedule)
+            .join(teamMemberSchedule.account, account)
             .where(
-                teamMemberSchedule.account.isNotNull,
-                isNotDeleted()
+                isNotDeleted(),
+                account.isDeleted.isNull.or(account.isDeleted.eq(false)),
+                accountKeywordMatch(keyword)
             )
+            .orderBy(account.name.asc())
+            .limit(limit.toLong())
             .fetch()
-            .filterNotNull()
+    }
+
+    private fun accountKeywordMatch(keyword: String?): BooleanExpression? {
+        if (keyword.isNullOrBlank()) return null
+        return account.name.containsIgnoreCase(keyword)
+            .or(account.externalKey.containsIgnoreCase(keyword))
     }
 
     override fun findDistinctAccountIdsByTeamLeaderIdAndDateRange(

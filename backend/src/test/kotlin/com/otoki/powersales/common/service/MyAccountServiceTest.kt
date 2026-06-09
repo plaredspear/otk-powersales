@@ -162,7 +162,7 @@ class MyAccountServiceTest {
     inner class AccountViewAllTests {
 
         @Test
-        @DisplayName("부서장 + scope=SALES -> 일정 잡힌 전체 거래처 조회")
+        @DisplayName("부서장 + scope=SALES -> 일정 잡힌 거래처 조회 (keyword/limit DB 푸시다운)")
         fun getMyAccounts_accountViewAll_salesScope_allAccounts() {
             val userId = 1L
             val employee = createEmployee(id = userId, employeeCode = "20030117", role = AppAuthority.ACCOUNT_VIEW_ALL)
@@ -172,13 +172,13 @@ class MyAccountServiceTest {
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { teamMemberScheduleRepository.findAllDistinctAccountIds() } returns listOf(1, 2)
-            every { accountRepository.findByIdInAndIsDeletedNot(listOf(1, 2), true) } returns accounts
+            every { teamMemberScheduleRepository.findDistinctScheduledAccounts(null, any()) } returns accounts
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.SALES)
 
             assertThat(result.stores).hasSize(2)
-            verify { teamMemberScheduleRepository.findAllDistinctAccountIds() }
+            verify { teamMemberScheduleRepository.findDistinctScheduledAccounts(null, any()) }
+            verify(exactly = 0) { accountRepository.findByIdInAndIsDeletedNot(any(), any()) }
         }
 
         @Test
@@ -193,7 +193,7 @@ class MyAccountServiceTest {
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.FIELD)
 
             assertThat(result.stores).isEmpty()
-            verify(exactly = 0) { teamMemberScheduleRepository.findAllDistinctAccountIds() }
+            verify(exactly = 0) { teamMemberScheduleRepository.findDistinctScheduledAccounts(any(), any()) }
             verify { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) }
         }
     }
