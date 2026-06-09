@@ -1,9 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Tabs, Typography } from 'antd';
 import type { TabsProps } from 'antd';
-import SapInboundAuditsTab from '../sap-inbound/SapInboundAuditsTab';
 import SapInboundCatalogDetail from '../sap-inbound/SapInboundCatalogDetail';
-import SapOutboundLogsTab from '../sap-outbound/SapOutboundLogsTab';
 import SapOutboundOutboxTab from '../sap-outbound/SapOutboundOutboxTab';
 import SapOutboundCatalogDetail from '../sap-outbound/SapOutboundCatalogDetail';
 import SapOutboundTestTab from '../sap-outbound/SapOutboundTestTab';
@@ -44,14 +42,16 @@ function groupHeader(key: string, label: string): TabItem {
  * 방향을 시각적으로 구분한다.
  *
  * API 카탈로그는 하나의 목록 표가 아니라 API(엔드포인트/인터페이스) 1건당 개별 탭으로
- * 나누어, 각 탭에서 해당 API 의 상세(스코프/적재 대상/sender 등)를 카드로 보여준다.
- * 탭 목록은 카탈로그 조회 결과로부터 동적으로 구성된다.
+ * 나누어, 각 탭에서 해당 API 의 상세(스코프/적재 대상/sender 등) + 그 API 의 호출 이력을
+ * 함께 보여준다. 탭 목록은 카탈로그 조회 결과로부터 동적으로 구성된다.
  *
- * - Inbound: 호출 이력 / (API 별 상세 탭 N개)
- * - Outbound: 호출 이력 / 대기 중(Outbox) / (API 별 상세 탭 N개) / 테스트
+ * 호출 이력은 별도 탭으로 분리하지 않고 각 API 상세 탭 안에 해당 API 로 고정된 형태로 표시한다.
+ *
+ * - Inbound: (API 별 상세 + 호출 이력 탭 N개)
+ * - Outbound: (API 별 상세 + 호출 이력 탭 N개) / 대기 중(Outbox) / 테스트
  */
 export default function SapIntegrationPage() {
-  const [activeKey, setActiveKey] = useState('inbound-audits');
+  const [activeKey, setActiveKey] = useState<string | undefined>(undefined);
 
   const inboundCatalogQuery = useSapInboundCatalog();
   const outboundCatalogQuery = useSapOutboundCatalog();
@@ -61,6 +61,7 @@ export default function SapIntegrationPage() {
   const outboxCount = outboxQuery.data?.totalCount ?? 0;
 
   // 카탈로그 각 항목을 API 별 개별 탭으로 변환 (key 는 식별자로 유일하게).
+  // 각 탭은 API 상세 + 그 API 로 고정된 호출 이력을 함께 렌더링한다.
   const inboundApiTabs: TabItem[] = (inboundCatalogQuery.data ?? []).map((item) => ({
     key: `inbound-api:${item.endpointPath}`,
     label: item.koreanName,
@@ -75,30 +76,29 @@ export default function SapIntegrationPage() {
 
   const tabItems: TabItem[] = [
     groupHeader('inbound-header', 'Inbound'),
-    {
-      key: 'inbound-audits',
-      label: '호출 이력',
-      children: <SapInboundAuditsTab />,
-    },
     ...inboundApiTabs,
     groupHeader('outbound-header', 'Outbound'),
-    {
-      key: 'outbound-logs',
-      label: '호출 이력',
-      children: <SapOutboundLogsTab />,
-    },
+    ...outboundApiTabs,
     {
       key: 'outbound-outbox',
       label: `대기 중 (Outbox)${outboxCount ? ` · ${outboxCount}` : ''}`,
       children: <SapOutboundOutboxTab />,
     },
-    ...outboundApiTabs,
     {
       key: 'outbound-test',
       label: '테스트',
       children: <SapOutboundTestTab />,
     },
   ];
+
+  // 카탈로그 로드 전에는 선택 가능한 API 탭이 없으므로, 첫 선택 가능 탭으로 기본 활성화.
+  // (그룹 헤더는 disabled 이므로 제외)
+  const firstSelectableKey = tabItems.find((tab) => !tab.disabled)?.key;
+  useEffect(() => {
+    if (activeKey === undefined && firstSelectableKey) {
+      setActiveKey(firstSelectableKey);
+    }
+  }, [activeKey, firstSelectableKey]);
 
   return (
     <div style={{ padding: 24 }}>
@@ -111,7 +111,7 @@ export default function SapIntegrationPage() {
       <Tabs
         tabPosition="left"
         style={{ marginTop: 24 }}
-        activeKey={activeKey}
+        activeKey={activeKey ?? firstSelectableKey}
         onChange={setActiveKey}
         items={tabItems}
       />

@@ -54,8 +54,15 @@ function formatDateTime(value: string | null | undefined): string {
  *
  * SAP 에서 backend 로 들어오는 인바운드 호출의 감사 로그(인증/스코프/변환 결과)를
  * 필터링 + 페이지네이션으로 조회한다. 행 클릭 시 상세 모달을 띄운다.
+ *
+ * `lockedEndpoint` 를 주면 해당 Endpoint 로 조회를 고정하고 Endpoint 필터 셀렉터를
+ * 숨긴다. API 상세 탭에서 그 API 의 호출 이력만 인라인으로 보여줄 때 사용한다.
  */
-export default function SapInboundAuditsTab() {
+export default function SapInboundAuditsTab({
+  lockedEndpoint,
+}: {
+  lockedEndpoint?: string;
+} = {}) {
   const [clientId, setClientId] = useState<string | undefined>(undefined);
   const [eventType, setEventType] = useState<string | undefined>(undefined);
   const [endpoint, setEndpoint] = useState<string | undefined>(undefined);
@@ -68,7 +75,7 @@ export default function SapInboundAuditsTab() {
   const auditsQuery = useSapInboundAudits({
     clientId,
     eventType,
-    endpoint,
+    endpoint: lockedEndpoint ?? endpoint,
     from: range?.[0]?.toISOString() ?? undefined,
     to: range?.[1]?.toISOString() ?? undefined,
     page,
@@ -189,19 +196,21 @@ export default function SapInboundAuditsTab() {
             }}
             options={EVENT_TYPE_OPTIONS}
           />
-          <Select
-            allowClear
-            placeholder="Endpoint"
-            style={{ width: 280 }}
-            value={endpoint}
-            onChange={(value) => {
-              setEndpoint(value ?? undefined);
-              setPage(1);
-            }}
-            options={endpointOptions}
-            showSearch
-            optionFilterProp="label"
-          />
+          {lockedEndpoint === undefined && (
+            <Select
+              allowClear
+              placeholder="Endpoint"
+              style={{ width: 280 }}
+              value={endpoint}
+              onChange={(value) => {
+                setEndpoint(value ?? undefined);
+                setPage(1);
+              }}
+              options={endpointOptions}
+              showSearch
+              optionFilterProp="label"
+            />
+          )}
           <RangePicker
             showTime
             value={range as [Dayjs, Dayjs] | null}
