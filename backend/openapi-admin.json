@@ -5727,6 +5727,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseOroraDailyMaterializeResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OroraDailyMaterializeResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseOroraMonthlyMaterializeResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OroraMonthlyMaterializeResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePPTConfirmedReportResponse" : {
         "properties" : {
           "data" : {
@@ -10931,6 +10989,53 @@
             "type" : [ "string", "null" ]
           },
           "orgNameLevel5" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "OroraDailyMaterializeResult" : {
+        "properties" : {
+          "dailyUpsertedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "monthlyAggregateUpdatedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "salesMonth" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "OroraMonthlyMaterializeResult" : {
+        "properties" : {
+          "fetchedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "salesMonth" : {
+            "type" : "string"
+          },
+          "skippedAccountUnmatchedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "upsertedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "OroraSalesMaterializeRequest" : {
+        "properties" : {
+          "salesMonth" : {
+            "description" : "대상 매출월 (YYYYMM). 미지정 시 당월",
+            "example" : "202605",
+            "pattern" : "^\\d{6}$",
             "type" : [ "string", "null" ]
           }
         },
@@ -22191,6 +22296,62 @@
           }
         },
         "tags" : [ "admin-electronic-sales-dashboard-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/materialize/daily" : {
+      "post" : {
+        "operationId" : "materializeDaily",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OroraSalesMaterializeRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraDailyMaterializeResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "ORORA 일별 매출 적재 + 월별 합계 갱신 (수동 트리거)",
+        "tags" : [ "admin-orora-sales-materialize-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/materialize/monthly" : {
+      "post" : {
+        "operationId" : "materializeMonthly",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OroraSalesMaterializeRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraMonthlyMaterializeResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "ORORA 월별 마감 적재 (수동 트리거)",
+        "tags" : [ "admin-orora-sales-materialize-controller" ]
       }
     },
     "/api/v1/admin/sales/monthly/detail/{customerId}" : {

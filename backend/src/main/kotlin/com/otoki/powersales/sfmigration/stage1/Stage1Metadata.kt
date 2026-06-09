@@ -22,11 +22,10 @@ data class FieldMapping(
     /**
      * SF `Date` 타입 (CSV export 시 ISO `yyyy-MM-dd`, 10자) 을 DB `varchar(8)` `yyyyMMdd` 로
      * 변환할지 여부.
-     * true → 하이픈 제거 (예: "2021-03-01" → "20210301"). 신규 시스템 SAP 인바운드
-     *        (DailySalesHistoryUpsertService) 가 salesDate 를 `yyyyMMdd` 8자로 검증 + externalKey
-     *        (`sapAccountCode + salesDate`) 키를 구성하므로, 마이그레이션도 동일 포맷이어야
-     *        SF `Externalkey__c` (SAPAccountCode + yyyyMMdd) 와 정합. SF `Date` 컬럼이 DB 에서
-     *        `LocalDate`/`date` 로 매핑된 경우는 false 유지 (yyyy-MM-dd 가 그대로 정상 적재).
+     * true → 하이픈 제거 (예: "2021-03-01" → "20210301"). `daily_sales_history.sales_date` 는
+     *        `varchar(8)` `yyyyMMdd` + externalKey (`sapAccountCode + salesDate`) 키를 구성하므로,
+     *        마이그레이션도 동일 포맷이어야 SF `Externalkey__c` (SAPAccountCode + yyyyMMdd) 와 정합.
+     *        SF `Date` 컬럼이 DB 에서 `LocalDate`/`date` 로 매핑된 경우는 false 유지 (yyyy-MM-dd 가 그대로 정상 적재).
      */
     val dateToYyyymmdd: Boolean = false,
 ) {

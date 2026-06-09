@@ -84,6 +84,16 @@ object ScheduledJobCatalog {
             cron = "0 0 4 * * *",
             description = "scheduled_job_run 90일 초과 이력 정리 (매일 04시)",
         ),
+        Entry(
+            jobName = OroraDailySalesMaterializeBatch.JOB_NAME,
+            cron = "\${app.batch.orora.daily.cron:0 30 4 * * *}",
+            description = "ORORA 일별 매출 → daily_sales_history 적재 + 월별 합계 갱신 (기본 매일 04:30) — legacy Queueable_OroraDailySalesHistory_M1 동등",
+        ),
+        Entry(
+            jobName = OroraMonthlySalesMaterializeBatch.JOB_NAME,
+            cron = "\${app.batch.orora.monthly.cron:0 0 5 * * *}",
+            description = "ORORA 월별 마감 → monthly_sales_history 적재 (기본 매일 05시) — legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등",
+        ),
     )
 
     val JOB_NAMES: List<String> = ENTRIES.map { it.jobName }
