@@ -6117,6 +6117,13 @@
             "minLength" : 0,
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "scope",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
