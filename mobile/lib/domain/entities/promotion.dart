@@ -131,6 +131,47 @@ class PromotionDetail {
   }
 }
 
+/// 담당 행사 일람 아이템 엔티티.
+///
+/// 홈 "행사매출 등록" → "일 매출 등록" 진입화면의 "담당 행사 선택" 목록 항목.
+/// [promotionEmployeeId] 는 일매출 마감 폼 진입 키.
+class MyPromotionAssignment {
+  final int promotionEmployeeId;
+  final int promotionId;
+  final String promotionNumber;
+  final String? promotionType;
+  final String? accountName;
+  final String? scheduleDate;
+  final String? standLocation;
+
+  /// 여사원 일매출 마감 완료 여부.
+  final bool isClosed;
+
+  const MyPromotionAssignment({
+    required this.promotionEmployeeId,
+    required this.promotionId,
+    required this.promotionNumber,
+    this.promotionType,
+    this.accountName,
+    this.scheduleDate,
+    this.standLocation,
+    this.isClosed = false,
+  });
+
+  factory MyPromotionAssignment.fromJson(Map<String, dynamic> json) {
+    return MyPromotionAssignment(
+      promotionEmployeeId: json['id'] as int,
+      promotionId: json['promotionId'] as int,
+      promotionNumber: json['promotionNumber'] as String,
+      promotionType: json['promotionType'] as String?,
+      accountName: json['accountName'] as String?,
+      scheduleDate: json['scheduleDate'] as String?,
+      standLocation: json['standLocation'] as String?,
+      isClosed: json['isClosed'] as bool? ?? false,
+    );
+  }
+}
+
 /// 행사 조원 엔티티
 class PromotionEmployee {
   final int id;

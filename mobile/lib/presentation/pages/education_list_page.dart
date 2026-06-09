@@ -103,8 +103,11 @@ class _EducationListPageState extends ConsumerState<EducationListPage>
   Widget _buildBody(EducationPostsState state) {
     // 초기 로딩 중 (데이터 없음)
     if (state.postPage == null && state.isLoading) {
+      // 스피너 색을 흰 배경에서도 보이는 secondary(네이비)로 지정.
+      // 기본값(primaryColor=노랑)은 흰 배경에서 보이지 않아 빈 화면처럼 보인다.
       return const LoadingIndicator(
         message: '게시물을 불러오는 중...',
+        color: AppColors.secondary,
       );
     }
 
@@ -193,16 +196,16 @@ class _EducationListPageState extends ConsumerState<EducationListPage>
 
   /// 게시물 목록 위젯
   Widget _buildPostList(EducationPostsState state) {
-    // 로딩 오버레이
+    // 로딩 오버레이 (흰 배경에서 보이도록 secondary 색 사용)
     if (state.isLoading) {
       return const Center(
         child: CircularProgressIndicator(
-          color: AppColors.primary,
+          color: AppColors.secondary,
         ),
       );
     }
 
-    // 게시물 없음
+    // 게시물 없음 — 검색 결과 0건/전체 0건 모두 "데이터가 없습니다"로 통일
     if (state.posts.isEmpty) {
       return SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -213,13 +216,13 @@ class _EducationListPageState extends ConsumerState<EducationListPage>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.search_off,
+                  Icons.inbox_outlined,
                   size: 64,
                   color: AppColors.textTertiary.withOpacity(0.5),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  '검색 결과가 없습니다',
+                  '데이터가 없습니다',
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),

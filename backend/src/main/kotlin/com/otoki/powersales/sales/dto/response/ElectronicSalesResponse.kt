@@ -17,13 +17,24 @@ data class ElectronicSalesResponse(
 	val customerId: Long,
 	val customerName: String,
 	val sapAccountCode: String,
-	val yearMonth: String,
+	/** 조회 시작일 `YYYY-MM-DD` (레거시 daterangepicker 시작일). */
+	val startDate: String,
+	/** 조회 종료일 `YYYY-MM-DD` (레거시 daterangepicker 종료일). */
+	val endDate: String,
+	/**
+	 * 합계금액(원). 레거시 `#totalAmount` 정합.
+	 * - 매출 조회 제품 선택 시: 선택 제품들의 `SUM(SALES_RAMT)` 합 ([items] 금액 합).
+	 * - 미선택 시: 거래처·기간 전체 `SUM(SALES_RAMT)` (레거시 `abcSumAmount`).
+	 */
+	val totalAmount: Long,
 	val items: List<ProductSales>,
 ) {
 	/** 제품별 전산매출 실적. */
 	data class ProductSales(
 		val productCode: String,
 		val productName: String,
+		/** 제품 바코드 (`UPC_CD`). 레거시 결과 카드의 "바코드". */
+		val barcode: String,
 		/** 매출 실적 금액(원). `SUM(SALES_RAMT)`. */
 		val amount: Long,
 		/** 매출 실적 수량. `SUM(SALES_RQTY)`. */

@@ -11,20 +11,27 @@ class ElectronicSalesApiDataSource {
 
   ElectronicSalesApiDataSource(this._dio);
 
-  /// 거래처 1곳 + 연월 기준 제품별 전산매출 조회.
-  Future<List<ElectronicSales>> getElectronicSales({
+  /// 거래처 1곳 + 기간 + 매출 조회 제품(바코드) 기준 전산매출 조회.
+  ///
+  /// [barcodes] 가 비어 있으면 합계금액만(레거시 `abcSumAmount`), 있으면 해당 제품별 실적을
+  /// 조회한다(레거시 `abcAmount`).
+  Future<ElectronicSalesResult> getElectronicSales({
     required int customerId,
-    required String yearMonth,
+    required String startDate,
+    required String endDate,
+    List<String> barcodes = const [],
   }) async {
     final response = await _dio.get(
       '/api/v1/mobile/sales/electronic',
       queryParameters: <String, dynamic>{
         'customerId': customerId,
-        'yearMonth': yearMonth,
+        'startDate': startDate,
+        'endDate': endDate,
+        if (barcodes.isNotEmpty) 'barcodes': barcodes,
       },
     );
 
-    return ElectronicSalesModel.listFromJson(
+    return ElectronicSalesModel.resultFromJson(
       response.data['data'] as Map<String, dynamic>,
     );
   }

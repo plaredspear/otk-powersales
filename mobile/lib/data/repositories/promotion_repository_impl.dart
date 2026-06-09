@@ -33,4 +33,9 @@ class PromotionRepositoryImpl implements PromotionRepository {
   Future<PromotionDetail> getPromotion(int id) async {
     return await _remoteDataSource.getPromotion(id);
   }
+
+  @override
+  Future<List<MyPromotionAssignment>> getMyAssignments({String? date}) async {
+    return await _remoteDataSource.getMyAssignments(date: date);
+  }
 }

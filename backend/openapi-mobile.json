@@ -1071,6 +1071,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseListMyPromotionAssignmentItem" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MyPromotionAssignmentItem"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListOrderHistoryGroupResponse" : {
         "properties" : {
           "data" : {
@@ -3176,17 +3204,28 @@
       },
       "ElectronicSalesRequest" : {
         "properties" : {
+          "barcodes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : [ "array", "null" ]
+          },
           "customerId" : {
             "format" : "int64",
             "type" : "integer"
           },
-          "yearMonth" : {
+          "endDate" : {
             "minLength" : 1,
-            "pattern" : "^\\d{6}$",
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$",
+            "type" : "string"
+          },
+          "startDate" : {
+            "minLength" : 1,
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$",
             "type" : "string"
           }
         },
-        "required" : [ "customerId", "yearMonth" ],
+        "required" : [ "customerId", "endDate", "startDate" ],
         "type" : "object"
       },
       "ElectronicSalesResponse" : {
@@ -3198,6 +3237,9 @@
           "customerName" : {
             "type" : "string"
           },
+          "endDate" : {
+            "type" : "string"
+          },
           "items" : {
             "items" : {
               "$ref" : "#/components/schemas/ProductSales"
@@ -3207,8 +3249,12 @@
           "sapAccountCode" : {
             "type" : "string"
           },
-          "yearMonth" : {
+          "startDate" : {
             "type" : "string"
+          },
+          "totalAmount" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -4252,6 +4298,38 @@
           "totalCount" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "MyPromotionAssignmentItem" : {
+        "properties" : {
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "closed" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "promotionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "promotionNumber" : {
+            "type" : "string"
+          },
+          "promotionType" : {
+            "type" : [ "string", "null" ]
+          },
+          "scheduleDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "standLocation" : {
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -8107,6 +8185,32 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseMobilePromotionListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "promotion-controller" ]
+      }
+    },
+    "/api/v1/mobile/promotions/my-assignments" : {
+      "get" : {
+        "operationId" : "getMyAssignments",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "date",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListMyPromotionAssignmentItem"
                 }
               }
             },

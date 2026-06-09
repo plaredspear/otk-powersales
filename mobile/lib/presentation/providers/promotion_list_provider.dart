@@ -5,6 +5,7 @@ import '../../core/utils/error_utils.dart';
 import '../../data/datasources/promotion_api_datasource.dart';
 import '../../data/repositories/promotion_repository_impl.dart';
 import '../../domain/entities/my_account.dart';
+import '../../domain/entities/promotion.dart';
 import '../../domain/repositories/promotion_repository.dart';
 import 'my_accounts_provider.dart';
 import 'promotion_list_state.dart';
@@ -142,4 +143,17 @@ final promotionAccountOptionsProvider =
   final useCase = ref.watch(getMyAccountsUseCaseProvider);
   final result = await useCase.call();
   return result.accounts;
+});
+
+// ============================================
+// 5. 일 매출 등록 진입 — 오늘 담당 행사 목록
+// ============================================
+
+/// 홈 "행사매출 등록" → 일 매출 등록 진입화면의 "담당 행사 선택" 목록.
+///
+/// 서버 오늘 날짜 기준(레거시 `eventlistapi` StartDate=EndDate=today 동등).
+final myPromotionAssignmentsProvider =
+    FutureProvider.autoDispose<List<MyPromotionAssignment>>((ref) async {
+  final repository = ref.watch(promotionRepositoryProvider);
+  return repository.getMyAssignments();
 });

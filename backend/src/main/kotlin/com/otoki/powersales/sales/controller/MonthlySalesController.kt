@@ -56,14 +56,19 @@ class MonthlySalesController(
     }
 
     /**
-     * 전산매출(ABC) 조회 (거래처 1곳 + 연월, 제품별 실적)
+     * 전산매출(ABC) 조회 (거래처 1곳 + 기간 + 매출 조회 제품 바코드, 제품별 실적)
      * GET /api/v1/mobile/sales/electronic
      */
     @GetMapping("/electronic")
     fun getElectronicSales(
         @Valid request: ElectronicSalesRequest
     ): ResponseEntity<ApiResponse<ElectronicSalesResponse>> {
-        val response = electronicSalesService.getElectronicSales(request.customerId, request.yearMonth)
+        val response = electronicSalesService.getElectronicSales(
+            customerId = request.customerId,
+            startDate = request.startDate,
+            endDate = request.endDate,
+            barcodes = request.barcodes,
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

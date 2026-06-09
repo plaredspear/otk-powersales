@@ -22,6 +22,9 @@ class AuthInterceptor extends Interceptor {
   bool _isRefreshing = false;
   Completer<String?>? _refreshCompleter;
 
+  /// 401 → 토큰 갱신 후 재시도된 요청 표식 (무한 루프 방지)
+  static const String _retriedKey = '__auth_retried__';
+
   AuthInterceptor({
     required AuthLocalDataSource localDataSource,
     required Dio dio,
@@ -73,6 +76,13 @@ class AuthInterceptor extends Interceptor {
       return handler.next(err);
     }
 
+    // 이미 한 번 토큰 갱신 후 재시도된 요청이 또 401이면 무한 갱신→재시도 루프가 된다.
+    // (갱신은 성공하지만 서버가 계속 401을 주는 케이스) → 더 갱신하지 않고 로그아웃.
+    if (err.requestOptions.extra[_retriedKey] == true) {
+      await _forceLogout();
+      return handler.next(err);
+    }
+
     try {
       final newToken = await _refreshAccessToken();
       if (newToken == null) {
@@ -80,9 +90,10 @@ class AuthInterceptor extends Interceptor {
         return handler.next(err);
       }
 
-      // 원래 요청에 새 토큰 설정하고 재시도
+      // 원래 요청에 새 토큰 설정하고 재시도 (재시도 표식으로 루프 차단)
       final options = err.requestOptions;
       options.headers['Authorization'] = 'Bearer $newToken';
+      options.extra[_retriedKey] = true;
       final retryResponse = await _dio.fetch(options);
       handler.resolve(retryResponse);
     } catch (_) {

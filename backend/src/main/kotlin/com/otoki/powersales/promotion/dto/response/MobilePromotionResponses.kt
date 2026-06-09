@@ -85,6 +85,42 @@ data class MobilePromotionDetailResponse(
     }
 }
 
+/**
+ * 홈 "행사매출 등록" → 일 매출 등록 진입화면의 "담당 행사 선택" 목록 항목.
+ * 레거시 Heroku `eventlistapi` 응답(오늘 담당 행사) 동등.
+ * [id] 는 일매출 마감 폼 진입 키(promotionEmployeeId).
+ */
+data class MyPromotionAssignmentItem(
+    val id: Long,
+    val promotionId: Long,
+    val promotionNumber: String,
+    val promotionType: String?,
+    val accountName: String?,
+    val scheduleDate: LocalDate?,
+    val standLocation: String?,
+    /** 여사원 일매출 마감 완료 여부 (promoCloseByTm). */
+    val isClosed: Boolean
+) {
+    companion object {
+        fun from(
+            entity: PromotionEmployee,
+            accountName: String?
+        ): MyPromotionAssignmentItem {
+            val promotion = entity.promotion!!
+            return MyPromotionAssignmentItem(
+                id = entity.id,
+                promotionId = promotion.id,
+                promotionNumber = promotion.promotionNumber,
+                promotionType = promotion.promotionType?.displayName,
+                accountName = accountName,
+                scheduleDate = entity.scheduleDate,
+                standLocation = promotion.standLocation?.displayName,
+                isClosed = entity.promoCloseByTm
+            )
+        }
+    }
+}
+
 data class MobilePromotionEmployeeItem(
     val id: Long,
     val employeeName: String?,

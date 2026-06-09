@@ -124,6 +124,31 @@ class MobilePromotionService(
         )
     }
 
+    /**
+     * 로그인 여사원의 특정 일자(미지정 시 오늘) 담당 행사 일람.
+     * 홈 "행사매출 등록" → 일 매출 등록 진입화면의 "담당 행사 선택" 목록.
+     * 레거시 Heroku `eventlistapi`(EmployeeCode + StartDate=EndDate=today) 동등.
+     */
+    fun getMyAssignments(userId: Long, date: String?): List<MyPromotionAssignmentItem> {
+        validateDateFormat(date)
+        val targetDate = if (date.isNullOrBlank()) LocalDate.now() else LocalDate.parse(date)
+
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
+
+        val assignments = promotionEmployeeRepository.findMyAssignmentsByDate(employee.id, targetDate)
+
+        val accountIds = assignments.mapNotNull { it.promotion?.account?.id }.distinct()
+        val accountMap = if (accountIds.isNotEmpty()) {
+            accountRepository.findByIdIn(accountIds).associateBy { it.id }
+        } else emptyMap()
+
+        return assignments.map { assignment ->
+            val accountName = assignment.promotion?.account?.id?.let { accountMap[it]?.name }
+            MyPromotionAssignmentItem.from(assignment, accountName)
+        }
+    }
+
     private fun validateDateFormat(dateStr: String?) {
         if (dateStr.isNullOrBlank()) return
         try {

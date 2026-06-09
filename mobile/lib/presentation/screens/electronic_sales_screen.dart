@@ -1,16 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
+import '../../core/utils/error_utils.dart';
 import '../providers/electronic_sales_provider.dart';
 import '../providers/electronic_sales_state.dart';
+import '../providers/product_add_provider.dart';
+import '../providers/product_add_state.dart';
 import '../widgets/account/account_selector_sheet.dart';
-import '../widgets/common/loading_indicator.dart';
 import '../widgets/common/error_view.dart';
-import '../widgets/electronic/electronic_sales_table.dart';
+import '../widgets/common/loading_indicator.dart';
+import '../widgets/electronic/electronic_product_picker_sheet.dart';
+import '../widgets/electronic/electronic_sales_result_list.dart';
 
-/// 전산매출(ABC) 조회 화면.
+/// 매출 조회 제품(추가된 제품) 1건.
+class _PickedProduct {
+  final String productCode;
+  final String productName;
+  final String barcode;
+
+  const _PickedProduct({
+    required this.productCode,
+    required this.productName,
+    required this.barcode,
+  });
+}
+
+/// 전산 매출 조회 화면.
 ///
-/// 레거시 `promotion/month/abcmain.jsp` 동등 — 거래처 1곳 + 연월 선택 후 제품별 실적 조회.
+/// 레거시 `promotion/month/abcmain.jsp` 정합 — 기간 + 거래처 + 매출 조회 제품(제품명 팝업/바코드)
+/// 으로 제품별 전산매출을 조회한다. 제품 미선택 시 합계금액만 조회한다(레거시 `abcSumAmount`).
 class ElectronicSalesScreen extends ConsumerStatefulWidget {
   const ElectronicSalesScreen({super.key});
 
@@ -19,19 +41,47 @@ class ElectronicSalesScreen extends ConsumerStatefulWidget {
       _ElectronicSalesScreenState();
 }
 
-class _ElectronicSalesScreenState
-    extends ConsumerState<ElectronicSalesScreen> {
+class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
+  static final _dateFormat = DateFormat('yyyy-MM-dd');
+  static final _numberFormat = NumberFormat('#,###');
+
+  late DateTime _startDate;
+  late DateTime _endDate;
   int? _customerId;
   String? _customerName;
-  late String _yearMonth;
+
+  /// 매출 조회 제품 목록 (바코드로 중복 제거)
+  final List<_PickedProduct> _products = [];
+
+  /// 최근 추가 바코드 번호 (표시용)
+  String? _recentBarcode;
 
   @override
   void initState() {
     super.initState();
-    _yearMonth = _getCurrentYearMonth();
+    final now = DateTime.now();
+    _startDate = DateTime(now.year, now.month, 1); // 당월 1일
+    _endDate = DateTime(now.year, now.month, now.day); // 오늘
   }
 
-  /// 거래처 선택 — 내 거래처 선택 바텀시트 → 선택 시 자동 조회
+  // ── 입력 핸들러 ──────────────────────────────────────────────
+
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(DateTime.now().year + 1, 12, 31),
+      initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
+      locale: const Locale('ko', 'KR'),
+    );
+    if (picked != null) {
+      setState(() {
+        _startDate = picked.start;
+        _endDate = picked.end;
+      });
+    }
+  }
+
   Future<void> _selectCustomer() async {
     final account = await AccountSelectorSheet.show(context);
     if (account == null || !mounted) return;
@@ -39,30 +89,142 @@ class _ElectronicSalesScreenState
       _customerId = account.accountId;
       _customerName = account.accountName;
     });
-    _fetchSales();
   }
 
-  /// 전산매출 조회 (거래처 선택 필요)
-  void _fetchSales() {
+  /// 제품명 팝업에서 제품 선택 → 매출 조회 제품에 추가
+  Future<void> _pickProduct() async {
+    final item = await ElectronicProductPickerSheet.show(context);
+    if (item == null || !mounted) return;
+    final barcode = item.barcode;
+    if (barcode == null || barcode.isEmpty) {
+      _showSnack('바코드가 없는 제품은 추가할 수 없습니다');
+      return;
+    }
+    _addProduct(
+      _PickedProduct(
+        productCode: item.productCode,
+        productName: item.productName,
+        barcode: barcode,
+      ),
+    );
+  }
+
+  /// 바코드 번호 입력 → 제품 조회 후 매출 조회 제품에 추가
+  ///
+  /// 레거시는 네이티브 카메라 스캔(`powersales://barcode`)이나, 신규 앱은 카메라 스캐너가 없어
+  /// 바코드 번호 직접 입력으로 대체한다(`barcodeValue()` 동등 — 조회 후 제품 추가).
+  Future<void> _addByBarcode() async {
+    final barcode = await _promptBarcode();
+    if (barcode == null || barcode.isEmpty || !mounted) return;
+
+    try {
+      final page = await ref
+          .read(productAddDataSourceProvider)
+          .searchByFilter(barcode: barcode, size: 20);
+      final content = (page['content'] as List<dynamic>? ?? const [])
+          .map((e) => ProductAddItem.fromJson(e as Map<String, dynamic>))
+          .where((p) => p.barcode != null && p.barcode!.isNotEmpty)
+          .toList();
+
+      // 입력 바코드와 정확히 일치하는 제품 우선, 없으면 첫 결과.
+      final match = content.firstWhere(
+        (p) => p.barcode == barcode,
+        orElse: () => content.isNotEmpty
+            ? content.first
+            : const ProductAddItem(productCode: '', productName: ''),
+      );
+
+      if (match.productCode.isEmpty) {
+        _showSnack('해당 바코드의 제품을 찾을 수 없습니다');
+        return;
+      }
+
+      setState(() => _recentBarcode = match.barcode);
+      _addProduct(
+        _PickedProduct(
+          productCode: match.productCode,
+          productName: match.productName,
+          barcode: match.barcode!,
+        ),
+      );
+    } catch (e) {
+      if (mounted) _showSnack(extractErrorMessage(e));
+    }
+  }
+
+  Future<String?> _promptBarcode() async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('바코드 번호 입력'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(hintText: '바코드를 입력하세요'),
+          onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addProduct(_PickedProduct product) {
+    if (_products.any((p) => p.barcode == product.barcode)) {
+      _showSnack('이미 추가된 제품입니다');
+      return;
+    }
+    setState(() => _products.add(product));
+  }
+
+  void _removeProduct(_PickedProduct product) {
+    setState(() => _products.remove(product));
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// 매출 조회 실행 (거래처 필수)
+  void _search() {
     final customerId = _customerId;
-    final customerName = _customerName;
-    if (customerId == null || customerName == null) return;
+    if (customerId == null) {
+      _showSnack('거래처를 선택하세요');
+      return;
+    }
     ref.read(electronicSalesProvider.notifier).fetchSales(
           customerId: customerId,
-          customerName: customerName,
-          yearMonth: _yearMonth,
+          startDate: _dateFormat.format(_startDate),
+          endDate: _dateFormat.format(_endDate),
+          barcodes: _products.map((p) => p.barcode).toList(),
         );
   }
 
-  /// 초기화 (거래처/연월 선택 해제)
   void _reset() {
+    final now = DateTime.now();
     setState(() {
+      _startDate = DateTime(now.year, now.month, 1);
+      _endDate = DateTime(now.year, now.month, now.day);
       _customerId = null;
       _customerName = null;
-      _yearMonth = _getCurrentYearMonth();
+      _products.clear();
+      _recentBarcode = null;
     });
     ref.read(electronicSalesProvider.notifier).reset();
   }
+
+  // ── 빌드 ────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +232,7 @@ class _ElectronicSalesScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('전산매출 조회'),
+        title: const Text('전산 매출 조회'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -79,226 +241,319 @@ class _ElectronicSalesScreenState
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildFilterSection(),
-          const Divider(height: 1),
-          Expanded(child: _buildResultSection(state)),
-        ],
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _periodField(),
+            const Divider(height: 1),
+            _customerField(),
+            const Divider(height: 1),
+            _productNameField(),
+            const Divider(height: 1),
+            _barcodeField(),
+            const Divider(height: 1),
+            _searchProductField(),
+            const Divider(height: 1),
+            _totalAmountField(state),
+            const Divider(height: 1),
+            _resultSection(state),
+          ],
+        ),
       ),
     );
   }
 
-  /// 필터 섹션 (거래처 선택 + 연월)
-  Widget _buildFilterSection() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      color: Colors.grey[50],
+  /// 공통 필드 컨테이너 (라벨 + 본문)
+  Widget _fieldRow({required Widget label, required Widget child}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.lg,
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSelectorRow(
-            icon: Icons.store_outlined,
-            label: '거래처',
-            value: _customerName ?? '거래처를 선택하세요',
-            onTap: _selectCustomer,
-          ),
-          const SizedBox(height: 10),
-          _buildSelectorRow(
-            icon: Icons.calendar_today,
-            label: '년월',
-            value: _formatYearMonth(_yearMonth),
-            onTap: () async {
-              final selected = await _showYearMonthPicker();
-              if (selected != null) {
-                setState(() => _yearMonth = selected);
-                _fetchSales();
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _customerId != null ? _fetchSales : null,
-            icon: const Icon(Icons.search),
-            label: const Text('조회'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-          ),
+          label,
+          const SizedBox(height: AppSpacing.sm),
+          child,
         ],
       ),
     );
   }
 
-  /// 거래처/연월 공통 선택 행
-  Widget _buildSelectorRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
+  Widget _label(String text, {bool required = false}) {
+    return RichText(
+      text: TextSpan(
+        text: text,
+        style: AppTypography.bodyLarge.copyWith(
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
+        children: required
+            ? [
+                TextSpan(
+                  text: ' *',
+                  style: AppTypography.bodyLarge
+                      .copyWith(color: AppColors.legacyDanger),
+                ),
+              ]
+            : null,
+      ),
+    );
+  }
+
+  // 기간
+  Widget _periodField() {
+    return _fieldRow(
+      label: _label('기간', required: true),
+      child: InkWell(
+        onTap: _pickDateRange,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${_dateFormat.format(_startDate)} - ${_dateFormat.format(_endDate)}',
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+              ),
+              const Icon(Icons.calendar_today,
+                  size: 18, color: AppColors.textTertiary),
+            ],
           ),
         ),
-        const SizedBox(height: 6),
-        InkWell(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.white,
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 20, color: Colors.grey[600]),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(value, style: const TextStyle(fontSize: 16)),
+      ),
+    );
+  }
+
+  // 거래처
+  Widget _customerField() {
+    return _fieldRow(
+      label: _label('거래처', required: true),
+      child: InkWell(
+        onTap: _selectCustomer,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _customerName ?? '거래처를 선택하세요',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: _customerName != null
+                        ? AppColors.textPrimary
+                        : AppColors.textTertiary,
+                  ),
                 ),
-                Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+              ),
+              const Icon(Icons.keyboard_arrow_down,
+                  color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 제품명
+  Widget _productNameField() {
+    return _fieldRow(
+      label: _label('제품명'),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '제품명 선택',
+              style: AppTypography.bodyMedium
+                  .copyWith(color: AppColors.textTertiary),
+            ),
+          ),
+          _pillButton(label: '제품명', onPressed: _pickProduct),
+        ],
+      ),
+    );
+  }
+
+  // 최근 추가 바코드 번호
+  Widget _barcodeField() {
+    final hasBarcode = _recentBarcode != null && _recentBarcode!.isNotEmpty;
+    return _fieldRow(
+      label: _label('최근 추가 바코드 번호'),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              hasBarcode ? _recentBarcode! : '바코드를 스캔하세요',
+              style: AppTypography.bodyMedium.copyWith(
+                color: hasBarcode
+                    ? AppColors.textPrimary
+                    : AppColors.textTertiary,
+              ),
+            ),
+          ),
+          _pillButton(
+            label: '바코드',
+            icon: Icons.qr_code_scanner,
+            onPressed: _addByBarcode,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 매출 조회 제품 (+ 매출 조회 버튼)
+  Widget _searchProductField() {
+    return _fieldRow(
+      label: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _label('매출 조회 제품', required: true),
+          ElevatedButton(
+            onPressed: _search,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.legacyDanger,
+              foregroundColor: AppColors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
+            ),
+            child: const Text('매출 조회'),
+          ),
+        ],
+      ),
+      child: _products.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Text(
+                '제품명/바코드로 조회할 제품을 추가하세요 (미추가 시 합계금액만 조회)',
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textTertiary),
+              ),
+            )
+          : Column(
+              children: _products
+                  .map((p) => _productChip(p))
+                  .toList(),
+            ),
+    );
+  }
+
+  Widget _productChip(_PickedProduct product) {
+    return Container(
+      margin: const EdgeInsets.only(top: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.productName,
+                  style: AppTypography.bodyMedium
+                      .copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  '바코드 : ${product.barcode}',
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textSecondary),
+                ),
               ],
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  /// 년월 선택 다이얼로그
-  Future<String?> _showYearMonthPicker() async {
-    final now = DateTime.now();
-    final initialDate = DateTime(
-      int.parse(_yearMonth.substring(0, 4)),
-      int.parse(_yearMonth.substring(4, 6)),
-    );
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(now.year + 1, 12),
-      helpText: '년월 선택',
-      cancelText: '취소',
-      confirmText: '확인',
-      locale: const Locale('ko', 'KR'),
-    );
-
-    return picked != null ? DateFormat('yyyyMM').format(picked) : null;
-  }
-
-  /// 년월 포맷팅 (202601 -> 2026년 01월)
-  String _formatYearMonth(String yearMonth) {
-    if (yearMonth.length != 6) return yearMonth;
-    return '${yearMonth.substring(0, 4)}년 ${yearMonth.substring(4, 6)}월';
-  }
-
-  /// 현재 년월 (예: 202602)
-  String _getCurrentYearMonth() => DateFormat('yyyyMM').format(DateTime.now());
-
-  /// 결과 섹션
-  Widget _buildResultSection(ElectronicSalesState state) {
-    // 거래처 미선택 — 안내
-    if (_customerId == null) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Text(
-            '거래처를 선택하면 전산매출을 조회합니다',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
+          IconButton(
+            icon: const Icon(Icons.close, size: 20),
+            color: AppColors.textTertiary,
+            onPressed: () => _removeProduct(product),
+            tooltip: '삭제',
           ),
+        ],
+      ),
+    );
+  }
+
+  // 합계금액
+  Widget _totalAmountField(ElectronicSalesState state) {
+    final amount = state.hasSearched ? state.totalAmount : 0;
+    return _fieldRow(
+      label: _label('합계금액'),
+      child: Text(
+        '${_numberFormat.format(amount)}원',
+        style: AppTypography.bodyLarge.copyWith(
+          fontWeight: FontWeight.w700,
+          color: AppColors.legacyDanger,
         ),
+      ),
+    );
+  }
+
+  // 결과 (로딩/에러/제품별 카드)
+  Widget _resultSection(ElectronicSalesState state) {
+    if (state.isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xxxl),
+        child: LoadingIndicator(message: '전산매출 조회 중...'),
       );
     }
 
-    if (state.isLoading) {
-      return const LoadingIndicator(message: '전산매출 조회 중...');
-    }
-
     if (state.errorMessage != null) {
-      return SingleChildScrollView(
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
         child: ErrorView(
           message: '조회 중 오류가 발생했습니다',
           description: state.errorMessage,
-          onRetry: _fetchSales,
+          onRetry: _search,
           isFullScreen: false,
         ),
       );
     }
 
     if (state.sales.isEmpty) {
-      return SingleChildScrollView(
-        child: ErrorView.noData(
-          message: '조회된 전산매출이 없습니다',
-          description: '다른 거래처/연월로 다시 조회해보세요',
-          onRetry: _fetchSales,
-          isFullScreen: false,
-        ),
-      );
+      // 미조회 또는 (합계만 조회/결과 없음) — 빈 영역 유지
+      return const SizedBox.shrink();
     }
 
-    return Column(
-      children: [
-        _buildSummarySection(state),
-        const Divider(height: 1),
-        Expanded(
-          child: ElectronicSalesTable(salesList: state.sales),
-        ),
-      ],
-    );
+    return ElectronicSalesResultList(salesList: state.sales);
   }
 
-  /// 합계 정보 섹션
-  Widget _buildSummarySection(ElectronicSalesState state) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      color: Colors.green[50],
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildSummaryItem('총 건수', '${state.sales.length}건', Icons.receipt_long),
-          _buildSummaryItem('총 수량', '${state.totalQuantity}개', Icons.inventory_2),
-          _buildSummaryItem(
-            '총 금액',
-            '${_formatCurrency(state.totalAmount)}원',
-            Icons.payments,
-          ),
-        ],
+  Widget _pillButton({
+    required String label,
+    required VoidCallback onPressed,
+    IconData? icon,
+  }) {
+    final style = OutlinedButton.styleFrom(
+      foregroundColor: AppColors.textPrimary,
+      side: const BorderSide(color: AppColors.divider),
+      shape: const StadiumBorder(),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
       ),
     );
-  }
-
-  /// 합계 항목 위젯
-  Widget _buildSummaryItem(String label, String value, IconData icon) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 20, color: Colors.green[700]),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-        const SizedBox(height: 1),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-      ],
+    if (icon == null) {
+      return OutlinedButton(
+        onPressed: onPressed,
+        style: style,
+        child: Text(label),
+      );
+    }
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 16),
+      label: Text(label),
+      style: style,
     );
-  }
-
-  /// 숫자를 통화 형식으로 포맷
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]},',
-        );
   }
 }

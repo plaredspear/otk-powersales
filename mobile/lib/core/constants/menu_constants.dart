@@ -54,6 +54,7 @@ abstract final class MenuConstants {
         MenuItem(id: 'event-sales', label: '행사 매출', route: '/promotions'),
         MenuItem(id: 'monthly-sales', label: '월 매출', route: '/monthly-sales'),
         MenuItem(id: 'logistics-sales', label: '물류 매출', route: '/logistics-sales'),
+        MenuItem(id: 'electronic-sales', label: '전산 매출', route: '/electronic-sales'),
       ],
     ),
     // 5. 현장톡

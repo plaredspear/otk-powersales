@@ -29,4 +29,7 @@ abstract class PromotionRepository {
 
   /// 행사 상세 조회
   Future<PromotionDetail> getPromotion(int id);
+
+  /// 담당 행사 일람 조회 (일 매출 등록 진입화면용, date 미지정 시 오늘).
+  Future<List<MyPromotionAssignment>> getMyAssignments({String? date});
 }

@@ -7,6 +7,7 @@ import com.otoki.powersales.promotion.dto.response.MobilePromotionDetailResponse
 import com.otoki.powersales.promotion.dto.response.MobilePromotionEmployeeItem
 import com.otoki.powersales.promotion.dto.response.MobilePromotionListItem
 import com.otoki.powersales.promotion.dto.response.MobilePromotionListResponse
+import com.otoki.powersales.promotion.dto.response.MyPromotionAssignmentItem
 import com.otoki.powersales.promotion.exception.PromotionForbiddenException
 import com.otoki.powersales.promotion.exception.PromotionInvalidParameterException
 import com.otoki.powersales.promotion.exception.PromotionNotFoundException
@@ -169,6 +170,71 @@ class PromotionControllerTest : MobileControllerTestSupport() {
             mockMvc.perform(
                 get("/api/v1/mobile/promotions")
                     .param("startDate", "invalid-date")
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/mobile/promotions/my-assignments - 담당 행사 일람")
+    inner class GetMyAssignments {
+
+        @Test
+        @DisplayName("성공 - 담당 행사 목록 반환 (date 미지정)")
+        fun getMyAssignments_success() {
+            val items = listOf(
+                MyPromotionAssignmentItem(
+                    id = 10L,
+                    promotionId = 1L,
+                    promotionNumber = "PM-2026-001",
+                    promotionType = "시식",
+                    accountName = "이마트 강남점",
+                    scheduleDate = LocalDate.of(2026, 6, 9),
+                    standLocation = "엔드",
+                    isClosed = false
+                )
+            )
+            every { mobilePromotionService.getMyAssignments(1L, null) } returns items
+
+            mockMvc.perform(get("/api/v1/mobile/promotions/my-assignments"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray)
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(10))
+                .andExpect(jsonPath("$.data[0].promotionId").value(1))
+                .andExpect(jsonPath("$.data[0].promotionNumber").value("PM-2026-001"))
+                .andExpect(jsonPath("$.data[0].accountName").value("이마트 강남점"))
+                .andExpect(jsonPath("$.data[0].scheduleDate").value("2026-06-09"))
+                .andExpect(jsonPath("$.data[0].standLocation").value("엔드"))
+                .andExpect(jsonPath("$.data[0].isClosed").value(false))
+        }
+
+        @Test
+        @DisplayName("성공 - date 파라미터 전달")
+        fun getMyAssignments_withDate() {
+            every { mobilePromotionService.getMyAssignments(1L, "2026-06-09") } returns emptyList()
+
+            mockMvc.perform(
+                get("/api/v1/mobile/promotions/my-assignments")
+                    .param("date", "2026-06-09")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray)
+                .andExpect(jsonPath("$.data.length()").value(0))
+        }
+
+        @Test
+        @DisplayName("실패 - 잘못된 날짜 형식")
+        fun getMyAssignments_invalidDate() {
+            every { mobilePromotionService.getMyAssignments(1L, "bad-date") } throws
+                PromotionInvalidParameterException()
+
+            mockMvc.perform(
+                get("/api/v1/mobile/promotions/my-assignments")
+                    .param("date", "bad-date")
             )
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))

@@ -346,7 +346,7 @@ class _HomePageState extends ConsumerState<HomePage>
           ),
         );
       } else {
-        AppRouter.navigateTo(context, AppRouter.promotionList);
+        AppRouter.navigateTo(context, AppRouter.promotionDailySalesEntry);
       }
     } else if (item.route != null) {
       AppRouter.navigateTo(context, item.route!);
