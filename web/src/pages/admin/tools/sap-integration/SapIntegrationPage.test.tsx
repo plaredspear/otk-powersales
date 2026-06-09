@@ -6,11 +6,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SapIntegrationPage from './SapIntegrationPage';
 
 // 호출 이력/대기/테스트 탭은 stub — 본 테스트는 통합 페이지 탭 구조와 API 별 탭 분리를 검증한다.
+// 호출 이력 탭은 별도 탭이 아니라 각 API 상세 카드 안에 인라인으로 렌더되므로,
+// stub 이 lockedEndpoint/lockedInterfaceId prop 을 받아 해당 API 로 고정되었음을 노출한다.
 vi.mock('../sap-inbound/SapInboundAuditsTab', () => ({
-  default: () => <div data-testid="inbound-audits-tab">inbound-audits</div>,
+  default: ({ lockedEndpoint }: { lockedEndpoint?: string }) => (
+    <div data-testid="inbound-audits-tab">inbound-audits:{lockedEndpoint ?? 'all'}</div>
+  ),
 }));
 vi.mock('../sap-outbound/SapOutboundLogsTab', () => ({
-  default: () => <div data-testid="outbound-logs-tab">outbound-logs</div>,
+  default: ({ lockedInterfaceId }: { lockedInterfaceId?: string }) => (
+    <div data-testid="outbound-logs-tab">outbound-logs:{lockedInterfaceId ?? 'all'}</div>
+  ),
 }));
 vi.mock('../sap-outbound/SapOutboundOutboxTab', () => ({
   default: () => <div data-testid="outbound-outbox-tab">outbound-outbox</div>,
@@ -81,7 +87,8 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
 
     expect(screen.getByText('Inbound')).toBeInTheDocument();
     expect(screen.getByText('Outbound')).toBeInTheDocument();
-    expect(screen.getAllByRole('tab', { name: '호출 이력' })).toHaveLength(2);
+    // 호출 이력은 별도 탭이 아니라 각 API 상세 안에 인라인 표시되므로 '호출 이력' 탭은 없다.
+    expect(screen.queryByRole('tab', { name: '호출 이력' })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /대기 중 \(Outbox\)/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '테스트' })).toBeInTheDocument();
   });
@@ -98,12 +105,13 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
     expect(screen.getByRole('tab', { name: '전문행사조 마스터' })).toBeInTheDocument();
   });
 
-  it('H3 - 진입 시 Inbound 호출 이력 탭이 기본 활성', () => {
+  it('H3 - 진입 시 첫 Inbound API 탭이 기본 활성이고 그 API 의 상세가 표시', () => {
     renderPage();
-    expect(screen.getByTestId('inbound-audits-tab')).toBeInTheDocument();
+    // 첫 inbound API(조직 마스터 수신) 상세가 기본 노출
+    expect(screen.getByText('/api/v1/sap/organization')).toBeInTheDocument();
   });
 
-  it('H4 - Inbound API 탭 클릭 시 해당 API 상세(Endpoint/Scope/적재 대상)가 표시', async () => {
+  it('H4 - Inbound API 탭 클릭 시 해당 API 상세 + 그 API 로 고정된 호출 이력이 인라인 표시', async () => {
     renderPage();
     const user = userEvent.setup();
     await user.click(screen.getByRole('tab', { name: '조직 마스터 수신' }));
@@ -111,15 +119,21 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
     expect(await screen.findByText('/api/v1/sap/organization')).toBeInTheDocument();
     expect(screen.getByText('sap.org.write')).toBeInTheDocument();
     expect(screen.getByText('OrganizeMaster')).toBeInTheDocument();
+    // 호출 이력이 해당 endpoint 로 고정되어 인라인 렌더
+    expect(
+      screen.getByText('inbound-audits:/api/v1/sap/organization'),
+    ).toBeInTheDocument();
   });
 
-  it('H5 - Outbound API 탭 클릭 시 Interface ID 와 트리거가 표시', async () => {
+  it('H5 - Outbound API 탭 클릭 시 Interface ID/트리거 + 그 API 로 고정된 호출 이력이 인라인 표시', async () => {
     renderPage();
     const user = userEvent.setup();
     await user.click(screen.getByRole('tab', { name: '전문행사조 마스터' }));
 
     expect(await screen.findByText('SD03300')).toBeInTheDocument();
     expect(screen.getByText('BATCH')).toBeInTheDocument();
+    // 호출 이력이 해당 interfaceId 로 고정되어 인라인 렌더
+    expect(screen.getByText('outbound-logs:SD03300')).toBeInTheDocument();
   });
 
   it('H6 - 대기 큐 건수가 있으면 Outbox 탭 라벨에 건수 표기', () => {

@@ -44,8 +44,15 @@ function formatDateTime(value: string | null | undefined): string {
  *
  * backend 가 SAP REST Adapter 로 송신한 아웃바운드 호출의 결과 로그(결과 코드/HTTP/시도/
  * 소요시간)를 인터페이스·결과·기간 필터로 조회한다. 행 클릭 시 상세 모달.
+ *
+ * `lockedInterfaceId` 를 주면 해당 Interface 로 조회를 고정하고 Interface 필터 셀렉터를
+ * 숨긴다. API 상세 탭에서 그 API 의 호출 이력만 인라인으로 보여줄 때 사용한다.
  */
-export default function SapOutboundLogsTab() {
+export default function SapOutboundLogsTab({
+  lockedInterfaceId,
+}: {
+  lockedInterfaceId?: string;
+} = {}) {
   const [interfaceId, setInterfaceId] = useState<string | undefined>(undefined);
   const [resultCode, setResultCode] = useState<SapOutboundResultCode | undefined>(undefined);
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
@@ -55,7 +62,7 @@ export default function SapOutboundLogsTab() {
 
   const catalogQuery = useSapOutboundCatalog();
   const logsQuery = useSapOutboundLogs({
-    interfaceId,
+    interfaceId: lockedInterfaceId ?? interfaceId,
     resultCode,
     from: range?.[0]?.toISOString() ?? undefined,
     to: range?.[1]?.toISOString() ?? undefined,
@@ -162,19 +169,21 @@ export default function SapOutboundLogsTab() {
     <>
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space wrap>
-          <Select
-            allowClear
-            placeholder="Interface"
-            style={{ width: 360 }}
-            value={interfaceId}
-            onChange={(value) => {
-              setInterfaceId(value ?? undefined);
-              setPage(1);
-            }}
-            options={interfaceOptions}
-            showSearch
-            optionFilterProp="label"
-          />
+          {lockedInterfaceId === undefined && (
+            <Select
+              allowClear
+              placeholder="Interface"
+              style={{ width: 360 }}
+              value={interfaceId}
+              onChange={(value) => {
+                setInterfaceId(value ?? undefined);
+                setPage(1);
+              }}
+              options={interfaceOptions}
+              showSearch
+              optionFilterProp="label"
+            />
+          )}
           <Select
             allowClear
             placeholder="Result"
