@@ -54,7 +54,7 @@ set -euo pipefail
 SF_ORG=""
 SF_API_VERSION="60.0"
 OUT_DIR=""
-TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,InspectionTheme,SiteActivity,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,DailySalesHistory,SalesProgressRateMaster,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
+TARGETS="Organization,Account,Product,Promotion,Group,Employee,User,Notice,AccountCategoryMaster,AgreementHistory,AgreementWord,AlternativeHoliday,Appointment,AttendanceLog,AttendInfo,Claim,DisplayWorkSchedule,EmployeeInputCriteriaMaster,ErpOrder,ErpOrderProduct,HolidayMaster,WorkingDayMaster,InspectionTheme,SiteActivity,MonthlyFemaleEmployeeIntegrationSchedule,MonthlySalesHistory,DailySalesHistory,SalesProgressRateMaster,NewProduct,OrderRequest,OrderRequestProduct,ProductBarcode,ProfessionalPromotionTeamHistory,ProfessionalPromotionTeamMaster,PromotionEmployee,PromotionProduct,PushMessage,PushMessageReceiver,Suggestion,TeamMemberSchedule,UploadFile,UserRole,Profile,Permission"
 SKIP_GROUP_MEMBERS=0
 SKIP_VERIFY=0
 # spec #790 Q4 채택 — XML 메타 (extract-sharing-meta.sh) 자동 포함, --skip-sharing-meta 로 제외 가능
@@ -536,6 +536,14 @@ SELECT
     Id, HolidayDate__c, Name, Type__c, OwnerId,
     CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
 FROM HolidayMaster__c
+EOF
+)
+
+WORKING_DAY_MASTER_SOQL=$(cat <<'EOF'
+SELECT
+    Id, Name, WorkingDate__c, WorkingDateCheck__c, OwnerId,
+    CreatedDate, LastModifiedDate, CreatedById, LastModifiedById, IsDeleted
+FROM WorkingDayMaster__c
 EOF
 )
 
@@ -1131,6 +1139,10 @@ fi
 
 if contains_target "HolidayMaster"; then
     run_query "HolidayMaster (HolidayMaster__c)" "$HOLIDAY_MASTER_SOQL" "$OUT_DIR/holiday_masters.csv"
+fi
+
+if contains_target "WorkingDayMaster"; then
+    run_query "WorkingDayMaster (WorkingDayMaster__c)" "$WORKING_DAY_MASTER_SOQL" "$OUT_DIR/working_day_masters.csv"
 fi
 
 if contains_target "InspectionTheme"; then

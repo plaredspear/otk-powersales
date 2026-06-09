@@ -4205,6 +4205,10 @@
             "format" : "double",
             "type" : "number"
           },
+          "baseRate" : {
+            "format" : "double",
+            "type" : "number"
+          },
           "categorySales" : {
             "items" : {
               "$ref" : "#/components/schemas/CategorySalesInfo"

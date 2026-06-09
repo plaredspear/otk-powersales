@@ -15,4 +15,12 @@ interface SalesProgressRateMasterRepository :
 
     /** ExternalKey(`연+월+거래처코드`) 일괄 조회 — SF fetch sync 의 upsert 매칭 키. */
     fun findByExternalKeyIn(externalKeys: Collection<String>): List<SalesProgressRateMaster>
+
+    /**
+     * 거래처(account FK) + 목표연도(`"YYYY"`) 목표 행 조회 — 월매출 현황 화면 목표 source.
+     *
+     * `targetMonth` 는 SF 적재 포맷(zero-pad 비보장) 이라 월 일치는 호출 측에서 정수 파싱으로 판정.
+     * soft-delete(`isDeleted == true`) 필터도 호출 측에서 수행 (`isDeleted` nullable).
+     */
+    fun findByAccountIdAndTargetYear(accountId: Long, targetYear: String): List<SalesProgressRateMaster>
 }

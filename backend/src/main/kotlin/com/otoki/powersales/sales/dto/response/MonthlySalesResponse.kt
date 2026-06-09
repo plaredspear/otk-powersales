@@ -10,6 +10,11 @@ data class MonthlySalesResponse(
     val targetAmount: Long,
     val achievedAmount: Long,
     val achievementRate: Double,
+    /**
+     * 기준 진도율 (영업일 기준, %) — 레거시 `calcBusinessRateOnlyThisMonth` 정합.
+     * 조회월이 시스템 당월일 때만 `(월초~오늘 영업일) / (월초~월말 영업일) × 100`, 그 외 월은 0.
+     */
+    val baseRate: Double,
     val categorySales: List<CategorySalesInfo>,
     val yearComparison: YearComparisonInfo,
     val monthlyAverage: MonthlyAverageInfo

@@ -185,6 +185,12 @@ class MonthlySales {
   /// 달성율 (%)
   final double achievementRate;
 
+  /// 기준 진도율 (영업일 기준, %)
+  ///
+  /// 조회월이 당월일 때만 `(월초~오늘 영업일) / (월초~월말 영업일) × 100`,
+  /// 그 외(과거/미래) 월은 0 (레거시 calcBusinessRateOnlyThisMonth 정합).
+  final double baseRate;
+
   /// 제품유형별 매출
   final List<CategorySales> categorySales;
 
@@ -201,6 +207,7 @@ class MonthlySales {
     required this.targetAmount,
     required this.achievedAmount,
     required this.achievementRate,
+    required this.baseRate,
     required this.categorySales,
     required this.previousYearSameMonth,
     required this.monthlyAverage,
@@ -213,6 +220,7 @@ class MonthlySales {
     int? targetAmount,
     int? achievedAmount,
     double? achievementRate,
+    double? baseRate,
     List<CategorySales>? categorySales,
     int? previousYearSameMonth,
     MonthlyAverage? monthlyAverage,
@@ -224,6 +232,7 @@ class MonthlySales {
       targetAmount: targetAmount ?? this.targetAmount,
       achievedAmount: achievedAmount ?? this.achievedAmount,
       achievementRate: achievementRate ?? this.achievementRate,
+      baseRate: baseRate ?? this.baseRate,
       categorySales: categorySales ?? this.categorySales,
       previousYearSameMonth:
           previousYearSameMonth ?? this.previousYearSameMonth,
@@ -239,6 +248,7 @@ class MonthlySales {
       'targetAmount': targetAmount,
       'achievedAmount': achievedAmount,
       'achievementRate': achievementRate,
+      'baseRate': baseRate,
       'categorySales': categorySales.map((c) => c.toJson()).toList(),
       'previousYearSameMonth': previousYearSameMonth,
       'monthlyAverage': monthlyAverage.toJson(),
@@ -253,6 +263,7 @@ class MonthlySales {
       targetAmount: json['targetAmount'] as int,
       achievedAmount: json['achievedAmount'] as int,
       achievementRate: (json['achievementRate'] as num).toDouble(),
+      baseRate: (json['baseRate'] as num?)?.toDouble() ?? 0.0,
       categorySales: (json['categorySales'] as List)
           .map((item) => CategorySales.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -272,6 +283,7 @@ class MonthlySales {
         other.targetAmount == targetAmount &&
         other.achievedAmount == achievedAmount &&
         other.achievementRate == achievementRate &&
+        other.baseRate == baseRate &&
         _listEquals(other.categorySales, categorySales) &&
         other.previousYearSameMonth == previousYearSameMonth &&
         other.monthlyAverage == monthlyAverage;
@@ -286,6 +298,7 @@ class MonthlySales {
       targetAmount,
       achievedAmount,
       achievementRate,
+      baseRate,
       Object.hashAll(categorySales),
       previousYearSameMonth,
       monthlyAverage,
@@ -297,6 +310,7 @@ class MonthlySales {
     return 'MonthlySales(customerId: $customerId, customerName: $customerName, '
         'yearMonth: $yearMonth, targetAmount: $targetAmount, '
         'achievedAmount: $achievedAmount, achievementRate: $achievementRate, '
+        'baseRate: $baseRate, '
         'categorySales: $categorySales, '
         'previousYearSameMonth: $previousYearSameMonth, '
         'monthlyAverage: $monthlyAverage)';

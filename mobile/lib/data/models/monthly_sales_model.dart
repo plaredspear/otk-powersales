@@ -165,6 +165,7 @@ class MonthlySalesModel {
   final int targetAmount;
   final int achievedAmount;
   final double achievementRate;
+  final double baseRate;
   final List<CategorySalesModel> categorySales;
   final int previousYearSameMonth;
   final MonthlyAverageModel monthlyAverage;
@@ -176,6 +177,7 @@ class MonthlySalesModel {
     required this.targetAmount,
     required this.achievedAmount,
     required this.achievementRate,
+    required this.baseRate,
     required this.categorySales,
     required this.previousYearSameMonth,
     required this.monthlyAverage,
@@ -193,6 +195,7 @@ class MonthlySalesModel {
       targetAmount: (json['targetAmount'] as num).toInt(),
       achievedAmount: (json['achievedAmount'] as num).toInt(),
       achievementRate: (json['achievementRate'] as num).toDouble(),
+      baseRate: (json['baseRate'] as num?)?.toDouble() ?? 0.0,
       categorySales: (json['categorySales'] as List<dynamic>)
           .map((item) => CategorySalesModel.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -211,6 +214,7 @@ class MonthlySalesModel {
       'targetAmount': targetAmount,
       'achievedAmount': achievedAmount,
       'achievementRate': achievementRate,
+      'baseRate': baseRate,
       'categorySales': categorySales.map((item) => item.toJson()).toList(),
       'previousYearSameMonth': previousYearSameMonth,
       'monthlyAverage': monthlyAverage.toJson(),
@@ -225,6 +229,7 @@ class MonthlySalesModel {
       targetAmount: targetAmount,
       achievedAmount: achievedAmount,
       achievementRate: achievementRate,
+      baseRate: baseRate,
       categorySales: categorySales.map((model) => model.toEntity()).toList(),
       previousYearSameMonth: previousYearSameMonth,
       monthlyAverage: monthlyAverage.toEntity(),
@@ -239,6 +244,7 @@ class MonthlySalesModel {
       targetAmount: entity.targetAmount,
       achievedAmount: entity.achievedAmount,
       achievementRate: entity.achievementRate,
+      baseRate: entity.baseRate,
       categorySales: entity.categorySales
           .map((item) => CategorySalesModel.fromEntity(item))
           .toList(),
@@ -257,6 +263,7 @@ class MonthlySalesModel {
         other.targetAmount == targetAmount &&
         other.achievedAmount == achievedAmount &&
         other.achievementRate == achievementRate &&
+        other.baseRate == baseRate &&
         _listEquals(other.categorySales, categorySales) &&
         other.previousYearSameMonth == previousYearSameMonth &&
         other.monthlyAverage == monthlyAverage;
@@ -271,6 +278,7 @@ class MonthlySalesModel {
       targetAmount,
       achievedAmount,
       achievementRate,
+      baseRate,
       Object.hashAll(categorySales),
       previousYearSameMonth,
       monthlyAverage,
@@ -282,7 +290,7 @@ class MonthlySalesModel {
     return 'MonthlySalesModel(customerId: $customerId, '
         'customerName: $customerName, yearMonth: $yearMonth, '
         'targetAmount: $targetAmount, achievedAmount: $achievedAmount, '
-        'achievementRate: $achievementRate%, '
+        'achievementRate: $achievementRate%, baseRate: $baseRate%, '
         'categorySales: ${categorySales.length} items, '
         'previousYearSameMonth: $previousYearSameMonth, '
         'monthlyAverage: $monthlyAverage)';

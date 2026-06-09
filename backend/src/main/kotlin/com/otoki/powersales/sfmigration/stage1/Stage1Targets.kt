@@ -709,6 +709,25 @@ object Stage1Targets {
         ),
     )
 
+    private val WORKING_DAY_MASTER = EntityMetadata(
+        targetName = "WorkingDayMaster",
+        sObjectName = "WorkingDayMaster__c",
+        tableName = "working_day_master",
+        csvFileName = "working_day_masters.csv",
+        fields = listOf(
+            FieldMapping("Id", "sfid", nullable = false),
+            FieldMapping("Name", "name"),
+            FieldMapping("WorkingDate__c", "working_date"),
+            FieldMapping("WorkingDateCheck__c", "working_date_check"),
+            FieldMapping("OwnerId", "owner_sfid"),
+            FieldMapping("CreatedById", "created_by_sfid"),
+            FieldMapping("CreatedDate", "created_at", nullable = false),
+            FieldMapping("LastModifiedDate", "updated_at", nullable = false),
+            FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+            FieldMapping("IsDeleted", "is_deleted"),
+        ),
+    )
+
     private val INSPECTION_THEME = EntityMetadata(
         targetName = "InspectionTheme",
         sObjectName = "Theme__c",
@@ -1715,6 +1734,7 @@ object Stage1Targets {
         ERP_ORDER,
         ERP_ORDER_PRODUCT,
         HOLIDAY_MASTER,
+        WORKING_DAY_MASTER,
         INSPECTION_THEME,
         SITE_ACTIVITY,
         MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE,
@@ -1795,6 +1815,7 @@ object Stage1Targets {
         "ErpOrder",
         "ErpOrderProduct",
         "HolidayMaster",
+        "WorkingDayMaster",
         "InspectionTheme",
         "SiteActivity",
         "MonthlyFemaleEmployeeIntegrationSchedule",
