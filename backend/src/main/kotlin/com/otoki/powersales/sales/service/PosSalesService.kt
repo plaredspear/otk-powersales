@@ -3,6 +3,7 @@ package com.otoki.powersales.sales.service
 import com.otoki.pos.repository.LivePosSalesDailyRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.sales.dto.response.PosSalesRangeResponse
 import com.otoki.powersales.sales.dto.response.PosSalesResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -96,6 +97,72 @@ class PosSalesService(
 			customerName = account.name ?: "",
 			sapAccountCode = sapCode ?: "",
 			yearMonth = yearMonth,
+			items = items,
+		)
+	}
+
+	/**
+	 * 거래처 1곳 + 기간(시작/종료일) + 선택 바코드 목록의 제품별 POS매출 조회 (레거시 daterangepicker 정합).
+	 *
+	 * [barcodes] 가 비면 거래처 전체 제품을 집계(레거시 `posSumAmount` 합계 모드), 1건 이상이면 해당
+	 * 바코드 제품만 집계(레거시 `posAmount` 명세 모드)한다. 합계금액/수량은 명세를 서버에서 합산한다.
+	 *
+	 * 거래처 미존재 시 404. 거래처 SAP 코드(`externalKey`) 부재 또는 POS DB 장애 시 빈 명세로 fallback.
+	 */
+	fun getPosSalesByRange(
+		customerId: Long,
+		startDate: String,
+		endDate: String,
+		barcodes: List<String>?,
+	): PosSalesRangeResponse {
+		val account = accountRepository.findByIdInAndIsDeletedNot(listOf(customerId), true).firstOrNull()
+			?: throw BusinessException(
+				errorCode = "ACCOUNT_NOT_FOUND",
+				message = "거래처를 찾을 수 없습니다: $customerId",
+				httpStatus = HttpStatus.NOT_FOUND,
+			)
+
+		val sapCode = account.externalKey
+		val custCd = if (sapCode.isNullOrBlank()) null else "$CUST_CD_PREFIX$sapCode"
+
+		// 공백 제거 후 비어있지 않은 바코드만 사용 (빈 IN () SQL 오류 방지)
+		val filterBarcodes = barcodes?.mapNotNull { it.trim().ifBlank { null } }?.distinct() ?: emptyList()
+
+		val items = if (custCd == null) {
+			emptyList()
+		} else {
+			runCatching {
+				val rows = if (filterBarcodes.isEmpty()) {
+					livePosSalesDailyRepository.aggregateByProduct(custCd, startDate, endDate)
+				} else {
+					livePosSalesDailyRepository.aggregateByProductAndBarcodes(custCd, startDate, endDate, filterBarcodes)
+				}
+				rows.map { row ->
+					PosSalesResponse.ProductSales(
+						productCode = row.getItemCd(),
+						productName = row.getItemNm() ?: "",
+						barcode = row.getBarcode(),
+						amount = (row.getSalesAmt() ?: BigDecimal.ZERO).toLong(),
+						quantity = (row.getSalesQty() ?: BigDecimal.ZERO).toLong(),
+					)
+				}
+			}.getOrElse { e ->
+				log.warn(
+					"POS매출(기간) 조회 실패 (custCd={}, {}~{}, barcodes={}): {}",
+					custCd, startDate, endDate, filterBarcodes.size, e.message,
+				)
+				emptyList()
+			}
+		}
+
+		return PosSalesRangeResponse(
+			customerId = account.id,
+			customerName = account.name ?: "",
+			sapAccountCode = sapCode ?: "",
+			startDate = startDate,
+			endDate = endDate,
+			totalAmount = items.sumOf { it.amount },
+			totalQuantity = items.sumOf { it.quantity },
 			items = items,
 		)
 	}

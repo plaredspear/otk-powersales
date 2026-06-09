@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>영업 방문 위치 기록을 위해 위치 정보를 사용합니다.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>제품 바코드 스캔을 위해 카메라를 사용합니다.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

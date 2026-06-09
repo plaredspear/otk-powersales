@@ -4,10 +4,12 @@ import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.sales.dto.request.ElectronicSalesRequest
 import com.otoki.powersales.sales.dto.request.LogisticsSalesRequest
 import com.otoki.powersales.sales.dto.request.MonthlySalesRequest
+import com.otoki.powersales.sales.dto.request.PosSalesRangeRequest
 import com.otoki.powersales.sales.dto.request.PosSalesRequest
 import com.otoki.powersales.sales.dto.response.ElectronicSalesResponse
 import com.otoki.powersales.sales.dto.response.LogisticsSalesResponse
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
+import com.otoki.powersales.sales.dto.response.PosSalesRangeResponse
 import com.otoki.powersales.sales.dto.response.PosSalesResponse
 import com.otoki.powersales.sales.service.ElectronicSalesService
 import com.otoki.powersales.sales.service.LogisticsSalesService
@@ -74,6 +76,26 @@ class MonthlySalesController(
         @Valid request: PosSalesRequest
     ): ResponseEntity<ApiResponse<PosSalesResponse>> {
         val response = posSalesService.getPosSales(request.customerId, request.yearMonth)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * POS매출 조회 (거래처 1곳 + 기간(시작/종료일) + 선택 바코드 목록)
+     * GET /api/v1/mobile/sales/pos/by-range
+     *
+     * 레거시 `promotion/month/posmain.jsp` 의 daterangepicker + 매출 조회 제품 정합.
+     * `barcodes` 미지정 시 거래처 전체 제품 집계, 1건 이상 시 해당 바코드 제품만 집계.
+     */
+    @GetMapping("/pos/by-range")
+    fun getPosSalesByRange(
+        @Valid request: PosSalesRangeRequest
+    ): ResponseEntity<ApiResponse<PosSalesRangeResponse>> {
+        val response = posSalesService.getPosSalesByRange(
+            request.customerId,
+            request.startDate,
+            request.endDate,
+            request.barcodeList(),
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

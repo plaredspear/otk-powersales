@@ -1,30 +1,26 @@
-import '../entities/pos_sales.dart';
+import '../entities/pos_sales_result.dart';
 import '../repositories/pos_sales_repository.dart';
 
 /// POS 매출 조회 UseCase.
 ///
-/// 거래처 1곳 + 연월 기준 제품별 POS 매출을 조회하고, 합계 산출을 보조한다.
+/// 거래처 1곳 + 기간 + 선택 바코드 기준 제품별 POS 매출을 조회한다 (합계금액 포함).
 class GetPosSalesUseCase {
   final PosSalesRepository _repository;
 
   GetPosSalesUseCase(this._repository);
 
-  /// POS 매출 조회 (거래처 + 연월).
-  Future<List<PosSales>> call({
+  /// POS 매출 조회 (기간 + 선택 바코드).
+  Future<PosSalesResult> call({
     required int customerId,
-    required String yearMonth,
+    required String startDate,
+    required String endDate,
+    List<String> barcodes = const [],
   }) {
-    return _repository.getPosSales(
+    return _repository.getPosSalesByRange(
       customerId: customerId,
-      yearMonth: yearMonth,
+      startDate: startDate,
+      endDate: endDate,
+      barcodes: barcodes,
     );
   }
-
-  /// 총 금액 합계.
-  int calculateTotalAmount(List<PosSales> salesList) =>
-      salesList.fold(0, (sum, sales) => sum + sales.amount);
-
-  /// 총 수량 합계.
-  int calculateTotalQuantity(List<PosSales> salesList) =>
-      salesList.fold(0, (sum, sales) => sum + sales.quantity);
 }
