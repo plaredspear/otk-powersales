@@ -189,6 +189,32 @@ void main() {
       }
     });
   });
+
+  group('_handle401 무한 루프 방지', () {
+    test('갱신 성공 후 재시도도 401이면 1회만 갱신하고 에러 전파 (무한 루프 X)', () async {
+      final adapter = _Mock401ExceptRefreshAdapter();
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource()
+        ..accessToken = 'oldToken'
+        ..refreshToken = 'refreshTok';
+      d.interceptors.add(AuthInterceptor(localDataSource: localDS, dio: d));
+      d.httpClientAdapter = adapter;
+
+      try {
+        await d.get('/api/v1/mobile/education/posts');
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.response?.statusCode, 401);
+      }
+
+      // 토큰 갱신은 정확히 1회만 수행되어야 한다 (무한 갱신 루프가 아님).
+      expect(adapter.refreshCount, 1);
+      // 보호 자원 요청은 최초 1회 + 재시도 1회 = 2회에서 멈춰야 한다.
+      expect(adapter.protectedCount, 2);
+      // 강제 로그아웃으로 토큰이 제거되어야 한다.
+      expect(localDS.accessToken, isNull);
+    });
+  });
 }
 
 // --- Fakes ---
@@ -292,6 +318,42 @@ class _Mock403Adapter implements HttpClientAdapter {
     return ResponseBody.fromString(body, 403, headers: {
       'content-type': [contentType],
     });
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// /auth/refresh 는 200(새 토큰)으로, 그 외 보호 자원은 항상 401로 응답하는 어댑터.
+/// "갱신은 성공하지만 서버가 계속 401을 주는" 무한 루프 시나리오 재현용.
+class _Mock401ExceptRefreshAdapter implements HttpClientAdapter {
+  int refreshCount = 0;
+  int protectedCount = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    if (options.path.contains('/auth/refresh')) {
+      refreshCount++;
+      return ResponseBody.fromString(
+        '{"success":true,"data":{"accessToken":"newToken"}}',
+        200,
+        headers: {
+          'content-type': ['application/json; charset=utf-8'],
+        },
+      );
+    }
+    protectedCount++;
+    return ResponseBody.fromString(
+      '{"success":false,"data":null,"error":{"code":"UNAUTHORIZED","message":"인증이 필요합니다"}}',
+      401,
+      headers: {
+        'content-type': ['application/json; charset=utf-8'],
+      },
+    );
   }
 
   @override
