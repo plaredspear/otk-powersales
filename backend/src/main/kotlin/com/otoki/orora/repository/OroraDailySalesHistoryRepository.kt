@@ -20,8 +20,10 @@ import org.springframework.data.repository.Repository
  * **빌드 단계에서 컴파일 에러로 검출**된다.
  *
  * ## 조회 메소드
- * 본 시점에는 marker + 시그니처만. 실제 조회 메소드 (e.g., `findBySapAccountCodeAndSalesDate`,
- * `findBySalesDateBetweenAndSapAccountCodeBetween`) 는 후속 조회 API 스펙에서 명시적으로 추가한다.
+ * - [findBySalesDateStartingWithAndSapAccountCodeBetween]: 매출월(`YYYYMM`) prefix + 거래처 코드 범위 조회 —
+ *   ORORA 일별 매출 적재 배치(Spec #855)가 거래처 코드 범위(레거시 `OroraDailyAccountRange__mdt`
+ *   from/to 동등)를 청크로 분할해 한 달치 일별 row 를 받아오는 용도. ORORA view 의 `SalesDate` 는
+ *   `YYYYMMDD` 8자 원본 문자열이라 `YYYYMM` prefix 매칭으로 한 달치를 조회한다.
  *
  * ## 활성 환경
  * 모든 환경. [com.otoki.powersales.common.integration.orora.config.OroraJpaConfig] 의
@@ -29,4 +31,21 @@ import org.springframework.data.repository.Repository
  * 없어 connection acquire 자체가 발생하지 않으며, dev/prod VPN 장애 시에는 호출 site 만
  * `CannotCreateTransactionException` 으로 실패하고 메인 기능은 무영향.
  */
-interface OroraDailySalesHistoryRepository : Repository<OroraDailySalesHistory, OroraDailySalesHistoryId>
+interface OroraDailySalesHistoryRepository : Repository<OroraDailySalesHistory, OroraDailySalesHistoryId> {
+
+	/**
+	 * 매출월(`YYYYMM`) prefix + 거래처 코드 범위(`from` ~ `to`, 양끝 포함) 조회.
+	 *
+	 * 거래처 코드는 ORORA view 원본 형식(선행 `000` 포함, 예: `0001000000`) 의 문자열 범위 비교.
+	 * 레거시 `Queueable_OroraDailySalesHistory_M1` 의 `From_cust`/`To_cust` 범위 동등.
+	 *
+	 * @param salesDatePrefix ORORA `SalesDate`(`YYYYMMDD`) 의 앞 6자 매출월 (`YYYYMM`)
+	 * @param fromSapAccountCode 거래처 코드 범위 시작 (포함)
+	 * @param toSapAccountCode 거래처 코드 범위 끝 (포함)
+	 */
+	fun findBySalesDateStartingWithAndSapAccountCodeBetween(
+		salesDatePrefix: String,
+		fromSapAccountCode: String,
+		toSapAccountCode: String,
+	): List<OroraDailySalesHistory>
+}

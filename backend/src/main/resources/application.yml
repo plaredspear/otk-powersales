@@ -204,6 +204,24 @@ app:
     gps-threshold-meters: ${ATTENDANCE_GPS_THRESHOLD_METERS:500}
 
   # ---------------------------------------------------------------------------
+  # ORORA 매출이력 RDS 적재 배치 (Spec #855)
+  #  - 거래처 코드 범위(from~to)를 chunk 단위로 분할해 ORORA view 를 조회 후 RDS upsert.
+  #  - 레거시 OroraDailyAccountRange__mdt 실측값(from 1000000 / to 1100000 / range 2000) 기본.
+  #  - cron 은 dev/prod 만 실 발동 (ORORA DataSource @Profile("dev | prod")). @EnableScheduling
+  #    전역 비활성 상태에서는 fire 안 됨 — 활성화 시 즉시 시작.
+  # ---------------------------------------------------------------------------
+  batch:
+    orora:
+      account-range:
+        from: ${ORORA_MATERIALIZE_ACCOUNT_FROM:1000000}
+        to: ${ORORA_MATERIALIZE_ACCOUNT_TO:1100000}
+        chunk-size: ${ORORA_MATERIALIZE_CHUNK_SIZE:2000}
+      daily:
+        cron: ${ORORA_MATERIALIZE_DAILY_CRON:0 30 4 * * *}
+      monthly:
+        cron: ${ORORA_MATERIALIZE_MONTHLY_CRON:0 0 5 * * *}
+
+  # ---------------------------------------------------------------------------
   # ORORA 외부 MSSQL DB 직결 DataSource
   #  - dev / prod 프로파일에서만 빈이 활성화된다 (`@Profile("dev | prod")`).
   #  - local / test 에서는 환경변수 미설정 상태에서도 정상 기동 (Bean 부재).

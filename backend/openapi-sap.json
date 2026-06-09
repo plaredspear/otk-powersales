@@ -364,50 +364,6 @@
         },
         "type" : "object"
       },
-      "DailySalesHistoryRequest" : {
-        "properties" : {
-          "reqItemList" : {
-            "items" : {
-              "$ref" : "#/components/schemas/DailySalesHistoryRequestItem"
-            },
-            "type" : [ "array", "null" ]
-          }
-        },
-        "required" : [ "reqItemList" ],
-        "type" : "object"
-      },
-      "DailySalesHistoryRequestItem" : {
-        "properties" : {
-          "ERPDistributionAmount1" : {
-            "type" : "string"
-          },
-          "ERPDistributionAmount2" : {
-            "type" : "string"
-          },
-          "ERPDistributionAmount3" : {
-            "type" : "string"
-          },
-          "ERPSalesAmount1" : {
-            "type" : "string"
-          },
-          "ERPSalesAmount2" : {
-            "type" : "string"
-          },
-          "ERPSalesAmount3" : {
-            "type" : "string"
-          },
-          "LedgerAmount" : {
-            "type" : "string"
-          },
-          "SAPAccountCode" : {
-            "type" : "string"
-          },
-          "SalesDate" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "EmployeeMasterDetail" : {
         "properties" : {
           "failureCount" : {
@@ -837,31 +793,6 @@
         },
         "type" : "object"
       },
-      "SalesHistoryDetail" : {
-        "properties" : {
-          "chunks" : {
-            "items" : {
-              "$ref" : "#/components/schemas/ChunkResult"
-            },
-            "type" : "array"
-          },
-          "failureCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "failures" : {
-            "items" : {
-              "$ref" : "#/components/schemas/FailureItem"
-            },
-            "type" : "array"
-          },
-          "successCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
       "SapResultWrapperAccountMasterDetail" : {
         "properties" : {
           "RESULT_CODE" : {
@@ -953,20 +884,6 @@
           },
           "RESULT_DETAIL" : {
             "$ref" : "#/components/schemas/ProductMasterDetail"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "SapResultWrapperSalesHistoryDetail" : {
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/SalesHistoryDetail"
           },
           "RESULT_MSG" : {
             "type" : "string"
@@ -1208,36 +1125,6 @@
         },
         "summary" : "출근 정보 적재 (UPSERT)",
         "tags" : [ "sap-attend-info-controller" ]
-      }
-    },
-    "/api/v1/sap/daily-sales-history" : {
-      "post" : {
-        "description" : "\n            SAP 일 매출 이력을 (SAPAccountCode + SalesDate) 기준으로 UPSERT 합니다.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/DailyErpSalesInfoReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_DailyErpSalesInfoReceive`\n        ",
-        "operationId" : "upsertDaily",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/DailySalesHistoryRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperSalesHistoryDetail"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "일 매출 이력 적재 (청크 UPSERT)",
-        "tags" : [ "sap-sales-history-controller" ]
       }
     },
     "/api/v1/sap/employee" : {

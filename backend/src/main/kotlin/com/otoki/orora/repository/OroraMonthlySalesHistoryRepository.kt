@@ -58,4 +58,21 @@ interface OroraMonthlySalesHistoryRepository : Repository<OroraMonthlySalesHisto
 		salesDates: Collection<String>,
 		sapAccountCodes: Collection<String>,
 	): List<OroraMonthlySalesHistory>
+
+	/**
+	 * 단월 + 거래처 코드 범위(`from` ~ `to`, 양끝 포함) 조회.
+	 *
+	 * 거래처 코드는 ORORA view 원본 형식(선행 `000` 포함) 의 문자열 범위 비교. ORORA 월별 매출 적재
+	 * 배치(Spec #855)가 거래처 코드 범위를 청크로 분할해 한 달치 월별 row 를 받아오는 용도.
+	 * 레거시 `IF_REST_ORORA_ReceiveMonthlySalesHistory` 의 `From_cust`/`To_cust` 범위 동등.
+	 *
+	 * @param salesDate ORORA `SalesDate` 원본 6자 문자열 (`YYYYMM`)
+	 * @param fromSapAccountCode 거래처 코드 범위 시작 (포함)
+	 * @param toSapAccountCode 거래처 코드 범위 끝 (포함)
+	 */
+	fun findBySalesDateAndSapAccountCodeBetween(
+		salesDate: String,
+		fromSapAccountCode: String,
+		toSapAccountCode: String,
+	): List<OroraMonthlySalesHistory>
 }

@@ -36,7 +36,6 @@ import org.springframework.web.context.request.ServletRequestAttributes
         SapAccountMasterController::class,
         SapEmployeeMasterController::class,
         SapProductMasterController::class,
-        SapSalesHistoryController::class,
         SapErpOrderController::class,
         SapAppointmentController::class,
         SapAttendInfoController::class,

@@ -7223,6 +7223,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseOroraDailyMaterializeResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OroraDailyMaterializeResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseOroraMonthlyMaterializeResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OroraMonthlyMaterializeResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePPTConfirmedReportResponse" : {
         "properties" : {
           "data" : {
@@ -11469,50 +11527,6 @@
           "scheduleDate" : {
             "format" : "date",
             "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
-      "DailySalesHistoryRequest" : {
-        "properties" : {
-          "reqItemList" : {
-            "items" : {
-              "$ref" : "#/components/schemas/DailySalesHistoryRequestItem"
-            },
-            "type" : [ "array", "null" ]
-          }
-        },
-        "required" : [ "reqItemList" ],
-        "type" : "object"
-      },
-      "DailySalesHistoryRequestItem" : {
-        "properties" : {
-          "ERPDistributionAmount1" : {
-            "type" : "string"
-          },
-          "ERPDistributionAmount2" : {
-            "type" : "string"
-          },
-          "ERPDistributionAmount3" : {
-            "type" : "string"
-          },
-          "ERPSalesAmount1" : {
-            "type" : "string"
-          },
-          "ERPSalesAmount2" : {
-            "type" : "string"
-          },
-          "ERPSalesAmount3" : {
-            "type" : "string"
-          },
-          "LedgerAmount" : {
-            "type" : "string"
-          },
-          "SAPAccountCode" : {
-            "type" : "string"
-          },
-          "SalesDate" : {
-            "type" : "string"
           }
         },
         "type" : "object"
@@ -15910,6 +15924,53 @@
         },
         "type" : "object"
       },
+      "OroraDailyMaterializeResult" : {
+        "properties" : {
+          "dailyUpsertedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "monthlyAggregateUpdatedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "salesMonth" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "OroraMonthlyMaterializeResult" : {
+        "properties" : {
+          "fetchedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "salesMonth" : {
+            "type" : "string"
+          },
+          "skippedAccountUnmatchedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "upsertedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "OroraSalesMaterializeRequest" : {
+        "properties" : {
+          "salesMonth" : {
+            "description" : "대상 매출월 (YYYYMM). 미지정 시 당월",
+            "example" : "202605",
+            "pattern" : "^\\d{6}$",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "PPTConfirmedReportItem" : {
         "properties" : {
           "accountCode" : {
@@ -19191,31 +19252,6 @@
         },
         "type" : "object"
       },
-      "SalesHistoryDetail" : {
-        "properties" : {
-          "chunks" : {
-            "items" : {
-              "$ref" : "#/components/schemas/ChunkResult"
-            },
-            "type" : "array"
-          },
-          "failureCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "failures" : {
-            "items" : {
-              "$ref" : "#/components/schemas/FailureItem"
-            },
-            "type" : "array"
-          },
-          "successCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
       "SalesProgressRateMasterDetailResponse" : {
         "properties" : {
           "accountBranchName" : {
@@ -19900,20 +19936,6 @@
           },
           "RESULT_DETAIL" : {
             "$ref" : "#/components/schemas/ProductMasterDetail"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "SapResultWrapperSalesHistoryDetail" : {
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/SalesHistoryDetail"
           },
           "RESULT_MSG" : {
             "type" : "string"
@@ -28325,6 +28347,62 @@
         "tags" : [ "admin-electronic-sales-dashboard-controller" ]
       }
     },
+    "/api/v1/admin/sales/materialize/daily" : {
+      "post" : {
+        "operationId" : "materializeDaily",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OroraSalesMaterializeRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraDailyMaterializeResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "ORORA 일별 매출 적재 + 월별 합계 갱신 (수동 트리거)",
+        "tags" : [ "admin-orora-sales-materialize-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/materialize/monthly" : {
+      "post" : {
+        "operationId" : "materializeMonthly",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OroraSalesMaterializeRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraMonthlyMaterializeResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "ORORA 월별 마감 적재 (수동 트리거)",
+        "tags" : [ "admin-orora-sales-materialize-controller" ]
+      }
+    },
     "/api/v1/admin/sales/monthly/detail/{customerId}" : {
       "get" : {
         "operationId" : "getDetail_4",
@@ -34575,36 +34653,6 @@
         },
         "summary" : "출근 정보 적재 (UPSERT)",
         "tags" : [ "sap-attend-info-controller" ]
-      }
-    },
-    "/api/v1/sap/daily-sales-history" : {
-      "post" : {
-        "description" : "\n            SAP 일 매출 이력을 (SAPAccountCode + SalesDate) 기준으로 UPSERT 합니다.\n            한 호출 최대 50,000행, 1,000행 청크 처리. 초과 시 `413 PAYLOAD_TOO_LARGE`.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/DailyErpSalesInfoReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_DailyErpSalesInfoReceive`\n        ",
-        "operationId" : "upsertDaily",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/DailySalesHistoryRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperSalesHistoryDetail"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "일 매출 이력 적재 (청크 UPSERT)",
-        "tags" : [ "sap-sales-history-controller" ]
       }
     },
     "/api/v1/sap/employee" : {
