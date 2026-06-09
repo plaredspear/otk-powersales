@@ -36,8 +36,11 @@ class SalesOverviewScreen extends StatelessWidget {
               const SizedBox(height: 24),
               _HubButton(
                 label: '월 매출 조회(물류)',
+                // 레거시 main2.jsp 의 "월 매출 조회(물류)" 는 /sales/monthList →
+                // list.jsp(월 매출 진도율·목표/실적 대시보드)로 진입한다.
+                // 신규에선 동일 대시보드가 MonthlySalesPage(=monthlySales)에 정합돼 있다.
                 onTap: () =>
-                    AppRouter.navigateTo(context, AppRouter.logisticsSales),
+                    AppRouter.navigateTo(context, AppRouter.monthlySales),
               ),
             ],
           ),
