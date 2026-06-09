@@ -14,7 +14,10 @@ class _FakeMyAccountRepository implements MyAccountRepository {
   _FakeMyAccountRepository({this.resultToReturn, this.exceptionToThrow});
 
   @override
-  Future<MyAccountListResult> getMyAccounts({String? keyword}) async {
+  Future<MyAccountListResult> getMyAccounts({
+    String? keyword,
+    MyAccountScope scope = MyAccountScope.field,
+  }) async {
     await Future<void>.delayed(Duration.zero);
     lastKeyword = keyword;
     if (exceptionToThrow != null) throw exceptionToThrow!;

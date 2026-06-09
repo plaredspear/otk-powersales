@@ -296,6 +296,37 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
+    override fun findAllDistinctAccountIds(): List<Long> {
+        return queryFactory
+            .select(teamMemberSchedule.account.id).distinct()
+            .from(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.account.isNotNull,
+                isNotDeleted()
+            )
+            .fetch()
+            .filterNotNull()
+    }
+
+    override fun findDistinctAccountIdsByTeamLeaderIdAndDateRange(
+        teamLeaderId: Long,
+        fromDate: LocalDate,
+        toDate: LocalDate
+    ): List<Long> {
+        return queryFactory
+            .select(teamMemberSchedule.account.id).distinct()
+            .from(teamMemberSchedule)
+            .where(
+                teamMemberSchedule.teamLeader.id.eq(teamLeaderId),
+                teamMemberSchedule.workingDate.goe(fromDate),
+                teamMemberSchedule.workingDate.lt(toDate),
+                teamMemberSchedule.account.isNotNull,
+                isNotDeleted()
+            )
+            .fetch()
+            .filterNotNull()
+    }
+
     override fun findIntegrationScheduleRecords(
         employeeIds: List<Long>,
         from: LocalDate,

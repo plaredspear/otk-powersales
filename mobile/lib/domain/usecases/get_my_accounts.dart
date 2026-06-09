@@ -9,7 +9,10 @@ class GetMyAccounts {
   GetMyAccounts(this._repository);
 
   /// 내 거래처 목록 조회 실행
-  Future<MyAccountListResult> call({String? keyword}) async {
-    return await _repository.getMyAccounts(keyword: keyword);
+  Future<MyAccountListResult> call({
+    String? keyword,
+    MyAccountScope scope = MyAccountScope.field,
+  }) async {
+    return await _repository.getMyAccounts(keyword: keyword, scope: scope);
   }
 }

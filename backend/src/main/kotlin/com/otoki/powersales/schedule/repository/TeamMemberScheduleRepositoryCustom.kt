@@ -83,6 +83,21 @@ interface TeamMemberScheduleRepositoryCustom {
 
     fun findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId: Long, fromDate: LocalDate, toDate: LocalDate): List<Long>
 
+    /**
+     * 팀멤버스케줄에 등록된 모든 거래처 ID (중복 제거).
+     * 레거시 `accountMapper.selectAllAccount` 정합 — 부서장(AppAuthority.ACCOUNT_VIEW_ALL) 매출 조회 시
+     * 본인/기간 필터 없이 일정이 잡힌 전체 거래처를 노출한다.
+     */
+    fun findAllDistinctAccountIds(): List<Long>
+
+    /**
+     * 팀장(teamLeader) 기준 거래처 ID (중복 제거).
+     * 레거시 `accountMapper.selectMyAccount` 의 조장 분기(`teamleadersfid__c = 본인 sfid`) 정합 —
+     * 특정 조장이 팀장으로 배정된 일정의 거래처를 기간 내 조회한다. sfid 비즈니스 로직 금지 정책 정합으로
+     * sfid 가 아닌 teamLeader id-FK 로 필터한다. `toDate` 는 반열림(exclusive) 상한.
+     */
+    fun findDistinctAccountIdsByTeamLeaderIdAndDateRange(teamLeaderId: Long, fromDate: LocalDate, toDate: LocalDate): List<Long>
+
     fun findIntegrationScheduleRecords(employeeIds: List<Long>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
     fun findWorkSchedulesByEmployeeAndAccountAndMonth(employeeId: Long, accountId: Long, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
