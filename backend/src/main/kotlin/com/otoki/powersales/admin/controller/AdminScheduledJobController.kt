@@ -20,7 +20,7 @@ import java.time.LocalDateTime
  * Admin 스케줄 잡 실행 이력 조회 endpoint.
  *
  * - `/runs`: 페이지네이션된 실행 이력 (필터: jobName, status, startedAt 범위)
- * - `/catalog`: 등록된 9개 `@Scheduled` 잡의 정적 목록 (jobName + cron + 설명)
+ * - `/catalog`: 등록된 `@Scheduled` 잡의 정적 목록 (jobName + cron + 설명, [com.otoki.powersales.batch.ScheduledJobCatalog] 단일 출처)
  * - `/summary`: 최근 N시간 윈도우의 status 별 카운트 + distinct jobName 목록
  *
  * 모든 endpoint 는 [AdminPermission.SCHEDULED_JOB_READ] 권한 필수
