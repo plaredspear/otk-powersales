@@ -35,6 +35,12 @@ class _FakePromotionRepository implements PromotionRepository {
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return detailResult!;
   }
+
+  @override
+  Future<List<MyPromotionAssignment>> getMyAssignments({String? date}) async {
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    return const [];
+  }
 }
 
 void main() {

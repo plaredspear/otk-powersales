@@ -58,4 +58,20 @@ class PromotionApiDataSource {
     final data = response.data['data'] as Map<String, dynamic>;
     return PromotionDetail.fromJson(data);
   }
+
+  /// 담당 행사 일람 조회 (date 미지정 시 서버 오늘 기준).
+  Future<List<MyPromotionAssignment>> getMyAssignments({String? date}) async {
+    final queryParameters = <String, dynamic>{};
+    if (date != null) queryParameters['date'] = date;
+
+    final response = await _dio.get(
+      '/api/v1/mobile/promotions/my-assignments',
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+
+    final data = response.data['data'] as List<dynamic>;
+    return data
+        .map((e) => MyPromotionAssignment.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

@@ -40,6 +40,7 @@ import 'presentation/pages/monthly_sales_page.dart';
 import 'presentation/screens/electronic_sales_screen.dart';
 import 'presentation/pages/promotion_detail_page.dart';
 import 'presentation/pages/promotion_daily_sales_page.dart';
+import 'presentation/pages/daily_sales_entry_page.dart';
 import 'presentation/pages/safety_check_page.dart';
 import 'presentation/pages/safety_check_status_page.dart';
 import 'presentation/screens/change_password_screen.dart';
@@ -65,6 +66,7 @@ class AppRouter {
   static const String main = '/';
   static const String posSales = '/pos-sales';
   static const String logisticsSales = '/logistics-sales';
+  static const String electronicSales = '/electronic-sales'; // 전산 매출 조회 (레거시 abcMain)
   static const String attendance = '/attendance';
   static const String attendanceComplete = '/attendance/complete';
   static const String myAccounts = '/my-accounts';
@@ -94,12 +96,13 @@ class AppRouter {
   static const String notices = '/notices';
   static const String noticeDetail = '/notices/detail';
   static const String salesOverview = '/sales-overview';
-  static const String electronicSales = '/electronic-sales';
   static const String monthlySales = '/monthly-sales';
   static const String safetyCheck = '/safety-check';
   static const String promotionList = '/promotions';
   static const String promotionDetail = '/promotions/detail';
   static const String promotionDailySales = '/promotions/daily-sales'; // P4: 여사원 일매출 마감
+  static const String promotionDailySalesEntry =
+      '/promotions/daily-sales-entry'; // 일 매출 등록 진입(담당 행사 선택)
   static const String safetyCheckStatus = '/safety-check-status'; // #278: 안전점검 현황
   static const String myScheduleCalendar = '/my-schedule'; // F56: 마이페이지 일정 캘린더
   static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
@@ -122,6 +125,7 @@ class AppRouter {
         main: (context) => const MainScreen(),
         posSales: (context) => const PosSalesScreen(),
         logisticsSales: (context) => const LogisticsSalesScreen(),
+        electronicSales: (context) => const ElectronicSalesScreen(),
         attendance: (context) => const AttendancePage(),
         attendanceComplete: (context) => const AttendanceCompletePage(),
         myAccounts: (context) => const MyAccountsPage(),
@@ -220,7 +224,6 @@ class AppRouter {
           return NoticeDetailPage(noticeId: noticeId);
         },
         salesOverview: (context) => const SalesOverviewScreen(),
-        electronicSales: (context) => const ElectronicSalesScreen(),
         monthlySales: (context) => const MonthlySalesPage(),
         safetyCheck: (context) => const SafetyCheckPage(),
         safetyCheckStatus: (context) => const SafetyCheckStatusPage(),
@@ -236,6 +239,7 @@ class AppRouter {
           return PromotionDailySalesPage(
               promotionEmployeeId: promotionEmployeeId);
         },
+        promotionDailySalesEntry: (context) => const DailySalesEntryPage(),
         leaderTeamMembers: (context) => const LeaderTeamMembersScreen(), // #554: 조장 팀원 일정 관리
         leaderDailyStatus: (context) => const LeaderDailyStatusScreen(), // P6: 여사원 일별현황(조회 전용)
         appInfo: (context) => const AppInfoPage(),

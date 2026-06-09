@@ -34,4 +34,13 @@ interface PromotionEmployeeRepositoryCustom {
      * 정렬: 행사명(promotion.promotionNumber = SF Name) 오름차순 + scheduleDate 오름차순 (Summary 그룹 재현).
      */
     fun findTargetActualReport(startDate: LocalDate, endDate: LocalDate): List<PromotionEmployee>
+
+    /**
+     * 로그인 여사원의 특정 일자 담당 행사 일람 (홈 "행사매출 등록" → 일 매출 등록 진입화면용).
+     * 레거시 Heroku `eventlistapi`(EmployeeCode + StartDate=EndDate=today) 동등.
+     * `promotion_employee` ⋈ promotion ⋈ promotion.account (fetchJoin).
+     * 필터: employeeId == me, scheduleDate == date, soft-delete 제외, promotion soft-delete 제외.
+     * 정렬: promotion.promotionNumber 오름차순.
+     */
+    fun findMyAssignmentsByDate(employeeId: Long, date: LocalDate): List<PromotionEmployee>
 }

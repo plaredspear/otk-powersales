@@ -469,4 +469,97 @@ class MobilePromotionServiceTest {
                 .isInstanceOf(PromotionNotFoundException::class.java)
         }
     }
+
+    @Nested
+    @DisplayName("getMyAssignments - 담당 행사 일람 (일 매출 등록 진입)")
+    inner class GetMyAssignmentsTests {
+
+        private fun assignmentOf(
+            promotion: Promotion,
+            id: Long = 1L,
+            scheduleDate: LocalDate = LocalDate.of(2026, 3, 5),
+            closed: Boolean = false
+        ): PromotionEmployee {
+            val pe = createPromotionEmployee(
+                id = id,
+                promotionId = promotion.id,
+                employeeId = 20L,
+                scheduleDate = scheduleDate
+            )
+            pe.promotion = promotion
+            pe.promoCloseByTm = closed
+            return pe
+        }
+
+        @Test
+        @DisplayName("date 미지정 - 오늘 기준 조회, 행사 정보 매핑")
+        fun getMyAssignments_default_today() {
+            val woman = createEmployee(id = 20L, role = AppAuthority.WOMAN)
+            val account = createAccount(id = 100, name = "이마트 성수점")
+            val promotion = createPromotion(id = 1L, account = account, promotionType = PromotionType.SAMPLING, standLocation = StandLocation.END_CAP)
+            val today = LocalDate.now()
+            val assignment = assignmentOf(promotion, id = 10L, scheduleDate = today)
+
+            every { employeeRepository.findById(20L) } returns Optional.of(woman)
+            every { promotionEmployeeRepository.findMyAssignmentsByDate(20L, today) } returns listOf(assignment)
+            every { accountRepository.findByIdIn(listOf(100)) } returns listOf(account)
+
+            val result = service.getMyAssignments(userId = 20L, date = null)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].id).isEqualTo(10L)
+            assertThat(result[0].promotionId).isEqualTo(1L)
+            assertThat(result[0].promotionNumber).isEqualTo("PM00000001")
+            assertThat(result[0].accountName).isEqualTo("이마트 성수점")
+            assertThat(result[0].promotionType).isEqualTo("시식")
+            assertThat(result[0].scheduleDate).isEqualTo(today)
+            assertThat(result[0].isClosed).isFalse()
+
+            verify { promotionEmployeeRepository.findMyAssignmentsByDate(20L, today) }
+        }
+
+        @Test
+        @DisplayName("date 지정 - 해당 일자로 조회, 마감건 isClosed=true")
+        fun getMyAssignments_withDate_closedFlag() {
+            val woman = createEmployee(id = 20L, role = AppAuthority.WOMAN)
+            val account = createAccount(id = 100)
+            val promotion = createPromotion(id = 1L, account = account)
+            val date = LocalDate.of(2026, 3, 5)
+            val assignment = assignmentOf(promotion, id = 10L, scheduleDate = date, closed = true)
+
+            every { employeeRepository.findById(20L) } returns Optional.of(woman)
+            every { promotionEmployeeRepository.findMyAssignmentsByDate(20L, date) } returns listOf(assignment)
+            every { accountRepository.findByIdIn(listOf(100)) } returns listOf(account)
+
+            val result = service.getMyAssignments(userId = 20L, date = "2026-03-05")
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].isClosed).isTrue()
+            verify { promotionEmployeeRepository.findMyAssignmentsByDate(20L, date) }
+        }
+
+        @Test
+        @DisplayName("담당 행사 없음 - 빈 목록 반환 (account 조회 생략)")
+        fun getMyAssignments_empty() {
+            val woman = createEmployee(id = 20L, role = AppAuthority.WOMAN)
+            val today = LocalDate.now()
+
+            every { employeeRepository.findById(20L) } returns Optional.of(woman)
+            every { promotionEmployeeRepository.findMyAssignmentsByDate(20L, today) } returns emptyList()
+
+            val result = service.getMyAssignments(userId = 20L, date = null)
+
+            assertThat(result).isEmpty()
+            verify(exactly = 0) { accountRepository.findByIdIn(any()) }
+        }
+
+        @Test
+        @DisplayName("잘못된 날짜 형식 - INVALID_PARAMETER 예외 발생")
+        fun getMyAssignments_invalidDate_throws() {
+            assertThatThrownBy { service.getMyAssignments(userId = 20L, date = "2026/03/05") }
+                .isInstanceOf(PromotionInvalidParameterException::class.java)
+
+            verify(exactly = 0) { promotionEmployeeRepository.findMyAssignmentsByDate(any(), any()) }
+        }
+    }
 }

@@ -15,7 +15,7 @@ void main() {
       expect(item.id, 1);
       expect(item.promotionNumber, 'P-2025-001');
       expect(item.promotionName, '이마트 죽전점 행사');
-      expect(item.promotionTypeName, '시식행사');
+      expect(item.promotionType, '시식행사');
       expect(item.accountName, '이마트 죽전점');
       expect(item.startDate, '2025-03-01');
       expect(item.endDate, '2025-03-15');
@@ -33,7 +33,7 @@ void main() {
         'id': 2,
         'promotionNumber': 'P-2025-002',
         'promotionName': null,
-        'promotionTypeName': null,
+        'promotionType': null,
         'accountName': null,
         'startDate': '2025-03-01',
         'endDate': '2025-03-15',
@@ -50,7 +50,7 @@ void main() {
 
       // Then
       expect(item.promotionName, isNull);
-      expect(item.promotionTypeName, isNull);
+      expect(item.promotionType, isNull);
       expect(item.accountName, isNull);
       expect(item.category, isNull);
       expect(item.standLocation, isNull);
@@ -73,7 +73,7 @@ void main() {
       expect(detail.id, 10);
       expect(detail.promotionNumber, 'P-2025-010');
       expect(detail.promotionName, '홈플러스 수지점 시식행사');
-      expect(detail.promotionTypeName, '시식행사');
+      expect(detail.promotionType, '시식행사');
       expect(detail.accountName, '홈플러스 수지점');
       expect(detail.startDate, '2025-03-01');
       expect(detail.endDate, '2025-03-15');
@@ -238,7 +238,7 @@ final _sampleItemJson = <String, dynamic>{
   'id': 1,
   'promotionNumber': 'P-2025-001',
   'promotionName': '이마트 죽전점 행사',
-  'promotionTypeName': '시식행사',
+  'promotionType': '시식행사',
   'accountName': '이마트 죽전점',
   'startDate': '2025-03-01',
   'endDate': '2025-03-15',
@@ -265,7 +265,7 @@ final _sampleDetailJson = <String, dynamic>{
   'id': 10,
   'promotionNumber': 'P-2025-010',
   'promotionName': '홈플러스 수지점 시식행사',
-  'promotionTypeName': '시식행사',
+  'promotionType': '시식행사',
   'accountName': '홈플러스 수지점',
   'startDate': '2025-03-01',
   'endDate': '2025-03-15',

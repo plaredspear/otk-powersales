@@ -98,4 +98,19 @@ class PromotionEmployeeRepositoryCustomImpl(
             .orderBy(promotion.promotionNumber.asc(), promotionEmployee.scheduleDate.asc())
             .fetch()
     }
+
+    override fun findMyAssignmentsByDate(employeeId: Long, date: LocalDate): List<PromotionEmployee> {
+        return queryFactory
+            .selectFrom(promotionEmployee)
+            .join(promotionEmployee.promotion, promotion).fetchJoin()
+            .leftJoin(promotion.account, account).fetchJoin()
+            .where(
+                promotionEmployee.employeeId.eq(employeeId),
+                promotionEmployee.scheduleDate.eq(date),
+                promotionEmployee.isDeleted.isNull.or(promotionEmployee.isDeleted.isFalse),
+                promotion.isDeleted.isFalse,
+            )
+            .orderBy(promotion.promotionNumber.asc())
+            .fetch()
+    }
 }

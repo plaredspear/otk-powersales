@@ -127,47 +127,57 @@ class MonthlySalesControllerTest : MobileControllerTestSupport() {
     // ========== getElectronicSales Tests ==========
 
     @Test
-    @DisplayName("전산매출 조회 - 200 OK (제품별 실적)")
+    @DisplayName("전산매출 조회 - 200 OK (기간 + 매출 조회 제품 바코드 → 제품별 실적·합계)")
     fun getElectronicSales_success() {
         val mockResponse = ElectronicSalesResponse(
             customerId = 1,
             customerName = "사과마을",
             sapAccountCode = "12345",
-            yearMonth = "202602",
+            startDate = "2026-06-01",
+            endDate = "2026-06-09",
+            totalAmount = 3500,
             items = listOf(
                 ElectronicSalesResponse.ProductSales(
                     productCode = "01101123",
                     productName = "갈릭 아이올리소스 240g",
+                    barcode = "8801234500011",
                     amount = 3500,
                     quantity = 10,
                 ),
             ),
         )
 
-        every { electronicSalesService.getElectronicSales(1, "202602") } returns mockResponse
+        every {
+            electronicSalesService.getElectronicSales(1, "2026-06-01", "2026-06-09", listOf("8801234500011"))
+        } returns mockResponse
 
         mockMvc.perform(
             get("/api/v1/mobile/sales/electronic")
                 .param("customerId", "1")
-                .param("yearMonth", "202602")
+                .param("startDate", "2026-06-01")
+                .param("endDate", "2026-06-09")
+                .param("barcodes", "8801234500011")
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.customerId").value(1))
             .andExpect(jsonPath("$.data.sapAccountCode").value("12345"))
+            .andExpect(jsonPath("$.data.totalAmount").value(3500))
             .andExpect(jsonPath("$.data.items[0].productCode").value("01101123"))
+            .andExpect(jsonPath("$.data.items[0].barcode").value("8801234500011"))
             .andExpect(jsonPath("$.data.items[0].amount").value(3500))
             .andExpect(jsonPath("$.data.items[0].quantity").value(10))
     }
 
     @Test
-    @DisplayName("전산매출 조회 - 잘못된 yearMonth 형식 시 400 BAD REQUEST")
-    fun getElectronicSales_invalidYearMonth() {
+    @DisplayName("전산매출 조회 - 잘못된 startDate 형식 시 400 BAD REQUEST")
+    fun getElectronicSales_invalidDate() {
         mockMvc.perform(
             get("/api/v1/mobile/sales/electronic")
                 .param("customerId", "1")
-                .param("yearMonth", "2026-02")
+                .param("startDate", "202606")
+                .param("endDate", "2026-06-09")
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isBadRequest)

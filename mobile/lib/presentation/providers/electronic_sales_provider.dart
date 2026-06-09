@@ -34,34 +34,34 @@ class ElectronicSalesNotifier extends StateNotifier<ElectronicSalesState> {
 
   final GetElectronicSales _getElectronicSales;
 
-  /// 전산매출 조회 (거래처 + 연월).
+  /// 전산매출 조회 (거래처 + 기간 + 매출 조회 제품 바코드).
+  ///
+  /// [barcodes] 가 비어 있으면 합계금액만(레거시 `abcSumAmount`), 있으면 해당 제품별 실적을
+  /// 조회한다(레거시 `abcAmount`).
   Future<void> fetchSales({
     required int customerId,
-    required String customerName,
-    required String yearMonth,
+    required String startDate,
+    required String endDate,
+    List<String> barcodes = const [],
   }) async {
     state = state.copyWith(
       isLoading: true,
       clearErrorMessage: true,
-      selectedCustomerId: customerId,
-      selectedCustomerName: customerName,
-      yearMonth: yearMonth,
+      hasSearched: true,
     );
 
     try {
-      final sales = await _getElectronicSales.call(
+      final result = await _getElectronicSales.call(
         customerId: customerId,
-        yearMonth: yearMonth,
+        startDate: startDate,
+        endDate: endDate,
+        barcodes: barcodes,
       );
 
-      final growthRate = _getElectronicSales.calculateAverageGrowthRate(sales);
       state = state.copyWith(
-        sales: sales,
+        sales: result.items,
+        totalAmount: result.totalAmount,
         isLoading: false,
-        totalAmount: _getElectronicSales.calculateTotalAmount(sales),
-        totalQuantity: _getElectronicSales.calculateTotalQuantity(sales),
-        averageGrowthRate: growthRate,
-        clearAverageGrowthRate: growthRate == null,
       );
     } catch (e) {
       state = state.copyWith(
@@ -76,7 +76,7 @@ class ElectronicSalesNotifier extends StateNotifier<ElectronicSalesState> {
     state = state.copyWith(clearErrorMessage: true);
   }
 
-  /// 조회 결과 초기화 (거래처 선택 해제 포함).
+  /// 조회 결과 초기화.
   void reset() {
     state = ElectronicSalesState.initial();
   }

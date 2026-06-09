@@ -11,13 +11,17 @@ class ElectronicSalesRepositoryImpl implements ElectronicSalesRepository {
   }) : _remoteDataSource = remoteDataSource;
 
   @override
-  Future<List<ElectronicSales>> getElectronicSales({
+  Future<ElectronicSalesResult> getElectronicSales({
     required int customerId,
-    required String yearMonth,
+    required String startDate,
+    required String endDate,
+    List<String> barcodes = const [],
   }) {
     return _remoteDataSource.getElectronicSales(
       customerId: customerId,
-      yearMonth: yearMonth,
+      startDate: startDate,
+      endDate: endDate,
+      barcodes: barcodes,
     );
   }
 }

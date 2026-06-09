@@ -2,56 +2,67 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/models/electronic_sales_model.dart';
 
 void main() {
-  group('ElectronicSalesModel.listFromJson', () {
-    test('data.items 를 제품별 ElectronicSales 목록으로 펼치고 공통 필드를 복제한다', () {
+  group('ElectronicSalesModel.resultFromJson', () {
+    test('data.items 를 제품별 ElectronicSales 목록으로 펼치고 합계금액·기간을 담는다', () {
       final data = {
         'customerId': 1,
         'customerName': '사과마을',
         'sapAccountCode': '12345',
-        'yearMonth': '202602',
+        'startDate': '2026-06-01',
+        'endDate': '2026-06-09',
+        'totalAmount': 5000,
         'items': [
           {
             'productCode': '01101123',
             'productName': '갈릭 아이올리소스 240g',
+            'barcode': '8801234500011',
             'amount': 3500,
             'quantity': 10,
           },
           {
             'productCode': '01101222',
             'productName': '오뚜기 3분 카레 100g',
+            'barcode': '8801234500028',
             'amount': 1500,
             'quantity': 5,
           },
         ],
       };
 
-      final result = ElectronicSalesModel.listFromJson(data);
+      final result = ElectronicSalesModel.resultFromJson(data);
 
-      expect(result, hasLength(2));
-      expect(result[0].yearMonth, '202602');
-      expect(result[0].customerName, '사과마을');
-      expect(result[0].productCode, '01101123');
-      expect(result[0].productName, '갈릭 아이올리소스 240g');
-      expect(result[0].amount, 3500);
-      expect(result[0].quantity, 10);
-      // 레거시 ABC 제품 명세에는 전년 비교 없음
-      expect(result[0].previousYearAmount, isNull);
-      expect(result[0].growthRate, isNull);
+      expect(result.customerName, '사과마을');
+      expect(result.startDate, '2026-06-01');
+      expect(result.endDate, '2026-06-09');
+      expect(result.totalAmount, 5000);
+      expect(result.totalQuantity, 15);
+      expect(result.items, hasLength(2));
+      expect(result.items[0].productCode, '01101123');
+      expect(result.items[0].productName, '갈릭 아이올리소스 240g');
+      expect(result.items[0].barcode, '8801234500011');
+      expect(result.items[0].amount, 3500);
+      expect(result.items[0].quantity, 10);
     });
 
-    test('items 가 없거나 비어 있으면 빈 목록을 반환한다', () {
-      final empty = {
+    test('items 가 없거나 비어 있으면 빈 목록 + 합계금액만 반환한다 (레거시 abcSumAmount)', () {
+      final sumOnly = {
         'customerName': '사과마을',
-        'yearMonth': '202602',
+        'startDate': '2026-06-01',
+        'endDate': '2026-06-09',
+        'totalAmount': 123456,
         'items': <dynamic>[],
       };
-      expect(ElectronicSalesModel.listFromJson(empty), isEmpty);
+      final result = ElectronicSalesModel.resultFromJson(sumOnly);
+      expect(result.items, isEmpty);
+      expect(result.totalAmount, 123456);
 
       final noItemsKey = {
         'customerName': '사과마을',
-        'yearMonth': '202602',
+        'startDate': '2026-06-01',
+        'endDate': '2026-06-09',
+        'totalAmount': 0,
       };
-      expect(ElectronicSalesModel.listFromJson(noItemsKey), isEmpty);
+      expect(ElectronicSalesModel.resultFromJson(noItemsKey).items, isEmpty);
     });
   });
 }
