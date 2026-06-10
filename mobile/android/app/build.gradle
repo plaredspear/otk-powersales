@@ -78,6 +78,16 @@ android {
         versionName flutterVersionName
     }
 
+    // 직접 배포(웹 다운로드)용 APK 는 ARM 2종(arm64-v8a + armeabi-v7a)만 포함하고
+    // x86_64(에뮬레이터 전용, 약 28MB)는 제외한다. 구형 32비트폰 호환은 유지.
+    // Flutter Gradle 플러그인이 defaultConfig.ndk.abiFilters 를 자체 ABI 목록으로 덮어써
+    // 무효화하므로, 패키징 단계에서 x86_64 .so 를 직접 제외한다(libapp.so / ML Kit libbarhopper).
+    packagingOptions {
+        jniLibs {
+            excludes += ['lib/x86_64/**', 'lib/x86/**']
+        }
+    }
+
     // dev/prod 환경 분리. 한 기기에 두 앱을 동시에 설치할 수 있도록
     // dev 는 applicationId 에 ".dev" 접미사를 부여한다.
     // 앱 표시 이름은 resValue 로 주입해 AndroidManifest 의 @string/app_name 이 참조한다.

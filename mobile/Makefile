@@ -47,10 +47,15 @@ run-prod-android: setup
 
 ## ───────────── 빌드 (release) ─────────────
 ## APK 빌드
+##   직접 배포(웹 다운로드)용 — ARM 2종만 포함하고 x86_64(에뮬레이터 전용, 약 28MB)는 제외한다.
+##   --target-platform 은 Flutter 엔진 빌드 단계의 ABI 를 줄이고, 실제 x86_64 .so 패키징 제외는
+##   android/app/build.gradle 의 packagingOptions.jniLibs.excludes 가 담당한다. 구형 32비트폰 호환 유지.
 build-apk-dev: setup
-	$(FLUTTER) build apk --release --flavor dev --dart-define-from-file=config/dev.json
+	$(FLUTTER) build apk --release --flavor dev --dart-define-from-file=config/dev.json \
+		--target-platform android-arm,android-arm64
 build-apk-prod: setup
-	$(FLUTTER) build apk --release --flavor prod --dart-define-from-file=config/prod.json
+	$(FLUTTER) build apk --release --flavor prod --dart-define-from-file=config/prod.json \
+		--target-platform android-arm,android-arm64
 ## iOS 빌드
 build-ios-dev: setup
 	$(FLUTTER) build ios --release --flavor dev --dart-define-from-file=config/dev.json
