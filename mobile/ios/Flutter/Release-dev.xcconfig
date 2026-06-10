@@ -1,5 +1,6 @@
 // dev flavor — Release 빌드.
-#include "Release.xcconfig"
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release-dev.xcconfig"
+#include "Generated.xcconfig"
 
 PRODUCT_BUNDLE_IDENTIFIER = com.otoki.pwrs.mobile.dev
 APP_DISPLAY_NAME = 파워세일즈(개발)
