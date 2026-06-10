@@ -25,6 +25,8 @@ export interface AppPackageListItem {
 
 export interface AppPackageDetail extends AppPackageListItem {
   downloadUrl: string;
+  /** presigned 다운로드 URL 유효 시간(초). 복사 안내 문구의 만료 시각 계산에 사용. */
+  downloadUrlExpiresInSeconds: number;
 }
 
 export interface AppPackagePage {

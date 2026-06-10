@@ -38,7 +38,7 @@ class AdminAppPackageService(
     fun getDetail(id: Long): AppPackageDetailDto {
         val entity = appPackageRepository.findById(id).orElseThrow { AppPackageNotFoundException() }
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
-        return AppPackageDetailDto.from(entity, url)
+        return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
     @Transactional
@@ -84,7 +84,7 @@ class AdminAppPackageService(
             )
         )
         val url = storageService.getPresignedUrl(saved.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
-        return AppPackageDetailDto.from(saved, url)
+        return AppPackageDetailDto.from(saved, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
     /**
@@ -98,7 +98,7 @@ class AdminAppPackageService(
         entity.isLatest = true
         appPackageRepository.save(entity)
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
-        return AppPackageDetailDto.from(entity, url)
+        return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
     @Transactional
@@ -107,7 +107,7 @@ class AdminAppPackageService(
         entity.forceUpdate = forceUpdate
         appPackageRepository.save(entity)
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
-        return AppPackageDetailDto.from(entity, url)
+        return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
     @Transactional
@@ -116,7 +116,7 @@ class AdminAppPackageService(
         entity.releaseNote = releaseNote
         appPackageRepository.save(entity)
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
-        return AppPackageDetailDto.from(entity, url)
+        return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
     @Transactional
