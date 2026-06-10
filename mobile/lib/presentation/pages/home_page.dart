@@ -237,7 +237,6 @@ class _HomePageState extends ConsumerState<HomePage>
                     Padding(
                       padding: horizontalGutter,
                       child: QuickMenuGrid(
-                        userRole: userRole,
                         onMenuTap: (item) {
                           throttledTap(() => _handleQuickMenuTap(item, userRole));
                         },
