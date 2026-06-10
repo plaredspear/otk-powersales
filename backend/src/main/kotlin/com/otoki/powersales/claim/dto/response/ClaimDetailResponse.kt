@@ -7,25 +7,56 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.math.BigDecimal
 
+/**
+ * 클레임 상세 응답 (모바일).
+ *
+ * 표시 항목은 레거시 Heroku `claim/view.jsp` 의 5개 섹션(제품정보 / 클레임정보 / 불만정보 /
+ * 채널정보 / 처리·조치정보) + 사진을 기준으로 전 항목을 매핑한다.
+ */
 data class ClaimDetailResponse(
     val claimId: Long,
-    val accountName: String?,
-    val productName: String?,
-    val productCode: String?,
-    val dateType: String?,
-    val dateTypeLabel: String?,
-    val date: LocalDate?,
-    val categoryValue: String?,
-    val categoryLabel: String?,
-    val subcategoryValue: String?,
-    val subcategoryLabel: String?,
-    val defectDescription: String?,
-    val defectQuantity: BigDecimal?,
-    val purchaseAmount: BigDecimal?,
-    val purchaseMethodName: String?,
-    val requestTypeName: String?,
+    // 제품정보
+    val productName: String? = null,
+    val productCode: String? = null,
+    val manufacturingDate: LocalDate? = null,
+    val logisticsCenter: String? = null,
+    val expirationDate: LocalDate? = null,
+    // 클레임정보
+    val claimNo: String? = null,
+    val accountName: String? = null,
+    val accountCode: String? = null,
+    val categoryValue: String? = null,
+    val categoryLabel: String? = null,
+    val subcategoryValue: String? = null,
+    val subcategoryLabel: String? = null,
+    val defectQuantity: BigDecimal? = null,
+    val sampleCollectionFlag: Boolean? = null,
     val status: String,
     val statusLabel: String,
+    val customerDeliveryDate: LocalDate? = null,
+    val detailSnsName: String? = null,
+    val dateType: String? = null,
+    val dateTypeLabel: String? = null,
+    val date: LocalDate? = null,
+    val purchaseMethodName: String? = null,
+    val purchaseAmount: BigDecimal? = null,
+    val requestTypeName: String? = null,
+    val division: String? = null,
+    // 불만정보
+    val defectDescription: String? = null,
+    // 채널정보
+    val interfaceDate: LocalDateTime? = null,
+    val channel: String? = null,
+    val channelLabel: String? = null,
+    val employeeName: String? = null,
+    val employeePhone: String? = null,
+    // 처리·조치정보
+    val counselNumber: String? = null,
+    val actionCode: String? = null,
+    val actionStatus: String? = null,
+    val reasonType: String? = null,
+    val actContent: String? = null,
+    // 메타
     val createdAt: LocalDateTime,
     val photos: List<ClaimPhotoItem>
 ) {
@@ -36,23 +67,48 @@ data class ClaimDetailResponse(
             urlResolver: (String?) -> String?
         ): ClaimDetailResponse = ClaimDetailResponse(
             claimId = claim.id,
-            accountName = claim.account?.name,
+            // 제품정보
             productName = claim.product?.name,
             productCode = claim.product?.productCode,
-            dateType = claim.dateType?.name,
-            dateTypeLabel = claim.dateType?.label,
-            date = claim.date,
+            manufacturingDate = claim.manufacturingDate,
+            logisticsCenter = claim.logisticsCenter,
+            expirationDate = claim.expirationDate,
+            // 클레임정보
+            claimNo = claim.name,
+            accountName = claim.account?.name,
+            accountCode = claim.account?.externalKey,
             categoryValue = claim.claimType1.value,
             categoryLabel = claim.claimType1.label,
             subcategoryValue = claim.claimType2.value,
             subcategoryLabel = claim.claimType2.label,
-            defectDescription = claim.defectDescription,
             defectQuantity = claim.defectQuantity,
-            purchaseAmount = claim.purchaseAmount,
-            purchaseMethodName = claim.purchaseMethodCode?.displayName,
-            requestTypeName = claim.requestTypeCode.joinToString(";") { it.displayName }.ifBlank { null },
+            sampleCollectionFlag = claim.sampleCollectionFlag,
             status = claim.status.name,
             statusLabel = claim.status.displayName,
+            customerDeliveryDate = claim.customerDeliveryDate,
+            detailSnsName = claim.detailSnsName,
+            dateType = claim.dateType?.name,
+            dateTypeLabel = claim.dateType?.label,
+            date = claim.date,
+            purchaseMethodName = claim.purchaseMethodCode?.displayName,
+            purchaseAmount = claim.purchaseAmount,
+            requestTypeName = claim.requestTypeCode.joinToString(";") { it.displayName }.ifBlank { null },
+            division = claim.division,
+            // 불만정보
+            defectDescription = claim.defectDescription,
+            // 채널정보
+            interfaceDate = claim.interfaceDate,
+            channel = claim.channel?.name,
+            channelLabel = claim.channel?.displayName,
+            employeeName = claim.employee?.name,
+            employeePhone = claim.employee?.phone,
+            // 처리·조치정보
+            counselNumber = claim.counselNumber,
+            actionCode = claim.actionCode,
+            actionStatus = claim.actionStatus,
+            reasonType = claim.reasonType,
+            actContent = claim.actContent,
+            // 메타
             createdAt = claim.createdAt,
             photos = photos.mapNotNull { ClaimPhotoItem.from(it, urlResolver) }
         )
