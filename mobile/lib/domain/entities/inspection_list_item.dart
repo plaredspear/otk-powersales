@@ -159,6 +159,12 @@ extension InspectionCategoryExtension on InspectionCategory {
 ///
 /// 현장 점검 목록 조회 시 사용하는 검색 조건을 담는 값 객체입니다.
 class InspectionFilter {
+  /// 조회 가능한 최대 기간 (일).
+  ///
+  /// 레거시 현장점검 목록(`fieldChk/list.jsp`) daterangepicker `maxSpan: {days: 7}`
+  /// 와 동일하게, 시작일~종료일 차이를 최대 7일로 제한한다.
+  static const int maxRangeDays = 7;
+
   /// 거래처 ID (null이면 전체)
   final int? accountId;
 
@@ -207,6 +213,13 @@ class InspectionFilter {
   /// 날짜 범위가 유효한지 검증 (시작일 <= 종료일)
   bool get isValidDateRange {
     return fromDate.isBefore(toDate) || fromDate.isAtSameMomentAs(toDate);
+  }
+
+  /// 조회 기간이 최대 범위([maxRangeDays]일) 이내인지 검증.
+  ///
+  /// 레거시 daterangepicker `maxSpan: {days: 7}` 와 정합.
+  bool get isWithinMaxRange {
+    return toDate.difference(fromDate).inDays <= maxRangeDays;
   }
 
   @override

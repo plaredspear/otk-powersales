@@ -191,7 +191,7 @@ void main() {
       final notifier = container.read(inspectionListProvider.notifier);
       notifier.selectAccount(100, '이마트');
       notifier.selectCategory(InspectionCategory.OWN);
-      notifier.updateFromDate(DateTime(2020, 8, 1));
+      notifier.updateFromDate(DateTime(2020, 8, 25));
       notifier.updateToDate(DateTime(2020, 8, 31));
 
       // When
@@ -201,8 +201,36 @@ void main() {
       expect(mockRepository.lastFilter, isNotNull);
       expect(mockRepository.lastFilter!.accountId, 100);
       expect(mockRepository.lastFilter!.category, InspectionCategory.OWN);
-      expect(mockRepository.lastFilter!.fromDate, DateTime(2020, 8, 1));
+      expect(mockRepository.lastFilter!.fromDate, DateTime(2020, 8, 25));
       expect(mockRepository.lastFilter!.toDate, DateTime(2020, 8, 31));
+    });
+
+    test('updateFromDate는 종료일이 7일을 초과하면 종료일을 시작일+7일로 보정한다', () {
+      // Given — 레거시 daterangepicker maxSpan {days: 7} 정합
+      final notifier = container.read(inspectionListProvider.notifier);
+      notifier.updateToDate(DateTime(2020, 8, 31));
+
+      // When — 시작일을 31일보다 30일 이른 날짜로 변경
+      notifier.updateFromDate(DateTime(2020, 8, 1));
+
+      // Then — 종료일이 시작일+7일로 자동 보정
+      final state = container.read(inspectionListProvider);
+      expect(state.fromDate, DateTime(2020, 8, 1));
+      expect(state.toDate, DateTime(2020, 8, 8));
+    });
+
+    test('updateToDate는 시작일이 7일을 초과하면 시작일을 종료일-7일로 보정한다', () {
+      // Given — 레거시 daterangepicker maxSpan {days: 7} 정합
+      final notifier = container.read(inspectionListProvider.notifier);
+      notifier.updateFromDate(DateTime(2020, 8, 1));
+
+      // When — 종료일을 1일보다 30일 늦은 날짜로 변경
+      notifier.updateToDate(DateTime(2020, 8, 31));
+
+      // Then — 시작일이 종료일-7일로 자동 보정
+      final state = container.read(inspectionListProvider);
+      expect(state.fromDate, DateTime(2020, 8, 24));
+      expect(state.toDate, DateTime(2020, 8, 31));
     });
 
     test('searchInspections는 에러 시 에러 상태로 전환한다', () async {
