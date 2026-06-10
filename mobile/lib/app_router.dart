@@ -52,12 +52,14 @@ import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
 import 'presentation/screens/pos_sales_screen.dart';
 import 'presentation/screens/sales_overview_screen.dart';
+import 'presentation/screens/splash_screen.dart';
 
 /// 앱 라우터
 ///
 /// 앱 전체의 라우팅을 관리합니다.
 class AppRouter {
   /// 라우트 이름 상수
+  static const String splash = '/splash';
   static const String login = '/login';
   static const String changePassword = '/change-password';
   static const String verifyPassword = '/verify-password'; // F54: 현재 비밀번호 확인
@@ -113,6 +115,7 @@ class AppRouter {
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
+        splash: (context) => const SplashScreen(),
         login: (context) => const LoginScreen(),
         changePassword: (context) => const ChangePasswordScreen(),
         gpsConsent: (context) => const GpsConsentScreen(), // F62: GPS 동의
@@ -252,8 +255,8 @@ class AppRouter {
         },
       };
 
-  /// 초기 라우트 - 로그인 화면에서 시작
-  static String get initialRoute => login;
+  /// 초기 라우트 - 스플래시(버전 게이트 + 자동 로그인)에서 시작
+  static String get initialRoute => splash;
 
   /// 알 수 없는 라우트 처리
   static Route<dynamic>? onUnknownRoute(RouteSettings settings) {

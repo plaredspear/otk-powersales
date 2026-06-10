@@ -9,9 +9,14 @@ void main() {
   });
 
   group('AppRouter', () {
-    test('초기 라우트가 로그인 경로이다', () {
-      expect(AppRouter.initialRoute, AppRouter.login);
-      expect(AppRouter.initialRoute, '/login');
+    test('초기 라우트가 스플래시 경로이다', () {
+      expect(AppRouter.initialRoute, AppRouter.splash);
+      expect(AppRouter.initialRoute, '/splash');
+    });
+
+    test('스플래시 라우트가 routes 맵에 존재한다', () {
+      final routes = AppRouter.routes;
+      expect(routes.containsKey(AppRouter.splash), true);
     });
 
     // MainScreen 내부의 HomePage가 initState에서 addPostFrameCallback으로
@@ -107,7 +112,8 @@ void main() {
       expect(routes.containsKey(AppRouter.gpsConsent), true);
       expect(routes.containsKey(AppRouter.suggestionRegister), true);
       expect(routes.containsKey(AppRouter.safetyCheckStatus), true);
-      expect(routes.length, 51);
+      expect(routes.containsKey(AppRouter.splash), true);
+      expect(routes.length, 52);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {

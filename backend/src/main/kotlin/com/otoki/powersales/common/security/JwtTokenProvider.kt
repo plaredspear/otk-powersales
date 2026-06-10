@@ -8,9 +8,9 @@ import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Component
+import java.security.MessageDigest
 import java.time.Duration
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import javax.crypto.SecretKey
 
 /**
@@ -28,9 +28,6 @@ class JwtTokenProvider(
     private val key: SecretKey by lazy {
         Keys.hmacShaKeyFor(secret.toByteArray())
     }
-
-    // Phase 1: 인메모리 블랙리스트 (Phase 2에서 Redis로 교체)
-    private val blacklist = ConcurrentHashMap<String, Date>()
 
     /**
      * Mobile (Employee 기반) Access Token 생성.
@@ -167,13 +164,20 @@ class JwtTokenProvider(
     }
 
     /**
-     * 토큰을 블랙리스트에 추가 (로그아웃 시 사용)
+     * 토큰을 블랙리스트에 추가 (로그아웃 시 사용).
+     *
+     * Redis에 `blacklist:<sha256(token)>` 키를 토큰 잔여 만료시간만큼 TTL로 저장한다.
+     * 다중 인스턴스 간 공유 + TTL 자동 정리. (구 인메모리 ConcurrentHashMap 대체)
      */
     fun blacklistToken(token: String) {
         try {
             val claims = parseClaims(token)
-            blacklist[token] = claims.expiration
-            cleanExpiredBlacklist()
+            val ttlMillis = claims.expiration.time - System.currentTimeMillis()
+            if (ttlMillis > 0) {
+                redisTemplate.opsForValue().set(
+                    "blacklist:${hashToken(token)}", "1", Duration.ofMillis(ttlMillis)
+                )
+            }
         } catch (e: ExpiredJwtException) {
             // 이미 만료된 토큰은 블랙리스트에 추가할 필요 없음
         }
@@ -258,7 +262,7 @@ class JwtTokenProvider(
     }
 
     private fun isBlacklisted(token: String): Boolean {
-        return blacklist.containsKey(token)
+        return redisTemplate.hasKey("blacklist:${hashToken(token)}") == true
     }
 
     private fun parseClaims(token: String): Claims {
@@ -269,12 +273,10 @@ class JwtTokenProvider(
             .payload
     }
 
-    /**
-     * 만료된 블랙리스트 항목 정리
-     */
-    private fun cleanExpiredBlacklist() {
-        val now = Date()
-        blacklist.entries.removeIf { it.value.before(now) }
+    /** 블랙리스트 Redis 키 길이를 제한하기 위해 토큰을 SHA-256 해시로 변환. */
+    private fun hashToken(token: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(token.toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }
     }
 
     companion object {

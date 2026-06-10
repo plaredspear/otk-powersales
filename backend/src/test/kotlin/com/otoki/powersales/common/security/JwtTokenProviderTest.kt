@@ -6,8 +6,11 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import io.mockk.every
 import io.mockk.mockk
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.ValueOperations
+import java.time.Duration
 
 /**
  * JwtTokenProvider 테스트
@@ -99,10 +102,18 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("validateToken은 블랙리스트에 추가된 토큰에 대해 false를 반환한다")
     fun validateToken_returnsFalse_forBlacklistedToken() {
-        // Given
+        // Given: Redis 블랙리스트를 in-memory set 으로 시뮬레이션 (set → 키 저장, hasKey → 존재 확인)
         val userId = 12345L
         val role = AppAuthority.WOMAN
         val token = jwtTokenProvider.createAccessToken(userId, role)
+
+        val blacklisted = mutableSetOf<String>()
+        val valueOps = mockk<ValueOperations<String, String>>(relaxed = true)
+        every { redisTemplate.opsForValue() } returns valueOps
+        every { valueOps.set(any<String>(), any<String>(), any<Duration>()) } answers {
+            blacklisted.add(firstArg()); Unit
+        }
+        every { redisTemplate.hasKey(any<String>()) } answers { blacklisted.contains(firstArg()) }
 
         // When: 토큰을 블랙리스트에 추가
         jwtTokenProvider.blacklistToken(token)
@@ -229,10 +240,18 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("blacklistToken은 토큰을 블랙리스트에 추가하고 검증 시 실패한다")
     fun blacklistToken_addsTokenToBlacklist() {
-        // Given
+        // Given: Redis 블랙리스트를 in-memory set 으로 시뮬레이션
         val userId = 12345L
         val role = AppAuthority.WOMAN
         val token = jwtTokenProvider.createAccessToken(userId, role)
+
+        val blacklisted = mutableSetOf<String>()
+        val valueOps = mockk<ValueOperations<String, String>>(relaxed = true)
+        every { redisTemplate.opsForValue() } returns valueOps
+        every { valueOps.set(any<String>(), any<String>(), any<Duration>()) } answers {
+            blacklisted.add(firstArg()); Unit
+        }
+        every { redisTemplate.hasKey(any<String>()) } answers { blacklisted.contains(firstArg()) }
 
         // When: 처음에는 유효
         assertTrue(jwtTokenProvider.validateToken(token))

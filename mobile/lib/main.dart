@@ -57,10 +57,9 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // 앱 시작 시 인증 초기화 (저장된 사번 로드 + 자동 로그인 시도)
+    // 인증 초기화(자동 로그인)는 SplashScreen 이 버전 게이트 통과 후 호출한다.
+    // 여기서는 게이트와 무관한 FCM 초기화만 수행한다.
     Future.microtask(() {
-      ref.read(authProvider.notifier).initialize();
-
       // FCM 권한 요청 + 토큰/리스너 등록 (설정 파일 없으면 내부에서 skip)
       final push = ref.read(pushNotificationServiceProvider);
       push.initialize();
