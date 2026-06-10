@@ -236,9 +236,13 @@ class LeaderScheduleService(
             ?: return emptyList()
 
         // 레거시 employeeMapper.xml `empSearch` 동작 보존:
-        // 퇴직자 제외(휴직은 포함), 이름(한글) 가나다순 정렬.
+        // 여사원 식별 = 조장·지점장 제외(역필터), 퇴직자 제외(휴직은 포함),
+        // 이름(한글) 가나다순 정렬.
         return employeeRepository
-            .findByCostCenterCodeAndRole(costCenterCode, AppAuthority.WOMAN)
+            .findByCostCenterCodeAndRoleNotIn(
+                costCenterCode,
+                listOf(AppAuthority.LEADER, AppAuthority.BRANCH_MANAGER)
+            )
             .filter { it.status != EmploymentStatus.RESIGNED.code }
             .sortedBy { it.name }
             .map { LeaderTeamMemberListResponse.from(it) }

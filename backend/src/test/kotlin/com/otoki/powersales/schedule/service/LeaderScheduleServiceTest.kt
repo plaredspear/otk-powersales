@@ -246,7 +246,7 @@ class LeaderScheduleServiceTest {
     inner class GetTeamMembersTests {
 
         @Test
-        @DisplayName("성공 - 퇴직 제외(휴직 포함) + 이름 가나다순 정렬 (레거시 empSearch parity)")
+        @DisplayName("성공 - 조장·지점장 제외(역필터) + 퇴직 제외(휴직 포함) + 이름 가나다순 (레거시 empSearch parity)")
         fun getTeamMembers_success() {
             val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
             val m1 = createEmployee(id = 5012, employeeCode = "20300002", authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "활동", name = "최여사")
@@ -254,7 +254,13 @@ class LeaderScheduleServiceTest {
             val resigned = createEmployee(id = 5014, employeeCode = "20300003", authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "퇴직", name = "박여사")
 
             every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
-            every { employeeRepository.findByCostCenterCodeAndRole("C001", AppAuthority.WOMAN) } returns listOf(m1, m2, resigned)
+            // 서비스가 조장·지점장 제외 finder 를 호출 → 여사원만 반환되는 상황을 모킹
+            every {
+                employeeRepository.findByCostCenterCodeAndRoleNotIn(
+                    "C001",
+                    listOf(AppAuthority.LEADER, AppAuthority.BRANCH_MANAGER)
+                )
+            } returns listOf(m1, m2, resigned)
 
             val result = leaderScheduleService.getTeamMembers(leader.id)
 
