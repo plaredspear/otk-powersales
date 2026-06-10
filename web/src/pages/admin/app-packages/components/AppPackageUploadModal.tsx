@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Form, Input, InputNumber, Switch, Upload, Alert, message } from 'antd';
+import { Modal, Form, Input, Switch, Upload, Alert, message } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
 import { useUploadAppPackage } from '@/hooks/appPackage/useAppPackages';
 import type { AppPlatform } from '@/api/appPackage';
@@ -14,9 +14,8 @@ interface Props {
 }
 
 interface FormValues {
-  // iOS 는 .ipa 에서 자동 추출하므로 폼에서 받지 않는다(Android 만 필수 입력).
-  versionName?: string;
-  versionCode?: number;
+  // versionName/versionCode 는 iOS(.ipa)·Android(.apk) 모두 파일에서 자동 추출하므로
+  // 폼에서 받지 않는다.
   forceUpdate: boolean;
   releaseNote?: string;
 }
@@ -41,10 +40,9 @@ export default function AppPackageUploadModal({ open, platform, onClose }: Props
       return;
     }
     try {
+      // versionName/versionCode 는 백엔드가 업로드 파일에서 자동 추출한다(전송 불요).
       await upload.mutateAsync({
         platform,
-        versionName: values.versionName,
-        versionCode: values.versionCode,
         forceUpdate: values.forceUpdate ?? false,
         releaseNote: values.releaseNote,
         file,
@@ -67,31 +65,12 @@ export default function AppPackageUploadModal({ open, platform, onClose }: Props
       destroyOnClose
     >
       <Form form={form} layout="vertical" initialValues={{ forceUpdate: false }}>
-        {platform === 'IOS' ? (
-          <Alert
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-            message="Bundle Identifier · 버전명 · 버전 코드는 업로드한 .ipa 파일에서 자동으로 추출됩니다."
-          />
-        ) : (
-          <>
-            <Form.Item
-              name="versionName"
-              label="버전명 (예: 1.2.0)"
-              rules={[{ required: true, message: '버전명을 입력하세요' }]}
-            >
-              <Input placeholder="1.2.0" />
-            </Form.Item>
-            <Form.Item
-              name="versionCode"
-              label="버전 코드 (정수, 비교용)"
-              rules={[{ required: true, message: '버전 코드를 입력하세요' }]}
-            >
-              <InputNumber style={{ width: '100%' }} min={1} placeholder="12" />
-            </Form.Item>
-          </>
-        )}
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={`${platform === 'IOS' ? 'Bundle Identifier' : 'Application ID'} · 버전명 · 버전 코드는 업로드한 ${ACCEPT[platform]} 파일에서 자동으로 추출됩니다.`}
+        />
         <Form.Item name="forceUpdate" label="강제 업데이트" valuePropName="checked">
           <Switch />
         </Form.Item>

@@ -26,6 +26,7 @@ class AdminAppPackageService(
     private val appPackageRepository: AppPackageRepository,
     private val storageService: StorageService,
     private val ipaMetadataExtractor: IpaMetadataExtractor,
+    private val apkMetadataExtractor: ApkMetadataExtractor,
 ) {
 
     fun list(platform: AppPlatform?, pageable: Pageable): Page<AppPackageListItemDto> {
@@ -44,10 +45,15 @@ class AdminAppPackageService(
     }
 
     /**
-     * @param versionName iOS 는 .ipa 의 CFBundleShortVersionString 으로 자동 채움(미입력 허용).
-     *                    추출 실패 + 미입력이면 예외. Android 는 필수 입력.
-     * @param versionCode iOS 는 .ipa 의 CFBundleVersion(정수 변환 가능 시)으로 자동 채움(미입력 허용).
-     *                    추출 불가(비정수 등) + 미입력이면 예외. Android 는 필수 입력.
+     * iOS/Android 모두 업로드 파일(.ipa/.apk)에서 식별자·버전을 자동 추출한다.
+     * 추출값 우선, 없으면 입력값으로 fallback. 둘 다 없으면 예외.
+     *
+     * - iOS: .ipa Info.plist → CFBundleIdentifier / CFBundleShortVersionString / CFBundleVersion.
+     *        (수동 입력 오타로 OTA manifest 불일치(설치 실패)하는 것을 원천 차단)
+     * - Android: .apk AndroidManifest → package(applicationId) / versionName / versionCode.
+     *
+     * @param versionName 미입력 허용. 추출 실패 + 미입력이면 예외.
+     * @param versionCode 미입력 허용. 추출 불가(iOS 비정수 등) + 미입력이면 예외.
      */
     @Transactional
     fun upload(
@@ -64,8 +70,6 @@ class AdminAppPackageService(
 
         val fileBytes = file.bytes
 
-        // iOS 는 서명된 .ipa 내부 Info.plist 에서 bundle identifier / 버전을 자동 추출한다.
-        // (수동 입력 시 오타로 OTA manifest 불일치(설치 실패) / 버전 어긋남을 원천 차단)
         val bundleIdentifier: String?
         val resolvedVersionName: String
         val resolvedVersionCode: Long
@@ -73,15 +77,19 @@ class AdminAppPackageService(
             val meta = ipaMetadataExtractor.extract(fileBytes)
                 ?: throw AppPackageBundleIdentifierRequiredException()
             bundleIdentifier = meta.bundleIdentifier
-            // 추출값 우선, 없으면 입력값으로 fallback. 둘 다 없으면 예외.
             resolvedVersionName = meta.shortVersion ?: versionName?.ifBlank { null }
                 ?: throw AppPackageVersionRequiredException("versionName")
             resolvedVersionCode = meta.bundleVersion?.toLongOrNull() ?: versionCode
                 ?: throw AppPackageVersionRequiredException("versionCode")
         } else {
-            bundleIdentifier = null
-            resolvedVersionName = versionName?.ifBlank { null } ?: throw AppPackageVersionRequiredException("versionName")
-            resolvedVersionCode = versionCode ?: throw AppPackageVersionRequiredException("versionCode")
+            // Android: AndroidManifest 추출 실패 시(손상/비APK) 입력값으로 fallback 가능하므로
+            // null 을 허용한다(파일 검증은 validateExtension 가 이미 수행).
+            val meta = apkMetadataExtractor.extract(fileBytes)
+            bundleIdentifier = meta?.packageName
+            resolvedVersionName = meta?.versionName ?: versionName?.ifBlank { null }
+                ?: throw AppPackageVersionRequiredException("versionName")
+            resolvedVersionCode = meta?.versionCode ?: versionCode
+                ?: throw AppPackageVersionRequiredException("versionCode")
         }
 
         if (appPackageRepository.existsByPlatformAndVersionCode(platform, resolvedVersionCode)) {

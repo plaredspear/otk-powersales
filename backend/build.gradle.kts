@@ -82,6 +82,9 @@ dependencies {
 
 	// dd-plist — iOS .ipa 내부 Info.plist(binary/XML plist) 파싱으로 bundle identifier 자동 추출
 	implementation("com.googlecode.plist:dd-plist:1.28")
+	// apk-parser — Android .apk 내부 AndroidManifest.xml(바이너리 AXML) 파싱으로
+	// applicationId / versionName / versionCode 자동 추출
+	implementation("net.dongliu:apk-parser:2.6.10")
 
 	// JWT
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")

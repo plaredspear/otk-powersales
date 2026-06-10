@@ -31,9 +31,16 @@ class AppPackageServiceTest {
     private val storageService = mockk<StorageService>(relaxed = true)
     private val manifestPlistBuilder = ManifestPlistBuilder()
     private val ipaMetadataExtractor = IpaMetadataExtractor()
+    // APK 추출은 실제 .apk 바이트 생성이 어려워 mock. 기본은 추출 실패(null) → 입력값 fallback.
+    private val apkMetadataExtractor = mockk<ApkMetadataExtractor>()
 
-    private val adminService = AdminAppPackageService(repository, storageService, ipaMetadataExtractor)
+    private val adminService =
+        AdminAppPackageService(repository, storageService, ipaMetadataExtractor, apkMetadataExtractor)
     private val mobileService = MobileAppPackageService(repository, storageService, manifestPlistBuilder)
+
+    init {
+        every { apkMetadataExtractor.extract(any()) } returns null
+    }
 
     /**
      * 테스트용 최소 .ipa(ZIP) 바이트 생성. `Payload/<App>.app/Info.plist` 에
@@ -102,6 +109,45 @@ class AppPackageServiceTest {
             assertThat(result.versionCode).isEqualTo(10)
             assertThat(result.downloadUrl).isEqualTo("https://s3/abc.apk")
             verify { storageService.uploadLargePrivate("app-package", "app.apk", any(), "application/vnd.android.package-archive") }
+        }
+
+        @Test
+        @DisplayName("ANDROID — .apk AndroidManifest 에서 applicationId/versionName/versionCode 자동 추출 (입력 미전달)")
+        fun androidAutoExtract() {
+            val file = MockMultipartFile("file", "app.apk", "application/octet-stream", ByteArray(10))
+            every { apkMetadataExtractor.extract(any()) } returns
+                ApkMetadataExtractor.ApkMetadata("com.otoki.pwrs.mobile", "3.4.5", 345)
+            every { repository.existsByPlatformAndVersionCode(any(), any()) } returns false
+            every { storageService.uploadLargePrivate(any(), any(), any(), any()) } returns
+                UploadResult("uploads/app-package/k.apk", "application/vnd.android.package-archive", "app.apk", 10)
+            val saved = slot<AppPackage>()
+            every { repository.save(capture(saved)) } answers { firstArg<AppPackage>() }
+            every { storageService.getPresignedUrl(any(), any()) } returns "https://s3/abc.apk"
+
+            adminService.upload(AppPlatform.ANDROID, null, null, false, null, file, 1L)
+
+            assertThat(saved.captured.bundleIdentifier).isEqualTo("com.otoki.pwrs.mobile")
+            assertThat(saved.captured.versionName).isEqualTo("3.4.5")
+            assertThat(saved.captured.versionCode).isEqualTo(345)
+        }
+
+        @Test
+        @DisplayName("ANDROID — APK 파싱 실패 시 입력 versionName/versionCode 로 fallback")
+        fun androidExtractFailFallsBackToInput() {
+            val file = MockMultipartFile("file", "app.apk", "application/octet-stream", ByteArray(10))
+            // init 의 기본 stub: apkMetadataExtractor.extract(any()) returns null
+            every { repository.existsByPlatformAndVersionCode(any(), any()) } returns false
+            every { storageService.uploadLargePrivate(any(), any(), any(), any()) } returns
+                UploadResult("uploads/app-package/k.apk", "ct", "app.apk", 10)
+            val saved = slot<AppPackage>()
+            every { repository.save(capture(saved)) } answers { firstArg<AppPackage>() }
+            every { storageService.getPresignedUrl(any(), any()) } returns "url"
+
+            adminService.upload(AppPlatform.ANDROID, "9.9.9", 999, false, null, file, 1L)
+
+            assertThat(saved.captured.bundleIdentifier).isNull()
+            assertThat(saved.captured.versionName).isEqualTo("9.9.9")
+            assertThat(saved.captured.versionCode).isEqualTo(999)
         }
 
         @Test
