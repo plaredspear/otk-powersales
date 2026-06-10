@@ -228,6 +228,9 @@ class _RangeCalendarDialogState extends State<_RangeCalendarDialog> {
       textColor = AppColors.textPrimary;
     }
 
+    // 현재 달이지만 선택 불가한 날짜(시작일 + maxRangeDays 초과 등)는 취소선으로 표시한다.
+    final isDisabledInMonth = inMonth && !selectable;
+
     return GestureDetector(
       onTap: selectable ? () => _onDayTap(day) : null,
       behavior: HitTestBehavior.opaque,
@@ -244,6 +247,8 @@ class _RangeCalendarDialogState extends State<_RangeCalendarDialog> {
           style: AppTypography.bodyMedium.copyWith(
             color: textColor,
             fontWeight: isEndpoint ? FontWeight.w700 : FontWeight.w400,
+            decoration: isDisabledInMonth ? TextDecoration.lineThrough : null,
+            decorationColor: AppColors.textTertiary,
           ),
         ),
       ),
