@@ -904,35 +904,6 @@
         },
         "type" : "object"
       },
-      "ApiResponseLeaderScheduleUpdateResponse" : {
-        "properties" : {
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/LeaderScheduleUpdateResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "ApiResponseListAlternativeHolidayListItemResponse" : {
         "properties" : {
           "data" : {
@@ -3948,42 +3919,6 @@
             "type" : "string"
           },
           "workingType" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "LeaderScheduleUpdateRequest" : {
-        "properties" : {
-          "accountId" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          }
-        },
-        "required" : [ "accountId" ],
-        "type" : "object"
-      },
-      "LeaderScheduleUpdateResponse" : {
-        "properties" : {
-          "accountId" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          },
-          "accountName" : {
-            "type" : [ "string", "null" ]
-          },
-          "scheduleId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "targetEmployeeId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "workingCategory3" : {
-            "type" : [ "string", "null" ]
-          },
-          "workingDate" : {
             "type" : "string"
           }
         },
@@ -7558,68 +7493,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseLeaderScheduleCreateResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "leader-schedule-controller" ]
-      }
-    },
-    "/api/v1/mobile/leader/team-member-schedule/{scheduleId}" : {
-      "delete" : {
-        "operationId" : "deleteTeamMemberSchedule",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "scheduleId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseUnit"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "leader-schedule-controller" ]
-      },
-      "put" : {
-        "operationId" : "updateTeamMemberSchedule",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "scheduleId",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/LeaderScheduleUpdateRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseLeaderScheduleUpdateResponse"
                 }
               }
             },
