@@ -11,6 +11,8 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.notice.repository.NoticeRepository
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
+import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
+import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.safetycheck.service.SafetyCheckService
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
@@ -45,6 +47,8 @@ class HomeServiceTest {
 
     private val safetyCheckService: SafetyCheckService = mockk()
 
+    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository = mockk()
+
     private val productExpirationRepository: ProductExpirationRepository = mockk()
 
     private val homeService = HomeService(
@@ -54,6 +58,7 @@ class HomeServiceTest {
         noticeRepository,
         accountRepository,
         safetyCheckService,
+        safetyCheckSubmissionRepository,
         productExpirationRepository,
     )
 
@@ -66,6 +71,7 @@ class HomeServiceTest {
         every { noticeRepository.findRecentNotices(any()) } returns emptyList()
         every { accountRepository.findByIdIn(any()) } returns emptyList()
         every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+        every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), any()) } returns emptyList()
     }
 
     @Nested
@@ -491,6 +497,47 @@ class HomeServiceTest {
             // Then
             assertThat(result.attendanceSummary.totalCount).isEqualTo(3)
             assertThat(result.attendanceSummary.registeredCount).isEqualTo(2)
+        }
+
+        @Test
+        @DisplayName("조장 출근현황 집계 - 팀원 단위(distinct) + 진열 비대칭(안전점검 실시자만 분모) (레거시 home.jsp promcnt/sum 정합)")
+        fun leaderAttendanceSummary_legacyAsymmetric() {
+            // Given — 팀: 조장(1) + A(2,행사·출근완료) + B(3,행사·미출근) + C(4,진열·안전점검O) + D(5,진열·안전점검X)
+            val userId = 1L
+            val orgName = "부산1지점"
+            val leader = createEmployee(id = userId, orgName = orgName, role = AppAuthority.LEADER)
+            val a = createEmployee(id = 2L, employeeCode = "00000002", orgName = orgName, name = "A")
+            val b = createEmployee(id = 3L, employeeCode = "00000003", orgName = orgName, name = "B")
+            val c = createEmployee(id = 4L, employeeCode = "00000004", orgName = orgName, name = "C")
+            val d = createEmployee(id = 5L, employeeCode = "00000005", orgName = orgName, name = "D")
+
+            // 행사 TMS: A 출근완료, B 미출근
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, employeeId = 2L, accountId = 8938, workingCategory1 = WorkingCategory1.EVENT, commuteLogSfid = "CLG-A"),
+                createTeamMemberSchedule(id = 2L, employeeId = 3L, accountId = 8939, workingCategory1 = WorkingCategory1.EVENT, commuteLogSfid = null)
+            )
+            // 확정 진열마스터: C, D
+            val displayWorkSchedules = listOf(
+                createDisplayWorkSchedule(id = 100L, employeeId = 4L, accountId = 8940),
+                createDisplayWorkSchedule(id = 101L, employeeId = 5L, accountId = 8941)
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(leader)
+            every { employeeRepository.findByOrgName(orgName) } returns listOf(leader, a, b, c, d)
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns displayWorkSchedules
+            // 안전점검 실시: C(4) 만
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(any(), any()) } returns
+                listOf(SafetyCheckSubmission(employeeId = 4L, workingDate = LocalDate.now()))
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            // 분모 N: A(행사)·B(행사)·C(진열+안전점검) = 3. D(진열·안전점검X)는 제외 — 진열 비대칭
+            assertThat(result.attendanceSummary.totalCount).isEqualTo(3)
+            // 분자 M: 출근 등록 완료자 A = 1
+            assertThat(result.attendanceSummary.registeredCount).isEqualTo(1)
         }
 
         // ========== 에러 케이스 ==========

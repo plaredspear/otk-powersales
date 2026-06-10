@@ -12,10 +12,9 @@ import '../../../domain/entities/schedule.dart';
 /// - 일정 있음: 오늘 스케줄 목록 (근무유형 배지, 매장명, 출근 상태)
 /// - 출근 카운트 배지: "✓ X/N" 형태로 출근 현황 표시
 ///
-/// 조장(LEADER)/지점장(ADMIN) 뷰:
+/// 조장(LEADER)/지점장(ADMIN) 뷰 (레거시 home.jsp 정합):
 /// - 헤더: "일정 관리" 버튼, "팀 출근 현황: N명 중 M명 등록 완료"
-/// - 목록: 팀원 이름 + 근무유형 배지 + 매장명 + 출근 시간/미등록
-/// - 등록 버튼 미표시
+/// - 팀원 목록/등록 버튼 미표시 (팀원 상세는 "일정 관리" 진입 후 페이지에서 확인)
 class ScheduleCard extends StatelessWidget {
   /// 오늘 일정 목록
   final List<Schedule> schedules;
@@ -93,7 +92,7 @@ class ScheduleCard extends StatelessWidget {
               ],
             ),
 
-            // 조장 뷰: 팀 출근 현황 텍스트
+            // 조장 뷰: 팀 출근 현황 텍스트만 표시 (레거시 home.jsp 정합 — 팀원 목록은 '일정 관리' 페이지에 있음)
             if (_isLeaderView) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
@@ -102,14 +101,10 @@ class ScheduleCard extends StatelessWidget {
                   color: AppColors.textSecondary,
                 ),
               ),
-            ],
+            ] else ...[
+              const SizedBox(height: AppSpacing.md),
 
-            const SizedBox(height: AppSpacing.md),
-
-            // 본문 영역
-            if (_isLeaderView)
-              _buildLeaderBody()
-            else ...[
+              // 본문 영역
               if (totalCount == 0)
                 _buildEmptySchedule()
               else if (registeredCount == 0)
@@ -210,117 +205,6 @@ class ScheduleCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  /// 조장 뷰: 본문 영역
-  Widget _buildLeaderBody() {
-    if (schedules.isEmpty) {
-      return Column(
-        children: [
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            '오늘 등록된 팀 스케줄이 없습니다.',
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      );
-    }
-
-    // employeeName 기준 가나다순 정렬
-    final sortedSchedules = List<Schedule>.from(schedules)
-      ..sort((a, b) => a.employeeName.compareTo(b.employeeName));
-
-    return Column(
-      children: sortedSchedules.map((schedule) {
-        return _buildLeaderScheduleItem(schedule);
-      }).toList(),
-    );
-  }
-
-  /// 조장 뷰: 스케줄 아이템 (팀원 이름 + 근무유형 + 매장명 + 출근 상태)
-  Widget _buildLeaderScheduleItem(Schedule schedule) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1행: 근무유형 배지 + 팀원 이름
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xxs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                ),
-                child: Text(
-                  schedule.workCategory,
-                  style: AppTypography.labelMedium.copyWith(
-                    color: AppColors.onPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  schedule.employeeName,
-                  style: AppTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xxs),
-          // 2행: 매장명 + 출근 시간/미등록
-          Row(
-            children: [
-              const SizedBox(width: AppSpacing.sm), // 배지 인덴트 정렬
-              Expanded(
-                child: Text(
-                  schedule.accountName ?? '(미지정)',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (schedule.isCommuteRegistered) ...[
-                Icon(Icons.check, size: 14, color: AppColors.success),
-                const SizedBox(width: 2),
-                Text(
-                  _formatTime(schedule.commuteRegisteredAt),
-                  style: AppTypography.labelMedium.copyWith(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ] else
-                Text(
-                  '미등록',
-                  style: AppTypography.labelMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 출근 시각을 "HH:mm" 형식으로 변환
-  String _formatTime(DateTime? dateTime) {
-    if (dateTime == null) return '';
-    final hour = dateTime.hour.toString().padLeft(2, '0');
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
   }
 
   /// 미출근 안내 텍스트

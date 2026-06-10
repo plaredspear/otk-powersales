@@ -7,6 +7,7 @@ import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.notice.repository.NoticeRepository
 import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.safetycheck.service.SafetyCheckService
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
@@ -32,6 +33,7 @@ class HomeService(
     private val noticeRepository: NoticeRepository,
     private val accountRepository: AccountRepository,
     private val safetyCheckService: SafetyCheckService,
+    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
     private val productExpirationRepository: ProductExpirationRepository
 ) {
 
@@ -112,10 +114,22 @@ class HomeService(
             employee.role == AppAuthority.WOMAN || employee.role == AppAuthority.LEADER
 
         // 출근 현황 집계
-        val attendanceSummary = HomeResponse.AttendanceSummaryInfo(
-            totalCount = todaySchedules.size,
-            registeredCount = todaySchedules.count { it.isCommuteRegistered }
-        )
+        // 조장: 레거시 home.jsp(promcnt/sum) 정합 — 팀원 단위(employeeId distinct) 집계 + 진열 비대칭.
+        // 그 외(여사원/지점장): 본인 스케줄 건수 그대로 집계.
+        val attendanceSummary = if (employee.role == AppAuthority.LEADER) {
+            computeLeaderAttendanceSummary(
+                teamMemberSchedules = teamMemberSchedules,
+                eventSchedules = eventSchedules,
+                displayWorkSchedules = displayWorkSchedules,
+                teamEmployeeIds = employeeMap.keys,
+                today = today
+            )
+        } else {
+            HomeResponse.AttendanceSummaryInfo(
+                totalCount = todaySchedules.size,
+                registeredCount = todaySchedules.count { it.isCommuteRegistered }
+            )
+        }
 
         // 안전점검 필요 여부 (조장은 항상 false)
         val safetyCheckRequired = if (employee.role == AppAuthority.WOMAN) {
@@ -181,6 +195,52 @@ class HomeService(
                 Pair(teamMemberSchedules, employeeMap)
             }
         }
+    }
+
+    /**
+     * 조장 홈 "팀 출근 현황: N명 중 M명 등록 완료" 집계 (레거시 home.jsp:509~531 정합)
+     *
+     * 레거시 mergedList 는 `employeeid__c` 기준 1팀원 1행으로 중복 제거되므로, 카운트도 팀원 단위(distinct).
+     *
+     * - 분모 N (promcnt): 행사 근무자(무조건) + 진열 근무자 중 `comm_cnt > 0`(= 안전점검 실시 = swm 레코드 존재)인 팀원.
+     *   진열 비대칭 — 진열만 있고 안전점검 미실시 팀원은 분모에서 제외 (레거시 home.jsp:515 정합).
+     * - 분자 M (sum): `commutelogid__c != null`(= attendanceLog 존재 = 출근 등록 완료)인 팀원 (레거시 home.jsp:518 정합).
+     *
+     * 분모/분자는 독립 집계이므로, 안전점검 없이 출근 등록만 한 진열 팀원은 M 에는 잡히나 N 에는 빠질 수 있다(레거시 동등).
+     */
+    private fun computeLeaderAttendanceSummary(
+        teamMemberSchedules: List<TeamMemberSchedule>,
+        eventSchedules: List<TeamMemberSchedule>,
+        displayWorkSchedules: List<DisplayWorkSchedule>,
+        teamEmployeeIds: Collection<Long>,
+        today: LocalDate
+    ): HomeResponse.AttendanceSummaryInfo {
+        // 안전점검 실시(swm = safetycheck__workschedule__member 레코드 존재) 팀원 집합 — 레거시 comm_cnt > 0 정합
+        val safetyCheckedIds = if (teamEmployeeIds.isEmpty()) {
+            emptySet()
+        } else {
+            safetyCheckSubmissionRepository
+                .findByEmployeeIdInAndWorkingDate(teamEmployeeIds.toList(), today)
+                .mapNotNull { it.employeeId }
+                .toSet()
+        }
+
+        val eventEmployeeIds = eventSchedules.mapNotNull { it.employee?.id }.toSet()
+        val displayEmployeeIds = displayWorkSchedules.mapNotNull { it.employee?.id }.toSet()
+
+        // 분모 N: 행사 근무자(무조건) + 진열 근무자 중 안전점검 실시자 — employeeId distinct
+        val denominatorIds = eventEmployeeIds + displayEmployeeIds.filter { it in safetyCheckedIds }
+
+        // 분자 M: 출근 등록 완료(attendanceLog != null) 팀원 — employeeId distinct
+        val registeredIds = teamMemberSchedules
+            .filter { it.attendanceLog != null }
+            .mapNotNull { it.employee?.id }
+            .toSet()
+
+        return HomeResponse.AttendanceSummaryInfo(
+            totalCount = denominatorIds.size,
+            registeredCount = registeredIds.size
+        )
     }
 
     /**
