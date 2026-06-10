@@ -14,6 +14,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -106,5 +107,19 @@ class AdminAppPackageControllerTest : AdminControllerTestSupport() {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.message").value("삭제되었습니다"))
         verify { adminAppPackageService.delete(1L) }
+    }
+
+    @Test
+    @DisplayName("iOS 고정 설치 링크 조회 — GET /ios/install-url")
+    fun iosInstallUrl() {
+        every { adminAppPackageService.iosInstallUrl() } returns
+            "https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/ios/install/latest"
+
+        mockMvc.perform(get("/api/v1/admin/app-package/ios/install-url"))
+            .andExpect(status().isOk)
+            .andExpect(
+                jsonPath("$.data.url")
+                    .value("https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/ios/install/latest"),
+            )
     }
 }

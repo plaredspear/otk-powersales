@@ -88,6 +88,13 @@ data class AppPackageDetailDto(
     }
 }
 
+/**
+ * iOS 대규모 배포용 고정 설치 링크 응답. [url] 이 null 이면 API 도메인 미설정 환경.
+ */
+data class AppPackageIosInstallUrlDto(
+    val url: String?,
+)
+
 data class AppPackageForceUpdateRequest(
     val forceUpdate: Boolean,
 )

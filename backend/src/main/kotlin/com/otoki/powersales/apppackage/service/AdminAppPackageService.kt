@@ -57,6 +57,14 @@ class AdminAppPackageService(
      */
     private fun iosInstallUrlOrNull(platform: AppPlatform): String? {
         if (platform != AppPlatform.IOS) return null
+        return iosInstallUrl()
+    }
+
+    /**
+     * iOS 대규모 배포용 고정 설치 링크. 버전·패키지와 무관한 고정값(API 도메인만 의존)이라
+     * web 이 페이지 상단에 상시 표시한다. API 도메인 미설정(local)이면 null.
+     */
+    fun iosInstallUrl(): String? {
         val apiDomain = domainProperties.api
         if (apiDomain.isBlank()) return null
         return MobileAppPackageService.iosLatestInstallPath("https://$apiDomain")

@@ -3841,6 +3841,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseAppPackageIosInstallUrlDto" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AppPackageIosInstallUrlDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseAssignmentBatchResult" : {
         "properties" : {
           "data" : {
@@ -7778,6 +7807,14 @@
         "properties" : {
           "forceUpdate" : {
             "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "AppPackageIosInstallUrlDto" : {
+        "properties" : {
+          "url" : {
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -16863,6 +16900,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAppPackageDetailDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-app-package-controller" ]
+      }
+    },
+    "/api/v1/admin/app-package/ios/install-url" : {
+      "get" : {
+        "operationId" : "iosInstallUrl",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAppPackageIosInstallUrlDto"
                 }
               }
             },

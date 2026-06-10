@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   deleteAppPackage,
   fetchAppPackages,
+  fetchIosInstallUrl,
   setAppPackageLatest,
   toggleAppPackageForceUpdate,
   updateAppPackageReleaseNote,
@@ -23,6 +24,19 @@ export function useAppPackages(platform: AppPlatform, page = 0, size = 20) {
   return useQuery({
     queryKey: [...appPackagesKey(platform), page, size],
     queryFn: () => fetchAppPackages(platform, page, size),
+  });
+}
+
+/**
+ * iOS 고정 OTA 설치 링크 조회. 버전 무관 고정값이라 길게 캐시한다.
+ * @param enabled iOS 탭에서만 조회하도록 제어
+ */
+export function useIosInstallUrl(enabled: boolean) {
+  return useQuery({
+    queryKey: ['admin', 'app-packages', 'ios-install-url'] as const,
+    queryFn: fetchIosInstallUrl,
+    enabled,
+    staleTime: 60 * 60 * 1000, // 1시간 — API 도메인 기반 고정값이라 자주 바뀌지 않음
   });
 }
 

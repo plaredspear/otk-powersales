@@ -93,6 +93,17 @@ export async function fetchAppPackageDetail(id: number): Promise<AppPackageDetai
   return res.data.data;
 }
 
+/**
+ * iOS 고정 OTA 설치 링크 조회 (버전 무관 고정값, 항상 최신 버전을 가리킴).
+ * url 이 null 이면 API 도메인 미설정 환경.
+ */
+export async function fetchIosInstallUrl(): Promise<string | null> {
+  const res = await client.get<ApiResponse<{ url: string | null }>>(
+    '/api/v1/admin/app-package/ios/install-url',
+  );
+  return res.data.data?.url ?? null;
+}
+
 export async function setAppPackageLatest(id: number): Promise<AppPackageDetail> {
   const res = await client.patch<ApiResponse<AppPackageDetail>>(`/api/v1/admin/app-package/${id}/latest`);
   if (!res.data.data) throw new Error(res.data.message || '최신 지정에 실패했습니다');
