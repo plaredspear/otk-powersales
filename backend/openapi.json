@@ -14383,7 +14383,8 @@
       "LoginRequest" : {
         "properties" : {
           "deviceId" : {
-            "type" : [ "string", "null" ]
+            "minLength" : 1,
+            "type" : "string"
           },
           "employeeCode" : {
             "maxLength" : 100,
@@ -14396,7 +14397,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "employeeCode", "password" ],
+        "required" : [ "deviceId", "employeeCode", "password" ],
         "type" : "object"
       },
       "LoginResponse" : {
