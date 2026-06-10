@@ -32,8 +32,7 @@ class ClaimPurchaseSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPurchaseAmount =
-        purchaseAmount != null && purchaseAmount! > 0;
+    final hasPurchaseAmount = purchaseAmount != null && purchaseAmount! > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,21 +65,48 @@ class ClaimPurchaseSection extends StatelessWidget {
 }
 
 /// 구매 금액 입력 필드
-class _PurchaseAmountField extends StatelessWidget {
-  const _PurchaseAmountField({
-    required this.amount,
-    required this.onChanged,
-  });
+class _PurchaseAmountField extends StatefulWidget {
+  const _PurchaseAmountField({required this.amount, required this.onChanged});
 
   final int? amount;
   final ValueChanged<int?> onChanged;
 
   @override
-  Widget build(BuildContext context) {
-    final controller = TextEditingController(
-      text: amount != null && amount! > 0 ? amount.toString() : '',
-    );
+  State<_PurchaseAmountField> createState() => _PurchaseAmountFieldState();
+}
 
+class _PurchaseAmountFieldState extends State<_PurchaseAmountField> {
+  late final TextEditingController _controller;
+
+  String _textOf(int? amount) =>
+      amount != null && amount > 0 ? amount.toString() : '';
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: _textOf(widget.amount));
+  }
+
+  @override
+  void didUpdateWidget(covariant _PurchaseAmountField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newText = _textOf(widget.amount);
+    if (newText != _controller.text) {
+      _controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newText.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return ClaimFormRow(
       label: '구매 금액',
       trailing: const Text(
@@ -88,22 +114,24 @@ class _PurchaseAmountField extends StatelessWidget {
         style: TextStyle(fontSize: 14, color: ClaimFormColors.unit),
       ),
       below: TextField(
-        controller: controller,
+        controller: _controller,
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         style: const TextStyle(fontSize: 14, color: ClaimFormColors.value),
         decoration: const InputDecoration(
           isCollapsed: true,
           hintText: '숫자 입력',
-          hintStyle: TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
+          hintStyle: TextStyle(
+            fontSize: 14,
+            color: ClaimFormColors.placeholder,
+          ),
           border: InputBorder.none,
         ),
         onChanged: (value) {
           if (value.isEmpty) {
-            onChanged(null);
+            widget.onChanged(null);
           } else {
-            final parsed = int.tryParse(value);
-            onChanged(parsed);
+            widget.onChanged(int.tryParse(value));
           }
         },
       ),
@@ -176,10 +204,7 @@ class _PurchaseMethodSheet extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               '구매 방법 선택',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           const Divider(height: 1),

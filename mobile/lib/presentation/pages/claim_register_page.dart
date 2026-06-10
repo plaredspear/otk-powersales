@@ -10,6 +10,7 @@ import '../../domain/entities/claim_category.dart';
 import '../../domain/entities/claim_code.dart';
 import '../../domain/entities/product.dart';
 import '../providers/claim_register_provider.dart';
+import '../providers/claim_register_state.dart';
 import '../providers/pos_sales_provider.dart';
 import '../screens/barcode_scanner_screen.dart';
 import '../widgets/claim/claim_category_selector.dart';
@@ -48,8 +49,7 @@ class ClaimRegisterPage extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ClaimRegisterPage> createState() =>
-      _ClaimRegisterPageState();
+  ConsumerState<ClaimRegisterPage> createState() => _ClaimRegisterPageState();
 }
 
 class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
@@ -116,125 +116,130 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
+      // 숫자 키패드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 키보드를 닫는다.
       body: state.loading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 거래처 선택
-                  _AccountField(
-                    accountName: state.form?.accountName,
-                    onTap: () => _showAccountSelector(context),
-                  ),
+          : GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 거래처 선택
+                    _AccountField(
+                      accountName: state.form?.accountName,
+                      onTap: () => _showAccountSelector(context),
+                    ),
 
-                  // 제품 선택
-                  ClaimProductField(
-                    productName: state.form?.productName,
-                    productCode: state.form?.productCode,
-                    onBarcodePressed: () => _handleBarcodeScan(),
-                    onProductSelectPressed: () => _showProductSelector(context),
-                  ),
+                    // 제품 선택
+                    ClaimProductField(
+                      productName: state.form?.productName,
+                      productCode: state.form?.productCode,
+                      onBarcodePressed: () => _handleBarcodeScan(),
+                      onProductSelectPressed: () =>
+                          _showProductSelector(context),
+                    ),
 
-                  // 기한 입력
-                  ClaimDateField(
-                    dateType: state.form?.dateType ?? ClaimDateType.expiryDate,
-                    date: state.form?.date ?? DateTime.now(),
-                    onDateTypeChanged: notifier.selectDateType,
-                    onDateSelected: notifier.selectDate,
-                  ),
+                    // 기한 입력
+                    ClaimDateField(
+                      dateType:
+                          state.form?.dateType ?? ClaimDateType.expiryDate,
+                      date: state.form?.date ?? DateTime.now(),
+                      onDateTypeChanged: notifier.selectDateType,
+                      onDateSelected: notifier.selectDate,
+                    ),
 
-                  // 클레임 종류 선택
-                  ClaimCategorySelector(
-                    categories: state.formData?.categories ?? [],
-                    selectedCategory: _findSelectedCategory(state),
-                    selectedSubcategory: _findSelectedSubcategory(state),
-                    onCategorySelected: (category) {
-                      if (category != null) {
-                        notifier.selectCategory(category.id, category.name);
-                      }
-                    },
-                    onSubcategorySelected: (subcategory) {
-                      if (subcategory != null) {
-                        notifier.selectSubcategory(
-                          subcategory.id,
-                          subcategory.name,
-                        );
-                      }
-                    },
-                  ),
+                    // 클레임 종류 선택
+                    ClaimCategorySelector(
+                      categories: state.formData?.categories ?? [],
+                      selectedCategory: _findSelectedCategory(state),
+                      selectedSubcategory: _findSelectedSubcategory(state),
+                      onCategorySelected: (category) =>
+                          notifier.selectCategory(category.id, category.name),
+                      onSubcategorySelected: (subcategory) => notifier
+                          .selectSubcategory(subcategory.id, subcategory.name),
+                    ),
 
-                  // 불량 내역
-                  _DefectDescriptionField(
-                    description: state.form?.defectDescription,
-                    onChanged: notifier.updateDefectDescription,
-                  ),
+                    // 불량 내역
+                    _DefectDescriptionField(
+                      description: state.form?.defectDescription,
+                      onChanged: notifier.updateDefectDescription,
+                    ),
 
-                  // 불량 수량
-                  _DefectQuantityField(
-                    quantity: state.form?.defectQuantity,
-                    onChanged: (value) {
-                      final quantity = int.tryParse(value);
-                      if (quantity != null) {
-                        notifier.updateDefectQuantity(quantity);
-                      }
-                    },
-                  ),
+                    // 불량 수량
+                    _DefectQuantityField(
+                      quantity: state.form?.defectQuantity,
+                      onChanged: (value) {
+                        final quantity = int.tryParse(value);
+                        if (quantity != null) {
+                          notifier.updateDefectQuantity(quantity);
+                        }
+                      },
+                    ),
 
-                  // 불량 사진
-                  ClaimPhotoField(
-                    label: '불량 사진 (최대 1장)',
-                    photo: _getValidPhoto(state.form?.defectPhoto),
-                    onPhotoSelected: notifier.attachDefectPhoto,
-                    onPhotoRemoved: notifier.removeDefectPhoto,
-                    isRequired: true,
-                  ),
+                    // 불량 사진
+                    ClaimPhotoField(
+                      label: '불량 사진 (최대 1장)',
+                      photo: _getValidPhoto(state.form?.defectPhoto),
+                      onPhotoSelected: notifier.attachDefectPhoto,
+                      onPhotoRemoved: notifier.removeDefectPhoto,
+                      isRequired: true,
+                    ),
 
-                  // 일부인 사진
-                  ClaimPhotoField(
-                    label: '일부인 (최대 1장)',
-                    photo: _getValidPhoto(state.form?.labelPhoto),
-                    onPhotoSelected: notifier.attachLabelPhoto,
-                    onPhotoRemoved: notifier.removeLabelPhoto,
-                    isRequired: true,
-                  ),
+                    // 일부인 사진
+                    ClaimPhotoField(
+                      label: '일부인 (최대 1장)',
+                      photo: _getValidPhoto(state.form?.labelPhoto),
+                      onPhotoSelected: notifier.attachLabelPhoto,
+                      onPhotoRemoved: notifier.removeLabelPhoto,
+                      isRequired: true,
+                    ),
 
-                  // 구매 정보 섹션
-                  ClaimPurchaseSection(
-                    purchaseAmount: state.form?.purchaseAmount,
-                    purchaseMethods: state.formData?.purchaseMethods ?? [],
-                    selectedPurchaseMethod: _findSelectedPurchaseMethod(state),
-                    receiptPhoto: state.form?.receiptPhoto,
-                    onPurchaseAmountChanged: notifier.updatePurchaseAmount,
-                    onPurchaseMethodSelected: (method) {
-                      if (method != null) {
-                        notifier.selectPurchaseMethod(method.code, method.name);
-                      } else {
-                        notifier.selectPurchaseMethod(null, null);
-                      }
-                    },
-                    onReceiptPhotoSelected: notifier.attachReceiptPhoto,
-                    onReceiptPhotoRemoved: notifier.removeReceiptPhoto,
-                  ),
+                    // 구매 정보 섹션
+                    ClaimPurchaseSection(
+                      purchaseAmount: state.form?.purchaseAmount,
+                      purchaseMethods: state.formData?.purchaseMethods ?? [],
+                      selectedPurchaseMethod: _findSelectedPurchaseMethod(
+                        state,
+                      ),
+                      receiptPhoto: state.form?.receiptPhoto,
+                      onPurchaseAmountChanged: notifier.updatePurchaseAmount,
+                      onPurchaseMethodSelected: (method) {
+                        if (method != null) {
+                          notifier.selectPurchaseMethod(
+                            method.code,
+                            method.name,
+                          );
+                        } else {
+                          notifier.selectPurchaseMethod(null, null);
+                        }
+                      },
+                      onReceiptPhotoSelected: notifier.attachReceiptPhoto,
+                      onReceiptPhotoRemoved: notifier.removeReceiptPhoto,
+                    ),
 
-                  // 요청사항
-                  ClaimRequestTypeField(
-                    selectedRequestType: _findSelectedRequestType(state),
-                    requestTypes: state.formData?.requestTypes ?? [],
-                    onRequestTypeSelected: (requestType) {
-                      if (requestType != null) {
-                        notifier.selectRequestType(
-                          requestType.code,
-                          requestType.name,
-                        );
-                      } else {
-                        notifier.selectRequestType(null, null);
-                      }
-                    },
-                  ),
+                    // 요청사항
+                    ClaimRequestTypeField(
+                      selectedRequestType: _findSelectedRequestType(state),
+                      requestTypes: state.formData?.requestTypes ?? [],
+                      onRequestTypeSelected: (requestType) {
+                        if (requestType != null) {
+                          notifier.selectRequestType(
+                            requestType.code,
+                            requestType.name,
+                          );
+                        } else {
+                          notifier.selectRequestType(null, null);
+                        }
+                      },
+                    ),
 
-                  const SizedBox(height: 24),
-                ],
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             ),
       bottomNavigationBar: _buildBottomButtons(context, state),
@@ -242,10 +247,7 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
   }
 
   /// 하단 버튼 (임시저장 + 전송) — 레거시처럼 전폭 무여백 2분할
-  Widget _buildBottomButtons(
-    BuildContext context,
-    state,
-  ) {
+  Widget _buildBottomButtons(BuildContext context, ClaimRegisterState state) {
     return SafeArea(
       top: false,
       child: SizedBox(
@@ -304,26 +306,27 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
     if (barcode == null || !mounted) return;
 
     try {
-      final product =
-          await ref.read(posProductUseCaseProvider).findByBarcode(barcode);
+      final product = await ref
+          .read(posProductUseCaseProvider)
+          .findByBarcode(barcode);
       if (!mounted) return;
       if (product == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('해당 제품이 없습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('해당 제품이 없습니다')));
         return;
       }
       ref
           .read(claimRegisterProvider.notifier)
           .selectProduct(product.productCode, product.productName);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${product.productName} 선택됨')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${product.productName} 선택됨')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제품 조회에 실패했습니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('제품 조회에 실패했습니다')));
     }
   }
 
@@ -334,39 +337,40 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('임시저장되었습니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('임시저장되었습니다')));
     } else {
-      final errorMessage =
-          ref.read(claimRegisterProvider).error ?? '임시저장 실패';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      final errorMessage = ref.read(claimRegisterProvider).error ?? '임시저장 실패';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
     }
   }
 
   /// 등록 전송
   Future<void> _handleSubmit() async {
-    final success = await ref.read(claimRegisterProvider.notifier).registerClaim();
+    final success = await ref
+        .read(claimRegisterProvider.notifier)
+        .registerClaim();
 
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('클레임이 등록되었습니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('클레임이 등록되었습니다')));
       Navigator.of(context).pop();
     } else {
       final errorMessage = ref.read(claimRegisterProvider).error ?? '등록 실패';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
     }
   }
 
   /// 선택된 카테고리 찾기
-  ClaimCategory? _findSelectedCategory(state) {
+  ClaimCategory? _findSelectedCategory(ClaimRegisterState state) {
     final categoryId = state.form?.categoryId;
     if (categoryId == null || categoryId.isEmpty) return null;
 
@@ -379,7 +383,7 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
   }
 
   /// 선택된 서브카테고리 찾기
-  ClaimSubcategory? _findSelectedSubcategory(state) {
+  ClaimSubcategory? _findSelectedSubcategory(ClaimRegisterState state) {
     final subcategoryId = state.form?.subcategoryId;
     if (subcategoryId == null || subcategoryId.isEmpty) return null;
 
@@ -394,7 +398,7 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
   }
 
   /// 선택된 구매 방법 찾기
-  PurchaseMethod? _findSelectedPurchaseMethod(state) {
+  PurchaseMethod? _findSelectedPurchaseMethod(ClaimRegisterState state) {
     final code = state.form?.purchaseMethodCode;
     if (code == null || code.isEmpty) return null;
 
@@ -407,7 +411,7 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
   }
 
   /// 선택된 요청사항 찾기
-  ClaimRequestType? _findSelectedRequestType(state) {
+  ClaimRequestType? _findSelectedRequestType(ClaimRegisterState state) {
     final code = state.form?.requestTypeCode;
     if (code == null || code.isEmpty) return null;
 
@@ -464,10 +468,7 @@ class _BottomBarButton extends StatelessWidget {
 
 /// 거래처 선택 필드
 class _AccountField extends StatelessWidget {
-  const _AccountField({
-    required this.accountName,
-    required this.onTap,
-  });
+  const _AccountField({required this.accountName, required this.onTap});
 
   final String? accountName;
   final VoidCallback onTap;
@@ -479,10 +480,7 @@ class _AccountField extends StatelessWidget {
       isRequired: true,
       onTap: onTap,
       trailing: const ClaimRowChevron(),
-      below: ClaimValueText(
-        value: accountName,
-        placeholder: '거래처 선택',
-      ),
+      below: ClaimValueText(value: accountName, placeholder: '거래처 선택'),
     );
   }
 }
@@ -541,7 +539,10 @@ class _DefectDescriptionFieldState extends State<_DefectDescriptionField> {
         decoration: const InputDecoration(
           isCollapsed: true,
           hintText: '내용 입력',
-          hintStyle: TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
+          hintStyle: TextStyle(
+            fontSize: 14,
+            color: ClaimFormColors.placeholder,
+          ),
           border: InputBorder.none,
         ),
         onChanged: widget.onChanged,
@@ -552,10 +553,7 @@ class _DefectDescriptionFieldState extends State<_DefectDescriptionField> {
 
 /// 불량 수량 입력 필드
 class _DefectQuantityField extends StatefulWidget {
-  const _DefectQuantityField({
-    required this.quantity,
-    required this.onChanged,
-  });
+  const _DefectQuantityField({required this.quantity, required this.onChanged});
 
   final int? quantity;
   final ValueChanged<String> onChanged;
@@ -611,7 +609,10 @@ class _DefectQuantityFieldState extends State<_DefectQuantityField> {
         decoration: const InputDecoration(
           isCollapsed: true,
           hintText: '숫자 입력',
-          hintStyle: TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
+          hintStyle: TextStyle(
+            fontSize: 14,
+            color: ClaimFormColors.placeholder,
+          ),
           border: InputBorder.none,
         ),
         onChanged: widget.onChanged,
