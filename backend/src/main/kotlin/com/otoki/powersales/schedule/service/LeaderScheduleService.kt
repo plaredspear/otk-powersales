@@ -21,6 +21,7 @@ import com.otoki.powersales.schedule.dto.response.LeaderScheduleCreateResponse
 import com.otoki.powersales.schedule.dto.response.LeaderTeamMemberListResponse
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.exception.LeaderScheduleAccountRequiredException
@@ -67,9 +68,8 @@ class LeaderScheduleService(
         private val WORKING_CATEGORY3_ALLOWED = setOf("고정", "격고", "순회")
         private val LEADER_ACCOUNT_GROUPS = listOf("1000", "1010")
 
-        /** 일별 현황 정렬 — 출근 완료자 우선(레거시 mngDaily 병합 순서 동등), 그 다음 이름순. */
-        private val WORKER_ORDER: Comparator<LeaderDailyWorkerItem> =
-            compareByDescending<LeaderDailyWorkerItem> { it.attended }.thenBy { it.employeeName }
+        /** 진열 cat2 '임시' 표시값 (레거시 tempList `workingcategory2__c.contains("임시")` 정합). */
+        private val DISPLAY_CATEGORY2_TEMPORARY = TypeOfWork5.TEMPORARY.displayName
     }
 
     @Transactional
@@ -173,7 +173,9 @@ class LeaderScheduleService(
      * - 행사: `team_member_schedule` `WORK && cat1=EVENT` (`selectHomeSchedulePromote` 정합).
      * - 연차: `team_member_schedule` `ANNUAL_LEAVE` (레거시 `costcentercode` 키 불일치 버그를
      *   계승하지 않고 정상 표시 — 코스트센터 인원 × 해당 일자).
-     * - 요약 총원/출근: 레거시 `dislength`/`promotelength` 정합으로 **고유 여사원 수** 기준.
+     * - 요약 총원/출근: 레거시 `dislength`=(여사원,cat2) 그룹 수, `promotelength`=(여사원,cat2,cat3) 그룹 수.
+     * - 정렬: 레거시 mergedList 버킷 순서 — 진열=출근완료→임시(미출근)→정규(미출근),
+     *   행사=출근완료→미출근, 그 안은 이름·거래처명순(레거시 accList `order by name`).
      */
     fun getDailyStatus(registrantId: Long, date: LocalDate): LeaderDailyStatusResponse {
         val registrant = findRegistrant(registrantId)
@@ -197,26 +199,52 @@ class LeaderScheduleService(
             .mapNotNull { it.employeeId }
             .toSet()
         // 거래처별 출근 = (여사원,거래처) 진열 team_member_schedule 행에 attendanceLog 존재.
+        // 레거시 dtc2 조인은 cat1='진열' 만 보고 workingtype 은 보지 않으므로 동일하게 cat1 만 본다.
         val displayAttendedKeys = schedules
             .asSequence()
-            .filter {
-                it.workingType == WorkingType.WORK &&
-                    it.workingCategory1 == WorkingCategory1.DISPLAY &&
-                    it.attendanceLog != null
-            }
+            .filter { it.workingCategory1 == WorkingCategory1.DISPLAY && it.attendanceLog != null }
             .mapNotNull { s -> pairOrNull(s.employee?.id, s.account?.id) }
             .toSet()
-        val displayWorkers = displayWorkScheduleRepository
+        val rawDisplay = displayWorkScheduleRepository
             .findConfirmedValidByEmployeeIdsAndDate(teamEmployeeIds, date)
             .filter { it.employee?.id in safetyEmployeeIds }
             .map { it.toDisplayWorkerItem(displayAttendedKeys) }
-            .sortedWith(WORKER_ORDER)
 
-        // ── 행사: team_member_schedule cat1=EVENT ──
-        val eventSchedules = schedules.filter {
-            it.workingType == WorkingType.WORK && it.workingCategory1 == WorkingCategory1.EVENT
-        }
-        val eventWorkers = eventSchedules.map { it.toWorkerItem() }.sortedWith(WORKER_ORDER)
+        // ── 행사: team_member_schedule cat1=EVENT (레거시도 cat1='행사' 만 필터) ──
+        val rawEvent = schedules
+            .filter { it.workingCategory1 == WorkingCategory1.EVENT }
+            .map { it.toWorkerItem() }
+
+        // ── 정렬 (레거시 mergedList 버킷 순서, 여사원 단위) ──
+        // 진열: 출근완료 → 임시(미출근) → 정규(미출근), 그 안은 이름·거래처명순.
+        val displayAttendedEmps = rawDisplay.filter { it.attended }.mapNotNull { it.employeeId }.toSet()
+        val displayTempEmps = rawDisplay
+            .filter {
+                it.employeeId != null && it.employeeId !in displayAttendedEmps &&
+                    it.workingCategory2 == DISPLAY_CATEGORY2_TEMPORARY
+            }
+            .mapNotNull { it.employeeId }
+            .toSet()
+        val displayWorkers = rawDisplay.sortedWith(
+            compareBy(
+                { w -> when {
+                    w.employeeId in displayAttendedEmps -> 0
+                    w.employeeId in displayTempEmps -> 1
+                    else -> 2
+                } },
+                { it.employeeName },
+                { it.accountName },
+            )
+        )
+        // 행사: 출근완료 → 미출근, 그 안은 이름·거래처명순.
+        val eventAttendedEmps = rawEvent.filter { it.attended }.mapNotNull { it.employeeId }.toSet()
+        val eventWorkers = rawEvent.sortedWith(
+            compareBy(
+                { w -> if (w.employeeId in eventAttendedEmps) 0 else 1 },
+                { it.employeeName },
+                { it.accountName },
+            )
+        )
 
         // ── 연차: team_member_schedule ANNUAL_LEAVE (레거시 버그 수정 — 정상 표시) ──
         val annualLeaveWorkers = schedules
@@ -226,12 +254,15 @@ class LeaderScheduleService(
             .sortedBy { it.name }
             .map { LeaderDailyEmployeeItem(employeeId = it.id, employeeName = it.name, employeeCode = it.employeeCode) }
 
-        // ── 요약: 고유 여사원 수 기준 (레거시 dislength/promotelength) ──
+        // ── 요약: 레거시 dislength/promotelength 와 동일 그룹 단위 ──
+        // dislength = (여사원, cat2) 그룹 수 / promotelength = (여사원, cat2, cat3) 그룹 수.
         val summary = LeaderDailyStatusSummary(
-            displayTotal = displayWorkers.mapNotNull { it.employeeId }.toSet().size,
-            displayAttended = displayWorkers.filter { it.attended }.mapNotNull { it.employeeId }.toSet().size,
-            eventTotal = eventWorkers.mapNotNull { it.employeeId }.toSet().size,
-            eventAttended = eventWorkers.filter { it.attended }.mapNotNull { it.employeeId }.toSet().size,
+            displayTotal = rawDisplay.map { it.employeeId to it.workingCategory2 }.toSet().size,
+            displayAttended = rawDisplay.filter { it.attended }
+                .map { it.employeeId to it.workingCategory2 }.toSet().size,
+            eventTotal = rawEvent.map { Triple(it.employeeId, it.workingCategory2, it.workingCategory3) }.toSet().size,
+            eventAttended = rawEvent.filter { it.attended }
+                .map { Triple(it.employeeId, it.workingCategory2, it.workingCategory3) }.toSet().size,
             annualLeaveCount = annualLeaveWorkers.size,
         )
 

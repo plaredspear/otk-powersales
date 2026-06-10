@@ -430,6 +430,48 @@ class LeaderScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("진열 정렬 = 출근완료 → 임시(미출근) → 정규(미출근) + 요약은 (여사원,cat2) 그룹 수")
+        fun getDailyStatus_displayOrdering() {
+            val date = LocalDate.of(2026, 6, 10)
+            val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
+            val w1 = createEmployee(id = 10, authority = AppAuthority.WOMAN, costCenterCode = "C001", name = "이여사")
+            val w2 = createEmployee(id = 11, authority = AppAuthority.WOMAN, costCenterCode = "C001", name = "박여사")
+            val w3 = createEmployee(id = 12, authority = AppAuthority.WOMAN, costCenterCode = "C001", name = "김여사")
+            val a1 = createAccount(id = 100, branchCode = "C001", accountGroup = "1000", name = "마트A")
+            val a2 = createAccount(id = 101, branchCode = "C001", accountGroup = "1000", name = "마트B")
+            val a3 = createAccount(id = 102, branchCode = "C001", accountGroup = "1000", name = "마트C")
+
+            val teamIds = listOf(4001L, 10L, 11L, 12L)
+            every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
+            every { employeeRepository.findByCostCenterCodeIn(listOf("C001")) } returns listOf(leader, w1, w2, w3)
+            every {
+                displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(teamIds, date)
+            } returns listOf(
+                displayMaster(employee = w1, account = a1, typeOfWork5 = TypeOfWork5.REGULAR),    // 출근완료
+                displayMaster(employee = w2, account = a2, typeOfWork5 = TypeOfWork5.TEMPORARY),  // 임시 미출근
+                displayMaster(employee = w3, account = a3, typeOfWork5 = TypeOfWork5.REGULAR),    // 정규 미출근
+            )
+            every {
+                safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(teamIds, date)
+            } returns listOf(safetySubmission(10L), safetySubmission(11L), safetySubmission(12L))
+            // w1@a1 만 출근(진열 출근행).
+            every {
+                teamMemberScheduleRepository.findDailyStatusByEmployeeIds(date, teamIds)
+            } returns listOf(
+                tms(employee = w1, account = a1, type = WorkingType.WORK, cat1 = WorkingCategory1.DISPLAY, attended = true),
+            )
+
+            val result = leaderScheduleService.getDailyStatus(leader.id, date)
+
+            // 순서: 출근완료(이여사) → 임시(박여사) → 정규(김여사) — 이름순 아님, 버킷순.
+            assertThat(result.displayWorkers.map { it.employeeName })
+                .containsExactly("이여사", "박여사", "김여사")
+            // dislength = (여사원,cat2) 3그룹, 출근 1그룹.
+            assertThat(result.summary.displayTotal).isEqualTo(3)
+            assertThat(result.summary.displayAttended).isEqualTo(1)
+        }
+
+        @Test
         @DisplayName("실패 - 비조장 -> NOT_LEADER")
         fun getDailyStatus_notLeader() {
             val nonLeader = createEmployee(id = 4001, authority = AppAuthority.WOMAN, costCenterCode = "C001")
@@ -457,11 +499,15 @@ class LeaderScheduleServiceTest {
         if (attended) attendanceLog = AttendanceLog()
     }
 
-    private fun displayMaster(employee: Employee, account: Account): DisplayWorkSchedule =
+    private fun displayMaster(
+        employee: Employee,
+        account: Account,
+        typeOfWork5: TypeOfWork5 = TypeOfWork5.REGULAR,
+    ): DisplayWorkSchedule =
         DisplayWorkSchedule(
             confirmed = true,
             typeOfWork1 = TypeOfWork1.DISPLAY,
-            typeOfWork5 = TypeOfWork5.REGULAR,
+            typeOfWork5 = typeOfWork5,
             typeOfWork3 = TypeOfWork3.FIXED,
         ).apply {
             this.employee = employee
