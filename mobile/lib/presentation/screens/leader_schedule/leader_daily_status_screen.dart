@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -7,19 +5,16 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/error_utils.dart';
 import '../../../core/utils/throttled_tap_mixin.dart';
-import '../../../domain/entities/leader_account.dart';
 import '../../../domain/entities/leader_daily_status.dart';
 import '../../providers/leader_schedule_provider.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/loading_indicator.dart';
 
-/// 조장 — 여사원 일별 현황 화면 (레거시 `employee/mngDaily.jsp` 대응).
+/// 조장 — 여사원 일별 현황 화면 (레거시 `employee/mngDaily.jsp` 결과 동등).
 ///
-/// 선택 날짜의 팀 여사원 진열/행사/연차 근무 현황 + 거래처별 출근 등록 현황을 조회한다(P6).
-/// P7: **진열 일정**에 한해 거래처 변경/삭제 가능(출근 미등록 건). 행사 일정변경은
-/// admin promotion 도메인(spec #679/#571)이 소유하므로 본 화면 범위 밖.
+/// 선택 날짜의 팀 여사원 진열/행사/연차 근무 현황 + 거래처별 출근 등록 현황을 **조회 전용**으로 표시한다.
+/// 진열은 진열 마스터(확정·안전점검 제출자) 기준이라 레거시와 동일하게 조회만 제공한다.
 class LeaderDailyStatusScreen extends ConsumerStatefulWidget {
   const LeaderDailyStatusScreen({super.key});
 
@@ -69,60 +64,6 @@ class _LeaderDailyStatusScreenState
       );
       if (picked != null) {
         ref.read(leaderDailyStatusProvider.notifier).changeDate(picked);
-      }
-    });
-  }
-
-  /// 진열 일정 거래처 변경(P7) — 거래처 선택 시트 → 수정 → 성공 토스트.
-  void _onEditAccount(LeaderDailyWorker worker) {
-    throttledTapAsync(() async {
-      final accountId = await showModalBottomSheet<int>(
-        context: context,
-        isScrollControlled: true,
-        builder: (_) => const _AccountPickerSheet(),
-      );
-      if (accountId == null) return;
-      final ok = await ref
-          .read(leaderDailyStatusProvider.notifier)
-          .updateScheduleAccount(worker.scheduleId, accountId);
-      if (ok && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('거래처가 변경되었습니다')),
-        );
-      }
-    });
-  }
-
-  /// 진열 일정 삭제(P7) — 확인 다이얼로그 → 삭제 → 성공 토스트.
-  void _onDelete(LeaderDailyWorker worker) {
-    throttledTapAsync(() async {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('일정 삭제'),
-          content: Text(
-            '${worker.employeeName}님의 "${worker.accountName}" 진열 일정을 삭제할까요?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('취소'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('삭제'),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true) return;
-      final ok = await ref
-          .read(leaderDailyStatusProvider.notifier)
-          .deleteSchedule(worker.scheduleId);
-      if (ok && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('일정이 삭제되었습니다')),
-        );
       }
     });
   }
@@ -220,13 +161,11 @@ class _LeaderDailyStatusScreenState
         ref.read(leaderDailyStatusProvider.notifier).load();
     return TabBarView(
       children: [
-        // 진열 탭 — 거래처 변경/삭제 가능(P7). 행사/연차는 조회 전용.
+        // 진열/행사/연차 모두 조회 전용 (레거시 mngDaily 동등).
         _WorkerList(
           workers: displayWorkers,
           emptyText: isSearching ? '검색 결과가 없습니다' : '진열 근무자가 없습니다',
           onRefresh: onRefresh,
-          onEditAccount: _onEditAccount,
-          onDelete: _onDelete,
         ),
         _WorkerList(
           workers: eventWorkers,
@@ -416,16 +355,10 @@ class _WorkerList extends StatelessWidget {
   final String emptyText;
   final Future<void> Function() onRefresh;
 
-  /// 진열 탭에서만 제공(행사 탭은 null) — 거래처 변경 / 삭제 액션.
-  final void Function(LeaderDailyWorker)? onEditAccount;
-  final void Function(LeaderDailyWorker)? onDelete;
-
   const _WorkerList({
     required this.workers,
     required this.emptyText,
     required this.onRefresh,
-    this.onEditAccount,
-    this.onDelete,
   });
 
   @override
@@ -439,11 +372,7 @@ class _WorkerList extends StatelessWidget {
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         itemCount: workers.length,
-        itemBuilder: (context, index) => _WorkerCard(
-          worker: workers[index],
-          onEditAccount: onEditAccount,
-          onDelete: onDelete,
-        ),
+        itemBuilder: (context, index) => _WorkerCard(worker: workers[index]),
       ),
     );
   }
@@ -451,21 +380,11 @@ class _WorkerList extends StatelessWidget {
 
 class _WorkerCard extends StatelessWidget {
   final LeaderDailyWorker worker;
-  final void Function(LeaderDailyWorker)? onEditAccount;
-  final void Function(LeaderDailyWorker)? onDelete;
 
-  const _WorkerCard({
-    required this.worker,
-    this.onEditAccount,
-    this.onDelete,
-  });
+  const _WorkerCard({required this.worker});
 
   @override
   Widget build(BuildContext context) {
-    // 출근 등록 전 + 진열 탭(콜백 제공)일 때만 편집/삭제 노출.
-    final canManage =
-        !worker.attended && (onEditAccount != null || onDelete != null);
-
     return Container(
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -512,20 +431,6 @@ class _WorkerCard extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
           _AttendanceBadge(attended: worker.attended),
-          if (canManage)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, size: 20),
-              onSelected: (value) {
-                if (value == 'edit') onEditAccount?.call(worker);
-                if (value == 'delete') onDelete?.call(worker);
-              },
-              itemBuilder: (context) => [
-                if (onEditAccount != null)
-                  const PopupMenuItem(value: 'edit', child: Text('거래처 변경')),
-                if (onDelete != null)
-                  const PopupMenuItem(value: 'delete', child: Text('삭제')),
-              ],
-            ),
         ],
       ),
     );
@@ -647,155 +552,3 @@ class _EmptyList extends StatelessWidget {
   }
 }
 
-/// 거래처 변경 시 사용하는 본인 담당 거래처 선택 시트 (P7).
-/// 선택 시 `Navigator.pop(accountId)` 로 반환한다.
-class _AccountPickerSheet extends ConsumerStatefulWidget {
-  const _AccountPickerSheet();
-
-  @override
-  ConsumerState<_AccountPickerSheet> createState() =>
-      _AccountPickerSheetState();
-}
-
-class _AccountPickerSheetState extends ConsumerState<_AccountPickerSheet> {
-  bool _isLoading = true;
-  String? _error;
-  List<LeaderAccount> _accounts = const [];
-  Timer? _debounce;
-
-  /// 검색 응답 순서 역전(out-of-order) 방지용 요청 시퀀스 토큰.
-  int _requestSeq = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  /// 입력마다 즉시 호출하지 않고 300ms 디바운스 후 검색.
-  void _onSearchChanged(String value) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      final keyword = value.trim().isEmpty ? null : value.trim();
-      _load(keyword: keyword);
-    });
-  }
-
-  Future<void> _load({String? keyword}) async {
-    final seq = ++_requestSeq;
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final accounts = await ref
-          .read(leaderScheduleRepositoryProvider)
-          .getAccounts(keyword: keyword);
-      if (!mounted || seq != _requestSeq) return; // 최신 요청만 반영
-      setState(() {
-        _accounts = accounts;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted || seq != _requestSeq) return;
-      setState(() {
-        _error = extractErrorMessage(e);
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.6,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Row(
-                children: [
-                  Text(
-                    '거래처 선택',
-                    style: AppTypography.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: TextField(
-                onChanged: _onSearchChanged,
-                decoration: InputDecoration(
-                  hintText: '거래처명 / 주소 검색',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Expanded(child: _buildList()),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildList() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    }
-    if (_error != null) {
-      return Center(
-        child: Text(
-          _error!,
-          style: AppTypography.bodyMedium.copyWith(color: AppColors.error),
-        ),
-      );
-    }
-    if (_accounts.isEmpty) {
-      return Center(
-        child: Text(
-          '거래처가 없습니다',
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      );
-    }
-    return ListView.separated(
-      itemCount: _accounts.length,
-      separatorBuilder: (_, __) => Divider(height: 1, color: AppColors.border),
-      itemBuilder: (context, index) {
-        final account = _accounts[index];
-        return ListTile(
-          title: Text(account.name ?? '-'),
-          subtitle: account.address1 != null ? Text(account.address1!) : null,
-          onTap: () => Navigator.of(context).pop(account.id),
-        );
-      },
-    );
-  }
-}

@@ -41,19 +41,6 @@ class FakeLeaderScheduleRepository implements LeaderScheduleRepository {
   }
 
   @override
-  Future<void> updateScheduleAccount({
-    required int scheduleId,
-    required int accountId,
-  }) async {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> deleteSchedule(int scheduleId) async {
-    throw UnimplementedError();
-  }
-
-  @override
   Future<LeaderScheduleCreated> createTeamMemberSchedule({
     required int targetEmployeeId,
     required DateTime workingDate,

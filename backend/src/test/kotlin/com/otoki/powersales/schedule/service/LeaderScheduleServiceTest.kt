@@ -1,8 +1,15 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
+import com.otoki.powersales.schedule.entity.AttendanceLog
+import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.schedule.enums.TypeOfWork1
+import com.otoki.powersales.schedule.enums.TypeOfWork3
+import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
@@ -19,6 +26,8 @@ import com.otoki.powersales.schedule.exception.LeaderScheduleNotLeaderException
 import com.otoki.powersales.schedule.exception.LeaderScheduleNotTeamMemberException
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeInactiveException
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeNotFoundException
+import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -40,6 +49,10 @@ class LeaderScheduleServiceTest {
 
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
 
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk()
+
+    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository = mockk()
+
     private val scheduleConflictValidator: ScheduleConflictValidator = mockk(relaxUnitFun = true)
 
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
@@ -48,6 +61,8 @@ class LeaderScheduleServiceTest {
         employeeRepository,
         accountRepository,
         teamMemberScheduleRepository,
+        displayWorkScheduleRepository,
+        safetyCheckSubmissionRepository,
         scheduleConflictValidator,
         teamMemberScheduleOwnerResolver,
     )
@@ -354,7 +369,107 @@ class LeaderScheduleServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getDailyStatus - 여사원 일별 현황 (레거시 mngDaily 결과 동등)")
+    inner class GetDailyStatusTests {
+
+        @Test
+        @DisplayName("진열=마스터+안전점검 제출자만, 행사=cat1 EVENT, 연차=정상표시, 요약=고유 여사원 수")
+        fun getDailyStatus_success() {
+            val date = LocalDate.of(2026, 6, 10)
+            val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
+            val w1 = createEmployee(id = 10, authority = AppAuthority.WOMAN, costCenterCode = "C001", name = "김여사")
+            val w2 = createEmployee(id = 11, authority = AppAuthority.WOMAN, costCenterCode = "C001", name = "박여사")
+            val a1 = createAccount(id = 100, branchCode = "C001", accountGroup = "1000", name = "마트A", externalKey = "K1")
+            val a2 = createAccount(id = 101, branchCode = "C001", accountGroup = "1000", name = "마트B", externalKey = "K2")
+
+            val teamIds = listOf(4001L, 10L, 11L)
+            every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
+            every { employeeRepository.findByCostCenterCodeIn(listOf("C001")) } returns listOf(leader, w1, w2)
+
+            // 진열 마스터: w1@a1, w2@a2 (둘 다 확정·유효). 단 안전점검은 w1 만 제출 → w2 진열 제외.
+            every {
+                displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(teamIds, date)
+            } returns listOf(
+                displayMaster(employee = w1, account = a1),
+                displayMaster(employee = w2, account = a2),
+            )
+            every {
+                safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(teamIds, date)
+            } returns listOf(safetySubmission(employeeId = 10L))
+
+            // team_member_schedule: w1@a1 진열 출근(attended), w2@a2 행사, w2 연차.
+            every {
+                teamMemberScheduleRepository.findDailyStatusByEmployeeIds(date, teamIds)
+            } returns listOf(
+                tms(employee = w1, account = a1, type = WorkingType.WORK, cat1 = WorkingCategory1.DISPLAY, attended = true),
+                tms(employee = w2, account = a2, type = WorkingType.WORK, cat1 = WorkingCategory1.EVENT, attended = false),
+                tms(employee = w2, account = null, type = WorkingType.ANNUAL_LEAVE, cat1 = null, attended = false),
+            )
+
+            val result = leaderScheduleService.getDailyStatus(leader.id, date)
+
+            // 진열: w1@a1 만 (w2 는 안전점검 미제출로 제외), 출근 완료.
+            assertThat(result.displayWorkers).hasSize(1)
+            assertThat(result.displayWorkers[0].employeeName).isEqualTo("김여사")
+            assertThat(result.displayWorkers[0].accountName).isEqualTo("마트A")
+            assertThat(result.displayWorkers[0].attended).isTrue()
+            // 행사: w2@a2.
+            assertThat(result.eventWorkers).hasSize(1)
+            assertThat(result.eventWorkers[0].employeeName).isEqualTo("박여사")
+            assertThat(result.eventWorkers[0].attended).isFalse()
+            // 연차: w2 (정상 표시).
+            assertThat(result.annualLeaveWorkers).hasSize(1)
+            assertThat(result.annualLeaveWorkers[0].employeeName).isEqualTo("박여사")
+            // 요약(고유 여사원 수).
+            assertThat(result.summary.displayTotal).isEqualTo(1)
+            assertThat(result.summary.displayAttended).isEqualTo(1)
+            assertThat(result.summary.eventTotal).isEqualTo(1)
+            assertThat(result.summary.eventAttended).isEqualTo(0)
+            assertThat(result.summary.annualLeaveCount).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("실패 - 비조장 -> NOT_LEADER")
+        fun getDailyStatus_notLeader() {
+            val nonLeader = createEmployee(id = 4001, authority = AppAuthority.WOMAN, costCenterCode = "C001")
+            every { employeeRepository.findById(nonLeader.id) } returns Optional.of(nonLeader)
+
+            assertThatThrownBy { leaderScheduleService.getDailyStatus(nonLeader.id, LocalDate.of(2026, 6, 10)) }
+                .isInstanceOf(LeaderScheduleNotLeaderException::class.java)
+        }
+    }
+
     // ========== Helpers ==========
+
+    private fun tms(
+        employee: Employee,
+        account: Account?,
+        type: WorkingType,
+        cat1: WorkingCategory1?,
+        attended: Boolean,
+    ): TeamMemberSchedule = TeamMemberSchedule(
+        employee = employee,
+        account = account,
+        workingType = type,
+        workingCategory1 = cat1,
+    ).apply {
+        if (attended) attendanceLog = AttendanceLog()
+    }
+
+    private fun displayMaster(employee: Employee, account: Account): DisplayWorkSchedule =
+        DisplayWorkSchedule(
+            confirmed = true,
+            typeOfWork1 = TypeOfWork1.DISPLAY,
+            typeOfWork5 = TypeOfWork5.REGULAR,
+            typeOfWork3 = TypeOfWork3.FIXED,
+        ).apply {
+            this.employee = employee
+            this.account = account
+        }
+
+    private fun safetySubmission(employeeId: Long): SafetyCheckSubmission =
+        SafetyCheckSubmission(employeeId = employeeId, workingDate = LocalDate.of(2026, 6, 10))
 
     private fun createEmployee(
         id: Long,

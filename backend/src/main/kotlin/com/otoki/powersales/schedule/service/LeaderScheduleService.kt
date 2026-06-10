@@ -12,24 +12,21 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmploymentStatus
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
-import com.otoki.powersales.schedule.dto.request.LeaderScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
 import com.otoki.powersales.schedule.dto.response.LeaderDailyEmployeeItem
 import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusResponse
 import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusSummary
 import com.otoki.powersales.schedule.dto.response.LeaderDailyWorkerItem
 import com.otoki.powersales.schedule.dto.response.LeaderScheduleCreateResponse
-import com.otoki.powersales.schedule.dto.response.LeaderScheduleUpdateResponse
 import com.otoki.powersales.schedule.dto.response.LeaderTeamMemberListResponse
+import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.exception.LeaderScheduleAccountRequiredException
-import com.otoki.powersales.schedule.exception.LeaderScheduleAlreadyAttendedException
-import com.otoki.powersales.schedule.exception.LeaderScheduleDisplayMasterLinkedException
 import com.otoki.powersales.schedule.exception.LeaderScheduleInvalidWorkCategory2Exception
 import com.otoki.powersales.schedule.exception.LeaderScheduleInvalidWorkingTypeException
 import com.otoki.powersales.schedule.exception.LeaderScheduleMissingWorkCategory3Exception
-import com.otoki.powersales.schedule.exception.LeaderScheduleNotDisplayScheduleException
-import com.otoki.powersales.schedule.exception.LeaderScheduleNotFoundException
 import com.otoki.powersales.schedule.exception.LeaderScheduleNotLeaderAccountException
 import com.otoki.powersales.schedule.exception.LeaderScheduleNotLeaderException
 import com.otoki.powersales.schedule.exception.LeaderScheduleNotTeamMemberException
@@ -56,6 +53,8 @@ class LeaderScheduleService(
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
+    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
     private val scheduleConflictValidator: ScheduleConflictValidator,
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
 ) {
@@ -142,92 +141,6 @@ class LeaderScheduleService(
         return LeaderScheduleCreateResponse.from(saved)
     }
 
-    /**
-     * 조장 진열 일정 수정 (P7 — 레거시 `changeProc` InterfaceType=M 동등, 거래처 변경만).
-     *
-     * 가드: 본인 팀원의 진열 일정 + 진열마스터 미연결 + 출근 미등록. 새 거래처는 본인 담당 거래처.
-     * 충돌 검증은 자기 자신을 제외하고 기존 [ScheduleConflictValidator] 규칙을 재사용한다(근무유형3 불변).
-     *
-     * **신규 차이(MFEIS)**: 레거시는 트리거로 N/M/D 시 `MonthlyFemaleEmployeeIntegrationSchedule` 를
-     * 재집계했으나, 신규는 #554 create 와 동일하게 batch 재집계 모델을 따라 호출하지 않는다.
-     * 본 수정은 거래처만 바꾸고 월/직원/근무유형 집계 키는 불변이라 MFEIS 영향이 없다.
-     */
-    @Transactional
-    fun updateTeamMemberSchedule(
-        registrantId: Long,
-        scheduleId: Long,
-        request: LeaderScheduleUpdateRequest
-    ): LeaderScheduleUpdateResponse {
-        val registrant = findRegistrant(registrantId)
-        requireLeader(registrant)
-
-        val schedule = teamMemberScheduleRepository.findById(scheduleId)
-            .orElseThrow { LeaderScheduleNotFoundException() }
-        requireEditableDisplaySchedule(schedule, registrant)
-
-        val accountId = request.accountId ?: throw LeaderScheduleAccountRequiredException()
-        val account = accountRepository.findById(accountId)
-            .orElseThrow { LeaderScheduleNotLeaderAccountException() }
-        if (!isLeaderAccount(account, registrant)) {
-            throw LeaderScheduleNotLeaderAccountException()
-        }
-
-        // 충돌 검증 — 근무유형3 은 변경하지 않으므로 기존 값 유지, 자기 자신 제외.
-        val employeeId = schedule.employee?.id ?: throw LeaderScheduleNotTeamMemberException()
-        val workingDate = schedule.workingDate ?: throw LeaderScheduleNotFoundException()
-        scheduleConflictValidator.validateConflicts(
-            employeeId = employeeId,
-            workingDate = workingDate,
-            workingType = WORKING_TYPE_WORK,
-            accountId = account.id,
-            workingCategory3 = schedule.workingCategory3,
-            excludeScheduleId = schedule.id
-        )
-
-        // 영속 entity — dirty checking 으로 commit 시 자동 UPDATE (명시 save 불요).
-        schedule.account = account
-        return LeaderScheduleUpdateResponse.from(schedule)
-    }
-
-    /**
-     * 조장 진열 일정 삭제 (P7 — 레거시 `changeProc` InterfaceType=D 동등).
-     *
-     * 가드: 본인 팀원의 진열 일정 + 진열마스터 미연결 + 출근 미등록.
-     *
-     * **신규 차이(MFEIS)**: 레거시 트리거의 `MonthlyFemaleEmployeeIntegrationSchedule` 재집계는
-     * 신규 batch 모델로 대체 — 삭제분은 차기 batch 까지 MFEIS 집계에 지연 반영될 수 있다(허용).
-     */
-    @Transactional
-    fun deleteTeamMemberSchedule(registrantId: Long, scheduleId: Long) {
-        val registrant = findRegistrant(registrantId)
-        requireLeader(registrant)
-
-        val schedule = teamMemberScheduleRepository.findById(scheduleId)
-            .orElseThrow { LeaderScheduleNotFoundException() }
-        requireEditableDisplaySchedule(schedule, registrant)
-
-        teamMemberScheduleRepository.delete(schedule)
-    }
-
-    /**
-     * 진열 일정 수정/삭제 공통 가드.
-     * - 본인 팀원(cost_center_code 일치) 일정
-     * - 진열 일정(`WORK && cat1 != EVENT`) — 행사/연차는 불가 (행사는 admin promotion 도메인 소유)
-     * - 진열마스터 미연결 (레거시 `checkDisplayMaster`)
-     * - 출근 미등록 (레거시 `deleteblock`)
-     */
-    private fun requireEditableDisplaySchedule(schedule: TeamMemberSchedule, registrant: Employee) {
-        val employee = schedule.employee ?: throw LeaderScheduleNotTeamMemberException()
-        if (employee.costCenterCode != registrant.costCenterCode) {
-            throw LeaderScheduleNotTeamMemberException()
-        }
-        val isDisplay = schedule.workingType == WorkingType.WORK &&
-            schedule.workingCategory1 != WorkingCategory1.EVENT
-        if (!isDisplay) throw LeaderScheduleNotDisplayScheduleException()
-        if (schedule.displayWorkSchedule != null) throw LeaderScheduleDisplayMasterLinkedException()
-        if (schedule.attendanceLog != null) throw LeaderScheduleAlreadyAttendedException()
-    }
-
     fun getTeamMembers(registrantId: Long): List<LeaderTeamMemberListResponse> {
         val registrant = findRegistrant(registrantId)
         requireLeader(registrant)
@@ -249,18 +162,18 @@ class LeaderScheduleService(
     }
 
     /**
-     * 조장 여사원 일별 현황 조회 (레거시 `employee/mngDaily.jsp` — 조회 전용).
+     * 조장 여사원 일별 현황 조회 (레거시 `employee/mngDaily.jsp` + `EmployeeController.mgnDaily` 결과 동등).
      *
-     * **레거시 매핑**: SF/JSP `employee/mngDaily.jsp` + `EmployeeController.mgnDaily`.
-     * 조장이 특정 날짜의 팀 여사원 진열/행사/연차 근무 현황 + 거래처별 출근 등록 현황을 조회.
-     * 레거시의 "일정변경"(mutation) 은 본 작업 범위 외 — P7 / spec #679 로 분리.
-     *
-     * **동작**: 본인 팀(cost_center_code) 여사원의 [date] 일정을 fetchJoin 단건 조회 후
-     * 진열/행사 근무자 + 연차자로 분류하고 출근 등록 여부(attendance_log FK)를 함께 반환.
-     *
-     * **분류 정합**: 진열/행사/연차 분류·출근 판정은 [FemaleEmployeeScheduleQueryService.aggregateSummary]
-     * 와 동일 기준 — 진열=`WORK && cat1 != EVENT`(cat1=null 포함), 행사=`WORK && cat1 == EVENT`,
-     * 연차=`ANNUAL_LEAVE`, 출근=`attendanceLog != null`.
+     * **레거시 결과 재현 규칙** (조회 전용):
+     * - 대상 인원: 조장의 `cost_center_code` 소속 전체 인원(레거시 sfid 서브쿼리 정합, 권한 필터 없음).
+     *   조회는 모두 내부 PK(`employee.id`/`account.id`) 기준 — sfid 미사용.
+     * - 진열: `DisplayWorkSchedule` 마스터(`confirmed=true` + 기간 유효, `selectHomeScheduleDisplay` 정합)
+     *   중 **안전점검 제출자(`SafetyCheckSubmission` 존재 = 레거시 comm_cnt>0)** 만 포함.
+     *   거래처별 출근 = 동일 (여사원,거래처,일자) 진열 `team_member_schedule` 행의 `attendanceLog` 존재.
+     * - 행사: `team_member_schedule` `WORK && cat1=EVENT` (`selectHomeSchedulePromote` 정합).
+     * - 연차: `team_member_schedule` `ANNUAL_LEAVE` (레거시 `costcentercode` 키 불일치 버그를
+     *   계승하지 않고 정상 표시 — 코스트센터 인원 × 해당 일자).
+     * - 요약 총원/출근: 레거시 `dislength`/`promotelength` 정합으로 **고유 여사원 수** 기준.
      */
     fun getDailyStatus(registrantId: Long, date: LocalDate): LeaderDailyStatusResponse {
         val registrant = findRegistrant(registrantId)
@@ -269,34 +182,56 @@ class LeaderScheduleService(
         val costCenterCode = registrant.costCenterCode
             ?: return emptyDailyStatus(date)
 
-        val teamMembers = employeeRepository.findByCostCenterCodeAndRole(costCenterCode, AppAuthority.WOMAN)
-        if (teamMembers.isEmpty()) return emptyDailyStatus(date)
+        // 코스트센터 전체 인원(내부 PK). 레거시는 sfid 서브쿼리지만 신규는 cost_center_code 직접.
+        val teamEmployeeIds = employeeRepository
+            .findByCostCenterCodeIn(listOf(costCenterCode))
+            .mapNotNull { it.id.takeIf { v -> v != 0L } }
+        if (teamEmployeeIds.isEmpty()) return emptyDailyStatus(date)
 
-        val employeeIds = teamMembers.mapNotNull { it.id.takeIf { v -> v != 0L } }
-        val schedules = teamMemberScheduleRepository.findDailyStatusByEmployeeIds(date, employeeIds)
+        // 행사/연차 + 진열 거래처별 출근 판정용 일별 team_member_schedule 조회.
+        val schedules = teamMemberScheduleRepository.findDailyStatusByEmployeeIds(date, teamEmployeeIds)
 
-        // 진열/행사/연차 분류 — aggregateSummary 정합 (진열은 cat1 != EVENT 로 null 포함).
-        val displaySchedules = schedules.filter {
-            it.workingType == WorkingType.WORK && it.workingCategory1 != WorkingCategory1.EVENT
-        }
+        // ── 진열: 마스터(확정·유효) + 안전점검 제출자(comm_cnt>0) ──
+        val safetyEmployeeIds = safetyCheckSubmissionRepository
+            .findByEmployeeIdInAndWorkingDate(teamEmployeeIds, date)
+            .mapNotNull { it.employeeId }
+            .toSet()
+        // 거래처별 출근 = (여사원,거래처) 진열 team_member_schedule 행에 attendanceLog 존재.
+        val displayAttendedKeys = schedules
+            .asSequence()
+            .filter {
+                it.workingType == WorkingType.WORK &&
+                    it.workingCategory1 == WorkingCategory1.DISPLAY &&
+                    it.attendanceLog != null
+            }
+            .mapNotNull { s -> pairOrNull(s.employee?.id, s.account?.id) }
+            .toSet()
+        val displayWorkers = displayWorkScheduleRepository
+            .findConfirmedValidByEmployeeIdsAndDate(teamEmployeeIds, date)
+            .filter { it.employee?.id in safetyEmployeeIds }
+            .map { it.toDisplayWorkerItem(displayAttendedKeys) }
+            .sortedWith(WORKER_ORDER)
+
+        // ── 행사: team_member_schedule cat1=EVENT ──
         val eventSchedules = schedules.filter {
             it.workingType == WorkingType.WORK && it.workingCategory1 == WorkingCategory1.EVENT
         }
-        val annualLeaveSchedules = schedules.filter { it.workingType == WorkingType.ANNUAL_LEAVE }
-
-        val displayWorkers = displaySchedules.map { it.toWorkerItem() }.sortedWith(WORKER_ORDER)
         val eventWorkers = eventSchedules.map { it.toWorkerItem() }.sortedWith(WORKER_ORDER)
-        val annualLeaveWorkers = annualLeaveSchedules
+
+        // ── 연차: team_member_schedule ANNUAL_LEAVE (레거시 버그 수정 — 정상 표시) ──
+        val annualLeaveWorkers = schedules
+            .filter { it.workingType == WorkingType.ANNUAL_LEAVE }
             .mapNotNull { it.employee }
             .distinctBy { it.id }
             .sortedBy { it.name }
             .map { LeaderDailyEmployeeItem(employeeId = it.id, employeeName = it.name, employeeCode = it.employeeCode) }
 
+        // ── 요약: 고유 여사원 수 기준 (레거시 dislength/promotelength) ──
         val summary = LeaderDailyStatusSummary(
-            displayTotal = displaySchedules.size,
-            displayAttended = displaySchedules.count { it.attendanceLog != null },
-            eventTotal = eventSchedules.size,
-            eventAttended = eventSchedules.count { it.attendanceLog != null },
+            displayTotal = displayWorkers.mapNotNull { it.employeeId }.toSet().size,
+            displayAttended = displayWorkers.filter { it.attended }.mapNotNull { it.employeeId }.toSet().size,
+            eventTotal = eventWorkers.mapNotNull { it.employeeId }.toSet().size,
+            eventAttended = eventWorkers.filter { it.attended }.mapNotNull { it.employeeId }.toSet().size,
             annualLeaveCount = annualLeaveWorkers.size,
         )
 
@@ -392,4 +327,31 @@ class LeaderScheduleService(
             workingCategory3 = workingCategory3?.displayName,
             attended = attendanceLog != null,
         )
+
+    /**
+     * 진열 마스터 → 일별 현황 워커 항목 (레거시 `selectDisplayAccList` 컬럼 매핑).
+     * 진열은 마스터 출처(조회 전용)라 편집용 schedule id 가 없어 [scheduleId] = 0.
+     * 카테고리: typeOfWork1→cat1(진열), typeOfWork5→cat2(상시/임시), typeOfWork3→cat3.
+     */
+    private fun DisplayWorkSchedule.toDisplayWorkerItem(
+        attendedKeys: Set<Pair<Long, Long>>
+    ): LeaderDailyWorkerItem {
+        val empId = employee?.id
+        val accId = account?.id
+        return LeaderDailyWorkerItem(
+            scheduleId = 0L,
+            employeeId = empId,
+            employeeName = employee?.name.orEmpty(),
+            employeeCode = employee?.employeeCode.orEmpty(),
+            accountName = account?.name.orEmpty(),
+            accountCode = account?.externalKey.orEmpty(),
+            workingCategory1 = typeOfWork1?.displayName,
+            workingCategory2 = typeOfWork5?.displayName,
+            workingCategory3 = typeOfWork3?.displayName,
+            attended = empId != null && accId != null && (empId to accId) in attendedKeys,
+        )
+    }
+
+    private fun pairOrNull(a: Long?, b: Long?): Pair<Long, Long>? =
+        if (a != null && b != null) a to b else null
 }
