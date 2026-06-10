@@ -5,6 +5,9 @@ class ClaimListState {
   /// 조회 기간 최대 일수 (레거시 daterangepicker maxSpan.days=7 동등).
   static const int maxRangeDays = 7;
 
+  /// 페이지당 표시 건수 (레거시 list.jsp claimListAppend 의 20건/페이지 동등).
+  static const int pageSize = 20;
+
   final bool isLoading;
   final String? errorMessage;
   final List<ClaimListItem> items;
@@ -13,6 +16,9 @@ class ClaimListState {
   final DateTime endDate;
   final int? selectedAccountId;
   final String? selectedAccountName;
+
+  /// 현재 화면에 노출 중인 건수 (클라이언트 페이징 — 전체 items 중 앞에서부터 이만큼만 표시).
+  final int visibleCount;
 
   const ClaimListState({
     this.isLoading = false,
@@ -23,6 +29,7 @@ class ClaimListState {
     required this.endDate,
     this.selectedAccountId,
     this.selectedAccountName,
+    this.visibleCount = pageSize,
   });
 
   factory ClaimListState.initial() {
@@ -41,6 +48,13 @@ class ClaimListState {
 
   bool get isEmpty => hasSearched && items.isEmpty;
 
+  /// 현재 페이지까지 노출할 아이템 (전체 items 의 앞부분 slice).
+  List<ClaimListItem> get visibleItems =>
+      items.length <= visibleCount ? items : items.sublist(0, visibleCount);
+
+  /// 더 보여줄 다음 페이지가 남아있는지.
+  bool get hasMore => items.length > visibleCount;
+
   ClaimListState copyWith({
     bool? isLoading,
     String? errorMessage,
@@ -52,6 +66,7 @@ class ClaimListState {
     int? selectedAccountId,
     String? selectedAccountName,
     bool clearAccount = false,
+    int? visibleCount,
   }) {
     return ClaimListState(
       isLoading: isLoading ?? this.isLoading,
@@ -65,6 +80,7 @@ class ClaimListState {
       selectedAccountName: clearAccount
           ? null
           : (selectedAccountName ?? this.selectedAccountName),
+      visibleCount: visibleCount ?? this.visibleCount,
     );
   }
 }

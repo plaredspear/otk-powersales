@@ -52,10 +52,19 @@ class ClaimListNotifier extends StateNotifier<ClaimListState> {
         isLoading: false,
         items: items,
         hasSearched: true,
+        visibleCount: ClaimListState.pageSize,
       );
     } catch (e) {
       state = state.toError(e.toString().replaceFirst('Exception: ', ''));
     }
+  }
+
+  /// 다음 페이지 노출 (클라이언트 페이징 — 이미 받아둔 목록에서 20건씩 추가 표시).
+  void loadMore() {
+    if (!state.hasMore) return;
+    final next = (state.visibleCount + ClaimListState.pageSize)
+        .clamp(0, state.items.length);
+    state = state.copyWith(visibleCount: next);
   }
 
   /// 시작일 변경. 종료일과의 간격이 최대 일수를 넘으면 종료일을 자동 보정한다.
