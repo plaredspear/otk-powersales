@@ -56,6 +56,14 @@ class AuthInterceptor extends Interceptor {
       return handler.next(err);
     }
 
+    // 로그인 요청의 에러(예: 401 자격증명 오류)는 인터셉터가 가로채면 안 된다.
+    // 401을 토큰 갱신 대상으로 처리하면 refresh 토큰이 없어 _forceLogout() →
+    // 로그인 화면 재진입(슬라이드 전환)이 발생한다. 로그인 화면이 직접 에러를
+    // 표시하도록 그대로 전달한다. (login 은 토큰 갱신/강제 로그아웃 대상이 아님)
+    if (err.requestOptions.path.contains('/auth/login')) {
+      return handler.next(err);
+    }
+
     if (response.statusCode == 401) {
       await _handle401(err, handler);
     } else if (response.statusCode == 403) {

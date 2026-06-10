@@ -77,73 +77,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // 저장된 사번 로드
     _loadSavedSettings();
 
-    // 에러 메시지 SnackBar 표시
-    ref.listen<String?>(
-      authProvider.select((state) => state.errorMessage),
-      (previous, next) {
-        if (next != null && next.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(next),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          ref.read(authProvider.notifier).clearError();
-        }
-      },
-    );
-
     return Scaffold(
       backgroundColor: const Color(0xFFEFEFEF),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
-                child: Container(
-                  width: double.infinity,
-                  color: AppColors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // 앱 로고 + 타이틀
-                        _buildLogo(),
-                        const SizedBox(height: 32),
+        // Stack 으로 폼(중앙 정렬)과 에러 박스(하단 고정)를 분리한다.
+        // 에러를 Column 흐름에 넣으면 중앙 정렬이 재계산되어 폼이 위로 점프(화면 전환)하므로,
+        // 하단 오버레이로 띄워 폼 레이아웃에 영향을 주지 않게 한다.
+        child: Stack(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      color: AppColors.white,
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 32),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // 앱 로고 + 타이틀
+                            _buildLogo(),
+                            const SizedBox(height: 32),
 
-                        // 아이디(사번) 입력
-                        _buildEmployeeNumberField(),
-                        const SizedBox(height: 12),
+                            // 아이디(사번) 입력
+                            _buildEmployeeNumberField(),
+                            const SizedBox(height: 12),
 
-                        // 비밀번호 입력
-                        _buildPasswordField(),
-                        const SizedBox(height: 16),
+                            // 비밀번호 입력
+                            _buildPasswordField(),
+                            const SizedBox(height: 16),
 
-                        // 체크박스 영역 (가로 배치)
-                        _buildCheckboxArea(),
-                        const SizedBox(height: 20),
+                            // 체크박스 영역 (가로 배치)
+                            _buildCheckboxArea(),
+                            const SizedBox(height: 20),
 
-                        // 로그인 버튼
-                        _buildLoginButton(authState.isLoading),
-                        const SizedBox(height: 36),
+                            // 로그인 버튼
+                            _buildLoginButton(authState.isLoading),
+                            const SizedBox(height: 36),
 
-                        // 저작권 문구
-                        _buildCopyright(),
-                      ],
+                            // 저작권 문구
+                            _buildCopyright(),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            );
-          },
+                );
+              },
+            ),
+
+            // 에러 메시지 (하단 고정 오버레이 — 화면 전환 없이 즉시 표시)
+            _buildErrorMessage(authState.errorMessage),
+          ],
         ),
       ),
     );
@@ -367,6 +360,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       isLoading: isLoading,
       height: 50,
       fontSize: 16,
+    );
+  }
+
+  /// 에러 메시지 (하단 고정 오버레이)
+  ///
+  /// 로그인 실패 시 화면 전환/애니메이션 없이 화면 하단에 즉시 표시한다.
+  /// Stack 오버레이라 중앙 정렬된 폼 레이아웃에 영향을 주지 않는다.
+  /// `errorMessage`는 다음 로그인 시도(`toLoading()`)에서 null로 초기화된다.
+  Widget _buildErrorMessage(String? message) {
+    if (message == null || message.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Positioned(
+      left: 16,
+      right: 16,
+      bottom: 16,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.error,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        ),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: AppTypography.bodyMedium.copyWith(
+            color: AppColors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 
