@@ -91,6 +91,16 @@ class ClaimListNotifier extends StateNotifier<ClaimListState> {
     state = state.copyWith(startDate: start, endDate: date);
   }
 
+  /// 시작일·종료일을 한 번에 변경(달력 범위 선택). 간격이 최대 일수를 넘으면 종료일을 보정한다.
+  void updateDateRange(DateTime start, DateTime end) {
+    const maxDays = ClaimListState.maxRangeDays;
+    var normalizedEnd = end.isBefore(start) ? start : end;
+    if (normalizedEnd.difference(start).inDays > maxDays) {
+      normalizedEnd = start.add(const Duration(days: maxDays));
+    }
+    state = state.copyWith(startDate: start, endDate: normalizedEnd);
+  }
+
   /// 거래처 필터 선택 (특정 거래처).
   void selectAccount(int accountId, String accountName) {
     state = state.copyWith(
