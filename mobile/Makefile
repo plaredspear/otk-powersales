@@ -62,8 +62,7 @@ build-ios-prod: setup
 build-ipa-dev: setup
 	$(FLUTTER) build ipa --release --flavor dev \
 		--dart-define-from-file=config/dev.json \
-		--export-options-plist=ios/ExportOptions-Enterprise-Dev.plist \
-		--output=build/ios/ipa-dev
+		--export-options-plist=ios/ExportOptions-Enterprise-Dev.plist
 
 ## iOS Enterprise In-House IPA 빌드 (prod)
 ##   archive + export 를 한 번에 수행. ios/ExportOptions-Enterprise.plist 와
@@ -71,8 +70,7 @@ build-ipa-dev: setup
 build-ipa-prod: setup
 	$(FLUTTER) build ipa --release --flavor prod \
 		--dart-define-from-file=config/prod.json \
-		--export-options-plist=ios/ExportOptions-Enterprise.plist \
-		--output=build/ios/ipa-prod
+		--export-options-plist=ios/ExportOptions-Enterprise.plist
 
 ## 테스트 실행
 test:

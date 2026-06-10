@@ -169,28 +169,22 @@ build_one() { # <make-target>
 ENVS=()
 case "$ENV" in dev) ENVS=(dev) ;; prod) ENVS=(prod) ;; all) ENVS=(dev prod) ;; esac
 
+# 산출물 공통 폴더. 빌드는 Flutter 기본 위치에 생성되고(원본 보존), 빌드 직후
+# build/dist 로 복사하며 <base>-<flavor>-<version> 으로 파일명을 정규화한다.
+# IPA 는 flavor 무관하게 build/ios/ipa/mobile.ipa 한 이름으로 덮여 생성되므로,
+# 다음 flavor 빌드가 덮어쓰기 전에 flavor 별 빌드 직후 즉시 복사해야 한다.
+DIST_DIR="$MOBILE_DIR/build/dist"
+mkdir -p "$DIST_DIR"
+
 BUILT=()
 for e in "${ENVS[@]}"; do
   if [[ "$PLATFORM" == "ios" || "$PLATFORM" == "all" ]]; then
     build_one "build-ipa-$e"; BUILT+=("ipa-$e")
-  fi
-  if [[ "$PLATFORM" == "android" || "$PLATFORM" == "all" ]]; then
-    build_one "build-apk-$e"; BUILT+=("apk-$e")
-  fi
-done
-
-# ── 산출물을 공통 폴더(build/dist)로 수집 ───────────────────────────
-#   빌드는 Flutter 기본 위치에 생성되고(원본 보존), 여기서 build/dist 로 복사하며
-#   <base>-<flavor>-<version> 으로 파일명을 정규화한다. flavor·버전이 파일명에
-#   들어가므로 dev/prod·여러 버전 산출물이 한 폴더에서 공존한다.
-DIST_DIR="$MOBILE_DIR/build/dist"
-mkdir -p "$DIST_DIR"
-for e in "${ENVS[@]}"; do
-  if [[ "$PLATFORM" == "ios" || "$PLATFORM" == "all" ]]; then
-    src="build/ios/ipa-$e/mobile.ipa"
+    src="build/ios/ipa/mobile.ipa"
     [[ -f "$src" ]] && cp -f "$src" "$DIST_DIR/mobile-$e-$NEW_VERSION.ipa"
   fi
   if [[ "$PLATFORM" == "android" || "$PLATFORM" == "all" ]]; then
+    build_one "build-apk-$e"; BUILT+=("apk-$e")
     src="build/app/outputs/flutter-apk/app-$e-release.apk"
     [[ -f "$src" ]] && cp -f "$src" "$DIST_DIR/app-$e-$NEW_VERSION.apk"
   fi
