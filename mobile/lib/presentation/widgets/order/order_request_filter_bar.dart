@@ -4,15 +4,18 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/order_request.dart';
+import '../../../domain/repositories/my_account_repository.dart';
+import '../account/account_selector_field.dart';
+import '../common/range_calendar_picker.dart';
 import 'order_filter_styles.dart';
 
 /// 주문 필터 바 위젯
 ///
-/// 거래처 드롭다운, 상태 드롭다운, 납기일 범위, 검색 버튼을 포함합니다.
+/// 거래처 선택(바텀시트), 상태 드롭다운, 납기일 범위, 검색 버튼을 포함합니다.
 /// Heroku 레거시(order/list.jsp - 내 주문 탭)의 플랫 검색 영역 디자인에 정합합니다.
 class OrderRequestFilterBar extends StatelessWidget {
-  /// 거래처 목록 (id -> name)
-  final Map<int, String> clients;
+  /// 선택된 거래처명 (미선택 시 전체)
+  final String? selectedClientName;
 
   /// 선택된 거래처 ID
   final int? selectedClientId;
@@ -40,7 +43,7 @@ class OrderRequestFilterBar extends StatelessWidget {
 
   const OrderRequestFilterBar({
     super.key,
-    required this.clients,
+    this.selectedClientName,
     this.selectedClientId,
     this.selectedStatus,
     this.deliveryDateFrom,
@@ -90,42 +93,15 @@ class OrderRequestFilterBar extends StatelessWidget {
   }
 
   Widget _buildClientDropdown(BuildContext context) {
-    return Padding(
+    return AccountSelectorField(
+      selectedName: selectedClientName,
+      placeholder: '거래처 전체',
+      scope: MyAccountScope.order,
+      leadingIcon: Icons.store_outlined,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: selectedClientId,
-          isExpanded: true,
-          icon: const Icon(
-            Icons.arrow_drop_down,
-            size: 22,
-            color: AppColors.textSecondary,
-          ),
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textPrimary,
-          ),
-          hint: Text('거래처 전체', style: OrderFilterStyles.valueText),
-          items: [
-            DropdownMenuItem<int?>(
-              value: null,
-              child: Text('거래처 전체', style: OrderFilterStyles.valueText),
-            ),
-            ...clients.entries.map((entry) {
-              return DropdownMenuItem<int?>(
-                value: entry.key,
-                child: Text(
-                  entry.value,
-                  style: OrderFilterStyles.valueText,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }),
-          ],
-          onChanged: (value) {
-            onClientChanged(value, value != null ? clients[value] : null);
-          },
-        ),
-      ),
+      onSelected: (account) =>
+          onClientChanged(account.accountId, account.accountName),
+      onCleared: () => onClientChanged(null, null),
     );
   }
 
@@ -196,6 +172,8 @@ class OrderRequestFilterBar extends StatelessWidget {
     );
   }
 
+  /// 납기일 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
+  /// 레거시(order/list.jsp #my-date): minDate/maxDate 없음, maxSpan 7일.
   Future<void> _showDateRangePicker(BuildContext context) async {
     // 현재 선택된 범위 기본값: 오늘 ~ 오늘+7일
     final now = DateTime.now();
@@ -206,40 +184,16 @@ class OrderRequestFilterBar extends StatelessWidget {
         ? DateTime.parse(deliveryDateTo!)
         : now.add(const Duration(days: 7));
 
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      initialDateRange: DateTimeRange(
-        start: initialFrom,
-        end: initialTo,
-      ),
-      locale: const Locale('ko', 'KR'),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: AppColors.otokiBlue,
-                ),
-          ),
-          child: child!,
-        );
-      },
+    final picked = await showRangeCalendar(
+      context,
+      initialStart: initialFrom,
+      initialEnd: initialTo,
+      maxRangeDays: 7,
     );
 
     if (picked != null) {
-      // 최대 7일 범위 제한 (레거시 daterangepicker maxSpan: 7d)
-      var start = picked.start;
-      var end = picked.end;
-      if (end.difference(start).inDays > 7) {
-        end = start.add(const Duration(days: 7));
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('최대 7일까지 선택 가능합니다')),
-          );
-        }
-      }
-
+      final start = picked.start;
+      final end = picked.end;
       final fromStr =
           '${start.year}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
       final toStr =

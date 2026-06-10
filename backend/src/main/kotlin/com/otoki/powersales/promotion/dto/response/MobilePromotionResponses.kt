@@ -15,6 +15,12 @@ data class MobilePromotionListResponse(
 data class MobilePromotionListItem(
     val id: Long,
     val promotionNumber: String,
+    /**
+     * 행사명. SF formula `DKRetail__PromotionName__c`
+     * (`TEXT(DKRetail__ProductType__c) + '(' + DKRetail__PrimaryProductId__r.Name + ')'`) 동등 파생값.
+     * 예: `냉장/냉동(새우깡)`. 레거시 `promotion/event/list.jsp` 카드 1행 정합.
+     */
+    val promotionName: String?,
     val promotionType: String?,
     val accountName: String?,
     val startDate: LocalDate,
@@ -27,10 +33,12 @@ data class MobilePromotionListItem(
         fun from(
             promotion: Promotion,
             accountName: String?,
+            primaryProductName: String?,
             myScheduleDate: LocalDate?
         ): MobilePromotionListItem = MobilePromotionListItem(
             id = promotion.id,
             promotionNumber = promotion.promotionNumber,
+            promotionName = buildPromotionName(promotion.productType?.displayName, primaryProductName),
             promotionType = promotion.promotionType?.displayName,
             accountName = accountName,
             startDate = promotion.startDate,
@@ -39,6 +47,18 @@ data class MobilePromotionListItem(
             isClosed = promotion.isClosed,
             myScheduleDate = myScheduleDate
         )
+
+        /**
+         * SF formula `DKRetail__PromotionName__c` 재현:
+         * `TEXT(ProductType) + '(' + PrimaryProduct.Name + ')'`.
+         * 두 입력이 모두 비면 null(레거시 빈 `()` 표시 회피).
+         */
+        private fun buildPromotionName(productType: String?, primaryProductName: String?): String? {
+            val type = productType.orEmpty()
+            val product = primaryProductName.orEmpty()
+            if (type.isEmpty() && product.isEmpty()) return null
+            return "$type($product)"
+        }
     }
 }
 

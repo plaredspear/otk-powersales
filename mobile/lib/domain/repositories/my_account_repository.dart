@@ -4,14 +4,20 @@ import '../entities/my_account.dart';
 ///
 /// - [sales] : 매출 계열(POS/전산/월매출). 부서장(AccountViewAll)이면 전체 거래처를 노출.
 /// - [field] : 현장 활동 계열(판촉/점검/유통기한/클레임). 부서장 전체조회 분기 없음.
+/// - [order] : 주문 작성 계열. 진열 일정 union + 주문가능 abctypecode 필터(레거시 accountSelectList order=order).
 ///
-/// 여사원/조장 경로는 두 유형 모두 동일하다.
+/// 여사원/조장 경로는 sales/field 두 유형이 동일하다.
 enum MyAccountScope {
   sales,
-  field;
+  field,
+  order;
 
   /// 백엔드 `scope` 쿼리 파라미터 값 (field 는 기본값이라 미전송)
-  String? get queryValue => this == MyAccountScope.sales ? 'sales' : null;
+  String? get queryValue => switch (this) {
+        MyAccountScope.sales => 'sales',
+        MyAccountScope.order => 'order',
+        MyAccountScope.field => null,
+      };
 }
 
 /// 내 거래처 목록 결과 값 객체

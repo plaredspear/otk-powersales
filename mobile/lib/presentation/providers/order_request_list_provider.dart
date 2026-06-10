@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/dio_provider.dart';
@@ -37,32 +36,16 @@ final getMyOrderRequestsUseCaseProvider = Provider<GetMyOrderRequests>((ref) {
 /// API 1회 호출 → 전체 배열 보관 → 페이지 클릭 시 슬라이스 재계산.
 class OrderRequestListNotifier extends StateNotifier<OrderRequestListState> {
   final GetMyOrderRequests _getMyOrderRequests;
-  final Dio _dio;
 
   OrderRequestListNotifier({
     required GetMyOrderRequests getMyOrderRequests,
-    required Dio dio,
   })  : _getMyOrderRequests = getMyOrderRequests,
-        _dio = dio,
         super(OrderRequestListState.initial());
 
-  /// 초기 데이터 로딩 — 거래처 목록 + 첫 fetch.
+  /// 초기 데이터 로딩 — 첫 fetch.
+  ///
+  /// 거래처 목록은 [AccountSelectorField] 바텀시트가 온디맨드로 조회하므로 프리로드하지 않는다.
   Future<void> initialize() async {
-    try {
-      final response = await _dio.get('/api/v1/mobile/accounts/my');
-      final data = response.data['data'] as Map<String, dynamic>;
-      final accountsJson = data['accounts'] as List<dynamic>;
-      final clientMap = <int, String>{};
-      for (final account in accountsJson) {
-        final accountMap = account as Map<String, dynamic>;
-        clientMap[accountMap['accountId'] as int] =
-            accountMap['accountName'] as String;
-      }
-      state = state.copyWith(clients: clientMap);
-    } catch (e) {
-      state = state.copyWith(clients: const {});
-    }
-
     await searchOrders();
   }
 
@@ -149,10 +132,8 @@ class OrderRequestListNotifier extends StateNotifier<OrderRequestListState> {
 final orderRequestListProvider =
     StateNotifierProvider<OrderRequestListNotifier, OrderRequestListState>((ref) {
   final useCase = ref.watch(getMyOrderRequestsUseCaseProvider);
-  final dio = ref.watch(dioProvider);
 
   return OrderRequestListNotifier(
     getMyOrderRequests: useCase,
-    dio: dio,
   );
 });

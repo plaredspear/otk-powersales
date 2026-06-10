@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -9,8 +8,8 @@ import '../../core/utils/throttled_tap_mixin.dart';
 import '../providers/claim_list_provider.dart';
 import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/claim/claim_list_item_card.dart';
+import '../widgets/common/date_range_filter_field.dart';
 import '../widgets/common/loading_indicator.dart';
-import '../widgets/common/range_calendar_picker.dart';
 
 /// 클레임 현황 목록 페이지
 class ClaimListPage extends ConsumerStatefulWidget {
@@ -138,56 +137,26 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
   }
 
   Widget _buildDateFilter(dynamic state) {
-    final dateFormat = DateFormat('yyyy-MM-dd');
-    final dateFieldDecoration = BoxDecoration(
-      border: Border.all(color: AppColors.border),
-      borderRadius: BorderRadius.circular(8),
-    );
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(
         children: [
           Expanded(
-            child: InkWell(
-              onTap: _selectDateRange,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.sm,
-                ),
-                decoration: dateFieldDecoration,
-                child: Text(
-                  dateFormat.format(state.startDate),
-                  style: AppTypography.bodySmall,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            child: Text('~'),
-          ),
-          Expanded(
-            child: InkWell(
-              onTap: _selectDateRange,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.sm,
-                ),
-                decoration: dateFieldDecoration,
-                child: Text(
-                  dateFormat.format(state.endDate),
-                  style: AppTypography.bodySmall,
-                  textAlign: TextAlign.center,
-                ),
-              ),
+            // 주문 현황 납기일과 동일한 인라인 기간 UI.
+            // 레거시(claim/list.jsp): minDate/maxDate 없음, maxSpan 7일.
+            child: DateRangeFilterField(
+              label: '기간',
+              startDate: state.startDate,
+              endDate: state.endDate,
+              maxRangeDays: 7,
+              onChanged: (start, end) => ref
+                  .read(claimListProvider.notifier)
+                  .updateDateRange(start, end),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
           SizedBox(
-            height: 40,
+            height: DateRangeFilterField.fieldHeight,
             child: ElevatedButton(
               onPressed: () => throttledTapAsync(
                 () => ref.read(claimListProvider.notifier).loadClaims(),
@@ -195,7 +164,7 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                minimumSize: const Size(48, 40),
+                minimumSize: const Size(48, DateRangeFilterField.fieldHeight),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: const Icon(Icons.search, size: 20),
@@ -271,21 +240,4 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
     );
   }
 
-  /// 레거시 daterangepicker와 동일하게 하나의 달력에서 시작일·종료일을 한 번에 선택한다.
-  /// 시작일을 고르면 시작일 + 7일까지만 종료일로 선택할 수 있다(ClaimListState.maxRangeDays).
-  Future<void> _selectDateRange() async {
-    final state = ref.read(claimListProvider);
-    final picked = await showRangeCalendar(
-      context,
-      initialStart: state.startDate,
-      initialEnd: state.endDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null) {
-      ref
-          .read(claimListProvider.notifier)
-          .updateDateRange(picked.start, picked.end);
-    }
-  }
 }

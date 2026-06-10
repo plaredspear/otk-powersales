@@ -10,6 +10,7 @@ import '../../../domain/entities/my_account.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/promotion_list_provider.dart';
 import '../../providers/promotion_list_state.dart';
+import '../common/date_range_filter_field.dart';
 import '../common/loading_indicator.dart';
 import 'promotion_card.dart';
 
@@ -87,20 +88,6 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
     }
   }
 
-  Future<void> _pickRangeDate(BuildContext context, bool isStart) async {
-    final state = ref.read(promotionListProvider);
-    final picked =
-        await _showPicker(context, isStart ? state.startDate : state.endDate);
-    if (picked != null) {
-      final notifier = ref.read(promotionListProvider.notifier);
-      if (isStart) {
-        notifier.updateDateRange(picked, state.endDate);
-      } else {
-        notifier.updateDateRange(state.startDate, picked);
-      }
-    }
-  }
-
   Future<String?> _showPicker(BuildContext context, String current) async {
     final picked = await showDatePicker(
       context: context,
@@ -109,8 +96,11 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
       lastDate: DateTime(2030),
     );
     if (picked == null) return null;
-    return '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+    return _fmtDate(picked);
   }
+
+  String _fmtDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
@@ -235,19 +225,16 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              Text('기간  ',
-                  style: AppTypography.bodyMedium
-                      .copyWith(color: AppColors.textSecondary)),
-              _buildDateButton(state.startDate,
-                  () => throttledTap(() => _pickRangeDate(context, true))),
-              Text(' ~ ',
-                  style: AppTypography.bodyMedium
-                      .copyWith(color: AppColors.textSecondary)),
-              _buildDateButton(state.endDate,
-                  () => throttledTap(() => _pickRangeDate(context, false))),
-            ],
+          // 주문 현황 납기일과 동일한 인라인 기간 UI.
+          // 레거시(promotion/event/list.jsp): minDate/maxDate 없음, maxSpan 30일.
+          DateRangeFilterField(
+            label: '기간',
+            startDate: DateTime.parse(state.startDate),
+            endDate: DateTime.parse(state.endDate),
+            maxRangeDays: 30,
+            onChanged: (start, end) => ref
+                .read(promotionListProvider.notifier)
+                .updateDateRange(_fmtDate(start), _fmtDate(end)),
           ),
         ],
       ),

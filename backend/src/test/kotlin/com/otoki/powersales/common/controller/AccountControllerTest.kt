@@ -58,7 +58,7 @@ class AccountControllerTest : MobileControllerTestSupport() {
                     phoneNumber = "053-234-5678"
                 )
             )
-            val response = MyAccountListResponse(stores = accounts, totalCount = 2)
+            val response = MyAccountListResponse(accounts = accounts, totalCount = 2)
 
             every { myAccountService.getMyAccounts(1L, null) } returns response
 
@@ -70,15 +70,15 @@ class AccountControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("내 거래처 목록 조회 성공"))
                 .andExpect(jsonPath("$.data.totalCount").value(2))
-                .andExpect(jsonPath("$.data.stores").isArray)
-                .andExpect(jsonPath("$.data.stores.length()").value(2))
-                .andExpect(jsonPath("$.data.stores[0].accountId").value(1))
-                .andExpect(jsonPath("$.data.stores[0].accountName").value("경산농협"))
-                .andExpect(jsonPath("$.data.stores[0].accountCode").value("STORE001"))
-                .andExpect(jsonPath("$.data.stores[0].address").value("경북 경산시 중앙로 123"))
-                .andExpect(jsonPath("$.data.stores[0].addressDetail").value("1층"))
-                .andExpect(jsonPath("$.data.stores[0].representativeName").value("김영수"))
-                .andExpect(jsonPath("$.data.stores[0].phoneNumber").value("053-123-4567"))
+                .andExpect(jsonPath("$.data.accounts").isArray)
+                .andExpect(jsonPath("$.data.accounts.length()").value(2))
+                .andExpect(jsonPath("$.data.accounts[0].accountId").value(1))
+                .andExpect(jsonPath("$.data.accounts[0].accountName").value("경산농협"))
+                .andExpect(jsonPath("$.data.accounts[0].accountCode").value("STORE001"))
+                .andExpect(jsonPath("$.data.accounts[0].address").value("경북 경산시 중앙로 123"))
+                .andExpect(jsonPath("$.data.accounts[0].addressDetail").value("1층"))
+                .andExpect(jsonPath("$.data.accounts[0].representativeName").value("김영수"))
+                .andExpect(jsonPath("$.data.accounts[0].phoneNumber").value("053-123-4567"))
         }
 
         @Test
@@ -96,7 +96,7 @@ class AccountControllerTest : MobileControllerTestSupport() {
                     phoneNumber = "053-123-4567"
                 )
             )
-            val response = MyAccountListResponse(stores = accounts, totalCount = 1)
+            val response = MyAccountListResponse(accounts = accounts, totalCount = 1)
 
             every { myAccountService.getMyAccounts(1L, keyword) } returns response
 
@@ -108,13 +108,13 @@ class AccountControllerTest : MobileControllerTestSupport() {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalCount").value(1))
-                .andExpect(jsonPath("$.data.stores[0].accountName").value("경산농협"))
+                .andExpect(jsonPath("$.data.accounts[0].accountName").value("경산농협"))
         }
 
         @Test
         @DisplayName("결과 없음 - 빈 목록 반환")
         fun getMyAccounts_EmptyResult() {
-            val response = MyAccountListResponse(stores = emptyList(), totalCount = 0)
+            val response = MyAccountListResponse(accounts = emptyList(), totalCount = 0)
 
             every { myAccountService.getMyAccounts(1L, null) } returns response
 
@@ -124,8 +124,8 @@ class AccountControllerTest : MobileControllerTestSupport() {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.totalCount").value(0))
-                .andExpect(jsonPath("$.data.stores").isArray)
-                .andExpect(jsonPath("$.data.stores.length()").value(0))
+                .andExpect(jsonPath("$.data.accounts").isArray)
+                .andExpect(jsonPath("$.data.accounts.length()").value(0))
         }
 
         @Test

@@ -3,23 +3,23 @@ import '../models/my_account_model.dart';
 
 /// 내 거래처 API 응답 모델
 class MyAccountListResponse {
-  final List<MyAccountModel> stores;
+  final List<MyAccountModel> accounts;
   final int totalCount;
 
   const MyAccountListResponse({
-    required this.stores,
+    required this.accounts,
     required this.totalCount,
   });
 
   factory MyAccountListResponse.fromJson(Map<String, dynamic> json) {
-    final storesJson = json['stores'] as List<dynamic>? ?? [];
-    final stores = storesJson
+    final accountsJson = json['accounts'] as List<dynamic>? ?? [];
+    final accounts = accountsJson
         .map((e) => MyAccountModel.fromJson(e as Map<String, dynamic>))
         .toList();
     final totalCount = json['totalCount'] as int;
 
     return MyAccountListResponse(
-      stores: stores,
+      accounts: accounts,
       totalCount: totalCount,
     );
   }

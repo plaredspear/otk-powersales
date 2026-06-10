@@ -9,9 +9,6 @@ class OrderFormState {
   /// 작성 중인 주문서
   final OrderDraft orderDraft;
 
-  /// 거래처 목록 (id → name) for dropdown
-  final Map<int, String> clients;
-
   /// 임시저장 데이터 존재 여부
   final bool hasDraft;
 
@@ -49,9 +46,6 @@ class OrderFormState {
   /// 거래처 PK — `submitOrderRequest` 페이로드 `accountId`.
   final int? selectedAccountId;
 
-  /// 거래처 ID → SAP externalKey 병행 매핑 (P2-M 거래처 선택 시 lookup).
-  final Map<int, String> clientExternalKeys;
-
   /// `getOrderDraft` 응답 임시 보관 — 사용자가 다이얼로그 "예"/"아니오" 선택 후 사용.
   final OrderDraftResponseModel? pendingDraft;
 
@@ -62,7 +56,6 @@ class OrderFormState {
 
   const OrderFormState({
     required this.orderDraft,
-    this.clients = const {},
     this.hasDraft = false,
     this.isLoading = false,
     this.isSubmitting = false,
@@ -74,7 +67,6 @@ class OrderFormState {
     this.draftId,
     this.selectedExternalKey,
     this.selectedAccountId,
-    this.clientExternalKeys = const {},
     this.pendingDraft,
     this.requiresDeliveryDateConfirm = false,
   });
@@ -111,6 +103,9 @@ class OrderFormState {
   /// 선택된 거래처 ID
   int? get selectedClientId => orderDraft.clientId;
 
+  /// 선택된 거래처명 (거래처 선택 필드 표시용)
+  String? get selectedClientName => orderDraft.clientName;
+
   /// 여신 잔액
   int? get creditBalance => orderDraft.creditBalance;
 
@@ -140,7 +135,6 @@ class OrderFormState {
 
   OrderFormState copyWith({
     OrderDraft? orderDraft,
-    Map<int, String>? clients,
     bool? hasDraft,
     bool? isLoading,
     bool? isSubmitting,
@@ -152,7 +146,6 @@ class OrderFormState {
     int? draftId,
     String? selectedExternalKey,
     int? selectedAccountId,
-    Map<int, String>? clientExternalKeys,
     OrderDraftResponseModel? pendingDraft,
     bool? requiresDeliveryDateConfirm,
     bool clearError = false,
@@ -168,7 +161,6 @@ class OrderFormState {
   }) {
     return OrderFormState(
       orderDraft: orderDraft ?? this.orderDraft,
-      clients: clients ?? this.clients,
       hasDraft: hasDraft ?? this.hasDraft,
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -190,7 +182,6 @@ class OrderFormState {
       selectedAccountId: clearSelectedAccountId
           ? null
           : (selectedAccountId ?? this.selectedAccountId),
-      clientExternalKeys: clientExternalKeys ?? this.clientExternalKeys,
       pendingDraft:
           clearPendingDraft ? null : (pendingDraft ?? this.pendingDraft),
       requiresDeliveryDateConfirm: clearRequiresDeliveryDateConfirm

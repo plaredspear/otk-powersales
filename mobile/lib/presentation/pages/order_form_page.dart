@@ -6,7 +6,8 @@ import '../../app_router.dart';
 import '../providers/order_form_provider.dart';
 import '../providers/order_form_state.dart';
 import '../screens/barcode_scanner_screen.dart';
-import '../widgets/order_form/client_selector.dart';
+import '../../domain/repositories/my_account_repository.dart';
+import '../widgets/account/account_selector_field.dart';
 import '../widgets/order_form/credit_balance_display.dart';
 import '../widgets/order_form/delivery_date_picker.dart';
 import '../widgets/order_form/delivery_date_warning_dialog.dart';
@@ -202,15 +203,48 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                         onNewOrder: () => notifier.declineDraft(),
                       ),
                     if (state.hasDraft) const SizedBox(height: AppSpacing.lg),
-                    ClientSelector(
-                      clients: state.clients,
-                      selectedClientId: state.selectedClientId,
-                      onClientSelected: (clientId) {
-                        final name = state.clients[clientId] ?? '';
-                        final externalKey =
-                            state.clientExternalKeys[clientId] ?? '';
-                        notifier.selectClient(clientId, name, externalKey);
-                      },
+                    // 거래처 선택 (월매출과 동일한 거래처 선택 바텀시트 재사용)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RichText(
+                          text: TextSpan(
+                            text: '거래처 ',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: '*',
+                                style: TextStyle(color: AppColors.error),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusMd),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: AccountSelectorField(
+                            selectedName: state.selectedClientName,
+                            scope: MyAccountScope.order,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.md,
+                            ),
+                            onSelected: (account) => notifier.selectClient(
+                              account.accountId,
+                              account.accountName,
+                              account.accountCode,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     CreditBalanceDisplay(

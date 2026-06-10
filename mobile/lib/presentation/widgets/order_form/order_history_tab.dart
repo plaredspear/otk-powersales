@@ -6,6 +6,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../providers/add_product_provider.dart';
 import '../../providers/add_product_state.dart';
+import '../common/date_range_filter_field.dart';
 import 'product_card_for_add.dart';
 
 /// 주문 이력 탭
@@ -17,98 +18,25 @@ class OrderHistoryTab extends ConsumerWidget {
     required this.scrollController,
   });
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(addProductProvider);
     final notifier = ref.read(addProductProvider.notifier);
+    final now = DateTime.now();
 
     return Column(
       children: [
-        // 날짜 범위 선택
+        // 기간(주문 현황 납기일과 동일한 인라인 UI). 조건: 최근 1년 ~ 오늘.
         Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate:
-                          state.historyDateFrom ?? DateTime.now().subtract(const Duration(days: 3)),
-                      firstDate:
-                          DateTime.now().subtract(const Duration(days: 365)),
-                      lastDate: DateTime.now(),
-                      locale: const Locale('ko', 'KR'),
-                    );
-                    if (picked != null) {
-                      notifier.setHistoryDateRange(
-                        picked,
-                        state.historyDateTo ?? DateTime.now(),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(
-                    _formatDate(state.historyDateFrom),
-                    style: AppTypography.bodySmall,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusMd),
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                child: Text(
-                  '~',
-                  style: AppTypography.bodyMedium,
-                ),
-              ),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: state.historyDateTo ?? DateTime.now(),
-                      firstDate:
-                          DateTime.now().subtract(const Duration(days: 365)),
-                      lastDate: DateTime.now(),
-                      locale: const Locale('ko', 'KR'),
-                    );
-                    if (picked != null) {
-                      notifier.setHistoryDateRange(
-                        state.historyDateFrom ??
-                            DateTime.now()
-                                .subtract(const Duration(days: 3)),
-                        picked,
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(
-                    _formatDate(state.historyDateTo),
-                    style: AppTypography.bodySmall,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusMd),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          child: DateRangeFilterField(
+            label: '기간',
+            startDate:
+                state.historyDateFrom ?? now.subtract(const Duration(days: 3)),
+            endDate: state.historyDateTo ?? now,
+            firstDate: now.subtract(const Duration(days: 365)),
+            lastDate: now,
+            onChanged: notifier.setHistoryDateRange,
           ),
         ),
         // 주문 이력 목록

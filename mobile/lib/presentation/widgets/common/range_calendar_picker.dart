@@ -9,21 +9,28 @@ import '../../../core/theme/app_typography.dart';
 /// - 하나의 달력에서 시작일과 종료일을 한 번에 선택한다.
 /// - 시작일을 선택하면 시작일 + [maxRangeDays]일까지만 종료일로 선택할 수 있고, 그 이후 날짜는 비활성화된다.
 /// - 종료일까지 선택되면 선택한 범위를 반환하며 닫힌다.
+///
+/// 조회 가능 기간([firstDate]/[lastDate])과 최대 범위 일수([maxRangeDays])는
+/// 화면별 조건에 맞게 호출부에서 지정한다. [maxRangeDays] 가 null 이면 범위 일수 제한 없이
+/// [firstDate]~[lastDate] 안에서 자유롭게 선택할 수 있다.
+///
+/// [firstDate]/[lastDate] 를 생략하면 사실상 제한 없이(2000~2100) 달력을 탐색할 수 있다.
+/// 레거시 daterangepicker 가 minDate/maxDate 제약이 없는 화면(클레임·현장점검·행사 등)에 정합한다.
 Future<DateTimeRange?> showRangeCalendar(
   BuildContext context, {
   required DateTime initialStart,
   required DateTime initialEnd,
-  required DateTime firstDate,
-  required DateTime lastDate,
-  int maxRangeDays = 7,
+  DateTime? firstDate,
+  DateTime? lastDate,
+  int? maxRangeDays = 7,
 }) {
   return showDialog<DateTimeRange>(
     context: context,
     builder: (_) => _RangeCalendarDialog(
       initialStart: initialStart,
       initialEnd: initialEnd,
-      firstDate: firstDate,
-      lastDate: lastDate,
+      firstDate: firstDate ?? DateTime(2000),
+      lastDate: lastDate ?? DateTime(2100),
       maxRangeDays: maxRangeDays,
     ),
   );
@@ -34,7 +41,7 @@ class _RangeCalendarDialog extends StatefulWidget {
   final DateTime initialEnd;
   final DateTime firstDate;
   final DateTime lastDate;
-  final int maxRangeDays;
+  final int? maxRangeDays;
 
   const _RangeCalendarDialog({
     required this.initialStart,
@@ -74,8 +81,11 @@ class _RangeCalendarDialogState extends State<_RangeCalendarDialog> {
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   /// 종료일 선택 가능한 마지막 날짜(시작일 + maxRangeDays, lastDate 로 클램프).
+  /// maxRangeDays 가 null 이면 lastDate 가 한계다.
   DateTime get _selectableEndLimit {
-    final limit = _rangeStart.add(Duration(days: widget.maxRangeDays));
+    final maxRangeDays = widget.maxRangeDays;
+    if (maxRangeDays == null) return widget.lastDate;
+    final limit = _rangeStart.add(Duration(days: maxRangeDays));
     return limit.isAfter(widget.lastDate) ? widget.lastDate : limit;
   }
 
@@ -86,7 +96,7 @@ class _RangeCalendarDialogState extends State<_RangeCalendarDialog> {
       return false;
     }
     // 종료일을 고르는 중(시작일만 선택됨): 시작일 이전은 새 시작일로 허용, 시작일 이후는 +maxRangeDays 까지만.
-    if (_rangeEnd == null && day.isAfter(_rangeStart)) {
+    if (widget.maxRangeDays != null && _rangeEnd == null && day.isAfter(_rangeStart)) {
       return !day.isAfter(_selectableEndLimit);
     }
     return true;
