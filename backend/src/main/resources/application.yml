@@ -324,6 +324,10 @@ app:
 
 server:
   port: ${SERVER_PORT:8080}
+  # forward-headers-strategy 전역 설정 금지: ForwardedHeaderFilter 가 X-Forwarded-For 를
+  # 요청에서 제거해 SAP/SF 인바운드 ClientIpResolver(IP allowlist/audit) 가 클라이언트
+  # 실 IP 를 잃는다. 프록시 뒤 https 절대 URL 보정은 필요한 곳에서 개별 처리
+  # (MobileAppPackageController.currentBaseUrl 참조).
 
 logging:
   level:
