@@ -37,7 +37,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.otoki.powersales.mobile"
+    namespace "com.otoki.pwrs.mobile"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
