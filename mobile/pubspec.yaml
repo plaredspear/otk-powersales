@@ -96,6 +96,18 @@ dev_dependencies:
   retrofit_generator: '>=9.1.2 <10.0.0'
   json_serializable: ^6.7.1
 
+  # Splash 화면 생성 (Android/iOS 네이티브 리소스 자동 생성)
+  flutter_native_splash: ^2.4.1
+
+# 스플래시 화면 설정 — 레거시 앱 기준(노란 배경 #ffe40c + 오뚜기 파워세일즈 로고) 유지.
+# 적용/갱신: `dart run flutter_native_splash:create`
+flutter_native_splash:
+  color: "#ffe40c"
+  image: assets/images/splash_logo.png
+  android_12:
+    color: "#ffe40c"
+    image: assets/images/splash_logo.png
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
