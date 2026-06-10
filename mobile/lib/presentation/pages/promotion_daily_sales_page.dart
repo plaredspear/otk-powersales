@@ -24,13 +24,16 @@ class PromotionDailySalesPage extends ConsumerStatefulWidget {
 }
 
 class _PromotionDailySalesPageState
-    extends ConsumerState<PromotionDailySalesPage> with ThrottledTapMixin {
+    extends ConsumerState<PromotionDailySalesPage>
+    with ThrottledTapMixin {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
-          .read(promotionDailySalesProvider(widget.promotionEmployeeId).notifier)
+          .read(
+            promotionDailySalesProvider(widget.promotionEmployeeId).notifier,
+          )
           .load();
     });
   }
@@ -41,16 +44,14 @@ class _PromotionDailySalesPageState
     final state = ref.watch(provider);
     final notifier = ref.read(provider.notifier);
 
-    ref.listen<String?>(
-      provider.select((s) => s.errorMessage),
-      (prev, next) {
-        if (next != null) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(next)));
-          notifier.clearError();
-        }
-      },
-    );
+    ref.listen<String?>(provider.select((s) => s.errorMessage), (prev, next) {
+      if (next != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next)));
+        notifier.clearError();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -88,8 +89,9 @@ class _PromotionDailySalesPageState
             const SizedBox(height: AppSpacing.lg),
             Text(
               '정보를 불러올 수 없습니다',
-              style: AppTypography.bodyMedium
-                  .copyWith(color: AppColors.textSecondary),
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
             const SizedBox(height: AppSpacing.lg),
             ElevatedButton(
@@ -101,22 +103,28 @@ class _PromotionDailySalesPageState
       );
     }
 
-    return SingleChildScrollView(
-      padding: AppSpacing.screenAll,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(state),
-          const SizedBox(height: AppSpacing.lg),
-          if (state.isClosed) ...[
-            _buildClosedBanner(),
+    // 숫자 키패드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 키보드를 닫는다.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: AppSpacing.screenAll,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(state),
             const SizedBox(height: AppSpacing.lg),
+            if (state.isClosed) ...[
+              _buildClosedBanner(),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+            if (state.editable)
+              _buildEditableForm(state, notifier)
+            else
+              _buildReadOnly(state),
           ],
-          if (state.editable)
-            _buildEditableForm(state, notifier)
-          else
-            _buildReadOnly(state),
-        ],
+        ),
       ),
     );
   }
@@ -139,8 +147,9 @@ class _PromotionDailySalesPageState
             const SizedBox(height: AppSpacing.xs),
             Text(
               '근무일 ${form.scheduleDate}',
-              style: AppTypography.bodySmall
-                  .copyWith(color: AppColors.textSecondary),
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ],
@@ -267,8 +276,9 @@ class _PromotionDailySalesPageState
             width: 120,
             child: Text(
               label,
-              style: AppTypography.bodyMedium
-                  .copyWith(color: AppColors.textSecondary),
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
           Expanded(child: Text(value, style: AppTypography.bodyMedium)),
@@ -316,8 +326,9 @@ class _PromotionDailySalesPageState
   Future<void> _submit(PromotionDailySalesNotifier notifier) async {
     final success = await notifier.submit();
     if (success && mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('일매출이 마감되었습니다')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('일매출이 마감되었습니다')));
       Navigator.pop(context, true);
     }
   }
@@ -325,8 +336,9 @@ class _PromotionDailySalesPageState
   Future<void> _saveDraft(PromotionDailySalesNotifier notifier) async {
     final success = await notifier.saveDraft();
     if (success && mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('임시저장되었습니다')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('임시저장되었습니다')));
     }
   }
 }

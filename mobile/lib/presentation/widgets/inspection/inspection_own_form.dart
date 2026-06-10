@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../common/synced_text_field.dart';
+
 /// 현장 점검 등록 - 자사 활동 정보 폼
 ///
 /// 포함 필드:
@@ -40,18 +42,15 @@ class InspectionOwnForm extends StatelessWidget {
           padding: EdgeInsets.all(16),
           child: Text(
             '자사 활동 정보',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
 
         // 설명 필드 (선택)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: TextField(
-            controller: TextEditingController(text: description),
+          child: SyncedTextField(
+            value: description ?? '',
             onChanged: onDescriptionChanged,
             decoration: const InputDecoration(
               labelText: '설명',
@@ -75,17 +74,11 @@ class InspectionOwnForm extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: '제품',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.black87),
                     ),
                     TextSpan(
                       text: ' *',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.red,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.red),
                     ),
                   ],
                 ),

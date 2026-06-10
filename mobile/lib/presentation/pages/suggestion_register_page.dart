@@ -51,22 +51,22 @@ class _SuggestionRegisterPageState
     final state = ref.watch(suggestionRegisterProvider);
     final notifier = ref.read(suggestionRegisterProvider.notifier);
 
-    ref.listen<SuggestionRegisterState>(
-      suggestionRegisterProvider,
-      (previous, next) {
-        if (next.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(next.errorMessage!)),
-          );
-        }
-        if (next.successMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(next.successMessage!)),
-          );
-          Navigator.of(context).pop();
-        }
-      },
-    );
+    ref.listen<SuggestionRegisterState>(suggestionRegisterProvider, (
+      previous,
+      next,
+    ) {
+      if (next.errorMessage != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+      }
+      if (next.successMessage != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.successMessage!)));
+        Navigator.of(context).pop();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -76,21 +76,28 @@ class _SuggestionRegisterPageState
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
+      // 숫자 키패드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 키보드를 닫는다.
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SuggestionCategorySelector(
-                    selectedCategory: state.form.category,
-                    onCategoryChanged: notifier.changeCategory,
-                  ),
-                  const SizedBox(height: 16),
-                  ..._buildCategoryFields(state, notifier),
-                  const SizedBox(height: 80),
-                ],
+          : GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SuggestionCategorySelector(
+                      selectedCategory: state.form.category,
+                      onCategoryChanged: notifier.changeCategory,
+                    ),
+                    const SizedBox(height: 16),
+                    ..._buildCategoryFields(state, notifier),
+                    const SizedBox(height: 80),
+                  ],
+                ),
               ),
             ),
       bottomNavigationBar: _buildBottomBar(context, state, notifier),
@@ -120,7 +127,10 @@ class _SuggestionRegisterPageState
           onSelectPressed: () => _showProductSelector(context),
         ),
         const SizedBox(height: 16),
-        _TitleField(controller: _titleController, onChanged: notifier.updateTitle),
+        _TitleField(
+          controller: _titleController,
+          onChanged: notifier.updateTitle,
+        ),
         const SizedBox(height: 16),
         SuggestionClaimTypeField(
           value: state.form.claimType,
@@ -164,7 +174,10 @@ class _SuggestionRegisterPageState
         onSelectPressed: () => _showProductSelector(context),
       ),
       const SizedBox(height: 16),
-      _TitleField(controller: _titleController, onChanged: notifier.updateTitle),
+      _TitleField(
+        controller: _titleController,
+        onChanged: notifier.updateTitle,
+      ),
       const SizedBox(height: 16),
       _ContentField(
         controller: _contentController,
@@ -217,8 +230,9 @@ class _SuggestionRegisterPageState
           // 전송
           Expanded(
             child: ElevatedButton(
-              onPressed:
-                  state.isSubmitting ? null : () => _handleSubmit(notifier),
+              onPressed: state.isSubmitting
+                  ? null
+                  : () => _handleSubmit(notifier),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.yellow[700],
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -249,50 +263,51 @@ class _SuggestionRegisterPageState
     if (barcode == null || !mounted) return;
 
     try {
-      final product =
-          await ref.read(posProductUseCaseProvider).findByBarcode(barcode);
+      final product = await ref
+          .read(posProductUseCaseProvider)
+          .findByBarcode(barcode);
       if (!mounted) return;
       if (product == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('해당 제품이 없습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('해당 제품이 없습니다')));
         return;
       }
       ref
           .read(suggestionRegisterProvider.notifier)
           .selectProduct(product.productCode, product.productName);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${product.productName} 선택됨')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${product.productName} 선택됨')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제품 조회에 실패했습니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('제품 조회에 실패했습니다')));
     }
   }
 
   Future<void> _showProductSelector(BuildContext context) async {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제품 선택 화면은 별 스펙에서 구현됩니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('제품 선택 화면은 별 스펙에서 구현됩니다')));
     }
   }
 
   Future<void> _showAccountSelector() async {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('거래처 선택 화면은 별 스펙에서 구현됩니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('거래처 선택 화면은 별 스펙에서 구현됩니다')));
     }
   }
 
   void _handleTempSave() {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('임시저장은 추후 지원 예정입니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('임시저장은 추후 지원 예정입니다')));
     }
   }
 
@@ -323,9 +338,9 @@ class _SuggestionRegisterPageState
     // 유효성 선검증 — 통과 시에만 전송 확인 (레거시 confirm 정합)
     final errors = ref.read(suggestionRegisterProvider).form.validate();
     if (errors.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errors.first)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errors.first)));
       return;
     }
 
@@ -353,10 +368,7 @@ class _SuggestionRegisterPageState
 
 /// 제목 입력 필드 (max 250 — backend `@Size(max=250)` 정합)
 class _TitleField extends StatelessWidget {
-  const _TitleField({
-    required this.controller,
-    required this.onChanged,
-  });
+  const _TitleField({required this.controller, required this.onChanged});
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
