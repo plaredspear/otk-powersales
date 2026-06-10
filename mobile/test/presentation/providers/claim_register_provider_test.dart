@@ -450,6 +450,7 @@ class FakeClaimRepository implements ClaimRepository {
   Future<List<ClaimListItem>> getClaims({
     String? startDate,
     String? endDate,
+    int? accountId,
   }) async {
     throw UnimplementedError();
   }

@@ -7,6 +7,7 @@ import com.otoki.powersales.claim.enums.ClaimDateType
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.enums.ClaimType2
+import com.otoki.powersales.claim.exception.ClaimInvalidParameterException
 import com.otoki.powersales.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.claim.exception.InvalidDateFormatException
 import com.otoki.powersales.claim.exception.InvalidDateRangeException
@@ -57,9 +58,9 @@ class ClaimQueryServiceTest {
         fun getClaims_woman_ownOnly() {
             val claim = createClaim()
             every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
-            every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns listOf(claim)
+            every { claimRepository.findOwnClaims(1L, any(), any(), any()) } returns listOf(claim)
 
-            val result = claimQueryService.getClaims(1L, null, null)
+            val result = claimQueryService.getClaims(1L, null, null, null)
 
             assertThat(result).hasSize(1)
             assertThat(result[0].claimId).isEqualTo(1L)
@@ -72,9 +73,9 @@ class ClaimQueryServiceTest {
         fun getClaims_leader_sameCostCenter() {
             val claim = createClaim()
             every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.LEADER, costCenterCode = "CC01")
-            every { claimRepository.findByCostCenterCodeAndCreatedAtBetweenOrderByCreatedAtDesc("CC01", any(), any()) } returns listOf(claim)
+            every { claimRepository.findCostCenterClaims("CC01", any(), any(), any()) } returns listOf(claim)
 
-            val result = claimQueryService.getClaims(1L, null, null)
+            val result = claimQueryService.getClaims(1L, null, null, null)
 
             assertThat(result).hasSize(1)
         }
@@ -83,9 +84,9 @@ class ClaimQueryServiceTest {
         @DisplayName("지점장 - 같은 원가센터 전체 반환 (조장과 동일 분기)")
         fun getClaims_branchManager_sameCostCenter() {
             every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.BRANCH_MANAGER, costCenterCode = "CC01")
-            every { claimRepository.findByCostCenterCodeAndCreatedAtBetweenOrderByCreatedAtDesc("CC01", any(), any()) } returns emptyList()
+            every { claimRepository.findCostCenterClaims("CC01", any(), any(), any()) } returns emptyList()
 
-            val result = claimQueryService.getClaims(1L, null, null)
+            val result = claimQueryService.getClaims(1L, null, null, null)
 
             assertThat(result).isEmpty()
         }
@@ -94,9 +95,9 @@ class ClaimQueryServiceTest {
         @DisplayName("조장이지만 원가센터 미설정 - 본인 등록분으로 fallback (전사 노출 방지)")
         fun getClaims_leader_noCostCenter_fallbackToOwn() {
             every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.LEADER, costCenterCode = null)
-            every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns emptyList()
+            every { claimRepository.findOwnClaims(1L, any(), any(), any()) } returns emptyList()
 
-            val result = claimQueryService.getClaims(1L, null, null)
+            val result = claimQueryService.getClaims(1L, null, null, null)
 
             assertThat(result).isEmpty()
         }
@@ -105,9 +106,9 @@ class ClaimQueryServiceTest {
         @DisplayName("정상 조회 - 기간 지정 → 목록 반환")
         fun getClaims_withDates_success() {
             every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
-            every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns emptyList()
+            every { claimRepository.findOwnClaims(1L, any(), any(), any()) } returns emptyList()
 
-            val result = claimQueryService.getClaims(1L, "2026-04-01", "2026-04-08")
+            val result = claimQueryService.getClaims(1L, "2026-04-01", "2026-04-08", null)
 
             assertThat(result).isEmpty()
         }
@@ -116,9 +117,9 @@ class ClaimQueryServiceTest {
         @DisplayName("빈 결과 - 해당 기간에 클레임 없음 → 빈 리스트")
         fun getClaims_empty() {
             every { employeeRepository.findByIdOrNull(1L) } returns createEmployee(role = AppAuthority.WOMAN, costCenterCode = "CC01")
-            every { claimRepository.findByEmployeeIdAndCreatedAtBetweenOrderByCreatedAtDesc(1L, any(), any()) } returns emptyList()
+            every { claimRepository.findOwnClaims(1L, any(), any(), any()) } returns emptyList()
 
-            val result = claimQueryService.getClaims(1L, null, null)
+            val result = claimQueryService.getClaims(1L, null, null, null)
 
             assertThat(result).isEmpty()
         }
@@ -126,15 +127,22 @@ class ClaimQueryServiceTest {
         @Test
         @DisplayName("잘못된 날짜 형식 - 20260401 → InvalidDateFormatException")
         fun getClaims_invalidDateFormat() {
-            assertThatThrownBy { claimQueryService.getClaims(1L, "20260401", null) }
+            assertThatThrownBy { claimQueryService.getClaims(1L, "20260401", null, null) }
                 .isInstanceOf(InvalidDateFormatException::class.java)
         }
 
         @Test
         @DisplayName("역전된 날짜 범위 - start > end → InvalidDateRangeException")
         fun getClaims_invalidDateRange() {
-            assertThatThrownBy { claimQueryService.getClaims(1L, "2026-04-10", "2026-04-01") }
+            assertThatThrownBy { claimQueryService.getClaims(1L, "2026-04-10", "2026-04-01", null) }
                 .isInstanceOf(InvalidDateRangeException::class.java)
+        }
+
+        @Test
+        @DisplayName("조회 기간 7일 초과 - 8일 범위 → ClaimInvalidParameterException")
+        fun getClaims_dateRangeExceedsMax() {
+            assertThatThrownBy { claimQueryService.getClaims(1L, "2026-04-01", "2026-04-09", null) }
+                .isInstanceOf(ClaimInvalidParameterException::class.java)
         }
     }
 

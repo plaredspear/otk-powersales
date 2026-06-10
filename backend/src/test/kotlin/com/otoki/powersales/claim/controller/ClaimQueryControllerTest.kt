@@ -59,7 +59,7 @@ class ClaimQueryControllerTest : MobileControllerTestSupport() {
                     createdAt = java.time.LocalDateTime.of(2026, 4, 8, 10, 30, 0)
                 )
             )
-            every { claimQueryService.getClaims(1L, null, null) } returns items
+            every { claimQueryService.getClaims(1L, null, null, null) } returns items
 
             mockMvc.perform(get("/api/v1/mobile/claims"))
                 .andExpect(status().isOk)
@@ -74,7 +74,7 @@ class ClaimQueryControllerTest : MobileControllerTestSupport() {
         @Test
         @DisplayName("성공 - 기간 지정 → 200")
         fun getClaims_withDates_success() {
-            every { claimQueryService.getClaims(1L, "2026-04-01", "2026-04-08") } returns emptyList()
+            every { claimQueryService.getClaims(1L, "2026-04-01", "2026-04-08", null) } returns emptyList()
 
             mockMvc.perform(
                 get("/api/v1/mobile/claims")
@@ -97,7 +97,7 @@ class ClaimQueryControllerTest : MobileControllerTestSupport() {
             exception: Throwable,
             expectedCode: String,
         ) {
-            every { claimQueryService.getClaims(1L, startDate, endDate) } throws exception
+            every { claimQueryService.getClaims(1L, startDate, endDate, null) } throws exception
 
             val builder = get("/api/v1/mobile/claims").param("startDate", startDate)
             if (endDate != null) builder.param("endDate", endDate)

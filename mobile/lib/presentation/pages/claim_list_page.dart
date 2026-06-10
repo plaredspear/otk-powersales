@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/throttled_tap_mixin.dart';
 import '../providers/claim_list_provider.dart';
+import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/claim/claim_list_item_card.dart';
 import '../widgets/common/loading_indicator.dart';
 
@@ -48,11 +49,72 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
       appBar: AppBar(title: const Text('클레임 현황')),
       body: Column(
         children: [
+          _buildAccountFilter(state),
           _buildDateFilter(state),
           Expanded(child: _buildBody(state)),
         ],
       ),
     );
+  }
+
+  Widget _buildAccountFilter(dynamic state) {
+    final hasAccount = state.selectedAccountId != null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+      child: InkWell(
+        onTap: () => throttledTap(_selectAccount),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.store_outlined,
+                  size: 18, color: AppColors.textSecondary),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  hasAccount ? state.selectedAccountName! : '거래처 전체',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: hasAccount
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (hasAccount)
+                GestureDetector(
+                  onTap: () =>
+                      ref.read(claimListProvider.notifier).clearAccount(),
+                  child: const Icon(Icons.close,
+                      size: 18, color: AppColors.textSecondary),
+                )
+              else
+                const Icon(Icons.arrow_drop_down,
+                    color: AppColors.textSecondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectAccount() async {
+    final account = await AccountSelectorSheet.show(context);
+    if (account != null) {
+      ref
+          .read(claimListProvider.notifier)
+          .selectAccount(account.accountId, account.accountName);
+    }
   }
 
   Widget _buildDateFilter(dynamic state) {

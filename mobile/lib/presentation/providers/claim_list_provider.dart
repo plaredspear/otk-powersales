@@ -46,6 +46,7 @@ class ClaimListNotifier extends StateNotifier<ClaimListState> {
       final items = await _getClaims.call(
         startDate: startDate,
         endDate: endDate,
+        accountId: state.selectedAccountId,
       );
       state = state.copyWith(
         isLoading: false,
@@ -57,12 +58,41 @@ class ClaimListNotifier extends StateNotifier<ClaimListState> {
     }
   }
 
+  /// 시작일 변경. 종료일과의 간격이 최대 일수를 넘으면 종료일을 자동 보정한다.
   void updateStartDate(DateTime date) {
-    state = state.copyWith(startDate: date);
+    const maxDays = ClaimListState.maxRangeDays;
+    var end = state.endDate;
+    if (date.isAfter(end)) {
+      end = date;
+    } else if (end.difference(date).inDays > maxDays) {
+      end = date.add(const Duration(days: maxDays));
+    }
+    state = state.copyWith(startDate: date, endDate: end);
   }
 
+  /// 종료일 변경. 시작일과의 간격이 최대 일수를 넘으면 시작일을 자동 보정한다.
   void updateEndDate(DateTime date) {
-    state = state.copyWith(endDate: date);
+    const maxDays = ClaimListState.maxRangeDays;
+    var start = state.startDate;
+    if (date.isBefore(start)) {
+      start = date;
+    } else if (date.difference(start).inDays > maxDays) {
+      start = date.subtract(const Duration(days: maxDays));
+    }
+    state = state.copyWith(startDate: start, endDate: date);
+  }
+
+  /// 거래처 필터 선택 (특정 거래처).
+  void selectAccount(int accountId, String accountName) {
+    state = state.copyWith(
+      selectedAccountId: accountId,
+      selectedAccountName: accountName,
+    );
+  }
+
+  /// 거래처 필터 해제 (거래처 전체).
+  void clearAccount() {
+    state = state.copyWith(clearAccount: true);
   }
 
   void clearError() {

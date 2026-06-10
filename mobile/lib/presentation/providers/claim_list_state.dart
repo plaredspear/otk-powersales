@@ -2,12 +2,17 @@ import '../../domain/entities/claim_list_item.dart';
 
 /// 클레임 목록 상태
 class ClaimListState {
+  /// 조회 기간 최대 일수 (레거시 daterangepicker maxSpan.days=7 동등).
+  static const int maxRangeDays = 7;
+
   final bool isLoading;
   final String? errorMessage;
   final List<ClaimListItem> items;
   final bool hasSearched;
   final DateTime startDate;
   final DateTime endDate;
+  final int? selectedAccountId;
+  final String? selectedAccountName;
 
   const ClaimListState({
     this.isLoading = false,
@@ -16,6 +21,8 @@ class ClaimListState {
     this.hasSearched = false,
     required this.startDate,
     required this.endDate,
+    this.selectedAccountId,
+    this.selectedAccountName,
   });
 
   factory ClaimListState.initial() {
@@ -42,6 +49,9 @@ class ClaimListState {
     bool? hasSearched,
     DateTime? startDate,
     DateTime? endDate,
+    int? selectedAccountId,
+    String? selectedAccountName,
+    bool clearAccount = false,
   }) {
     return ClaimListState(
       isLoading: isLoading ?? this.isLoading,
@@ -50,6 +60,11 @@ class ClaimListState {
       hasSearched: hasSearched ?? this.hasSearched,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
+      selectedAccountId:
+          clearAccount ? null : (selectedAccountId ?? this.selectedAccountId),
+      selectedAccountName: clearAccount
+          ? null
+          : (selectedAccountName ?? this.selectedAccountName),
     );
   }
 }

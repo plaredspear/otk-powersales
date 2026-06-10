@@ -10,10 +10,12 @@ class GetClaimsUseCase {
   Future<List<ClaimListItem>> call({
     String? startDate,
     String? endDate,
+    int? accountId,
   }) async {
     return await _repository.getClaims(
       startDate: startDate,
       endDate: endDate,
+      accountId: accountId,
     );
   }
 }

@@ -22,9 +22,10 @@ class ClaimQueryController(
     fun getClaims(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false) startDate: String?,
-        @RequestParam(required = false) endDate: String?
+        @RequestParam(required = false) endDate: String?,
+        @RequestParam(required = false) accountId: Long?
     ): ResponseEntity<ApiResponse<List<ClaimListItemResponse>>> {
-        val result = claimQueryService.getClaims(principal.userId, startDate, endDate)
+        val result = claimQueryService.getClaims(principal.userId, startDate, endDate, accountId)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
