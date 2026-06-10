@@ -30,9 +30,31 @@ class AppPackageServiceTest {
     private val repository = mockk<AppPackageRepository>(relaxed = true)
     private val storageService = mockk<StorageService>(relaxed = true)
     private val manifestPlistBuilder = ManifestPlistBuilder()
+    private val ipaMetadataExtractor = IpaMetadataExtractor()
 
-    private val adminService = AdminAppPackageService(repository, storageService)
+    private val adminService = AdminAppPackageService(repository, storageService, ipaMetadataExtractor)
     private val mobileService = MobileAppPackageService(repository, storageService, manifestPlistBuilder)
+
+    /**
+     * 테스트용 최소 .ipa(ZIP) 바이트 생성. `Payload/<App>.app/Info.plist` 에
+     * 주어진 bundle id 를 담은 XML plist 를 넣는다.
+     */
+    private fun fakeIpa(bundleId: String = "com.otoki.pwrs.mobile"): ByteArray {
+        val plist = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>$bundleId</string>
+<key>CFBundleShortVersionString</key><string>1.0.0</string>
+<key>CFBundleVersion</key><string>1</string>
+</dict></plist>"""
+        val baos = java.io.ByteArrayOutputStream()
+        java.util.zip.ZipOutputStream(baos).use { zos ->
+            zos.putNextEntry(java.util.zip.ZipEntry("Payload/Runner.app/Info.plist"))
+            zos.write(plist.toByteArray())
+            zos.closeEntry()
+        }
+        return baos.toByteArray()
+    }
 
     private fun entity(
         id: Long = 1L,
@@ -70,7 +92,7 @@ class AppPackageServiceTest {
             every { storageService.getPresignedUrl(any(), any()) } returns "https://s3/abc.apk"
 
             val result = adminService.upload(
-                AppPlatform.ANDROID, "1.0.0", 10, false, "note", null, file, 1L
+                AppPlatform.ANDROID, "1.0.0", 10, false, "note", file, 1L
             )
 
             assertThat(result.versionCode).isEqualTo(10)
@@ -79,11 +101,30 @@ class AppPackageServiceTest {
         }
 
         @Test
+        @DisplayName("IOS 정상 업로드 — .ipa Info.plist 에서 bundleIdentifier 자동 추출")
+        fun iosSuccess() {
+            val file = MockMultipartFile("file", "mobile.ipa", "application/octet-stream", fakeIpa("com.otoki.pwrs.mobile"))
+            every { repository.existsByPlatformAndVersionCode(any(), any()) } returns false
+            every { storageService.uploadLargePrivate(any(), any(), any(), any()) } returns
+                UploadResult("uploads/app-package/2026/06/10/abc.ipa", "application/octet-stream", "mobile.ipa", 10)
+            val saved = slot<AppPackage>()
+            every { repository.save(capture(saved)) } answers { firstArg<AppPackage>() }
+            every { storageService.getPresignedUrl(any(), any()) } returns "https://s3/abc.ipa"
+
+            val result = adminService.upload(
+                AppPlatform.IOS, "1.0.0", 10, false, null, file, 1L
+            )
+
+            assertThat(saved.captured.bundleIdentifier).isEqualTo("com.otoki.pwrs.mobile")
+            assertThat(result.bundleIdentifier).isEqualTo("com.otoki.pwrs.mobile")
+        }
+
+        @Test
         @DisplayName("빈 파일 → AppPackageFileRequiredException")
         fun emptyFile() {
             val file = MockMultipartFile("file", "app.apk", "application/octet-stream", ByteArray(0))
             assertThatThrownBy {
-                adminService.upload(AppPlatform.ANDROID, "1.0.0", 10, false, null, null, file, 1L)
+                adminService.upload(AppPlatform.ANDROID, "1.0.0", 10, false, null, file, 1L)
             }.isInstanceOf(AppPackageFileRequiredException::class.java)
         }
 
@@ -92,16 +133,18 @@ class AppPackageServiceTest {
         fun wrongExtension() {
             val file = MockMultipartFile("file", "app.ipa", "application/octet-stream", ByteArray(10))
             assertThatThrownBy {
-                adminService.upload(AppPlatform.ANDROID, "1.0.0", 10, false, null, null, file, 1L)
+                adminService.upload(AppPlatform.ANDROID, "1.0.0", 10, false, null, file, 1L)
             }.isInstanceOf(AppPackageInvalidExtensionException::class.java)
         }
 
         @Test
-        @DisplayName("IOS 인데 bundleIdentifier 누락 → AppPackageBundleIdentifierRequiredException")
-        fun iosMissingBundleId() {
+        @DisplayName("IOS 인데 .ipa 에서 bundleIdentifier 추출 불가 → AppPackageBundleIdentifierRequiredException")
+        fun iosBundleIdNotExtractable() {
+            // Info.plist 가 없는 손상된/위조 .ipa (단순 바이트)
+            every { repository.existsByPlatformAndVersionCode(any(), any()) } returns false
             val file = MockMultipartFile("file", "app.ipa", "application/octet-stream", ByteArray(10))
             assertThatThrownBy {
-                adminService.upload(AppPlatform.IOS, "1.0.0", 10, false, null, null, file, 1L)
+                adminService.upload(AppPlatform.IOS, "1.0.0", 10, false, null, file, 1L)
             }.isInstanceOf(AppPackageBundleIdentifierRequiredException::class.java)
         }
 
@@ -111,7 +154,7 @@ class AppPackageServiceTest {
             val file = MockMultipartFile("file", "app.apk", "application/octet-stream", ByteArray(10))
             every { repository.existsByPlatformAndVersionCode(AppPlatform.ANDROID, 10) } returns true
             assertThatThrownBy {
-                adminService.upload(AppPlatform.ANDROID, "1.0.0", 10, false, null, null, file, 1L)
+                adminService.upload(AppPlatform.ANDROID, "1.0.0", 10, false, null, file, 1L)
             }.isInstanceOf(AppPackageDuplicateVersionException::class.java)
         }
     }
@@ -266,7 +309,7 @@ class AppPackageServiceTest {
         every { repository.save(capture(saved)) } answers { firstArg<AppPackage>() }
         every { storageService.getPresignedUrl(any(), any()) } returns "url"
 
-        adminService.upload(AppPlatform.ANDROID, "1.0.0", 10, false, null, null, file, 42L)
+        adminService.upload(AppPlatform.ANDROID, "1.0.0", 10, false, null, file, 42L)
 
         assertThat(saved.captured.uploadedById).isEqualTo(42L)
     }

@@ -80,6 +80,9 @@ dependencies {
 	// OpenCSV (SF migration Stage 1 — S3 → PostgreSQL COPY 직결)
 	implementation("com.opencsv:opencsv:5.9")
 
+	// dd-plist — iOS .ipa 내부 Info.plist(binary/XML plist) 파싱으로 bundle identifier 자동 추출
+	implementation("com.googlecode.plist:dd-plist:1.28")
+
 	// JWT
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")

@@ -35,6 +35,6 @@ class AppPackageCannotDeleteLatestException : BusinessException(
 
 class AppPackageBundleIdentifierRequiredException : BusinessException(
     errorCode = "APP_PACKAGE_BUNDLE_IDENTIFIER_REQUIRED",
-    message = "iOS 패키지는 bundle identifier 가 필요합니다",
+    message = "유효한 iOS 패키지(.ipa)가 아닙니다. Info.plist 에서 bundle identifier 를 읽을 수 없습니다",
     httpStatus = HttpStatus.BAD_REQUEST,
 )

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Form, Input, InputNumber, Switch, Upload, message } from 'antd';
+import { Modal, Form, Input, InputNumber, Switch, Upload, Alert, message } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
 import { useUploadAppPackage } from '@/hooks/appPackage/useAppPackages';
 import type { AppPlatform } from '@/api/appPackage';
@@ -18,7 +18,6 @@ interface FormValues {
   versionCode: number;
   forceUpdate: boolean;
   releaseNote?: string;
-  bundleIdentifier?: string;
 }
 
 const ACCEPT: Record<AppPlatform, string> = { ANDROID: '.apk', IOS: '.ipa' };
@@ -40,10 +39,6 @@ export default function AppPackageUploadModal({ open, platform, onClose }: Props
       message.error('패키지 파일을 선택하세요');
       return;
     }
-    if (platform === 'IOS' && !values.bundleIdentifier?.trim()) {
-      message.error('iOS 패키지는 Bundle Identifier 가 필요합니다');
-      return;
-    }
     try {
       await upload.mutateAsync({
         platform,
@@ -51,7 +46,6 @@ export default function AppPackageUploadModal({ open, platform, onClose }: Props
         versionCode: values.versionCode,
         forceUpdate: values.forceUpdate ?? false,
         releaseNote: values.releaseNote,
-        bundleIdentifier: values.bundleIdentifier,
         file,
       });
       message.success('패키지가 업로드되었습니다');
@@ -87,13 +81,12 @@ export default function AppPackageUploadModal({ open, platform, onClose }: Props
           <InputNumber style={{ width: '100%' }} min={1} placeholder="12" />
         </Form.Item>
         {platform === 'IOS' && (
-          <Form.Item
-            name="bundleIdentifier"
-            label="Bundle Identifier (서명된 IPA 의 실제 값)"
-            rules={[{ required: true, message: 'iOS 는 Bundle Identifier 가 필요합니다' }]}
-          >
-            <Input placeholder="com.otoki.powersales" />
-          </Form.Item>
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="Bundle Identifier 는 업로드한 .ipa 파일에서 자동으로 추출됩니다."
+          />
         )}
         <Form.Item name="forceUpdate" label="강제 업데이트" valuePropName="checked">
           <Switch />

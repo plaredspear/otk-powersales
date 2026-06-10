@@ -64,12 +64,12 @@ class AdminAppPackageController(
         @RequestParam versionCode: Long,
         @RequestParam(required = false, defaultValue = "false") forceUpdate: Boolean,
         @RequestParam(required = false) releaseNote: String?,
-        @RequestParam(required = false) bundleIdentifier: String?,
         @RequestPart("file") file: MultipartFile,
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<AppPackageDetailDto>> {
+        // iOS bundleIdentifier 는 업로드된 .ipa 의 Info.plist 에서 자동 추출한다(수동 입력 불요).
         val result = adminAppPackageService.upload(
-            platform, versionName, versionCode, forceUpdate, releaseNote, bundleIdentifier, file, principal.employeeId
+            platform, versionName, versionCode, forceUpdate, releaseNote, file, principal.employeeId
         )
         return ResponseEntity.ok(ApiResponse.success(result, "패키지가 업로드되었습니다"))
     }

@@ -43,18 +43,17 @@ export interface UploadAppPackageParams {
   versionCode: number;
   forceUpdate: boolean;
   releaseNote?: string;
-  bundleIdentifier?: string;
   file: File;
 }
 
 export async function uploadAppPackage(params: UploadAppPackageParams): Promise<AppPackageDetail> {
+  // iOS bundleIdentifier 는 백엔드가 업로드된 .ipa 의 Info.plist 에서 자동 추출한다(전송 불요).
   const formData = new FormData();
   formData.append('platform', params.platform);
   formData.append('versionName', params.versionName);
   formData.append('versionCode', String(params.versionCode));
   formData.append('forceUpdate', String(params.forceUpdate));
   if (params.releaseNote) formData.append('releaseNote', params.releaseNote);
-  if (params.bundleIdentifier) formData.append('bundleIdentifier', params.bundleIdentifier);
   formData.append('file', params.file);
 
   const res = await client.post<ApiResponse<AppPackageDetail>>('/api/v1/admin/app-package', formData, {

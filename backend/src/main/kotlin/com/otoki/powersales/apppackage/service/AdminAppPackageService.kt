@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile
 class AdminAppPackageService(
     private val appPackageRepository: AppPackageRepository,
     private val storageService: StorageService,
+    private val ipaMetadataExtractor: IpaMetadataExtractor,
 ) {
 
     fun list(platform: AppPlatform?, pageable: Pageable): Page<AppPackageListItemDto> {
@@ -48,23 +49,29 @@ class AdminAppPackageService(
         versionCode: Long,
         forceUpdate: Boolean,
         releaseNote: String?,
-        bundleIdentifier: String?,
         file: MultipartFile,
         uploadedById: Long?,
     ): AppPackageDetailDto {
         if (file.isEmpty || file.originalFilename.isNullOrBlank()) throw AppPackageFileRequiredException()
         validateExtension(platform, file.originalFilename!!)
-        if (platform == AppPlatform.IOS && bundleIdentifier.isNullOrBlank()) {
-            throw AppPackageBundleIdentifierRequiredException()
-        }
         if (appPackageRepository.existsByPlatformAndVersionCode(platform, versionCode)) {
             throw AppPackageDuplicateVersionException(versionCode)
+        }
+
+        val fileBytes = file.bytes
+        // iOS 는 서명된 .ipa 내부 Info.plist 의 CFBundleIdentifier 를 자동 추출한다.
+        // (수동 입력 시 오타로 OTA manifest 가 불일치해 설치 실패하는 것을 원천 차단)
+        val bundleIdentifier = if (platform == AppPlatform.IOS) {
+            ipaMetadataExtractor.extract(fileBytes)?.bundleIdentifier
+                ?: throw AppPackageBundleIdentifierRequiredException()
+        } else {
+            null
         }
 
         val result = storageService.uploadLargePrivate(
             domain = "app-package",
             originalName = file.originalFilename!!,
-            bytes = file.bytes,
+            bytes = fileBytes,
             contentType = resolveContentType(platform),
         )
 
@@ -79,7 +86,7 @@ class AdminAppPackageService(
                 fileName = file.originalFilename!!,
                 fileSize = file.size,
                 isLatest = false,
-                bundleIdentifier = bundleIdentifier?.ifBlank { null },
+                bundleIdentifier = bundleIdentifier,
                 uploadedById = uploadedById,
             )
         )

@@ -49,7 +49,7 @@ class AdminAppPackageControllerTest : AdminControllerTestSupport() {
     @DisplayName("업로드 — multipart 정상 처리 (200 + ApiResponse)")
     fun upload() {
         every {
-            adminAppPackageService.upload(any(), any(), any(), any(), any(), any(), any(), any())
+            adminAppPackageService.upload(any(), any(), any(), any(), any(), any(), any())
         } returns detail()
 
         val file = MockMultipartFile("file", "app.apk", "application/octet-stream", ByteArray(10))
