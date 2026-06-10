@@ -246,21 +246,23 @@ class LeaderScheduleServiceTest {
     inner class GetTeamMembersTests {
 
         @Test
-        @DisplayName("성공 - 조장의 팀원이 employee_code ASC 정렬되어 반환")
+        @DisplayName("성공 - 퇴직 제외(휴직 포함) + 이름 가나다순 정렬 (레거시 empSearch parity)")
         fun getTeamMembers_success() {
             val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
-            val m1 = createEmployee(id = 5012, employeeCode = "20300002", authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "활동")
-            val m2 = createEmployee(id = 5013, employeeCode = "20300001", authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "휴직")
+            val m1 = createEmployee(id = 5012, employeeCode = "20300002", authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "활동", name = "최여사")
+            val m2 = createEmployee(id = 5013, employeeCode = "20300001", authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "휴직", name = "김여사")
+            val resigned = createEmployee(id = 5014, employeeCode = "20300003", authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "퇴직", name = "박여사")
 
             every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
-            every { employeeRepository.findByCostCenterCodeAndRole("C001", AppAuthority.WOMAN) } returns listOf(m1, m2)
+            every { employeeRepository.findByCostCenterCodeAndRole("C001", AppAuthority.WOMAN) } returns listOf(m1, m2, resigned)
 
             val result = leaderScheduleService.getTeamMembers(leader.id)
 
+            // 퇴직(박여사) 제외 → 2명, 이름순(김 < 최)
             assertThat(result).hasSize(2)
-            assertThat(result[0].employeeCode).isEqualTo("20300001")
+            assertThat(result[0].name).isEqualTo("김여사")
             assertThat(result[0].status).isEqualTo("휴직")
-            assertThat(result[1].employeeCode).isEqualTo("20300002")
+            assertThat(result[1].name).isEqualTo("최여사")
         }
 
         @Test

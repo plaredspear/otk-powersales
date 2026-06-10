@@ -9,6 +9,7 @@ import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.enums.EmploymentStatus
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleUpdateRequest
@@ -234,9 +235,12 @@ class LeaderScheduleService(
         val costCenterCode = registrant.costCenterCode
             ?: return emptyList()
 
+        // 레거시 employeeMapper.xml `empSearch` 동작 보존:
+        // 퇴직자 제외(휴직은 포함), 이름(한글) 가나다순 정렬.
         return employeeRepository
             .findByCostCenterCodeAndRole(costCenterCode, AppAuthority.WOMAN)
-            .sortedBy { it.employeeCode }
+            .filter { it.status != EmploymentStatus.RESIGNED.code }
+            .sortedBy { it.name }
             .map { LeaderTeamMemberListResponse.from(it) }
     }
 
