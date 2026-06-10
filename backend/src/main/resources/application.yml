@@ -97,8 +97,11 @@ management:
         enabled: true
 
 jwt:
+  # access: 1시간 (3600000ms). 짧게 유지해 폐기(revocation) 지연을 줄인다.
+  #   refresh 회전이 7일 롤링 세션을 유지하므로 사용자 체감 변화는 없다.
+  # refresh: 7일 (604800000ms). 회전 시 TTL 재부여되는 슬라이딩 윈도우 = 비활동 한계.
   secret: ${JWT_SECRET:otoki-internal-dev-secret-key-change-in-production-minimum-256-bits}
-  expiration: ${JWT_EXPIRATION:86400000}
+  expiration: ${JWT_EXPIRATION:3600000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 orora:
