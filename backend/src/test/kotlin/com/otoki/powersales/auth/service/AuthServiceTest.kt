@@ -836,7 +836,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("예외 사번 로그인 - excluded-employee-numbers에 포함된 사번은 device_id 불일치여도 로그인 성공")
+    @DisplayName("예외 사번 로그인 - excluded-employee-codes에 포함된 사번은 device_id 불일치여도 로그인 성공")
     fun login_excludedEmployee_skipsValidation() {
         // Given
         val employee = createTestEmployee(id = 1L, employeeCode = "20010585", deviceUuid = "device-abc-123")

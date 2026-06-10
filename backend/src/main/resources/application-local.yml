@@ -44,3 +44,10 @@ spring:
   # 그대로 사용하므로 별도 설정이 필요 없다 (이 키는 명시적 의도 표시용).
   flyway:
     enabled: true
+
+# local 단말 바인딩 면제 사번 — dev 와 동일하게 00000009 + 20030239 둘 다 면제.
+# (00000009 는 운영에서도 면제되며 base 기본값으로 적용, 20030239 는 local/dev 한정)
+app:
+  auth:
+    uuid-check:
+      excluded-employee-codes: "00000009,20030239"
