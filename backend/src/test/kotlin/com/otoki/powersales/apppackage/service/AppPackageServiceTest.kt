@@ -30,13 +30,15 @@ class AppPackageServiceTest {
     private val repository = mockk<AppPackageRepository>(relaxed = true)
     private val storageService = mockk<StorageService>(relaxed = true)
     private val manifestPlistBuilder = ManifestPlistBuilder()
+    private val iosInstallPageBuilder = IosInstallPageBuilder()
     private val ipaMetadataExtractor = IpaMetadataExtractor()
     // APK 추출은 실제 .apk 바이트 생성이 어려워 mock. 기본은 추출 실패(null) → 입력값 fallback.
     private val apkMetadataExtractor = mockk<ApkMetadataExtractor>()
 
     private val adminService =
         AdminAppPackageService(repository, storageService, ipaMetadataExtractor, apkMetadataExtractor)
-    private val mobileService = MobileAppPackageService(repository, storageService, manifestPlistBuilder)
+    private val mobileService =
+        MobileAppPackageService(repository, storageService, manifestPlistBuilder, iosInstallPageBuilder)
 
     init {
         every { apkMetadataExtractor.extract(any()) } returns null

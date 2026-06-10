@@ -19,10 +19,15 @@ class MobileAppPackageService(
     private val appPackageRepository: AppPackageRepository,
     private val storageService: StorageService,
     private val manifestPlistBuilder: ManifestPlistBuilder,
+    private val iosInstallPageBuilder: IosInstallPageBuilder,
 ) {
 
     companion object {
         private const val IOS_INSTALL_TITLE = "오뚜기 파워세일즈"
+
+        /** iOS manifest.plist 엔드포인트 경로 (절대 URL 합성용). */
+        fun iosManifestPath(baseUrl: String, id: Long): String =
+            "$baseUrl/api/v1/mobile/app-package/ios/manifest.plist?id=$id"
     }
 
     /**
@@ -81,6 +86,21 @@ class MobileAppPackageService(
         )
     }
 
+    /**
+     * iOS OTA 설치 안내 HTML 페이지 생성. 공유 가능한 https URL 로 열려 페이지 내 버튼이
+     * Safari 컨텍스트에서 itms-services 를 호출하게 한다.
+     *
+     * @param baseUrl manifest 절대 URL 합성용 요청 기준 origin
+     */
+    fun buildIosInstallPage(id: Long, baseUrl: String): String {
+        val entity = appPackageRepository.findById(id).orElseThrow { AppPackageNotFoundException() }
+        return iosInstallPageBuilder.build(
+            manifestUrl = iosManifestPath(baseUrl, id),
+            title = IOS_INSTALL_TITLE,
+            versionName = entity.versionName,
+        )
+    }
+
     private fun resolveLatest(platform: AppPlatform): AppPackage? =
         appPackageRepository.findByPlatformAndIsLatestTrue(platform)
             ?: appPackageRepository.findTopByPlatformOrderByVersionCodeDesc(platform)
@@ -89,8 +109,7 @@ class MobileAppPackageService(
         AppPlatform.ANDROID ->
             storageService.getPresignedUrl(latest.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
         AppPlatform.IOS -> {
-            val manifestUrl = "$baseUrl/api/v1/mobile/app-package/ios/manifest.plist?id=${latest.id}"
-            val encoded = URLEncoder.encode(manifestUrl, StandardCharsets.UTF_8)
+            val encoded = URLEncoder.encode(iosManifestPath(baseUrl, latest.id), StandardCharsets.UTF_8)
             "itms-services://?action=download-manifest&url=$encoded"
         }
     }

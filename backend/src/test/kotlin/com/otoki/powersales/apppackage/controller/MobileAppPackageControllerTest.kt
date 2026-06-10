@@ -70,4 +70,16 @@ class MobileAppPackageControllerTest : MobileControllerTestSupport() {
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML))
             .andExpect(content().string(xml))
     }
+
+    @Test
+    @DisplayName("iOS 설치 안내 페이지 — Content-Type text/html + HTML 본문")
+    fun iosInstallPage() {
+        val html = "<!DOCTYPE html><html><body>설치</body></html>"
+        every { mobileAppPackageService.buildIosInstallPage(7L, any()) } returns html
+
+        mockMvc.perform(get("/api/v1/mobile/app-package/ios/install?id=7"))
+            .andExpect(status().isOk)
+            .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+            .andExpect(content().string(html))
+    }
 }

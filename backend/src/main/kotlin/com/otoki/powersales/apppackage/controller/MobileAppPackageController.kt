@@ -48,6 +48,20 @@ class MobileAppPackageController(
             .body(xml)
     }
 
+    /**
+     * iOS OTA 설치 안내 HTML 페이지. 공유 가능한 https URL — iPhone Safari 에서 열어
+     * 페이지 내 "설치" 버튼으로 itms-services 를 호출한다.
+     *
+     * 한글이 포함되므로 charset=UTF-8 을 명시한다(누락 시 브라우저가 깨진 인코딩으로 표시).
+     */
+    @GetMapping("/ios/install", produces = ["text/html;charset=UTF-8"])
+    fun iosInstallPage(@RequestParam id: Long): ResponseEntity<String> {
+        val html = mobileAppPackageService.buildIosInstallPage(id, currentBaseUrl())
+        return ResponseEntity.ok()
+            .contentType(MediaType("text", "html", Charsets.UTF_8))
+            .body(html)
+    }
+
     /** 요청 기준 origin (scheme + host[:port]). X-Forwarded-* 가 반영된 절대 URL 의 base 를 추출. */
     private fun currentBaseUrl(): String =
         ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString()
