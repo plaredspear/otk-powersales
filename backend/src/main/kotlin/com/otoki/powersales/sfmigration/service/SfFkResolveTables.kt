@@ -67,6 +67,10 @@ internal val POLYMORPHIC_OWNER_TABLES: Set<String> = setOf(
     "notice",
     "product",
     "team_member_schedule",
+    // WorkingDayMaster__c.OwnerId.referenceTo = [Group, User] polymorphic. owner_sfid → owner_user_id (005) /
+    // owner_group_id (00G) 분기. entity 는 owner_user_id/owner_group_id/XOR 를 갖췄으나 화이트리스트 등록 누락
+    // (monthly_sales_history / sales_progress_rate_master / daily_sales_history 와 동일 함정).
+    "working_day_master",
 )
 
 /**

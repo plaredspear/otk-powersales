@@ -129,6 +129,66 @@ class SfFkResolveInventoryTest {
         }
     }
 
+    /**
+     * owner polymorphic (OwnerId.referenceTo = [Group, User]) entity 의 권위 테이블 인벤토리.
+     *
+     * 출처: backend entity 의 `@Column(name = "owner_group_id")` 보유 테이블 전수 (2026-06-11 추출).
+     *   - 갱신 방법:
+     *       cd backend/src/main/kotlin
+     *       grep -rln 'name = "owner_group_id"' com --include='*.kt' 별 @Table name 추출 후 sort -u
+     *   - owner_group_id 컬럼을 가진 entity 는 owner_sfid → owner_user_id(005) / owner_group_id(00G)
+     *     분기가 필요하므로 반드시 POLYMORPHIC_OWNER_TABLES 에 등록되어야 한다. 누락 시 Group(00G)
+     *     소유 row 의 owner_user_id/owner_group_id 가 둘 다 NULL 로 남는 silent miss
+     *     (monthly_sales_history / sales_progress_rate_master / working_day_master 가 모두 이 함정에
+     *     빠진 전력 — 본 테스트가 재발을 차단).
+     */
+    private val ownerPolymorphicTables: Set<String> = setOf(
+        "account_category_master",
+        "agreement_history",
+        "agreement_word",
+        "alternative_holiday",
+        "appointment",
+        "attend_info",
+        "attendance_log",
+        "claim",
+        "daily_sales_history",
+        "display_work_schedule",
+        "employee",
+        "employee_input_criteria_master",
+        "erp_order_product",
+        "holiday_master",
+        "inspection_theme",
+        "monthly_female_employee_integration_schedule",
+        "monthly_sales_history",
+        "new_product",
+        "notice",
+        "order_request",
+        "order_request_product",
+        "organization",
+        "product",
+        "product_barcode",
+        "professional_promotion_team_history",
+        "professional_promotion_team_master",
+        "promotion",
+        "push_message",
+        "sales_progress_rate_master",
+        "site_activity",
+        "suggestion",
+        "team_member_schedule",
+        "upload_file",
+        "working_day_master",
+    )
+
+    @Test
+    @DisplayName("owner polymorphic — owner_group_id 보유 entity 전수가 POLYMORPHIC_OWNER_TABLES 에 등록 (silent miss 차단)")
+    fun ownerPolymorphicWhitelistMatchesEntities() {
+        // owner_group_id 컬럼 보유 entity ↔ 화이트리스트 정합. 어느 한쪽만 어긋나면 깨진다.
+        // 신규 owner polymorphic entity 추가 / 화이트리스트 누락 양방향 모두 감지.
+        assertThat(POLYMORPHIC_OWNER_TABLES)
+            .describedAs("POLYMORPHIC_OWNER_TABLES 는 owner_group_id 보유 entity 전수와 일치해야 함")
+            .isEqualTo(ownerPolymorphicTables)
+    }
+
     @Test
     @DisplayName("table-scoped override — user.manager_sfid 는 user self-ref, employee.manager_sfid 는 employee self-ref")
     fun tableScopedManagerClassification() {
