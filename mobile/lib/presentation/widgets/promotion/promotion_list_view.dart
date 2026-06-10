@@ -11,6 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/promotion_list_provider.dart';
 import '../../providers/promotion_list_state.dart';
 import '../common/loading_indicator.dart';
+import '../common/range_calendar_picker.dart';
 import 'promotion_card.dart';
 
 /// 행사 목록 본문 위젯 (AppBar 없는 임베드 가능 형태).
@@ -87,17 +88,24 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
     }
   }
 
-  Future<void> _pickRangeDate(BuildContext context, bool isStart) async {
+  /// 기간 시작일~종료일을 클레임 현황과 동일한 달력 모달로 선택한다(조장/지점장).
+  /// 조회 가능 기간은 행사 조건(2020 ~ 2030)에 맞추고,
+  /// 레거시 daterangepicker maxSpan 정합으로 최대 30일까지만 선택할 수 있다.
+  Future<void> _pickDateRange(BuildContext context) async {
     final state = ref.read(promotionListProvider);
-    final picked =
-        await _showPicker(context, isStart ? state.startDate : state.endDate);
+    final picked = await showRangeCalendar(
+      context,
+      initialStart: DateTime.parse(state.startDate),
+      initialEnd: DateTime.parse(state.endDate),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      maxRangeDays: 30,
+    );
     if (picked != null) {
-      final notifier = ref.read(promotionListProvider.notifier);
-      if (isStart) {
-        notifier.updateDateRange(picked, state.endDate);
-      } else {
-        notifier.updateDateRange(state.startDate, picked);
-      }
+      ref.read(promotionListProvider.notifier).updateDateRange(
+            _fmtDate(picked.start),
+            _fmtDate(picked.end),
+          );
     }
   }
 
@@ -109,8 +117,11 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
       lastDate: DateTime(2030),
     );
     if (picked == null) return null;
-    return '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+    return _fmtDate(picked);
   }
+
+  String _fmtDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
@@ -241,12 +252,12 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
                   style: AppTypography.bodyMedium
                       .copyWith(color: AppColors.textSecondary)),
               _buildDateButton(state.startDate,
-                  () => throttledTap(() => _pickRangeDate(context, true))),
+                  () => throttledTap(() => _pickDateRange(context))),
               Text(' ~ ',
                   style: AppTypography.bodyMedium
                       .copyWith(color: AppColors.textSecondary)),
               _buildDateButton(state.endDate,
-                  () => throttledTap(() => _pickRangeDate(context, false))),
+                  () => throttledTap(() => _pickDateRange(context))),
             ],
           ),
         ],
