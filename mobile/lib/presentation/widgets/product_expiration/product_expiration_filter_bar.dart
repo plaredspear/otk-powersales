@@ -3,22 +3,18 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../domain/repositories/my_account_repository.dart';
+import '../account/account_selector_field.dart';
 import '../common/range_calendar_picker.dart';
 
 /// 유통기한 검색 필터 바
 ///
 /// 레거시(otg_PowerSales `product/expiration/list.jsp`)의 `search_top` 정합:
-/// - 거래처 전체 선택 (flat full-width 행 + 우측 chevron)
+/// - 거래처 전체 선택 (공용 [AccountSelectorField] 바텀시트, flat full-width 행)
 /// - "유통기한 [기간]" 한 줄 + 우측 노란 pill `검색` 버튼
 class ProductExpirationFilterBar extends StatelessWidget {
-  /// 거래처 목록 {accountCode: accountName}
-  final Map<String, String> accounts;
-
-  /// 선택된 거래처 코드
-  final String? selectedAccountCode;
-
-  /// 거래처 목록 로딩 중 여부
-  final bool isAccountsLoading;
+  /// 선택된 거래처명 (미선택 시 전체)
+  final String? selectedAccountName;
 
   /// 검색 시작일
   final DateTime fromDate;
@@ -40,9 +36,7 @@ class ProductExpirationFilterBar extends StatelessWidget {
 
   const ProductExpirationFilterBar({
     super.key,
-    required this.accounts,
-    this.selectedAccountCode,
-    this.isAccountsLoading = false,
+    this.selectedAccountName,
     required this.fromDate,
     required this.toDate,
     required this.onAccountChanged,
@@ -72,65 +66,15 @@ class ProductExpirationFilterBar extends StatelessWidget {
   }
 
   Widget _buildAccountRow() {
-    if (isAccountsLoading) {
-      return Container(
-        height: _rowHeight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        alignment: Alignment.centerLeft,
-        child: Row(
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '거래처 로딩 중...',
-              style: AppTypography.bodyLarge
-                  .copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      height: _rowHeight,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      alignment: Alignment.center,
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          value: selectedAccountCode,
-          isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down,
-              color: AppColors.textPrimary),
-          style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
-          hint: Text(
-            '거래처 전체',
-            style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
-          ),
-          items: [
-            DropdownMenuItem<String?>(
-              value: null,
-              child: Text('거래처 전체', style: AppTypography.bodyLarge),
-            ),
-            ...accounts.entries.map((entry) {
-              return DropdownMenuItem<String?>(
-                value: entry.key,
-                child: Text(
-                  entry.value,
-                  style: AppTypography.bodyLarge,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }),
-          ],
-          onChanged: (value) {
-            onAccountChanged(value, value != null ? accounts[value] : null);
-          },
-        ),
-      ),
+    // 레거시 search_top 행 높이(50)에 맞춰 세로 패딩으로 중앙 정렬한다.
+    return AccountSelectorField(
+      selectedName: selectedAccountName,
+      placeholder: '거래처 전체',
+      scope: MyAccountScope.field,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      onSelected: (account) =>
+          onAccountChanged(account.accountCode, account.accountName),
+      onCleared: () => onAccountChanged(null, null),
     );
   }
 

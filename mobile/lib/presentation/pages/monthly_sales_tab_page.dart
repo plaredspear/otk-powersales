@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../domain/entities/my_account.dart';
 import '../../domain/repositories/my_account_repository.dart';
 import '../providers/monthly_sales_provider.dart';
+import '../providers/monthly_sales_state.dart';
 import '../widgets/account/account_selector_field.dart';
 import '../widgets/sales/monthly_sales_chart_widget.dart';
 
@@ -32,7 +33,7 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
     });
   }
 
-  /// 거래처 선택 — 내 거래처 선택 바텀시트에서 고른 거래처로 필터링
+  /// 거래처 선택 — 내 거래처 선택 바텀시트에서 고른 거래처로 조회 (레거시 정합 — 필수)
   Future<void> _onAccountSelected(MyAccount account) async {
     if (!mounted) return;
     setState(() => _selectedAccountName = account.accountName);
@@ -41,16 +42,31 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
         .setCustomer(account.accountId.toString());
   }
 
-  /// 거래처 필터 초기화 (전체)
-  void _clearAccount() {
-    setState(() => _selectedAccountName = null);
-    ref.read(monthlySalesProvider.notifier).clearCustomerFilter();
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(monthlySalesProvider);
+
+    // 거래처 선택은 항상 상단에 노출(레거시 month/list.jsp 처럼 거래처 필수 선택).
+    return Column(
+      children: [
+        AccountSelectorField(
+          selectedName: _selectedAccountName,
+          placeholder: '거래처 선택',
+          scope: MyAccountScope.sales,
+          onSelected: _onAccountSelected,
+        ),
+        const Divider(height: 1),
+        Expanded(child: _buildBody(state)),
+      ],
+    );
+  }
+
+  Widget _buildBody(MonthlySalesState state) {
     final notifier = ref.read(monthlySalesProvider.notifier);
+
+    if (state.selectedCustomerId == null) {
+      return const Center(child: Text('거래처를 선택해 주세요'));
+    }
 
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -83,17 +99,6 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
       onRefresh: () => notifier.refresh(),
       child: ListView(
         children: [
-          // 거래처 선택 필터
-          AccountSelectorField(
-            selectedName: _selectedAccountName,
-            placeholder: '전체 거래처',
-            scope: MyAccountScope.sales,
-            onSelected: _onAccountSelected,
-            onCleared: _clearAccount,
-          ),
-
-          const Divider(height: 1),
-
           // 연월 네비게이터
           Container(
             padding: const EdgeInsets.all(16),

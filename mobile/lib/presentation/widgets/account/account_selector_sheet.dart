@@ -12,16 +12,40 @@ import '../../providers/my_accounts_provider.dart';
 ///
 /// "내 거래처" 목록(`GET /accounts/my`)을 검색·선택하여 선택된 [MyAccount]를 반환한다.
 /// 클레임 등록·월매출 등 폼/필터의 거래처 선택에서 공용으로 사용한다.
+///
+/// [includeAllOption] 이 true 면 목록 최상단에 "거래처 전체"(필터 해제) 항목을 노출한다.
+/// 레거시에서 거래처 필터에 `<option value="">거래처 전체</option>` 가 있는 화면(목록 필터)에만
+/// 사용하고, 거래처 필수 선택 화면(등록 폼·주문 작성·거래처별 주문)에는 사용하지 않는다.
+/// "거래처 전체" 선택 시 [show] 는 [allOption] sentinel 을 반환한다([isAllOption] 으로 판별).
 class AccountSelectorSheet extends ConsumerStatefulWidget {
-  const AccountSelectorSheet({super.key, this.scope = MyAccountScope.field});
+  const AccountSelectorSheet({
+    super.key,
+    this.scope = MyAccountScope.field,
+    this.includeAllOption = false,
+  });
 
   /// 거래처 조회 범위 — 매출 계열(POS/전산/월매출)은 [MyAccountScope.sales] 전달.
   final MyAccountScope scope;
 
-  /// 바텀시트로 표시하고 선택된 거래처를 반환한다 (취소 시 null).
+  /// 목록 최상단 "거래처 전체"(필터 해제) 항목 노출 여부.
+  final bool includeAllOption;
+
+  /// "거래처 전체" 선택 시 [show] 가 반환하는 sentinel (accountId == -1).
+  static const MyAccount allOption = MyAccount(
+    accountId: -1,
+    accountName: '거래처 전체',
+    accountCode: '',
+  );
+
+  /// [show] 결과가 "거래처 전체"(필터 해제) 인지 여부.
+  static bool isAllOption(MyAccount? account) =>
+      account != null && account.accountId == allOption.accountId;
+
+  /// 바텀시트로 표시하고 선택된 거래처를 반환한다 (취소 시 null, 전체 선택 시 [allOption]).
   static Future<MyAccount?> show(
     BuildContext context, {
     MyAccountScope scope = MyAccountScope.field,
+    bool includeAllOption = false,
   }) {
     return showModalBottomSheet<MyAccount>(
       context: context,
@@ -32,7 +56,8 @@ class AccountSelectorSheet extends ConsumerStatefulWidget {
           top: Radius.circular(AppSpacing.radiusXl),
         ),
       ),
-      builder: (_) => AccountSelectorSheet(scope: scope),
+      builder: (_) =>
+          AccountSelectorSheet(scope: scope, includeAllOption: includeAllOption),
     );
   }
 
@@ -147,15 +172,29 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
     if (_error != null) {
       return Center(child: Text(_error!));
     }
-    if (_accounts.isEmpty) {
+    final showAll = widget.includeAllOption;
+    if (_accounts.isEmpty && !showAll) {
       return const Center(child: Text('거래처가 없습니다'));
     }
+    final itemCount = _accounts.length + (showAll ? 1 : 0);
     return ListView.separated(
-      itemCount: _accounts.length,
+      itemCount: itemCount,
       separatorBuilder: (_, _) =>
           const Divider(height: 1, color: AppColors.divider),
       itemBuilder: (context, index) {
-        final account = _accounts[index];
+        // 최상단 "거래처 전체"(필터 해제) 항목
+        if (showAll && index == 0) {
+          return ListTile(
+            title: Text(
+              '거래처 전체',
+              style: AppTypography.bodyLarge
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+            onTap: () => Navigator.of(context)
+                .pop(AccountSelectorSheet.allOption),
+          );
+        }
+        final account = _accounts[index - (showAll ? 1 : 0)];
         return ListTile(
           title: Text(account.accountName, style: AppTypography.bodyLarge),
           subtitle: Text(

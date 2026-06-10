@@ -95,9 +95,7 @@ class _ProductExpirationListPageState extends ConsumerState<ProductExpirationLis
         children: [
           // 검색 필터
           ProductExpirationFilterBar(
-            accounts: state.accounts,
-            selectedAccountCode: state.selectedAccountCode,
-            isAccountsLoading: state.isAccountsLoading,
+            selectedAccountName: state.selectedAccountName,
             fromDate: state.fromDate,
             toDate: state.toDate,
             onAccountChanged: (code, name) {

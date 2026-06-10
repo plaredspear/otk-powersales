@@ -26,12 +26,6 @@ class ProductExpirationListState {
   /// 검색 종료일
   final DateTime toDate;
 
-  /// 내 거래처 목록 (드롭다운용) - {accountCode: accountName}
-  final Map<String, String> accounts;
-
-  /// 거래처 목록 로딩 중 여부
-  final bool isAccountsLoading;
-
   const ProductExpirationListState({
     this.isLoading = false,
     this.errorMessage,
@@ -41,8 +35,6 @@ class ProductExpirationListState {
     this.selectedAccountName,
     required this.fromDate,
     required this.toDate,
-    this.accounts = const {},
-    this.isAccountsLoading = false,
   });
 
   /// 초기 상태 (시작: 오늘 - 7일, 종료: 오늘 + 3개월)
@@ -93,8 +85,6 @@ class ProductExpirationListState {
     String? selectedAccountName,
     DateTime? fromDate,
     DateTime? toDate,
-    Map<String, String>? accounts,
-    bool? isAccountsLoading,
     bool clearAccountFilter = false,
   }) {
     return ProductExpirationListState(
@@ -108,8 +98,6 @@ class ProductExpirationListState {
           clearAccountFilter ? null : (selectedAccountName ?? this.selectedAccountName),
       fromDate: fromDate ?? this.fromDate,
       toDate: toDate ?? this.toDate,
-      accounts: accounts ?? this.accounts,
-      isAccountsLoading: isAccountsLoading ?? this.isAccountsLoading,
     );
   }
 }

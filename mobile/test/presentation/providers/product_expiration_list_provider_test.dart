@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/product_expiration_item.dart';
-import 'package:mobile/domain/repositories/my_account_repository.dart';
 import 'package:mobile/domain/repositories/product_expiration_repository.dart';
-import 'package:mobile/domain/usecases/get_my_accounts.dart';
 import 'package:mobile/domain/usecases/get_product_expiration_list_usecase.dart';
 import 'package:mobile/presentation/providers/product_expiration_list_provider.dart';
 
@@ -15,12 +13,10 @@ void main() {
     setUp(() {
       fakeRepository = FakeProductExpirationRepository();
       useCase = GetProductExpirationList(fakeRepository);
-      // 거래처 목록은 GetMyAccounts(FIELD scope) 를 재사용한다. initialize() 를
-      // 호출하지 않는 테스트에서는 _loadAccounts() 가 트리거되지 않으므로 빈 목록
-      // 을 반환하는 fake 로 충분하다.
+      // 거래처 목록은 AccountSelectorField 바텀시트가 온디맨드로 조회하므로
+      // provider 는 거래처 의존성을 갖지 않는다.
       notifier = ProductExpirationListNotifier(
         getProductExpirationList: useCase,
-        getMyAccounts: GetMyAccounts(FakeMyAccountRepository()),
       );
     });
 
@@ -166,16 +162,6 @@ class FakeProductExpirationRepository implements ProductExpirationRepository {
   Future<int> deleteProductExpirationBatch(List<int> seqs) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return batchDeleteCount;
-  }
-}
-
-class FakeMyAccountRepository implements MyAccountRepository {
-  @override
-  Future<MyAccountListResult> getMyAccounts({
-    String? keyword,
-    MyAccountScope scope = MyAccountScope.field,
-  }) async {
-    return const MyAccountListResult(accounts: [], totalCount: 0);
   }
 }
 
