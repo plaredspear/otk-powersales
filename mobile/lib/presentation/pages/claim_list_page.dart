@@ -142,13 +142,12 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
       child: Row(
         children: [
           Expanded(
-            // 주문 현황 납기일과 동일한 인라인 기간 UI. 클레임 조건(최대 7일)을 적용한다.
+            // 주문 현황 납기일과 동일한 인라인 기간 UI.
+            // 레거시(claim/list.jsp): minDate/maxDate 없음, maxSpan 7일.
             child: DateRangeFilterField(
               label: '기간',
               startDate: state.startDate,
               endDate: state.endDate,
-              firstDate: DateTime(2020),
-              lastDate: DateTime.now().add(const Duration(days: 365)),
               maxRangeDays: 7,
               onChanged: (start, end) => ref
                   .read(claimListProvider.notifier)
@@ -157,7 +156,7 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
           ),
           const SizedBox(width: AppSpacing.sm),
           SizedBox(
-            height: 40,
+            height: DateRangeFilterField.fieldHeight,
             child: ElevatedButton(
               onPressed: () => throttledTapAsync(
                 () => ref.read(claimListProvider.notifier).loadClaims(),
@@ -165,7 +164,7 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                minimumSize: const Size(48, 40),
+                minimumSize: const Size(48, DateRangeFilterField.fieldHeight),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: const Icon(Icons.search, size: 20),

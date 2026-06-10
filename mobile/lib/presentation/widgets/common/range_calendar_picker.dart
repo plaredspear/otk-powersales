@@ -13,12 +13,15 @@ import '../../../core/theme/app_typography.dart';
 /// 조회 가능 기간([firstDate]/[lastDate])과 최대 범위 일수([maxRangeDays])는
 /// 화면별 조건에 맞게 호출부에서 지정한다. [maxRangeDays] 가 null 이면 범위 일수 제한 없이
 /// [firstDate]~[lastDate] 안에서 자유롭게 선택할 수 있다.
+///
+/// [firstDate]/[lastDate] 를 생략하면 사실상 제한 없이(2000~2100) 달력을 탐색할 수 있다.
+/// 레거시 daterangepicker 가 minDate/maxDate 제약이 없는 화면(클레임·현장점검·행사 등)에 정합한다.
 Future<DateTimeRange?> showRangeCalendar(
   BuildContext context, {
   required DateTime initialStart,
   required DateTime initialEnd,
-  required DateTime firstDate,
-  required DateTime lastDate,
+  DateTime? firstDate,
+  DateTime? lastDate,
   int? maxRangeDays = 7,
 }) {
   return showDialog<DateTimeRange>(
@@ -26,8 +29,8 @@ Future<DateTimeRange?> showRangeCalendar(
     builder: (_) => _RangeCalendarDialog(
       initialStart: initialStart,
       initialEnd: initialEnd,
-      firstDate: firstDate,
-      lastDate: lastDate,
+      firstDate: firstDate ?? DateTime(2000),
+      lastDate: lastDate ?? DateTime(2100),
       maxRangeDays: maxRangeDays,
     ),
   );

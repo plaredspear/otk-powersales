@@ -175,13 +175,13 @@ class InspectionFilterBar extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          // 주문 현황 납기일과 동일한 인라인 기간 UI. 현장점검 조건(2020~2030)을 적용한다.
+          // 주문 현황 납기일과 동일한 인라인 기간 UI.
+          // 레거시(fieldChk/list.jsp): minDate/maxDate 없음, maxSpan 7일.
           child: DateRangeFilterField(
             label: '점검일',
             startDate: fromDate,
             endDate: toDate,
-            firstDate: DateTime(2020),
-            lastDate: DateTime(2030),
+            maxRangeDays: 7,
             onChanged: (start, end) {
               onFromDateChanged(start);
               onToDateChanged(end);
@@ -189,9 +189,9 @@ class InspectionFilterBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        // 검색 버튼 (노란 pill - 레거시 .type_btn button 정렬)
+        // 검색 버튼 (노란 pill - 레거시 .type_btn button 정렬). 기간 필드와 높이 통일.
         SizedBox(
-          height: AppSpacing.buttonHeightSmall,
+          height: DateRangeFilterField.fieldHeight,
           child: ElevatedButton(
             onPressed: onSearch,
             style: ElevatedButton.styleFrom(
@@ -199,7 +199,8 @@ class InspectionFilterBar extends StatelessWidget {
               foregroundColor: AppColors.onPrimary,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              minimumSize: const Size(57, AppSpacing.buttonHeightSmall),
+              minimumSize:
+                  const Size(57, DateRangeFilterField.fieldHeight),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),

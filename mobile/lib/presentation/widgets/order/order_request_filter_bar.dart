@@ -173,8 +173,7 @@ class OrderRequestFilterBar extends StatelessWidget {
   }
 
   /// 납기일 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
-  /// 조회 가능 기간은 주문 조건(2020 ~ 2030)에 맞추고,
-  /// 레거시 daterangepicker maxSpan 정합으로 최대 7일까지만 선택할 수 있다.
+  /// 레거시(order/list.jsp #my-date): minDate/maxDate 없음, maxSpan 7일.
   Future<void> _showDateRangePicker(BuildContext context) async {
     // 현재 선택된 범위 기본값: 오늘 ~ 오늘+7일
     final now = DateTime.now();
@@ -189,8 +188,6 @@ class OrderRequestFilterBar extends StatelessWidget {
       context,
       initialStart: initialFrom,
       initialEnd: initialTo,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
       maxRangeDays: 7,
     );
 

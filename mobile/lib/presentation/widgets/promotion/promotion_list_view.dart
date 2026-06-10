@@ -225,13 +225,12 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          // 주문 현황 납기일과 동일한 인라인 기간 UI. 행사 조건(최대 30일)을 적용한다.
+          // 주문 현황 납기일과 동일한 인라인 기간 UI.
+          // 레거시(promotion/event/list.jsp): minDate/maxDate 없음, maxSpan 30일.
           DateRangeFilterField(
             label: '기간',
             startDate: DateTime.parse(state.startDate),
             endDate: DateTime.parse(state.endDate),
-            firstDate: DateTime(2020),
-            lastDate: DateTime(2030),
             maxRangeDays: 30,
             onChanged: (start, end) => ref
                 .read(promotionListProvider.notifier)
