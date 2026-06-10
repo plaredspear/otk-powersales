@@ -20,6 +20,11 @@ class GetInspectionListUseCase {
       throw Exception('검색 시작일은 종료일보다 이전이어야 합니다');
     }
 
+    // 레거시 maxSpan(7일) 정합 — 최대 조회 기간 초과 방지
+    if (!filter.isWithinMaxRange) {
+      throw Exception('조회 기간은 최대 ${InspectionFilter.maxRangeDays}일까지 가능합니다');
+    }
+
     return await _repository.getInspectionList(filter);
   }
 }

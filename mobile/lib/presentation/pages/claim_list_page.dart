@@ -10,6 +10,7 @@ import '../providers/claim_list_provider.dart';
 import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/claim/claim_list_item_card.dart';
 import '../widgets/common/loading_indicator.dart';
+import '../widgets/common/range_calendar_picker.dart';
 
 /// 클레임 현황 목록 페이지
 class ClaimListPage extends ConsumerStatefulWidget {
@@ -138,22 +139,23 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
 
   Widget _buildDateFilter(dynamic state) {
     final dateFormat = DateFormat('yyyy-MM-dd');
+    final dateFieldDecoration = BoxDecoration(
+      border: Border.all(color: AppColors.border),
+      borderRadius: BorderRadius.circular(8),
+    );
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(
         children: [
           Expanded(
             child: InkWell(
-              onTap: () => _selectDate(isStart: true),
+              onTap: _selectDateRange,
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm,
                   vertical: AppSpacing.sm,
                 ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                decoration: dateFieldDecoration,
                 child: Text(
                   dateFormat.format(state.startDate),
                   style: AppTypography.bodySmall,
@@ -168,16 +170,13 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
           ),
           Expanded(
             child: InkWell(
-              onTap: () => _selectDate(isStart: false),
+              onTap: _selectDateRange,
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm,
                   vertical: AppSpacing.sm,
                 ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                decoration: dateFieldDecoration,
                 child: Text(
                   dateFormat.format(state.endDate),
                   style: AppTypography.bodySmall,
@@ -272,21 +271,21 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
     );
   }
 
-  Future<void> _selectDate({required bool isStart}) async {
+  /// 레거시 daterangepicker와 동일하게 하나의 달력에서 시작일·종료일을 한 번에 선택한다.
+  /// 시작일을 고르면 시작일 + 7일까지만 종료일로 선택할 수 있다(ClaimListState.maxRangeDays).
+  Future<void> _selectDateRange() async {
     final state = ref.read(claimListProvider);
-    final initialDate = isStart ? state.startDate : state.endDate;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
+    final picked = await showRangeCalendar(
+      context,
+      initialStart: state.startDate,
+      initialEnd: state.endDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) {
-      if (isStart) {
-        ref.read(claimListProvider.notifier).updateStartDate(picked);
-      } else {
-        ref.read(claimListProvider.notifier).updateEndDate(picked);
-      }
+      ref
+          .read(claimListProvider.notifier)
+          .updateDateRange(picked.start, picked.end);
     }
   }
 }

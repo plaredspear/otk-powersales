@@ -15,14 +15,10 @@ class QuickMenuItem {
   /// 이동 라우트
   final String? route;
 
-  /// Material 아이콘 (에셋이 없는 경우 대체)
-  final IconData? iconData;
-
   const QuickMenuItem({
     this.assetPath = '',
     required this.label,
     this.route,
-    this.iconData,
   });
 }
 
@@ -30,23 +26,20 @@ class QuickMenuItem {
 ///
 /// 홈 화면의 #5 영역: 3x2 그리드 (아이콘 + 텍스트) 빠른 메뉴.
 /// 내 일정, 매출 현황, 주문 관리, 활동 등록, 교육, 행사매출 등록
+/// (레거시 Heroku home.jsp .main_quick_nav 6개 항목과 1:1 정합)
 ///
 /// 조장(LEADER)/지점장(ADMIN): "행사매출 등록" 탭 시 스낵바 안내 + 이동 차단
 class QuickMenuGrid extends StatelessWidget {
   /// 메뉴 아이템 탭 콜백
   final void Function(QuickMenuItem item)? onMenuTap;
 
-  /// 사용자 역할 ("USER", "LEADER", "ADMIN")
-  final String userRole;
-
   const QuickMenuGrid({
     super.key,
     this.onMenuTap,
-    this.userRole = 'USER',
   });
 
-  /// 기본 메뉴 목록
-  static const List<QuickMenuItem> defaultMenuItems = [
+  /// 빠른 메뉴 목록 (레거시 Heroku home.jsp 정합 — 6개)
+  static const List<QuickMenuItem> menuItems = [
     QuickMenuItem(assetPath: 'assets/images/ico_quick1.png', label: '내 일정', route: AppRouter.myScheduleCalendar),
     QuickMenuItem(assetPath: 'assets/images/ico_quick2.png', label: '매출 현황', route: AppRouter.salesOverview),
     QuickMenuItem(assetPath: 'assets/images/ico_quick3.png', label: '주문 관리', route: AppRouter.orderList),
@@ -55,22 +48,9 @@ class QuickMenuGrid extends StatelessWidget {
     QuickMenuItem(assetPath: 'assets/images/ico_quick6.png', label: '행사매출\n등록'),
   ];
 
-  /// 관리자 전용 메뉴 목록
-  static const List<QuickMenuItem> adminMenuItems = [
-    QuickMenuItem(iconData: Icons.fact_check_outlined, label: '안전점검\n현황', route: AppRouter.safetyCheckStatus),
-  ];
-
-  List<QuickMenuItem> get _menuItems {
-    final isLeaderOrAdmin = userRole == 'LEADER' || userRole == 'ADMIN';
-    if (isLeaderOrAdmin) {
-      return [...defaultMenuItems, ...adminMenuItems];
-    }
-    return defaultMenuItems;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final items = _menuItems;
+    const items = menuItems;
     // 레거시(common.css .main_quick_nav): 3열, 행 간 15px, 셀 높이는 콘텐츠
     // (아이콘+라벨) 높이를 그대로 따른다. 정사각형(childAspectRatio:1.0)으로
     // 강제하지 않아 셀 위아래에 불필요한 여백이 생기지 않는다.
@@ -111,18 +91,11 @@ class QuickMenuGrid extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (item.iconData != null)
-            Icon(
-              item.iconData,
-              size: AppSpacing.iconSizeMenu,
-              color: AppColors.secondary,
-            )
-          else
-            Image.asset(
-              item.assetPath,
-              width: AppSpacing.iconSizeMenu,
-              height: AppSpacing.iconSizeMenu,
-            ),
+          Image.asset(
+            item.assetPath,
+            width: AppSpacing.iconSizeMenu,
+            height: AppSpacing.iconSizeMenu,
+          ),
           const SizedBox(height: 5),
           Text(
             item.label,

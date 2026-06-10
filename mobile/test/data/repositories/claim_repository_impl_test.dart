@@ -249,6 +249,7 @@ class FakeClaimRemoteDataSource implements ClaimRemoteDataSource {
   Future<List<ClaimListItemModel>> getClaims({
     String? startDate,
     String? endDate,
+    int? accountId,
   }) async {
     throw UnimplementedError();
   }

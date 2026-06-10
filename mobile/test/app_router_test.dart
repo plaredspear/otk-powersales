@@ -111,9 +111,8 @@ void main() {
       expect(routes.containsKey(AppRouter.myScheduleDetail), true);
       expect(routes.containsKey(AppRouter.gpsConsent), true);
       expect(routes.containsKey(AppRouter.suggestionRegister), true);
-      expect(routes.containsKey(AppRouter.safetyCheckStatus), true);
       expect(routes.containsKey(AppRouter.splash), true);
-      expect(routes.length, 52);
+      expect(routes.length, 51);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {

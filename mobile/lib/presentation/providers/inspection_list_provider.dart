@@ -82,14 +82,30 @@ class InspectionListNotifier extends StateNotifier<InspectionListState> {
     }
   }
 
-  /// 검색 시작일 변경
+  /// 검색 시작일 변경.
+  ///
+  /// 레거시 daterangepicker `maxSpan: {days: 7}` 정합 — 시작일 기준으로 종료일이
+  /// 7일 범위를 벗어나거나 시작일보다 이르면 종료일을 시작일+7일로 자동 보정한다.
   void updateFromDate(DateTime date) {
-    state = state.copyWith(fromDate: date);
+    var toDate = state.toDate;
+    if (toDate.isBefore(date) ||
+        toDate.difference(date).inDays > InspectionFilter.maxRangeDays) {
+      toDate = date.add(const Duration(days: InspectionFilter.maxRangeDays));
+    }
+    state = state.copyWith(fromDate: date, toDate: toDate);
   }
 
-  /// 검색 종료일 변경
+  /// 검색 종료일 변경.
+  ///
+  /// 레거시 daterangepicker `maxSpan: {days: 7}` 정합 — 종료일 기준으로 시작일이
+  /// 7일 범위를 벗어나거나 종료일보다 늦으면 시작일을 종료일-7일로 자동 보정한다.
   void updateToDate(DateTime date) {
-    state = state.copyWith(toDate: date);
+    var fromDate = state.fromDate;
+    if (date.isBefore(fromDate) ||
+        date.difference(fromDate).inDays > InspectionFilter.maxRangeDays) {
+      fromDate = date.subtract(const Duration(days: InspectionFilter.maxRangeDays));
+    }
+    state = state.copyWith(fromDate: fromDate, toDate: date);
   }
 
   /// 현장점검 목록 검색

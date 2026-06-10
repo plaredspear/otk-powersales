@@ -27,12 +27,12 @@ void main() {
   });
 
   group('QuickMenuGrid', () {
-    test('defaultMenuItems는 6개여야 한다', () {
-      expect(QuickMenuGrid.defaultMenuItems.length, 6);
+    test('menuItems는 6개여야 한다', () {
+      expect(QuickMenuGrid.menuItems.length, 6);
     });
 
     test('각 메뉴의 assetPath가 올바른 경로여야 한다', () {
-      final items = QuickMenuGrid.defaultMenuItems;
+      final items = QuickMenuGrid.menuItems;
 
       expect(items[0].assetPath, 'assets/images/ico_quick1.png');
       expect(items[1].assetPath, 'assets/images/ico_quick2.png');
@@ -43,7 +43,7 @@ void main() {
     });
 
     test('각 메뉴의 label이 올바르게 지정되어야 한다', () {
-      final items = QuickMenuGrid.defaultMenuItems;
+      final items = QuickMenuGrid.menuItems;
 
       expect(items[0].label, '내 일정');
       expect(items[1].label, '매출 현황');
