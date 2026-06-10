@@ -12,6 +12,7 @@ void main() {
     String userRole = 'USER',
     VoidCallback? onRegisterTap,
     void Function(Schedule)? onScheduleTap,
+    VoidCallback? onScheduleManageTap,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -24,6 +25,7 @@ void main() {
             userRole: userRole,
             onRegisterTap: onRegisterTap,
             onScheduleTap: onScheduleTap,
+            onScheduleManageTap: onScheduleManageTap,
           ),
         ),
       ),
@@ -191,15 +193,30 @@ void main() {
     });
 
     group('조장(LEADER) 뷰', () {
-      testWidgets('헤더에 "일정 관리" 텍스트가 표시되지 않아야 한다', (tester) async {
+      testWidgets('헤더에 "일정 관리" 버튼이 표시되어야 한다 (레거시 근태 영역 대응)',
+          (tester) async {
         await tester.pumpWidget(buildTestWidget(
           userRole: 'LEADER',
           attendanceSummary:
               const AttendanceSummary(totalCount: 5, registeredCount: 3),
         ));
 
-        expect(find.text('일정 관리'), findsNothing);
+        expect(find.text('일정 관리'), findsOneWidget);
         expect(find.text('내 일정'), findsNothing);
+      });
+
+      testWidgets('"일정 관리" 버튼 탭 시 onScheduleManageTap 콜백이 호출되어야 한다',
+          (tester) async {
+        var tapped = false;
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'LEADER',
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 5, registeredCount: 3),
+          onScheduleManageTap: () => tapped = true,
+        ));
+
+        await tester.tap(find.text('일정 관리'));
+        expect(tapped, isTrue);
       });
 
       testWidgets('"팀 출근 현황: N명 중 M명 등록 완료" 텍스트가 표시되어야 한다',
@@ -350,7 +367,7 @@ void main() {
               const AttendanceSummary(totalCount: 3, registeredCount: 1),
         ));
 
-        expect(find.text('일정 관리'), findsNothing);
+        expect(find.text('일정 관리'), findsOneWidget);
         expect(find.text('팀 출근 현황: 3명 중 1명 등록 완료'), findsOneWidget);
         expect(find.text('내 일정'), findsNothing);
         // 등록 버튼은 USER 뷰에서만 노출

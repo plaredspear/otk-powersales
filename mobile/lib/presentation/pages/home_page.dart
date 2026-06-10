@@ -157,6 +157,13 @@ class _HomePageState extends ConsumerState<HomePage>
                         arguments: date,
                       );
                     },
+                    // 조장/지점장: 레거시 근태 영역 "일정 관리" → 팀원 일정 관리
+                    onScheduleManageTap: () {
+                      AppRouter.navigateTo(
+                        context,
+                        AppRouter.leaderTeamMembers,
+                      );
+                    },
                   ),
                 ),
               ),

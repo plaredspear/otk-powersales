@@ -35,6 +35,12 @@ class ScheduleCard extends StatelessWidget {
   /// 일정 아이템 탭 콜백
   final void Function(Schedule schedule)? onScheduleTap;
 
+  /// 조장/지점장 뷰 "일정 관리" 버튼 탭 콜백
+  ///
+  /// 레거시 home.jsp 근태보고 영역의 조장 전용 "일정 관리" 버튼
+  /// (`${ctx}/employee/mgnSchedule`)에 대응한다.
+  final VoidCallback? onScheduleManageTap;
+
   const ScheduleCard({
     super.key,
     required this.schedules,
@@ -43,6 +49,7 @@ class ScheduleCard extends StatelessWidget {
     this.userRole = 'USER',
     this.onRegisterTap,
     this.onScheduleTap,
+    this.onScheduleManageTap,
   });
 
   /// 조장/지점장 뷰 여부
@@ -78,6 +85,11 @@ class ScheduleCard extends StatelessWidget {
                   const SizedBox(width: AppSpacing.sm),
                   _buildAttendanceBadge(registeredCount, totalCount),
                 ],
+                // 조장/지점장: 레거시 근태 영역 "일정 관리" 버튼
+                if (_isLeaderView) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  _buildScheduleManageButton(),
+                ],
               ],
             ),
 
@@ -111,6 +123,32 @@ class ScheduleCard extends StatelessWidget {
             ],
             const SizedBox(height: AppSpacing.sm),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 조장/지점장 "일정 관리" 버튼 (레거시 navy 버튼 대응)
+  Widget _buildScheduleManageButton() {
+    return SizedBox(
+      height: 28,
+      child: Material(
+        color: AppColors.legacyNavy,
+        borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),
+          onTap: onScheduleManageTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Center(
+              child: Text(
+                '일정 관리',
+                style: AppTypography.legacyBody.copyWith(
+                  color: AppColors.white,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
