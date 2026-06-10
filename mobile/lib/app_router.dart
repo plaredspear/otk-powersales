@@ -42,7 +42,6 @@ import 'presentation/pages/promotion_detail_page.dart';
 import 'presentation/pages/promotion_daily_sales_page.dart';
 import 'presentation/pages/daily_sales_entry_page.dart';
 import 'presentation/pages/safety_check_page.dart';
-import 'presentation/pages/safety_check_status_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/gps_consent_screen.dart';
 import 'presentation/screens/leader_schedule/leader_daily_status_screen.dart';
@@ -105,7 +104,6 @@ class AppRouter {
   static const String promotionDailySales = '/promotions/daily-sales'; // P4: 여사원 일매출 마감
   static const String promotionDailySalesEntry =
       '/promotions/daily-sales-entry'; // 일 매출 등록 진입(담당 행사 선택)
-  static const String safetyCheckStatus = '/safety-check-status'; // #278: 안전점검 현황
   static const String myScheduleCalendar = '/my-schedule'; // F56: 마이페이지 일정 캘린더
   static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
   static const String leaderTeamMembers = '/leader/team-members'; // #554: 조장 — 팀원 일정 관리
@@ -229,7 +227,6 @@ class AppRouter {
         salesOverview: (context) => const SalesOverviewScreen(),
         monthlySales: (context) => const MonthlySalesPage(),
         safetyCheck: (context) => const SafetyCheckPage(),
-        safetyCheckStatus: (context) => const SafetyCheckStatusPage(),
         promotionList: (context) => const PromotionListPage(),
         promotionDetail: (context) {
           final promotionId =
