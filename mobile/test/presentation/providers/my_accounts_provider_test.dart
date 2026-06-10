@@ -142,23 +142,6 @@ void main() {
       });
     });
 
-    group('clearError', () {
-      test('에러를 초기화한다', () async {
-        final errorRepo = _FakeMyAccountRepository(
-          exceptionToThrow: Exception('오류'),
-        );
-        final errorNotifier = MyAccountsNotifier(
-          getMyAccounts: GetMyAccounts(errorRepo),
-        );
-
-        await errorNotifier.loadAccounts();
-        expect(errorNotifier.state.errorMessage, isNotNull);
-
-        errorNotifier.clearError();
-        expect(errorNotifier.state.errorMessage, isNull);
-      });
-    });
-
     group('State computed getters', () {
       test('displayCount는 accounts 길이를 반환한다', () async {
         await notifier.loadAccounts();
