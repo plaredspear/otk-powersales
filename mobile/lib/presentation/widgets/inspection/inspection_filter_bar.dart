@@ -241,6 +241,7 @@ class InspectionFilterBar extends StatelessWidget {
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               minimumSize: const Size(57, AppSpacing.buttonHeightSmall),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),
               ),
