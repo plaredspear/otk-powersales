@@ -5,6 +5,7 @@ import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
+import com.otoki.powersales.promotion.enums.ProductTemperatureType
 import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.promotion.exception.PromotionForbiddenException
@@ -80,7 +81,8 @@ class MobilePromotionServiceTest {
         primaryProductId: Long? = null,
         otherProduct: String? = null,
         message: String? = null,
-        remark: String? = null
+        remark: String? = null,
+        productType: ProductTemperatureType? = null
     ): Promotion = Promotion(
         id = id,
         promotionNumber = promotionNumber,
@@ -95,7 +97,8 @@ class MobilePromotionServiceTest {
         primaryProductId = primaryProductId,
         otherProduct = otherProduct,
         message = message,
-        remark = remark
+        remark = remark,
+        productType = productType
     )
 
     private fun createPromotionEmployee(
@@ -197,6 +200,36 @@ class MobilePromotionServiceTest {
             assertThat(result.content[0].myScheduleDate).isEqualTo(myScheduleDate)
 
             verify { promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeId(1L, 20L) }
+        }
+
+        @Test
+        @DisplayName("행사명 파생 - SF formula `productType(대표제품명)` 동등")
+        fun getPromotions_derivesPromotionNameFromProductTypeAndPrimaryProduct() {
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = AppAuthority.LEADER, costCenterCode = "1234")
+            val promotion = createPromotion(
+                id = 1L,
+                account = createAccount(id = 100),
+                promotionType = PromotionType.SAMPLING,
+                productType = ProductTemperatureType.COLD,
+                primaryProductId = 5L
+            )
+            val account = createAccount(id = 100, name = "이마트 성수점")
+            val product = createProduct(id = 5L, name = "새우깡")
+            val page = PageImpl(listOf(promotion), PageRequest.of(0, 20), 1)
+
+            every { employeeRepository.findById(10L) } returns Optional.of(leader)
+            every {
+                promotionRepository.searchForMobile(
+                    employeeId = 10L, costCenterCode = "1234", isWoman = false,
+                    keyword = null, startDate = null, endDate = null, accountId = null, pageable = any()
+                )
+            } returns page
+            every { accountRepository.findByIdIn(listOf(100)) } returns listOf(account)
+            every { productRepository.findAllById(listOf(5L)) } returns listOf(product)
+
+            val result = service.getPromotions(userId = 10L, startDate = null, endDate = null, keyword = null, accountId = null, page = 0, size = 20)
+
+            assertThat(result.content[0].promotionName).isEqualTo("냉장/냉동(새우깡)")
         }
 
         @Test

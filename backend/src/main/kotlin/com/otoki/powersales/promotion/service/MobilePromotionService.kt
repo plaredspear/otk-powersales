@@ -63,9 +63,16 @@ class MobilePromotionService(
             accountRepository.findByIdIn(accountIds).associateBy { it.id }
         } else emptyMap()
 
+        // 행사명(SF formula `DKRetail__PromotionName__c`) 파생용 대표제품명 배치 로딩 (N+1 방지)
+        val productIds = promotionPage.content.mapNotNull { it.primaryProductId }.distinct()
+        val productMap = if (productIds.isNotEmpty()) {
+            productRepository.findAllById(productIds).associateBy { it.id }
+        } else emptyMap()
+
         return MobilePromotionListResponse(
             content = promotionPage.content.map { promotion ->
                 val accountName = accountMap[promotion.account!!.id]?.name
+                val primaryProductName = promotion.primaryProductId?.let { productMap[it]?.name }
                 val myScheduleDate = if (isWoman) {
                     promotionEmployeeRepository.findMinScheduleDateByPromotionIdAndEmployeeId(
                         promotion.id, employee.id
@@ -75,6 +82,7 @@ class MobilePromotionService(
                 MobilePromotionListItem.from(
                     promotion = promotion,
                     accountName = accountName,
+                    primaryProductName = primaryProductName,
                     myScheduleDate = myScheduleDate
                 )
             },
