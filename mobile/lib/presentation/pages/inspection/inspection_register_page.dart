@@ -3,14 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_router.dart';
 import '../../../core/utils/image_picker_helper.dart';
-import '../../../domain/entities/inspection_field_type.dart';
-import '../../../domain/entities/inspection_list_item.dart';
 import '../../../domain/entities/product.dart';
-import '../../../domain/entities/inspection_theme.dart';
+import '../../../domain/repositories/my_account_repository.dart';
 import '../../providers/inspection_register_provider.dart';
 import '../../providers/inspection_register_state.dart';
 import '../../providers/pos_sales_provider.dart';
 import '../../screens/barcode_scanner_screen.dart';
+import '../../widgets/account/account_selector_sheet.dart';
 import '../../widgets/inspection/inspection_common_form.dart';
 import '../../widgets/inspection/inspection_competitor_form.dart';
 import '../../widgets/inspection/inspection_own_form.dart';
@@ -240,27 +239,16 @@ class _InspectionRegisterPageState
     );
   }
 
-  /// 거래처 선택 다이얼로그
-  void _showAccountSelector(BuildContext context) {
-    final accounts = ref.read(inspectionRegisterProvider).accounts;
-    if (accounts.isEmpty) return;
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => ListView(
-        children: accounts.entries.map((entry) {
-          return ListTile(
-            title: Text(entry.value),
-            onTap: () {
-              ref
-                  .read(inspectionRegisterProvider.notifier)
-                  .selectAccount(entry.key, entry.value);
-              Navigator.pop(context);
-            },
-          );
-        }).toList(),
-      ),
+  /// 거래처 선택 — 공용 [AccountSelectorSheet] 바텀시트 재사용 (현장 scope=field, 필수 선택).
+  Future<void> _showAccountSelector(BuildContext context) async {
+    final account = await AccountSelectorSheet.show(
+      context,
+      scope: MyAccountScope.field,
     );
+    if (account == null || !mounted) return;
+    ref
+        .read(inspectionRegisterProvider.notifier)
+        .selectAccount(account.accountId, account.accountName);
   }
 
   /// 현장 유형 선택 다이얼로그

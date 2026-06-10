@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/utils/throttled_tap_mixin.dart';
 import '../../domain/entities/logistics_sales.dart';
-import '../../domain/entities/my_account.dart';
+import '../../domain/repositories/my_account_repository.dart';
 import '../providers/logistics_sales_provider.dart';
 import '../providers/logistics_sales_state.dart';
-import '../providers/my_accounts_provider.dart';
+import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/common/loading_indicator.dart';
 import '../widgets/common/error_view.dart';
 import '../widgets/logistics/logistics_sales_table.dart';
@@ -42,11 +42,7 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: _categories.length, vsync: this);
-
-    // 거래처 선택기를 채울 내 거래처 목록 로딩
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(myAccountsProvider.notifier).loadAccounts();
-    });
+    // 거래처 목록은 [AccountSelectorSheet] 가 열릴 때 자체 로드한다(사전 로딩 불필요).
   }
 
   @override
@@ -179,11 +175,9 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
     );
   }
 
-  /// 거래처 선택기 (내 거래처 목록 드롭다운)
+  /// 거래처 선택기 — 공용 [AccountSelectorSheet] 바텀시트 재사용 (매출 계열 scope=sales, 필수 선택).
   Widget _buildCustomerPicker() {
-    final accountsState = ref.watch(myAccountsProvider);
-    final accounts = accountsState.accounts;
-
+    final name = _selectedCustomerName;
     return Row(
       children: [
         const Icon(Icons.store, size: 20),
@@ -191,60 +185,47 @@ class _LogisticsSalesScreenState extends ConsumerState<LogisticsSalesScreen>
         const Text('거래처', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(width: 16),
         Expanded(
-          child: accountsState.isLoading
-              ? const SizedBox(
-                  height: 24,
-                  child: Center(
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+          child: InkWell(
+            onTap: () => throttledTap(_selectCustomer),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      name ?? '거래처 선택',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: name != null ? Colors.black87 : Colors.grey,
+                      ),
                     ),
                   ),
-                )
-              : accountsState.errorMessage != null
-              ? Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        '거래처 목록을 불러오지 못했습니다.',
-                        style: TextStyle(fontSize: 13, color: Colors.red),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => throttledTap(
-                        () => ref.read(myAccountsProvider.notifier).loadAccounts(),
-                      ),
-                      child: const Text('재시도'),
-                    ),
-                  ],
-                )
-              : DropdownButton<int>(
-                  isExpanded: true,
-                  value: _selectedCustomerId,
-                  hint: const Text('거래처 선택'),
-                  items: accounts.map((MyAccount account) {
-                    return DropdownMenuItem<int>(
-                      value: account.accountId,
-                      child: Text(
-                        account.accountName,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    final selected =
-                        accounts.firstWhere((a) => a.accountId == value);
-                    setState(() {
-                      _selectedCustomerId = selected.accountId;
-                      _selectedCustomerName = selected.accountName;
-                    });
-                  },
-                ),
+                  const Icon(Icons.expand_more, size: 20, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
+  }
+
+  /// 거래처 선택 바텀시트 호출 (매출 계열 scope=sales, 필수 선택이라 "전체" 옵션 없음).
+  Future<void> _selectCustomer() async {
+    final account = await AccountSelectorSheet.show(
+      context,
+      scope: MyAccountScope.sales,
+    );
+    if (account == null || !mounted) return;
+    setState(() {
+      _selectedCustomerId = account.accountId;
+      _selectedCustomerName = account.accountName;
+    });
   }
 
   /// 년월 선택기

@@ -8,50 +8,39 @@ import '../../domain/entities/inspection_form.dart';
 import '../../domain/entities/inspection_list_item.dart';
 import '../../domain/entities/inspection_theme.dart';
 import '../../domain/usecases/get_field_types_usecase.dart';
-import '../../domain/usecases/get_my_accounts.dart';
 import '../../domain/usecases/get_themes_usecase.dart';
 import '../../domain/usecases/register_inspection_usecase.dart';
 import 'inspection_list_provider.dart';
 import 'inspection_register_state.dart';
-import 'my_accounts_provider.dart';
 
 /// 현장 점검 등록 Provider
 class InspectionRegisterNotifier
     extends StateNotifier<InspectionRegisterState> {
   final GetThemesUseCase _getThemes;
   final GetFieldTypesUseCase _getFieldTypes;
-  final GetMyAccounts _getMyAccounts;
   final RegisterInspectionUseCase _registerInspection;
 
   InspectionRegisterNotifier({
     required GetThemesUseCase getThemes,
     required GetFieldTypesUseCase getFieldTypes,
-    required GetMyAccounts getMyAccounts,
     required RegisterInspectionUseCase registerInspection,
   })  : _getThemes = getThemes,
         _getFieldTypes = getFieldTypes,
-        _getMyAccounts = getMyAccounts,
         _registerInspection = registerInspection,
         super(InspectionRegisterState.initial());
 
-  /// 초기화: 테마, 현장 유형, 거래처 목록 로드
+  /// 초기화: 테마, 현장 유형 로드.
+  /// 거래처는 [AccountSelectorSheet] 가 열릴 때 자체 로드하므로 여기서 받지 않는다.
   Future<void> initialize() async {
     state = state.toLoading();
 
     try {
       final themes = await _getThemes.call();
       final fieldTypes = await _getFieldTypes.call();
-      final accountResult = await _getMyAccounts.call();
-
-      // 거래처 목록을 Map<int, String>으로 변환
-      final accountMap = <int, String>{
-        for (var account in accountResult.accounts) account.accountId: account.accountName,
-      };
 
       state = state.toLoaded(
         themes: themes,
         fieldTypes: fieldTypes,
-        accounts: accountMap,
       );
     } catch (e) {
       state = state.toError(extractErrorMessage(e));
@@ -92,7 +81,7 @@ class InspectionRegisterNotifier
     if (state.form == null) return;
 
     final updatedForm = state.form!.copyWith(accountId: accountId);
-    state = state.copyWith(form: updatedForm);
+    state = state.copyWith(form: updatedForm, accountName: accountName);
   }
 
   /// 점검일 변경
@@ -266,7 +255,6 @@ final inspectionRegisterProvider = StateNotifierProvider<
   return InspectionRegisterNotifier(
     getThemes: ref.watch(getThemesUseCaseProvider),
     getFieldTypes: ref.watch(getFieldTypesUseCaseProvider),
-    getMyAccounts: ref.watch(getMyAccountsUseCaseProvider),
     registerInspection: ref.watch(registerInspectionUseCaseProvider),
   );
 });
