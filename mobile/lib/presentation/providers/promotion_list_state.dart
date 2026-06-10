@@ -22,6 +22,9 @@ class PromotionListState {
   /// 거래처 필터 (null = 거래처 전체)
   final int? accountId;
 
+  /// 선택된 거래처명 (null = 거래처 전체)
+  final String? accountName;
+
   const PromotionListState({
     this.isLoading = false,
     this.isLoadingMore = false,
@@ -36,6 +39,7 @@ class PromotionListState {
     required this.endDate,
     this.keyword = '',
     this.accountId,
+    this.accountName,
   });
 
   /// 초기 상태 (레거시 정합: 기본 기간 = 오늘)
@@ -88,6 +92,7 @@ class PromotionListState {
     String? endDate,
     String? keyword,
     int? accountId,
+    String? accountName,
     bool clearAccount = false,
   }) {
     return PromotionListState(
@@ -104,6 +109,7 @@ class PromotionListState {
       endDate: endDate ?? this.endDate,
       keyword: keyword ?? this.keyword,
       accountId: clearAccount ? null : (accountId ?? this.accountId),
+      accountName: clearAccount ? null : (accountName ?? this.accountName),
     );
   }
 }
