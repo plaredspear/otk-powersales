@@ -91,13 +91,8 @@ class AuthService(
             passwordChangeRequired
         )
 
-        // Refresh Token Rotation: familyId + tokenId 생성
-        val familyId = UUID.randomUUID().toString()
-        val tokenId = UUID.randomUUID().toString()
-        val refreshToken = jwtTokenProvider.createRefreshToken(employee.id, familyId, tokenId)
-
-        // Redis에 Refresh Token 메타데이터 저장
-        jwtTokenProvider.storeRefreshToken(tokenId, employee.id, familyId)
+        // Refresh Token Rotation: 신규 familyId 로 발급
+        val refreshToken = issueRefreshToken(employee.id, UUID.randomUUID().toString())
 
         return LoginResponse(
             user = UserInfo.from(employee),
@@ -202,10 +197,7 @@ class AuthService(
             employee.agreementFlag == true,
             false
         )
-        val familyId = UUID.randomUUID().toString()
-        val tokenId = UUID.randomUUID().toString()
-        val refreshToken = jwtTokenProvider.createRefreshToken(employee.id, familyId, tokenId)
-        jwtTokenProvider.storeRefreshToken(tokenId, employee.id, familyId)
+        val refreshToken = issueRefreshToken(employee.id, UUID.randomUUID().toString())
 
         return ChangePasswordResponse(
             accessToken = accessToken,
@@ -260,19 +252,28 @@ class AuthService(
         val employee = employeeRepository.findById(userId)
             .orElseThrow { InvalidTokenException() }
 
-        // 7. 새 토큰 발급 (동일 familyId, 새 tokenId)
-        val newTokenId = UUID.randomUUID().toString()
+        // 7. 새 토큰 발급 (동일 familyId 재사용, 새 tokenId)
         val newAccessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: AppAuthority.WOMAN, employee.agreementFlag == true)
-        val newRefreshToken = jwtTokenProvider.createRefreshToken(employee.id, familyId, newTokenId)
-
-        // 8. Redis에 새 Refresh Token 저장
-        jwtTokenProvider.storeRefreshToken(newTokenId, employee.id, familyId)
+        val newRefreshToken = issueRefreshToken(employee.id, familyId)
 
         return TokenResponse(
             accessToken = newAccessToken,
             refreshToken = newRefreshToken,
             expiresIn = jwtTokenProvider.getAccessTokenExpirationSeconds()
         )
+    }
+
+    /**
+     * Refresh Token 발급 + Redis 메타데이터 저장.
+     *
+     * 신규 발급(login/changePassword)은 호출처에서 새 [familyId] 를 생성해 전달하고,
+     * rotation(refreshAccessToken)은 기존 [familyId] 를 그대로 전달해 family 를 유지한다.
+     */
+    private fun issueRefreshToken(employeeId: Long, familyId: String): String {
+        val tokenId = UUID.randomUUID().toString()
+        val refreshToken = jwtTokenProvider.createRefreshToken(employeeId, familyId, tokenId)
+        jwtTokenProvider.storeRefreshToken(tokenId, employeeId, familyId)
+        return refreshToken
     }
 
     /**
