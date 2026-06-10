@@ -1,6 +1,7 @@
 plugins {
     id "com.android.application"
     id "kotlin-android"
+    // Flutter Gradle Plugin 은 Android / Kotlin Gradle plugin 다음에 적용해야 한다.
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -34,6 +35,18 @@ if (flutterVersionCode == null) {
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
     flutterVersionName = '1.0'
+}
+
+// release 서명 설정. android/key.properties 가 존재할 때만 release keystore 를 적용한다.
+// 파일이 없으면(개발자 로컬 / CI 미설정) release 도 debug 키로 서명되어 빌드가 깨지지 않는다.
+// key.properties 와 *.jks 는 .gitignore 로 추적 제외 — 절대 커밋하지 않는다.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+def hasKeystore = keystorePropertiesFile.exists()
+if (hasKeystore) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
 }
 
 android {
@@ -81,11 +94,23 @@ android {
         }
     }
 
+    // android/key.properties 가 있으면 release keystore 로 서명 설정을 등록한다.
+    signingConfigs {
+        if (hasKeystore) {
+            release {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            // key.properties 가 있으면 release keystore, 없으면 debug 키로 서명한다.
+            // debug 서명 APK 는 정식 배포(동일 패키지 업데이트)에 사용하면 안 된다.
+            signingConfig hasKeystore ? signingConfigs.release : signingConfigs.debug
         }
     }
 }

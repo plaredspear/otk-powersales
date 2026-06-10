@@ -1,0 +1,10 @@
+# Android release 서명 설정 템플릿.
+# 이 파일을 복사해 android/key.properties 로 만들고 실제 값을 채운다.
+#   cp android/key.properties.example android/key.properties
+# key.properties 와 *.jks 는 .gitignore 로 추적 제외된다. 절대 커밋하지 않는다.
+#
+# storeFile 은 rootProject(= android/) 기준 상대경로. 예: keystore 를 android/app/ 에 두면 app/upload-keystore.jks
+storeFile=app/upload-keystore.jks
+storePassword=여기에_keystore_비밀번호
+keyAlias=upload
+keyPassword=여기에_key_비밀번호

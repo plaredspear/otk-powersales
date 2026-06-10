@@ -1,13 +1,11 @@
 buildscript {
-    ext.kotlin_version = '1.9.22'
     repositories {
         google()
         mavenCentral()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.3.2'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        // AGP / Kotlin Gradle Plugin 은 settings.gradle 의 plugins 블록에서 버전 관리한다.
         // FCM: google-services.json 처리 플러그인 (app/build.gradle 에서 조건부 적용)
         classpath 'com.google.gms:google-services:4.4.2'
     }
