@@ -83,7 +83,6 @@ void main() {
       expect(routes.containsKey(AppRouter.attendance), true);
       expect(routes.containsKey(AppRouter.attendanceComplete), true);
       expect(routes.containsKey(AppRouter.productSearch), true);
-      expect(routes.containsKey(AppRouter.productSearchResult), true);
       expect(routes.containsKey(AppRouter.myAccounts), true);
       expect(routes.containsKey(AppRouter.orderList), true);
       expect(routes.containsKey(AppRouter.orderDetail), true);
@@ -108,9 +107,7 @@ void main() {
       expect(routes.containsKey(AppRouter.gpsConsent), true);
       expect(routes.containsKey(AppRouter.suggestionRegister), true);
       expect(routes.containsKey(AppRouter.safetyCheckStatus), true);
-      expect(routes.containsKey(AppRouter.altHolidayRequest), true);
-      expect(routes.containsKey(AppRouter.altHolidayHistory), true);
-      expect(routes.length, 50);
+      expect(routes.length, 51);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {

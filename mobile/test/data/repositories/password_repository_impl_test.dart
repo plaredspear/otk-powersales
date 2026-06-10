@@ -3,6 +3,7 @@ import 'package:mobile/data/datasources/auth_local_datasource.dart';
 import 'package:mobile/data/datasources/auth_remote_datasource.dart';
 import 'package:mobile/data/models/auth_token_model.dart';
 import 'package:mobile/data/models/login_response_model.dart';
+import 'package:mobile/data/models/user_model.dart';
 import 'package:mobile/data/repositories/password_repository_impl.dart';
 
 void main() {
@@ -106,6 +107,11 @@ class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
 
   @override
   Future<void> logout() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<UserModel> getMe() {
     throw UnimplementedError();
   }
 
