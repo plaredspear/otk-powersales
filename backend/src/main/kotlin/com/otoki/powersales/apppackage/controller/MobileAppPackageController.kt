@@ -5,6 +5,7 @@ import com.otoki.powersales.apppackage.dto.AppVersionCheckDto
 import com.otoki.powersales.apppackage.entity.AppPlatform
 import com.otoki.powersales.apppackage.service.MobileAppPackageService
 import com.otoki.powersales.common.dto.ApiResponse
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -31,8 +32,9 @@ class MobileAppPackageController(
     fun check(
         @RequestParam platform: AppPlatform,
         @RequestParam versionCode: Long,
+        request: HttpServletRequest,
     ): ResponseEntity<ApiResponse<AppVersionCheckDto>> {
-        val result = mobileAppPackageService.check(platform, versionCode, currentBaseUrl())
+        val result = mobileAppPackageService.check(platform, versionCode, currentBaseUrl(request))
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -66,8 +68,8 @@ class MobileAppPackageController(
      * 한글이 포함되므로 charset=UTF-8 을 명시한다(누락 시 브라우저가 깨진 인코딩으로 표시).
      */
     @GetMapping("/ios/install", produces = ["text/html;charset=UTF-8"])
-    fun iosInstallPage(@RequestParam id: Long): ResponseEntity<String> {
-        val html = mobileAppPackageService.buildIosInstallPage(id, currentBaseUrl())
+    fun iosInstallPage(@RequestParam id: Long, request: HttpServletRequest): ResponseEntity<String> {
+        val html = mobileAppPackageService.buildIosInstallPage(id, currentBaseUrl(request))
         return htmlResponse(html)
     }
 
@@ -76,8 +78,8 @@ class MobileAppPackageController(
      * 새 버전 업로드 후 "최신 지정"만 하면 동일 URL 이 신버전을 가리킨다. 사번 전체에 1회 공지.
      */
     @GetMapping("/ios/install/latest", produces = ["text/html;charset=UTF-8"])
-    fun iosLatestInstallPage(): ResponseEntity<String> {
-        val html = mobileAppPackageService.buildLatestIosInstallPage(currentBaseUrl())
+    fun iosLatestInstallPage(request: HttpServletRequest): ResponseEntity<String> {
+        val html = mobileAppPackageService.buildLatestIosInstallPage(currentBaseUrl(request))
         return htmlResponse(html)
     }
 
@@ -99,7 +101,21 @@ class MobileAppPackageController(
             .contentType(MediaType("text", "html", Charsets.UTF_8))
             .body(html)
 
-    /** 요청 기준 origin (scheme + host[:port]). X-Forwarded-* 가 반영된 절대 URL 의 base 를 추출. */
-    private fun currentBaseUrl(): String =
-        ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString()
+    /**
+     * 요청 기준 origin (scheme + host[:port]).
+     *
+     * TLS 가 ALB/nginx 에서 종료되어 Tomcat 은 http 로 받으므로 X-Forwarded-Proto 로 scheme 을
+     * 보정한다 — 보정 없이는 itms-services manifest URL 이 http 로 합성되어 iOS 가 OTA 설치를
+     * "인증서가 유효하지 않음" 오류로 거부한다. 전역 server.forward-headers-strategy 는
+     * ForwardedHeaderFilter 가 X-Forwarded-For 를 제거해 SAP/SF 인바운드 IP allowlist
+     * (ClientIpResolver) 를 깨뜨리므로 쓰지 않고, 본 컨트롤러 한정으로 보정한다.
+     */
+    private fun currentBaseUrl(request: HttpServletRequest): String {
+        val builder = ServletUriComponentsBuilder.fromCurrentContextPath()
+        request.getHeader("X-Forwarded-Proto")
+            ?.split(",")?.first()?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { builder.scheme(it) }
+        return builder.build().toUriString()
+    }
 }

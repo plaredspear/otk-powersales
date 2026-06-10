@@ -7,6 +7,8 @@ import com.otoki.powersales.apppackage.entity.AppPlatform
 import com.otoki.powersales.apppackage.service.MobileAppPackageService
 import com.otoki.powersales.common.test.MobileControllerTestSupport
 import io.mockk.every
+import io.mockk.slot
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -106,6 +108,35 @@ class MobileAppPackageControllerTest : MobileControllerTestSupport() {
             .andExpect(status().isOk)
             .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
             .andExpect(content().string(html))
+    }
+
+    @Test
+    @DisplayName("X-Forwarded-Proto=https 반영 — TLS 종료 프록시 뒤에서 baseUrl 을 https 로 합성")
+    fun forwardedProtoReflectedInBaseUrl() {
+        val baseUrlSlot = slot<String>()
+        every { mobileAppPackageService.buildLatestIosInstallPage(capture(baseUrlSlot)) } returns
+            "<!DOCTYPE html><html><body>설치</body></html>"
+
+        mockMvc.perform(
+            get("/api/v1/mobile/app-package/ios/install/latest")
+                .header("X-Forwarded-Proto", "https"),
+        ).andExpect(status().isOk)
+
+        // http 합성 시 iOS itms-services 가 manifest 를 거부 (인증서 오류로 표시)
+        assertThat(baseUrlSlot.captured).isEqualTo("https://localhost")
+    }
+
+    @Test
+    @DisplayName("X-Forwarded-Proto 부재 시 요청 원본 스킴 유지 — 로컬 직접 접근 동작 불변")
+    fun withoutForwardedProtoKeepsRequestScheme() {
+        val baseUrlSlot = slot<String>()
+        every { mobileAppPackageService.buildLatestIosInstallPage(capture(baseUrlSlot)) } returns
+            "<!DOCTYPE html><html><body>설치</body></html>"
+
+        mockMvc.perform(get("/api/v1/mobile/app-package/ios/install/latest"))
+            .andExpect(status().isOk)
+
+        assertThat(baseUrlSlot.captured).isEqualTo("http://localhost")
     }
 
     @Test
