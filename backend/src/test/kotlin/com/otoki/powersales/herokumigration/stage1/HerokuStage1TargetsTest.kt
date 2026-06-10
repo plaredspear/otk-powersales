@@ -19,9 +19,9 @@ class HerokuStage1TargetsTest {
     inner class TargetRegistration {
 
         @Test
-        @DisplayName("19개 target 등록 (ProductSyncBuffer 제외)")
-        fun nineteenTargets() {
-            assertThat(HerokuStage1Targets.list()).hasSize(19)
+        @DisplayName("18개 target 등록 (ProductSyncBuffer + DeviceVersion 제외)")
+        fun targetCount() {
+            assertThat(HerokuStage1Targets.list()).hasSize(18)
         }
 
         @Test
@@ -38,7 +38,7 @@ class HerokuStage1TargetsTest {
                 "TmpOrder", "TmpOrderProduct", "TmpClaim", "TmpSuggest", "TmpOnsite", "TmpPromotion",
                 "TmpClaimCode", "EducationCode", "EducationPost", "EducationPostAttachment",
                 "EducationViewHistory", "SafetyCheckItem", "SafetyCheckSubmission", "FavoriteProduct",
-                "LoginHistory", "DeviceVersion", "EmployeeAdmin", "ProductExpiration", "EmployeeInfo",
+                "LoginHistory", "EmployeeAdmin", "ProductExpiration", "EmployeeInfo",
             ).forEach { name ->
                 assertThat(HerokuStage1Targets.get(name)).withFailMessage("%s 미등록", name).isNotNull
             }

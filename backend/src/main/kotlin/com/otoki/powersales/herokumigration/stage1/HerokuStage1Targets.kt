@@ -1,6 +1,5 @@
 package com.otoki.powersales.herokumigration.stage1
 
-import com.otoki.powersales.common.entity.DeviceVersion
 import com.otoki.powersales.common.entity.EmployeeAdmin
 import com.otoki.powersales.common.entity.LoginHistory
 import com.otoki.powersales.common.salesforce.HCColumn
@@ -88,7 +87,6 @@ object HerokuStage1Targets {
     private val TARGET_CLASSES: List<KClass<*>> = listOf(
         EducationCode::class,
         TmpClaimCode::class,
-        DeviceVersion::class,
         SafetyCheckItem::class,
         EmployeeAdmin::class,
         EmployeeInfo::class,

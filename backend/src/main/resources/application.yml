@@ -66,6 +66,13 @@ spring:
     baseline-version: 0
     enabled: true
 
+  # 모바일 앱 패키지(APK/IPA) 업로드를 위해 multipart 상한을 상향 (기본 1MB/10MB).
+  # 패키지 자체 크기 검증은 StorageConstants.APP_PACKAGE_MAX_BYTES(500MB) 가 담당.
+  servlet:
+    multipart:
+      max-file-size: 512MB
+      max-request-size: 512MB
+
   jackson:
     time-zone: Asia/Seoul
   web:
