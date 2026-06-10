@@ -6,7 +6,6 @@ import com.otoki.powersales.common.dto.request.GpsConsentRequest
 import com.otoki.powersales.auth.dto.request.LoginRequest
 import com.otoki.powersales.auth.dto.request.RefreshTokenRequest
 import com.otoki.powersales.auth.dto.request.VerifyPasswordRequest
-import com.otoki.powersales.auth.permission.SfPermissionResolver
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.dto.response.*
 import com.otoki.powersales.auth.policy.PasswordPolicyValidator
@@ -21,7 +20,6 @@ import com.otoki.powersales.common.repository.LoginHistoryRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.common.util.TimeZones
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -43,8 +41,6 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider,
     private val uuidCheckProperties: UuidCheckProperties,
-    private val sfPermissionResolver: SfPermissionResolver,
-    private val userRepository: UserRepository,
     private val passwordPolicyValidator: PasswordPolicyValidator
 ) {
 
@@ -69,7 +65,7 @@ class AuthService(
         }
 
         // 로그인 권한 검증 (비밀번호 검증 이후, 단말기 바인딩 이전)
-        validateLoginAuthority(employee, request.deviceId)
+        validateLoginAuthority(employee)
 
         // 단말기 바인딩 검증 (비밀번호 검증 이후)
         validateDeviceBinding(employee, request.deviceId)
@@ -108,15 +104,13 @@ class AuthService(
 
     /**
      * 단말기 바인딩 검증
-     * 1. device_id 미전달 → 검증 스킵 (웹 브라우저)
-     * 2. 바인딩 비활성화 → 검증 스킵
-     * 3. 예외 사번 → 검증 스킵
-     * 4. DB deviceUuid == NULL → 최초 등록
-     * 5. 일치 → 정상
-     * 6. 불일치 → DEVICE_MISMATCH 에러
+     * 1. 바인딩 비활성화 → 검증 스킵
+     * 2. 예외 사번 → 검증 스킵
+     * 3. DB deviceUuid == NULL → 최초 등록
+     * 4. 일치 → 정상
+     * 5. 불일치 → DEVICE_MISMATCH 에러
      */
-    private fun validateDeviceBinding(employee: Employee, deviceId: String?) {
-        if (deviceId.isNullOrBlank()) return
+    private fun validateDeviceBinding(employee: Employee, deviceId: String) {
         if (!uuidCheckProperties.enabled) return
         if (uuidCheckProperties.isExcluded(employee.employeeCode ?: error("로그인 사원의 사번이 null - 비정상"))) return
 
@@ -132,28 +126,14 @@ class AuthService(
     }
 
     /**
-     * 로그인 권한 검증
-     * - WEB (deviceId 미전달): role이 허용 목록에 포함되어야 함
-     * - Mobile (deviceId 전달): appLoginActive가 true여야 함
+     * 로그인 권한 검증 (native app 전용 — appLoginActive 가 true 여야 함).
      *
-     * Spec #760: 신규 Web 로그인은 `/api/v1/admin/auth/login` + WebAuthenticationService 경로(User 기반)로 분리됨.
-     * 본 메서드의 WEB 분기는 레거시 호환 (Mobile API 의 deviceId 미전달 케이스) 만 다룬다.
+     * 신규 Web(admin) 로그인은 `/api/v1/admin/auth/login` + WebAuthenticationService 경로
+     * (User 기반) 로 완전히 분리되어 있어, 본 모바일 엔드포인트는 Mobile 권한만 검증한다.
      */
-    private fun validateLoginAuthority(employee: Employee, deviceId: String?) {
-        if (deviceId.isNullOrBlank()) {
-            // WEB 로그인 — 레거시 호환 분기 (신규 Web 로그인은 WebAuthenticationService 사용).
-            // spec #801 — SF 권한 모델 적용: user 의 SF 권한 set 이 비어있으면 web login 차단.
-            val user = userRepository.findByEmployeeCode(
-                employee.employeeCode ?: error("로그인 사원의 사번이 null - 비정상")
-            )
-            if (user == null || sfPermissionResolver.resolveForUser(user).isEmpty()) {
-                throw WebLoginNotAllowedException()
-            }
-        } else {
-            // Mobile 로그인
-            if (employee.appLoginActive != true) {
-                throw AppLoginNotActiveException()
-            }
+    private fun validateLoginAuthority(employee: Employee) {
+        if (employee.appLoginActive != true) {
+            throw AppLoginNotActiveException()
         }
     }
 

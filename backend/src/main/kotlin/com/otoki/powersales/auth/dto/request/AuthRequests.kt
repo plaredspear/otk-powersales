@@ -9,6 +9,9 @@ import jakarta.validation.constraints.Size
  * 사번 형식: Heroku 레거시 로그인과 동일하게 형식 검증을 두지 않는다 (8자리/숫자 전용 제약 없음).
  * SF `DKRetail__EmpCode__c` 가 string(100) 이라 길이 상한 100자만 안전장치로 유지.
  * 인증 성공 여부는 입력 사번이 저장된 사번과 정확히 일치하는지로 결정.
+ *
+ * deviceId: native app 전용 엔드포인트이므로 필수. 모바일 클라이언트가 단말기 식별자를
+ * 항상 채워 전송한다 (조회 실패 시에도 fallback 으로 non-empty 보장).
  */
 data class LoginRequest(
     @field:NotBlank(message = "사번은 필수입니다")
@@ -19,7 +22,8 @@ data class LoginRequest(
     @field:Size(min = 4, message = "비밀번호는 4글자 이상이어야 합니다")
     val password: String,
 
-    val deviceId: String? = null
+    @field:NotBlank(message = "단말기 식별자는 필수입니다")
+    val deviceId: String
 )
 
 /**

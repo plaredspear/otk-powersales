@@ -1,9 +1,6 @@
 package com.otoki.powersales.auth.service
 
 import com.otoki.powersales.common.config.UuidCheckProperties
-import com.otoki.powersales.auth.permission.SfPermissionResolver
-import com.otoki.powersales.user.entity.User
-import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.auth.dto.request.ChangePasswordRequest
 import com.otoki.powersales.common.dto.request.GpsConsentRequest
 import com.otoki.powersales.auth.dto.request.LoginRequest
@@ -13,7 +10,6 @@ import com.otoki.powersales.common.entity.AgreementHistory
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.common.entity.LoginHistory
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.auth.exception.*
 import com.otoki.powersales.common.repository.AgreementHistoryRepository
 import com.otoki.powersales.common.repository.AgreementWordRepository
@@ -48,8 +44,6 @@ class AuthServiceTest {
     private val passwordEncoder: PasswordEncoder = mockk()
     private val jwtTokenProvider: JwtTokenProvider = mockk(relaxUnitFun = true)
     private val uuidCheckProperties: UuidCheckProperties = mockk()
-    private val sfPermissionResolver: SfPermissionResolver = mockk()
-    private val userRepository: UserRepository = mockk()
     private val passwordPolicyValidator: PasswordPolicyValidator = PasswordPolicyValidator()
 
     private val authService = AuthService(
@@ -60,8 +54,6 @@ class AuthServiceTest {
         passwordEncoder,
         jwtTokenProvider,
         uuidCheckProperties,
-        sfPermissionResolver,
-        userRepository,
         passwordPolicyValidator,
     )
 
@@ -82,14 +74,14 @@ class AuthServiceTest {
             agreementFlag = null
         )
 
-        val loginRequest = LoginRequest(employeeCode, rawPassword)
+        val loginRequest = LoginRequest(employeeCode, rawPassword, deviceId = "device-123")
         val accessToken = "access_token_123"
         val refreshToken = "refresh_token_123"
         val expiresIn = 3600
 
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
         every { passwordEncoder.matches(rawPassword, encodedPassword) } returns true
-        every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
+        every { uuidCheckProperties.enabled } returns false
         every { jwtTokenProvider.createAccessToken(employee.id, any<String>(), false, any()) } returns accessToken
         every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns refreshToken
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns expiresIn
@@ -119,12 +111,12 @@ class AuthServiceTest {
         // Given
         val employeeCode = "12345678"
         val employee = createTestEmployee(id = 1L, employeeCode = employeeCode)
-        val loginRequest = LoginRequest(employeeCode, "password123")
+        val loginRequest = LoginRequest(employeeCode, "password123", deviceId = "device-123")
         val historySlot = slot<LoginHistory>()
 
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
-        every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
+        every { uuidCheckProperties.enabled } returns false
         every { jwtTokenProvider.createAccessToken(employee.id, any<String>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
@@ -144,11 +136,11 @@ class AuthServiceTest {
         // Given
         val employeeCode = "12345678"
         val employee = createTestEmployee(id = 1L, employeeCode = employeeCode)
-        val loginRequest = LoginRequest(employeeCode, "password123")
+        val loginRequest = LoginRequest(employeeCode, "password123", deviceId = "device-123")
 
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
-        every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
+        every { uuidCheckProperties.enabled } returns false
         every { loginHistoryRepository.save(any<LoginHistory>()) } throws RuntimeException("DB error")
         every { jwtTokenProvider.createAccessToken(employee.id, any<String>(), false, any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(employee.id, any(), any()) } returns "refresh"
@@ -166,7 +158,7 @@ class AuthServiceTest {
     @DisplayName("로그인 실패 - 존재하지 않는 사번으로 로그인 시 InvalidCredentialsException 발생")
     fun login_userNotFound() {
         // Given
-        val loginRequest = LoginRequest("99999999", "password123")
+        val loginRequest = LoginRequest("99999999", "password123", deviceId = "device-123")
 
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode("99999999") } returns null
 
@@ -181,7 +173,7 @@ class AuthServiceTest {
     fun login_passwordMismatch() {
         // Given
         val employee = createTestEmployee(password = "encoded_password")
-        val loginRequest = LoginRequest("12345678", "wrong_password")
+        val loginRequest = LoginRequest("12345678", "wrong_password", deviceId = "device-123")
 
         every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
         every { passwordEncoder.matches("wrong_password", "encoded_password") } returns false
@@ -822,28 +814,6 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("웹 로그인 - device_id 미전달 시 단말기 검증 스킵, 로그인 성공")
-    fun login_webLogin_skipsDeviceBinding() {
-        // Given
-        val employee = createTestEmployee(id = 1L, deviceUuid = "device-abc-123")
-        val request = LoginRequest("12345678", "password123")
-
-        every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
-        every { passwordEncoder.matches("password123", "encoded_password") } returns true
-        every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
-        every { jwtTokenProvider.createAccessToken(1L, any<String>(), false, any()) } returns "token"
-        every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
-        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
-        every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
-
-        // When
-        val response = authService.login(request)
-
-        // Then
-        assertThat(response.token.accessToken).isEqualTo("token")
-    }
-
-    @Test
     @DisplayName("바인딩 비활성화 - enabled=false일 때 device_id 불일치여도 로그인 성공")
     fun login_bindingDisabled_skipsValidation() {
         // Given
@@ -895,28 +865,6 @@ class AuthServiceTest {
     inner class LoginAuthorityTests {
 
         @Test
-        @DisplayName("WEB 로그인 성공 - 허용 권한(영업부장)으로 로그인 시 정상 반환")
-        fun webLogin_allowedAuthority_success() {
-            // Given
-            val employee = createTestEmployee(id = 1L, role = null)
-            val request = LoginRequest("12345678", "password123")
-
-            every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
-            every { passwordEncoder.matches("password123", "encoded_password") } returns true
-            every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns setOf("SYSTEM:VIEW_ALL_DATA")
-            every { jwtTokenProvider.createAccessToken(1L, any<String>(), false, any()) } returns "token"
-            every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
-            every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
-            every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
-
-            // When
-            val response = authService.login(request)
-
-            // Then
-            assertThat(response.token.accessToken).isEqualTo("token")
-        }
-
-        @Test
         @DisplayName("Mobile 로그인 성공 - appLoginActive=true로 로그인 시 정상 반환")
         fun mobileLogin_active_success() {
             // Given
@@ -938,38 +886,6 @@ class AuthServiceTest {
 
             // Then
             assertThat(response.token.accessToken).isEqualTo("token")
-        }
-
-        @Test
-        @DisplayName("WEB 미허용 권한 - appAuthority가 허용 목록에 없으면 WebLoginNotAllowedException")
-        fun webLogin_notAllowedAuthority_throws() {
-            // Given
-            val employee = createTestEmployee(id = 1L, role = AppAuthority.WOMAN)
-            val request = LoginRequest("12345678", "password123")
-
-            every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
-            every { passwordEncoder.matches("password123", "encoded_password") } returns true
-            every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
-
-            // When & Then
-            assertThatThrownBy { authService.login(request) }
-                .isInstanceOf(WebLoginNotAllowedException::class.java)
-        }
-
-        @Test
-        @DisplayName("WEB 권한 null - appAuthority가 null이면 WebLoginNotAllowedException")
-        fun webLogin_nullAuthority_throws() {
-            // Given
-            val employee = createTestEmployee(id = 1L, role = null)
-            val request = LoginRequest("12345678", "password123")
-
-            every { employeeRepository.findWithEmployeeInfoByEmployeeCode("12345678") } returns employee
-            every { passwordEncoder.matches("password123", "encoded_password") } returns true
-            every { userRepository.findByEmployeeCode(any()) } returns mockk<User>(relaxed = true); every { sfPermissionResolver.resolveForUser(any()) } returns emptySet()
-
-            // When & Then
-            assertThatThrownBy { authService.login(request) }
-                .isInstanceOf(WebLoginNotAllowedException::class.java)
         }
 
         @Test

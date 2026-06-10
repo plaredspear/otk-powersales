@@ -53,7 +53,7 @@ class AuthControllerTest : MobileControllerTestSupport() {
     @Test
     @DisplayName("정상 로그인 - 200 OK, 사용자 정보 및 토큰 반환")
     fun login_success() {
-        val request = LoginRequest(employeeCode = "12345678", password = "password123")
+        val request = LoginRequest(employeeCode = "12345678", password = "password123", deviceId = "device-123")
         val mockResponse = LoginResponse(
             user = UserInfo(1L, "12345678", "홍길동", "서울지점", "여사원"),
             token = TokenInfo("access-token", "refresh-token", 3600),
@@ -76,6 +76,18 @@ class AuthControllerTest : MobileControllerTestSupport() {
     }
 
     @Test
+    @DisplayName("단말기 식별자 누락 - 400 INVALID_PARAMETER (native app 전용)")
+    fun login_missingDeviceId() {
+        mockMvc.perform(
+            post("/api/v1/mobile/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"employeeCode": "12345678", "password": "password123"}""")
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
+    }
+
+    @Test
     @DisplayName("초기 비밀번호로 로그인 - 200 OK, password_change_required=true")
     fun login_initialPassword() {
         val mockResponse = LoginResponse(
@@ -90,7 +102,7 @@ class AuthControllerTest : MobileControllerTestSupport() {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employeeCode": "87654321", "password": "otg1"}""")
+                .content("""{"employeeCode": "87654321", "password": "otg1", "deviceId": "device-123"}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.passwordChangeRequired").value(true))
@@ -105,7 +117,7 @@ class AuthControllerTest : MobileControllerTestSupport() {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employeeCode": "99999999", "password": "password123"}""")
+                .content("""{"employeeCode": "99999999", "password": "password123", "deviceId": "device-123"}""")
         )
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.error.code").value("INVALID_CREDENTIALS"))
@@ -117,7 +129,7 @@ class AuthControllerTest : MobileControllerTestSupport() {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employeeCode": "", "password": "password123"}""")
+                .content("""{"employeeCode": "", "password": "password123", "deviceId": "device-123"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
@@ -129,7 +141,7 @@ class AuthControllerTest : MobileControllerTestSupport() {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employeeCode": "${"1".repeat(101)}", "password": "password123"}""")
+                .content("""{"employeeCode": "${"1".repeat(101)}", "password": "password123", "deviceId": "device-123"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
@@ -142,7 +154,7 @@ class AuthControllerTest : MobileControllerTestSupport() {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employeeCode": "12345678", "password": "123"}""")
+                .content("""{"employeeCode": "12345678", "password": "123", "deviceId": "device-123"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
