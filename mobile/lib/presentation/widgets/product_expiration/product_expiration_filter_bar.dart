@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../common/range_calendar_picker.dart';
 
 /// 유통기한 검색 필터 바
 ///
@@ -186,12 +187,16 @@ class ProductExpirationFilterBar extends StatelessWidget {
     );
   }
 
+  /// 유통기한 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
+  /// 조회 가능 기간은 유통기한 조건(2020 ~ 2030)에 맞춘다. 범위 일수 제한은 없다.
   Future<void> _selectDateRange(BuildContext context) async {
-    final picked = await showDateRangePicker(
-      context: context,
-      initialDateRange: DateTimeRange(start: fromDate, end: toDate),
+    final picked = await showRangeCalendar(
+      context,
+      initialStart: fromDate,
+      initialEnd: toDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
+      maxRangeDays: null,
     );
     if (picked != null) {
       onFromDateChanged(picked.start);

@@ -14,6 +14,7 @@ import '../providers/product_add_state.dart';
 import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/common/error_view.dart';
 import '../widgets/common/loading_indicator.dart';
+import '../widgets/common/range_calendar_picker.dart';
 import '../widgets/electronic/electronic_product_picker_sheet.dart';
 import '../widgets/electronic/electronic_sales_result_list.dart';
 import 'barcode_scanner_screen.dart';
@@ -68,13 +69,16 @@ class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
 
   // ── 입력 핸들러 ──────────────────────────────────────────────
 
+  /// 기간 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
+  /// 조회 가능 기간은 전산매출 조건(2020 ~ 내년 말)에 맞춘다. 범위 일수 제한은 없다.
   Future<void> _pickDateRange() async {
-    final picked = await showDateRangePicker(
-      context: context,
+    final picked = await showRangeCalendar(
+      context,
+      initialStart: _startDate,
+      initialEnd: _endDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(DateTime.now().year + 1, 12, 31),
-      initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
-      locale: const Locale('ko', 'KR'),
+      maxRangeDays: null,
     );
     if (picked != null) {
       setState(() {

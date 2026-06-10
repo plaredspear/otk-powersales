@@ -8,6 +8,7 @@ import '../../domain/repositories/my_account_repository.dart';
 import '../providers/pos_sales_provider.dart';
 import '../providers/pos_sales_state.dart';
 import '../widgets/account/account_selector_sheet.dart';
+import '../widgets/common/range_calendar_picker.dart';
 import '../widgets/pos/pos_product_search_sheet.dart';
 import 'barcode_scanner_screen.dart';
 
@@ -76,41 +77,24 @@ class PosSalesScreen extends ConsumerWidget {
     );
   }
 
+  /// 기간 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
+  /// 조회 가능 기간은 POS 매출 조건(2020 ~ 2030)에 맞추고,
+  /// 레거시 daterangepicker maxSpan 정합으로 최대 31일까지만 선택할 수 있다.
   Future<void> _pickDateRange(
       BuildContext context, WidgetRef ref, PosSalesState state) async {
-    final picked = await showDateRangePicker(
-      context: context,
+    final picked = await showRangeCalendar(
+      context,
+      initialStart: DateTime.parse(state.startDate),
+      initialEnd: DateTime.parse(state.endDate),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      initialDateRange: DateTimeRange(
-        start: DateTime.parse(state.startDate),
-        end: DateTime.parse(state.endDate),
-      ),
-      locale: const Locale('ko', 'KR'),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context)
-              .colorScheme
-              .copyWith(primary: AppColors.otokiRed),
-        ),
-        child: child!,
-      ),
+      maxRangeDays: 31,
     );
     if (picked == null) return;
 
-    // 레거시 daterangepicker maxSpan: 31일 정합
-    var end = picked.end;
-    if (end.difference(picked.start).inDays > 31) {
-      end = picked.start.add(const Duration(days: 31));
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('최대 31일까지 선택 가능합니다')),
-        );
-      }
-    }
     ref
         .read(posSalesProvider.notifier)
-        .setDateRange(_fmt(picked.start), _fmt(end));
+        .setDateRange(_fmt(picked.start), _fmt(picked.end));
   }
 
   static String _fmt(DateTime d) =>

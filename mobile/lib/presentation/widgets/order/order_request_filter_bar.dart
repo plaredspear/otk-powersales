@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/order_request.dart';
 import '../../../domain/repositories/my_account_repository.dart';
 import '../account/account_selector_field.dart';
+import '../common/range_calendar_picker.dart';
 import 'order_filter_styles.dart';
 
 /// 주문 필터 바 위젯
@@ -171,6 +172,9 @@ class OrderRequestFilterBar extends StatelessWidget {
     );
   }
 
+  /// 납기일 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
+  /// 조회 가능 기간은 주문 조건(2020 ~ 2030)에 맞추고,
+  /// 레거시 daterangepicker maxSpan 정합으로 최대 7일까지만 선택할 수 있다.
   Future<void> _showDateRangePicker(BuildContext context) async {
     // 현재 선택된 범위 기본값: 오늘 ~ 오늘+7일
     final now = DateTime.now();
@@ -181,40 +185,18 @@ class OrderRequestFilterBar extends StatelessWidget {
         ? DateTime.parse(deliveryDateTo!)
         : now.add(const Duration(days: 7));
 
-    final picked = await showDateRangePicker(
-      context: context,
+    final picked = await showRangeCalendar(
+      context,
+      initialStart: initialFrom,
+      initialEnd: initialTo,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      initialDateRange: DateTimeRange(
-        start: initialFrom,
-        end: initialTo,
-      ),
-      locale: const Locale('ko', 'KR'),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: AppColors.otokiBlue,
-                ),
-          ),
-          child: child!,
-        );
-      },
+      maxRangeDays: 7,
     );
 
     if (picked != null) {
-      // 최대 7일 범위 제한 (레거시 daterangepicker maxSpan: 7d)
-      var start = picked.start;
-      var end = picked.end;
-      if (end.difference(start).inDays > 7) {
-        end = start.add(const Duration(days: 7));
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('최대 7일까지 선택 가능합니다')),
-          );
-        }
-      }
-
+      final start = picked.start;
+      final end = picked.end;
       final fromStr =
           '${start.year}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
       final toStr =

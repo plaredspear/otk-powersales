@@ -6,6 +6,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../providers/add_product_provider.dart';
 import '../../providers/add_product_state.dart';
+import '../common/range_calendar_picker.dart';
 import 'product_card_for_add.dart';
 
 /// 주문 이력 탭
@@ -22,6 +23,28 @@ class OrderHistoryTab extends ConsumerWidget {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
+  /// 주문 이력 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
+  /// 조회 가능 기간은 주문 이력 조건(최근 1년 ~ 오늘)에 맞춘다. 범위 일수 제한은 없다.
+  Future<void> _pickDateRange(
+    BuildContext context,
+    AddProductState state,
+    AddProductNotifier notifier,
+  ) async {
+    final now = DateTime.now();
+    final picked = await showRangeCalendar(
+      context,
+      initialStart:
+          state.historyDateFrom ?? now.subtract(const Duration(days: 3)),
+      initialEnd: state.historyDateTo ?? now,
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now,
+      maxRangeDays: null,
+    );
+    if (picked != null) {
+      notifier.setHistoryDateRange(picked.start, picked.end);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(addProductProvider);
@@ -36,23 +59,7 @@ class OrderHistoryTab extends ConsumerWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate:
-                          state.historyDateFrom ?? DateTime.now().subtract(const Duration(days: 3)),
-                      firstDate:
-                          DateTime.now().subtract(const Duration(days: 365)),
-                      lastDate: DateTime.now(),
-                      locale: const Locale('ko', 'KR'),
-                    );
-                    if (picked != null) {
-                      notifier.setHistoryDateRange(
-                        picked,
-                        state.historyDateTo ?? DateTime.now(),
-                      );
-                    }
-                  },
+                  onPressed: () => _pickDateRange(context, state, notifier),
                   icon: const Icon(Icons.calendar_today, size: 16),
                   label: Text(
                     _formatDate(state.historyDateFrom),
@@ -76,24 +83,7 @@ class OrderHistoryTab extends ConsumerWidget {
               ),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: state.historyDateTo ?? DateTime.now(),
-                      firstDate:
-                          DateTime.now().subtract(const Duration(days: 365)),
-                      lastDate: DateTime.now(),
-                      locale: const Locale('ko', 'KR'),
-                    );
-                    if (picked != null) {
-                      notifier.setHistoryDateRange(
-                        state.historyDateFrom ??
-                            DateTime.now()
-                                .subtract(const Duration(days: 3)),
-                        picked,
-                      );
-                    }
-                  },
+                  onPressed: () => _pickDateRange(context, state, notifier),
                   icon: const Icon(Icons.calendar_today, size: 16),
                   label: Text(
                     _formatDate(state.historyDateTo),

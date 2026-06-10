@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/inspection_list_item.dart';
+import '../common/range_calendar_picker.dart';
 
 /// 현장점검 검색 필터 바
 ///
@@ -185,7 +186,7 @@ class InspectionFilterBar extends StatelessWidget {
         const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: GestureDetector(
-            onTap: () => _selectDate(context, fromDate, onFromDateChanged),
+            onTap: () => _selectDateRange(context),
             child: Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm,
@@ -210,7 +211,7 @@ class InspectionFilterBar extends StatelessWidget {
         ),
         Expanded(
           child: GestureDetector(
-            onTap: () => _selectDate(context, toDate, onToDateChanged),
+            onTap: () => _selectDateRange(context),
             child: Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm,
@@ -256,19 +257,20 @@ class InspectionFilterBar extends StatelessWidget {
     );
   }
 
-  Future<void> _selectDate(
-    BuildContext context,
-    DateTime initialDate,
-    void Function(DateTime) onChanged,
-  ) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
+  /// 점검일 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
+  /// 조회 가능 기간은 현장점검 조건(2020 ~ 2030)에 맞춘다. 범위 일수 제한은 없다.
+  Future<void> _selectDateRange(BuildContext context) async {
+    final picked = await showRangeCalendar(
+      context,
+      initialStart: fromDate,
+      initialEnd: toDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
+      maxRangeDays: null,
     );
     if (picked != null) {
-      onChanged(picked);
+      onFromDateChanged(picked.start);
+      onToDateChanged(picked.end);
     }
   }
 }
