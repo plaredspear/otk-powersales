@@ -2,6 +2,7 @@ package com.otoki.powersales.claim.dto.response
 
 import com.otoki.powersales.claim.entity.Claim
 import com.otoki.powersales.common.entity.UploadFile
+import com.otoki.powersales.common.storage.UploadFileKbnTypes
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.math.BigDecimal
@@ -64,9 +65,12 @@ data class ClaimDetailResponse(
  * 데이터 소스: UploadFile (SF UploadFile__c 마이그레이션 entity).
  * - url: UploadFile.uniqueKey (= S3 객체 key) 를 presigned URL 로 변환 (private/ 저장, 인증 기반 조회).
  *   resolver 가 null 을 반환하면 (uniqueKey 부재) 응답에서 제외.
+ * - photoType: UploadFile.uploadKbn (claim/part/receipt) 을 모바일 분류값(DEFECT/LABEL/RECEIPT) 으로 매핑.
+ *   모바일 상세 화면이 불량/일부인/영수증 섹션 분류에 사용. 미지정 시 null.
  */
 data class ClaimPhotoItem(
     val photoId: Long,
+    val photoType: String? = null,
     val url: String,
     val originalFileName: String?
 ) {
@@ -75,9 +79,17 @@ data class ClaimPhotoItem(
             val resolved = urlResolver(uploadFile.uniqueKey) ?: return null
             return ClaimPhotoItem(
                 photoId = uploadFile.id,
+                photoType = toPhotoType(uploadFile.uploadKbn),
                 url = resolved,
                 originalFileName = uploadFile.name
             )
+        }
+
+        private fun toPhotoType(uploadKbn: String?): String? = when (uploadKbn) {
+            UploadFileKbnTypes.CLAIM_DEFECT -> "DEFECT"
+            UploadFileKbnTypes.CLAIM_PART -> "LABEL"
+            UploadFileKbnTypes.CLAIM_RECEIPT -> "RECEIPT"
+            else -> null
         }
     }
 }
