@@ -3963,8 +3963,8 @@
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
-            "minLength" : 1,
-            "pattern" : "^(\\d{8}|ADMIN-[A-Za-z0-9_-]{1,30})$",
+            "maxLength" : 100,
+            "minLength" : 0,
             "type" : "string"
           },
           "password" : {

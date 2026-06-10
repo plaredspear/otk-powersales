@@ -124,16 +124,16 @@ class AuthControllerTest : MobileControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("사번 형식 오류 (6자리) - 400 with validation message")
-    fun login_invalidEmployeeCodeFormat() {
+    @DisplayName("사번 길이 초과 (101자) - 400 with validation message")
+    fun login_employeeCodeTooLong() {
         mockMvc.perform(
             post("/api/v1/mobile/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"employeeCode": "123456", "password": "password123"}""")
+                .content("""{"employeeCode": "${"1".repeat(101)}", "password": "password123"}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
-            .andExpect(jsonPath("$.error.message", containsString("사번은 8자리 숫자 또는 'ADMIN-'")))
+            .andExpect(jsonPath("$.error.message", containsString("사번은 100자를 초과할 수 없습니다")))
     }
 
     @Test
