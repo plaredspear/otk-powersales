@@ -218,6 +218,6 @@ class MonthlySalesService(
 
     private companion object {
         /** SF `WorkingDateCheck__c` 의 영업일 값. */
-        const val WORKING_DAY_CHECK = 1
+        const val WORKING_DAY_CHECK = 1.0
     }
 }

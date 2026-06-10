@@ -79,13 +79,13 @@ backend 의 `@SFObject` 어노테이션이 붙은 모든 entity + Permission sta
 | `ProfileFieldPermission` | (XML 메타) | `POST /stage2/fk` (profile FK) — spec #795. 운영 0건 (Profile 위임 패턴) |
 | `PermissionSetFieldPermission` | (XML 메타) | `POST /stage2/fk` (permission_set FK) — spec #795. 운영 26 PermissionSet |
 
-**Stage 1 raw 적재만 수행하는 target** (36종):
+**Stage 1 raw 적재만 수행하는 target** (37종):
 
 `Organization`, `Account`, `Product`, `Promotion`, `Group`, `Notice`,
 `AccountCategoryMaster`, `AgreementHistory`, `AgreementWord`, `AlternativeHoliday`,
 `Appointment`, `AttendanceLog`, `AttendInfo`, `BranchReview`, `Claim`,
 `DisplayWorkSchedule`, `EmployeeInputCriteriaMaster`, `ErpOrder`, `ErpOrderProduct`,
-`HolidayMaster`, `HqReview`, `InspectionTheme`,
+`HolidayMaster`, `WorkingDayMaster`, `HqReview`, `InspectionTheme`,
 `MonthlyFemaleEmployeeIntegrationSchedule`, `MonthlySalesHistory`, `NewProduct`,
 `OrderRequest`, `OrderRequestProduct`, `ProductBarcode`,
 `ProfessionalPromotionTeamHistory`, `ProfessionalPromotionTeamMaster`,

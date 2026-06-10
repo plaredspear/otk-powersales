@@ -1,15 +1,15 @@
 package com.otoki.powersales.sales.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
-import jakarta.persistence.Table
+import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.user.entity.User
+import jakarta.persistence.*
 import java.time.LocalDate
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.LastModifiedBy
 
 /**
  * 영업일관리마스터 Entity (SF `WorkingDayMaster__c`).
@@ -20,6 +20,7 @@ import java.time.LocalDate
  * 데이터 권위: SF (HC sync 대상 아님 — Heroku PG 미존재. SF → RDS 단방향 마이그레이션 Stage1).
  * Name 은 SF AutoNumber(`WM-{00000000}`) — 적재 정합 위해 보존하되 조회엔 미사용.
  */
+@EntityListeners(OwnerUserDefaultListener::class)
 @Entity
 @Table(name = "working_day_master")
 @SFObject("WorkingDayMaster__c")
@@ -41,10 +42,10 @@ class WorkingDayMaster(
     @Column(name = "working_date")
     var workingDate: LocalDate? = null,
 
-    /** SF `WorkingDateCheck__c` (Number, scale 0). 1 = 영업일. */
+    /** SF `WorkingDateCheck__c` (Number). 1 = 영업일. SF describe type = double. */
     @SFField("WorkingDateCheck__c")
     @Column(name = "working_date_check")
-    var workingDateCheck: Int? = null,
+    var workingDateCheck: Double? = null,
 
     @SFField("IsDeleted")
     @Column(name = "is_deleted")
@@ -61,4 +62,25 @@ class WorkingDayMaster(
     @SFField("LastModifiedById")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
+
+    // SF OwnerId.referenceTo = [Group, User] polymorphic. owner_user_id (User FK) +
+    // owner_group_id (Group FK) + XOR CHECK. Stage 2 fk substep 이 owner_sfid → FK 해소.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_user_id")
+    var ownerUser: User? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_group_id")
+    var ownerGroup: Group? = null,
+
+    // SF CreatedById/LastModifiedById.referenceTo = [User]. audit FK → User.
+    @CreatedBy
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    var createdBy: User? = null,
+
+    @LastModifiedBy
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_modified_by_id")
+    var lastModifiedBy: User? = null,
 ) : BaseEntity()

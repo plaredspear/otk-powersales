@@ -141,9 +141,9 @@ class MonthlySalesServiceTest {
             every { accountRepository.findByExternalKey("C001") } returns null
             every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns emptyList()
             // 전체 영업일 20, 월초~오늘 경과 영업일 10 → 50%.
-            every { workingDayMasterRepository.countWorkingDays(firstDay, lastDay, 1) } returns 20L
+            every { workingDayMasterRepository.countWorkingDays(firstDay, lastDay, 1.0) } returns 20L
             if (now != lastDay) {
-                every { workingDayMasterRepository.countWorkingDays(firstDay, now, 1) } returns 10L
+                every { workingDayMasterRepository.countWorkingDays(firstDay, now, 1.0) } returns 10L
             }
             val expected = if (now == lastDay) 100.0 else 50.0
 
@@ -164,7 +164,7 @@ class MonthlySalesServiceTest {
 
             every { accountRepository.findByExternalKey("C001") } returns null
             every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns emptyList()
-            every { workingDayMasterRepository.countWorkingDays(firstDay, lastDay, 1) } returns 0L
+            every { workingDayMasterRepository.countWorkingDays(firstDay, lastDay, 1.0) } returns 0L
 
             val result = service.getMonthlySales(
                 MonthlySalesRequest(customerId = "C001", yearMonth = yearMonth)
