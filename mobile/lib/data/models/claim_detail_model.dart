@@ -4,41 +4,85 @@ import 'claim_photo_model.dart';
 /// 클레임 상세 데이터 모델 (JSON 매핑)
 class ClaimDetailModel {
   final int claimId;
-  final String? accountName;
+  // 제품정보
   final String? productName;
   final String? productCode;
+  final String? manufacturingDate;
+  final String? logisticsCenter;
+  final String? expirationDate;
+  // 클레임정보
+  final String? claimNo;
+  final String? accountName;
+  final String? accountCode;
+  final String? categoryLabel;
+  final String? subcategoryLabel;
+  final num? defectQuantity;
+  final bool? sampleCollectionFlag;
+  final String status;
+  final String statusLabel;
+  final String? customerDeliveryDate;
+  final String? detailSnsName;
   final String? dateType;
   final String? dateTypeLabel;
   final String? date;
-  final String? categoryLabel;
-  final String? subcategoryLabel;
-  final String? defectDescription;
-  final int? defectQuantity;
-  final int? purchaseAmount;
   final String? purchaseMethodName;
+  final num? purchaseAmount;
   final String? requestTypeName;
-  final String status;
-  final String statusLabel;
+  final String? division;
+  // 불만정보
+  final String? defectDescription;
+  // 채널정보
+  final String? interfaceDate;
+  final String? channel;
+  final String? channelLabel;
+  final String? employeeName;
+  final String? employeePhone;
+  // 처리·조치정보
+  final String? counselNumber;
+  final String? actionCode;
+  final String? actionStatus;
+  final String? reasonType;
+  final String? actContent;
+  // 메타
   final DateTime createdAt;
   final List<ClaimPhotoModel> photos;
 
   const ClaimDetailModel({
     required this.claimId,
-    this.accountName,
     this.productName,
     this.productCode,
+    this.manufacturingDate,
+    this.logisticsCenter,
+    this.expirationDate,
+    this.claimNo,
+    this.accountName,
+    this.accountCode,
+    this.categoryLabel,
+    this.subcategoryLabel,
+    this.defectQuantity,
+    this.sampleCollectionFlag,
+    required this.status,
+    required this.statusLabel,
+    this.customerDeliveryDate,
+    this.detailSnsName,
     this.dateType,
     this.dateTypeLabel,
     this.date,
-    this.categoryLabel,
-    this.subcategoryLabel,
-    this.defectDescription,
-    this.defectQuantity,
-    this.purchaseAmount,
     this.purchaseMethodName,
+    this.purchaseAmount,
     this.requestTypeName,
-    required this.status,
-    required this.statusLabel,
+    this.division,
+    this.defectDescription,
+    this.interfaceDate,
+    this.channel,
+    this.channelLabel,
+    this.employeeName,
+    this.employeePhone,
+    this.counselNumber,
+    this.actionCode,
+    this.actionStatus,
+    this.reasonType,
+    this.actContent,
     required this.createdAt,
     required this.photos,
   });
@@ -46,45 +90,86 @@ class ClaimDetailModel {
   factory ClaimDetailModel.fromJson(Map<String, dynamic> json) {
     return ClaimDetailModel(
       claimId: json['claimId'] as int,
-      accountName: json['accountName'] as String?,
       productName: json['productName'] as String?,
       productCode: json['productCode'] as String?,
+      manufacturingDate: json['manufacturingDate'] as String?,
+      logisticsCenter: json['logisticsCenter'] as String?,
+      expirationDate: json['expirationDate'] as String?,
+      claimNo: json['claimNo'] as String?,
+      accountName: json['accountName'] as String?,
+      accountCode: json['accountCode'] as String?,
+      categoryLabel: json['categoryLabel'] as String?,
+      subcategoryLabel: json['subcategoryLabel'] as String?,
+      defectQuantity: json['defectQuantity'] as num?,
+      sampleCollectionFlag: json['sampleCollectionFlag'] as bool?,
+      status: json['status'] as String,
+      statusLabel: json['statusLabel'] as String,
+      customerDeliveryDate: json['customerDeliveryDate'] as String?,
+      detailSnsName: json['detailSnsName'] as String?,
       dateType: json['dateType'] as String?,
       dateTypeLabel: json['dateTypeLabel'] as String?,
       date: json['date'] as String?,
-      categoryLabel: json['categoryLabel'] as String?,
-      subcategoryLabel: json['subcategoryLabel'] as String?,
-      defectDescription: json['defectDescription'] as String?,
-      defectQuantity: json['defectQuantity'] as int?,
-      purchaseAmount: json['purchaseAmount'] as int?,
       purchaseMethodName: json['purchaseMethodName'] as String?,
+      purchaseAmount: json['purchaseAmount'] as num?,
       requestTypeName: json['requestTypeName'] as String?,
-      status: json['status'] as String,
-      statusLabel: json['statusLabel'] as String,
+      division: json['division'] as String?,
+      defectDescription: json['defectDescription'] as String?,
+      interfaceDate: json['interfaceDate'] as String?,
+      channel: json['channel'] as String?,
+      channelLabel: json['channelLabel'] as String?,
+      employeeName: json['employeeName'] as String?,
+      employeePhone: json['employeePhone'] as String?,
+      counselNumber: json['counselNumber'] as String?,
+      actionCode: json['actionCode'] as String?,
+      actionStatus: json['actionStatus'] as String?,
+      reasonType: json['reasonType'] as String?,
+      actContent: json['actContent'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      photos: (json['photos'] as List<dynamic>)
+      photos: (json['photos'] as List<dynamic>? ?? [])
           .map((e) => ClaimPhotoModel.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
 
+  DateTime? _parseDate(String? value) =>
+      value != null ? DateTime.tryParse(value) : null;
+
   ClaimDetail toEntity() => ClaimDetail(
         claimId: claimId,
-        accountName: accountName,
         productName: productName,
         productCode: productCode,
-        dateType: dateType,
-        dateTypeLabel: dateTypeLabel,
-        date: date != null ? DateTime.parse(date!) : null,
+        manufacturingDate: _parseDate(manufacturingDate),
+        logisticsCenter: logisticsCenter,
+        expirationDate: _parseDate(expirationDate),
+        claimNo: claimNo,
+        accountName: accountName,
+        accountCode: accountCode,
         categoryLabel: categoryLabel,
         subcategoryLabel: subcategoryLabel,
-        defectDescription: defectDescription,
-        defectQuantity: defectQuantity,
-        purchaseAmount: purchaseAmount,
-        purchaseMethodName: purchaseMethodName,
-        requestTypeName: requestTypeName,
+        defectQuantity: defectQuantity?.toInt(),
+        sampleCollectionFlag: sampleCollectionFlag,
         status: status,
         statusLabel: statusLabel,
+        customerDeliveryDate: _parseDate(customerDeliveryDate),
+        detailSnsName: detailSnsName,
+        dateType: dateType,
+        dateTypeLabel: dateTypeLabel,
+        date: _parseDate(date),
+        purchaseMethodName: purchaseMethodName,
+        purchaseAmount: purchaseAmount?.toInt(),
+        requestTypeName: requestTypeName,
+        division: division,
+        defectDescription: defectDescription,
+        interfaceDate: _parseDate(interfaceDate),
+        channel: channel,
+        channelLabel: channelLabel,
+        employeeName: employeeName,
+        employeePhone: employeePhone,
+        counselNumber: counselNumber,
+        actionCode: actionCode,
+        actionStatus: actionStatus,
+        reasonType: reasonType,
+        actContent: actContent,
         createdAt: createdAt,
         photos: photos.map((e) => e.toEntity()).toList(),
       );

@@ -64,6 +64,40 @@ void main() {
       });
     });
 
+    group('페이징 (클라이언트 20건/페이지)', () {
+      test('조회 성공 시 첫 페이지(20건)만 노출하고 hasMore=true', () async {
+        fakeRepository.claimsToReturn = _buildItems(25);
+        await notifier.loadClaims();
+        expect(notifier.state.items.length, 25);
+        expect(notifier.state.visibleItems.length, 20);
+        expect(notifier.state.hasMore, true);
+      });
+
+      test('loadMore 호출 시 다음 페이지(20건)를 추가 노출', () async {
+        fakeRepository.claimsToReturn = _buildItems(25);
+        await notifier.loadClaims();
+        notifier.loadMore();
+        expect(notifier.state.visibleItems.length, 25);
+        expect(notifier.state.hasMore, false);
+      });
+
+      test('전체가 20건 이하면 hasMore=false', () async {
+        fakeRepository.claimsToReturn = _buildItems(15);
+        await notifier.loadClaims();
+        expect(notifier.state.visibleItems.length, 15);
+        expect(notifier.state.hasMore, false);
+      });
+
+      test('재조회 시 노출 페이지가 첫 페이지로 초기화된다', () async {
+        fakeRepository.claimsToReturn = _buildItems(25);
+        await notifier.loadClaims();
+        notifier.loadMore();
+        expect(notifier.state.visibleItems.length, 25);
+        await notifier.loadClaims();
+        expect(notifier.state.visibleItems.length, 20);
+      });
+    });
+
     test('clearError로 에러 메시지를 초기화해야 한다', () async {
       fakeRepository.exceptionToThrow = Exception('에러');
       await notifier.loadClaims();
@@ -83,6 +117,7 @@ class FakeClaimRepository implements ClaimRepository {
   Future<List<ClaimListItem>> getClaims({
     String? startDate,
     String? endDate,
+    int? accountId,
   }) async {
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return claimsToReturn;
@@ -109,6 +144,18 @@ class FakeClaimRepository implements ClaimRepository {
   @override
   Future<void> deleteDraft() async => throw UnimplementedError();
 }
+
+List<ClaimListItem> _buildItems(int count) => List.generate(
+      count,
+      (i) => ClaimListItem(
+        claimId: i + 1,
+        accountName: '거래처$i',
+        productName: '제품$i',
+        status: 'SENT',
+        statusLabel: '전송완료',
+        createdAt: DateTime(2026, 6, 1),
+      ),
+    );
 
 final _sampleItem1 = ClaimListItem(
   claimId: 1,

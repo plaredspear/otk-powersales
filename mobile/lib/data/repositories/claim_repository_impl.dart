@@ -31,10 +31,12 @@ class ClaimRepositoryImpl implements ClaimRepository {
   Future<List<ClaimListItem>> getClaims({
     String? startDate,
     String? endDate,
+    int? accountId,
   }) async {
     final models = await _dataSource.getClaims(
       startDate: startDate,
       endDate: endDate,
+      accountId: accountId,
     );
     return models.map((e) => e.toEntity()).toList();
   }

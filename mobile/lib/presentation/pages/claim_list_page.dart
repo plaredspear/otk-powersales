@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/throttled_tap_mixin.dart';
 import '../providers/claim_list_provider.dart';
+import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/claim/claim_list_item_card.dart';
 import '../widgets/common/loading_indicator.dart';
 
@@ -20,12 +21,31 @@ class ClaimListPage extends ConsumerStatefulWidget {
 
 class _ClaimListPageState extends ConsumerState<ClaimListPage>
     with ThrottledTapMixin {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(claimListProvider.notifier).loadClaims();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// 목록 하단 근처에 도달하면 다음 페이지(20건)를 추가로 노출한다(클라이언트 페이징).
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 200) {
+      ref.read(claimListProvider.notifier).loadMore();
+    }
   }
 
   @override
@@ -48,11 +68,72 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
       appBar: AppBar(title: const Text('클레임 현황')),
       body: Column(
         children: [
+          _buildAccountFilter(state),
           _buildDateFilter(state),
           Expanded(child: _buildBody(state)),
         ],
       ),
     );
+  }
+
+  Widget _buildAccountFilter(dynamic state) {
+    final hasAccount = state.selectedAccountId != null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+      child: InkWell(
+        onTap: () => throttledTap(_selectAccount),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.store_outlined,
+                  size: 18, color: AppColors.textSecondary),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  hasAccount ? state.selectedAccountName! : '거래처 전체',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: hasAccount
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (hasAccount)
+                GestureDetector(
+                  onTap: () =>
+                      ref.read(claimListProvider.notifier).clearAccount(),
+                  child: const Icon(Icons.close,
+                      size: 18, color: AppColors.textSecondary),
+                )
+              else
+                const Icon(Icons.arrow_drop_down,
+                    color: AppColors.textSecondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectAccount() async {
+    final account = await AccountSelectorSheet.show(context);
+    if (account != null) {
+      ref
+          .read(claimListProvider.notifier)
+          .selectAccount(account.accountId, account.accountName);
+    }
   }
 
   Widget _buildDateFilter(dynamic state) {
@@ -115,6 +196,8 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                minimumSize: const Size(48, 40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: const Icon(Icons.search, size: 20),
             ),
@@ -144,10 +227,15 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
       return const SizedBox.shrink();
     }
 
+    final visibleItems = state.visibleItems;
     return ListView.builder(
-      itemCount: state.items.length,
+      controller: _scrollController,
+      itemCount: visibleItems.length + (state.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        final item = state.items[index];
+        if (index >= visibleItems.length) {
+          return _buildLoadMoreFooter(state);
+        }
+        final item = visibleItems[index];
         return ClaimListItemCard(
           item: item,
           onTap: () => throttledTap(
@@ -159,6 +247,28 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
           ),
         );
       },
+    );
+  }
+
+  /// 다음 페이지가 남아있을 때 하단에 노출하는 '더보기' 푸터.
+  /// 스크롤로 자동 로드되지만, 탭으로도 다음 20건을 즉시 표시할 수 있다.
+  Widget _buildLoadMoreFooter(dynamic state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Center(
+        child: TextButton(
+          onPressed: () => ref.read(claimListProvider.notifier).loadMore(),
+          child: Text(
+            '더보기 (${state.visibleItems.length}/${state.items.length})',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
     );
   }
 

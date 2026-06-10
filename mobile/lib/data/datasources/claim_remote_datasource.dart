@@ -18,6 +18,7 @@ abstract class ClaimRemoteDataSource {
   Future<List<ClaimListItemModel>> getClaims({
     String? startDate,
     String? endDate,
+    int? accountId,
   });
 
   /// 클레임 상세 조회

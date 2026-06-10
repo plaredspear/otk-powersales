@@ -488,7 +488,7 @@ class _AccountField extends StatelessWidget {
 }
 
 /// 불량 내역 입력 필드
-class _DefectDescriptionField extends StatelessWidget {
+class _DefectDescriptionField extends StatefulWidget {
   const _DefectDescriptionField({
     required this.description,
     required this.onChanged,
@@ -498,12 +498,44 @@ class _DefectDescriptionField extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   @override
+  State<_DefectDescriptionField> createState() =>
+      _DefectDescriptionFieldState();
+}
+
+class _DefectDescriptionFieldState extends State<_DefectDescriptionField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.description ?? '');
+  }
+
+  @override
+  void didUpdateWidget(covariant _DefectDescriptionField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newText = widget.description ?? '';
+    if (newText != _controller.text) {
+      _controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newText.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ClaimFormRow(
       label: '불량 내역',
       isRequired: true,
       below: TextField(
-        controller: TextEditingController(text: description ?? ''),
+        controller: _controller,
         maxLines: null,
         style: const TextStyle(fontSize: 14, color: ClaimFormColors.value),
         decoration: const InputDecoration(
@@ -512,14 +544,14 @@ class _DefectDescriptionField extends StatelessWidget {
           hintStyle: TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
           border: InputBorder.none,
         ),
-        onChanged: onChanged,
+        onChanged: widget.onChanged,
       ),
     );
   }
 }
 
 /// 불량 수량 입력 필드
-class _DefectQuantityField extends StatelessWidget {
+class _DefectQuantityField extends StatefulWidget {
   const _DefectQuantityField({
     required this.quantity,
     required this.onChanged,
@@ -527,6 +559,40 @@ class _DefectQuantityField extends StatelessWidget {
 
   final int? quantity;
   final ValueChanged<String> onChanged;
+
+  @override
+  State<_DefectQuantityField> createState() => _DefectQuantityFieldState();
+}
+
+class _DefectQuantityFieldState extends State<_DefectQuantityField> {
+  late final TextEditingController _controller;
+
+  String _textOf(int? quantity) =>
+      quantity != null && quantity > 0 ? quantity.toString() : '';
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: _textOf(widget.quantity));
+  }
+
+  @override
+  void didUpdateWidget(covariant _DefectQuantityField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newText = _textOf(widget.quantity);
+    if (newText != _controller.text) {
+      _controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newText.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -538,9 +604,7 @@ class _DefectQuantityField extends StatelessWidget {
         style: TextStyle(fontSize: 14, color: ClaimFormColors.unit),
       ),
       below: TextField(
-        controller: TextEditingController(
-          text: quantity != null && quantity! > 0 ? quantity.toString() : '',
-        ),
+        controller: _controller,
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         style: const TextStyle(fontSize: 14, color: ClaimFormColors.value),
@@ -550,7 +614,7 @@ class _DefectQuantityField extends StatelessWidget {
           hintStyle: TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
           border: InputBorder.none,
         ),
-        onChanged: onChanged,
+        onChanged: widget.onChanged,
       ),
     );
   }

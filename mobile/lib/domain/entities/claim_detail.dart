@@ -3,41 +3,85 @@ import 'claim_photo.dart';
 /// 클레임 상세 도메인 엔티티
 class ClaimDetail {
   final int claimId;
-  final String? accountName;
+  // 제품정보
   final String? productName;
   final String? productCode;
+  final DateTime? manufacturingDate;
+  final String? logisticsCenter;
+  final DateTime? expirationDate;
+  // 클레임정보
+  final String? claimNo;
+  final String? accountName;
+  final String? accountCode;
+  final String? categoryLabel;
+  final String? subcategoryLabel;
+  final int? defectQuantity;
+  final bool? sampleCollectionFlag;
+  final String status;
+  final String statusLabel;
+  final DateTime? customerDeliveryDate;
+  final String? detailSnsName;
   final String? dateType;
   final String? dateTypeLabel;
   final DateTime? date;
-  final String? categoryLabel;
-  final String? subcategoryLabel;
-  final String? defectDescription;
-  final int? defectQuantity;
-  final int? purchaseAmount;
   final String? purchaseMethodName;
+  final int? purchaseAmount;
   final String? requestTypeName;
-  final String status;
-  final String statusLabel;
+  final String? division;
+  // 불만정보
+  final String? defectDescription;
+  // 채널정보
+  final DateTime? interfaceDate;
+  final String? channel;
+  final String? channelLabel;
+  final String? employeeName;
+  final String? employeePhone;
+  // 처리·조치정보
+  final String? counselNumber;
+  final String? actionCode;
+  final String? actionStatus;
+  final String? reasonType;
+  final String? actContent;
+  // 메타
   final DateTime createdAt;
   final List<ClaimPhoto> photos;
 
   const ClaimDetail({
     required this.claimId,
-    this.accountName,
     this.productName,
     this.productCode,
+    this.manufacturingDate,
+    this.logisticsCenter,
+    this.expirationDate,
+    this.claimNo,
+    this.accountName,
+    this.accountCode,
+    this.categoryLabel,
+    this.subcategoryLabel,
+    this.defectQuantity,
+    this.sampleCollectionFlag,
+    required this.status,
+    required this.statusLabel,
+    this.customerDeliveryDate,
+    this.detailSnsName,
     this.dateType,
     this.dateTypeLabel,
     this.date,
-    this.categoryLabel,
-    this.subcategoryLabel,
-    this.defectDescription,
-    this.defectQuantity,
-    this.purchaseAmount,
     this.purchaseMethodName,
+    this.purchaseAmount,
     this.requestTypeName,
-    required this.status,
-    required this.statusLabel,
+    this.division,
+    this.defectDescription,
+    this.interfaceDate,
+    this.channel,
+    this.channelLabel,
+    this.employeeName,
+    this.employeePhone,
+    this.counselNumber,
+    this.actionCode,
+    this.actionStatus,
+    this.reasonType,
+    this.actContent,
     required this.createdAt,
     required this.photos,
   });

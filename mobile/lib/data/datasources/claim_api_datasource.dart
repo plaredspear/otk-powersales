@@ -61,10 +61,12 @@ class ClaimApiDataSource implements ClaimRemoteDataSource {
   Future<List<ClaimListItemModel>> getClaims({
     String? startDate,
     String? endDate,
+    int? accountId,
   }) async {
     final queryParameters = <String, dynamic>{};
     if (startDate != null) queryParameters['startDate'] = startDate;
     if (endDate != null) queryParameters['endDate'] = endDate;
+    if (accountId != null) queryParameters['accountId'] = accountId;
 
     final response = await _dio.get(
       '/api/v1/mobile/claims',

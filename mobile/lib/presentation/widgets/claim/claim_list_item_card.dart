@@ -42,6 +42,11 @@ class ClaimListItemCard extends StatelessWidget {
               _buildAccountName(),
               const SizedBox(height: AppSpacing.xs),
               _buildCategoryRow(),
+              if (item.defectDescription != null &&
+                  item.defectDescription!.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xs),
+                _buildDescription(),
+              ],
               const SizedBox(height: AppSpacing.xs),
               _buildDate(),
             ],
@@ -52,11 +57,15 @@ class ClaimListItemCard extends StatelessWidget {
   }
 
   Widget _buildHeader() {
+    final productName = item.productName ?? '-';
+    final title = item.claimNo != null && item.claimNo!.isNotEmpty
+        ? '[${item.claimNo}] $productName'
+        : productName;
     return Row(
       children: [
         Expanded(
           child: Text(
-            item.productName ?? '-',
+            title,
             style: AppTypography.bodySmall.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -111,9 +120,21 @@ class ClaimListItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDate() {
+  Widget _buildDescription() {
     return Text(
-      DateFormat('yyyy-MM-dd').format(item.createdAt),
+      item.defectDescription!,
+      style: AppTypography.bodySmall.copyWith(
+        color: AppColors.textSecondary,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildDate() {
+    // 발생일자(SF ClaimDate) 우선 표시 — 레거시 list.jsp 와 동일. 없으면 등록일시로 폴백.
+    return Text(
+      DateFormat('yyyy-MM-dd').format(item.date ?? item.createdAt),
       style: AppTypography.labelSmall.copyWith(
         color: AppColors.textSecondary,
       ),
