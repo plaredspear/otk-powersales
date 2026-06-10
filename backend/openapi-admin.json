@@ -7729,6 +7729,10 @@
           "downloadUrl" : {
             "type" : "string"
           },
+          "downloadUrlExpiresInSeconds" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "fileName" : {
             "type" : "string"
           },
