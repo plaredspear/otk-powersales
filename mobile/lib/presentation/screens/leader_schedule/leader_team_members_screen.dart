@@ -151,6 +151,9 @@ class _TeamMemberCard extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.otokiBlue,
               foregroundColor: AppColors.white,
+              // Row 안에서는 메인축 폭이 무한이므로, 전역 테마의
+              // Size.fromHeight(=width:Infinity) minimumSize 를 덮어써야 한다.
+              minimumSize: const Size(0, AppSpacing.buttonHeight),
             ),
           ),
         ],

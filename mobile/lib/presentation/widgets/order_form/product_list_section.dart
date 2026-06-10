@@ -65,6 +65,8 @@ class ProductListSection extends StatelessWidget {
               icon: const Icon(Icons.qr_code_scanner, size: 18),
               label: const Text('바코드'),
               style: OutlinedButton.styleFrom(
+                // Row 안 무한폭 제약 크래시 방지 (전역 테마 덮어쓰기).
+                minimumSize: Size.zero,
                 foregroundColor: AppColors.textPrimary,
                 side: BorderSide(color: AppColors.textSecondary),
                 shape: const StadiumBorder(),
@@ -80,6 +82,8 @@ class ProductListSection extends StatelessWidget {
               icon: const Icon(Icons.add, size: 18),
               label: const Text('추가'),
               style: OutlinedButton.styleFrom(
+                // Row 안 무한폭 제약 크래시 방지 (전역 테마 덮어쓰기).
+                minimumSize: Size.zero,
                 foregroundColor: AppColors.textPrimary,
                 side: BorderSide(color: AppColors.textSecondary),
                 shape: const StadiumBorder(),
@@ -108,6 +112,8 @@ class ProductListSection extends StatelessWidget {
             ElevatedButton(
               onPressed: hasSelectedItems ? onRemoveSelected : null,
               style: ElevatedButton.styleFrom(
+                // Row 안 무한폭 제약 크래시 방지 (전역 테마 덮어쓰기).
+                minimumSize: Size.zero,
                 backgroundColor: AppColors.error,
                 foregroundColor: AppColors.white,
                 // ignore: deprecated_member_use

@@ -65,6 +65,8 @@ class EducationSearchBar extends StatelessWidget {
           child: ElevatedButton(
             onPressed: () => onSearch(controller.text),
             style: ElevatedButton.styleFrom(
+              // Row 안 무한폭 제약 크래시 방지 (전역 테마 덮어쓰기).
+              minimumSize: Size.zero,
               backgroundColor: AppColors.otokiYellow,
               foregroundColor: AppColors.textPrimary,
               elevation: 0,
