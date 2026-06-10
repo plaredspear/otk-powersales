@@ -2,7 +2,7 @@
 	run-local run-local-ios run-local-android \
 	run-dev run-dev-ios run-dev-android \
 	run-prod run-prod-ios run-prod-android \
-	build-apk-dev build-apk-prod build-ios-dev build-ios-prod build-ipa-prod
+	build-apk-dev build-apk-prod build-ios-dev build-ios-prod build-ipa-dev build-ipa-prod
 
 ## Flutter 실행기 (기본 fvm). fvm 미사용 시: make run-local FLUTTER=flutter
 FLUTTER ?= fvm flutter
@@ -56,6 +56,14 @@ build-ios-dev: setup
 	$(FLUTTER) build ios --release --flavor dev --dart-define-from-file=config/dev.json
 build-ios-prod: setup
 	$(FLUTTER) build ios --release --flavor prod --dart-define-from-file=config/prod.json
+## iOS Enterprise In-House IPA 빌드 (dev)
+##   archive + export 를 한 번에 수행. ios/ExportOptions-Enterprise-Dev.plist 와
+##   In-House provisioning profile(dev) 이 준비되어 있어야 한다.
+build-ipa-dev: setup
+	$(FLUTTER) build ipa --release --flavor dev \
+		--dart-define-from-file=config/dev.json \
+		--export-options-plist=ios/ExportOptions-Enterprise-Dev.plist
+
 ## iOS Enterprise In-House IPA 빌드 (prod)
 ##   archive + export 를 한 번에 수행. ios/ExportOptions-Enterprise.plist 와
 ##   In-House provisioning profile 이 준비되어 있어야 한다.
