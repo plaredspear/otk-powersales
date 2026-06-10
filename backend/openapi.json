@@ -10958,7 +10958,19 @@
       },
       "ClaimDetailResponse" : {
         "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
           "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "actContent" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionStatus" : {
             "type" : [ "string", "null" ]
           },
           "categoryLabel" : {
@@ -10967,13 +10979,29 @@
           "categoryValue" : {
             "type" : [ "string", "null" ]
           },
+          "channel" : {
+            "type" : [ "string", "null" ]
+          },
+          "channelLabel" : {
+            "type" : [ "string", "null" ]
+          },
           "claimId" : {
             "format" : "int64",
             "type" : "integer"
           },
+          "claimNo" : {
+            "type" : [ "string", "null" ]
+          },
+          "counselNumber" : {
+            "type" : [ "string", "null" ]
+          },
           "createdAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "customerDeliveryDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
           },
           "date" : {
             "format" : "date",
@@ -10990,6 +11018,33 @@
           },
           "defectQuantity" : {
             "type" : [ "number", "null" ]
+          },
+          "detailSnsName" : {
+            "type" : [ "string", "null" ]
+          },
+          "division" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeePhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "expirationDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "interfaceDate" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "logisticsCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "manufacturingDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
           },
           "photos" : {
             "items" : {
@@ -11009,8 +11064,14 @@
           "purchaseMethodName" : {
             "type" : [ "string", "null" ]
           },
+          "reasonType" : {
+            "type" : [ "string", "null" ]
+          },
           "requestTypeName" : {
             "type" : [ "string", "null" ]
+          },
+          "sampleCollectionFlag" : {
+            "type" : [ "boolean", "null" ]
           },
           "status" : {
             "type" : "string"
@@ -11181,9 +11242,19 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "claimNo" : {
+            "type" : [ "string", "null" ]
+          },
           "createdAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "date" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "defectDescription" : {
+            "type" : [ "string", "null" ]
           },
           "defectQuantity" : {
             "type" : [ "number", "null" ]
@@ -11314,6 +11385,9 @@
           "photoId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "photoType" : {
+            "type" : [ "string", "null" ]
           },
           "url" : {
             "type" : "string"
@@ -33171,6 +33245,14 @@
           "required" : false,
           "schema" : {
             "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         } ],
         "responses" : {
