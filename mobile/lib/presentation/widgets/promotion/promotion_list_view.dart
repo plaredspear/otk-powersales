@@ -284,6 +284,10 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         elevation: 0,
+        // 전역 테마의 minimumSize 가 Size.fromHeight(=너비 무한) 이라
+        // Row(Expanded 형제) 측정 시 무한 너비 제약을 받아 크래시가 난다.
+        // 검색 버튼은 콘텐츠 폭으로 들어가도록 minimumSize 를 유한값으로 덮어쓴다.
+        minimumSize: const Size(0, AppSpacing.buttonHeight),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.sm,
