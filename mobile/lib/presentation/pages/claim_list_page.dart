@@ -115,6 +115,8 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                minimumSize: const Size(48, 40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: const Icon(Icons.search, size: 20),
             ),
