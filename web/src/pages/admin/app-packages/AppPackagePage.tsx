@@ -95,9 +95,10 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
     try {
       // presigned URL 을 새로 발급받아 클립보드에 복사. URL 은 발급 시점부터 TTL 동안만 유효.
       const detail = await fetchAppPackageDetail(id);
-      await copyToClipboard(detail.downloadUrl);
       const ttl = detail.downloadUrlExpiresInSeconds;
-      const expiresAt = dayjs().add(ttl, 'second').format('HH:mm:ss');
+      const expiresAt = dayjs().add(ttl, 'second').format('YYYY-MM-DD HH:mm:ss');
+      // 첫 줄은 순수 URL(주소창 붙여넣기 호환), 둘째 줄은 만료 안내 주석.
+      await copyToClipboard(`${detail.downloadUrl}\n(${expiresAt}까지 유효 · ${formatTtl(ttl)})`);
       message.success(
         `다운로드 URL이 복사되었습니다 — ${formatTtl(ttl)}간 유효 (${expiresAt}까지)`,
       );

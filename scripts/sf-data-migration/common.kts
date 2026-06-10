@@ -887,6 +887,26 @@ val HOLIDAY_MASTER_METADATA = EntityMetadata(
     )
 )
 
+val WORKING_DAY_MASTER_METADATA = EntityMetadata(
+    targetName = "WorkingDayMaster",
+    sObjectName = "WorkingDayMaster__c",
+    tableName = "working_day_master",
+    pkColumn = "working_day_master_id",
+    conflictKey = "sfid",
+    fields = listOf(
+        FieldMapping("Id", "sfid", nullable = false),
+        FieldMapping("Name", "name"),
+        FieldMapping("WorkingDate__c", "working_date", isString = false),
+        FieldMapping("WorkingDateCheck__c", "working_date_check", isString = false),
+        FieldMapping("OwnerId", "owner_sfid"),
+        FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+        FieldMapping("IsDeleted", "is_deleted", isString = false)
+    )
+)
+
 val INSPECTION_THEME_METADATA = EntityMetadata(
     targetName = "InspectionTheme",
     sObjectName = "Theme__c",
@@ -1807,6 +1827,7 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "ErpOrder" to TargetSpec(ERP_ORDER_METADATA, "ERP_Order__c", "erp_orders.csv", "order/entity/ErpOrder"),
     "ErpOrderProduct" to TargetSpec(ERP_ORDER_PRODUCT_METADATA, "ERP_OrderProduct__c", "erp_order_products.csv", "order/entity/ErpOrderProduct"),
     "HolidayMaster" to TargetSpec(HOLIDAY_MASTER_METADATA, "HolidayMaster__c", "holiday_masters.csv", "leave/entity/HolidayMaster"),
+    "WorkingDayMaster" to TargetSpec(WORKING_DAY_MASTER_METADATA, "WorkingDayMaster__c", "working_day_masters.csv", "sales/entity/WorkingDayMaster"),
     "InspectionTheme" to TargetSpec(INSPECTION_THEME_METADATA, "Theme__c", "inspection_themes.csv", "inspection/entity/InspectionTheme"),
     "SiteActivity" to TargetSpec(SITE_ACTIVITY_METADATA, "DKRetail__SiteAcitivity__c", "site_activities.csv", "inspection/entity/SiteActivity"),
     "MonthlyFemaleEmployeeIntegrationSchedule" to TargetSpec(MONTHLY_FEMALE_EMPLOYEE_INTEGRATION_SCHEDULE_METADATA, "MonthlyFemaleEmployeeIntegrationSchedule__c", "monthly_female_employee_integration_schedules.csv", "schedule/entity/MonthlyFemaleEmployeeIntegrationSchedule"),
@@ -1857,6 +1878,7 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "ErpOrder",
     "ErpOrderProduct",
     "HolidayMaster",
+    "WorkingDayMaster",
     "InspectionTheme",
     "SiteActivity",
     "MonthlyFemaleEmployeeIntegrationSchedule",
@@ -1886,7 +1908,7 @@ val SUPPORTED_TARGETS = setOf(
     "Employee", "User", "Notice", "Permission", "AccountCategoryMaster",
     "AgreementHistory", "AgreementWord", "AlternativeHoliday", "Appointment", "AttendanceLog",
     "AttendInfo", "Claim", "DisplayWorkSchedule", "EmployeeInputCriteriaMaster",
-    "ErpOrder", "ErpOrderProduct", "HolidayMaster", "InspectionTheme", "SiteActivity",
+    "ErpOrder", "ErpOrderProduct", "HolidayMaster", "WorkingDayMaster", "InspectionTheme", "SiteActivity",
     "MonthlyFemaleEmployeeIntegrationSchedule", "MonthlySalesHistory", "DailySalesHistory", "SalesProgressRateMaster", "NewProduct", "OrderRequest", "OrderRequestProduct",
     "ProductBarcode", "ProfessionalPromotionTeamHistory", "ProfessionalPromotionTeamMaster", "PromotionEmployee", "PushMessage",
     "PushMessageReceiver", "TeamMemberSchedule", "UploadFile", "Suggestion",

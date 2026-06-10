@@ -32,6 +32,6 @@ interface WorkingDayMasterRepository : JpaRepository<WorkingDayMaster, Long> {
     fun countWorkingDays(
         @Param("start") start: LocalDate,
         @Param("end") end: LocalDate,
-        @Param("check") check: Int,
+        @Param("check") check: Double,
     ): Long
 }
