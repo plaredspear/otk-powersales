@@ -6,7 +6,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../providers/add_product_provider.dart';
 import '../../providers/add_product_state.dart';
-import '../common/range_calendar_picker.dart';
+import '../common/date_range_filter_field.dart';
 import 'product_card_for_add.dart';
 
 /// 주문 이력 탭
@@ -18,87 +18,25 @@ class OrderHistoryTab extends ConsumerWidget {
     required this.scrollController,
   });
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  /// 주문 이력 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
-  /// 조회 가능 기간은 주문 이력 조건(최근 1년 ~ 오늘)에 맞춘다. 범위 일수 제한은 없다.
-  Future<void> _pickDateRange(
-    BuildContext context,
-    AddProductState state,
-    AddProductNotifier notifier,
-  ) async {
-    final now = DateTime.now();
-    final picked = await showRangeCalendar(
-      context,
-      initialStart:
-          state.historyDateFrom ?? now.subtract(const Duration(days: 3)),
-      initialEnd: state.historyDateTo ?? now,
-      firstDate: now.subtract(const Duration(days: 365)),
-      lastDate: now,
-      maxRangeDays: null,
-    );
-    if (picked != null) {
-      notifier.setHistoryDateRange(picked.start, picked.end);
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(addProductProvider);
     final notifier = ref.read(addProductProvider.notifier);
+    final now = DateTime.now();
 
     return Column(
       children: [
-        // 날짜 범위 선택
+        // 기간(주문 현황 납기일과 동일한 인라인 UI). 조건: 최근 1년 ~ 오늘.
         Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickDateRange(context, state, notifier),
-                  icon: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(
-                    _formatDate(state.historyDateFrom),
-                    style: AppTypography.bodySmall,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusMd),
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                child: Text(
-                  '~',
-                  style: AppTypography.bodyMedium,
-                ),
-              ),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickDateRange(context, state, notifier),
-                  icon: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(
-                    _formatDate(state.historyDateTo),
-                    style: AppTypography.bodySmall,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusMd),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          child: DateRangeFilterField(
+            label: '기간',
+            startDate:
+                state.historyDateFrom ?? now.subtract(const Duration(days: 3)),
+            endDate: state.historyDateTo ?? now,
+            firstDate: now.subtract(const Duration(days: 365)),
+            lastDate: now,
+            onChanged: notifier.setHistoryDateRange,
           ),
         ),
         // 주문 이력 목록

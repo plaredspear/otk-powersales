@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/inspection_list_item.dart';
-import '../common/range_calendar_picker.dart';
+import '../common/date_range_filter_field.dart';
 
 /// 현장점검 검색 필터 바
 ///
@@ -173,61 +172,20 @@ class InspectionFilterBar extends StatelessWidget {
   }
 
   Widget _buildDateRange(BuildContext context) {
-    final dateFormat = DateFormat('yyyy-MM-dd');
-
     return Row(
       children: [
-        Text(
-          '점검일',
-          style: AppTypography.labelLarge.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: GestureDetector(
-            onTap: () => _selectDateRange(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: AppSpacing.inputBorderRadius,
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(
-                dateFormat.format(fromDate),
-                style: AppTypography.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-          child: Text('~'),
-        ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => _selectDateRange(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: AppSpacing.inputBorderRadius,
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(
-                dateFormat.format(toDate),
-                style: AppTypography.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-            ),
+          // 주문 현황 납기일과 동일한 인라인 기간 UI. 현장점검 조건(2020~2030)을 적용한다.
+          child: DateRangeFilterField(
+            label: '점검일',
+            startDate: fromDate,
+            endDate: toDate,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2030),
+            onChanged: (start, end) {
+              onFromDateChanged(start);
+              onToDateChanged(end);
+            },
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
@@ -257,20 +215,4 @@ class InspectionFilterBar extends StatelessWidget {
     );
   }
 
-  /// 점검일 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
-  /// 조회 가능 기간은 현장점검 조건(2020 ~ 2030)에 맞춘다. 범위 일수 제한은 없다.
-  Future<void> _selectDateRange(BuildContext context) async {
-    final picked = await showRangeCalendar(
-      context,
-      initialStart: fromDate,
-      initialEnd: toDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      maxRangeDays: null,
-    );
-    if (picked != null) {
-      onFromDateChanged(picked.start);
-      onToDateChanged(picked.end);
-    }
-  }
 }

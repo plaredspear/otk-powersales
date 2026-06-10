@@ -10,8 +10,8 @@ import '../../../domain/entities/my_account.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/promotion_list_provider.dart';
 import '../../providers/promotion_list_state.dart';
+import '../common/date_range_filter_field.dart';
 import '../common/loading_indicator.dart';
-import '../common/range_calendar_picker.dart';
 import 'promotion_card.dart';
 
 /// 행사 목록 본문 위젯 (AppBar 없는 임베드 가능 형태).
@@ -85,27 +85,6 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
     final picked = await _showPicker(context, state.startDate);
     if (picked != null) {
       ref.read(promotionListProvider.notifier).updateSingleDate(picked);
-    }
-  }
-
-  /// 기간 시작일~종료일을 클레임 현황과 동일한 달력 모달로 선택한다(조장/지점장).
-  /// 조회 가능 기간은 행사 조건(2020 ~ 2030)에 맞추고,
-  /// 레거시 daterangepicker maxSpan 정합으로 최대 30일까지만 선택할 수 있다.
-  Future<void> _pickDateRange(BuildContext context) async {
-    final state = ref.read(promotionListProvider);
-    final picked = await showRangeCalendar(
-      context,
-      initialStart: DateTime.parse(state.startDate),
-      initialEnd: DateTime.parse(state.endDate),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      maxRangeDays: 30,
-    );
-    if (picked != null) {
-      ref.read(promotionListProvider.notifier).updateDateRange(
-            _fmtDate(picked.start),
-            _fmtDate(picked.end),
-          );
     }
   }
 
@@ -246,19 +225,17 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              Text('기간  ',
-                  style: AppTypography.bodyMedium
-                      .copyWith(color: AppColors.textSecondary)),
-              _buildDateButton(state.startDate,
-                  () => throttledTap(() => _pickDateRange(context))),
-              Text(' ~ ',
-                  style: AppTypography.bodyMedium
-                      .copyWith(color: AppColors.textSecondary)),
-              _buildDateButton(state.endDate,
-                  () => throttledTap(() => _pickDateRange(context))),
-            ],
+          // 주문 현황 납기일과 동일한 인라인 기간 UI. 행사 조건(최대 30일)을 적용한다.
+          DateRangeFilterField(
+            label: '기간',
+            startDate: DateTime.parse(state.startDate),
+            endDate: DateTime.parse(state.endDate),
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2030),
+            maxRangeDays: 30,
+            onChanged: (start, end) => ref
+                .read(promotionListProvider.notifier)
+                .updateDateRange(_fmtDate(start), _fmtDate(end)),
           ),
         ],
       ),

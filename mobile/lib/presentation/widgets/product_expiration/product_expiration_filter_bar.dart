@@ -156,7 +156,7 @@ class ProductExpirationFilterBar extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onTap: () => _selectDateRange(context),
               child: Text(
-                '${dateFormat.format(fromDate)} - ${dateFormat.format(toDate)}',
+                '${dateFormat.format(fromDate)} ~ ${dateFormat.format(toDate)}',
                 style: AppTypography.bodyMedium
                     .copyWith(color: AppColors.textPrimary),
               ),
