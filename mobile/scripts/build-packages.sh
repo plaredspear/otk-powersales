@@ -14,7 +14,7 @@
 # 사용 예:
 #   mobile/scripts/build-packages.sh                      # 대화형(버전·범위 질문)
 #   mobile/scripts/build-packages.sh --platform all --env dev --bump patch
-#   mobile/scripts/build-packages.sh --platform ios --env prod --bump keep --no-commit
+#   mobile/scripts/build-packages.sh --platform ios --env prod --bump patch --no-commit
 #
 set -euo pipefail
 
@@ -27,7 +27,7 @@ cd "$MOBILE_DIR"
 # ── 인자 파싱 ────────────────────────────────────────────────────────
 PLATFORM=""        # ios | android | all
 ENV=""             # dev | prod | all
-BUMP=""            # keep | patch | minor | major | <X.Y.Z>
+BUMP=""            # patch | minor | major | <X.Y.Z>
 DO_COMMIT="yes"
 DO_TAG="yes"
 
@@ -90,23 +90,21 @@ case "$ENV" in dev|prod|all) ;; *) err "env 는 dev|prod|all 중 하나" ;; esac
 if [[ -z "$BUMP" ]]; then
   echo ""
   echo "versionName 변경 방식:"
-  echo "  keep   = 유지 ($CURRENT_NAME)"
   echo "  patch  = ${CURRENT_NAME%.*}.$(( ${CURRENT_NAME##*.} + 1 ))"
   IFS='.' read -r MA MI PA <<< "$CURRENT_NAME"
   echo "  minor  = $MA.$(( MI + 1 )).0"
   echo "  major  = $(( MA + 1 )).0.0"
   echo "  또는 X.Y.Z 직접 입력"
-  BUMP="$(ask 'bump (keep/patch/minor/major/X.Y.Z)' 'keep')"
+  BUMP="$(ask 'bump (patch/minor/major/X.Y.Z)' 'patch')"
 fi
 
 IFS='.' read -r MA MI PA <<< "$CURRENT_NAME"
 case "$BUMP" in
-  keep)  NEW_NAME="$CURRENT_NAME" ;;
   patch) NEW_NAME="$MA.$MI.$(( PA + 1 ))" ;;
   minor) NEW_NAME="$MA.$(( MI + 1 )).0" ;;
   major) NEW_NAME="$(( MA + 1 )).0.0" ;;
   *)
-    [[ "$BUMP" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || err "bump 값이 keep|patch|minor|major|X.Y.Z 형식이 아닙니다: $BUMP"
+    [[ "$BUMP" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || err "bump 값이 patch|minor|major|X.Y.Z 형식이 아닙니다: $BUMP"
     NEW_NAME="$BUMP" ;;
 esac
 
@@ -181,22 +179,62 @@ for e in "${ENVS[@]}"; do
   fi
 done
 
+# ── 산출물을 공통 폴더(build/dist)로 수집 ───────────────────────────
+#   빌드는 Flutter 기본 위치에 생성되고(원본 보존), 여기서 build/dist 로 복사하며
+#   <base>-<flavor>-<version> 으로 파일명을 정규화한다. flavor·버전이 파일명에
+#   들어가므로 dev/prod·여러 버전 산출물이 한 폴더에서 공존한다.
+DIST_DIR="$MOBILE_DIR/build/dist"
+mkdir -p "$DIST_DIR"
+for e in "${ENVS[@]}"; do
+  if [[ "$PLATFORM" == "ios" || "$PLATFORM" == "all" ]]; then
+    src="build/ios/ipa-$e/mobile.ipa"
+    [[ -f "$src" ]] && cp -f "$src" "$DIST_DIR/mobile-$e-$NEW_VERSION.ipa"
+  fi
+  if [[ "$PLATFORM" == "android" || "$PLATFORM" == "all" ]]; then
+    src="build/app/outputs/flutter-apk/app-$e-release.apk"
+    [[ -f "$src" ]] && cp -f "$src" "$DIST_DIR/app-$e-$NEW_VERSION.apk"
+  fi
+done
+
 # ── 산출물 경로 출력 ─────────────────────────────────────────────────
 echo ""
 ok "빌드 완료: ${BUILT[*]}"
-echo "── 산출물 ──"
-[[ -d build/ios/ipa ]] && ls -la build/ios/ipa/*.ipa 2>/dev/null | sed 's/^/  /' || true
-[[ -d build/app/outputs/flutter-apk ]] && ls -la build/app/outputs/flutter-apk/*.apk 2>/dev/null | sed 's/^/  /' || true
+echo "── 산출물 (build/dist) ──"
+ls -la "$DIST_DIR"/*-"$NEW_VERSION".{ipa,apk} 2>/dev/null | sed 's/^/  /' || true
 
 # ── 커밋 + 태그 ──────────────────────────────────────────────────────
 if [[ "$DO_COMMIT" == "yes" ]]; then
   git add "$PUBSPEC"
-  # 릴리즈 노트 확정본이 있으면 함께 커밋한다.
+  COMMIT_SUBJECT="chore(mobile): bump version to $NEW_VERSION"
+  # 릴리즈 노트 확정본이 있으면 함께 커밋하고, 그 내용을 축약해 커밋 본문에 포함한다.
+  COMMIT_BODY=""
   if [[ -f "$RELEASE_NOTES_FILE" ]]; then
     git add "$RELEASE_NOTES_FILE"
+    # 마크다운을 커밋 본문용으로 축약:
+    #   - '# 제목' 라인 제외(버전은 subject 에 이미 있음)
+    #   - '## 섹션' → '[섹션]' 라벨, 섹션별 항목은 최대 4개 + '- 외 N건'
+    #   - 그 외 '- 항목' 은 유지, 빈 줄/기타 텍스트는 제외
+    COMMIT_BODY="$(awk '
+      function flush(  i) {
+        if (sec != "") {
+          printf "\n[%s]\n", sec
+          for (i = 1; i <= n && i <= 4; i++) print items[i]
+          if (n > 4) printf "- 외 %d건\n", n - 4
+        }
+      }
+      /^#[^#]/     { next }
+      /^##[ \t]/   { flush(); sub(/^##[ \t]*/, ""); sec=$0; n=0; next }
+      /^[-*][ \t]/ { sub(/^[-*][ \t]*/, "- "); n++; items[n]=$0; next }
+                   { next }
+      END          { flush() }
+    ' "$RELEASE_NOTES_FILE")"
   fi
-  git commit -m "chore(mobile): bump version to $NEW_VERSION" >/dev/null
-  ok "커밋: chore(mobile): bump version to $NEW_VERSION"
+  if [[ -n "$COMMIT_BODY" ]]; then
+    git commit -m "$COMMIT_SUBJECT" -m "$COMMIT_BODY" >/dev/null
+  else
+    git commit -m "$COMMIT_SUBJECT" >/dev/null
+  fi
+  ok "커밋: $COMMIT_SUBJECT"
   if [[ "$DO_TAG" == "yes" ]]; then
     TAG="mobile-v$NEW_VERSION"
     git tag "$TAG"
