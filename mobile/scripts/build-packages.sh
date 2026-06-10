@@ -118,18 +118,37 @@ echo ""
 info "새 버전: $NEW_VERSION  (versionName $CURRENT_NAME → $NEW_NAME, versionCode $CURRENT_CODE → $NEW_CODE)"
 info "빌드 대상: platform=$PLATFORM, env=$ENV"
 
-# ── 릴리즈 노트 초안 (직전 버전 태그 이후 mobile/ 커밋) ──────────────
+# ── 릴리즈 노트 (feat/fix 만 — 사용자=영업사원 관점) ─────────────────
+# 규칙:
+#   - 포함 타입: feat, fix 만 (build/chore/refactor/style/test 는 내부 변경이라 제외)
+#   - 최종 문구는 사용자 친화 표현으로 다듬어야 함(AI 번역). 스크립트는 원커밋
+#     기반 골격만 생성하고, /build-packages 커맨드가 이를 다듬어 확정한다.
+#   - 저장: mobile/release-notes/<X.Y.Z+N>.md (git 커밋), 업로드 시 releaseNote 로 사용.
+RELEASE_NOTES_DIR="$MOBILE_DIR/release-notes"
+RELEASE_NOTES_FILE="$RELEASE_NOTES_DIR/$NEW_VERSION.md"
 LAST_TAG="$(git tag --list 'mobile-v*' --sort=-creatordate | head -1 || true)"
+if [[ -n "$LAST_TAG" ]]; then RANGE="$LAST_TAG..HEAD"; else RANGE=""; fi
+
 echo ""
-echo "── 릴리즈 노트 초안 (mobile/ 변경) ──"
-if [[ -n "$LAST_TAG" ]]; then
-  echo "  범위: $LAST_TAG..HEAD"
-  git log --oneline "$LAST_TAG..HEAD" -- mobile/ 2>/dev/null | sed 's/^/  - /' || echo "  (없음)"
+if [[ -f "$RELEASE_NOTES_FILE" ]]; then
+  # /build-packages 커맨드가 미리 작성·확정한 릴리즈 노트가 있으면 그대로 사용.
+  echo "── 릴리즈 노트 (확정본 사용) ── $RELEASE_NOTES_FILE"
+  sed 's/^/  /' "$RELEASE_NOTES_FILE"
 else
-  echo "  (이전 버전 태그 없음 — 최근 mobile/ 커밋 10건)"
-  git log --oneline -10 -- mobile/ 2>/dev/null | sed 's/^/  - /' || echo "  (없음)"
+  # 골격 자동 생성: feat/fix 만 추출. 문구 다듬기는 별도(커맨드).
+  echo "── 릴리즈 노트 초안 (feat/fix, 골격) ──"
+  if [[ -n "$RANGE" ]]; then echo "  범위: $RANGE"; else echo "  (이전 버전 태그 없음 — 전체 mobile/ 이력)"; fi
+  # cwd 가 mobile/ 이므로 pathspec 은 '.' (현재 디렉토리 = mobile/)
+  FEATFIX="$(git log --pretty=format:'%s' ${RANGE} -- . 2>/dev/null \
+    | grep -E '^(feat|fix)(\(.*\))?(!)?:' || true)"
+  if [[ -z "$FEATFIX" ]]; then
+    echo "  (feat/fix 커밋 없음)"
+  else
+    echo "$FEATFIX" | sed -E 's/^(feat|fix)(\(.*\))?(!)?:[[:space:]]*/  - /'
+  fi
+  echo "  ※ 위는 원커밋 골격. 사용자 친화 문구로 다듬어 다음 파일에 저장 권장:"
+  echo "     $RELEASE_NOTES_FILE  (업로드 시 releaseNote 로 사용)"
 fi
-echo "  ※ 릴리즈 노트 최종 확정은 별도 — 업로드 시 releaseNote 로 입력"
 echo ""
 
 # ── 확인 ─────────────────────────────────────────────────────────────
@@ -172,6 +191,10 @@ echo "── 산출물 ──"
 # ── 커밋 + 태그 ──────────────────────────────────────────────────────
 if [[ "$DO_COMMIT" == "yes" ]]; then
   git add "$PUBSPEC"
+  # 릴리즈 노트 확정본이 있으면 함께 커밋한다.
+  if [[ -f "$RELEASE_NOTES_FILE" ]]; then
+    git add "$RELEASE_NOTES_FILE"
+  fi
   git commit -m "chore(mobile): bump version to $NEW_VERSION" >/dev/null
   ok "커밋: chore(mobile): bump version to $NEW_VERSION"
   if [[ "$DO_TAG" == "yes" ]]; then
