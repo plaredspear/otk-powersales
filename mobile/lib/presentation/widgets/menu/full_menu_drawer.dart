@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../app_router.dart';
 import '../../../core/constants/menu_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/menu_item.dart' as domain;
 import '../../providers/auth_provider.dart';
 import '../home/activity_registration_popup.dart';
@@ -80,6 +82,8 @@ class FullMenuDrawer extends ConsumerWidget {
                   ),
                 ),
               ),
+              // 하단 현재 버전 표시
+              const _MenuVersionFooter(),
             ],
           ),
         ),
@@ -152,4 +156,39 @@ class FullMenuDrawer extends ConsumerWidget {
     }
   }
 
+}
+
+/// 전체메뉴 하단에 현재 앱 버전을 표시하는 푸터.
+///
+/// pubspec.yaml 의 version(예: 1.0.1+3) 을 package_info_plus 로 읽어
+/// "버전 1.0.1" 형태로 노출한다(빌드번호는 앱 정보 화면에서 확인).
+class _MenuVersionFooter extends StatelessWidget {
+  const _MenuVersionFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.divider)),
+        ),
+        child: FutureBuilder<PackageInfo>(
+          future: PackageInfo.fromPlatform(),
+          builder: (context, snapshot) {
+            final version = snapshot.data?.version;
+            return Text(
+              version != null ? '버전 $version' : '',
+              textAlign: TextAlign.center,
+              style: AppTypography.labelSmall.copyWith(
+                color: AppColors.textTertiary,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
