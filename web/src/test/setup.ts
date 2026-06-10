@@ -7,8 +7,14 @@ import userEvent from '@testing-library/user-event';
 // 옵션을 delay: null 로 패치해 입력 시뮬레이션의 인위적 지연을 제거한다.
 // userEvent.type/click 등 default export 직접 호출도 내부적으로 이 setup 을 거치므로 함께 적용된다.
 const originalSetup = userEvent.setup.bind(userEvent);
-userEvent.setup = ((options = {}) =>
-  originalSetup({ delay: null, ...options })) as typeof userEvent.setup;
+// userEvent.setup 은 타입상 read-only 라 직접 재할당하면 TS2540 이 발생한다.
+// defineProperty 로 덮어써 동일한 런타임 패치를 적용한다.
+Object.defineProperty(userEvent, 'setup', {
+  configurable: true,
+  writable: true,
+  value: ((options = {}) =>
+    originalSetup({ delay: null, ...options })) as typeof userEvent.setup,
+});
 
 // jsdom 에는 matchMedia 가 없으므로 antd 등의 라이브러리가 사용할 수 있도록 stub 을 제공한다.
 if (typeof window !== 'undefined' && !window.matchMedia) {
