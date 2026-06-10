@@ -81,20 +81,19 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
     }
   };
 
-  // iOS OTA 설치 안내 페이지(https) URL. 공유 가능한 평범한 https 라 카톡/문자에서 클릭되고,
-  // 페이지 내 버튼이 Safari 컨텍스트에서 itms-services 를 호출해 설치를 시작한다.
-  const iosInstallPageUrl = (id: number) =>
-    `${window.location.origin}/api/v1/mobile/app-package/ios/install?id=${id}`;
-
   const handleDownload = async (id: number) => {
     try {
-      // iOS 는 .ipa 직접 다운로드로 설치 불가. https 설치 안내 페이지를 새 탭으로 연다.
+      const detail = await fetchAppPackageDetail(id);
+      // iOS 는 .ipa 직접 다운로드로 설치 불가. 고정 OTA 설치 안내 페이지(API public 도메인)를 새 탭으로 연다.
       if (platform === 'IOS') {
-        window.open(iosInstallPageUrl(id), '_blank', 'noopener');
+        if (!detail.iosInstallUrl) {
+          message.warning('설치 링크를 사용할 수 없습니다 (API 도메인 미설정 환경)');
+          return;
+        }
+        window.open(detail.iosInstallUrl, '_blank', 'noopener');
         return;
       }
-      // Android: 목록엔 URL 이 없으므로 상세 조회로 presigned 다운로드 URL 발급 후 새 탭 열기.
-      const detail = await fetchAppPackageDetail(id);
+      // Android: presigned 다운로드 URL 을 새 탭으로 연다.
       window.open(detail.downloadUrl, '_blank', 'noopener');
     } catch (e) {
       message.error(e instanceof Error ? e.message : '다운로드 URL 발급에 실패했습니다');
@@ -103,16 +102,20 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
 
   const handleCopyUrl = async (id: number) => {
     try {
-      // iOS 는 https 설치 안내 페이지 URL 을 복사한다. 카톡/문자/메일로 공유하면 받는 사람이
-      // 클릭 → Safari 로 열림 → 페이지 내 "설치" 버튼으로 OTA 설치. 링크는 만료되지 않는다
-      // (IPA presigned URL 은 manifest fetch 시점에 새로 발급). (PC 관리자 → 영업사원 전달 시나리오)
+      const detail = await fetchAppPackageDetail(id);
+      // iOS 는 고정 설치 안내 페이지 URL(API public 도메인)을 복사한다. 새 버전 배포 후 "최신 지정"만
+      // 하면 같은 링크가 신버전을 가리키므로 사번 전체에 1회만 공지하면 된다. 카톡/문자로 공유하면
+      // 받는 사람이 클릭 → Safari → "설치" 버튼으로 OTA 설치. 링크는 만료되지 않는다.
       if (platform === 'IOS') {
-        await copyToClipboard(iosInstallPageUrl(id));
-        message.success('설치 링크가 복사되었습니다 — iPhone 으로 공유하면 클릭만으로 설치됩니다');
+        if (!detail.iosInstallUrl) {
+          message.warning('설치 링크를 사용할 수 없습니다 (API 도메인 미설정 환경)');
+          return;
+        }
+        await copyToClipboard(detail.iosInstallUrl);
+        message.success('고정 설치 링크가 복사되었습니다 — 사번 전체에 공지해 설치할 수 있습니다');
         return;
       }
       // Android: presigned URL 을 새로 발급받아 클립보드에 복사. URL 은 발급 시점부터 TTL 동안만 유효.
-      const detail = await fetchAppPackageDetail(id);
       const ttl = detail.downloadUrlExpiresInSeconds;
       const expiresAt = dayjs().add(ttl, 'second').format('YYYY-MM-DD HH:mm:ss');
       // 첫 줄은 순수 URL(주소창 붙여넣기 호환), 둘째 줄은 만료 안내 주석.
@@ -176,11 +179,11 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
       render: (_: unknown, r) => (
         <Space>
           <Tooltip
-            title={platform === 'IOS' ? '설치 안내 페이지 열기 (iPhone Safari)' : '다운로드 (새 탭)'}
+            title={platform === 'IOS' ? '고정 설치 페이지 열기 (항상 최신, iPhone Safari)' : '다운로드 (새 탭)'}
           >
             <Button size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(r.id)} />
           </Tooltip>
-          <Tooltip title={platform === 'IOS' ? '설치 링크 복사 (iPhone 공유용)' : '다운로드 URL 복사'}>
+          <Tooltip title={platform === 'IOS' ? '고정 설치 링크 복사 (대규모 공지용)' : '다운로드 URL 복사'}>
             <Button size="small" icon={<CopyOutlined />} onClick={() => handleCopyUrl(r.id)} />
           </Tooltip>
           {!r.isLatest && (

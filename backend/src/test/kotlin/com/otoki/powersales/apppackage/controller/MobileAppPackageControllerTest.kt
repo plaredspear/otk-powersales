@@ -82,4 +82,28 @@ class MobileAppPackageControllerTest : MobileControllerTestSupport() {
             .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
             .andExpect(content().string(html))
     }
+
+    @Test
+    @DisplayName("iOS latest manifest — id 없이 최신 버전")
+    fun iosLatestManifest() {
+        val xml = "<?xml version=\"1.0\"?><plist></plist>"
+        every { mobileAppPackageService.buildLatestIosManifest() } returns xml
+
+        mockMvc.perform(get("/api/v1/mobile/app-package/ios/manifest.plist/latest"))
+            .andExpect(status().isOk)
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML))
+            .andExpect(content().string(xml))
+    }
+
+    @Test
+    @DisplayName("iOS latest 설치 페이지 — 고정 링크, id 불필요")
+    fun iosLatestInstallPage() {
+        val html = "<!DOCTYPE html><html><body>최신 설치</body></html>"
+        every { mobileAppPackageService.buildLatestIosInstallPage(any()) } returns html
+
+        mockMvc.perform(get("/api/v1/mobile/app-package/ios/install/latest"))
+            .andExpect(status().isOk)
+            .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+            .andExpect(content().string(html))
+    }
 }

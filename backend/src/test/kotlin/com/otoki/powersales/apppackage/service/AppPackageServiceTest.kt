@@ -9,6 +9,7 @@ import com.otoki.powersales.apppackage.exception.AppPackageFileRequiredException
 import com.otoki.powersales.apppackage.exception.AppPackageInvalidExtensionException
 import com.otoki.powersales.apppackage.exception.AppPackageNotFoundException
 import com.otoki.powersales.apppackage.repository.AppPackageRepository
+import com.otoki.powersales.common.config.DomainProperties
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadResult
 import io.mockk.every
@@ -35,8 +36,12 @@ class AppPackageServiceTest {
     // APK 추출은 실제 .apk 바이트 생성이 어려워 mock. 기본은 추출 실패(null) → 입력값 fallback.
     private val apkMetadataExtractor = mockk<ApkMetadataExtractor>()
 
+    private val domainProperties = DomainProperties(api = "dev-powersalesapi.otoki.com", admin = "dev-admin.otoki.com")
+
     private val adminService =
-        AdminAppPackageService(repository, storageService, ipaMetadataExtractor, apkMetadataExtractor)
+        AdminAppPackageService(
+            repository, storageService, ipaMetadataExtractor, apkMetadataExtractor, domainProperties,
+        )
     private val mobileService =
         MobileAppPackageService(repository, storageService, manifestPlistBuilder, iosInstallPageBuilder)
 
@@ -374,6 +379,74 @@ class AppPackageServiceTest {
             assertThat(xml).doesNotContain("Signature=abc&X-Amz-Date") // raw & 가 남으면 안 됨
             assertThat(xml).contains("<key>bundle-identifier</key><string>com.otoki.app</string>")
             assertThat(xml).contains("software-package")
+        }
+
+        @Test
+        @DisplayName("latest manifest — isLatest iOS 패키지로 생성")
+        fun latestManifestUsesLatestPackage() {
+            every { repository.findByPlatformAndIsLatestTrue(AppPlatform.IOS) } returns
+                entity(id = 9L, platform = AppPlatform.IOS, isLatest = true, bundleIdentifier = "com.otoki.app")
+            every { storageService.getPresignedUrl(any(), any()) } returns "https://s3/latest.ipa"
+
+            val xml = mobileService.buildLatestIosManifest()
+
+            assertThat(xml).contains("https://s3/latest.ipa")
+            assertThat(xml).contains("<key>bundle-identifier</key><string>com.otoki.app</string>")
+        }
+
+        @Test
+        @DisplayName("latest 설치 페이지 — manifest URL 이 /manifest.plist/latest 고정 경로")
+        fun latestInstallPagePointsToLatestManifest() {
+            every { repository.findByPlatformAndIsLatestTrue(AppPlatform.IOS) } returns
+                entity(id = 9L, platform = AppPlatform.IOS, isLatest = true, bundleIdentifier = "com.otoki.app")
+
+            val html = mobileService.buildLatestIosInstallPage("https://api.example.com")
+
+            // 고정 경로(id 없는 latest)가 itms-services url 파라미터에 인코딩되어 들어가야 함
+            assertThat(html).contains("manifest.plist%2Flatest")
+            assertThat(html).doesNotContain("manifest.plist%3Fid") // 특정 id 가 박히면 안 됨
+        }
+
+        @Test
+        @DisplayName("최신 iOS 패키지 부재 → AppPackageNotFoundException")
+        fun latestManifestThrowsWhenNoPackage() {
+            every { repository.findByPlatformAndIsLatestTrue(AppPlatform.IOS) } returns null
+            every { repository.findTopByPlatformOrderByVersionCodeDesc(AppPlatform.IOS) } returns null
+
+            assertThatThrownBy { mobileService.buildLatestIosManifest() }
+                .isInstanceOf(AppPackageNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("상세 조회 — iOS 고정 설치 URL")
+    inner class IosInstallUrl {
+
+        @Test
+        @DisplayName("iOS 상세는 API 도메인 기반 고정 latest 설치 URL 포함")
+        fun iosDetailIncludesInstallUrl() {
+            every { repository.findById(3L) } returns Optional.of(
+                entity(id = 3L, platform = AppPlatform.IOS, isLatest = true, bundleIdentifier = "com.otoki.app")
+            )
+            every { storageService.getPresignedUrl(any(), any()) } returns "https://s3/app.ipa"
+
+            val dto = adminService.getDetail(3L)
+
+            assertThat(dto.iosInstallUrl)
+                .isEqualTo("https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/ios/install/latest")
+        }
+
+        @Test
+        @DisplayName("Android 상세는 설치 URL null")
+        fun androidDetailHasNullInstallUrl() {
+            every { repository.findById(4L) } returns Optional.of(
+                entity(id = 4L, platform = AppPlatform.ANDROID, isLatest = true)
+            )
+            every { storageService.getPresignedUrl(any(), any()) } returns "https://s3/app.apk"
+
+            val dto = adminService.getDetail(4L)
+
+            assertThat(dto.iosInstallUrl).isNull()
         }
     }
 

@@ -12,6 +12,7 @@ import com.otoki.powersales.apppackage.exception.AppPackageInvalidExtensionExcep
 import com.otoki.powersales.apppackage.exception.AppPackageNotFoundException
 import com.otoki.powersales.apppackage.exception.AppPackageVersionRequiredException
 import com.otoki.powersales.apppackage.repository.AppPackageRepository
+import com.otoki.powersales.common.config.DomainProperties
 import com.otoki.powersales.common.storage.StorageConstants
 import com.otoki.powersales.common.storage.StorageService
 import org.springframework.data.domain.Page
@@ -27,6 +28,7 @@ class AdminAppPackageService(
     private val storageService: StorageService,
     private val ipaMetadataExtractor: IpaMetadataExtractor,
     private val apkMetadataExtractor: ApkMetadataExtractor,
+    private val domainProperties: DomainProperties,
 ) {
 
     fun list(platform: AppPlatform?, pageable: Pageable): Page<AppPackageListItemDto> {
@@ -41,7 +43,23 @@ class AdminAppPackageService(
     fun getDetail(id: Long): AppPackageDetailDto {
         val entity = appPackageRepository.findById(id).orElseThrow { AppPackageNotFoundException() }
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
-        return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+        return AppPackageDetailDto.from(
+            entity,
+            url,
+            StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS,
+            iosInstallUrl = iosInstallUrlOrNull(entity.platform),
+        )
+    }
+
+    /**
+     * iOS 패키지면 대규모 배포용 고정 설치 링크(API public 도메인, 항상 최신 버전)를 반환. Android 는 null.
+     * API 도메인 미설정(local)이면 null (web 은 이 경우 버튼을 비활성/숨김 처리).
+     */
+    private fun iosInstallUrlOrNull(platform: AppPlatform): String? {
+        if (platform != AppPlatform.IOS) return null
+        val apiDomain = domainProperties.api
+        if (apiDomain.isBlank()) return null
+        return MobileAppPackageService.iosLatestInstallPath("https://$apiDomain")
     }
 
     /**

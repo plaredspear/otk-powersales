@@ -27,6 +27,12 @@ export interface AppPackageDetail extends AppPackageListItem {
   downloadUrl: string;
   /** presigned 다운로드 URL 유효 시간(초). 복사 안내 문구의 만료 시각 계산에 사용. */
   downloadUrlExpiresInSeconds: number;
+  /**
+   * iOS 고정 OTA 설치 안내 페이지 URL (API public 도메인, 항상 최신 버전). Android 는 null.
+   * 대규모 배포용 — 사외 접근 가능한 mobile API 도메인이라 영업사원에게 공유하면 클릭 설치된다.
+   * API 도메인 미설정 환경(local)에서도 null.
+   */
+  iosInstallUrl: string | null;
 }
 
 export interface AppPackagePage {

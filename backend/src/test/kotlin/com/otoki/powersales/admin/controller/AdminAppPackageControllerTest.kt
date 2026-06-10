@@ -42,6 +42,7 @@ class AdminAppPackageControllerTest : AdminControllerTestSupport() {
             bundleIdentifier = null,
             downloadUrl = "https://s3/app.apk",
             downloadUrlExpiresInSeconds = 900,
+            iosInstallUrl = null,
             uploadedAt = LocalDateTime.of(2026, 6, 10, 12, 0),
         )
 

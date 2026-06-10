@@ -54,10 +54,21 @@ data class AppPackageDetailDto(
     val bundleIdentifier: String?,
     val downloadUrl: String,
     val downloadUrlExpiresInSeconds: Int,
+    /**
+     * iOS 고정 OTA 설치 안내 페이지 URL (mobile API public 도메인 기준, 항상 최신 버전).
+     * Android 는 null. web 은 이 값을 그대로 복사/공유한다 — web admin 도메인(IP whitelist)이
+     * 아니라 사외 접근 가능한 API 도메인이어야 영업사원이 설치할 수 있기 때문.
+     */
+    val iosInstallUrl: String?,
     val uploadedAt: LocalDateTime,
 ) {
     companion object {
-        fun from(e: AppPackage, downloadUrl: String, downloadUrlExpiresInSeconds: Int): AppPackageDetailDto =
+        fun from(
+            e: AppPackage,
+            downloadUrl: String,
+            downloadUrlExpiresInSeconds: Int,
+            iosInstallUrl: String? = null,
+        ): AppPackageDetailDto =
             AppPackageDetailDto(
                 id = e.id,
                 platform = e.platform,
@@ -71,6 +82,7 @@ data class AppPackageDetailDto(
                 bundleIdentifier = e.bundleIdentifier,
                 downloadUrl = downloadUrl,
                 downloadUrlExpiresInSeconds = downloadUrlExpiresInSeconds,
+                iosInstallUrl = iosInstallUrl,
                 uploadedAt = e.createdAt,
             )
     }

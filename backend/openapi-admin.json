@@ -7747,6 +7747,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "iosInstallUrl" : {
+            "type" : [ "string", "null" ]
+          },
           "latest" : {
             "type" : "boolean"
           },

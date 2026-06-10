@@ -6339,6 +6339,51 @@
         "tags" : [ "mobile-app-package-controller" ]
       }
     },
+    "/api/v1/mobile/app-package/ios/install" : {
+      "get" : {
+        "operationId" : "iosInstallPage",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/html;charset=UTF-8" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-app-package-controller" ]
+      }
+    },
+    "/api/v1/mobile/app-package/ios/install/latest" : {
+      "get" : {
+        "operationId" : "iosLatestInstallPage",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/html;charset=UTF-8" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-app-package-controller" ]
+      }
+    },
     "/api/v1/mobile/app-package/ios/manifest.plist" : {
       "get" : {
         "operationId" : "iosManifest",
@@ -6351,6 +6396,24 @@
             "type" : "integer"
           }
         } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/xml" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-app-package-controller" ]
+      }
+    },
+    "/api/v1/mobile/app-package/ios/manifest.plist/latest" : {
+      "get" : {
+        "operationId" : "iosLatestManifest",
         "responses" : {
           "200" : {
             "content" : {

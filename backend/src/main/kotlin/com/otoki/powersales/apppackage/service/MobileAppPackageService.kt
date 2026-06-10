@@ -25,9 +25,19 @@ class MobileAppPackageService(
     companion object {
         private const val IOS_INSTALL_TITLE = "오뚜기 파워세일즈"
 
-        /** iOS manifest.plist 엔드포인트 경로 (절대 URL 합성용). */
+        private const val IOS_BASE = "/api/v1/mobile/app-package/ios"
+
+        /** iOS manifest.plist 엔드포인트 경로 (특정 버전, 절대 URL 합성용). */
         fun iosManifestPath(baseUrl: String, id: Long): String =
-            "$baseUrl/api/v1/mobile/app-package/ios/manifest.plist?id=$id"
+            "$baseUrl$IOS_BASE/manifest.plist?id=$id"
+
+        /** iOS manifest.plist 엔드포인트 경로 (항상 최신 isLatest 버전). 고정 링크용. */
+        fun iosLatestManifestPath(baseUrl: String): String =
+            "$baseUrl$IOS_BASE/manifest.plist/latest"
+
+        /** iOS OTA 설치 안내 페이지 경로 (항상 최신 isLatest 버전). 고정 배포 링크. */
+        fun iosLatestInstallPath(baseUrl: String): String =
+            "$baseUrl$IOS_BASE/install/latest"
     }
 
     /**
@@ -73,21 +83,16 @@ class MobileAppPackageService(
     }
 
     /**
-     * iOS manifest.plist 동적 생성. 요청 시점에 IPA presigned URL 을 발급해 plist XML 에 주입한다.
+     * iOS manifest.plist 동적 생성(특정 버전). 요청 시점에 IPA presigned URL 을 발급해 plist XML 에 주입한다.
      */
-    fun buildIosManifest(id: Long): String {
-        val entity = appPackageRepository.findById(id).orElseThrow { AppPackageNotFoundException() }
-        val ipaUrl = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
-        return manifestPlistBuilder.build(
-            ipaUrl = ipaUrl,
-            bundleIdentifier = entity.bundleIdentifier ?: "",
-            bundleVersion = entity.versionName,
-            title = IOS_INSTALL_TITLE,
-        )
-    }
+    fun buildIosManifest(id: Long): String =
+        buildManifestFor(appPackageRepository.findById(id).orElseThrow { AppPackageNotFoundException() })
+
+    /** iOS manifest.plist 동적 생성(항상 최신 isLatest 버전). 고정 링크용. */
+    fun buildLatestIosManifest(): String = buildManifestFor(requireLatestIos())
 
     /**
-     * iOS OTA 설치 안내 HTML 페이지 생성. 공유 가능한 https URL 로 열려 페이지 내 버튼이
+     * iOS OTA 설치 안내 HTML 페이지 생성(특정 버전). 공유 가능한 https URL 로 열려 페이지 내 버튼이
      * Safari 컨텍스트에서 itms-services 를 호출하게 한다.
      *
      * @param baseUrl manifest 절대 URL 합성용 요청 기준 origin
@@ -100,6 +105,33 @@ class MobileAppPackageService(
             versionName = entity.versionName,
         )
     }
+
+    /**
+     * iOS OTA 설치 안내 HTML 페이지 생성(항상 최신 isLatest 버전). 고정 배포 링크가 가리키는 페이지.
+     * 새 버전 업로드 후 "최신 지정"만 하면 동일 링크가 신버전을 가리킨다.
+     */
+    fun buildLatestIosInstallPage(baseUrl: String): String {
+        val entity = requireLatestIos()
+        return iosInstallPageBuilder.build(
+            manifestUrl = iosLatestManifestPath(baseUrl),
+            title = IOS_INSTALL_TITLE,
+            versionName = entity.versionName,
+        )
+    }
+
+    private fun buildManifestFor(entity: AppPackage): String {
+        val ipaUrl = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+        return manifestPlistBuilder.build(
+            ipaUrl = ipaUrl,
+            bundleIdentifier = entity.bundleIdentifier ?: "",
+            bundleVersion = entity.versionName,
+            title = IOS_INSTALL_TITLE,
+        )
+    }
+
+    /** 최신 iOS 패키지. 없으면 NotFound (아직 배포본이 없는 상태). */
+    private fun requireLatestIos(): AppPackage =
+        resolveLatest(AppPlatform.IOS) ?: throw AppPackageNotFoundException()
 
     private fun resolveLatest(platform: AppPlatform): AppPackage? =
         appPackageRepository.findByPlatformAndIsLatestTrue(platform)
