@@ -4,10 +4,19 @@ platform :ios, '13.0'
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
+# dev/prod flavor 별 build configuration 을 CocoaPods 가 인식하도록 매핑.
+# (Xcode 에서 Debug-dev/Release-dev/Profile-dev, Debug-prod/Release-prod/Profile-prod
+#  6개 configuration 을 생성한 뒤 pod install 하면 적용된다.)
 project 'Runner', {
   'Debug' => :debug,
   'Profile' => :release,
   'Release' => :release,
+  'Debug-dev' => :debug,
+  'Profile-dev' => :release,
+  'Release-dev' => :release,
+  'Debug-prod' => :debug,
+  'Profile-prod' => :release,
+  'Release-prod' => :release,
 }
 
 def flutter_root

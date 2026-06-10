@@ -1,0 +1,5 @@
+// prod flavor — Release 빌드.
+#include "Release.xcconfig"
+
+PRODUCT_BUNDLE_IDENTIFIER = com.otoki.pwrs.mobile
+APP_DISPLAY_NAME = 파워세일즈

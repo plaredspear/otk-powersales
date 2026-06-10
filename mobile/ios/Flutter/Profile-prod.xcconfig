@@ -1,0 +1,5 @@
+// prod flavor — Profile 빌드 (Release 계열 설정 상속).
+#include "Release.xcconfig"
+
+PRODUCT_BUNDLE_IDENTIFIER = com.otoki.pwrs.mobile
+APP_DISPLAY_NAME = 파워세일즈

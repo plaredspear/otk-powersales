@@ -1,0 +1,7 @@
+// dev flavor — Debug 빌드.
+// 기존 Debug.xcconfig (Generated.xcconfig + Pods-Runner.debug 포함) 를 그대로 상속하고
+// 환경 식별 변수만 덮어쓴다.
+#include "Debug.xcconfig"
+
+PRODUCT_BUNDLE_IDENTIFIER = com.otoki.pwrs.mobile.dev
+APP_DISPLAY_NAME = 파워세일즈(개발)

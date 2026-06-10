@@ -19,7 +19,7 @@ phases:
       - flutter pub get
       - |
         mkdir -p config
-        cat > config/prod.json << EOF
+        cat > config/dev.json << EOF
         {
           "BASE_URL": "$BASE_URL",
           "ENV": "$ENV"
@@ -28,11 +28,13 @@ phases:
 
   build:
     commands:
+      # ENV=dev 이므로 dev flavor 로 빌드. flavor 빌드 산출물명은 app-<flavor>-release.apk.
       - flutter build apk
           --release
-          --dart-define-from-file=config/prod.json
+          --flavor dev
+          --dart-define-from-file=config/dev.json
 
 artifacts:
   files:
-    - build/app/outputs/flutter-apk/app-release.apk
+    - build/app/outputs/flutter-apk/app-dev-release.apk
   discard-paths: yes

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Enterprise In-House 배포용 export 옵션 (prod flavor / com.otoki.pwrs.mobile). -->
+    <key>method</key>
+    <string>enterprise</string>
+    <key>teamID</key>
+    <string>D8ZNVVY6TN</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <!-- 아래 provisioning profile 이름은 Apple Developer 포털에서 생성한
+         In-House Distribution 프로파일 이름과 정확히 일치해야 한다. -->
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.otoki.pwrs.mobile</key>
+        <string>Otoki PowerSales InHouse</string>
+    </dict>
+    <key>compileBitcode</key>
+    <false/>
+    <key>stripSwiftSymbols</key>
+    <true/>
+    <key>uploadSymbols</key>
+    <true/>
+</dict>
+</plist>
