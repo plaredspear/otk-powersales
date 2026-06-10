@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Card, Popconfirm, Space, Switch, Tabs, Tag, Tooltip, message } from 'antd';
-import { PlusOutlined, DownloadOutlined, CrownOutlined } from '@ant-design/icons';
+import { PlusOutlined, DownloadOutlined, CrownOutlined, CopyOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -19,6 +19,32 @@ function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** presigned URL 유효시간(초)을 "N분"/"N초" 등 사람이 읽는 문구로 변환. */
+function formatTtl(seconds: number): string {
+  if (seconds % 3600 === 0) return `${seconds / 3600}시간`;
+  if (seconds % 60 === 0) return `${seconds / 60}분`;
+  return `${seconds}초`;
+}
+
+/** navigator.clipboard 미지원(비 HTTPS 등) 환경 대비 fallback 복사. */
+async function copyToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+  } finally {
+    document.body.removeChild(ta);
+  }
 }
 
 function PlatformTable({ platform }: { platform: AppPlatform }) {
@@ -62,6 +88,21 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
       window.open(detail.downloadUrl, '_blank', 'noopener');
     } catch (e) {
       message.error(e instanceof Error ? e.message : '다운로드 URL 발급에 실패했습니다');
+    }
+  };
+
+  const handleCopyUrl = async (id: number) => {
+    try {
+      // presigned URL 을 새로 발급받아 클립보드에 복사. URL 은 발급 시점부터 TTL 동안만 유효.
+      const detail = await fetchAppPackageDetail(id);
+      await copyToClipboard(detail.downloadUrl);
+      const ttl = detail.downloadUrlExpiresInSeconds;
+      const expiresAt = dayjs().add(ttl, 'second').format('HH:mm:ss');
+      message.success(
+        `다운로드 URL이 복사되었습니다 — ${formatTtl(ttl)}간 유효 (${expiresAt}까지)`,
+      );
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'URL 복사에 실패했습니다');
     }
   };
 
@@ -112,11 +153,14 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
     {
       title: '액션',
       key: 'action',
-      width: 220,
+      width: 260,
       render: (_: unknown, r) => (
         <Space>
-          <Tooltip title="다운로드 URL 발급">
+          <Tooltip title="다운로드 (새 탭)">
             <Button size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(r.id)} />
+          </Tooltip>
+          <Tooltip title="다운로드 URL 복사">
+            <Button size="small" icon={<CopyOutlined />} onClick={() => handleCopyUrl(r.id)} />
           </Tooltip>
           {!r.isLatest && (
             <Tooltip title="최신 버전으로 지정">
