@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 
 import 'suggestion_logistics_claim_fields.dart';
 
-/// 제안하기 사진 첨부 필드 (최대 2장)
+/// 제안하기 사진 첨부 필드 (최대 2장, 레거시 suggestWrite.jsp 정합)
+///
+/// 라벨 우측에 "+ 사진 선택" pill 버튼을 두고, 미첨부 시 "사진 선택" 플레이스홀더,
+/// 첨부 시 썸네일 목록을 평면 행으로 노출한다.
 class SuggestionPhotoField extends StatelessWidget {
   const SuggestionPhotoField({
     super.key,
@@ -25,46 +28,32 @@ class SuggestionPhotoField extends StatelessWidget {
   Widget build(BuildContext context) {
     final canAddPhoto = photos.length < 2;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SuggestionFieldLabel(text: '사진 (최대 2장)', required: required),
-        const SizedBox(height: 8),
-
-        // 사진 목록 + 추가 버튼
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            // 기존 사진들
-            ...List.generate(photos.length, (index) {
-              return _PhotoItem(
-                photo: photos[index],
-                onRemove: () => onRemovePhoto(index),
-              );
-            }),
-
-            // 사진 추가 버튼
-            if (canAddPhoto)
-              _AddPhotoButton(
-                onPressed: onAddPhoto,
-              ),
-          ],
-        ),
-
-        // 안내 문구
-        if (photos.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              '사진을 첨부하면 제안 내용을 더 명확하게 전달할 수 있습니다',
+    return SuggestionFieldRow(
+      label: '사진 (최대 2장)',
+      required: required,
+      trailing: SuggestionPillButton(
+        icon: Icons.add,
+        label: '사진 선택',
+        onPressed: canAddPhoto ? onAddPhoto : null,
+      ),
+      child: photos.isEmpty
+          ? const Text(
+              '사진 선택',
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
+                fontSize: 15,
+                color: kSuggestionPlaceholderColor,
               ),
+            )
+          : Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(photos.length, (index) {
+                return _PhotoItem(
+                  photo: photos[index],
+                  onRemove: () => onRemovePhoto(index),
+                );
+              }),
             ),
-          ),
-      ],
     );
   }
 }
@@ -118,52 +107,6 @@ class _PhotoItem extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// 사진 추가 버튼
-class _AddPhotoButton extends StatelessWidget {
-  const _AddPhotoButton({
-    required this.onPressed,
-  });
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.grey.shade300,
-            style: BorderStyle.solid,
-          ),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_photo_alternate_outlined,
-              size: 32,
-              color: Colors.grey.shade600,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '사진 선택',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

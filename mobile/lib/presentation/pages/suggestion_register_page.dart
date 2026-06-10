@@ -69,11 +69,24 @@ class _SuggestionRegisterPageState
     });
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('제안하기'),
+        title: const Text(
+          '제안하기',
+          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.black),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.of(context).pop(),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
         ),
       ),
       // 숫자 키패드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 키보드를 닫는다.
@@ -85,7 +98,6 @@ class _SuggestionRegisterPageState
               child: SingleChildScrollView(
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -93,9 +105,8 @@ class _SuggestionRegisterPageState
                       selectedCategory: state.form.category,
                       onCategoryChanged: notifier.changeCategory,
                     ),
-                    const SizedBox(height: 16),
                     ..._buildCategoryFields(state, notifier),
-                    const SizedBox(height: 80),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -115,7 +126,6 @@ class _SuggestionRegisterPageState
           accountName: state.form.accountName,
           onSelect: _showAccountSelector,
         ),
-        const SizedBox(height: 16),
         SuggestionProductField(
           enabled: true,
           label: '대표 제품',
@@ -126,34 +136,28 @@ class _SuggestionRegisterPageState
           onBarcodePressed: _handleBarcodeScan,
           onSelectPressed: () => _showProductSelector(context),
         ),
-        const SizedBox(height: 16),
         _TitleField(
           controller: _titleController,
           onChanged: notifier.updateTitle,
         ),
-        const SizedBox(height: 16),
         SuggestionClaimTypeField(
           value: state.form.claimType,
           onChanged: notifier.updateClaimType,
         ),
-        const SizedBox(height: 16),
         SuggestionClaimDateField(
           value: state.form.claimDate,
           onChanged: notifier.updateClaimDate,
         ),
-        const SizedBox(height: 16),
         _ContentField(
           controller: _contentController,
           label: '클레임 상세 내용',
-          hint: '클레임 내용을 상세하게 입력하세요',
+          hint: '내용 입력',
           onChanged: notifier.updateContent,
         ),
-        const SizedBox(height: 16),
         SuggestionCarNumberField(
           value: state.form.carNumber,
           onChanged: notifier.updateCarNumber,
         ),
-        const SizedBox(height: 16),
         SuggestionPhotoField(
           photos: state.form.photos,
           required: true,
@@ -173,19 +177,16 @@ class _SuggestionRegisterPageState
         onBarcodePressed: _handleBarcodeScan,
         onSelectPressed: () => _showProductSelector(context),
       ),
-      const SizedBox(height: 16),
       _TitleField(
         controller: _titleController,
         onChanged: notifier.updateTitle,
       ),
-      const SizedBox(height: 16),
       _ContentField(
         controller: _contentController,
         label: '제안 내용',
-        hint: '제안 내용을 상세하게 입력하세요',
+        hint: '내용 입력',
         onChanged: notifier.updateContent,
       ),
-      const SizedBox(height: 16),
       SuggestionPhotoField(
         photos: state.form.photos,
         onAddPhoto: _handleAddPhoto,
@@ -194,65 +195,40 @@ class _SuggestionRegisterPageState
     ];
   }
 
-  /// 하단 버튼 — 레거시 정합 (임시저장 | 전송)
+  /// 하단 버튼 — 레거시 정합 (임시저장 | 전송, 풀폭 분할·여백 없음)
   Widget _buildBottomBar(
     BuildContext context,
     SuggestionRegisterState state,
     SuggestionRegisterNotifier notifier,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // 임시저장 — 신규 모바일 백엔드 미지원(별 스펙), 안내만 노출
-          Expanded(
-            child: OutlinedButton(
-              onPressed: state.isSubmitting ? null : _handleTempSave,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.grey.shade700,
-                side: BorderSide(color: Colors.grey.shade400),
-                padding: const EdgeInsets.symmetric(vertical: 16),
+    return SafeArea(
+      top: false,
+      child: SizedBox(
+        height: 56,
+        child: Row(
+          children: [
+            // 임시저장 — 신규 모바일 백엔드 미지원(별 스펙), 안내만 노출
+            Expanded(
+              child: _BottomAction(
+                label: '임시저장',
+                background: const Color(0xFF3C3C3C),
+                foreground: Colors.white,
+                onPressed: state.isSubmitting ? null : _handleTempSave,
               ),
-              child: const Text('임시저장', style: TextStyle(fontSize: 16)),
             ),
-          ),
-          const SizedBox(width: 12),
-          // 전송
-          Expanded(
-            child: ElevatedButton(
-              onPressed: state.isSubmitting
-                  ? null
-                  : () => _handleSubmit(notifier),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.yellow[700],
-                padding: const EdgeInsets.symmetric(vertical: 16),
+            // 전송
+            Expanded(
+              child: _BottomAction(
+                label: '전송',
+                background: const Color(0xFFFFD400),
+                foreground: Colors.black,
+                loading: state.isSubmitting,
+                onPressed:
+                    state.isSubmitting ? null : () => _handleSubmit(notifier),
               ),
-              child: state.isSubmitting
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text(
-                      '전송',
-                      style: TextStyle(fontSize: 16, color: Colors.black),
-                    ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -375,23 +351,15 @@ class _TitleField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SuggestionFieldLabel(text: '제목', required: true),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          maxLength: 250,
-          decoration: const InputDecoration(
-            hintText: '제목을 입력하세요',
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.all(12),
-            counterText: '',
-          ),
-          onChanged: onChanged,
-        ),
-      ],
+    return SuggestionFieldRow(
+      label: '제목',
+      required: true,
+      child: SuggestionBorderlessField(
+        controller: controller,
+        hint: '제목 입력',
+        maxLength: 250,
+        onChanged: onChanged,
+      ),
     );
   }
 }
@@ -411,23 +379,62 @@ class _ContentField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SuggestionFieldLabel(text: label, required: true),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          maxLines: 5,
-          maxLength: 2000,
-          decoration: InputDecoration(
-            hintText: hint,
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.all(12),
-          ),
-          onChanged: onChanged,
+    return SuggestionFieldRow(
+      label: label,
+      required: true,
+      child: SuggestionBorderlessField(
+        controller: controller,
+        hint: hint,
+        maxLength: 2000,
+        maxLines: 5,
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+/// 하단 분할 버튼(임시저장/전송) — 풀폭, 모서리·여백 없음 (레거시 정합)
+class _BottomAction extends StatelessWidget {
+  const _BottomAction({
+    required this.label,
+    required this.background,
+    required this.foreground,
+    required this.onPressed,
+    this.loading = false,
+  });
+
+  final String label;
+  final Color background;
+  final Color foreground;
+  final VoidCallback? onPressed;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: onPressed == null ? background.withValues(alpha: 0.6) : background,
+      child: InkWell(
+        onTap: onPressed,
+        child: Center(
+          child: loading
+              ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: foreground,
+                  ),
+                )
+              : Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: foreground,
+                  ),
+                ),
         ),
-      ],
+      ),
     );
   }
 }
