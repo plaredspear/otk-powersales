@@ -1,18 +1,18 @@
 package com.otoki.powersales.auth.dto.request
 
 import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 
 /**
  * 로그인 요청 DTO
+ *
+ * 사번 형식: Heroku 레거시 로그인과 동일하게 형식 검증을 두지 않는다 (8자리/숫자 전용 제약 없음).
+ * SF `DKRetail__EmpCode__c` 가 string(100) 이라 길이 상한 100자만 안전장치로 유지.
+ * 인증 성공 여부는 입력 사번이 저장된 사번과 정확히 일치하는지로 결정.
  */
 data class LoginRequest(
     @field:NotBlank(message = "사번은 필수입니다")
-    @field:Pattern(
-        regexp = "^(\\d{8}|ADMIN-[A-Za-z0-9_-]{1,30})$",
-        message = "사번은 8자리 숫자 또는 'ADMIN-' 으로 시작하는 관리자 사번이어야 합니다"
-    )
+    @field:Size(max = 100, message = "사번은 100자를 초과할 수 없습니다")
     val employeeCode: String,
 
     @field:NotBlank(message = "비밀번호는 필수입니다")

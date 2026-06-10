@@ -186,10 +186,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildEmployeeNumberField() {
     return TextFormField(
       controller: _employeeCodeController,
-      keyboardType: TextInputType.number,
+      keyboardType: TextInputType.text,
+      // Heroku 레거시 로그인과 동일하게 사번 형식 제약 없음 (8자리/숫자 전용 아님).
+      // SF EmpCode__c string(100) 정합으로 길이 상한 100만 유지.
       inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(8),
+        LengthLimitingTextInputFormatter(100),
       ],
       decoration: InputDecoration(
         hintText: '아이디 입력 (사번)',
