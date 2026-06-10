@@ -8,6 +8,8 @@ import '../providers/pos_sales_provider.dart';
 import '../providers/suggestion_register_provider.dart';
 import '../providers/suggestion_register_state.dart';
 import '../screens/barcode_scanner_screen.dart';
+import '../widgets/account/account_selector_sheet.dart';
+import '../widgets/product/product_selector_sheet.dart';
 import '../widgets/suggestion/suggestion_category_selector.dart';
 import '../widgets/suggestion/suggestion_logistics_claim_fields.dart';
 import '../widgets/suggestion/suggestion_photo_field.dart';
@@ -263,20 +265,27 @@ class _SuggestionRegisterPageState
     }
   }
 
+  /// 대표 제품 선택 — 제품명/코드 검색 바텀시트에서 1건 선택.
   Future<void> _showProductSelector(BuildContext context) async {
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('제품 선택 화면은 별 스펙에서 구현됩니다')));
-    }
+    final product = await ProductSelectorSheet.show(context);
+    if (product == null || !mounted) return;
+    ref
+        .read(suggestionRegisterProvider.notifier)
+        .selectProduct(product.productCode, product.productName);
   }
 
+  /// 거래처 선택 — 내 거래처 목록(field scope) 바텀시트에서 1건 선택.
+  ///
+  /// 물류 클레임은 현장 활동 계열이므로 [MyAccountScope.field](기본값) 사용.
+  /// 선택 결과의 `accountCode`(거래처/외부 코드)를 backend `sapAccountCode` 로 전달한다.
   Future<void> _showAccountSelector() async {
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('거래처 선택 화면은 별 스펙에서 구현됩니다')));
-    }
+    final account = await AccountSelectorSheet.show(context);
+    if (account == null || !mounted) return;
+    ref.read(suggestionRegisterProvider.notifier).selectAccount(
+          accountId: account.accountId,
+          accountName: account.accountName,
+          sapAccountCode: account.accountCode,
+        );
   }
 
   void _handleTempSave() {
