@@ -1,8 +1,8 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.apppackage.dto.AppPackageDetailDto
+import com.otoki.powersales.apppackage.dto.AppPackageDistributionUrlsDto
 import com.otoki.powersales.apppackage.dto.AppPackageForceUpdateRequest
-import com.otoki.powersales.apppackage.dto.AppPackageIosInstallUrlDto
 import com.otoki.powersales.apppackage.dto.AppPackageListItemDto
 import com.otoki.powersales.apppackage.dto.AppPackageReleaseNoteUpdateRequest
 import com.otoki.powersales.apppackage.entity.AppPlatform
@@ -58,13 +58,17 @@ class AdminAppPackageController(
     }
 
     /**
-     * iOS 대규모 배포용 고정 설치 링크. 버전과 무관한 고정값이라 web 이 페이지 상단에 상시 표시한다.
-     * url 이 null 이면 API 도메인 미설정 환경(local) — web 은 안내 문구로 대체한다.
+     * 대규모 배포용 고정 링크 (iOS 설치 페이지 + Android APK 다운로드). 버전과 무관한 고정값이라
+     * web 이 각 플랫폼 탭 상단에 상시 표시한다. url 이 null 이면 API 도메인 미설정 환경(local).
      */
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
-    @GetMapping("/ios/install-url")
-    fun iosInstallUrl(): ResponseEntity<ApiResponse<AppPackageIosInstallUrlDto>> {
-        return ResponseEntity.ok(ApiResponse.success(AppPackageIosInstallUrlDto(adminAppPackageService.iosInstallUrl())))
+    @GetMapping("/distribution-urls")
+    fun distributionUrls(): ResponseEntity<ApiResponse<AppPackageDistributionUrlsDto>> {
+        val dto = AppPackageDistributionUrlsDto(
+            iosInstallUrl = adminAppPackageService.iosInstallUrl(),
+            androidDownloadUrl = adminAppPackageService.androidDownloadUrl(),
+        )
+        return ResponseEntity.ok(ApiResponse.success(dto))
     }
 
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)

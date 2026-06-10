@@ -5,6 +5,8 @@ import com.otoki.powersales.apppackage.dto.AppVersionCheckDto
 import com.otoki.powersales.apppackage.entity.AppPlatform
 import com.otoki.powersales.apppackage.service.MobileAppPackageService
 import com.otoki.powersales.common.dto.ApiResponse
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -77,6 +79,19 @@ class MobileAppPackageController(
     fun iosLatestInstallPage(): ResponseEntity<String> {
         val html = mobileAppPackageService.buildLatestIosInstallPage(currentBaseUrl())
         return htmlResponse(html)
+    }
+
+    /**
+     * Android 최신 APK 다운로드 (대규모 배포용 고정 링크). 최신 isLatest APK 의 presigned URL 로
+     * 302 redirect 한다 — 영구 고정 링크 뒤에서 만료되는 presigned URL 을 매 요청 새로 발급.
+     * 기기는 redirect 를 따라가 APK 를 직접 받아 설치한다(iOS 와 달리 안내 페이지 불요).
+     */
+    @GetMapping("/android/download/latest")
+    fun androidLatestDownload(): ResponseEntity<Void> {
+        val presignedUrl = mobileAppPackageService.issueLatestAndroidDownloadUrl()
+        return ResponseEntity.status(HttpStatus.FOUND)
+            .header(HttpHeaders.LOCATION, presignedUrl)
+            .build()
     }
 
     private fun htmlResponse(html: String): ResponseEntity<String> =

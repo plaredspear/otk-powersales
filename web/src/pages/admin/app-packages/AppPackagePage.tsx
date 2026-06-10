@@ -7,7 +7,7 @@ import ResizableTable from '@/components/common/ResizableTable';
 import {
   useAppPackages,
   useDeleteAppPackage,
-  useIosInstallUrl,
+  useDistributionUrls,
   useSetAppPackageLatest,
   useToggleAppPackageForceUpdate,
 } from '@/hooks/appPackage/useAppPackages';
@@ -53,7 +53,10 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
   const [uploadOpen, setUploadOpen] = useState(false);
   const { data, isLoading } = useAppPackages(platform, page, DEFAULT_SIZE);
   const isIos = platform === 'IOS';
-  const { data: iosInstallUrl } = useIosInstallUrl(isIos);
+  const { data: distributionUrls } = useDistributionUrls();
+  const distributionUrl = isIos
+    ? distributionUrls?.iosInstallUrl
+    : distributionUrls?.androidDownloadUrl;
   const setLatest = useSetAppPackageLatest(platform);
   const toggleForce = useToggleAppPackageForceUpdate(platform);
   const remove = useDeleteAppPackage(platform);
@@ -212,11 +215,11 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
     },
   ];
 
-  const handleCopyInstallUrl = async () => {
-    if (!iosInstallUrl) return;
+  const handleCopyDistributionUrl = async () => {
+    if (!distributionUrl) return;
     try {
-      await copyToClipboard(iosInstallUrl);
-      message.success('고정 설치 링크가 복사되었습니다 — 사번 전체에 공지해 설치할 수 있습니다');
+      await copyToClipboard(distributionUrl);
+      message.success('고정 배포 링크가 복사되었습니다 — 사번 전체에 공지해 설치할 수 있습니다');
     } catch {
       message.error('링크 복사에 실패했습니다');
     }
@@ -224,37 +227,44 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
 
   return (
     <>
-      {isIos && (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message="iOS 고정 설치 링크 (대규모 배포용)"
-          description={
-            iosInstallUrl ? (
-              <>
-                <Typography.Paragraph style={{ marginBottom: 8, wordBreak: 'break-all' }}>
-                  <Typography.Text code>{iosInstallUrl}</Typography.Text>
-                </Typography.Paragraph>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  · 항상 <b>최신으로 지정된 버전</b>을 가리킵니다. 새 버전 업로드 후 "최신 지정"만 하면 이 링크가
-                  신버전을 가리키므로 재공지가 필요 없습니다.
-                  <br />· iPhone <b>Safari</b>에서 열어야 설치됩니다 (PC·다른 브라우저·인앱 브라우저 불가).
-                </Typography.Text>
-                <div style={{ marginTop: 8 }}>
-                  <Button size="small" icon={<CopyOutlined />} onClick={handleCopyInstallUrl}>
-                    링크 복사
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <Typography.Text type="secondary">
-                현재 환경에서는 고정 설치 링크를 사용할 수 없습니다 (API 도메인 미설정).
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message={isIos ? 'iOS 고정 설치 링크 (대규모 배포용)' : 'Android 고정 설치 링크 (대규모 배포용)'}
+        description={
+          distributionUrl ? (
+            <>
+              <Typography.Paragraph style={{ marginBottom: 8, wordBreak: 'break-all' }}>
+                <Typography.Text code>{distributionUrl}</Typography.Text>
+              </Typography.Paragraph>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                · 항상 <b>최신으로 지정된 버전</b>을 가리킵니다. 새 버전 업로드 후 "최신 지정"만 하면 이 링크가
+                신버전을 가리키므로 재공지가 필요 없습니다.
+                {isIos ? (
+                  <>
+                    <br />· iPhone <b>Safari</b>에서 열어야 설치됩니다 (PC·다른 브라우저·인앱 브라우저 불가).
+                  </>
+                ) : (
+                  <>
+                    <br />· 링크를 열면 <b>최신 APK</b>가 다운로드됩니다. 설치하려면 기기에서 "출처를 알 수 없는 앱
+                    설치"를 허용해야 합니다.
+                  </>
+                )}
               </Typography.Text>
-            )
-          }
-        />
-      )}
+              <div style={{ marginTop: 8 }}>
+                <Button size="small" icon={<CopyOutlined />} onClick={handleCopyDistributionUrl}>
+                  링크 복사
+                </Button>
+              </div>
+            </>
+          ) : (
+            <Typography.Text type="secondary">
+              현재 환경에서는 고정 배포 링크를 사용할 수 없습니다 (API 도메인 미설정).
+            </Typography.Text>
+          )
+        }
+      />
       <div style={{ marginBottom: 16, textAlign: 'right' }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setUploadOpen(true)}>
           패키지 업로드

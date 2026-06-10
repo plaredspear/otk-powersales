@@ -110,16 +110,22 @@ class AdminAppPackageControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("iOS 고정 설치 링크 조회 — GET /ios/install-url")
-    fun iosInstallUrl() {
+    @DisplayName("고정 배포 링크 조회 — GET /distribution-urls (iOS + Android)")
+    fun distributionUrls() {
         every { adminAppPackageService.iosInstallUrl() } returns
             "https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/ios/install/latest"
+        every { adminAppPackageService.androidDownloadUrl() } returns
+            "https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/android/download/latest"
 
-        mockMvc.perform(get("/api/v1/admin/app-package/ios/install-url"))
+        mockMvc.perform(get("/api/v1/admin/app-package/distribution-urls"))
             .andExpect(status().isOk)
             .andExpect(
-                jsonPath("$.data.url")
+                jsonPath("$.data.iosInstallUrl")
                     .value("https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/ios/install/latest"),
+            )
+            .andExpect(
+                jsonPath("$.data.androidDownloadUrl")
+                    .value("https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/android/download/latest"),
             )
     }
 }

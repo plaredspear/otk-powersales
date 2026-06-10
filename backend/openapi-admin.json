@@ -3841,11 +3841,11 @@
         },
         "type" : "object"
       },
-      "ApiResponseAppPackageIosInstallUrlDto" : {
+      "ApiResponseAppPackageDistributionUrlsDto" : {
         "properties" : {
           "data" : {
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/AppPackageIosInstallUrlDto"
+              "$ref" : "#/components/schemas/AppPackageDistributionUrlsDto"
             }, {
               "type" : "null"
             } ]
@@ -7803,18 +7803,21 @@
         },
         "type" : "object"
       },
-      "AppPackageForceUpdateRequest" : {
+      "AppPackageDistributionUrlsDto" : {
         "properties" : {
-          "forceUpdate" : {
-            "type" : "boolean"
+          "androidDownloadUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "iosInstallUrl" : {
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
       },
-      "AppPackageIosInstallUrlDto" : {
+      "AppPackageForceUpdateRequest" : {
         "properties" : {
-          "url" : {
-            "type" : [ "string", "null" ]
+          "forceUpdate" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -16909,15 +16912,15 @@
         "tags" : [ "admin-app-package-controller" ]
       }
     },
-    "/api/v1/admin/app-package/ios/install-url" : {
+    "/api/v1/admin/app-package/distribution-urls" : {
       "get" : {
-        "operationId" : "iosInstallUrl",
+        "operationId" : "distributionUrls",
         "responses" : {
           "200" : {
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseAppPackageIosInstallUrlDto"
+                  "$ref" : "#/components/schemas/ApiResponseAppPackageDistributionUrlsDto"
                 }
               }
             },

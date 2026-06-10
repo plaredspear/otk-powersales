@@ -94,14 +94,22 @@ export async function fetchAppPackageDetail(id: number): Promise<AppPackageDetai
 }
 
 /**
- * iOS 고정 OTA 설치 링크 조회 (버전 무관 고정값, 항상 최신 버전을 가리킴).
- * url 이 null 이면 API 도메인 미설정 환경.
+ * 대규모 배포용 고정 링크 (iOS 설치 페이지 + Android APK 다운로드). 버전 무관 고정값, 항상 최신 버전.
+ * 각 url 이 null 이면 API 도메인 미설정 환경.
  */
-export async function fetchIosInstallUrl(): Promise<string | null> {
-  const res = await client.get<ApiResponse<{ url: string | null }>>(
-    '/api/v1/admin/app-package/ios/install-url',
+export interface DistributionUrls {
+  iosInstallUrl: string | null;
+  androidDownloadUrl: string | null;
+}
+
+export async function fetchDistributionUrls(): Promise<DistributionUrls> {
+  const res = await client.get<ApiResponse<DistributionUrls>>(
+    '/api/v1/admin/app-package/distribution-urls',
   );
-  return res.data.data?.url ?? null;
+  return {
+    iosInstallUrl: res.data.data?.iosInstallUrl ?? null,
+    androidDownloadUrl: res.data.data?.androidDownloadUrl ?? null,
+  };
 }
 
 export async function setAppPackageLatest(id: number): Promise<AppPackageDetail> {

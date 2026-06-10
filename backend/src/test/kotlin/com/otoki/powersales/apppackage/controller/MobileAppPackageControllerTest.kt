@@ -14,6 +14,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -105,5 +106,16 @@ class MobileAppPackageControllerTest : MobileControllerTestSupport() {
             .andExpect(status().isOk)
             .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
             .andExpect(content().string(html))
+    }
+
+    @Test
+    @DisplayName("Android latest 다운로드 — 최신 APK presigned URL 로 302 redirect")
+    fun androidLatestDownload() {
+        every { mobileAppPackageService.issueLatestAndroidDownloadUrl() } returns
+            "https://s3/latest.apk?X-Amz-Signature=abc"
+
+        mockMvc.perform(get("/api/v1/mobile/app-package/android/download/latest"))
+            .andExpect(status().isFound)
+            .andExpect(header().string("Location", "https://s3/latest.apk?X-Amz-Signature=abc"))
     }
 }

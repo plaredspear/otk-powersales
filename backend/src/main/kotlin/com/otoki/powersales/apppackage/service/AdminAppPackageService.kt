@@ -65,9 +65,23 @@ class AdminAppPackageService(
      * web 이 페이지 상단에 상시 표시한다. API 도메인 미설정(local)이면 null.
      */
     fun iosInstallUrl(): String? {
+        val base = apiBaseUrlOrNull() ?: return null
+        return MobileAppPackageService.iosLatestInstallPath(base)
+    }
+
+    /**
+     * Android 대규모 배포용 고정 다운로드 링크. 최신 APK 로 302 redirect 하는 고정 엔드포인트.
+     * 버전과 무관한 고정값. API 도메인 미설정(local)이면 null.
+     */
+    fun androidDownloadUrl(): String? {
+        val base = apiBaseUrlOrNull() ?: return null
+        return MobileAppPackageService.androidLatestDownloadPath(base)
+    }
+
+    /** API public 도메인 기준 https base URL. 미설정(local)이면 null. */
+    private fun apiBaseUrlOrNull(): String? {
         val apiDomain = domainProperties.api
-        if (apiDomain.isBlank()) return null
-        return MobileAppPackageService.iosLatestInstallPath("https://$apiDomain")
+        return if (apiDomain.isBlank()) null else "https://$apiDomain"
     }
 
     /**

@@ -448,6 +448,40 @@ class AppPackageServiceTest {
 
             assertThat(dto.iosInstallUrl).isNull()
         }
+
+        @Test
+        @DisplayName("배포 링크 — iOS 설치 페이지 + Android 다운로드 고정 경로")
+        fun distributionUrls() {
+            assertThat(adminService.iosInstallUrl())
+                .isEqualTo("https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/ios/install/latest")
+            assertThat(adminService.androidDownloadUrl())
+                .isEqualTo("https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/android/download/latest")
+        }
+    }
+
+    @Nested
+    @DisplayName("Android 최신 다운로드")
+    inner class AndroidLatestDownload {
+
+        @Test
+        @DisplayName("최신 isLatest APK presigned URL 발급")
+        fun issuesLatestApkPresigned() {
+            every { repository.findByPlatformAndIsLatestTrue(AppPlatform.ANDROID) } returns
+                entity(id = 5L, platform = AppPlatform.ANDROID, isLatest = true)
+            every { storageService.getPresignedUrl(any(), any()) } returns "https://s3/latest.apk?sig=x"
+
+            assertThat(mobileService.issueLatestAndroidDownloadUrl()).isEqualTo("https://s3/latest.apk?sig=x")
+        }
+
+        @Test
+        @DisplayName("최신 APK 부재 → AppPackageNotFoundException")
+        fun throwsWhenNoApk() {
+            every { repository.findByPlatformAndIsLatestTrue(AppPlatform.ANDROID) } returns null
+            every { repository.findTopByPlatformOrderByVersionCodeDesc(AppPlatform.ANDROID) } returns null
+
+            assertThatThrownBy { mobileService.issueLatestAndroidDownloadUrl() }
+                .isInstanceOf(AppPackageNotFoundException::class.java)
+        }
     }
 
     @Test

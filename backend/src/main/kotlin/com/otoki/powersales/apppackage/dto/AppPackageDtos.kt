@@ -89,10 +89,14 @@ data class AppPackageDetailDto(
 }
 
 /**
- * iOS 대규모 배포용 고정 설치 링크 응답. [url] 이 null 이면 API 도메인 미설정 환경.
+ * 대규모 배포용 고정 설치/다운로드 링크 응답. 각 url 이 null 이면 API 도메인 미설정 환경.
+ *
+ * @property iosInstallUrl iOS OTA 설치 안내 페이지 고정 링크 (Safari 에서 열어 설치)
+ * @property androidDownloadUrl Android 최신 APK 다운로드 고정 링크 (직접 받아 설치)
  */
-data class AppPackageIosInstallUrlDto(
-    val url: String?,
+data class AppPackageDistributionUrlsDto(
+    val iosInstallUrl: String?,
+    val androidDownloadUrl: String?,
 )
 
 data class AppPackageForceUpdateRequest(

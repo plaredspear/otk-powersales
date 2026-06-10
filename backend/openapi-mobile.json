@@ -6304,6 +6304,17 @@
         "tags" : [ "alternative-holiday-controller" ]
       }
     },
+    "/api/v1/mobile/app-package/android/download/latest" : {
+      "get" : {
+        "operationId" : "androidLatestDownload",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-app-package-controller" ]
+      }
+    },
     "/api/v1/mobile/app-package/check" : {
       "get" : {
         "operationId" : "check",

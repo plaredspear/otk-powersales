@@ -38,6 +38,15 @@ class MobileAppPackageService(
         /** iOS OTA 설치 안내 페이지 경로 (항상 최신 isLatest 버전). 고정 배포 링크. */
         fun iosLatestInstallPath(baseUrl: String): String =
             "$baseUrl$IOS_BASE/install/latest"
+
+        private const val ANDROID_BASE = "/api/v1/mobile/app-package/android"
+
+        /**
+         * Android 최신 APK 다운로드 고정 경로. 이 URL 로 접근하면 backend 가 최신 isLatest APK 의
+         * presigned URL 로 302 redirect 한다. iOS 와 달리 안내 페이지 없이 APK 를 직접 받아 설치.
+         */
+        fun androidLatestDownloadPath(baseUrl: String): String =
+            "$baseUrl$ANDROID_BASE/download/latest"
     }
 
     /**
@@ -80,6 +89,16 @@ class MobileAppPackageService(
         val entity = appPackageRepository.findById(id).orElseThrow { AppPackageNotFoundException() }
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
         return AppPackageDownloadUrlDto(url = url, expiresInSeconds = StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+    }
+
+    /**
+     * 최신 Android APK 의 presigned 다운로드 URL 을 발급한다. 고정 다운로드 엔드포인트가 이 URL 로
+     * 302 redirect 하므로, 영구 고정 링크 뒤에서 만료되는 presigned URL 을 매 요청 새로 발급한다.
+     * 최신 APK 부재 시 NotFound.
+     */
+    fun issueLatestAndroidDownloadUrl(): String {
+        val entity = resolveLatest(AppPlatform.ANDROID) ?: throw AppPackageNotFoundException()
+        return storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
     /**

@@ -3957,11 +3957,11 @@
         },
         "type" : "object"
       },
-      "ApiResponseAppPackageDownloadUrlDto" : {
+      "ApiResponseAppPackageDistributionUrlsDto" : {
         "properties" : {
           "data" : {
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/AppPackageDownloadUrlDto"
+              "$ref" : "#/components/schemas/AppPackageDistributionUrlsDto"
             }, {
               "type" : "null"
             } ]
@@ -3986,11 +3986,11 @@
         },
         "type" : "object"
       },
-      "ApiResponseAppPackageIosInstallUrlDto" : {
+      "ApiResponseAppPackageDownloadUrlDto" : {
         "properties" : {
           "data" : {
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/AppPackageIosInstallUrlDto"
+              "$ref" : "#/components/schemas/AppPackageDownloadUrlDto"
             }, {
               "type" : "null"
             } ]
@@ -9705,6 +9705,17 @@
         },
         "type" : "object"
       },
+      "AppPackageDistributionUrlsDto" : {
+        "properties" : {
+          "androidDownloadUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "iosInstallUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "AppPackageDownloadUrlDto" : {
         "properties" : {
           "expiresInSeconds" : {
@@ -9721,14 +9732,6 @@
         "properties" : {
           "forceUpdate" : {
             "type" : "boolean"
-          }
-        },
-        "type" : "object"
-      },
-      "AppPackageIosInstallUrlDto" : {
-        "properties" : {
-          "url" : {
-            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -23061,15 +23064,15 @@
         "tags" : [ "admin-app-package-controller" ]
       }
     },
-    "/api/v1/admin/app-package/ios/install-url" : {
+    "/api/v1/admin/app-package/distribution-urls" : {
       "get" : {
-        "operationId" : "iosInstallUrl",
+        "operationId" : "distributionUrls",
         "responses" : {
           "200" : {
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseAppPackageIosInstallUrlDto"
+                  "$ref" : "#/components/schemas/ApiResponseAppPackageDistributionUrlsDto"
                 }
               }
             },
@@ -32711,6 +32714,17 @@
           }
         },
         "tags" : [ "alternative-holiday-controller" ]
+      }
+    },
+    "/api/v1/mobile/app-package/android/download/latest" : {
+      "get" : {
+        "operationId" : "androidLatestDownload",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-app-package-controller" ]
       }
     },
     "/api/v1/mobile/app-package/check" : {
