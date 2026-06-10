@@ -143,8 +143,13 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
           AppRouter.gpsConsent,
           (route) => false,
         );
-      } else if (next.user == null && !next.isLoading) {
-        // 미인증 상태 → 로그인 화면
+      } else if (next.user == null &&
+          !next.isLoading &&
+          next.errorMessage == null) {
+        // 미인증 상태(로그아웃·자동로그인 실패·토큰만료) → 로그인 화면.
+        // 단, 로그인 에러(errorMessage != null)는 이미 로그인 화면에서 발생한 것이므로
+        // 재네비게이션하지 않는다. 재네비게이션 시 LoginScreen 라우트가 슬라이드 애니메이션과
+        // 함께 다시 push 되어 "화면 전환"으로 보인다(에러는 화면 내 오버레이로 즉시 표시됨).
         navigator.pushNamedAndRemoveUntil(
           AppRouter.login,
           (route) => false,

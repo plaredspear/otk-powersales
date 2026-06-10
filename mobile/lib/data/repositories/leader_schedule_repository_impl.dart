@@ -28,17 +28,6 @@ class LeaderScheduleRepositoryImpl implements LeaderScheduleRepository {
   }
 
   @override
-  Future<void> updateScheduleAccount({
-    required int scheduleId,
-    required int accountId,
-  }) =>
-      _dataSource.updateTeamMemberSchedule(scheduleId, accountId);
-
-  @override
-  Future<void> deleteSchedule(int scheduleId) =>
-      _dataSource.deleteTeamMemberSchedule(scheduleId);
-
-  @override
   Future<List<LeaderAccount>> getAccounts({String? keyword}) async {
     final models = await _dataSource.getAccounts(keyword: keyword);
     return models.map((m) => m.toEntity()).toList();

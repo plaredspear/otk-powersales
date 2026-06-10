@@ -134,6 +134,8 @@ class PhotoPickerWidget extends StatelessWidget {
                 onPressed: () => _pickImage(context, ImageSource.camera),
                 icon: const Icon(Icons.camera_alt),
                 label: const Text('촬영'),
+                // Row 안 무한폭 제약 크래시 방지 (전역 테마 minimumSize 덮어쓰기).
+                style: ElevatedButton.styleFrom(minimumSize: Size.zero),
               ),
               const SizedBox(width: 12),
               // 갤러리 버튼
@@ -141,6 +143,8 @@ class PhotoPickerWidget extends StatelessWidget {
                 onPressed: () => _pickImage(context, ImageSource.gallery),
                 icon: const Icon(Icons.photo_library),
                 label: const Text('갤러리'),
+                // Row 안 무한폭 제약 크래시 방지 (전역 테마 minimumSize 덮어쓰기).
+                style: ElevatedButton.styleFrom(minimumSize: Size.zero),
               ),
             ],
           ),

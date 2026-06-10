@@ -119,6 +119,9 @@ class InspectionOwnForm extends StatelessWidget {
                     icon: const Icon(Icons.qr_code_scanner),
                     label: const Text('바코드'),
                     style: OutlinedButton.styleFrom(
+                      // Row 안에서는 전역 테마의 width:Infinity minimumSize 가
+                      // 무한폭 제약 크래시를 유발하므로 덮어쓴다.
+                      minimumSize: Size.zero,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 12,
@@ -132,6 +135,8 @@ class InspectionOwnForm extends StatelessWidget {
                     icon: const Icon(Icons.add),
                     label: const Text('선택'),
                     style: OutlinedButton.styleFrom(
+                      // Row 안 무한폭 제약 크래시 방지 (전역 테마 덮어쓰기).
+                      minimumSize: Size.zero,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 12,

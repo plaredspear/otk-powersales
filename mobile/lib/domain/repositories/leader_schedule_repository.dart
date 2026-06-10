@@ -11,15 +11,6 @@ abstract class LeaderScheduleRepository {
   /// 여사원 일별 현황 조회 (조회 전용). [date] 기준 진열/행사/연차 + 출근 현황.
   Future<LeaderDailyStatus> getDailyStatus(DateTime date);
 
-  /// 진열 일정 거래처 변경 (P7).
-  Future<void> updateScheduleAccount({
-    required int scheduleId,
-    required int accountId,
-  });
-
-  /// 진열 일정 삭제 (P7).
-  Future<void> deleteSchedule(int scheduleId);
-
   /// 조장 본인 거래처 목록 조회. [keyword] 부분 일치 검색 (선택).
   Future<List<LeaderAccount>> getAccounts({String? keyword});
 

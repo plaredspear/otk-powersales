@@ -63,6 +63,15 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     fun findByCostCenterCodeAndRole(costCenterCode: String, role: String): List<Employee>
 
     /**
+     * 조직(costCenterCode) + 역할(role)이 제외 목록에 없는 사원 조회 (조장 팀원 목록).
+     *
+     * 레거시 employeeMapper.xml `empSearch` 의 여사원 식별 방식 보존:
+     * `appauthority != '조장' AND != '지점장'` (역필터). role 이 NULL 인 사원은
+     * SQL `NOT IN` 의미상 제외되며, 이는 레거시 `!=` 비교의 NULL 제외와 일치한다.
+     */
+    fun findByCostCenterCodeAndRoleNotIn(costCenterCode: String, roles: Collection<String>): List<Employee>
+
+    /**
      * 조직 목록(costCenterCode IN) + 역할(role)로 사원 일괄 조회 (진열스케줄 업로드 - 조장 조회)
      */
     fun findByCostCenterCodeInAndRole(costCenterCodes: List<String>, role: String): List<Employee>
