@@ -4214,6 +4214,9 @@
             "format" : "date",
             "type" : [ "string", "null" ]
           },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          },
           "promotionNumber" : {
             "type" : "string"
           },
@@ -4401,7 +4404,7 @@
       },
       "MyAccountListResponse" : {
         "properties" : {
-          "stores" : {
+          "accounts" : {
             "items" : {
               "$ref" : "#/components/schemas/MyAccountInfo"
             },
