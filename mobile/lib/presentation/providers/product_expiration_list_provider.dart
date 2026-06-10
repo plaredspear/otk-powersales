@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,8 +5,11 @@ import '../../core/network/dio_provider.dart';
 import '../../data/datasources/product_expiration_api_datasource.dart';
 import '../../data/repositories/product_expiration_repository_impl.dart';
 import '../../domain/entities/product_expiration_item.dart';
+import '../../domain/repositories/my_account_repository.dart';
 import '../../domain/repositories/product_expiration_repository.dart';
+import '../../domain/usecases/get_my_accounts.dart';
 import '../../domain/usecases/get_product_expiration_list_usecase.dart';
+import 'my_accounts_provider.dart';
 import 'product_expiration_list_state.dart';
 
 // ============================================
@@ -35,13 +37,13 @@ final getProductExpirationListUseCaseProvider =
 /// 유통기한 관리 목록 상태 관리 Notifier
 class ProductExpirationListNotifier extends StateNotifier<ProductExpirationListState> {
   final GetProductExpirationList _getProductExpirationList;
-  final Dio _dio;
+  final GetMyAccounts _getMyAccounts;
 
   ProductExpirationListNotifier({
     required GetProductExpirationList getProductExpirationList,
-    required Dio dio,
+    required GetMyAccounts getMyAccounts,
   })  : _getProductExpirationList = getProductExpirationList,
-        _dio = dio,
+        _getMyAccounts = getMyAccounts,
         super(ProductExpirationListState.initial());
 
   /// 초기 데이터 로딩 (거래처 목록 + 자동 검색)
@@ -53,19 +55,18 @@ class ProductExpirationListNotifier extends StateNotifier<ProductExpirationListS
     await searchProductExpiration();
   }
 
-  /// GET /api/v1/mobile/accounts/my 호출하여 거래처 목록 로드
+  /// 내 거래처 목록 로드.
+  ///
+  /// 레거시 유통기한 화면(`product/expiration`)은 현장점검(`fieldChk`)과 동일하게
+  /// `selectMyAccount`/`teamleaderAccList` 를 공유한다 — 즉 FIELD scope 다.
+  /// 등록 화면([AccountSelectorSheet]) 과 동일한 [GetMyAccounts] 경로를 재사용한다.
   Future<void> _loadAccounts() async {
     state = state.copyWith(isAccountsLoading: true);
     try {
-      final response = await _dio.get('/api/v1/mobile/accounts/my');
-      final data = response.data['data'] as Map<String, dynamic>;
-      final accountsList = data['accounts'] as List<dynamic>;
+      final result = await _getMyAccounts.call(scope: MyAccountScope.field);
       final accountsMap = <String, String>{};
-      for (final account in accountsList) {
-        final accountMap = account as Map<String, dynamic>;
-        final code = accountMap['accountCode'] as String;
-        final name = accountMap['accountName'] as String;
-        accountsMap[code] = name;
+      for (final account in result.accounts) {
+        accountsMap[account.accountCode] = account.accountName;
       }
       state = state.copyWith(accounts: accountsMap, isAccountsLoading: false);
     } catch (e) {
@@ -136,10 +137,9 @@ class ProductExpirationListNotifier extends StateNotifier<ProductExpirationListS
 final productExpirationListProvider =
     StateNotifierProvider<ProductExpirationListNotifier, ProductExpirationListState>((ref) {
   final useCase = ref.watch(getProductExpirationListUseCaseProvider);
-  final dio = ref.watch(dioProvider);
 
   return ProductExpirationListNotifier(
     getProductExpirationList: useCase,
-    dio: dio,
+    getMyAccounts: ref.watch(getMyAccountsUseCaseProvider),
   );
 });
