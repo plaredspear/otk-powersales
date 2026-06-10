@@ -14,8 +14,9 @@ interface Props {
 }
 
 interface FormValues {
-  versionName: string;
-  versionCode: number;
+  // iOS 는 .ipa 에서 자동 추출하므로 폼에서 받지 않는다(Android 만 필수 입력).
+  versionName?: string;
+  versionCode?: number;
   forceUpdate: boolean;
   releaseNote?: string;
 }
@@ -66,27 +67,30 @@ export default function AppPackageUploadModal({ open, platform, onClose }: Props
       destroyOnClose
     >
       <Form form={form} layout="vertical" initialValues={{ forceUpdate: false }}>
-        <Form.Item
-          name="versionName"
-          label="버전명 (예: 1.2.0)"
-          rules={[{ required: true, message: '버전명을 입력하세요' }]}
-        >
-          <Input placeholder="1.2.0" />
-        </Form.Item>
-        <Form.Item
-          name="versionCode"
-          label="버전 코드 (정수, 비교용)"
-          rules={[{ required: true, message: '버전 코드를 입력하세요' }]}
-        >
-          <InputNumber style={{ width: '100%' }} min={1} placeholder="12" />
-        </Form.Item>
-        {platform === 'IOS' && (
+        {platform === 'IOS' ? (
           <Alert
             type="info"
             showIcon
             style={{ marginBottom: 16 }}
-            message="Bundle Identifier 는 업로드한 .ipa 파일에서 자동으로 추출됩니다."
+            message="Bundle Identifier · 버전명 · 버전 코드는 업로드한 .ipa 파일에서 자동으로 추출됩니다."
           />
+        ) : (
+          <>
+            <Form.Item
+              name="versionName"
+              label="버전명 (예: 1.2.0)"
+              rules={[{ required: true, message: '버전명을 입력하세요' }]}
+            >
+              <Input placeholder="1.2.0" />
+            </Form.Item>
+            <Form.Item
+              name="versionCode"
+              label="버전 코드 (정수, 비교용)"
+              rules={[{ required: true, message: '버전 코드를 입력하세요' }]}
+            >
+              <InputNumber style={{ width: '100%' }} min={1} placeholder="12" />
+            </Form.Item>
+          </>
         )}
         <Form.Item name="forceUpdate" label="강제 업데이트" valuePropName="checked">
           <Switch />

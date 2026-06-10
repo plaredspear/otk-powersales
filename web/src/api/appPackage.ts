@@ -39,19 +39,21 @@ export interface AppPackagePage {
 
 export interface UploadAppPackageParams {
   platform: AppPlatform;
-  versionName: string;
-  versionCode: number;
+  /** iOS 는 .ipa 에서 자동 추출되므로 생략 가능. Android 는 필수. */
+  versionName?: string;
+  versionCode?: number;
   forceUpdate: boolean;
   releaseNote?: string;
   file: File;
 }
 
 export async function uploadAppPackage(params: UploadAppPackageParams): Promise<AppPackageDetail> {
-  // iOS bundleIdentifier 는 백엔드가 업로드된 .ipa 의 Info.plist 에서 자동 추출한다(전송 불요).
+  // iOS 는 bundleIdentifier·versionName·versionCode 를 백엔드가 업로드된 .ipa 의
+  // Info.plist 에서 자동 추출한다(전송 불요).
   const formData = new FormData();
   formData.append('platform', params.platform);
-  formData.append('versionName', params.versionName);
-  formData.append('versionCode', String(params.versionCode));
+  if (params.versionName) formData.append('versionName', params.versionName);
+  if (params.versionCode != null) formData.append('versionCode', String(params.versionCode));
   formData.append('forceUpdate', String(params.forceUpdate));
   if (params.releaseNote) formData.append('releaseNote', params.releaseNote);
   formData.append('file', params.file);

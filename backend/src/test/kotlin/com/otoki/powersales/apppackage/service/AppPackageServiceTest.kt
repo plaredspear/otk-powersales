@@ -39,13 +39,17 @@ class AppPackageServiceTest {
      * 테스트용 최소 .ipa(ZIP) 바이트 생성. `Payload/<App>.app/Info.plist` 에
      * 주어진 bundle id 를 담은 XML plist 를 넣는다.
      */
-    private fun fakeIpa(bundleId: String = "com.otoki.pwrs.mobile"): ByteArray {
+    private fun fakeIpa(
+        bundleId: String = "com.otoki.pwrs.mobile",
+        shortVersion: String = "1.0.0",
+        bundleVersion: String = "1",
+    ): ByteArray {
         val plist = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>CFBundleIdentifier</key><string>$bundleId</string>
-<key>CFBundleShortVersionString</key><string>1.0.0</string>
-<key>CFBundleVersion</key><string>1</string>
+<key>CFBundleShortVersionString</key><string>$shortVersion</string>
+<key>CFBundleVersion</key><string>$bundleVersion</string>
 </dict></plist>"""
         val baos = java.io.ByteArrayOutputStream()
         java.util.zip.ZipOutputStream(baos).use { zos ->
@@ -101,9 +105,13 @@ class AppPackageServiceTest {
         }
 
         @Test
-        @DisplayName("IOS 정상 업로드 — .ipa Info.plist 에서 bundleIdentifier 자동 추출")
+        @DisplayName("IOS 정상 업로드 — .ipa Info.plist 에서 bundleId/versionName/versionCode 자동 추출 (입력 미전달)")
         fun iosSuccess() {
-            val file = MockMultipartFile("file", "mobile.ipa", "application/octet-stream", fakeIpa("com.otoki.pwrs.mobile"))
+            // shortVersion=2.3.1, bundleVersion=42 인 .ipa. 입력 versionName/versionCode 는 null.
+            val file = MockMultipartFile(
+                "file", "mobile.ipa", "application/octet-stream",
+                fakeIpa("com.otoki.pwrs.mobile", shortVersion = "2.3.1", bundleVersion = "42"),
+            )
             every { repository.existsByPlatformAndVersionCode(any(), any()) } returns false
             every { storageService.uploadLargePrivate(any(), any(), any(), any()) } returns
                 UploadResult("uploads/app-package/2026/06/10/abc.ipa", "application/octet-stream", "mobile.ipa", 10)
@@ -112,11 +120,34 @@ class AppPackageServiceTest {
             every { storageService.getPresignedUrl(any(), any()) } returns "https://s3/abc.ipa"
 
             val result = adminService.upload(
-                AppPlatform.IOS, "1.0.0", 10, false, null, file, 1L
+                AppPlatform.IOS, null, null, false, null, file, 1L
             )
 
             assertThat(saved.captured.bundleIdentifier).isEqualTo("com.otoki.pwrs.mobile")
+            assertThat(saved.captured.versionName).isEqualTo("2.3.1")
+            assertThat(saved.captured.versionCode).isEqualTo(42)
             assertThat(result.bundleIdentifier).isEqualTo("com.otoki.pwrs.mobile")
+        }
+
+        @Test
+        @DisplayName("IOS CFBundleVersion 이 비정수(1.2.3)면 입력 versionCode 로 fallback")
+        fun iosNonIntegerBundleVersionFallsBackToInput() {
+            val file = MockMultipartFile(
+                "file", "mobile.ipa", "application/octet-stream",
+                fakeIpa("com.otoki.pwrs.mobile", shortVersion = "1.2.3", bundleVersion = "1.2.3"),
+            )
+            every { repository.existsByPlatformAndVersionCode(any(), any()) } returns false
+            every { storageService.uploadLargePrivate(any(), any(), any(), any()) } returns
+                UploadResult("uploads/app-package/k.ipa", "ct", "mobile.ipa", 10)
+            val saved = slot<AppPackage>()
+            every { repository.save(capture(saved)) } answers { firstArg<AppPackage>() }
+            every { storageService.getPresignedUrl(any(), any()) } returns "url"
+
+            // bundleVersion=1.2.3 은 Long 변환 불가 → 입력 99 로 fallback
+            adminService.upload(AppPlatform.IOS, null, 99, false, null, file, 1L)
+
+            assertThat(saved.captured.versionName).isEqualTo("1.2.3")
+            assertThat(saved.captured.versionCode).isEqualTo(99)
         }
 
         @Test

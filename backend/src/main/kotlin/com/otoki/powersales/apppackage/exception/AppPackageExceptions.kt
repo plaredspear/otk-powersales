@@ -38,3 +38,9 @@ class AppPackageBundleIdentifierRequiredException : BusinessException(
     message = "유효한 iOS 패키지(.ipa)가 아닙니다. Info.plist 에서 bundle identifier 를 읽을 수 없습니다",
     httpStatus = HttpStatus.BAD_REQUEST,
 )
+
+class AppPackageVersionRequiredException(field: String) : BusinessException(
+    errorCode = "APP_PACKAGE_VERSION_REQUIRED",
+    message = "$field 값이 필요합니다. 패키지에서 자동 추출되지 않았으므로 직접 입력하세요",
+    httpStatus = HttpStatus.BAD_REQUEST,
+)

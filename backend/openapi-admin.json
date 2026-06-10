@@ -16810,14 +16810,14 @@
         }, {
           "in" : "query",
           "name" : "versionName",
-          "required" : true,
+          "required" : false,
           "schema" : {
             "type" : "string"
           }
         }, {
           "in" : "query",
           "name" : "versionCode",
-          "required" : true,
+          "required" : false,
           "schema" : {
             "format" : "int64",
             "type" : "integer"

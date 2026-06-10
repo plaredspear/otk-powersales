@@ -10,6 +10,7 @@ import com.otoki.powersales.apppackage.exception.AppPackageDuplicateVersionExcep
 import com.otoki.powersales.apppackage.exception.AppPackageFileRequiredException
 import com.otoki.powersales.apppackage.exception.AppPackageInvalidExtensionException
 import com.otoki.powersales.apppackage.exception.AppPackageNotFoundException
+import com.otoki.powersales.apppackage.exception.AppPackageVersionRequiredException
 import com.otoki.powersales.apppackage.repository.AppPackageRepository
 import com.otoki.powersales.common.storage.StorageConstants
 import com.otoki.powersales.common.storage.StorageService
@@ -42,11 +43,17 @@ class AdminAppPackageService(
         return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
+    /**
+     * @param versionName iOS 는 .ipa 의 CFBundleShortVersionString 으로 자동 채움(미입력 허용).
+     *                    추출 실패 + 미입력이면 예외. Android 는 필수 입력.
+     * @param versionCode iOS 는 .ipa 의 CFBundleVersion(정수 변환 가능 시)으로 자동 채움(미입력 허용).
+     *                    추출 불가(비정수 등) + 미입력이면 예외. Android 는 필수 입력.
+     */
     @Transactional
     fun upload(
         platform: AppPlatform,
-        versionName: String,
-        versionCode: Long,
+        versionName: String?,
+        versionCode: Long?,
         forceUpdate: Boolean,
         releaseNote: String?,
         file: MultipartFile,
@@ -54,18 +61,31 @@ class AdminAppPackageService(
     ): AppPackageDetailDto {
         if (file.isEmpty || file.originalFilename.isNullOrBlank()) throw AppPackageFileRequiredException()
         validateExtension(platform, file.originalFilename!!)
-        if (appPackageRepository.existsByPlatformAndVersionCode(platform, versionCode)) {
-            throw AppPackageDuplicateVersionException(versionCode)
-        }
 
         val fileBytes = file.bytes
-        // iOS 는 서명된 .ipa 내부 Info.plist 의 CFBundleIdentifier 를 자동 추출한다.
-        // (수동 입력 시 오타로 OTA manifest 가 불일치해 설치 실패하는 것을 원천 차단)
-        val bundleIdentifier = if (platform == AppPlatform.IOS) {
-            ipaMetadataExtractor.extract(fileBytes)?.bundleIdentifier
+
+        // iOS 는 서명된 .ipa 내부 Info.plist 에서 bundle identifier / 버전을 자동 추출한다.
+        // (수동 입력 시 오타로 OTA manifest 불일치(설치 실패) / 버전 어긋남을 원천 차단)
+        val bundleIdentifier: String?
+        val resolvedVersionName: String
+        val resolvedVersionCode: Long
+        if (platform == AppPlatform.IOS) {
+            val meta = ipaMetadataExtractor.extract(fileBytes)
                 ?: throw AppPackageBundleIdentifierRequiredException()
+            bundleIdentifier = meta.bundleIdentifier
+            // 추출값 우선, 없으면 입력값으로 fallback. 둘 다 없으면 예외.
+            resolvedVersionName = meta.shortVersion ?: versionName?.ifBlank { null }
+                ?: throw AppPackageVersionRequiredException("versionName")
+            resolvedVersionCode = meta.bundleVersion?.toLongOrNull() ?: versionCode
+                ?: throw AppPackageVersionRequiredException("versionCode")
         } else {
-            null
+            bundleIdentifier = null
+            resolvedVersionName = versionName?.ifBlank { null } ?: throw AppPackageVersionRequiredException("versionName")
+            resolvedVersionCode = versionCode ?: throw AppPackageVersionRequiredException("versionCode")
+        }
+
+        if (appPackageRepository.existsByPlatformAndVersionCode(platform, resolvedVersionCode)) {
+            throw AppPackageDuplicateVersionException(resolvedVersionCode)
         }
 
         val result = storageService.uploadLargePrivate(
@@ -78,8 +98,8 @@ class AdminAppPackageService(
         val saved = appPackageRepository.save(
             AppPackage(
                 platform = platform,
-                versionName = versionName,
-                versionCode = versionCode,
+                versionName = resolvedVersionName,
+                versionCode = resolvedVersionCode,
                 forceUpdate = forceUpdate,
                 releaseNote = releaseNote,
                 fileUniqueKey = result.key,

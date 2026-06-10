@@ -60,14 +60,15 @@ class AdminAppPackageController(
     @PostMapping(consumes = ["multipart/form-data"])
     fun upload(
         @RequestParam platform: AppPlatform,
-        @RequestParam versionName: String,
-        @RequestParam versionCode: Long,
+        @RequestParam(required = false) versionName: String?,
+        @RequestParam(required = false) versionCode: Long?,
         @RequestParam(required = false, defaultValue = "false") forceUpdate: Boolean,
         @RequestParam(required = false) releaseNote: String?,
         @RequestPart("file") file: MultipartFile,
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<AppPackageDetailDto>> {
-        // iOS bundleIdentifier 는 업로드된 .ipa 의 Info.plist 에서 자동 추출한다(수동 입력 불요).
+        // iOS 는 bundleIdentifier / versionName / versionCode 를 업로드된 .ipa 의
+        // Info.plist 에서 자동 추출한다(미입력 허용). Android 는 버전 필드가 필수.
         val result = adminAppPackageService.upload(
             platform, versionName, versionCode, forceUpdate, releaseNote, file, principal.employeeId
         )
