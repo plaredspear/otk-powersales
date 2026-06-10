@@ -7,6 +7,7 @@ import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.AccountInvalidParameterException
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepositoryCustom
+import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepositoryCustom
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -24,15 +25,17 @@ import java.time.LocalDate
  * | 조장 (일반) | 지점코드 + 그룹 1000/1010 | `teamleaderAccList` |
  * | 여사원/그 외 | 본인 팀멤버스케줄 거래처 | `selectMyAccount`(여사원 분기) |
  *
- * 진열스케줄(displayWorkSchedule) union 은 레거시 주문/범용 셀렉터(`accountSelectList`)에만 존재하며,
- * 본 endpoint 를 사용하는 매출/현장 화면(7종)에는 없으므로 합치지 않는다.
+ * 진열스케줄(displayWorkSchedule) union 과 주문가능 거래처유형(abctypecode) 필터는 레거시 주문 셀렉터
+ * (`accountSelectList` with `order=order`)에만 존재한다. 따라서 [MyAccountScope.ORDER] 일 때만
+ * 여사원/yang 예외 경로에 합치며, 매출/현장 화면(SALES/FIELD)에는 합치지 않는다.
  */
 @Service
 @Transactional(readOnly = true)
 class MyAccountService(
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
-    private val teamMemberScheduleRepository: TeamMemberScheduleRepositoryCustom
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepositoryCustom,
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepositoryCustom
 ) {
 
     fun getMyAccounts(userId: Long, keyword: String?, scope: MyAccountScope = MyAccountScope.FIELD): MyAccountListResponse {
@@ -51,15 +54,16 @@ class MyAccountService(
 
             // 조장 중 레거시 person-specific 예외(yang_sfid): 팀장 기준 스케줄 거래처 (레거시 selectMyAccount 조장 분기)
             employee.role == AppAuthority.LEADER && employee.sfid == LEGACY_SCHEDULE_LEADER_SFID ->
-                getLeaderScheduleAccounts(employee.id)
+                getLeaderScheduleAccounts(employee.id, scope)
 
-            // 조장 일반: 지점코드 + 거래처 그룹 1000/1010 (레거시 teamleaderAccList)
+            // 조장 일반: 지점코드 + 거래처 그룹 1000/1010 (레거시 teamleaderAccList).
+            // 레거시 주문 셀렉터에서도 abctype 필터가 주석 처리되어 있어 ORDER 여도 분기 동일.
             employee.role == AppAuthority.LEADER ->
                 getLeaderAccounts(employee.costCenterCode)
 
             // 여사원/그 외: 본인 팀멤버스케줄 기반 (레거시 selectMyAccount 여사원 분기)
             else ->
-                getEmployeeAccounts(employee.id)
+                getEmployeeAccounts(employee.id, scope)
         }
 
         val filteredList = if (!keyword.isNullOrBlank()) {
@@ -75,7 +79,7 @@ class MyAccountService(
         val sortedList = filteredList.sortedBy { it.accountName }
 
         return MyAccountListResponse(
-            stores = sortedList,
+            accounts = sortedList,
             totalCount = sortedList.size
         )
     }
@@ -94,27 +98,56 @@ class MyAccountService(
     }
 
     /**
-     * 일반 사원 거래처 조회: 본인 팀멤버스케줄 기반 (레거시 selectMyAccount 여사원 분기 — 진열 union 없음)
+     * 일반 사원 거래처 조회: 본인 팀멤버스케줄 기반 (레거시 selectMyAccount 여사원 분기).
+     * [MyAccountScope.ORDER] 면 본인 진열 일정(레거시 selectDisplayMyAccount) union + abctype 필터를 적용한다.
      */
-    private fun getEmployeeAccounts(userId: Long): List<MyAccountInfo> {
+    private fun getEmployeeAccounts(userId: Long, scope: MyAccountScope): List<MyAccountInfo> {
         val (fromDate, toDateExclusive) = scheduleDateRange()
 
-        val accountIds = teamMemberScheduleRepository
+        val scheduleAccountIds = teamMemberScheduleRepository
             .findDistinctAccountIdsByEmployeeIdAndDateRange(userId, fromDate, toDateExclusive)
 
-        return toAccounts(accountIds)
+        val accountIds = unionDisplayAccountsIfOrder(scheduleAccountIds, userId, scope, fromDate, toDateExclusive)
+
+        return toAccounts(accountIds, scope)
     }
 
     /**
-     * 조장(yang 예외) 거래처 조회: 본인이 팀장으로 배정된 팀멤버스케줄 기반 (레거시 selectMyAccount 조장 분기)
+     * 조장(yang 예외) 거래처 조회: 본인이 팀장으로 배정된 팀멤버스케줄 기반 (레거시 selectMyAccount 조장 분기).
+     * [MyAccountScope.ORDER] 면 본인 진열 일정 union + abctype 필터를 적용한다.
+     *
+     * 레거시 주문 셀렉터에서 yang 예외(leader != null)는 selectDisplayMyAccount 의 `fullname__c` 필터가
+     * 빠져 전체 진열 거래처를 노출하나, 이는 1인 하드코딩 예외의 의도치 않은 동작으로 판단되어
+     * 신규에서는 본인 진열 일정 기준으로 한정한다(전사 진열 스캔 회피).
      */
-    private fun getLeaderScheduleAccounts(leaderId: Long): List<MyAccountInfo> {
+    private fun getLeaderScheduleAccounts(leaderId: Long, scope: MyAccountScope): List<MyAccountInfo> {
         val (fromDate, toDateExclusive) = scheduleDateRange()
 
-        val accountIds = teamMemberScheduleRepository
+        val scheduleAccountIds = teamMemberScheduleRepository
             .findDistinctAccountIdsByTeamLeaderIdAndDateRange(leaderId, fromDate, toDateExclusive)
 
-        return toAccounts(accountIds)
+        val accountIds = unionDisplayAccountsIfOrder(scheduleAccountIds, leaderId, scope, fromDate, toDateExclusive)
+
+        return toAccounts(accountIds, scope)
+    }
+
+    /**
+     * 주문(ORDER) 화면 한정: 팀멤버스케줄 거래처에 본인 진열 일정 거래처(레거시 selectDisplayMyAccount)를 합친다.
+     * 진열 confirmed 조건은 레거시 selectDisplayMyAccount 원문에 없어 적용하지 않는다(날짜범위·삭제여부만).
+     */
+    private fun unionDisplayAccountsIfOrder(
+        scheduleAccountIds: List<Long>,
+        employeeId: Long,
+        scope: MyAccountScope,
+        fromDate: LocalDate,
+        toDateExclusive: LocalDate
+    ): List<Long> {
+        if (scope != MyAccountScope.ORDER) return scheduleAccountIds
+
+        val displayAccountIds = displayWorkScheduleRepository
+            .findDistinctAccountIdsByEmployeeIdAndDateRange(employeeId, fromDate, toDateExclusive)
+
+        return (scheduleAccountIds + displayAccountIds).distinct()
     }
 
     /**
@@ -127,10 +160,19 @@ class MyAccountService(
             .map { MyAccountInfo.from(it) }
     }
 
-    private fun toAccounts(accountIds: List<Long>): List<MyAccountInfo> {
+    /**
+     * accountId 목록 → 거래처 DTO. [MyAccountScope.ORDER] 면 주문가능 거래처유형(abctypecode) 필터를 적용한다
+     * (레거시 selectMyAccount/selectDisplayMyAccount 의 `order=order` 분기).
+     */
+    private fun toAccounts(accountIds: List<Long>, scope: MyAccountScope): List<MyAccountInfo> {
         if (accountIds.isEmpty()) return emptyList()
-        return accountRepository.findByIdInAndIsDeletedNot(accountIds, true)
-            .map { MyAccountInfo.from(it) }
+        val accounts = accountRepository.findByIdInAndIsDeletedNot(accountIds, true)
+        val filtered = if (scope == MyAccountScope.ORDER) {
+            accounts.filter { it.abcTypeCode in ORDER_ABC_TYPE_CODES }
+        } else {
+            accounts
+        }
+        return filtered.map { MyAccountInfo.from(it) }
     }
 
     /**
@@ -151,5 +193,12 @@ class MyAccountService(
 
         // 부서장 전체조회 결과 상한 — 모바일 드롭다운 과대 응답(broken pipe) 방지. keyword 검색과 함께 사용.
         private const val ALL_ACCOUNTS_LIMIT = 100
+
+        // 레거시 주문 셀렉터(`order=order`) 의 주문가능 거래처유형 필터
+        // (accountMapper.xml selectMyAccount/selectDisplayMyAccount `abctypecode__c IN (...)`).
+        private val ORDER_ABC_TYPE_CODES = setOf(
+            "2001", "2002", "2513", "3061", "6112", "3025", "5900",
+            "5012", "5108", "5101", "5106", "5102", "5104"
+        )
     }
 }

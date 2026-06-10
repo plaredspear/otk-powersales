@@ -54,11 +54,6 @@ class OrderRequestListState {
   /// 현재 정렬 타입
   final OrderSortType sortType;
 
-  // --- 거래처 목록 (필터 드롭다운용) ---
-
-  /// 거래처 목록 (id -> name)
-  final Map<int, String> clients;
-
   const OrderRequestListState({
     this.isLoading = false,
     this.errorMessage,
@@ -74,7 +69,6 @@ class OrderRequestListState {
     this.deliveryDateFrom,
     this.deliveryDateTo,
     this.sortType = OrderSortType.latestOrder,
-    this.clients = const {},
   });
 
   /// 초기 상태
@@ -133,7 +127,6 @@ class OrderRequestListState {
     String? deliveryDateFrom,
     String? deliveryDateTo,
     OrderSortType? sortType,
-    Map<int, String>? clients,
     bool clearClientFilter = false,
     bool clearStatusFilter = false,
     bool clearDateFilter = false,
@@ -160,7 +153,6 @@ class OrderRequestListState {
       deliveryDateTo:
           clearDateFilter ? null : (deliveryDateTo ?? this.deliveryDateTo),
       sortType: sortType ?? this.sortType,
-      clients: clients ?? this.clients,
     );
   }
 }

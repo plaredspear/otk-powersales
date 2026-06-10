@@ -42,11 +42,6 @@ class ClientOrderListState {
   /// 선택된 납기일 (YYYY-MM-DD)
   final String selectedDeliveryDate;
 
-  // --- 거래처 목록 (필터 드롭다운용) ---
-
-  /// 거래처 목록 (id -> name)
-  final Map<int, String> accounts;
-
   const ClientOrderListState({
     this.isLoading = false,
     this.errorMessage,
@@ -60,7 +55,6 @@ class ClientOrderListState {
     this.selectedAccountId,
     this.selectedAccountName,
     required this.selectedDeliveryDate,
-    this.accounts = const {},
   });
 
   /// 초기 상태
@@ -119,7 +113,6 @@ class ClientOrderListState {
     int? selectedAccountId,
     String? selectedAccountName,
     String? selectedDeliveryDate,
-    Map<int, String>? accounts,
     bool clearAccountFilter = false,
   }) {
     return ClientOrderListState(
@@ -138,7 +131,6 @@ class ClientOrderListState {
           ? null
           : (selectedAccountName ?? this.selectedAccountName),
       selectedDeliveryDate: selectedDeliveryDate ?? this.selectedDeliveryDate,
-      accounts: accounts ?? this.accounts,
     );
   }
 }

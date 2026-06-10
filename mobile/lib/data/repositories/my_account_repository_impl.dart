@@ -19,7 +19,7 @@ class MyAccountRepositoryImpl implements MyAccountRepository {
     final response =
         await _remoteDataSource.getMyAccounts(keyword: keyword, scope: scope);
 
-    final accounts = response.stores.map((model) => model.toEntity()).toList();
+    final accounts = response.accounts.map((model) => model.toEntity()).toList();
 
     return MyAccountListResult(
       accounts: accounts,

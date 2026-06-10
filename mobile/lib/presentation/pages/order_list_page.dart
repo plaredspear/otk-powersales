@@ -46,10 +46,9 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
       initialIndex: widget.initialTabIndex,
     );
 
-    // 페이지 진입 시 초기 데이터 로딩
+    // 페이지 진입 시 초기 데이터 로딩 (거래처별 주문은 사용자 선택 후 검색이라 별도 init 없음)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(orderRequestListProvider.notifier).initialize();
-      ref.read(clientOrderListProvider.notifier).initialize();
     });
   }
 
@@ -157,7 +156,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
       children: [
         // 필터 바
         OrderRequestFilterBar(
-          clients: state.clients,
+          selectedClientName: state.selectedClientName,
           selectedClientId: state.selectedClientId,
           selectedStatus: state.selectedStatus,
           deliveryDateFrom: state.deliveryDateFrom,
@@ -359,7 +358,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
           children: [
             // 필터 바
             ClientOrderFilterBar(
-              accounts: state.accounts,
+              selectedAccountName: state.selectedAccountName,
               selectedAccountId: state.selectedAccountId,
               selectedDeliveryDate: state.selectedDeliveryDate,
               canSearch: state.canSearch,

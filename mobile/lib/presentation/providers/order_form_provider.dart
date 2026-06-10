@@ -96,19 +96,13 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   /// 초기화 (Spec #598 P2-M §2.1).
   ///
   /// [orderId]: 수정할 주문 ID (있으면 수정 모드)
-  /// [clients]: 거래처 ID → 이름
-  /// [clientExternalKeys]: 거래처 ID → SAP externalKey (`getLoanInquiry` 호출용)
   Future<void> initialize({
     int? orderId,
-    Map<int, String>? clients,
-    Map<int, String>? clientExternalKeys,
   }) async {
     // 신규 폼 — UUID v4 멱등키 발급 (P1-M state 필드)
     final newClientRequestId = orderId == null ? _uuid.v4() : null;
 
     state = state.copyWith(
-      clients: clients ?? state.clients,
-      clientExternalKeys: clientExternalKeys ?? state.clientExternalKeys,
       clientRequestId: newClientRequestId,
     );
 
@@ -212,7 +206,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
 
   /// 거래처 선택 (Spec #598 P2-M §2.3).
   void selectClient(int clientId, String clientName, [String? externalKey]) {
-    final resolvedExternalKey = externalKey ?? state.clientExternalKeys[clientId];
+    final resolvedExternalKey = externalKey;
 
     state = state.copyWith(
       orderDraft: state.orderDraft.copyWith(
@@ -713,8 +707,6 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       await _deleteOrderDraft.call();
       state = OrderFormState.initial().copyWith(
         clientRequestId: _uuid.v4(),
-        clients: state.clients,
-        clientExternalKeys: state.clientExternalKeys,
         successMessage: '삭제되었습니다.',
       );
     } catch (e) {

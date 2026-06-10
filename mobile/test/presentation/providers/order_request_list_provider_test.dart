@@ -1,37 +1,9 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/core/network/dio_provider.dart';
 import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/presentation/providers/order_request_list_provider.dart';
 
 import '../../helpers/fake_order_request_repository.dart';
-
-Dio _createMockDio() {
-  final dio = Dio(BaseOptions(baseUrl: 'http://localhost'));
-  dio.interceptors.add(InterceptorsWrapper(
-    onRequest: (options, handler) {
-      if (options.path == '/api/v1/mobile/accounts/my') {
-        handler.resolve(Response(
-          data: {
-            'success': true,
-            'data': {
-              'accounts': [
-                {'accountId': 1, 'accountName': '천사푸드'},
-                {'accountId': 2, 'accountName': '(유)경산식품'},
-              ],
-            },
-          },
-          statusCode: 200,
-          requestOptions: options,
-        ));
-        return;
-      }
-      handler.reject(DioException(requestOptions: options, message: 'Not mocked'));
-    },
-  ));
-  return dio;
-}
 
 void main() {
   group('OrderRequestListNotifier (클라이언트 슬라이스)', () {
@@ -43,7 +15,6 @@ void main() {
       container = ProviderContainer(
         overrides: [
           orderRequestRepositoryProvider.overrideWithValue(fakeRepository),
-          dioProvider.overrideWithValue(_createMockDio()),
         ],
       );
     });
@@ -56,7 +27,6 @@ void main() {
       final state = container.read(orderRequestListProvider);
 
       expect(state.allOrderRequests, isEmpty);
-      expect(state.clients, isEmpty);
       expect(state.isLoading, false);
       expect(state.hasSearched, false);
       expect(state.currentPage, 0);
@@ -67,14 +37,13 @@ void main() {
       expect(state.sortType, OrderSortType.latestOrder);
     });
 
-    test('initialize() 가 거래처 + 전체 배열 1회 fetch 한다 (T1)', () async {
+    test('initialize() 가 전체 배열 1회 fetch 한다 (T1)', () async {
       final notifier = container.read(orderRequestListProvider.notifier);
 
       notifier.updateDeliveryDateRange(null, null);
       await notifier.initialize();
 
       final state = container.read(orderRequestListProvider);
-      expect(state.clients, isNotEmpty);
       expect(state.allOrderRequests, isNotEmpty);
       expect(state.hasSearched, true);
       expect(state.fetchedAt, isNotNull);

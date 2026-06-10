@@ -7,6 +7,7 @@ import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.AccountInvalidParameterException
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepositoryCustom
+import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepositoryCustom
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -24,11 +25,13 @@ class MyAccountServiceTest {
     private val employeeRepository: EmployeeRepository = mockk()
     private val accountRepository: AccountRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepositoryCustom = mockk()
+    private val displayWorkScheduleRepository: DisplayWorkScheduleRepositoryCustom = mockk()
 
     private val myAccountService = MyAccountService(
         employeeRepository,
         accountRepository,
         teamMemberScheduleRepository,
+        displayWorkScheduleRepository,
     )
 
     @Nested
@@ -51,10 +54,10 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, null)
 
-            assertThat(result.stores).hasSize(2)
+            assertThat(result.accounts).hasSize(2)
             assertThat(result.totalCount).isEqualTo(2)
-            assertThat(result.stores[0].accountName).isEqualTo("(유)경산식품")
-            assertThat(result.stores[1].accountName).isEqualTo("(주)대한식품")
+            assertThat(result.accounts[0].accountName).isEqualTo("(유)경산식품")
+            assertThat(result.accounts[1].accountName).isEqualTo("(주)대한식품")
         }
 
         @Test
@@ -68,7 +71,7 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, null)
 
-            assertThat(result.stores).isEmpty()
+            assertThat(result.accounts).isEmpty()
             assertThat(result.totalCount).isEqualTo(0)
         }
 
@@ -88,8 +91,8 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, null)
 
-            assertThat(result.stores[0].address).isEqualTo("전라남도 목포시 용해동 123")
-            assertThat(result.stores[0].addressDetail).isEqualTo("1층")
+            assertThat(result.accounts[0].address).isEqualTo("전라남도 목포시 용해동 123")
+            assertThat(result.accounts[0].addressDetail).isEqualTo("1층")
         }
     }
 
@@ -114,7 +117,7 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, null)
 
-            assertThat(result.stores).hasSize(2)
+            assertThat(result.accounts).hasSize(2)
             assertThat(result.totalCount).isEqualTo(2)
             verify(exactly = 0) { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any()) }
         }
@@ -129,7 +132,7 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, null)
 
-            assertThat(result.stores).isEmpty()
+            assertThat(result.accounts).isEmpty()
             assertThat(result.totalCount).isEqualTo(0)
         }
 
@@ -150,8 +153,8 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, null)
 
-            assertThat(result.stores).hasSize(1)
-            assertThat(result.stores[0].accountName).isEqualTo("사과마을")
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountName).isEqualTo("사과마을")
             // yang 예외는 지점코드 기반(teamleaderAccList)을 타지 않는다
             verify(exactly = 0) { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(any(), any(), any()) }
         }
@@ -176,7 +179,7 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.SALES)
 
-            assertThat(result.stores).hasSize(2)
+            assertThat(result.accounts).hasSize(2)
             verify { teamMemberScheduleRepository.findDistinctScheduledAccounts(null, any()) }
             verify(exactly = 0) { accountRepository.findByIdInAndIsDeletedNot(any(), any()) }
         }
@@ -192,7 +195,7 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.FIELD)
 
-            assertThat(result.stores).isEmpty()
+            assertThat(result.accounts).isEmpty()
             verify(exactly = 0) { teamMemberScheduleRepository.findDistinctScheduledAccounts(any(), any()) }
             verify { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) }
         }
@@ -217,8 +220,8 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, "경산")
 
-            assertThat(result.stores).hasSize(1)
-            assertThat(result.stores[0].accountName).isEqualTo("(유)경산식품")
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountName).isEqualTo("(유)경산식품")
         }
 
         @Test
@@ -236,8 +239,8 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, "1025")
 
-            assertThat(result.stores).hasSize(1)
-            assertThat(result.stores[0].accountCode).isEqualTo("1025172")
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountCode).isEqualTo("1025172")
         }
 
         @Test
@@ -282,10 +285,81 @@ class MyAccountServiceTest {
 
             val result = myAccountService.getMyAccounts(userId, null)
 
-            assertThat(result.stores).hasSize(3)
-            assertThat(result.stores[0].accountName).isEqualTo("가나다식품")
-            assertThat(result.stores[1].accountName).isEqualTo("나라마트")
-            assertThat(result.stores[2].accountName).isEqualTo("홈플러스 서면점")
+            assertThat(result.accounts).hasSize(3)
+            assertThat(result.accounts[0].accountName).isEqualTo("가나다식품")
+            assertThat(result.accounts[1].accountName).isEqualTo("나라마트")
+            assertThat(result.accounts[2].accountName).isEqualTo("홈플러스 서면점")
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyAccounts - 주문(ORDER) 거래처 조회")
+    inner class OrderScopeTests {
+
+        @Test
+        @DisplayName("여사원 + ORDER -> 팀멤버스케줄 ∪ 진열 일정, 주문가능 abctype만 반환")
+        fun getMyAccounts_order_unionDisplayAndAbcFilter() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+            // TMS [1,2] ∪ Display [2,3] = [1,2,3] (2 중복 제거)
+            val accounts = listOf(
+                createAccount(id = 1, name = "주문가능마트", externalKey = "1001", abcTypeCode = "2001"),
+                createAccount(id = 2, name = "주문불가식품", externalKey = "1002", abcTypeCode = "9999"),
+                createAccount(id = 3, name = "진열주문마트", externalKey = "1003", abcTypeCode = "5104")
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(1, 2)
+            every { displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(2, 3)
+            every { accountRepository.findByIdInAndIsDeletedNot(any(), true) } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER)
+
+            // abctype 미해당(9999) 제외 -> 주문가능 2건만
+            assertThat(result.accounts).hasSize(2)
+            assertThat(result.accounts.map { it.accountName })
+                .containsExactlyInAnyOrder("주문가능마트", "진열주문마트")
+            verify { displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) }
+        }
+
+        @Test
+        @DisplayName("여사원 + FIELD -> 진열 union 미적용 (진열 레포 미호출)")
+        fun getMyAccounts_field_noDisplayUnion() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+            val accounts = listOf(createAccount(id = 1, name = "현장마트", externalKey = "1001", abcTypeCode = "9999"))
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns listOf(1)
+            every { accountRepository.findByIdInAndIsDeletedNot(any(), true) } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.FIELD)
+
+            // FIELD 는 abctype 필터 없이 그대로 반환
+            assertThat(result.accounts).hasSize(1)
+            verify(exactly = 0) { displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("일반 조장 + ORDER -> teamleaderAccList 그대로 (abctype 미적용, 진열 union 없음)")
+        fun getMyAccounts_order_leaderUnchanged() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", role = AppAuthority.LEADER, costCenterCode = "1100")
+            val accounts = listOf(
+                createAccount(id = 10, name = "A마트", externalKey = "2001", abcTypeCode = "9999"),
+                createAccount(id = 11, name = "B식품", externalKey = "2002", abcTypeCode = "0000")
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every {
+                accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot("1100", listOf("1000", "1010"), true)
+            } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER)
+
+            // 레거시 teamleaderAccList 는 abctype 주석 처리 -> 2건 모두 반환
+            assertThat(result.accounts).hasSize(2)
+            verify(exactly = 0) { displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any()) }
         }
     }
 
@@ -316,7 +390,8 @@ class MyAccountServiceTest {
         address1: String? = "전라남도 목포시",
         address2: String? = null,
         representative: String? = "김정자",
-        phone: String? = "061-123-4567"
+        phone: String? = "061-123-4567",
+        abcTypeCode: String? = null
     ): Account {
         return Account(
             id = id,
@@ -325,7 +400,8 @@ class MyAccountServiceTest {
             address1 = address1,
             address2 = address2,
             representative = representative,
-            phone = phone
+            phone = phone,
+            abcTypeCode = abcTypeCode
         )
     }
 }

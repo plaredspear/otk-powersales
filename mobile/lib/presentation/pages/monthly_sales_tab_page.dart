@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../domain/entities/my_account.dart';
 import '../../domain/repositories/my_account_repository.dart';
 import '../providers/monthly_sales_provider.dart';
-import '../widgets/account/account_selector_sheet.dart';
+import '../widgets/account/account_selector_field.dart';
 import '../widgets/sales/monthly_sales_chart_widget.dart';
 
 /// 월매출 탭 페이지
@@ -32,12 +33,8 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
   }
 
   /// 거래처 선택 — 내 거래처 선택 바텀시트에서 고른 거래처로 필터링
-  Future<void> _selectAccount() async {
-    final account = await AccountSelectorSheet.show(
-      context,
-      scope: MyAccountScope.sales,
-    );
-    if (account == null || !mounted) return;
+  Future<void> _onAccountSelected(MyAccount account) async {
+    if (!mounted) return;
     setState(() => _selectedAccountName = account.accountName);
     await ref
         .read(monthlySalesProvider.notifier)
@@ -87,35 +84,12 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
       child: ListView(
         children: [
           // 거래처 선택 필터
-          InkWell(
-            onTap: _selectAccount,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.store_outlined, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _selectedAccountName ?? '전체 거래처',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  if (_selectedAccountName != null)
-                    IconButton(
-                      onPressed: _clearAccount,
-                      icon: const Icon(Icons.close, size: 18),
-                      visualDensity: VisualDensity.compact,
-                      tooltip: '전체 보기',
-                    )
-                  else
-                    const Icon(Icons.chevron_right, size: 20),
-                ],
-              ),
-            ),
+          AccountSelectorField(
+            selectedName: _selectedAccountName,
+            placeholder: '전체 거래처',
+            scope: MyAccountScope.sales,
+            onSelected: _onAccountSelected,
+            onCleared: _clearAccount,
           ),
 
           const Divider(height: 1),

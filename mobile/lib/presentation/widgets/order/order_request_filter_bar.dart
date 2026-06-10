@@ -4,15 +4,17 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/order_request.dart';
+import '../../../domain/repositories/my_account_repository.dart';
+import '../account/account_selector_field.dart';
 import 'order_filter_styles.dart';
 
 /// 주문 필터 바 위젯
 ///
-/// 거래처 드롭다운, 상태 드롭다운, 납기일 범위, 검색 버튼을 포함합니다.
+/// 거래처 선택(바텀시트), 상태 드롭다운, 납기일 범위, 검색 버튼을 포함합니다.
 /// Heroku 레거시(order/list.jsp - 내 주문 탭)의 플랫 검색 영역 디자인에 정합합니다.
 class OrderRequestFilterBar extends StatelessWidget {
-  /// 거래처 목록 (id -> name)
-  final Map<int, String> clients;
+  /// 선택된 거래처명 (미선택 시 전체)
+  final String? selectedClientName;
 
   /// 선택된 거래처 ID
   final int? selectedClientId;
@@ -40,7 +42,7 @@ class OrderRequestFilterBar extends StatelessWidget {
 
   const OrderRequestFilterBar({
     super.key,
-    required this.clients,
+    this.selectedClientName,
     this.selectedClientId,
     this.selectedStatus,
     this.deliveryDateFrom,
@@ -90,42 +92,15 @@ class OrderRequestFilterBar extends StatelessWidget {
   }
 
   Widget _buildClientDropdown(BuildContext context) {
-    return Padding(
+    return AccountSelectorField(
+      selectedName: selectedClientName,
+      placeholder: '거래처 전체',
+      scope: MyAccountScope.order,
+      leadingIcon: Icons.store_outlined,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: selectedClientId,
-          isExpanded: true,
-          icon: const Icon(
-            Icons.arrow_drop_down,
-            size: 22,
-            color: AppColors.textSecondary,
-          ),
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textPrimary,
-          ),
-          hint: Text('거래처 전체', style: OrderFilterStyles.valueText),
-          items: [
-            DropdownMenuItem<int?>(
-              value: null,
-              child: Text('거래처 전체', style: OrderFilterStyles.valueText),
-            ),
-            ...clients.entries.map((entry) {
-              return DropdownMenuItem<int?>(
-                value: entry.key,
-                child: Text(
-                  entry.value,
-                  style: OrderFilterStyles.valueText,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }),
-          ],
-          onChanged: (value) {
-            onClientChanged(value, value != null ? clients[value] : null);
-          },
-        ),
-      ),
+      onSelected: (account) =>
+          onClientChanged(account.accountId, account.accountName),
+      onCleared: () => onClientChanged(null, null),
     );
   }
 

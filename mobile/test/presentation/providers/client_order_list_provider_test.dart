@@ -1,9 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/core/network/dio_provider.dart';
 import 'package:mobile/domain/entities/client_order.dart';
-import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
@@ -15,38 +12,6 @@ import 'package:mobile/presentation/providers/order_request_list_provider.dart';
 
 import '../../helpers/fake_order_request_repository.dart';
 
-Dio _createMockDio() {
-  final dio = Dio(BaseOptions(baseUrl: 'http://localhost'));
-  dio.interceptors.add(InterceptorsWrapper(
-    onRequest: (options, handler) {
-      if (options.path == '/api/v1/mobile/accounts/my') {
-        handler.resolve(Response(
-          data: {
-            'success': true,
-            'data': {
-              'accounts': [
-                {'accountId': 1, 'accountName': '천사푸드', 'accountCode': 'S001', 'address': '', 'representativeName': ''},
-                {'accountId': 2, 'accountName': '(유)경산식품', 'accountCode': 'S002', 'address': '', 'representativeName': ''},
-                {'accountId': 3, 'accountName': '대한식품유통', 'accountCode': 'S003', 'address': '', 'representativeName': ''},
-                {'accountId': 4, 'accountName': '행복마트', 'accountCode': 'S004', 'address': '', 'representativeName': ''},
-                {'accountId': 5, 'accountName': '명품식자재', 'accountCode': 'S005', 'address': '', 'representativeName': ''},
-                {'accountId': 6, 'accountName': '서울종합식품', 'accountCode': 'S006', 'address': '', 'representativeName': ''},
-                {'accountId': 7, 'accountName': '그린유통', 'accountCode': 'S007', 'address': '', 'representativeName': ''},
-                {'accountId': 8, 'accountName': '삼성식품', 'accountCode': 'S008', 'address': '', 'representativeName': ''},
-              ]
-            }
-          },
-          statusCode: 200,
-          requestOptions: options,
-        ));
-        return;
-      }
-      handler.reject(DioException(requestOptions: options, message: 'Not mocked'));
-    },
-  ));
-  return dio;
-}
-
 void main() {
   group('ClientOrderListNotifier', () {
     late ProviderContainer container;
@@ -57,7 +22,6 @@ void main() {
       container = ProviderContainer(
         overrides: [
           orderRequestRepositoryProvider.overrideWithValue(fakeRepository),
-          dioProvider.overrideWithValue(_createMockDio()),
         ],
       );
     });
@@ -81,20 +45,7 @@ void main() {
       expect(state.selectedAccountId, isNull);
       expect(state.selectedAccountName, isNull);
       expect(state.selectedDeliveryDate, isNotNull);
-      expect(state.accounts, isEmpty);
       expect(state.canSearch, false);
-    });
-
-    test('initialize() loads account data', () async {
-      final notifier = container.read(clientOrderListProvider.notifier);
-
-      await notifier.initialize();
-
-      final state = container.read(clientOrderListProvider);
-      expect(state.accounts, isNotEmpty);
-      expect(state.accounts.length, 8); // mockClients has 8 accounts
-      expect(state.accounts[1], '천사푸드');
-      expect(state.accounts[2], '(유)경산식품');
     });
 
     test('selectAccount() sets account filter', () {
@@ -147,9 +98,6 @@ void main() {
     test('searchOrders() loads orders for selected account', () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
-      // Initialize to get accounts
-      await notifier.initialize();
-
       // Select account 2 ((유)경산식품)
       notifier.selectAccount(2, '(유)경산식품');
       notifier.updateDeliveryDate('2026-02-08');
@@ -171,8 +119,6 @@ void main() {
     test('searchOrders() sets hasSearched true', () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
-      // Initialize and select an account
-      await notifier.initialize();
       notifier.selectAccount(1, '천사푸드');
 
       expect(container.read(clientOrderListProvider).hasSearched, false);
@@ -186,8 +132,6 @@ void main() {
     test('goToPage() navigates to specific page', () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
-      // Initialize and select account
-      await notifier.initialize();
       notifier.selectAccount(1, '천사푸드');
       await notifier.searchOrders();
 
@@ -253,7 +197,6 @@ void main() {
       final errorContainer = ProviderContainer(
         overrides: [
           orderRequestRepositoryProvider.overrideWithValue(errorRepository),
-          dioProvider.overrideWithValue(_createMockDio()),
         ],
       );
 
@@ -275,15 +218,9 @@ void main() {
         () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
-      // Step 1: Initialize
-      await notifier.initialize();
-      var state = container.read(clientOrderListProvider);
-      expect(state.accounts, isNotEmpty);
-      expect(state.accounts.length, 8);
-
-      // Step 2: Select account
+      // Step 1: Select account
       notifier.selectAccount(2, '(유)경산식품');
-      state = container.read(clientOrderListProvider);
+      var state = container.read(clientOrderListProvider);
       expect(state.selectedAccountId, 2);
       expect(state.selectedAccountName, '(유)경산식품');
       expect(state.canSearch, true);
@@ -304,7 +241,6 @@ void main() {
       }
 
       // Step 5: Go to page (if available)
-      final ordersOnFirstPage = state.orders.length;
       if (!state.isLast && state.totalPages > 1) {
         await notifier.goToPage(1);
         state = container.read(clientOrderListProvider);
@@ -327,7 +263,6 @@ void main() {
       expect(container.read(clientOrderListProvider).hasResults, false);
 
       // After search, has results
-      await notifier.initialize();
       notifier.selectAccount(1, '천사푸드');
       await notifier.searchOrders();
 
@@ -344,7 +279,6 @@ void main() {
       expect(container.read(clientOrderListProvider).isEmpty, false);
 
       // After search with results, not isEmpty
-      await notifier.initialize();
       notifier.selectAccount(1, '천사푸드');
       await notifier.searchOrders();
 
@@ -365,7 +299,6 @@ void main() {
     test('hasNextPage and hasPreviousPage getters', () async {
       final notifier = container.read(clientOrderListProvider.notifier);
 
-      await notifier.initialize();
       notifier.selectAccount(1, '천사푸드');
       await notifier.searchOrders();
 

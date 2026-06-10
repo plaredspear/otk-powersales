@@ -1,7 +1,5 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/network/dio_provider.dart';
 import '../../core/utils/error_utils.dart';
 import '../../domain/usecases/get_client_orders_usecase.dart';
 import 'client_order_list_state.dart';
@@ -22,34 +20,11 @@ final getClientOrdersUseCaseProvider = Provider<GetClientOrdersUseCase>((ref) {
 /// 거래처 선택, 납기일 선택, 페이지네이션 기능을 관리합니다.
 class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
   final GetClientOrdersUseCase _getClientOrders;
-  final Dio _dio;
 
   ClientOrderListNotifier({
     required GetClientOrdersUseCase getClientOrders,
-    required Dio dio,
   })  : _getClientOrders = getClientOrders,
-        _dio = dio,
         super(ClientOrderListState.initial());
-
-  /// 초기 데이터 로딩
-  ///
-  /// GET /api/v1/mobile/accounts/my 에서 거래처 목록 로딩
-  Future<void> initialize() async {
-    try {
-      final response = await _dio.get('/api/v1/mobile/accounts/my');
-      final data = response.data['data'] as Map<String, dynamic>;
-      final accountsJson = data['accounts'] as List<dynamic>;
-      final accountMap = <int, String>{};
-      for (final account in accountsJson) {
-        final json = account as Map<String, dynamic>;
-        accountMap[json['accountId'] as int] = json['accountName'] as String;
-      }
-      state = state.copyWith(accounts: accountMap);
-    } catch (e) {
-      // 거래처 목록 로드 실패: 빈 맵으로 설정
-      state = state.copyWith(accounts: const {});
-    }
-  }
 
   /// 거래처 선택
   void selectAccount(int? accountId, String? accountName) {
@@ -142,10 +117,8 @@ class ClientOrderListNotifier extends StateNotifier<ClientOrderListState> {
 final clientOrderListProvider =
     StateNotifierProvider<ClientOrderListNotifier, ClientOrderListState>((ref) {
   final useCase = ref.watch(getClientOrdersUseCaseProvider);
-  final dio = ref.watch(dioProvider);
 
   return ClientOrderListNotifier(
     getClientOrders: useCase,
-    dio: dio,
   );
 });
