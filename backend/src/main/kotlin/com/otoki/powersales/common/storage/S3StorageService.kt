@@ -56,6 +56,17 @@ class S3StorageService(
 		)
 	}
 
+	override fun uploadLargePrivate(domain: String, originalName: String, bytes: ByteArray, contentType: String): UploadResult {
+		val uniqueKey = buildKey(domain, originalName)
+		putLargeObject(StorageConstants.privateKey(uniqueKey), bytes, contentType)
+		return UploadResult(
+			key = uniqueKey,
+			contentType = contentType,
+			originalName = originalName,
+			sizeBytes = bytes.size.toLong()
+		)
+	}
+
 	override fun getPresignedUrl(uniqueKey: String, expiresInSeconds: Int): String =
 		presignGet(StorageConstants.privateKey(uniqueKey), expiresInSeconds)
 
@@ -69,6 +80,25 @@ class S3StorageService(
 		}
 		if (bytes.size.toLong() > StorageConstants.MAX_FILE_BYTES) {
 			throw FileTooLargeException(bytes.size.toLong(), StorageConstants.MAX_FILE_BYTES)
+		}
+
+		val request = PutObjectRequest.builder()
+			.bucket(bucket)
+			.key(key)
+			.contentType(contentType)
+			.contentLength(bytes.size.toLong())
+			.build()
+
+		try {
+			s3Client.putObject(request, RequestBody.fromBytes(bytes))
+		} catch (ex: S3Exception) {
+			throw StorageWriteFailedException(reason = ex.awsErrorDetails().errorMessage(), cause = ex)
+		}
+	}
+
+	private fun putLargeObject(key: String, bytes: ByteArray, contentType: String) {
+		if (bytes.size.toLong() > StorageConstants.APP_PACKAGE_MAX_BYTES) {
+			throw FileTooLargeException(bytes.size.toLong(), StorageConstants.APP_PACKAGE_MAX_BYTES)
 		}
 
 		val request = PutObjectRequest.builder()

@@ -71,6 +71,8 @@ class SecurityConfig(
                         "/api/health",
                         "/api/v1/mobile/auth/login",
                         "/api/v1/mobile/auth/refresh",
+                        // 앱 패키지 버전 체크/다운로드는 강제 업데이트 게이트가 로그인 전에 동작해야 하므로 무인증 허용.
+                        "/api/v1/mobile/app-package/**",
                         "/h2-console/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",

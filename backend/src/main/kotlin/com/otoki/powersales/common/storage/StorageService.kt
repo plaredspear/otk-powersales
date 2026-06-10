@@ -18,6 +18,12 @@ interface StorageService {
 	/** private/ 하위로 업로드. 반환 UploadResult.key 는 segment 없는 uniqueKey. */
 	fun uploadPrivate(domain: String, originalName: String, bytes: ByteArray, contentType: String): UploadResult
 
+	/**
+	 * private/ 하위로 대용량 바이너리(앱 패키지 APK/IPA) 업로드. uploadPrivate 와 달리 contentType 화이트리스트를
+	 * 적용하지 않고 크기 상한도 [StorageConstants.APP_PACKAGE_MAX_BYTES] 로 별도 적용한다. 반환 key 는 segment 없는 uniqueKey.
+	 */
+	fun uploadLargePrivate(domain: String, originalName: String, bytes: ByteArray, contentType: String): UploadResult
+
 	/** private/ 객체의 presigned GET URL 발급. */
 	fun getPresignedUrl(uniqueKey: String, expiresInSeconds: Int): String
 

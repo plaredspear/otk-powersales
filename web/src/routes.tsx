@@ -79,6 +79,7 @@ const ProductExpirationPage = lazy(() => import('@/pages/ProductExpirationPage')
 const AdminAccountRegisterPage = lazy(() => import('@/pages/settings/AdminAccountRegisterPage'));
 const NaverGeocodeTestPage = lazy(() => import('@/pages/admin/NaverGeocodeTestPage'));
 const ExternalApiTestPage = lazy(() => import('@/pages/admin/tools/external-api/ExternalApiTestPage'));
+const AppPackagePage = lazy(() => import('@/pages/admin/app-packages/AppPackagePage'));
 const ScheduledJobsPage = lazy(() => import('@/pages/admin/scheduled-jobs/ScheduledJobsPage'));
 const SapIntegrationPage = lazy(() => import('@/pages/admin/tools/sap-integration/SapIntegrationPage'));
 const SfMigrationPage = lazy(() => import('@/pages/admin/tools/sf-migration/SfMigrationPage'));
@@ -323,6 +324,7 @@ export const router = createBrowserRouter(
               children: [
                 { path: '/admin/tools/external-api', element: <LazyWrapper><ExternalApiTestPage /></LazyWrapper> },
                 { path: '/admin/tools/naver-geocode', element: <LazyWrapper><NaverGeocodeTestPage /></LazyWrapper> },
+                { path: '/admin/app-packages', element: <LazyWrapper><AppPackagePage /></LazyWrapper> },
               ],
             },
             {

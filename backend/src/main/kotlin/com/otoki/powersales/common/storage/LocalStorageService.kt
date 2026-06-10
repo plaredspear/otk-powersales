@@ -54,6 +54,22 @@ class LocalStorageService : StorageService {
 		)
 	}
 
+	override fun uploadLargePrivate(domain: String, originalName: String, bytes: ByteArray, contentType: String): UploadResult {
+		if (bytes.size.toLong() > StorageConstants.APP_PACKAGE_MAX_BYTES) {
+			throw FileTooLargeException(bytes.size.toLong(), StorageConstants.APP_PACKAGE_MAX_BYTES)
+		}
+
+		val uniqueKey = buildKey(domain, originalName)
+		store[StorageConstants.privateKey(uniqueKey)] = bytes.copyOf()
+
+		return UploadResult(
+			key = uniqueKey,
+			contentType = contentType,
+			originalName = originalName,
+			sizeBytes = bytes.size.toLong()
+		)
+	}
+
 	override fun getPresignedUrl(uniqueKey: String, expiresInSeconds: Int): String = "local://$uniqueKey"
 
 	override fun downloadPrivate(uniqueKey: String): ByteArray =

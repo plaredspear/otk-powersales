@@ -21,6 +21,15 @@ object StorageConstants {
 	// 읽으므로 클레임(600s)보다 길게 30분. web 은 페이지 로드 시 1회 소비, mobile 은 cacheKey(refid)로
 	// 재요청을 흡수하므로 만료 마찰이 작다.
 	const val NOTICE_PRESIGN_TTL_SECONDS: Int = 1800
+
+	// 모바일 앱 패키지(APK/IPA) 최대 크기(초). 이미지(20MB)와 달리 수십~수백 MB 바이너리이므로 별도 상한.
+	const val APP_PACKAGE_MAX_BYTES: Long = 500L * 1024 * 1024
+
+	// 앱 패키지 다운로드 presigned URL 만료 시간(초). iOS OTA 는 manifest fetch → 사용자 확인 →
+	// IPA 다운로드까지 수 분 소요되므로(설치 시작 시점부터 TTL 카운트) 넉넉히 15분. Android 도 대용량 APK
+	// 다운로드를 고려해 동일 적용.
+	const val APP_PACKAGE_PRESIGN_TTL_SECONDS: Int = 900
+
 	val ALLOWED_CONTENT_TYPES: Set<String> = setOf(
 		"image/jpeg",
 		"image/png",

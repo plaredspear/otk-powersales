@@ -208,6 +208,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseAppPackageDownloadUrlDto" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AppPackageDownloadUrlDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAppVersionCheckDto" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AppVersionCheckDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseAttendanceRegisterResponse" : {
         "properties" : {
           "data" : {
@@ -2182,6 +2240,46 @@
           "timestamp" : {
             "format" : "date-time",
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AppPackageDownloadUrlDto" : {
+        "properties" : {
+          "expiresInSeconds" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "url" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AppVersionCheckDto" : {
+        "properties" : {
+          "downloadUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "forceUpdate" : {
+            "type" : "boolean"
+          },
+          "latestVersionCode" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "latestVersionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "platform" : {
+            "enum" : [ "ANDROID", "IOS" ],
+            "type" : "string"
+          },
+          "releaseNote" : {
+            "type" : [ "string", "null" ]
+          },
+          "updateAvailable" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -6203,6 +6301,95 @@
           }
         },
         "tags" : [ "alternative-holiday-controller" ]
+      }
+    },
+    "/api/v1/mobile/app-package/check" : {
+      "get" : {
+        "operationId" : "check",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "platform",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "ANDROID", "IOS" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "versionCode",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAppVersionCheckDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-app-package-controller" ]
+      }
+    },
+    "/api/v1/mobile/app-package/ios/manifest.plist" : {
+      "get" : {
+        "operationId" : "iosManifest",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/xml" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-app-package-controller" ]
+      }
+    },
+    "/api/v1/mobile/app-package/{id}/download-url" : {
+      "get" : {
+        "operationId" : "downloadUrl",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAppPackageDownloadUrlDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "mobile-app-package-controller" ]
       }
     },
     "/api/v1/mobile/attendance" : {

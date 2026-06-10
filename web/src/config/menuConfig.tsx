@@ -371,6 +371,7 @@ export const menuRoute: MenuRoute = {
       icon: <MobileOutlined />,
       children: [
         { path: '/admin/agreement-words', name: '동의 약관 등록', entity: 'agreement_word', operation: 'READ' },
+        { path: '/admin/app-packages', name: '앱 버전 관리', systemPermission: 'MODIFY_ALL_DATA' },
       ],
     },
     {
