@@ -1286,6 +1286,26 @@
         },
         "type" : "object"
       },
+      "AdminClaimRegistTestResponse" : {
+        "properties" : {
+          "rawResponse" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestPayload" : {
+            "type" : "string"
+          },
+          "resultCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "resultMsg" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "AdminCreateSiteActivityRequest" : {
         "properties" : {
           "accountId" : {
@@ -3237,6 +3257,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminClaimListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminClaimRegistTestResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminClaimRegistTestResponse"
             }, {
               "type" : "null"
             } ]
@@ -17453,6 +17502,33 @@
           }
         },
         "tags" : [ "admin-cache-controller" ]
+      }
+    },
+    "/api/v1/admin/claim-regist/test" : {
+      "post" : {
+        "operationId" : "test_1",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminClaimCreateRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminClaimRegistTestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-claim-regist-test-controller" ]
       }
     },
     "/api/v1/admin/claims" : {
