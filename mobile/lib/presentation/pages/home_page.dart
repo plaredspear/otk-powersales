@@ -17,6 +17,7 @@ import '../widgets/home/activity_registration_popup.dart';
 import '../../core/utils/throttled_tap_mixin.dart';
 import '../../app_router.dart';
 import '../providers/safety_check_provider.dart';
+import '../screens/leader_schedule/leader_team_member_schedule_screen.dart';
 
 /// 홈 화면
 ///
@@ -157,11 +158,15 @@ class _HomePageState extends ConsumerState<HomePage>
                         arguments: date,
                       );
                     },
-                    // 조장/지점장: 레거시 근태 영역 "일정 관리" → 팀원 일정 관리
+                    // 조장/지점장: 레거시 home.jsp "일정 관리" → /employee/mgnSchedule
+                    // (여사원 전체 모드의 월간 일정 캘린더)와 동일하게 연결.
                     onScheduleManageTap: () {
-                      AppRouter.navigateTo(
-                        context,
-                        AppRouter.leaderTeamMembers,
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const LeaderTeamMemberScheduleScreen(
+                            initialEmployeeId: null,
+                          ),
+                        ),
                       );
                     },
                   ),
