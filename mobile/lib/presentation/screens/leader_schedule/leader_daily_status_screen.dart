@@ -23,13 +23,18 @@ class LeaderDailyStatusScreen extends ConsumerStatefulWidget {
   /// 진입 시 조회할 초기 날짜. null 이면 오늘. (조원 월간 캘린더 날짜 탭 진입용)
   final DateTime? initialDate;
 
-  /// 진입 시 미리 적용할 검색어(예: 특정 조원명). (조원 월간 캘린더 날짜 탭 진입용)
-  final String? initialKeyword;
+  /// 단일 여사원 모드 대상 ID. null 이면 "여사원 전체" 모드(섹션/바로가기/검색 노출).
+  /// 지정 시 레거시 mngDaily 개인 화면 — 타이틀=이름, 헤더="X/Y 보고 완료", 해당 여사원 카드만.
+  final int? singleEmployeeId;
+
+  /// 단일 여사원 모드 타이틀(여사원 이름).
+  final String? singleEmployeeName;
 
   const LeaderDailyStatusScreen({
     super.key,
     this.initialDate,
-    this.initialKeyword,
+    this.singleEmployeeId,
+    this.singleEmployeeName,
   });
 
   @override
@@ -52,11 +57,6 @@ class _LeaderDailyStatusScreenState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notifier = ref.read(leaderDailyStatusProvider.notifier);
-      final keyword = widget.initialKeyword?.trim();
-      if (keyword != null && keyword.isNotEmpty) {
-        _searchController.text = keyword;
-        notifier.setSearchKeyword(keyword);
-      }
       if (widget.initialDate != null) {
         // changeDate 가 내부에서 load() 까지 수행.
         notifier.changeDate(widget.initialDate!);
@@ -128,48 +128,140 @@ class _LeaderDailyStatusScreenState
     );
 
     final state = ref.watch(leaderDailyStatusProvider);
+    final isSingle = widget.singleEmployeeId != null;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        // 단일 모드: 타이틀=여사원 이름 (레거시 mngDaily 개인 화면 h1).
+        title: Text(isSingle
+            ? (widget.singleEmployeeName ?? '여사원 일정')
+            : '여사원 일별 현황'),
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+      ),
+      body: isSingle ? _buildSingleMode(state) : _buildAllMode(state),
+    );
+  }
+
+  /// "여사원 전체" 모드 — 요약칩 + 검색 + 바로가기 + 진열/행사/연차 섹션.
+  Widget _buildAllMode(LeaderDailyStatusState state) {
     // 레거시 mngDaily 카드 1개 = 여사원 1명 — 백엔드의 (여사원×거래처) 행을 여사원 단위로 그룹핑.
     final displayGroups = _groupByEmployee(state.filteredDisplayWorkers);
     final eventGroups = _groupByEmployee(state.filteredEventWorkers);
     final annualLeaveWorkers = state.filteredAnnualLeaveWorkers;
     final isSearching = state.searchKeyword.isNotEmpty;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('여사원 일별 현황'),
-        backgroundColor: AppColors.white,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          _DateSelector(
-            date: state.selectedDate,
-            onPrev: () => _shiftDate(-1),
-            onNext: () => _shiftDate(1),
-            onTap: _pickDate,
+    return Column(
+      children: [
+        _DateSelector(
+          date: state.selectedDate,
+          onPrev: () => _shiftDate(-1),
+          onNext: () => _shiftDate(1),
+          onTap: _pickDate,
+        ),
+        _SummaryHeader(summary: state.data?.summary),
+        _SearchField(
+          controller: _searchController,
+          onChanged: (v) =>
+              ref.read(leaderDailyStatusProvider.notifier).setSearchKeyword(v),
+        ),
+        _QuickJumpBar(
+          onDisplay: () => _jumpTo(_displaySectionKey),
+          onEvent: () => _jumpTo(_eventSectionKey),
+          onAnnual: () => _jumpTo(_annualSectionKey),
+        ),
+        Expanded(
+          child: _buildBody(
+            state,
+            displayGroups: displayGroups,
+            eventGroups: eventGroups,
+            annualLeaveWorkers: annualLeaveWorkers,
+            isSearching: isSearching,
           ),
-          _SummaryHeader(summary: state.data?.summary),
-          _SearchField(
-            controller: _searchController,
-            onChanged: (v) =>
-                ref.read(leaderDailyStatusProvider.notifier).setSearchKeyword(v),
-          ),
-          _QuickJumpBar(
-            onDisplay: () => _jumpTo(_displaySectionKey),
-            onEvent: () => _jumpTo(_eventSectionKey),
-            onAnnual: () => _jumpTo(_annualSectionKey),
-          ),
-          Expanded(
-            child: _buildBody(
-              state,
-              displayGroups: displayGroups,
-              eventGroups: eventGroups,
-              annualLeaveWorkers: annualLeaveWorkers,
-              isSearching: isSearching,
+        ),
+      ],
+    );
+  }
+
+  /// 단일 여사원 모드 — 날짜 + "X/Y 보고 완료(카테고리)" 헤더 + 해당 여사원 카드만.
+  /// 레거시 mngDaily `employeeid != ''` 분기 동등 (검색/바로가기/섹션헤더 없음).
+  Widget _buildSingleMode(LeaderDailyStatusState state) {
+    final empId = widget.singleEmployeeId!;
+    final data = state.data;
+    final displayRows =
+        (data?.displayWorkers ?? const []).where((w) => w.employeeId == empId).toList();
+    final eventRows =
+        (data?.eventWorkers ?? const []).where((w) => w.employeeId == empId).toList();
+
+    return Column(
+      children: [
+        _DateSelector(
+          date: state.selectedDate,
+          onPrev: () => _shiftDate(-1),
+          onNext: () => _shiftDate(1),
+          onTap: _pickDate,
+        ),
+        _SingleEmployeeHeader(displayRows: displayRows, eventRows: eventRows),
+        Expanded(
+          child: _buildSingleBody(state, displayRows: displayRows, eventRows: eventRows),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSingleBody(
+    LeaderDailyStatusState state, {
+    required List<LeaderDailyWorker> displayRows,
+    required List<LeaderDailyWorker> eventRows,
+  }) {
+    if (state.isLoading && state.data == null) {
+      return const LoadingIndicator(message: '일정을 불러오는 중...');
+    }
+    if (state.errorMessage != null && state.data == null) {
+      return ErrorView(
+        message: '일정을 불러올 수 없습니다',
+        description: state.errorMessage,
+        onRetry: () => ref.read(leaderDailyStatusProvider.notifier).load(),
+      );
+    }
+
+    Future<void> onRefresh() =>
+        ref.read(leaderDailyStatusProvider.notifier).load();
+
+    final displayGroups = _groupByEmployee(displayRows);
+    final eventGroups = _groupByEmployee(eventRows);
+
+    if (displayGroups.isEmpty && eventGroups.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        color: AppColors.primary,
+        child: ListView(
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.4,
+              child: Center(
+                child: Text(
+                  '해당 일자 근무 일정이 없습니다',
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+              ),
             ),
-          ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      color: AppColors.primary,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        children: [
+          for (final g in displayGroups) _WorkerCard(worker: g, isEvent: false),
+          for (final g in eventGroups) _WorkerCard(worker: g, isEvent: true),
         ],
       ),
     );
@@ -423,6 +515,55 @@ class _SummaryChip extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 단일 여사원 모드 헤더 — "X / Y 보고 완료 (카테고리)".
+/// Y=담당 거래처 수, X=출근등록 완료 거래처 수, 카테고리=진열/행사 (레거시 emp-acc-cnt/comm-cnt).
+class _SingleEmployeeHeader extends StatelessWidget {
+  final List<LeaderDailyWorker> displayRows;
+  final List<LeaderDailyWorker> eventRows;
+
+  const _SingleEmployeeHeader({
+    required this.displayRows,
+    required this.eventRows,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = [...displayRows, ...eventRows];
+    final total = rows.length;
+    final done = rows.where((r) => r.attended).length;
+    // 레거시는 첫 .workingcategory — 진열 우선, 없으면 행사.
+    final category = displayRows.isNotEmpty
+        ? '진열'
+        : (eventRows.isNotEmpty ? '행사' : '');
+
+    return Container(
+      width: double.infinity,
+      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Center(
+        child: RichText(
+          text: TextSpan(
+            style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+            children: [
+              TextSpan(
+                text: '$done',
+                style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+              ),
+              const TextSpan(text: ' / '),
+              TextSpan(
+                text: '$total',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const TextSpan(text: ' 보고 완료'),
+              if (category.isNotEmpty) TextSpan(text: ' ($category)'),
+            ],
+          ),
         ),
       ),
     );

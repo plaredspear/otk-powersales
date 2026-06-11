@@ -89,9 +89,12 @@ class _LeaderTeamMemberScheduleScreenState
       List<LeaderTeamMember> members) {
     Navigator.of(context).push(
       MaterialPageRoute(
+        // 조원 선택 상태면 단일 모드(레거시 mngDaily 개인 화면), 전체면 전체 모드.
         builder: (_) => LeaderDailyStatusScreen(
           initialDate: date,
-          initialKeyword: _selectedMemberName(selectedEmployeeId, members),
+          singleEmployeeId: selectedEmployeeId,
+          singleEmployeeName:
+              _selectedMemberName(selectedEmployeeId, members),
         ),
       ),
     );
