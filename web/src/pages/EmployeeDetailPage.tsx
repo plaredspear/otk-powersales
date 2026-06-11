@@ -16,7 +16,6 @@ import { usePermission } from '@/hooks/usePermission';
 import EmployeeEditModal from '@/pages/employee/components/EmployeeEditModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
-import SfPermissionSection from '@/pages/employee/components/SfPermissionSection';
 import WorkHistorySection from '@/pages/employee/components/WorkHistorySection';
 
 function toEmployeeListItem(detail: EmployeeDetail): Employee {
@@ -246,8 +245,6 @@ export default function EmployeeDetailPage() {
       </Card>
 
       {employeeId && <WorkHistorySection employeeId={employeeId} />}
-
-      {employeeId && <SfPermissionSection employeeId={employeeId} />}
 
       {editOpen && (
         <EmployeeEditModal
