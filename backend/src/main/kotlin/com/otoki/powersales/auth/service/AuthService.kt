@@ -18,6 +18,7 @@ import com.otoki.powersales.common.repository.AgreementHistoryRepository
 import com.otoki.powersales.common.repository.AgreementWordRepository
 import com.otoki.powersales.common.repository.LoginHistoryRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.common.security.ActiveDeviceStore
 import com.otoki.powersales.common.security.JwtTokenProvider
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.common.util.TimeZones
@@ -41,7 +42,8 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider,
     private val uuidCheckProperties: UuidCheckProperties,
-    private val passwordPolicyValidator: PasswordPolicyValidator
+    private val passwordPolicyValidator: PasswordPolicyValidator,
+    private val activeDeviceStore: ActiveDeviceStore
 ) {
 
     private val log = LoggerFactory.getLogger(AuthService::class.java)
@@ -80,12 +82,18 @@ class AuthService(
         }
 
         val passwordChangeRequired = employee.passwordChangeRequired ?: true
+        // validateDeviceBinding 이후라 employee.deviceUuid 는 현재 바인딩된 단말. 검증 면제/비활성이면 null.
+        val activeDeviceId = activeDeviceIdFor(employee)
         val accessToken = jwtTokenProvider.createAccessToken(
             employee.id,
             employee.role ?: AppAuthority.WOMAN,
             employee.agreementFlag == true,
-            passwordChangeRequired
+            passwordChangeRequired,
+            activeDeviceId
         )
+        if (activeDeviceId != null) {
+            activeDeviceStore.setActiveDevice(employee.id, activeDeviceId)
+        }
 
         // Refresh Token Rotation: 신규 familyId 로 발급
         val refreshToken = issueRefreshToken(employee.id, UUID.randomUUID().toString())
@@ -123,6 +131,19 @@ class AuthService(
         if (employee.deviceUuid != deviceId) {
             throw DeviceMismatchException()
         }
+    }
+
+    /**
+     * 토큰에 각인할 단말 식별자 — 매 요청 단말 재검증 대상이면 현재 바인딩 단말(device_uuid), 아니면 null.
+     *
+     * null 반환(검증 비활성 / 예외 사번) 시 access token 에 device_id 클레임이 빠지고,
+     * [com.otoki.powersales.common.security.JwtAuthenticationFilter] 가 단말 검증을 건너뛴다.
+     */
+    private fun activeDeviceIdFor(employee: Employee): String? {
+        if (!uuidCheckProperties.enabled) return null
+        val employeeCode = employee.employeeCode ?: return null
+        if (uuidCheckProperties.isExcluded(employeeCode)) return null
+        return employee.deviceUuid
     }
 
     /**
@@ -175,7 +196,8 @@ class AuthService(
             employee.id,
             employee.role ?: AppAuthority.WOMAN,
             employee.agreementFlag == true,
-            false
+            false,
+            activeDeviceIdFor(employee)
         )
         val refreshToken = issueRefreshToken(employee.id, UUID.randomUUID().toString())
 
@@ -227,13 +249,23 @@ class AuthService(
         // 5. 이전 Refresh Token 삭제
         jwtTokenProvider.deleteRefreshToken(tokenId)
 
-        // 6. 사용자 정보 조회
+        // 6. 사용자 정보 조회 (device_uuid 확인 위해 employeeInfo fetch)
         val userId = jwtTokenProvider.getUserIdFromToken(request.refreshToken)
-        val employee = employeeRepository.findById(userId)
-            .orElseThrow { InvalidTokenException() }
+        val employee = employeeRepository.findWithEmployeeInfoById(userId)
+            ?: throw InvalidTokenException()
 
-        // 7. 새 토큰 발급 (동일 familyId 재사용, 새 tokenId)
-        val newAccessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: AppAuthority.WOMAN, employee.agreementFlag == true)
+        // 7. 새 토큰 발급 (동일 familyId 재사용, 새 tokenId). access token 에 현재 단말 재각인 →
+        //    리프레시 후에도 매 요청 단말 검증 유지. 리셋된 단말의 refresh 는 5번에서 이미 차단됨.
+        val activeDeviceId = activeDeviceIdFor(employee)
+        val newAccessToken = jwtTokenProvider.createAccessToken(
+            employee.id,
+            employee.role ?: AppAuthority.WOMAN,
+            employee.agreementFlag == true,
+            deviceId = activeDeviceId
+        )
+        if (activeDeviceId != null) {
+            activeDeviceStore.setActiveDevice(employee.id, activeDeviceId)
+        }
         val newRefreshToken = issueRefreshToken(employee.id, familyId)
 
         return TokenResponse(
@@ -359,7 +391,12 @@ class AuthService(
 
         employee.recordGpsConsent(terms.name)
 
-        val accessToken = jwtTokenProvider.createAccessToken(employee.id, employee.role ?: AppAuthority.WOMAN, true)
+        val accessToken = jwtTokenProvider.createAccessToken(
+            employee.id,
+            employee.role ?: AppAuthority.WOMAN,
+            true,
+            deviceId = activeDeviceIdFor(employee)
+        )
 
         return GpsConsentRecordResponse(
             accessToken = accessToken,
@@ -377,6 +414,15 @@ class AuthService(
 
         employee.resetDevice()
         employeeRepository.save(employee)
+
+        // 기존 기기 즉시 차단: access token 활성기기 캐시 제거 + 현재 단말의 refresh token 무효화.
+        // Redis 장애가 DB 단말 초기화(트랜잭션)를 막지 않도록 예외를 삼킨다.
+        try {
+            activeDeviceStore.clearActiveDevice(employee.id)
+            jwtTokenProvider.deleteRefreshTokenByUserId(employee.id)
+        } catch (e: Exception) {
+            log.warn("단말 초기화 중 토큰/캐시 정리 실패(무시): employeeCode={}", employeeCode, e)
+        }
     }
 
 }

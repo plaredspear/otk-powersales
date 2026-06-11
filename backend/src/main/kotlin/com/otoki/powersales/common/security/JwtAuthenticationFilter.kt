@@ -15,7 +15,8 @@ import org.springframework.web.filter.OncePerRequestFilter
  */
 @Component
 class JwtAuthenticationFilter(
-    private val jwtTokenProvider: JwtTokenProvider
+    private val jwtTokenProvider: JwtTokenProvider,
+    private val activeDeviceStore: ActiveDeviceStore
 ) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -35,9 +36,13 @@ class JwtAuthenticationFilter(
                 } else if (tokenType == "access") {
                     val userId = jwtTokenProvider.getUserIdFromToken(token)
                     val role = jwtTokenProvider.getRoleFromToken(token)
+                    val deviceId = jwtTokenProvider.getDeviceIdFromToken(token)
                     if (role == null) {
                         // 신규 enum 매핑 실패 (구 토큰의 USER/ADMIN 등) — 인증 미설정 → 401 처리
                         request.setAttribute("jwt.invalidRole", true)
+                    } else if (deviceId != null && !activeDeviceStore.isDeviceActive(userId, deviceId)) {
+                        // 단말이 회수/교체됨 → 기존 기기 즉시 차단 (단말 교체 시 기존 기기 로그인 제한)
+                        request.setAttribute("jwt.deviceRevoked", true)
                     } else {
                         val agreementFlag = jwtTokenProvider.getAgreementFlagFromToken(token)
                         val passwordChangeRequired = jwtTokenProvider.getPasswordChangeRequiredFromToken(token)
