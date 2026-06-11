@@ -13,7 +13,7 @@ import '../../../domain/entities/schedule.dart';
 /// - 출근 카운트 배지: "✓ X/N" 형태로 출근 현황 표시
 ///
 /// 조장(LEADER)/지점장(ADMIN) 뷰 (레거시 home.jsp 정합):
-/// - 헤더: "일정 관리" 버튼, "팀 출근 현황: N명 중 M명 등록 완료"
+/// - 날짜 → "N명 중, M명 등록 완료" → 풀폭 "일정 관리" navy 버튼
 /// - 팀원 목록/등록 버튼 미표시 (팀원 상세는 "일정 관리" 진입 후 페이지에서 확인)
 class ScheduleCard extends StatelessWidget {
   /// 오늘 일정 목록
@@ -84,23 +84,21 @@ class ScheduleCard extends StatelessWidget {
                   const SizedBox(width: AppSpacing.sm),
                   _buildAttendanceBadge(registeredCount, totalCount),
                 ],
-                // 조장/지점장: 레거시 근태 영역 "일정 관리" 버튼
-                if (_isLeaderView) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  _buildScheduleManageButton(),
-                ],
               ],
             ),
 
-            // 조장 뷰: 팀 출근 현황 텍스트만 표시 (레거시 home.jsp 정합 — 팀원 목록은 '일정 관리' 페이지에 있음)
+            // 조장 뷰: 팀 출근 현황 텍스트 + 풀폭 "일정 관리" 버튼
+            // (레거시 home.jsp 정합 — 날짜/현황 아래 navy 버튼, 팀원 목록은 '일정 관리' 페이지에 있음)
             if (_isLeaderView) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '팀 출근 현황: $totalCount명 중 $registeredCount명 등록 완료',
+                '$totalCount명 중, $registeredCount명 등록 완료',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
+              const SizedBox(height: AppSpacing.md),
+              _buildScheduleManageButton(),
             ] else ...[
               const SizedBox(height: AppSpacing.md),
 
@@ -123,24 +121,22 @@ class ScheduleCard extends StatelessWidget {
     );
   }
 
-  /// 조장/지점장 "일정 관리" 버튼 (레거시 navy 버튼 대응)
+  /// 조장/지점장 "일정 관리" 버튼 (레거시 home.jsp 풀폭 navy 버튼 대응)
   Widget _buildScheduleManageButton() {
     return SizedBox(
-      height: 28,
+      width: double.infinity,
+      height: AppSpacing.buttonHeight, // 44
       child: Material(
         color: AppColors.legacyNavy,
-        borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),
+        borderRadius: BorderRadius.circular(AppSpacing.homeButtonRadius),
         child: InkWell(
-          borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),
+          borderRadius: BorderRadius.circular(AppSpacing.homeButtonRadius),
           onTap: onScheduleManageTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Center(
-              child: Text(
-                '일정 관리',
-                style: AppTypography.legacyBody.copyWith(
-                  color: AppColors.white,
-                ),
+          child: Center(
+            child: Text(
+              '일정 관리',
+              style: AppTypography.legacyButton.copyWith(
+                color: AppColors.white,
               ),
             ),
           ),

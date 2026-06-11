@@ -96,9 +96,21 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     with WidgetsBindingObserver {
   StreamSubscription<String>? _tokenRefreshSub;
 
+  /// authProvider 리스너가 마지막으로 네비게이션한 라우트.
+  ///
+  /// 동일 목적지로의 중복 push 를 막아 로그인 화면이 무한히 쌓이는 루프를 차단한다.
+  /// (예: LoginScreen 진입 후 savedEmployeeNumber 로드로 authState 가 다시 emit 되어도
+  /// 목적지는 여전히 login 이므로 재 push 하지 않는다.)
+  String? _lastAuthRoute;
+
   @override
   void initState() {
     super.initState();
+    // 로그아웃 재생성 세션은 initialRoute 가 이미 login 이므로, 동일 목적지 재 push 를
+    // 막기 위해 마지막 네비게이션 라우트를 login 으로 맞춰둔다.
+    if (widget.startAtLogin) {
+      _lastAuthRoute = AppRouter.login;
+    }
     WidgetsBinding.instance.addObserver(this);
     // 인증 초기화(자동 로그인)는 SplashScreen 이 버전 게이트 통과 후 호출한다.
     // 여기서는 게이트와 무관한 FCM 초기화만 수행한다.
@@ -167,36 +179,32 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
       // 로딩은 항상 종료 상태로 이어지는 과도 상태이므로 건너뛰어도 안전하다.
       if (next.isLoading) return;
 
+      // 상태에서 네비게이션 목적지를 도출한다.
+      final String? target;
       if (next.isAuthenticated) {
         // 인증 완료 → 메인 화면
-        navigator.pushNamedAndRemoveUntil(
-          AppRouter.main,
-          (route) => false,
-        );
+        target = AppRouter.main;
       } else if (next.passwordChangeRequired) {
         // 비밀번호 변경 필요 → 비밀번호 변경 화면
-        navigator.pushNamedAndRemoveUntil(
-          AppRouter.changePassword,
-          (route) => false,
-        );
+        target = AppRouter.changePassword;
       } else if (next.requiresGpsConsent && next.user != null) {
         // GPS 동의 필요 → GPS 동의 화면
-        navigator.pushNamedAndRemoveUntil(
-          AppRouter.gpsConsent,
-          (route) => false,
-        );
-      } else if (next.user == null &&
-          !next.isLoading &&
-          next.errorMessage == null) {
+        target = AppRouter.gpsConsent;
+      } else if (next.user == null && next.errorMessage == null) {
         // 미인증 상태(로그아웃·자동로그인 실패·토큰만료) → 로그인 화면.
-        // 단, 로그인 에러(errorMessage != null)는 이미 로그인 화면에서 발생한 것이므로
-        // 재네비게이션하지 않는다. 재네비게이션 시 LoginScreen 라우트가 슬라이드 애니메이션과
-        // 함께 다시 push 되어 "화면 전환"으로 보인다(에러는 화면 내 오버레이로 즉시 표시됨).
-        navigator.pushNamedAndRemoveUntil(
-          AppRouter.login,
-          (route) => false,
-        );
+        target = AppRouter.login;
+      } else {
+        // 로그인 에러(errorMessage != null)는 이미 로그인 화면에서 발생한 것이므로
+        // 재네비게이션하지 않는다(에러는 화면 내 오버레이로 즉시 표시됨).
+        target = null;
       }
+
+      // 동일 목적지로의 중복 push 차단.
+      // LoginScreen 진입 후 savedEmployeeNumber 로드 등으로 authState 가 다시 emit 되어도
+      // 목적지가 변하지 않으면 재 push 하지 않는다 — 로그인 화면이 무한히 쌓이는 루프 방지.
+      if (target == null || target == _lastAuthRoute) return;
+      _lastAuthRoute = target;
+      navigator.pushNamedAndRemoveUntil(target, (route) => false);
     });
 
     return MaterialApp(
