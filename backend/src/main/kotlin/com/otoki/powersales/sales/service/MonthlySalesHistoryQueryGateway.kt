@@ -105,7 +105,12 @@ class MonthlySalesHistoryQueryGateway(
                 (year to month) in requestedYearMonths
             }
             .mapNotNull { row ->
-                val sapCode = row.sapAccountCode ?: return@mapNotNull null
+                // account_id 조회 경로(findBySalesDatesByAccountId)의 row 는 sap_account_code 가 비어
+                // 있을 수 있다 (레거시는 Account 관계 formula `Account_ExternalKey__c` 로 조인하고, 신규는
+                // FK `account_id` 로 조인하므로 별도 텍스트 컬럼 `SAPAccountCode__c` 적재 여부와 무관해야 함).
+                // 문자열 조회 경로(findBySalesDates)의 row 는 조회 키 자체가 sap_account_code 라 항상 채워져
+                // 있어 "" fallback 은 발생하지 않는다.
+                val sapCode = row.sapAccountCode ?: ""
                 MonthlySalesRow(
                     sapAccountCode = sapCode,
                     salesDate = salesDateOf(row),
