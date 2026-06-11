@@ -27,11 +27,13 @@ class MonthlySalesState {
     this.monthlySales,
   });
 
-  /// 초기 상태 (이전 달)
+  /// 초기 상태 (당월)
+  ///
+  /// 레거시 `promotion/month/list.jsp` 의 무인자 `monthlyApi()` 호출이 `today` 기준 연월을
+  /// 사용하는 것과 정합 — 기본 조회월은 전월이 아니라 당월이다.
   factory MonthlySalesState.initial() {
     final now = DateTime.now();
-    final previousMonth = DateTime(now.year, now.month - 1, 1);
-    final yearMonth = '${previousMonth.year}${previousMonth.month.toString().padLeft(2, '0')}';
+    final yearMonth = '${now.year}${now.month.toString().padLeft(2, '0')}';
 
     return MonthlySalesState(
       yearMonth: yearMonth,
