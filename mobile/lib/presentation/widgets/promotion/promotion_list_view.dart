@@ -179,6 +179,18 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
           AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
       child: Column(
         children: [
+          // 주문 현황 납기일과 동일한 인라인 기간 UI.
+          // 레거시(promotion/event/list.jsp): minDate/maxDate 없음, maxSpan 30일.
+          DateRangeFilterField(
+            label: '기간',
+            startDate: DateTime.parse(state.startDate),
+            endDate: DateTime.parse(state.endDate),
+            maxRangeDays: 30,
+            onChanged: (start, end) => ref
+                .read(promotionListProvider.notifier)
+                .updateDateRange(_fmtDate(start), _fmtDate(end)),
+          ),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
               Expanded(
@@ -207,18 +219,6 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
               const SizedBox(width: AppSpacing.sm),
               _buildSearchButton(),
             ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          // 주문 현황 납기일과 동일한 인라인 기간 UI.
-          // 레거시(promotion/event/list.jsp): minDate/maxDate 없음, maxSpan 30일.
-          DateRangeFilterField(
-            label: '기간',
-            startDate: DateTime.parse(state.startDate),
-            endDate: DateTime.parse(state.endDate),
-            maxRangeDays: 30,
-            onChanged: (start, end) => ref
-                .read(promotionListProvider.notifier)
-                .updateDateRange(_fmtDate(start), _fmtDate(end)),
           ),
         ],
       ),
