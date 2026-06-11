@@ -5,10 +5,7 @@ import 'package:mobile/domain/entities/inspection_field_type.dart';
 import 'package:mobile/domain/entities/inspection_form.dart';
 import 'package:mobile/domain/entities/inspection_list_item.dart';
 import 'package:mobile/domain/entities/inspection_theme.dart';
-import 'package:mobile/domain/entities/my_account.dart';
-import 'package:mobile/domain/repositories/my_account_repository.dart';
 import 'package:mobile/domain/usecases/get_field_types_usecase.dart';
-import 'package:mobile/domain/usecases/get_my_accounts.dart';
 import 'package:mobile/domain/usecases/get_themes_usecase.dart';
 import 'package:mobile/domain/usecases/register_inspection_usecase.dart';
 import 'package:mobile/presentation/providers/inspection_register_provider.dart';
@@ -36,28 +33,6 @@ class MockGetFieldTypesUseCase implements GetFieldTypesUseCase {
     return [
       const InspectionFieldType(code: 'FT01', name: '본매대'),
     ];
-  }
-}
-
-class MockGetMyAccounts implements GetMyAccounts {
-  @override
-  Future<MyAccountListResult> call({
-    String? keyword,
-    MyAccountScope scope = MyAccountScope.field,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    return const MyAccountListResult(
-      accounts: [
-        MyAccount(
-          accountId: 100,
-          accountName: '이마트 죽전점',
-          accountCode: 'S100',
-          address: '서울시 강남구',
-          representativeName: '홍길동',
-        ),
-      ],
-      totalCount: 1,
-    );
   }
 }
 
@@ -93,7 +68,6 @@ void main() {
       notifier = InspectionRegisterNotifier(
         getThemes: MockGetThemesUseCase(),
         getFieldTypes: MockGetFieldTypesUseCase(),
-        getMyAccounts: MockGetMyAccounts(),
         registerInspection: mockRegisterUseCase,
       );
     });
@@ -107,7 +81,6 @@ void main() {
       expect(state.form, isNotNull);
       expect(state.themes, isEmpty);
       expect(state.fieldTypes, isEmpty);
-      expect(state.accounts, isEmpty);
     });
 
     test('initialize()는 데이터를 로드한다', () async {
@@ -118,8 +91,6 @@ void main() {
       expect(notifier.state.isLoading, false);
       expect(notifier.state.themes.length, 1);
       expect(notifier.state.fieldTypes.length, 1);
-      expect(notifier.state.accounts.length, 1);
-      expect(notifier.state.accounts[100], '이마트 죽전점');
     });
 
     test('selectTheme()는 테마를 선택한다', () async {

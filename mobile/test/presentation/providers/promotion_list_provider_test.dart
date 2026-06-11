@@ -241,14 +241,16 @@ void main() {
     // ----------------------------------------
     test('updateAccount로 거래처 필터가 설정/해제된다', () {
       // When: 거래처 선택
-      notifier.updateAccount(100);
+      notifier.updateAccount(100, '이마트 죽전점');
       // Then
       expect(notifier.state.accountId, 100);
+      expect(notifier.state.accountName, '이마트 죽전점');
 
       // When: 거래처 전체(null)로 해제
-      notifier.updateAccount(null);
+      notifier.updateAccount(null, null);
       // Then
       expect(notifier.state.accountId, isNull);
+      expect(notifier.state.accountName, isNull);
     });
 
     // ----------------------------------------
