@@ -187,10 +187,9 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(dialogContext).pop(); // 다이얼로그 닫기
+              // 로그아웃 → 루트 ProviderScope 재생성으로 로그인 화면 전환까지 처리되므로
+              // 별도의 수동 네비게이션은 두지 않는다.
               await ref.read(authProvider.notifier).logout();
-              if (context.mounted) {
-                AppRouter.navigateToAndRemoveAll(context, AppRouter.login);
-              }
             },
             child: Text(
               '확인',

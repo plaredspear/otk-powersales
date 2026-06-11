@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/dio_provider.dart';
 import '../../core/services/fcm_token_registrar.dart';
+import '../../core/session/session_reset_controller.dart';
 import '../../data/datasources/auth_api_datasource.dart';
 import '../../data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
@@ -335,8 +336,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _localDataSource.clearTokens();
     await _localDataSource.setAutoLogin(false);
 
-    // 상태 초기화
-    state = state.toUnauthenticated();
+    // 전역 상태 초기화 — 루트 ProviderScope 를 재생성해 모든 Provider(도메인 캐시 포함)를
+    // 폐기한다. 이를 통해 다른 계정으로 재로그인 시 이전 사용자의 잔여 데이터가 노출되지 않는다.
+    // (별도로 state 를 unauthenticated 로 바꾸지 않아도 재생성된 세션이 로그인 화면에서 시작한다.)
+    SessionResetController.instance.requestReset();
   }
 
   /// 에러 메시지 초기화

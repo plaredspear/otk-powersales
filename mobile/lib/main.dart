@@ -12,6 +12,7 @@ import 'app_router.dart';
 import 'core/navigation/navigator_key.dart';
 import 'core/services/fcm_token_registrar.dart';
 import 'core/services/push_notification_service.dart';
+import 'core/session/session_reset_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/auth_state.dart';
@@ -36,15 +37,56 @@ void main() async {
     // 설정 파일 미존재 — 푸시 비활성 상태로 앱 구동.
   }
 
-  runApp(
-    const ProviderScope(
-      child: OtokiApp(),
-    ),
-  );
+  runApp(const AppBootstrap());
+}
+
+/// 루트 부트스트랩 위젯.
+///
+/// [SessionResetController] 의 신호를 받아 루트 `ProviderScope` 를 새 인스턴스로
+/// 교체(key 갱신)함으로써, 로그아웃 시 모든 Provider 캐시를 한 번에 폐기한다.
+/// 로그아웃으로 재생성된 세션(generation > 0)은 스플래시/버전 게이트를 건너뛰고
+/// 곧바로 로그인 화면에서 시작한다.
+class AppBootstrap extends StatefulWidget {
+  const AppBootstrap({super.key});
+
+  @override
+  State<AppBootstrap> createState() => _AppBootstrapState();
+}
+
+class _AppBootstrapState extends State<AppBootstrap> {
+  final ValueNotifier<int> _generation =
+      SessionResetController.instance.generation;
+
+  @override
+  void initState() {
+    super.initState();
+    _generation.addListener(_onReset);
+  }
+
+  @override
+  void dispose() {
+    _generation.removeListener(_onReset);
+    super.dispose();
+  }
+
+  void _onReset() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final generation = _generation.value;
+    return ProviderScope(
+      // key 가 바뀌면 ProviderScope 전체가 재생성되어 모든 Provider 가 폐기된다.
+      key: ValueKey<int>(generation),
+      child: OtokiApp(startAtLogin: generation > 0),
+    );
+  }
 }
 
 class OtokiApp extends ConsumerStatefulWidget {
-  const OtokiApp({super.key});
+  const OtokiApp({super.key, this.startAtLogin = false});
+
+  /// 로그아웃 재생성 세션 여부. true 면 스플래시 대신 로그인 화면에서 시작한다.
+  final bool startAtLogin;
 
   @override
   ConsumerState<OtokiApp> createState() => _OtokiAppState();
@@ -161,7 +203,8 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
       title: '오뚜기 임직원 영업관리',
       theme: AppTheme.light,
       navigatorKey: navigatorKey,
-      initialRoute: AppRouter.initialRoute,
+      initialRoute:
+          widget.startAtLogin ? AppRouter.login : AppRouter.initialRoute,
       routes: AppRouter.routes,
       onUnknownRoute: AppRouter.onUnknownRoute,
       debugShowCheckedModeBanner: false,
