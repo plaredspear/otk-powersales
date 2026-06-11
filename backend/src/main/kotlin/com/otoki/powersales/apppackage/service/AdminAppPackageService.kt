@@ -86,6 +86,17 @@ class AdminAppPackageService(
     }
 
     /**
+     * 대규모 배포용 고정 링크가 실제로 가리키는 "현재 최신 지정" 패키지의 버전명/코드.
+     * mobile 다운로드/설치 엔드포인트와 동일한 resolveLatest 로직(최신 지정 우선, 없으면 versionCode
+     * 최대값)을 [AppVersionMetaProvider] 의 캐시된 메타로 재사용한다 — 추가 DB 조회 없음.
+     * 해당 플랫폼 패키지가 하나도 없으면 (versionName, versionCode) 둘 다 null.
+     */
+    fun latestVersion(platform: AppPlatform): Pair<String?, Long?> {
+        val meta = appVersionMetaProvider.loadMeta(platform)
+        return meta.latestVersionName to meta.latestVersionCode
+    }
+
+    /**
      * iOS/Android 모두 업로드 파일(.ipa/.apk)에서 식별자·버전을 자동 추출한다.
      * 추출값 우선, 없으면 입력값으로 fallback. 둘 다 없으면 예외.
      *

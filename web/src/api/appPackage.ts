@@ -94,12 +94,19 @@ export async function fetchAppPackageDetail(id: number): Promise<AppPackageDetai
 }
 
 /**
- * 대규모 배포용 고정 링크 (iOS 설치 페이지 + Android APK 다운로드). 버전 무관 고정값, 항상 최신 버전.
+ * 대규모 배포용 고정 링크 (iOS 설치 페이지 + Android APK 다운로드). url 은 버전 무관 고정값.
  * 각 url 이 null 이면 API 도메인 미설정 환경.
+ *
+ * latestVersionName/Code 는 고정 링크가 "현재" 가리키는 버전(최신 지정 우선, 없으면 최대 versionCode).
+ * 해당 플랫폼 패키지가 하나도 없으면 null.
  */
 export interface DistributionUrls {
   iosInstallUrl: string | null;
   androidDownloadUrl: string | null;
+  iosLatestVersionName: string | null;
+  iosLatestVersionCode: number | null;
+  androidLatestVersionName: string | null;
+  androidLatestVersionCode: number | null;
 }
 
 export async function fetchDistributionUrls(): Promise<DistributionUrls> {
@@ -109,6 +116,10 @@ export async function fetchDistributionUrls(): Promise<DistributionUrls> {
   return {
     iosInstallUrl: res.data.data?.iosInstallUrl ?? null,
     androidDownloadUrl: res.data.data?.androidDownloadUrl ?? null,
+    iosLatestVersionName: res.data.data?.iosLatestVersionName ?? null,
+    iosLatestVersionCode: res.data.data?.iosLatestVersionCode ?? null,
+    androidLatestVersionName: res.data.data?.androidLatestVersionName ?? null,
+    androidLatestVersionCode: res.data.data?.androidLatestVersionCode ?? null,
   };
 }
 

@@ -91,12 +91,24 @@ data class AppPackageDetailDto(
 /**
  * 대규모 배포용 고정 설치/다운로드 링크 응답. 각 url 이 null 이면 API 도메인 미설정 환경.
  *
+ * 고정 링크가 실제로 가리키는 "현재 최신 지정 버전"을 함께 내려 web 이 링크 옆에 표시한다.
+ * 링크 해석은 mobile 다운로드/설치 엔드포인트와 동일한 resolveLatest(최신 지정 우선,
+ * 없으면 versionCode 최대값)를 따른다. 해당 플랫폼 패키지가 하나도 없으면 버전 필드는 null.
+ *
  * @property iosInstallUrl iOS OTA 설치 안내 페이지 고정 링크 (Safari 에서 열어 설치)
  * @property androidDownloadUrl Android 최신 APK 다운로드 고정 링크 (직접 받아 설치)
+ * @property iosLatestVersionName iOS 고정 링크가 가리키는 현재 버전명 (예: 1.2.3). 패키지 부재 시 null
+ * @property iosLatestVersionCode iOS 고정 링크가 가리키는 현재 버전 코드. 패키지 부재 시 null
+ * @property androidLatestVersionName Android 고정 링크가 가리키는 현재 버전명. 패키지 부재 시 null
+ * @property androidLatestVersionCode Android 고정 링크가 가리키는 현재 버전 코드. 패키지 부재 시 null
  */
 data class AppPackageDistributionUrlsDto(
     val iosInstallUrl: String?,
     val androidDownloadUrl: String?,
+    val iosLatestVersionName: String?,
+    val iosLatestVersionCode: Long?,
+    val androidLatestVersionName: String?,
+    val androidLatestVersionCode: Long?,
 )
 
 data class AppPackageForceUpdateRequest(

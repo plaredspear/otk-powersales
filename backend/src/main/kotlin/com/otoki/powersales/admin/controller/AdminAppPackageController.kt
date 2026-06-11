@@ -64,9 +64,15 @@ class AdminAppPackageController(
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     @GetMapping("/distribution-urls")
     fun distributionUrls(): ResponseEntity<ApiResponse<AppPackageDistributionUrlsDto>> {
+        val (iosVersionName, iosVersionCode) = adminAppPackageService.latestVersion(AppPlatform.IOS)
+        val (androidVersionName, androidVersionCode) = adminAppPackageService.latestVersion(AppPlatform.ANDROID)
         val dto = AppPackageDistributionUrlsDto(
             iosInstallUrl = adminAppPackageService.iosInstallUrl(),
             androidDownloadUrl = adminAppPackageService.androidDownloadUrl(),
+            iosLatestVersionName = iosVersionName,
+            iosLatestVersionCode = iosVersionCode,
+            androidLatestVersionName = androidVersionName,
+            androidLatestVersionCode = androidVersionCode,
         )
         return ResponseEntity.ok(ApiResponse.success(dto))
     }

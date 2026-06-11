@@ -110,12 +110,14 @@ class AdminAppPackageControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("고정 배포 링크 조회 — GET /distribution-urls (iOS + Android)")
+    @DisplayName("고정 배포 링크 조회 — GET /distribution-urls (iOS + Android + 링크가 가리키는 현재 버전)")
     fun distributionUrls() {
         every { adminAppPackageService.iosInstallUrl() } returns
             "https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/ios/install/latest"
         every { adminAppPackageService.androidDownloadUrl() } returns
             "https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/android/download/latest"
+        every { adminAppPackageService.latestVersion(AppPlatform.IOS) } returns ("1.2.3" to 30L)
+        every { adminAppPackageService.latestVersion(AppPlatform.ANDROID) } returns ("2.0.0" to 40L)
 
         mockMvc.perform(get("/api/v1/admin/app-package/distribution-urls"))
             .andExpect(status().isOk)
@@ -127,5 +129,9 @@ class AdminAppPackageControllerTest : AdminControllerTestSupport() {
                 jsonPath("$.data.androidDownloadUrl")
                     .value("https://dev-powersalesapi.otoki.com/api/v1/mobile/app-package/android/download/latest"),
             )
+            .andExpect(jsonPath("$.data.iosLatestVersionName").value("1.2.3"))
+            .andExpect(jsonPath("$.data.iosLatestVersionCode").value(30))
+            .andExpect(jsonPath("$.data.androidLatestVersionName").value("2.0.0"))
+            .andExpect(jsonPath("$.data.androidLatestVersionCode").value(40))
     }
 }

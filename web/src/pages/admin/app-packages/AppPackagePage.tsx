@@ -58,6 +58,13 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
   const distributionUrl = isIos
     ? distributionUrls?.iosInstallUrl
     : distributionUrls?.androidDownloadUrl;
+  // 고정 링크가 실제로 가리키는 현재 버전 (백엔드 resolveLatest 와 동일 기준).
+  const distributionVersionName = isIos
+    ? distributionUrls?.iosLatestVersionName
+    : distributionUrls?.androidLatestVersionName;
+  const distributionVersionCode = isIos
+    ? distributionUrls?.iosLatestVersionCode
+    : distributionUrls?.androidLatestVersionCode;
   const setLatest = useSetAppPackageLatest(platform);
   const toggleForce = useToggleAppPackageForceUpdate(platform);
   const remove = useDeleteAppPackage(platform);
@@ -245,6 +252,19 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
               <Typography.Paragraph style={{ marginBottom: 8, wordBreak: 'break-all' }}>
                 <Typography.Text code>{distributionUrl}</Typography.Text>
               </Typography.Paragraph>
+              <div style={{ marginBottom: 8 }}>
+                <Typography.Text style={{ fontSize: 13 }}>현재 가리키는 버전: </Typography.Text>
+                {distributionVersionName ? (
+                  <Tag color="blue">
+                    {distributionVersionName}
+                    {distributionVersionCode != null && ` (${distributionVersionCode})`}
+                  </Tag>
+                ) : (
+                  <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                    등록된 버전 없음
+                  </Typography.Text>
+                )}
+              </div>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 · 항상 <b>최신으로 지정된 버전</b>을 가리킵니다. 새 버전 업로드 후 "최신 지정"만 하면 이 링크가
                 신버전을 가리키므로 재공지가 필요 없습니다.
