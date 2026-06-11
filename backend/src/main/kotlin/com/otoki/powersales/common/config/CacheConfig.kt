@@ -1,8 +1,12 @@
 package com.otoki.powersales.common.config
 
+import org.slf4j.LoggerFactory
 import org.springframework.boot.cache.autoconfigure.RedisCacheManagerBuilderCustomizer
+import org.springframework.cache.Cache
 import org.springframework.cache.CacheManager
+import org.springframework.cache.annotation.CachingConfigurer
 import org.springframework.cache.annotation.EnableCaching
+import org.springframework.cache.interceptor.CacheErrorHandler
 import org.springframework.cache.support.NoOpCacheManager
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -80,9 +84,11 @@ import java.time.Duration
  */
 @Configuration
 @EnableCaching
-class CacheConfig {
+class CacheConfig : CachingConfigurer {
 
     companion object {
+        private val log = LoggerFactory.getLogger(CacheConfig::class.java)
+
         /**
          * Organization cascade lookup 결과 (Organization 단건) — 24h TTL.
          *
@@ -161,6 +167,16 @@ class CacheConfig {
          */
         const val CACHE_ADMIN_DATA_SCOPE = "admin-data-scope:v2"
 
+        /**
+         * 모바일 버전 체크 메타 (플랫폼별 최신 버전 + 강제 업데이트 경계) — 5분 TTL.
+         *
+         * 로그인 전 스플래시에서 매 실행 호출되는 무인증 엔드포인트라 DB 조회(최신 버전 + force_update
+         * 경계 2~3 query)를 캐시로 절약한다. key = platform. 앱 패키지 변경(upload/setLatest/
+         * setForceUpdate/updateReleaseNote/delete) 시 @CacheEvict 로 즉시 무효화하며, 5분 TTL 은
+         * evict 누락 / 다른 경로 적재의 fallback (최대 5분 내 자동 회복).
+         */
+        const val CACHE_APP_VERSION_META = "app-version-meta:v1"
+
         /** spec #792 — sharing recalc 가 일괄 evict 하는 cache name 일람 */
         val SHARING_RELATED_CACHE_NAMES: List<String> = listOf(
             CACHE_HIERARCHY_SUBORDINATES,
@@ -177,6 +193,7 @@ class CacheConfig {
         private val ORGANIZATION_TTL: Duration = Duration.ofHours(24)
         private val SHARING_POLICY_TTL: Duration = Duration.ofHours(1)
         private val PERMISSION_MATRIX_TTL: Duration = Duration.ofMinutes(5)
+        private val APP_VERSION_META_TTL: Duration = Duration.ofMinutes(5)
     }
 
     /**
@@ -228,6 +245,7 @@ class CacheConfig {
     fun perCacheTtlCustomizer(defaultConfig: RedisCacheConfiguration): RedisCacheManagerBuilderCustomizer {
         val sharingPolicyConfig = defaultConfig.entryTtl(SHARING_POLICY_TTL)
         val permissionMatrixConfig = defaultConfig.entryTtl(PERMISSION_MATRIX_TTL)
+        val appVersionMetaConfig = defaultConfig.entryTtl(APP_VERSION_META_TTL)
         val perCacheConfig = mapOf(
             CACHE_ORGANIZATION_CASCADE to defaultConfig,
             CACHE_TEAM_SCHEDULE_BRANCHES to defaultConfig,
@@ -246,6 +264,8 @@ class CacheConfig {
             // 관리자 권한 가드 캐시 (Caffeine → Redis 전환) — 5분 TTL
             CACHE_ADMIN_PERMISSION to permissionMatrixConfig,
             CACHE_ADMIN_DATA_SCOPE to permissionMatrixConfig,
+            // 모바일 버전 체크 메타 — 5분 TTL
+            CACHE_APP_VERSION_META to appVersionMetaConfig,
         )
         return RedisCacheManagerBuilderCustomizer { builder ->
             builder.withInitialCacheConfigurations(perCacheConfig)
@@ -266,4 +286,35 @@ class CacheConfig {
     @Primary
     @Profile("test | local")
     fun noOpCacheManager(): CacheManager = NoOpCacheManager()
+
+    /**
+     * 캐시 작업 실패(주로 Redis 연결 불가) 시 예외를 전파하지 않고 삼켜서 **원본 메서드(DB 조회)로
+     * graceful 하게 fallback** 하게 한다.
+     *
+     * Spring Cache 의 기본 동작은 캐시 get/put/evict 중 발생한 예외를 그대로 호출자에게 전파한다 —
+     * 즉 Redis 가 죽으면 `@Cacheable` 메서드 호출 자체가 실패한다. 본 핸들러는 get/put/evict/clear
+     * 실패를 WARN 로그만 남기고 무시하므로:
+     *  - GET 실패 → 캐시 미스로 간주되어 Spring 이 원본 메서드를 호출(DB 조회) 후 정상 반환
+     *  - PUT/EVICT/CLEAR 실패 → 무시 (다음 TTL 만료 또는 Redis 회복 시 자연 정합)
+     *
+     * 캐시는 성능 최적화일 뿐 정합성의 SoT 가 아니므로(SoT 는 DB), Redis 장애가 기능 장애로
+     * 번지지 않게 하는 것이 옳다. 단 PUT/EVICT 실패는 stale 가능성이 있어 WARN 으로 가시화한다.
+     */
+    override fun errorHandler(): CacheErrorHandler = object : CacheErrorHandler {
+        override fun handleCacheGetError(exception: RuntimeException, cache: Cache, key: Any) {
+            log.warn("캐시 GET 실패 — 원본(DB) 조회로 fallback. cache={}, key={}", cache.name, key, exception)
+        }
+
+        override fun handleCachePutError(exception: RuntimeException, cache: Cache, key: Any, value: Any?) {
+            log.warn("캐시 PUT 실패 — 무시(다음 회복 시 정합). cache={}, key={}", cache.name, key, exception)
+        }
+
+        override fun handleCacheEvictError(exception: RuntimeException, cache: Cache, key: Any) {
+            log.warn("캐시 EVICT 실패 — 무시(TTL 만료로 자연 정합). cache={}, key={}", cache.name, key, exception)
+        }
+
+        override fun handleCacheClearError(exception: RuntimeException, cache: Cache) {
+            log.warn("캐시 CLEAR 실패 — 무시. cache={}", cache.name, exception)
+        }
+    }
 }

@@ -38,12 +38,22 @@ class AppPackageServiceTest {
 
     private val domainProperties = DomainProperties(api = "dev-powersalesapi.otoki.com", admin = "dev-admin.otoki.com")
 
+    // 실제 provider 를 repository mock 위에 둔다 — @Cacheable 은 단위 테스트에서 미적용(프록시 부재)이라
+    // 매 호출 loadMeta 본문(repository mocking)이 그대로 실행되어 기존 검증 흐름이 유지된다.
+    // cacheManager 는 relaxed mock — evict 의 getCache(...) 가 null 반환해도 안전(NPE-safe).
+    private val cacheManager = mockk<org.springframework.cache.CacheManager>(relaxed = true)
+    private val appVersionMetaProvider = AppVersionMetaProvider(repository, cacheManager)
+
     private val adminService =
         AdminAppPackageService(
             repository, storageService, ipaMetadataExtractor, apkMetadataExtractor, domainProperties,
+            appVersionMetaProvider,
         )
     private val mobileService =
-        MobileAppPackageService(repository, storageService, manifestPlistBuilder, iosInstallPageBuilder)
+        MobileAppPackageService(
+            repository, storageService, manifestPlistBuilder, iosInstallPageBuilder,
+            appVersionMetaProvider,
+        )
 
     init {
         every { apkMetadataExtractor.extract(any()) } returns null
@@ -317,9 +327,8 @@ class AppPackageServiceTest {
         @DisplayName("최신 > 요청 + 강제버전 존재 → updateAvailable + forceUpdate (Android presigned URL)")
         fun androidForceUpdate() {
             every { repository.findByPlatformAndIsLatestTrue(AppPlatform.ANDROID) } returns entity(versionCode = 20, isLatest = true)
-            every {
-                repository.existsByPlatformAndForceUpdateTrueAndVersionCodeGreaterThan(AppPlatform.ANDROID, 5)
-            } returns true
+            // 요청 5 초과 강제 버전 존재 → 강제 버전들의 최대 version_code 가 5 보다 큼.
+            every { repository.findMaxForceUpdateVersionCode(AppPlatform.ANDROID) } returns 20
             every { storageService.getPresignedUrl(any(), any()) } returns "https://s3/latest.apk"
 
             val result = mobileService.check(AppPlatform.ANDROID, 5, "https://api.example.com")
@@ -345,9 +354,8 @@ class AppPackageServiceTest {
         fun iosDownloadUrl() {
             every { repository.findByPlatformAndIsLatestTrue(AppPlatform.IOS) } returns
                 entity(id = 7L, platform = AppPlatform.IOS, versionCode = 20, isLatest = true, bundleIdentifier = "com.otoki.app")
-            every {
-                repository.existsByPlatformAndForceUpdateTrueAndVersionCodeGreaterThan(AppPlatform.IOS, 5)
-            } returns false
+            // 강제 버전 없음 → null (forceUpdate=false).
+            every { repository.findMaxForceUpdateVersionCode(AppPlatform.IOS) } returns null
 
             val result = mobileService.check(AppPlatform.IOS, 5, "https://api.example.com")
 

@@ -29,6 +29,7 @@ class AdminAppPackageService(
     private val ipaMetadataExtractor: IpaMetadataExtractor,
     private val apkMetadataExtractor: ApkMetadataExtractor,
     private val domainProperties: DomainProperties,
+    private val appVersionMetaProvider: AppVersionMetaProvider,
 ) {
 
     fun list(platform: AppPlatform?, pageable: Pageable): Page<AppPackageListItemDto> {
@@ -159,6 +160,7 @@ class AdminAppPackageService(
             )
         )
         val url = storageService.getPresignedUrl(saved.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+        appVersionMetaProvider.evict(platform)
         return AppPackageDetailDto.from(saved, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
@@ -173,6 +175,7 @@ class AdminAppPackageService(
         entity.isLatest = true
         appPackageRepository.save(entity)
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+        appVersionMetaProvider.evict(entity.platform)
         return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
@@ -182,6 +185,7 @@ class AdminAppPackageService(
         entity.forceUpdate = forceUpdate
         appPackageRepository.save(entity)
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+        appVersionMetaProvider.evict(entity.platform)
         return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
@@ -191,6 +195,7 @@ class AdminAppPackageService(
         entity.releaseNote = releaseNote
         appPackageRepository.save(entity)
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+        appVersionMetaProvider.evict(entity.platform)
         return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
@@ -200,6 +205,7 @@ class AdminAppPackageService(
         if (entity.isLatest) throw AppPackageCannotDeleteLatestException()
         storageService.deletePrivate(entity.fileUniqueKey)
         appPackageRepository.delete(entity)
+        appVersionMetaProvider.evict(entity.platform)
     }
 
     private fun validateExtension(platform: AppPlatform, filename: String) {

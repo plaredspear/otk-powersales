@@ -2,6 +2,7 @@ package com.otoki.powersales.apppackage.service
 
 import com.otoki.powersales.apppackage.dto.AppPackageDownloadUrlDto
 import com.otoki.powersales.apppackage.dto.AppVersionCheckDto
+import com.otoki.powersales.apppackage.dto.AppVersionMeta
 import com.otoki.powersales.apppackage.entity.AppPackage
 import com.otoki.powersales.apppackage.entity.AppPlatform
 import com.otoki.powersales.apppackage.exception.AppPackageNotFoundException
@@ -20,6 +21,7 @@ class MobileAppPackageService(
     private val storageService: StorageService,
     private val manifestPlistBuilder: ManifestPlistBuilder,
     private val iosInstallPageBuilder: IosInstallPageBuilder,
+    private val appVersionMetaProvider: AppVersionMetaProvider,
 ) {
 
     companion object {
@@ -52,11 +54,15 @@ class MobileAppPackageService(
     /**
      * 버전 체크. 최신 지정 우선, 없으면 version_code 최대값 fallback.
      *
+     * 최신 버전/강제 경계 메타는 [AppVersionMetaProvider] 의 Redis 캐시(5분 TTL)로 제공되어 DB 조회를
+     * 절약한다. presigned downloadUrl 만 캐시 밖에서 매 요청 신선 발급한다(만료 URL 캐싱 방지).
+     *
      * @param baseUrl iOS manifest 엔드포인트 절대 URL 합성을 위한 요청 기준 origin (예: https://api.example.com)
      */
     fun check(platform: AppPlatform, versionCode: Long, baseUrl: String): AppVersionCheckDto {
-        val latest = resolveLatest(platform)
-            ?: return AppVersionCheckDto(
+        val meta = appVersionMetaProvider.loadMeta(platform)
+        if (!meta.hasLatest) {
+            return AppVersionCheckDto(
                 platform = platform,
                 updateAvailable = false,
                 forceUpdate = false,
@@ -65,21 +71,23 @@ class MobileAppPackageService(
                 releaseNote = null,
                 downloadUrl = null,
             )
+        }
 
-        val updateAvailable = latest.versionCode > versionCode
+        val updateAvailable = (meta.latestVersionCode ?: 0) > versionCode
         // 요청 버전 초과 ~ 최신 사이에 강제 버전이 하나라도 있으면 강제 (중간 강제 버전 우회 방지).
+        // existsBy...ForceUpdateTrueAndVersionCodeGreaterThan(vc) 와 동치: maxForceUpdateVersionCode > vc.
         val forceUpdate = updateAvailable &&
-            appPackageRepository.existsByPlatformAndForceUpdateTrueAndVersionCodeGreaterThan(platform, versionCode)
+            (meta.maxForceUpdateVersionCode ?: Long.MIN_VALUE) > versionCode
 
-        val downloadUrl = if (updateAvailable) buildDownloadUrl(latest, baseUrl) else null
+        val downloadUrl = if (updateAvailable) buildDownloadUrl(platform, meta, baseUrl) else null
 
         return AppVersionCheckDto(
             platform = platform,
             updateAvailable = updateAvailable,
             forceUpdate = forceUpdate,
-            latestVersionName = latest.versionName,
-            latestVersionCode = latest.versionCode,
-            releaseNote = latest.releaseNote,
+            latestVersionName = meta.latestVersionName,
+            latestVersionCode = meta.latestVersionCode,
+            releaseNote = meta.releaseNote,
             downloadUrl = downloadUrl,
         )
     }
@@ -156,12 +164,20 @@ class MobileAppPackageService(
         appPackageRepository.findByPlatformAndIsLatestTrue(platform)
             ?: appPackageRepository.findTopByPlatformOrderByVersionCodeDesc(platform)
 
-    private fun buildDownloadUrl(latest: AppPackage, baseUrl: String): String = when (latest.platform) {
-        AppPlatform.ANDROID ->
-            storageService.getPresignedUrl(latest.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
-        AppPlatform.IOS -> {
-            val encoded = URLEncoder.encode(iosManifestPath(baseUrl, latest.id), StandardCharsets.UTF_8)
-            "itms-services://?action=download-manifest&url=$encoded"
+    /**
+     * downloadUrl 합성 — 캐시된 메타 기반. Android presigned URL 은 매 요청 신선 발급(만료 URL 캐싱 방지).
+     */
+    private fun buildDownloadUrl(platform: AppPlatform, meta: AppVersionMeta, baseUrl: String): String =
+        when (platform) {
+            AppPlatform.ANDROID ->
+                storageService.getPresignedUrl(
+                    meta.latestFileUniqueKey!!,
+                    StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS,
+                )
+            AppPlatform.IOS -> {
+                val encoded =
+                    URLEncoder.encode(iosManifestPath(baseUrl, meta.latestPackageId!!), StandardCharsets.UTF_8)
+                "itms-services://?action=download-manifest&url=$encoded"
+            }
         }
-    }
 }
