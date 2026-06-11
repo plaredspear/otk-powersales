@@ -179,36 +179,50 @@ class ProductRepositoryTest {
         }
     }
 
-    // ========== findByLogisticsBarcode Tests ==========
+    // ========== findByBarcode Tests ==========
 
     @Nested
-    @DisplayName("findByLogisticsBarcode - 바코드 정확 일치 검색")
-    inner class FindByLogisticsBarcodeTests {
+    @DisplayName("findByBarcode - 소비자 바코드(ProductBarcode) 부분일치 검색")
+    inner class FindByBarcodeTests {
 
         @Test
         @DisplayName("존재하는 바코드 검색 - 해당 제품 반환")
-        fun findByLogisticsBarcode_existingBarcode_returnsProduct() {
+        fun findByBarcode_existingBarcode_returnsProduct() {
             // Given
             val pageable = PageRequest.of(0, 20)
 
             // When
-            val result = productRepository.findByLogisticsBarcode("8801045570716", pageable)
+            val result = productRepository.findByBarcode("8801045570716", pageable)
 
             // Then
             assertThat(result.content).hasSize(1)
-            assertThat(result.content[0].product.logisticsBarcode).isEqualTo("8801045570716")
             assertThat(result.content[0].product.name).isEqualTo("열라면_용기105G")
             assertThat(result.content[0].barcode).isEqualTo("8801045570716")
         }
 
         @Test
-        @DisplayName("존재하지 않는 바코드 검색 - 빈 결과 반환")
-        fun findByLogisticsBarcode_nonExistingBarcode_returnsEmpty() {
+        @DisplayName("바코드 일부로 검색 - 부분일치 결과 반환")
+        fun findByBarcode_partialBarcode_returnsMatches() {
             // Given
             val pageable = PageRequest.of(0, 20)
 
             // When
-            val result = productRepository.findByLogisticsBarcode("0000000000000", pageable)
+            val result = productRepository.findByBarcode("88010455707", pageable)
+
+            // Then
+            assertThat(result.content).anySatisfy { row ->
+                assertThat(row.barcode).isEqualTo("8801045570716")
+            }
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 바코드 검색 - 빈 결과 반환")
+        fun findByBarcode_nonExistingBarcode_returnsEmpty() {
+            // Given
+            val pageable = PageRequest.of(0, 20)
+
+            // When
+            val result = productRepository.findByBarcode("0000000000000", pageable)
 
             // Then
             assertThat(result.content).isEmpty()

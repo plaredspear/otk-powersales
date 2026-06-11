@@ -40,12 +40,13 @@ class JwtTokenProvider(
         userId: Long,
         role: String?,
         agreementFlag: Boolean = false,
-        passwordChangeRequired: Boolean = false
+        passwordChangeRequired: Boolean = false,
+        deviceId: String? = null
     ): String {
         val now = Date()
         val expiry = Date(now.time + accessExpiration)
 
-        return Jwts.builder()
+        val builder = Jwts.builder()
             .subject(userId.toString())
             .claim("role", role)
             .claim("type", "access")
@@ -54,6 +55,14 @@ class JwtTokenProvider(
             .claim("password_change_required", passwordChangeRequired)
             .issuedAt(now)
             .expiration(expiry)
+
+        // 단말 바인딩 검증 대상일 때만 device_id 를 박는다. 클레임 부재 토큰(검증 면제/구 토큰)은
+        // 매 요청 필터가 단말 검증을 건너뛴다 (excluded 사번이 잠기는 사고 방지 + 무중단 롤아웃).
+        if (deviceId != null) {
+            builder.claim("device_id", deviceId)
+        }
+
+        return builder
             .signWith(key)
             .compact()
     }
@@ -125,6 +134,18 @@ class JwtTokenProvider(
      */
     fun getPasswordChangeRequiredFromToken(token: String): Boolean {
         return parseClaims(token).get("password_change_required", java.lang.Boolean::class.java)?.booleanValue() ?: false
+    }
+
+    /**
+     * 토큰에서 device_id 추출 (단말 바인딩 검증 대상 토큰만 보유).
+     * 클레임이 없는 토큰(검증 면제/본 기능 배포 이전)은 `null` → 매 요청 단말 검증 skip.
+     */
+    fun getDeviceIdFromToken(token: String): String? {
+        return try {
+            parseClaims(token).get("device_id", String::class.java)
+        } catch (_: Exception) {
+            null
+        }
     }
 
     /**

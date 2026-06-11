@@ -208,24 +208,24 @@ void main() {
       expect(PromotionAmountText.formatAmount(null), '-');
     });
 
-    test('10000 이상이면 만 단위 (4800000 -> "480만")', () {
-      expect(PromotionAmountText.formatAmount(4800000), '480만');
+    test('천단위 콤마 + 원 (4800000 -> "4,800,000원")', () {
+      expect(PromotionAmountText.formatAmount(4800000), '4,800,000원');
     });
 
-    test('10000 미만이면 원 단위 (5000 -> "5,000원")', () {
+    test('만 미만도 원 단위 (5000 -> "5,000원")', () {
       expect(PromotionAmountText.formatAmount(5000), '5,000원');
     });
 
-    test('정확히 10000이면 만 단위 (10000 -> "1만")', () {
-      expect(PromotionAmountText.formatAmount(10000), '1만');
+    test('10000 -> "10,000원"', () {
+      expect(PromotionAmountText.formatAmount(10000), '10,000원');
     });
 
     test('0이면 원 단위 ("0원")', () {
       expect(PromotionAmountText.formatAmount(0), '0원');
     });
 
-    test('큰 금액 천 단위 콤마 (12345만)', () {
-      expect(PromotionAmountText.formatAmount(123450000), '12,345만');
+    test('큰 금액 천 단위 콤마 (123450000 -> "123,450,000원")', () {
+      expect(PromotionAmountText.formatAmount(123450000), '123,450,000원');
     });
   });
 }

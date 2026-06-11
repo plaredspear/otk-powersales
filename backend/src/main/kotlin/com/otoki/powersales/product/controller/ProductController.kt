@@ -1,6 +1,7 @@
 package com.otoki.powersales.product.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.product.dto.response.OrderProductDto
 import com.otoki.powersales.product.dto.response.ProductCategoryGroup
 import com.otoki.powersales.product.dto.response.ProductDetail
 import com.otoki.powersales.product.dto.response.ProductDto
@@ -69,6 +70,32 @@ class ProductController(
         @RequestParam(defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<Page<ProductDto>>> {
         val result = productService.searchProductsByFilter(productName, barcode, category2, category3, page, size)
+        return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
+    }
+
+    /**
+     * 주문 작성용 제품 검색
+     * GET /api/v1/mobile/products/search/order
+     *
+     * 단일 검색어(제품명/제품코드/바코드)와 선택적 중분류/소분류로 검색하며,
+     * 주문 라인 생성에 필요한 단가/박스입수/전용·시식 차단값을 함께 반환한다.
+     *
+     * @param query 검색어 (제품명/제품코드/바코드)
+     * @param categoryMid 중분류 (선택)
+     * @param categorySub 소분류 (선택)
+     * @param page 페이지 번호 (기본: 0)
+     * @param size 페이지 크기 (기본: 20)
+     */
+    @GetMapping("/search/order")
+    fun searchProductsForOrder(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestParam query: String,
+        @RequestParam(required = false) categoryMid: String?,
+        @RequestParam(required = false) categorySub: String?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int
+    ): ResponseEntity<ApiResponse<Page<OrderProductDto>>> {
+        val result = productService.searchProductsForOrder(query, categoryMid, categorySub, page, size)
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 

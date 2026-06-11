@@ -1,7 +1,9 @@
 package com.otoki.powersales.product.service
 
 import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.product.enums.ProductType
 import com.otoki.powersales.product.enums.StorageCondition
+import java.math.BigDecimal
 import com.otoki.powersales.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.product.exception.InvalidSearchTypeException
 import com.otoki.powersales.product.repository.OrderableCategoryRow
@@ -108,20 +110,19 @@ class ProductServiceTest {
     inner class BarcodeSearch {
 
         @Test
-        @DisplayName("바코드 정확 일치 검색 성공")
+        @DisplayName("바코드(소비자 바코드) 검색 성공")
         fun searchProducts_barcodeSearch_success() {
             val products = listOf(
                 createTestProduct("18110014", "열라면_용기105G", "18110014", "8801045570716")
             )
             val page = rowPage(products, PageRequest.of(0, 20), 1)
-            every { productRepository.findByLogisticsBarcode("8801045570716", any()) } returns page
+            every { productRepository.findByBarcode("8801045570716", any()) } returns page
 
             val result = productService.searchProducts("8801045570716", "barcode", 0, 20)
 
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].barcode).isEqualTo("8801045570716")
-            assertThat(result.content[0].logisticsBarcode).isEqualTo("8801045570716")
-            verify { productRepository.findByLogisticsBarcode("8801045570716", any()) }
+            verify { productRepository.findByBarcode("8801045570716", any()) }
         }
 
         @Test
@@ -292,6 +293,77 @@ class ProductServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("주문 작성용 제품 검색 (searchProductsForOrder)")
+    inner class OrderSearch {
+
+        @Test
+        @DisplayName("검색 결과를 주문 DTO로 매핑 - 단가/박스입수 포함")
+        fun searchProductsForOrder_mapsOrderFields() {
+            val products = listOf(
+                createTestProduct(
+                    "18110014", "열라면_용기105G", "18110014", "8801045570716",
+                    standardUnitPrice = BigDecimal("1200"),
+                    boxReceivingQuantity = BigDecimal("30")
+                )
+            )
+            val page = rowPage(products, PageRequest.of(0, 30), 1)
+            every { productRepository.searchForOrder("열라면", null, null, any()) } returns page
+
+            val result = productService.searchProductsForOrder("열라면", null, null, 0, 30)
+
+            assertThat(result.content).hasSize(1)
+            val dto = result.content[0]
+            assertThat(dto.unitPrice).isEqualTo(1200)
+            assertThat(dto.boxSize).isEqualTo(30)
+            assertThat(dto.productType).isNull()
+            assertThat(dto.tasteGiftType).isNull()
+            verify { productRepository.searchForOrder("열라면", null, null, any()) }
+        }
+
+        @Test
+        @DisplayName("전용상품(productType=2) → EXCLUSIVE 매핑")
+        fun searchProductsForOrder_exclusiveMapping() {
+            val products = listOf(
+                createTestProduct(
+                    "20010001", "전용상품", "20010001", "8800000000001",
+                    productType = ProductType.PRODUCT_TYPE_2
+                )
+            )
+            every { productRepository.searchForOrder(any(), any(), any(), any()) } returns
+                rowPage(products, PageRequest.of(0, 30), 1)
+
+            val result = productService.searchProductsForOrder("전용", null, null, 0, 30)
+
+            assertThat(result.content[0].productType).isEqualTo("EXCLUSIVE")
+        }
+
+        @Test
+        @DisplayName("시식·증정용(tasteGift=x) → TASTING_GIFT 매핑")
+        fun searchProductsForOrder_tastingGiftMapping() {
+            val products = listOf(
+                createTestProduct(
+                    "20020001", "시식증정", "20020001", "8800000000002",
+                    tasteGift = "x"
+                )
+            )
+            every { productRepository.searchForOrder(any(), any(), any(), any()) } returns
+                rowPage(products, PageRequest.of(0, 30), 1)
+
+            val result = productService.searchProductsForOrder("시식", null, null, 0, 30)
+
+            assertThat(result.content[0].tasteGiftType).isEqualTo("TASTING_GIFT")
+        }
+
+        @Test
+        @DisplayName("빈 검색어 - INVALID_PARAMETER 예외")
+        fun searchProductsForOrder_blankQuery_throws() {
+            assertThatThrownBy {
+                productService.searchProductsForOrder("   ", null, null, 0, 30)
+            }.isInstanceOf(InvalidSearchParameterException::class.java)
+        }
+    }
+
     /** 제품 목록을 검색 결과 행(ProductSearchRow) 페이지로 감싼다. 바코드는 logisticsBarcode 로 시드. */
     private fun rowPage(products: List<Product>, pageable: PageRequest, total: Long) =
         PageImpl(products.map { ProductSearchRow(it, it.logisticsBarcode) }, pageable, total)
@@ -304,7 +376,11 @@ class ProductServiceTest {
         storageCondition: String = "실온",
         shelfLife: String = "7개월",
         category1: String = "라면",
-        category2: String = "봉지면"
+        category2: String = "봉지면",
+        productType: ProductType? = null,
+        tasteGift: String? = null,
+        standardUnitPrice: BigDecimal? = null,
+        boxReceivingQuantity: BigDecimal? = null
     ): Product {
         return Product(
             name = productName,
@@ -313,7 +389,11 @@ class ProductServiceTest {
             storageCondition = StorageCondition.fromDisplayNameOrNull(storageCondition),
             shelfLife = shelfLife,
             productCategory1 = category1,
-            productCategory2 = category2
+            productCategory2 = category2,
+            productType = productType,
+            tasteGift = tasteGift,
+            standardUnitPrice = standardUnitPrice,
+            boxReceivingQuantity = boxReceivingQuantity
         )
     }
 }

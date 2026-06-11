@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/session/session_reset_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -38,6 +39,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     Future.microtask(
       () => ref.read(authProvider.notifier).loadSavedEmployeeNumber(),
     );
+
+    // 강제 로그아웃으로 재진입한 세션이면 사유를 1회 안내한다.
+    // (사용자가 직접 로그아웃한 경우 사유는 null → 무표시)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final reason = SessionResetController.instance.consumeReason();
+      if (reason != null) {
+        _showLogoutReason(reason);
+      }
+    });
+  }
+
+  /// 강제 로그아웃 사유 안내.
+  /// - [LogoutReason.deviceRevoked]: 다른 기기 로그인 → 명확한 다이얼로그(확인 필요)
+  /// - [LogoutReason.sessionExpired]: 세션 만료 → 가벼운 SnackBar
+  void _showLogoutReason(LogoutReason reason) {
+    switch (reason) {
+      case LogoutReason.deviceRevoked:
+        showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text('로그아웃 안내', style: AppTypography.headlineSmall),
+            content: Text(
+              '다른 기기에서 로그인되어 현재 기기에서 로그아웃되었습니다.\n'
+              '본인이 맞다면 다시 로그인해 주세요.',
+              style: AppTypography.bodyMedium,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(
+                  '확인',
+                  style: AppTypography.labelLarge.copyWith(
+                    color: AppColors.secondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      case LogoutReason.sessionExpired:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('세션이 만료되어 로그아웃되었습니다. 다시 로그인해 주세요.'),
+          ),
+        );
+    }
   }
 
   @override

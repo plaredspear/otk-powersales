@@ -19,9 +19,14 @@ class JwtAuthenticationEntryPoint(
         authException: AuthenticationException
     ) {
         val isExpired = request.getAttribute("jwt.expired") == true
+        val isDeviceRevoked = request.getAttribute("jwt.deviceRevoked") == true
 
-        val errorCode = if (isExpired) "TOKEN_EXPIRED" else "UNAUTHORIZED"
-        val errorMessage = if (isExpired) "토큰이 만료되었습니다" else "인증이 필요합니다"
+        // 단말 회수/교체(DEVICE_REVOKED)는 만료보다 우선 — 모바일이 강제 로그아웃으로 분기.
+        val (errorCode, errorMessage) = when {
+            isDeviceRevoked -> "DEVICE_REVOKED" to "다른 기기에서 로그인되어 로그아웃되었습니다"
+            isExpired -> "TOKEN_EXPIRED" to "토큰이 만료되었습니다"
+            else -> "UNAUTHORIZED" to "인증이 필요합니다"
+        }
 
         response.status = HttpServletResponse.SC_UNAUTHORIZED
         response.contentType = "application/json;charset=UTF-8"

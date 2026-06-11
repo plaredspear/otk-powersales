@@ -109,8 +109,30 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
     required String query,
     String? categoryMid,
     String? categorySub,
-  }) {
-    throw UnimplementedError('별도 스펙에서 구현');
+  }) async {
+    final queryParameters = <String, dynamic>{
+      'query': query,
+      'page': 0,
+      'size': 30,
+    };
+    if (categoryMid != null && categoryMid.isNotEmpty) {
+      queryParameters['categoryMid'] = categoryMid;
+    }
+    if (categorySub != null && categorySub.isNotEmpty) {
+      queryParameters['categorySub'] = categorySub;
+    }
+
+    final response = await _dio.get(
+      '/api/v1/mobile/products/search/order',
+      queryParameters: queryParameters,
+    );
+
+    final page = response.data['data'] as Map<String, dynamic>;
+    final content = (page['content'] as List<dynamic>?) ?? const [];
+    return content
+        .map((raw) =>
+            ProductForOrderModel.fromJson(raw as Map<String, dynamic>))
+        .toList();
   }
 
   @override

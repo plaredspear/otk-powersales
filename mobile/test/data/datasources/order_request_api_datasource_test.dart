@@ -248,6 +248,91 @@ void main() {
       });
     });
 
+    group('searchProductsForOrder', () {
+      test('정상 응답 시 ProductForOrderModel 목록 반환 + 차단값 매핑', () async {
+        Map<String, dynamic>? capturedParams;
+
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            if (options.path == '/api/v1/mobile/products/search/order') {
+              capturedParams = options.queryParameters;
+              handler.resolve(Response(
+                data: {
+                  'success': true,
+                  'data': {
+                    'content': [
+                      {
+                        'productCode': '18110014',
+                        'productName': '열라면_용기105G',
+                        'barcode': '8801045570716',
+                        'storageType': '실온',
+                        'shelfLife': '7개월',
+                        'unitPrice': 1200,
+                        'boxSize': 30,
+                        'isFavorite': false,
+                        'categoryMid': '봉지면',
+                        'categorySub': '가정',
+                        'productType': 'EXCLUSIVE',
+                        'tasteGiftType': 'TASTING_GIFT',
+                      }
+                    ],
+                    'totalElements': 1,
+                  },
+                  'message': '조회 성공',
+                },
+                statusCode: 200,
+                requestOptions: options,
+              ));
+              return;
+            }
+            handler.reject(DioException(requestOptions: options));
+          },
+        ));
+
+        final result =
+            await dataSource.searchProductsForOrder(query: '열라면');
+
+        expect(result.length, 1);
+        expect(result[0].productCode, '18110014');
+        expect(result[0].unitPrice, 1200);
+        expect(result[0].boxSize, 30);
+        expect(result[0].productType, 'EXCLUSIVE');
+        expect(result[0].tasteGiftType, 'TASTING_GIFT');
+        expect(capturedParams!['query'], '열라면');
+      });
+
+      test('categoryMid/categorySub 지정 시 queryParameters에 포함', () async {
+        Map<String, dynamic>? capturedParams;
+
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            if (options.path == '/api/v1/mobile/products/search/order') {
+              capturedParams = options.queryParameters;
+              handler.resolve(Response(
+                data: {
+                  'success': true,
+                  'data': {'content': [], 'totalElements': 0},
+                },
+                statusCode: 200,
+                requestOptions: options,
+              ));
+              return;
+            }
+            handler.reject(DioException(requestOptions: options));
+          },
+        ));
+
+        await dataSource.searchProductsForOrder(
+          query: '라면',
+          categoryMid: '봉지면',
+          categorySub: '가정',
+        );
+
+        expect(capturedParams!['categoryMid'], '봉지면');
+        expect(capturedParams!['categorySub'], '가정');
+      });
+    });
+
     group('미구현 메서드', () {
       test('getOrderRequestDetail은 UnimplementedError 발생', () {
         expect(

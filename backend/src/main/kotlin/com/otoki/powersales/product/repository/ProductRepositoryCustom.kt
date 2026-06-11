@@ -10,8 +10,24 @@ interface ProductRepositoryCustom {
 
     fun searchByTextIncludingBarcode(query: String, pageable: Pageable): Page<ProductSearchRow>
 
-    /** 바코드 정확 일치 검색 (logistics_barcode). */
-    fun findByLogisticsBarcode(logisticsBarcode: String, pageable: Pageable): Page<ProductSearchRow>
+    /**
+     * 바코드 스캔 검색 — 레거시 `selectProduct` 의 바코드 매칭과 정합.
+     * 소비자 바코드(ProductBarcode.barcode)에 대한 부분일치(LIKE) + orderable 필터를 적용한다.
+     * (물류 바코드 `Product.logisticsBarcode` 가 아니라, 스캐너가 읽는 단위별 바코드 컬럼을 조회한다.)
+     */
+    fun findByBarcode(barcode: String, pageable: Pageable): Page<ProductSearchRow>
+
+    /**
+     * 주문 작성용 제품 검색 — 레거시 주문 `selectProduct`(searchWord) 정합.
+     * 단일 검색어를 제품명/제품코드/소비자 바코드(ProductBarcode.barcode) OR 부분일치로 매칭하며
+     * orderable 필터 + 선택적 중분류/소분류를 적용한다. 주문에 필요한 전체 필드를 함께 반환한다.
+     */
+    fun searchForOrder(
+        query: String,
+        category2: String?,
+        category3: String?,
+        pageable: Pageable
+    ): Page<ProductSearchRow>
 
     /**
      * 레거시 제품추가 팝업(productMapper.xml `selectProduct`) 정합 — 제품명/바코드/중분류/소분류 조합 검색.

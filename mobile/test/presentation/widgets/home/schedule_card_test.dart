@@ -219,7 +219,7 @@ void main() {
         expect(tapped, isTrue);
       });
 
-      testWidgets('"팀 출근 현황: N명 중 M명 등록 완료" 텍스트가 표시되어야 한다',
+      testWidgets('"N명 중, M명 등록 완료" 요약 텍스트가 표시되어야 한다',
           (tester) async {
         await tester.pumpWidget(buildTestWidget(
           userRole: 'LEADER',
@@ -227,10 +227,10 @@ void main() {
               const AttendanceSummary(totalCount: 5, registeredCount: 3),
         ));
 
-        expect(find.text('팀 출근 현황: 5명 중 3명 등록 완료'), findsOneWidget);
+        expect(find.text('5명 중, 3명 등록 완료'), findsOneWidget);
       });
 
-      testWidgets('스케줄 없음 시 "오늘 등록된 팀 스케줄이 없습니다." 표시',
+      testWidgets('스케줄 없음 시 "0명 중, 0명 등록 완료" + "일정 관리" 표시',
           (tester) async {
         await tester.pumpWidget(buildTestWidget(
           userRole: 'LEADER',
@@ -238,10 +238,14 @@ void main() {
               const AttendanceSummary(totalCount: 0, registeredCount: 0),
         ));
 
-        expect(find.text('오늘 등록된 팀 스케줄이 없습니다.'), findsOneWidget);
+        // 레거시 정합: 팀원 목록/빈 스케줄 메시지는 카드에 없고
+        // 요약 텍스트 + '일정 관리' 진입 버튼만 노출된다.
+        expect(find.text('0명 중, 0명 등록 완료'), findsOneWidget);
+        expect(find.text('일정 관리'), findsOneWidget);
       });
 
-      testWidgets('팀원 이름이 가나다순으로 정렬되어 표시되어야 한다', (tester) async {
+      testWidgets('팀원 목록/스케줄 상세는 카드에 표시되지 않는다 ("일정 관리" 페이지로 이전)',
+          (tester) async {
         await tester.pumpWidget(buildTestWidget(
           userRole: 'LEADER',
           schedules: _makeLeaderSchedules(),
@@ -249,10 +253,11 @@ void main() {
               const AttendanceSummary(totalCount: 3, registeredCount: 1),
         ));
 
-        // 가나다순: 김영미 → 박수진 → 이지현
-        expect(find.text('김영미'), findsOneWidget);
-        expect(find.text('박수진'), findsOneWidget);
-        expect(find.text('이지현'), findsOneWidget);
+        // 팀원 이름/매장/출근상태 등 상세는 '일정 관리' 페이지에서 확인한다.
+        expect(find.text('김영미'), findsNothing);
+        expect(find.text('박수진'), findsNothing);
+        expect(find.text('이지현'), findsNothing);
+        expect(find.text('미등록'), findsNothing);
       });
 
       testWidgets('출근 등록 버튼이 표시되지 않아야 한다', (tester) async {
@@ -270,49 +275,7 @@ void main() {
         expect(find.text('등록 완료'), findsNothing);
       });
 
-      testWidgets('출근 완료 시 체크 아이콘과 시간이 표시되어야 한다', (tester) async {
-        await tester.pumpWidget(buildTestWidget(
-          userRole: 'LEADER',
-          schedules: [
-            Schedule(
-              scheduleId: 1,
-              employeeName: '김영미',
-              employeeCode: 'EMP-001',
-              accountName: '이마트 강남점',
-              workCategory: '행사',
-              isCommuteRegistered: true,
-              commuteRegisteredAt: DateTime(2026, 3, 3, 9, 30),
-            ),
-          ],
-          attendanceSummary:
-              const AttendanceSummary(totalCount: 1, registeredCount: 1),
-        ));
-
-        expect(find.text('09:30'), findsOneWidget);
-        expect(find.byIcon(Icons.check), findsOneWidget);
-      });
-
-      testWidgets('미등록 시 "미등록" 텍스트가 표시되어야 한다', (tester) async {
-        await tester.pumpWidget(buildTestWidget(
-          userRole: 'LEADER',
-          schedules: [
-            const Schedule(
-              scheduleId: 1,
-              employeeName: '박수진',
-              employeeCode: 'EMP-002',
-              accountName: '홈플러스 잠실점',
-              workCategory: '진열',
-              isCommuteRegistered: false,
-            ),
-          ],
-          attendanceSummary:
-              const AttendanceSummary(totalCount: 1, registeredCount: 0),
-        ));
-
-        expect(find.text('미등록'), findsOneWidget);
-      });
-
-      testWidgets('출근 카운트 배지가 숨겨져야 한다 (팀 출근 현황 텍스트로 대체)',
+      testWidgets('출근 카운트 배지가 숨겨져야 한다 (요약 텍스트로 대체)',
           (tester) async {
         await tester.pumpWidget(buildTestWidget(
           userRole: 'LEADER',
@@ -323,38 +286,6 @@ void main() {
 
         // 기존 "X/N" 배지가 표시되지 않아야 함
         expect(find.text('1/3'), findsNothing);
-      });
-
-      testWidgets('동일 팀원의 복수 스케줄이 독립 표시되어야 한다', (tester) async {
-        await tester.pumpWidget(buildTestWidget(
-          userRole: 'LEADER',
-          schedules: const [
-            Schedule(
-              scheduleId: 1,
-              employeeName: '김영미',
-              employeeCode: 'EMP-001',
-              accountName: '이마트 강남점',
-              workCategory: '행사',
-              isCommuteRegistered: true,
-              commuteRegisteredAt: null,
-            ),
-            Schedule(
-              scheduleId: 2,
-              employeeName: '김영미',
-              employeeCode: 'EMP-001',
-              accountName: '롯데마트 서초점',
-              workCategory: '진열',
-              isCommuteRegistered: false,
-            ),
-          ],
-          attendanceSummary:
-              const AttendanceSummary(totalCount: 2, registeredCount: 1),
-        ));
-
-        // 김영미가 2번 표시
-        expect(find.text('김영미'), findsNWidgets(2));
-        expect(find.text('이마트 강남점'), findsOneWidget);
-        expect(find.text('롯데마트 서초점'), findsOneWidget);
       });
     });
 
@@ -368,7 +299,7 @@ void main() {
         ));
 
         expect(find.text('일정 관리'), findsOneWidget);
-        expect(find.text('팀 출근 현황: 3명 중 1명 등록 완료'), findsOneWidget);
+        expect(find.text('3명 중, 1명 등록 완료'), findsOneWidget);
         expect(find.text('내 일정'), findsNothing);
         // 등록 버튼은 USER 뷰에서만 노출
         expect(find.text('다음 등록'), findsNothing);

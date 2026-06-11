@@ -86,16 +86,23 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
+    // 단말 회수/교체(DEVICE_REVOKED): 다른 기기에서 로그인되어 현재 단말이 차단됨.
+    // refresh 토큰도 서버에서 무효화됐으므로 갱신 시도 없이 즉시 강제 로그아웃.
+    if (_errorCode(err.response?.data) == 'DEVICE_REVOKED') {
+      await _forceLogout(reason: LogoutReason.deviceRevoked);
+      return handler.next(err);
+    }
+
     // 이미 refresh 요청 자체가 401이면 로그아웃
     if (err.requestOptions.path.contains('/auth/refresh')) {
-      await _forceLogout();
+      await _forceLogout(reason: LogoutReason.sessionExpired);
       return handler.next(err);
     }
 
     // 이미 한 번 토큰 갱신 후 재시도된 요청이 또 401이면 무한 갱신→재시도 루프가 된다.
     // (갱신은 성공하지만 서버가 계속 401을 주는 케이스) → 더 갱신하지 않고 로그아웃.
     if (err.requestOptions.extra[_retriedKey] == true) {
-      await _forceLogout();
+      await _forceLogout(reason: LogoutReason.sessionExpired);
       return handler.next(err);
     }
 
@@ -108,7 +115,7 @@ class AuthInterceptor extends Interceptor {
         if (err.requestOptions.cancelToken?.isCancelled == true) {
           return handler.next(err);
         }
-        await _forceLogout();
+        await _forceLogout(reason: LogoutReason.sessionExpired);
         return handler.next(err);
       }
 
@@ -124,7 +131,7 @@ class AuthInterceptor extends Interceptor {
       if (isRequestCancelled(e)) {
         return handler.next(err);
       }
-      await _forceLogout();
+      await _forceLogout(reason: LogoutReason.sessionExpired);
       handler.next(err);
     }
   }
@@ -179,11 +186,8 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  /// 403 처리: GPS_CONSENT_REQUIRED이면 GPS 동의 화면으로 이동
-  void _handle403(DioException err, ErrorInterceptorHandler handler) {
-    final data = err.response?.data;
-
-    // 응답 body를 Map으로 변환 (Map 직접 수신 또는 String JSON 디코딩)
+  /// 응답 body에서 error.code 추출 (Map 직접 수신 또는 String JSON 디코딩).
+  String? _errorCode(dynamic data) {
     Map<String, dynamic>? parsed;
     if (data is Map<String, dynamic>) {
       parsed = data;
@@ -194,13 +198,19 @@ class AuthInterceptor extends Interceptor {
           parsed = decoded;
         }
       } catch (_) {
-        // JSON 파싱 실패 → 일반 403 처리
+        // JSON 파싱 실패 → null
       }
     }
+    if (parsed == null) return null;
+    final error = parsed['error'];
+    return error is Map<String, dynamic> ? error['code'] as String? : null;
+  }
 
-    if (parsed != null) {
-      final error = parsed['error'];
-      final code = error is Map<String, dynamic> ? error['code'] : null;
+  /// 403 처리: GPS_CONSENT_REQUIRED이면 GPS 동의 화면으로 이동
+  void _handle403(DioException err, ErrorInterceptorHandler handler) {
+    final code = _errorCode(err.response?.data);
+
+    if (code != null) {
       if (code == 'GPS_CONSENT_REQUIRED') {
         _navigateToGpsConsent();
         // cancel 타입으로 교체하여 UI에서 에러 표시 억제
@@ -253,8 +263,8 @@ class AuthInterceptor extends Interceptor {
   ///
   /// 루트 ProviderScope 를 재생성해 모든 Provider(도메인 캐시 포함)를 폐기하므로,
   /// 토큰 만료로 로그아웃된 뒤 다른 계정으로 로그인해도 잔여 데이터가 노출되지 않는다.
-  Future<void> _forceLogout() async {
+  Future<void> _forceLogout({LogoutReason? reason}) async {
     await _localDataSource.clearTokens();
-    SessionResetController.instance.requestReset();
+    SessionResetController.instance.requestReset(reason: reason);
   }
 }
