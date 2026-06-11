@@ -410,7 +410,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// 저작권 문구
   Widget _buildCopyright() {
     return Text(
-      'Copyright ⓒ ottogi co,Ltd All Rights Reserved.',
+      'Copyright ⓒ Otoki co,Ltd All Rights Reserved.',
       textAlign: TextAlign.center,
       style: AppTypography.bodySmall.copyWith(
         color: AppColors.textTertiary,
