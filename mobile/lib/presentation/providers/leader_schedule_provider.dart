@@ -285,13 +285,17 @@ class LeaderDailyStatusState {
     this.hasLoaded = false,
   });
 
+  /// 공백·대소문자 무시 매칭 (레거시 `REGEXP_REPLACE(..,'\s','')` + 검색어 공백 제거 정합).
   bool _matches(String name, String code, String account) {
-    if (searchKeyword.isEmpty) return true;
-    final needle = searchKeyword.toLowerCase();
-    return name.toLowerCase().contains(needle) ||
-        code.toLowerCase().contains(needle) ||
-        account.toLowerCase().contains(needle);
+    final needle = _normalize(searchKeyword);
+    if (needle.isEmpty) return true;
+    return _normalize(name).contains(needle) ||
+        _normalize(code).contains(needle) ||
+        _normalize(account).contains(needle);
   }
+
+  static String _normalize(String s) =>
+      s.toLowerCase().replaceAll(RegExp(r'\s+'), '');
 
   List<LeaderDailyWorker> get filteredDisplayWorkers =>
       (data?.displayWorkers ?? const [])
