@@ -83,4 +83,13 @@ class WorkingDayMaster(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,
-) : BaseEntity()
+) : BaseEntity() {
+
+    /** `workingDateCheck == 1` 이면 영업일 (주말/공휴일은 0). SF `WorkingDateCheck__c` 판정 동등. */
+    fun isWorkingDay(): Boolean = workingDateCheck == WORKING_DAY_CHECK_VALUE
+
+    companion object {
+        /** 영업일 판정 임계값 — `WorkingDateCheck__c = 1`. */
+        const val WORKING_DAY_CHECK_VALUE: Double = 1.0
+    }
+}

@@ -378,6 +378,7 @@ export const menuRoute: MenuRoute = {
       name: '시스템',
       icon: <SettingOutlined />,
       children: [
+        { path: '/admin/working-day-masters', name: '영업일 마스터', entity: 'working_day_master', operation: 'READ' },
         {
           path: '/users',
           name: '사용자 관리',

@@ -34,4 +34,26 @@ interface WorkingDayMasterRepository : JpaRepository<WorkingDayMaster, Long> {
         @Param("end") end: LocalDate,
         @Param("check") check: Double,
     ): Long
+
+    /**
+     * `[start, end]` 구간의 영업일 달력 row 목록 — 운영 관리 화면 조회용. soft-delete row 제외, 일자 오름차순.
+     *
+     * 화면이 생성자/수정자 이름을 표기하므로 `createdBy`/`lastModifiedBy` 를 함께 fetch (둘 다 `@ManyToOne`
+     * 이라 Cartesian product 없음) — N+1 회피.
+     */
+    @Query(
+        """
+        SELECT w FROM WorkingDayMaster w
+        LEFT JOIN FETCH w.createdBy
+        LEFT JOIN FETCH w.lastModifiedBy
+        WHERE w.workingDate >= :start
+          AND w.workingDate <= :end
+          AND (w.isDeleted IS NULL OR w.isDeleted = false)
+        ORDER BY w.workingDate ASC
+        """
+    )
+    fun findByWorkingDateRange(
+        @Param("start") start: LocalDate,
+        @Param("end") end: LocalDate,
+    ): List<WorkingDayMaster>
 }

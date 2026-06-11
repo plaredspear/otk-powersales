@@ -88,6 +88,7 @@ const HerokuMigrationPage = lazy(() => import('@/pages/admin/tools/heroku-migrat
 const HerokuMigrationStage1Page = lazy(() => import('@/pages/admin/tools/heroku-migration-stage1/HerokuMigrationStage1Page'));
 const CacheManagementPage = lazy(() => import('@/pages/admin/cache/CacheManagementPage'));
 const AgreementWordsPage = lazy(() => import('@/pages/admin/agreement-words/AgreementWordsPage'));
+const WorkingDayMastersPage = lazy(() => import('@/pages/admin/working-day-masters/WorkingDayMastersPage'));
 const UserListPage = lazy(() => import('@/pages/users/UserListPage'));
 const UserDetailPage = lazy(() => import('@/pages/users/UserDetailPage'));
 const ProfileListPage = lazy(() => import('@/pages/admin/permissions/ProfileListPage'));
@@ -357,6 +358,12 @@ export const router = createBrowserRouter(
               element: <PermissionRoute entity="agreement_word" operation="READ" />,
               children: [
                 { path: '/admin/agreement-words', element: <LazyWrapper><AgreementWordsPage /></LazyWrapper> },
+              ],
+            },
+            {
+              element: <PermissionRoute entity="working_day_master" operation="READ" />,
+              children: [
+                { path: '/admin/working-day-masters', element: <LazyWrapper><WorkingDayMastersPage /></LazyWrapper> },
               ],
             },
             {

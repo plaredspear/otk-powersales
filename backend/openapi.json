@@ -9701,6 +9701,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseWorkingDayMasterListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/WorkingDayMasterListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "AppPackageDetailDto" : {
         "properties" : {
           "bundleIdentifier" : {
@@ -22379,6 +22408,62 @@
         },
         "type" : "object"
       },
+      "WorkingDayMasterListItem" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "createdByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "lastModifiedByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "workingDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "workingDateCheck" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "workingDay" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "WorkingDayMasterListResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/WorkingDayMasterListItem"
+            },
+            "type" : "array"
+          },
+          "holidayCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "workingDayCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "YearComparisonInfo" : {
         "properties" : {
           "currentYear" : {
@@ -32798,6 +32883,41 @@
           }
         },
         "tags" : [ "admin-user-controller" ]
+      }
+    },
+    "/api/v1/admin/working-day-masters" : {
+      "get" : {
+        "operationId" : "getWorkingDayMasters",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseWorkingDayMasterListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-working-day-master-controller" ]
       }
     },
     "/api/v1/mobile/accounts/my" : {
