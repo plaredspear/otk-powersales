@@ -655,7 +655,10 @@ export default function DisplaySchedulePage() {
               setSelectedRowKeys([]);
             },
           }}
-          onChange={(_pagination, _filters, sorter) => {
+          onChange={(_pagination, _filters, sorter, extra) => {
+            // 페이지 이동(paginate)은 pagination.onChange 가 처리. 여기서 listPage 를 0 으로
+            // 리셋하면 페이지 클릭이 항상 1페이지로 되돌아가므로, 정렬 변경일 때만 처리한다.
+            if (extra.action !== 'sort') return;
             const single = Array.isArray(sorter) ? sorter[0] : sorter;
             if (single && single.order && single.field) {
               setSortBy(String(single.field));
