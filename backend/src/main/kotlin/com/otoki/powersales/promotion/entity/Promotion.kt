@@ -6,10 +6,8 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.promotion.entity.converter.ProductTemperatureTypeConverter
 import com.otoki.powersales.promotion.entity.converter.PromotionTypeConverter
 import com.otoki.powersales.promotion.entity.converter.StandLocationConverter
-import com.otoki.powersales.promotion.enums.ProductTemperatureType
 import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.user.entity.User
@@ -91,10 +89,13 @@ class Promotion(
     @Column(name = "remark", length = 200)
     var remark: String? = null,
 
+    // 상품유형(SF picklist `DKRetail__ProductType__c`). 행사명 formula 가
+    // `TEXT(DKRetail__ProductType__c)` 로 원시 picklist 값을 그대로 통과시키므로,
+    // enum 으로 제약하면 비활성 값(`냉동`/`카레` 등)이 변환 시 유실된다.
+    // 레거시와 동일하게 원시 문자열로 보존한다.
     @SFField("DKRetail__ProductType__c")
     @Column(name = "product_type", length = 255)
-    @Convert(converter = ProductTemperatureTypeConverter::class)
-    var productType: ProductTemperatureType? = null,
+    var productType: String? = null,
 
     @SFField("OwnerId")
     @Column(name = "owner_sfid", length = 18)
@@ -166,7 +167,7 @@ class Promotion(
         otherProduct: String?,
         message: String?,
         standLocation: StandLocation?,
-        productType: ProductTemperatureType?,
+        productType: String?,
         remark: String?
     ) {
         this.promotionType = promotionType

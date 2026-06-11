@@ -44,7 +44,7 @@ data class PromotionListItem(
             primaryProductName: String?,
             primaryProductCode: String?
         ): PromotionListItem {
-            val productTypeName = promotion.productType?.displayName
+            val productTypeName = promotion.productType
             // SF formula DKRetail__PromotionName__c = TEXT(DKRetail__ProductType__c) + '(' + DKRetail__PrimaryProductId__r.Name + ')'
             val promotionName = if (primaryProductName != null) {
                 "${productTypeName.orEmpty()}(${primaryProductName})"
@@ -119,7 +119,7 @@ data class PromotionDetailResponse(
             primaryProductName: String?,
             primaryProductCode: String?
         ): PromotionDetailResponse {
-            val productTypeName = promotion.productType?.displayName
+            val productTypeName = promotion.productType
             // SF formula DKRetail__PromotionName__c = TEXT(DKRetail__ProductType__c) + '(' + DKRetail__PrimaryProductId__r.Name + ')'
             val promotionName = if (primaryProductName != null) {
                 "${productTypeName.orEmpty()}(${primaryProductName})"

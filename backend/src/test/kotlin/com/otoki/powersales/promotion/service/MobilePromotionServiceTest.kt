@@ -5,7 +5,6 @@ import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
-import com.otoki.powersales.promotion.enums.ProductTemperatureType
 import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.promotion.enums.StandLocation
 import com.otoki.powersales.promotion.exception.PromotionForbiddenException
@@ -83,7 +82,7 @@ class MobilePromotionServiceTest {
         otherProduct: String? = null,
         message: String? = null,
         remark: String? = null,
-        productType: ProductTemperatureType? = null
+        productType: String? = null
     ): Promotion = Promotion(
         id = id,
         promotionNumber = promotionNumber,
@@ -220,7 +219,7 @@ class MobilePromotionServiceTest {
                 id = 1L,
                 account = createAccount(id = 100),
                 promotionType = PromotionType.SAMPLING,
-                productType = ProductTemperatureType.COLD,
+                productType = "냉장/냉동",
                 primaryProductId = 5L
             )
             val account = createAccount(id = 100, name = "이마트 성수점")

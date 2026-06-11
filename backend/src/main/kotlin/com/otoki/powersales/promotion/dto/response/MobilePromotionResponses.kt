@@ -38,7 +38,7 @@ data class MobilePromotionListItem(
         ): MobilePromotionListItem = MobilePromotionListItem(
             id = promotion.id,
             promotionNumber = promotion.promotionNumber,
-            promotionName = buildPromotionName(promotion.productType?.displayName, primaryProductName),
+            promotionName = buildPromotionName(promotion.productType, primaryProductName),
             promotionType = promotion.promotionType?.displayName,
             accountName = accountName,
             startDate = promotion.startDate,
@@ -107,7 +107,7 @@ data class MobilePromotionDetailResponse(
             promotionNumber = promotion.promotionNumber,
             promotionType = promotion.promotionType?.displayName,
             promotionName = MobilePromotionListItem.buildPromotionName(
-                promotion.productType?.displayName,
+                promotion.productType,
                 primaryProductName
             ),
             accountId = promotion.account!!.id,
@@ -118,7 +118,7 @@ data class MobilePromotionDetailResponse(
             otherProduct = promotion.otherProduct,
             message = promotion.message,
             standLocation = promotion.standLocation?.displayName,
-            productType = promotion.productType?.displayName,
+            productType = promotion.productType,
             isClosed = promotion.isClosed,
             remark = promotion.remark,
             targetAmount = promotion.dkTargetAmount?.toLong(),

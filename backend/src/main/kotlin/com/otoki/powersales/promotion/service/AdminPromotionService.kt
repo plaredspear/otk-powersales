@@ -5,7 +5,6 @@ import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.promotion.entity.QPromotion.Companion.promotion as qPromotion
-import com.otoki.powersales.promotion.enums.ProductTemperatureType
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.entity.PromotionProduct
@@ -252,7 +251,7 @@ class AdminPromotionService(
                 message = request.message,
                 standLocation = StandLocation.fromDisplayNameOrNull(request.standLocation),
                 costCenterCode = costCenterCode,
-                productType = ProductTemperatureType.fromDisplayNameOrNull(request.productType),
+                productType = request.productType,
                 remark = request.remark
             )
         )
@@ -330,7 +329,7 @@ class AdminPromotionService(
             otherProduct = request.otherProduct,
             message = request.message,
             standLocation = StandLocation.fromDisplayNameOrNull(request.standLocation),
-            productType = ProductTemperatureType.fromDisplayNameOrNull(request.productType),
+            productType = request.productType,
             remark = request.remark
         )
 
@@ -451,7 +450,7 @@ class AdminPromotionService(
             otherProduct = source.otherProduct,
             message = source.message,
             standLocation = source.standLocation?.displayName,
-            productType = source.productType?.displayName,
+            productType = source.productType,
             remark = source.remark
         )
 
