@@ -16,7 +16,17 @@ import '../../widgets/common/loading_indicator.dart';
 /// 선택 날짜의 팀 여사원 진열/행사/연차 근무 현황 + 거래처별 출근 등록 현황을 **조회 전용**으로 표시한다.
 /// 진열은 진열 마스터(확정·안전점검 제출자) 기준이라 레거시와 동일하게 조회만 제공한다.
 class LeaderDailyStatusScreen extends ConsumerStatefulWidget {
-  const LeaderDailyStatusScreen({super.key});
+  /// 진입 시 조회할 초기 날짜. null 이면 오늘. (조원 월간 캘린더 날짜 탭 진입용)
+  final DateTime? initialDate;
+
+  /// 진입 시 미리 적용할 검색어(예: 특정 조원명). (조원 월간 캘린더 날짜 탭 진입용)
+  final String? initialKeyword;
+
+  const LeaderDailyStatusScreen({
+    super.key,
+    this.initialDate,
+    this.initialKeyword,
+  });
 
   @override
   ConsumerState<LeaderDailyStatusScreen> createState() =>
@@ -31,7 +41,18 @@ class _LeaderDailyStatusScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(leaderDailyStatusProvider.notifier).load();
+      final notifier = ref.read(leaderDailyStatusProvider.notifier);
+      final keyword = widget.initialKeyword?.trim();
+      if (keyword != null && keyword.isNotEmpty) {
+        _searchController.text = keyword;
+        notifier.setSearchKeyword(keyword);
+      }
+      if (widget.initialDate != null) {
+        // changeDate 가 내부에서 load() 까지 수행.
+        notifier.changeDate(widget.initialDate!);
+      } else {
+        notifier.load();
+      }
     });
   }
 

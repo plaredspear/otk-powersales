@@ -6,6 +6,7 @@ import '../../data/datasources/leader_schedule_api_datasource.dart';
 import '../../data/repositories/leader_schedule_repository_impl.dart';
 import '../../domain/entities/leader_account.dart';
 import '../../domain/entities/leader_daily_status.dart';
+import '../../domain/entities/leader_monthly_schedule.dart';
 import '../../domain/entities/leader_team_member.dart';
 import '../../domain/repositories/leader_schedule_repository.dart';
 import '../../domain/usecases/create_team_member_schedule_usecase.dart';
@@ -376,6 +377,127 @@ class LeaderDailyStatusNotifier extends StateNotifier<LeaderDailyStatusState> {
 final leaderDailyStatusProvider = StateNotifierProvider.autoDispose<
     LeaderDailyStatusNotifier, LeaderDailyStatusState>(
   (ref) => LeaderDailyStatusNotifier(
+    ref.watch(leaderScheduleRepositoryProvider),
+  ),
+);
+
+// ============================================
+// 5. 여사원 월간 일정 캘린더 State + Notifier (조회 전용)
+// ============================================
+
+/// 여사원 월간 일정 캘린더 상태 (레거시 mgnSchedule).
+/// [selectedEmployeeId] null = "여사원 전체" 모드.
+class LeaderScheduleCalendarState {
+  final int? selectedEmployeeId;
+  final int year;
+  final int month;
+  final bool isLoading;
+  final String? errorMessage;
+  final List<LeaderCalendarDay> days;
+
+  const LeaderScheduleCalendarState({
+    this.selectedEmployeeId,
+    required this.year,
+    required this.month,
+    this.isLoading = false,
+    this.errorMessage,
+    this.days = const [],
+  });
+
+  /// 날짜(YYYY-MM-DD) → 집계 빠른 조회.
+  LeaderCalendarDay? dayOf(String date) {
+    for (final d in days) {
+      if (d.date == date) return d;
+    }
+    return null;
+  }
+
+  LeaderScheduleCalendarState copyWith({
+    int? selectedEmployeeId,
+    bool clearSelected = false,
+    int? year,
+    int? month,
+    bool? isLoading,
+    String? errorMessage,
+    bool clearError = false,
+    List<LeaderCalendarDay>? days,
+  }) {
+    return LeaderScheduleCalendarState(
+      selectedEmployeeId:
+          clearSelected ? null : (selectedEmployeeId ?? this.selectedEmployeeId),
+      year: year ?? this.year,
+      month: month ?? this.month,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      days: days ?? this.days,
+    );
+  }
+}
+
+class LeaderScheduleCalendarNotifier
+    extends StateNotifier<LeaderScheduleCalendarState> {
+  final LeaderScheduleRepository _repository;
+
+  LeaderScheduleCalendarNotifier(this._repository) : super(_initialState());
+
+  static LeaderScheduleCalendarState _initialState() {
+    final now = DateTime.now();
+    return LeaderScheduleCalendarState(year: now.year, month: now.month);
+  }
+
+  /// 진입 시 1회 호출 — 초기 선택 조원(null=전체) 설정 후 조회.
+  Future<void> init(int? employeeId) async {
+    state = state.copyWith(
+      selectedEmployeeId: employeeId,
+      clearSelected: employeeId == null,
+    );
+    await load();
+  }
+
+  /// 드롭다운에서 조원(또는 전체) 변경.
+  Future<void> selectEmployee(int? employeeId) async {
+    state = state.copyWith(
+      selectedEmployeeId: employeeId,
+      clearSelected: employeeId == null,
+    );
+    await load();
+  }
+
+  Future<void> goToPreviousMonth() async {
+    final prev = DateTime(state.year, state.month - 1);
+    state = state.copyWith(year: prev.year, month: prev.month);
+    await load();
+  }
+
+  Future<void> goToNextMonth() async {
+    final next = DateTime(state.year, state.month + 1);
+    state = state.copyWith(year: next.year, month: next.month);
+    await load();
+  }
+
+  Future<void> load() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final result = await _repository.getMonthlyCalendar(
+        employeeId: state.selectedEmployeeId,
+        year: state.year,
+        month: state.month,
+      );
+      state = state.copyWith(isLoading: false, days: result.days);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: extractErrorMessage(e),
+        days: const [],
+      );
+    }
+  }
+}
+
+/// 여사원 월간 일정 캘린더 Provider.
+final leaderScheduleCalendarProvider = StateNotifierProvider.autoDispose<
+    LeaderScheduleCalendarNotifier, LeaderScheduleCalendarState>(
+  (ref) => LeaderScheduleCalendarNotifier(
     ref.watch(leaderScheduleRepositoryProvider),
   ),
 );

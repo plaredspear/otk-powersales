@@ -7,6 +7,7 @@ class LeaderTeamMemberModel {
   final String name;
   final String? status;
   final String? costCenterCode;
+  final String? phone;
 
   const LeaderTeamMemberModel({
     required this.id,
@@ -14,6 +15,7 @@ class LeaderTeamMemberModel {
     required this.name,
     required this.status,
     required this.costCenterCode,
+    required this.phone,
   });
 
   factory LeaderTeamMemberModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class LeaderTeamMemberModel {
       name: json['name'] as String,
       status: json['status'] as String?,
       costCenterCode: json['costCenterCode'] as String?,
+      phone: json['phone'] as String?,
     );
   }
 
@@ -32,5 +35,6 @@ class LeaderTeamMemberModel {
         name: name,
         status: status,
         costCenterCode: costCenterCode,
+        phone: phone,
       );
 }

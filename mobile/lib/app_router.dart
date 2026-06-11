@@ -45,6 +45,7 @@ import 'presentation/pages/safety_check_page.dart';
 import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/gps_consent_screen.dart';
 import 'presentation/screens/leader_schedule/leader_daily_status_screen.dart';
+import 'presentation/screens/leader_schedule/leader_female_staff_screen.dart';
 import 'presentation/screens/leader_schedule/leader_team_members_screen.dart';
 import 'presentation/screens/logistics_sales_screen.dart';
 import 'presentation/screens/login_screen.dart';
@@ -106,6 +107,7 @@ class AppRouter {
       '/promotions/daily-sales-entry'; // 일 매출 등록 진입(담당 행사 선택)
   static const String myScheduleCalendar = '/my-schedule'; // F56: 마이페이지 일정 캘린더
   static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
+  static const String leaderFemaleStaff = '/leader/female-staff'; // 레거시 /employee/main: 조장 — 여사원 명단
   static const String leaderTeamMembers = '/leader/team-members'; // #554: 조장 — 팀원 일정 관리
   static const String leaderDailyStatus = '/leader/daily-status'; // P6: 조장 — 여사원 일별현황(조회 전용)
   static const String appInfo = '/app-info'; // 앱 정보 / 오픈소스 라이선스
@@ -240,6 +242,7 @@ class AppRouter {
               promotionEmployeeId: promotionEmployeeId);
         },
         promotionDailySalesEntry: (context) => const DailySalesEntryPage(),
+        leaderFemaleStaff: (context) => const LeaderFemaleStaffScreen(), // 레거시 /employee/main: 여사원 명단
         leaderTeamMembers: (context) => const LeaderTeamMembersScreen(), // #554: 조장 팀원 일정 관리
         leaderDailyStatus: (context) => const LeaderDailyStatusScreen(), // P6: 여사원 일별현황(조회 전용)
         appInfo: (context) => const AppInfoPage(),

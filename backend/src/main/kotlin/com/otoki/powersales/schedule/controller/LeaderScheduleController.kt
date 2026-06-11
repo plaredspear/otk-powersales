@@ -5,6 +5,7 @@ import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
 import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusResponse
+import com.otoki.powersales.schedule.dto.response.LeaderMonthlyCalendarResponse
 import com.otoki.powersales.schedule.dto.response.LeaderScheduleCreateResponse
 import com.otoki.powersales.schedule.dto.response.LeaderTeamMemberListResponse
 import com.otoki.powersales.schedule.service.LeaderScheduleService
@@ -53,6 +54,27 @@ class LeaderScheduleController(
     ): ResponseEntity<ApiResponse<List<LeaderTeamMemberListResponse>>> {
         val response = leaderScheduleService.getTeamMembers(principal.userId)
         return ResponseEntity.ok(ApiResponse.success(response, "팀원 목록 조회 성공"))
+    }
+
+    /**
+     * 조장 — 여사원 월간 일정 캘린더 (레거시 `employee/mgnSchedule.jsp` + `calSchedule`)
+     * GET /api/v1/mobile/leader/schedule/monthly?year=&month=&employeeId=(선택)
+     *
+     * employeeId 미지정 시 "여사원 전체" 모드, 지정 시 해당 조원 단독 집계.
+     */
+    @GetMapping("/schedule/monthly")
+    fun getMonthlyCalendar(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestParam year: Int,
+        @RequestParam month: Int,
+        @RequestParam(required = false) employeeId: Long?
+    ): ResponseEntity<ApiResponse<LeaderMonthlyCalendarResponse>> {
+        require(year > 0) { "연도와 월을 확인해주세요" }
+        require(month in 1..12) { "연도와 월을 확인해주세요" }
+        val response = leaderScheduleService.getMonthlyCalendar(
+            principal.userId, employeeId, year, month
+        )
+        return ResponseEntity.ok(ApiResponse.success(response, "월간 일정 캘린더 조회 성공"))
     }
 
     /**

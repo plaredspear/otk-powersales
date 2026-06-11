@@ -13,7 +13,9 @@ data class LeaderTeamMemberListResponse(
     val employeeCode: String?,
     val name: String,
     val status: String?,
-    val costCenterCode: String?
+    val costCenterCode: String?,
+    /** 레거시 여사원 명단 화면의 전화 버튼(tel:)용. SF Phone__c. null/공백이면 클라이언트가 버튼 미노출. */
+    val phone: String?
 ) {
     companion object {
         fun from(entity: Employee): LeaderTeamMemberListResponse =
@@ -22,7 +24,8 @@ data class LeaderTeamMemberListResponse(
                 employeeCode = entity.employeeCode,
                 name = entity.name,
                 status = entity.status,
-                costCenterCode = entity.costCenterCode
+                costCenterCode = entity.costCenterCode,
+                phone = entity.phone
             )
     }
 }
