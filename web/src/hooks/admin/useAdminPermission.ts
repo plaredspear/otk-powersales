@@ -69,7 +69,6 @@ function useInvalidatePermissions() {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: KEY_BASE });
-    queryClient.invalidateQueries({ queryKey: ['employee'] }); // EmployeeDetailPage 의 SF 권한 section
   };
 }
 
