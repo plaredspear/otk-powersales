@@ -291,6 +291,8 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                 productType = "라면",
                 isClosed = false,
                 remark = "비고 내용",
+                targetAmount = 5000000L,
+                actualAmount = 3200000L,
                 employees = employees
             )
             every { mobilePromotionService.getPromotion(1L, 1L) } returns detail
@@ -312,6 +314,8 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.data.productType").value("라면"))
                 .andExpect(jsonPath("$.data.isClosed").value(false))
                 .andExpect(jsonPath("$.data.remark").value("비고 내용"))
+                .andExpect(jsonPath("$.data.targetAmount").value(5000000))
+                .andExpect(jsonPath("$.data.actualAmount").value(3200000))
                 .andExpect(jsonPath("$.data.employees").isArray)
                 .andExpect(jsonPath("$.data.employees.length()").value(2))
                 .andExpect(jsonPath("$.data.employees[0].id").value(10))

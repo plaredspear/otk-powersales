@@ -30,6 +30,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _prefilledFromStorage = false;
 
   @override
+  void initState() {
+    super.initState();
+    // 저장된 사번 로드를 보장한다. 정상 기동은 스플래시의 initialize() 가 이미 로드하지만,
+    // 로그아웃 재생성 세션은 스플래시를 건너뛰므로 여기서 직접 로드해 프리필이 깨지지 않게 한다.
+    // (값이 채워지면 build 의 _loadSavedSettings 가 컨트롤러에 반영한다.)
+    Future.microtask(
+      () => ref.read(authProvider.notifier).loadSavedEmployeeNumber(),
+    );
+  }
+
+  @override
   void dispose() {
     _employeeCodeController.dispose();
     _passwordController.dispose();

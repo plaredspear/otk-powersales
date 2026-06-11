@@ -12,7 +12,7 @@ class PromotionListPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('행사 현황'),
+        title: const Text('행사 매출 현황'),
       ),
       body: const PromotionListView(),
     );

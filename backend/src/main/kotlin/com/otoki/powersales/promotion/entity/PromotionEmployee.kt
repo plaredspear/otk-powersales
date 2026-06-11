@@ -177,6 +177,29 @@ class PromotionEmployee(
             return primaryTerm + otherTerm
         }
 
+    // SF Formula `DKRetail__DailyTargetAmount__c` (label=목표금액) 재현. calculated 필드라 미적재.
+    // 공식: ( DKRetail__DailyTargetCount__c * DKRetail__BasePrice__c )
+    // 레거시 Heroku 행사 상세(`PromotionSearch` sub-item `DailyTargetAmount`) 조원별 "목표" 동등.
+    val dkDailyTargetAmount: BigDecimal?
+        get() {
+            val count = dailyTargetCount
+            val price = basePrice
+            if (count == null && price == null) return null
+            return (count ?: BigDecimal.ZERO) * (price ?: BigDecimal.ZERO)
+        }
+
+    // SF Formula `DailyActualSalesAmount__c` (label=총 실적) 재현. calculated 필드라 미적재.
+    // 공식: PrimaryProductAmount__c + DKRetail__OtherSalesAmount__c
+    // 레거시 Heroku 행사 상세(`PromotionSearch` sub-item `DailyActualSalesAmount`) 조원별 "실적" 동등
+    // — DKRetail__DailyActualSalesAmount__c(의미오류 공식) 가 아닌 이 "총 실적" 필드를 사용함에 유의.
+    val dailyTotalActualSalesAmount: BigDecimal?
+        get() {
+            val primary = primaryProductAmount
+            val other = otherSalesAmount
+            if (primary == null && other == null) return null
+            return (primary ?: BigDecimal.ZERO) + (other ?: BigDecimal.ZERO)
+        }
+
     fun update(
         employeeId: Long?,
         scheduleDate: LocalDate?,

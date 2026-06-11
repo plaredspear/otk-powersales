@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 
 import '../../app_router.dart';
 import '../../core/navigation/navigator_key.dart';
+import '../../core/session/session_reset_controller.dart';
 import 'auth_local_datasource.dart';
 
 /// 인증 Dio Interceptor
@@ -223,15 +223,12 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  /// 강제 로그아웃: 토큰 클리어 + 로그인 화면 이동
+  /// 강제 로그아웃: 토큰 클리어 + 전역 상태 초기화(로그인 화면 이동)
+  ///
+  /// 루트 ProviderScope 를 재생성해 모든 Provider(도메인 캐시 포함)를 폐기하므로,
+  /// 토큰 만료로 로그아웃된 뒤 다른 계정으로 로그인해도 잔여 데이터가 노출되지 않는다.
   Future<void> _forceLogout() async {
     await _localDataSource.clearTokens();
-    final navigator = navigatorKey.currentState;
-    if (navigator != null) {
-      navigator.pushNamedAndRemoveUntil(
-        AppRouter.login,
-        (route) => false,
-      );
-    }
+    SessionResetController.instance.requestReset();
   }
 }
