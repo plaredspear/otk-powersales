@@ -393,6 +393,36 @@ class LeaderDailyStatusNotifier extends StateNotifier<LeaderDailyStatusState> {
     }
   }
 
+  /// 행사 일정 변경 — 담당 여사원/투입일 재배정. 성공 시 null, 실패 시 에러 메시지.
+  Future<String?> changeEventAssignment({
+    required int scheduleId,
+    required int targetEmployeeId,
+    required DateTime workingDate,
+  }) async {
+    try {
+      await _repository.changeEventAssignment(
+        scheduleId: scheduleId,
+        targetEmployeeId: targetEmployeeId,
+        workingDate: workingDate,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      return extractErrorMessage(e);
+    }
+  }
+
+  /// 행사 일정 삭제 — 행사 배정 해제. 성공 시 null, 실패 시 에러 메시지.
+  Future<String?> deleteEventAssignment(int scheduleId) async {
+    try {
+      await _repository.deleteEventAssignment(scheduleId);
+      await load();
+      return null;
+    } catch (e) {
+      return extractErrorMessage(e);
+    }
+  }
+
   /// 에러 메시지 1회성 소비(SnackBar 표시 후 호출).
   void clearError() => state = state.copyWith(clearError: true);
 }

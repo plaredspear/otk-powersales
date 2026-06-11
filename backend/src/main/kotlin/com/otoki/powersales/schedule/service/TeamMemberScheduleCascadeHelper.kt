@@ -41,11 +41,21 @@ class TeamMemberScheduleCascadeHelper(
      * @param principal cascade 진입 사용자 — `actorIsAdminGrade` 분기에 사용
      * @param scheduleIds cascade 대상 schedule id 목록. 빈 list 면 no-op.
      */
-    fun cascadeDeleteByIds(principal: WebUserPrincipal, scheduleIds: List<Long>) {
+    fun cascadeDeleteByIds(principal: WebUserPrincipal, scheduleIds: List<Long>) =
+        cascadeDeleteByIds(actorIsAdminGrade(principal), scheduleIds)
+
+    /**
+     * cascade hard delete — `actorIsAdminGrade` 직접 전달 오버로드.
+     *
+     * 조장 모바일 흐름처럼 `WebUserPrincipal`(웹 JWT) 이 없는 호출처용. 조장(LEADER)은 admin 등급이
+     * 아니므로 `actorIsAdminGrade=false` 로 호출 → `validateDisplayMasterLink` 가 비admin 기준으로 평가.
+     * (행사 schedule 은 진열마스터 link 가 없어 가드는 사실상 통과.)
+     */
+    fun cascadeDeleteByIds(actorIsAdminGrade: Boolean, scheduleIds: List<Long>) {
         if (scheduleIds.isEmpty()) return
 
         val schedules = teamMemberScheduleRepository.findAllById(scheduleIds)
-        cascadeDeleteSchedules(principal, schedules)
+        cascadeDeleteSchedules(actorIsAdminGrade, schedules)
     }
 
     /**
@@ -54,10 +64,14 @@ class TeamMemberScheduleCascadeHelper(
      * `findAllById` 재조회 비용 회피용. cascade 호출처가 PE 조회 → schedule 수집 흐름에서
      * 이미 schedule 엔티티를 보유한 경우 본 메소드 사용.
      */
-    fun cascadeDeleteSchedules(principal: WebUserPrincipal, schedules: List<TeamMemberSchedule>) {
-        if (schedules.isEmpty()) return
+    fun cascadeDeleteSchedules(principal: WebUserPrincipal, schedules: List<TeamMemberSchedule>) =
+        cascadeDeleteSchedules(actorIsAdminGrade(principal), schedules)
 
-        val actorIsAdminGrade = actorIsAdminGrade(principal)
+    /**
+     * cascade hard delete — `actorIsAdminGrade` 직접 전달 오버로드 (id 오버로드의 본체).
+     */
+    fun cascadeDeleteSchedules(actorIsAdminGrade: Boolean, schedules: List<TeamMemberSchedule>) {
+        if (schedules.isEmpty()) return
 
         // Q1 옵션 1 — 1건 가드 fail 시 throw → 호출 측 트랜잭션 전체 rollback (legacy allOrNone=true 동등)
         schedules.forEach { schedule ->

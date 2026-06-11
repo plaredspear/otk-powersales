@@ -66,6 +66,29 @@ class LeaderScheduleApiDataSource {
     await _dio.post('/api/v1/mobile/leader/attendance', data: body);
   }
 
+  /// 조장 행사 일정 변경 — 담당 여사원/투입일 재배정 (레거시 scheduleChangePromo M).
+  Future<void> changeEventAssignment({
+    required int scheduleId,
+    required int targetEmployeeId,
+    required DateTime workingDate,
+  }) async {
+    await _dio.put(
+      '/api/v1/mobile/leader/event-schedule/$scheduleId',
+      data: {
+        'targetEmployeeId': targetEmployeeId,
+        'workingDate': _formatDate(workingDate),
+      },
+    );
+  }
+
+  /// 조장 행사 일정 삭제 — 행사 배정 해제 (레거시 scheduleChangePromo D).
+  Future<void> deleteEventAssignment(int scheduleId) async {
+    await _dio.delete('/api/v1/mobile/leader/event-schedule/$scheduleId');
+  }
+
+  String _formatDate(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
   /// 여사원 월간 일정 캘린더 (레거시 mgnSchedule). [employeeId] null 이면 "여사원 전체".
   Future<LeaderMonthlyCalendar> getMonthlyCalendar({
     int? employeeId,

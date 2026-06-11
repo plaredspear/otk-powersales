@@ -55,6 +55,24 @@ class LeaderScheduleRepositoryImpl implements LeaderScheduleRepository {
   }
 
   @override
+  Future<void> changeEventAssignment({
+    required int scheduleId,
+    required int targetEmployeeId,
+    required DateTime workingDate,
+  }) {
+    return _dataSource.changeEventAssignment(
+      scheduleId: scheduleId,
+      targetEmployeeId: targetEmployeeId,
+      workingDate: workingDate,
+    );
+  }
+
+  @override
+  Future<void> deleteEventAssignment(int scheduleId) {
+    return _dataSource.deleteEventAssignment(scheduleId);
+  }
+
+  @override
   Future<List<LeaderAccount>> getAccounts({String? keyword}) async {
     final models = await _dataSource.getAccounts(keyword: keyword);
     return models.map((m) => m.toEntity()).toList();

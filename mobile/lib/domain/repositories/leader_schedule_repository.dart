@@ -27,6 +27,16 @@ abstract class LeaderScheduleRepository {
     int? displayWorkScheduleId,
   });
 
+  /// 조장 행사 일정 변경 — 담당 여사원/투입일 재배정 (레거시 scheduleChangePromo M).
+  Future<void> changeEventAssignment({
+    required int scheduleId,
+    required int targetEmployeeId,
+    required DateTime workingDate,
+  });
+
+  /// 조장 행사 일정 삭제 — 행사 배정 해제 (레거시 scheduleChangePromo D).
+  Future<void> deleteEventAssignment(int scheduleId);
+
   /// 조장 본인 거래처 목록 조회. [keyword] 부분 일치 검색 (선택).
   Future<List<LeaderAccount>> getAccounts({String? keyword});
 

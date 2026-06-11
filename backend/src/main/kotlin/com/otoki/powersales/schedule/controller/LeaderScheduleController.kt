@@ -2,9 +2,11 @@ package com.otoki.powersales.schedule.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.schedule.dto.request.LeaderEventScheduleChangeRequest
 import com.otoki.powersales.schedule.dto.request.LeaderProxyAttendanceRequest
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
+import com.otoki.powersales.schedule.dto.response.LeaderEventScheduleChangeResponse
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
 import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusResponse
 import com.otoki.powersales.schedule.dto.response.LeaderMonthlyCalendarResponse
@@ -15,8 +17,11 @@ import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -59,6 +64,35 @@ class LeaderScheduleController(
     ): ResponseEntity<ApiResponse<AttendanceRegisterResponse>> {
         val response = leaderScheduleService.registerProxyAttendance(principal.userId, request)
         return ResponseEntity.ok(ApiResponse.success(response, "대리출근 등록 완료"))
+    }
+
+    /**
+     * 조장 행사 일정 변경 — 담당 여사원/투입일 재배정 (레거시 `scheduleChangePromo` M)
+     * PUT /api/v1/mobile/leader/event-schedule/{scheduleId}
+     *
+     * scheduleId = 일별 현황 eventWorkers[].scheduleId (team_member_schedule ID).
+     */
+    @PutMapping("/event-schedule/{scheduleId}")
+    fun changeEventAssignment(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable scheduleId: Long,
+        @Valid @RequestBody request: LeaderEventScheduleChangeRequest
+    ): ResponseEntity<ApiResponse<LeaderEventScheduleChangeResponse>> {
+        val response = leaderScheduleService.changeEventAssignment(principal.userId, scheduleId, request)
+        return ResponseEntity.ok(ApiResponse.success(response, "행사 일정이 변경되었습니다"))
+    }
+
+    /**
+     * 조장 행사 일정 삭제 — 행사 배정 해제 (레거시 `scheduleChangePromo` D)
+     * DELETE /api/v1/mobile/leader/event-schedule/{scheduleId}
+     */
+    @DeleteMapping("/event-schedule/{scheduleId}")
+    fun deleteEventAssignment(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable scheduleId: Long
+    ): ResponseEntity<ApiResponse<Unit>> {
+        leaderScheduleService.deleteEventAssignment(principal.userId, scheduleId)
+        return ResponseEntity.ok(ApiResponse.success(Unit, "행사 일정이 삭제되었습니다"))
     }
 
     /**

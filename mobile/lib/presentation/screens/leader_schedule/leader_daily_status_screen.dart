@@ -372,6 +372,69 @@ class _LeaderDailyStatusScreenState
     });
   }
 
+  /// 행사 일정 변경/삭제 흐름 (레거시 scheduleChangePromo).
+  ///
+  /// 그룹의 행사 배정이 여러 건이면 대상 선택 → 변경 시트(담당 여사원/날짜 재배정 + 삭제) → 처리 후 재조회.
+  void _openEventChangeFlow(_GroupedWorker group) {
+    throttledTapAsync(() async {
+      final rows = group.rows;
+      if (rows.isEmpty) return;
+
+      // 변경 대상 행사 배정 선택 (단건이면 바로).
+      LeaderDailyWorker target;
+      if (rows.length == 1) {
+        target = rows.first;
+      } else {
+        final picked = await showModalBottomSheet<LeaderDailyWorker>(
+          context: context,
+          shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
+          ),
+          builder: (_) => _EventTargetPicker(
+            employeeName: group.employeeName,
+            rows: rows,
+          ),
+        );
+        if (picked == null || !mounted) return;
+        target = picked;
+      }
+
+      final result = await showModalBottomSheet<_EventChangeResult>(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
+        ),
+        builder: (_) => _EventChangeSheet(
+          employeeName: group.employeeName,
+          row: target,
+          initialDate: ref.read(leaderDailyStatusProvider).selectedDate,
+        ),
+      );
+      if (result == null || !mounted) return;
+
+      final notifier = ref.read(leaderDailyStatusProvider.notifier);
+      final messenger = ScaffoldMessenger.of(context);
+      String? err;
+      String okMessage;
+      if (result.delete) {
+        err = await notifier.deleteEventAssignment(target.scheduleId);
+        okMessage = '행사 일정이 삭제되었습니다.';
+      } else {
+        err = await notifier.changeEventAssignment(
+          scheduleId: target.scheduleId,
+          targetEmployeeId: result.targetEmployeeId!,
+          workingDate: result.workingDate!,
+        );
+        okMessage = '행사 일정이 변경되었습니다.';
+      }
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(err ?? okMessage)));
+    });
+  }
+
   /// 최초 로드 중/실패 시 표시 위젯, 데이터 보유 시 null.
   Widget? _loadingOrError(LeaderDailyStatusState state) {
     if (state.isLoading && state.data == null) {
@@ -437,7 +500,12 @@ class _LeaderDailyStatusScreenState
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         children: [
           for (final g in displayGroups) _WorkerCard(worker: g, isEvent: false),
-          for (final g in eventGroups) _WorkerCard(worker: g, isEvent: true),
+          for (final g in eventGroups)
+            _WorkerCard(
+              worker: g,
+              isEvent: true,
+              onChange: g.attended ? null : () => _openEventChangeFlow(g),
+            ),
         ],
       ),
     );
@@ -518,7 +586,14 @@ class _LeaderDailyStatusScreenState
     if (groups.isEmpty) {
       return [_SectionEmpty(text: emptyText)];
     }
-    return groups.map((g) => _WorkerCard(worker: g, isEvent: isEvent)).toList();
+    return groups
+        .map((g) => _WorkerCard(
+              worker: g,
+              isEvent: isEvent,
+              // 행사 + 미출근(변경 가능)일 때만 변경 흐름 진입.
+              onChange: (isEvent && !g.attended) ? () => _openEventChangeFlow(g) : null,
+            ))
+        .toList();
   }
 
   List<Widget> _buildAnnualCards(
@@ -1125,6 +1200,322 @@ class _ProxyRegisterSheetState extends State<_ProxyRegisterSheet> {
   }
 }
 
+/// 행사 변경 시트 결과 — 변경(담당자/날짜) 또는 삭제.
+class _EventChangeResult {
+  final bool delete;
+  final int? targetEmployeeId;
+  final DateTime? workingDate;
+
+  const _EventChangeResult.change(this.targetEmployeeId, this.workingDate)
+      : delete = false;
+  const _EventChangeResult.delete()
+      : delete = true,
+        targetEmployeeId = null,
+        workingDate = null;
+}
+
+/// 변경 대상 행사 배정 선택 시트 (그룹에 행사 배정 2건 이상일 때).
+class _EventTargetPicker extends StatelessWidget {
+  final String employeeName;
+  final List<LeaderDailyWorker> rows;
+
+  const _EventTargetPicker({required this.employeeName, required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$employeeName 변경할 행사 선택',
+              style: AppTypography.bodyLarge.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ...rows.map((r) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    r.accountName,
+                    style: AppTypography.bodyMedium
+                        .copyWith(color: AppColors.textPrimary),
+                  ),
+                  subtitle: r.workCategoryLabel.isEmpty
+                      ? null
+                      : Text(
+                          r.workCategoryLabel,
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.textSecondary),
+                        ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).pop(r),
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 행사 일정 변경 시트 — 거래처/행사 readonly + 담당 여사원 드롭다운 + 날짜 피커 + 삭제.
+/// 레거시 scheduleChangePromo: 담당 여사원·투입일만 변경 가능, 거래처/근무유형은 표시만.
+class _EventChangeSheet extends ConsumerStatefulWidget {
+  final String employeeName;
+  final LeaderDailyWorker row;
+  final DateTime initialDate;
+
+  const _EventChangeSheet({
+    required this.employeeName,
+    required this.row,
+    required this.initialDate,
+  });
+
+  @override
+  ConsumerState<_EventChangeSheet> createState() => _EventChangeSheetState();
+}
+
+class _EventChangeSheetState extends ConsumerState<_EventChangeSheet> {
+  int? _selectedEmployeeId;
+  late DateTime _date;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedEmployeeId = widget.row.employeeId;
+    _date = widget.initialDate;
+    // 담당 여사원 드롭다운 옵션 로드 (팀원 목록).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notifier = ref.read(leaderTeamMembersProvider.notifier);
+      if (!ref.read(leaderTeamMembersProvider).hasLoaded) {
+        notifier.load();
+      }
+    });
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(_date.year - 2, 1, 1),
+      lastDate: DateTime(_date.year + 2, 12, 31),
+      helpText: '투입일 선택',
+      cancelText: '취소',
+      confirmText: '확인',
+    );
+    if (picked != null) setState(() => _date = picked);
+  }
+
+  Future<void> _confirmDelete() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('행사 일정 삭제'),
+        content: const Text('이 행사 배정을 삭제하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('삭제', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      Navigator.of(context).pop(const _EventChangeResult.delete());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final membersState = ref.watch(leaderTeamMembersProvider);
+    final members = membersState.members;
+    final label =
+        DateFormat('yyyy년 MM월 dd일(E)', 'ko_KR').format(_date);
+
+    // 드롭다운 값이 목록에 없으면(예: 로드 전) null 로 보정.
+    final dropdownValue =
+        members.any((m) => m.id == _selectedEmployeeId) ? _selectedEmployeeId : null;
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          top: AppSpacing.lg,
+          bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '행사 일정 변경',
+              style: AppTypography.bodyLarge.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // 거래처/행사 — readonly (행사 마스터 파생).
+            _ReadonlyField(
+              label: '거래처',
+              value: widget.row.workCategoryLabel.isEmpty
+                  ? widget.row.accountName
+                  : '${widget.row.accountName} | ${widget.row.workCategoryLabel}',
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // 담당 여사원 — 변경 가능.
+            Text('담당 여사원',
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary)),
+            const SizedBox(height: AppSpacing.xxs),
+            if (membersState.isLoading && members.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: LoadingIndicator(message: '팀원 불러오는 중...'),
+              )
+            else
+              DropdownButtonFormField<int>(
+                initialValue: dropdownValue,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    borderSide: BorderSide(color: AppColors.border),
+                  ),
+                ),
+                items: members
+                    .map((m) => DropdownMenuItem<int>(
+                          value: m.id,
+                          child: Text('${m.name} (${m.employeeCode})'),
+                        ))
+                    .toList(),
+                onChanged: (v) => setState(() => _selectedEmployeeId = v),
+              ),
+            const SizedBox(height: AppSpacing.md),
+            // 투입일 — 변경 가능.
+            Text('투입일',
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary)),
+            const SizedBox(height: AppSpacing.xxs),
+            InkWell(
+              onTap: _pickDate,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: AppTypography.bodyMedium
+                            .copyWith(color: AppColors.textPrimary),
+                      ),
+                    ),
+                    const Icon(Icons.calendar_today, size: 18),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    ),
+                    onPressed: _confirmDelete,
+                    child: const Text('삭제'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      foregroundColor: AppColors.white,
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    ),
+                    onPressed: dropdownValue == null
+                        ? null
+                        : () => Navigator.of(context).pop(
+                              _EventChangeResult.change(_selectedEmployeeId, _date),
+                            ),
+                    child: const Text('저장'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 시트 내 readonly 표시 필드 (라벨 + 값).
+class _ReadonlyField extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ReadonlyField({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: AppTypography.bodySmall
+                .copyWith(color: AppColors.textSecondary)),
+        const SizedBox(height: AppSpacing.xxs),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          ),
+          child: Text(
+            value,
+            style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// 등록 탭 거래처별 행 — 거래처명 / 근무유형 + 등록완료·미등록 (레거시 comm-list li).
 class _RegisterAccountRow extends StatelessWidget {
   final LeaderDailyWorker row;
@@ -1256,7 +1647,10 @@ class _WorkerCard extends StatelessWidget {
   final _GroupedWorker worker;
   final bool isEvent;
 
-  const _WorkerCard({required this.worker, required this.isEvent});
+  /// 행사 변경 흐름 진입 콜백 (행사 카드·미출근일 때만 전달).
+  final VoidCallback? onChange;
+
+  const _WorkerCard({required this.worker, required this.isEvent, this.onChange});
 
   @override
   Widget build(BuildContext context) {
@@ -1304,7 +1698,7 @@ class _WorkerCard extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           // 행사: 변경/변경불가 버튼, 진열: 등록완료/미등록 배지.
           if (isEvent)
-            _ChangeButton(attended: worker.attended)
+            _ChangeButton(attended: worker.attended, onChange: onChange)
           else
             _AttendanceBadge(attended: worker.attended),
         ],
@@ -1315,12 +1709,13 @@ class _WorkerCard extends StatelessWidget {
 
 /// 행사 근무자 변경/변경불가 버튼 (레거시 mngDaily commuteNullChk 정합).
 ///
-/// - 출근등록 없음([attended]=false) → "변경"(활성). 탭 시 행사 일정변경은 보류 안내.
+/// - 출근등록 없음([attended]=false) → "변경"(활성). 탭 시 행사 일정변경 시트 진입.
 /// - 출근등록 있음([attended]=true) → "변경불가"(비활성 라벨).
 class _ChangeButton extends StatelessWidget {
   final bool attended;
+  final VoidCallback? onChange;
 
-  const _ChangeButton({required this.attended});
+  const _ChangeButton({required this.attended, this.onChange});
 
   @override
   Widget build(BuildContext context) {
@@ -1344,14 +1739,10 @@ class _ChangeButton extends StatelessWidget {
         ),
       );
     }
-    // 변경 — 활성. mutation 보류라 안내만.
+    // 변경 — 활성. 탭 시 행사 일정변경 시트 진입.
     return InkWell(
       borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('행사 일정 변경 기능은 추후 제공됩니다.')),
-        );
-      },
+      onTap: onChange,
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
