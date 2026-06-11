@@ -22,15 +22,19 @@ class SuggestionRegisterResultModel {
   final String createdAt; // ISO 8601 String
 
   /// JSON 역직렬화
+  ///
+  /// backend `SuggestionCreateResponse` 는 `id`/`proposalNumber`/`attachments`
+  /// 만 반환하고 `category`/`categoryName`/`title`/`createdAt` 은 내려주지 않으므로
+  /// null 을 허용하고 기본값으로 방어한다(등록 결과는 성공 메시지 외 미사용).
   factory SuggestionRegisterResultModel.fromJson(Map<String, dynamic> json) {
     return SuggestionRegisterResultModel(
-      id: json['id'] as int,
-      category: json['category'] as String,
-      categoryName: json['categoryName'] as String,
+      id: (json['id'] as num).toInt(),
+      category: json['category'] as String? ?? '',
+      categoryName: json['categoryName'] as String? ?? '',
       productCode: json['productCode'] as String?,
       productName: json['productName'] as String?,
-      title: json['title'] as String,
-      createdAt: json['createdAt'] as String,
+      title: json['title'] as String? ?? '',
+      createdAt: json['createdAt'] as String? ?? '',
     );
   }
 
@@ -43,7 +47,7 @@ class SuggestionRegisterResultModel {
       productCode: productCode,
       productName: productName,
       title: title,
-      createdAt: DateTime.parse(createdAt),
+      createdAt: createdAt.isEmpty ? DateTime.now() : DateTime.parse(createdAt),
     );
   }
 }
