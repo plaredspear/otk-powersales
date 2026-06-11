@@ -108,20 +108,19 @@ class ProductServiceTest {
     inner class BarcodeSearch {
 
         @Test
-        @DisplayName("바코드 정확 일치 검색 성공")
+        @DisplayName("바코드(소비자 바코드) 검색 성공")
         fun searchProducts_barcodeSearch_success() {
             val products = listOf(
                 createTestProduct("18110014", "열라면_용기105G", "18110014", "8801045570716")
             )
             val page = rowPage(products, PageRequest.of(0, 20), 1)
-            every { productRepository.findByLogisticsBarcode("8801045570716", any()) } returns page
+            every { productRepository.findByBarcode("8801045570716", any()) } returns page
 
             val result = productService.searchProducts("8801045570716", "barcode", 0, 20)
 
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].barcode).isEqualTo("8801045570716")
-            assertThat(result.content[0].logisticsBarcode).isEqualTo("8801045570716")
-            verify { productRepository.findByLogisticsBarcode("8801045570716", any()) }
+            verify { productRepository.findByBarcode("8801045570716", any()) }
         }
 
         @Test

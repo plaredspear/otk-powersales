@@ -243,17 +243,41 @@ class ProductRepositoryCustomImpl(
     }
 
     override fun searchByTextIncludingBarcode(query: String, pageable: Pageable): Page<ProductSearchRow> {
+        // 레거시 `searchWord`: `a.name OR a.dkretail__productcode__c OR b.productbarcode__c` 3-컬럼 OR LIKE.
+        // 바코드는 물류 바코드(Product.logisticsBarcode)가 아니라 소비자 바코드(ProductBarcode.barcode)를 매칭한다.
         val lowerPattern = "%${query.lowercase()}%"
         val rawPattern = "%$query%"
 
+        val barcodeLikeExists = JPAExpressions.selectOne()
+            .from(productBarcode)
+            .where(
+                productBarcode.productId.eq(product.id),
+                productBarcode.unit.eq(product.unit),
+                productBarcode.barcode.like(rawPattern),
+            )
+            .exists()
+
         val searchPredicate = product.name.lower().like(lowerPattern)
             .or(product.productCode.lower().like(lowerPattern))
-            .or(product.logisticsBarcode.like(rawPattern))
+            .or(barcodeLikeExists)
 
         return pagedSearch(orderableProductFilter().and(searchPredicate), pageable)
     }
 
-    override fun findByLogisticsBarcode(logisticsBarcode: String, pageable: Pageable): Page<ProductSearchRow> {
-        return pagedSearch(product.logisticsBarcode.eq(logisticsBarcode), pageable)
+    override fun findByBarcode(barcode: String, pageable: Pageable): Page<ProductSearchRow> {
+        // 레거시 selectProduct: `b.productbarcode__c LIKE '%?%' AND a.dkretail__unit__c = b.productunit__c`.
+        // 스캐너가 읽는 소비자 바코드는 ProductBarcode.barcode 에 저장되므로(물류 바코드 아님)
+        // 발주 단위와 일치하는 바코드에 대한 부분일치 + orderable 필터로 조회한다.
+        val barcodePattern = "%$barcode%"
+        val barcodeLikeExists = JPAExpressions.selectOne()
+            .from(productBarcode)
+            .where(
+                productBarcode.productId.eq(product.id),
+                productBarcode.unit.eq(product.unit),
+                productBarcode.barcode.like(barcodePattern),
+            )
+            .exists()
+
+        return pagedSearch(orderableProductFilter().and(barcodeLikeExists), pageable)
     }
 }
