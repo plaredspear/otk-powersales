@@ -53,7 +53,7 @@ data class MobilePromotionListItem(
          * `TEXT(ProductType) + '(' + PrimaryProduct.Name + ')'`.
          * 두 입력이 모두 비면 null(레거시 빈 `()` 표시 회피).
          */
-        private fun buildPromotionName(productType: String?, primaryProductName: String?): String? {
+        fun buildPromotionName(productType: String?, primaryProductName: String?): String? {
             val type = productType.orEmpty()
             val product = primaryProductName.orEmpty()
             if (type.isEmpty() && product.isEmpty()) return null
@@ -66,6 +66,11 @@ data class MobilePromotionDetailResponse(
     val id: Long,
     val promotionNumber: String,
     val promotionType: String?,
+    /**
+     * 행사명. SF formula `DKRetail__PromotionName__c`(`제품온도타입(대표제품명)`) 동등 파생값.
+     * 레거시 Heroku `promotion/event/view.jsp` 헤더 `[행사유형] 행사명` 표기 정합.
+     */
+    val promotionName: String?,
     val accountId: Long,
     val accountName: String?,
     val startDate: LocalDate,
@@ -101,6 +106,10 @@ data class MobilePromotionDetailResponse(
             id = promotion.id,
             promotionNumber = promotion.promotionNumber,
             promotionType = promotion.promotionType?.displayName,
+            promotionName = MobilePromotionListItem.buildPromotionName(
+                promotion.productType?.displayName,
+                primaryProductName
+            ),
             accountId = promotion.account!!.id,
             accountName = accountName,
             startDate = promotion.startDate,

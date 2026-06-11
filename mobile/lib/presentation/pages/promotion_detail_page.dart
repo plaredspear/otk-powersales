@@ -12,7 +12,12 @@ import '../widgets/common/loading_indicator.dart';
 import '../widgets/promotion/promotion_amount_text.dart';
 import '../widgets/promotion/promotion_employee_list.dart';
 
-/// 행사 상세 페이지
+/// 행사 상세 페이지.
+///
+/// 레거시 Heroku `promotion/event/view.jsp` 정합 — 상단 헤더(`[행사유형] 행사명` + 기간)
+/// 아래 "매출" / "행사 정보" 두 탭 구성.
+/// - 매출 탭: 진행율(날짜 경과율) + 목표·달성 금액(달성률) + 내 일별 매출.
+/// - 행사 정보 탭: 행사번호~기타상품 기본 정보 + 배정 조원 목록(모바일 확장).
 class PromotionDetailPage extends ConsumerStatefulWidget {
   final int promotionId;
 
@@ -24,15 +29,24 @@ class PromotionDetailPage extends ConsumerStatefulWidget {
 }
 
 class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
-    with ThrottledTapMixin {
+    with ThrottledTapMixin, SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(promotionDetailProvider.notifier)
           .loadPromotion(widget.promotionId);
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -66,7 +80,9 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
       arguments: employee.id,
     );
     if (result == true && mounted) {
-      ref.read(promotionDetailProvider.notifier).loadPromotion(widget.promotionId);
+      ref
+          .read(promotionDetailProvider.notifier)
+          .loadPromotion(widget.promotionId);
     }
   }
 
@@ -100,6 +116,340 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
     }
 
     final detail = state.detail!;
+    return Column(
+      children: [
+        _buildHeaderCard(detail),
+        _buildTabBar(),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildSalesTab(detail),
+              _buildInfoTab(detail),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── 헤더 + 탭 ──────────────────────────────────────────────
+
+  Widget _buildHeaderCard(PromotionDetail detail) {
+    return Container(
+      width: double.infinity,
+      color: AppColors.background,
+      padding: AppSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(_promotionTitle(detail), style: AppTypography.headlineSmall),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '기간 ${detail.startDate} ~ ${detail.endDate}',
+            style: AppTypography.bodySmall
+                .copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// `[행사유형] 행사명` (레거시 `['+PromotionType+'] '+PromotionName`).
+  String _promotionTitle(PromotionDetail detail) {
+    final type = detail.promotionType;
+    final name = detail.promotionName ?? '';
+    return (type != null && type.isNotEmpty) ? '[$type] $name' : name;
+  }
+
+  Widget _buildTabBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        labelColor: AppColors.secondary,
+        unselectedLabelColor: AppColors.textSecondary,
+        indicatorColor: AppColors.secondary,
+        indicatorWeight: AppSpacing.tabIndicatorWeight,
+        labelStyle:
+            AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
+        unselectedLabelStyle: AppTypography.labelLarge,
+        tabs: const [
+          Tab(text: '매출'),
+          Tab(text: '행사 정보'),
+        ],
+      ),
+    );
+  }
+
+  // ─── 매출 탭 ────────────────────────────────────────────────
+
+  Widget _buildSalesTab(PromotionDetail detail) {
+    return SingleChildScrollView(
+      padding: AppSpacing.screenAll,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProgressSection(detail),
+          const SizedBox(height: AppSpacing.xl),
+          _buildTargetActualSection(detail),
+          const SizedBox(height: AppSpacing.xl),
+          _buildDailySalesSection(detail),
+        ],
+      ),
+    );
+  }
+
+  /// 진행율 = 날짜 경과율. 레거시 view.jsp: `round(100 - 남은일수/전체일수 * 100)`.
+  /// 프로그레스 바 표시 안정성을 위해 0~100 범위로 클램프.
+  Widget _buildProgressSection(PromotionDetail detail) {
+    final percent = _progressPercent(detail);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(Icons.show_chart, '진행율'),
+        const SizedBox(height: AppSpacing.md),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(height: 26, color: AppColors.surfaceVariant),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: percent / 100,
+                  child: Container(
+                    height: 26,
+                    color: AppColors.legacyYellow,
+                  ),
+                ),
+              ),
+              Text(
+                '$percent%',
+                style: AppTypography.labelMedium.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTargetActualSection(PromotionDetail detail) {
+    final rate = detail.achievementRate;
+    final rateText = rate != null ? '${rate.round()}' : '0';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(Icons.adjust, '목표 & 달성 금액'),
+        const SizedBox(height: AppSpacing.md),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _amountBox(
+                  icon: Icons.adjust,
+                  label: '목표 금액',
+                  amount: detail.targetAmount,
+                  highlight: false,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                child: Center(
+                  widthFactor: 1,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward,
+                      size: 16,
+                      color: AppColors.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: _amountBox(
+                  icon: Icons.trending_up,
+                  label: '달성 금액',
+                  amount: detail.actualAmount,
+                  highlight: true,
+                  subtitle: '($rateText% 달성)',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _amountBox({
+    required IconData icon,
+    required String label,
+    required int? amount,
+    required bool highlight,
+    String? subtitle,
+  }) {
+    final valueColor = highlight ? AppColors.success : AppColors.textPrimary;
+    return Container(
+      padding: AppSpacing.cardPadding,
+      decoration: BoxDecoration(
+        color: highlight ? AppColors.background : AppColors.surface,
+        borderRadius: AppSpacing.cardBorderRadius,
+        border: Border.all(
+          color: highlight ? AppColors.success : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                label,
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            PromotionAmountText.formatAmount(amount),
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMedium.copyWith(
+              fontWeight: FontWeight.w700,
+              color: valueColor,
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              subtitle,
+              style: AppTypography.bodySmall.copyWith(color: AppColors.success),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailySalesSection(PromotionDetail detail) {
+    final rows = _buildDailyRows(detail);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(Icons.calendar_month, '내 일별 매출'),
+        const SizedBox(height: AppSpacing.md),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: AppSpacing.cardBorderRadius,
+          ),
+          child: Column(
+            children: [
+              _dailyHeaderRow(),
+              if (rows.isEmpty)
+                Padding(
+                  padding: AppSpacing.cardPadding,
+                  child: Text(
+                    '표시할 일별 매출이 없습니다',
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.textTertiary),
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: rows.length,
+                  separatorBuilder: (_, _) =>
+                      const Divider(height: 1, color: AppColors.border),
+                  itemBuilder: (context, index) => _dailyRow(rows[index]),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _dailyHeaderRow() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(AppSpacing.radiusLg),
+          topRight: Radius.circular(AppSpacing.radiusLg),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '일시',
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+          Text(
+            '판매금액',
+            style: AppTypography.bodySmall
+                .copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dailyRow(_DailySalesRow row) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              _formatDailyDate(row.date),
+              style: AppTypography.bodyMedium,
+            ),
+          ),
+          Text(
+            _formatSalesAmount(row.amount),
+            style: AppTypography.bodyMedium
+                .copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── 행사 정보 탭 ───────────────────────────────────────────
+
+  Widget _buildInfoTab(PromotionDetail detail) {
     return SingleChildScrollView(
       padding: AppSpacing.screenAll,
       child: Column(
@@ -112,15 +462,14 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
           _buildInfoSection(detail),
           const SizedBox(height: AppSpacing.xl),
           _buildProductSection(detail),
-          const SizedBox(height: AppSpacing.xl),
-          _buildAchievementCard(detail),
-          const SizedBox(height: AppSpacing.xl),
-          if (detail.employees.isNotEmpty)
+          if (detail.employees.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xl),
             PromotionEmployeeList(
               employees: detail.employees,
               onDailySalesTap: (emp) =>
                   throttledTapAsync(() => _openDailySales(emp)),
             ),
+          ],
         ],
       ),
     );
@@ -180,32 +529,15 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
     );
   }
 
-  Widget _buildAchievementCard(PromotionDetail detail) {
-    final rate = detail.achievementRate;
-    final rateText = rate != null ? '${rate.toStringAsFixed(1)}%' : '-';
+  // ─── 공통 위젯 ──────────────────────────────────────────────
 
-    return Container(
-      width: double.infinity,
-      padding: AppSpacing.cardPadding,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppSpacing.cardBorderRadius,
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('실적 현황', style: AppTypography.headlineSmall),
-          const SizedBox(height: AppSpacing.md),
-          _achievementRow('목표',
-              PromotionAmountText.formatAmount(detail.targetAmount)),
-          const SizedBox(height: AppSpacing.xs),
-          _achievementRow('실적',
-              PromotionAmountText.formatAmount(detail.actualAmount)),
-          const SizedBox(height: AppSpacing.xs),
-          _achievementRow('달성률', rateText),
-        ],
-      ),
+  Widget _sectionHeader(IconData icon, String title) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.secondary),
+        const SizedBox(width: AppSpacing.xs),
+        Text(title, style: AppTypography.headlineSmall),
+      ],
     );
   }
 
@@ -231,18 +563,81 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
     );
   }
 
-  Widget _achievementRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label,
-            style: AppTypography.bodyMedium
-                .copyWith(color: AppColors.textSecondary)),
-        Text(value,
-            style: AppTypography.bodyMedium
-                .copyWith(fontWeight: FontWeight.w600)),
-      ],
-    );
+  // ─── 계산 헬퍼 ──────────────────────────────────────────────
+
+  /// 레거시 view.jsp 진행율: `round(100 - (남은일수/전체일수) * 100)`.
+  /// `dateCompare` = `ceil(|a-b| / 1day)`. 클라이언트 현재 시각 기준.
+  int _progressPercent(PromotionDetail detail) {
+    final start = DateTime.tryParse(detail.startDate);
+    final end = DateTime.tryParse(detail.endDate);
+    if (start == null || end == null) return 0;
+
+    final totalDays = _ceilDays(start, end);
+    if (totalDays == 0) return 0;
+    final remainingDays = _ceilDays(DateTime.now(), end);
+    final pct = 100 - (remainingDays / totalDays * 100);
+    return pct.round().clamp(0, 100);
   }
 
+  int _ceilDays(DateTime a, DateTime b) {
+    final ms = a.difference(b).inMilliseconds.abs();
+    return (ms / Duration.millisecondsPerDay).ceil();
+  }
+
+  /// 행사 기간(start~end) 전체 날짜 행 구성. 각 날짜의 조원 실적 합계를 매핑
+  /// (실적 미입력 날짜는 빈칸). 레거시 "내 일별 매출" 테이블 정합.
+  List<_DailySalesRow> _buildDailyRows(PromotionDetail detail) {
+    final start = DateTime.tryParse(detail.startDate);
+    final end = DateTime.tryParse(detail.endDate);
+    if (start == null || end == null || end.isBefore(start)) return [];
+
+    final byDate = <String, int>{};
+    for (final emp in detail.employees) {
+      final date = emp.scheduleDate;
+      final amount = emp.actualAmount;
+      if (date == null || amount == null) continue;
+      byDate[date] = (byDate[date] ?? 0) + amount;
+    }
+
+    final rows = <_DailySalesRow>[];
+    var cur = DateTime(start.year, start.month, start.day);
+    final last = DateTime(end.year, end.month, end.day);
+    while (!cur.isAfter(last)) {
+      rows.add(_DailySalesRow(date: cur, amount: byDate[_isoDate(cur)]));
+      cur = cur.add(const Duration(days: 1));
+    }
+    return rows;
+  }
+
+  String _isoDate(DateTime d) {
+    final mm = d.month.toString().padLeft(2, '0');
+    final dd = d.day.toString().padLeft(2, '0');
+    return '${d.year.toString().padLeft(4, '0')}-$mm-$dd';
+  }
+
+  /// `08.19 (수)` (레거시 moment `MM.DD` + 한글 요일).
+  String _formatDailyDate(DateTime d) {
+    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+    final mm = d.month.toString().padLeft(2, '0');
+    final dd = d.day.toString().padLeft(2, '0');
+    return '$mm.$dd (${weekdays[d.weekday - 1]})';
+  }
+
+  /// 일별 매출 금액 포맷: 천단위 콤마(원 단위 없음). null/0 은 빈칸
+  /// (레거시 `numberWithCommas(isEmpty(...))` 정합).
+  String _formatSalesAmount(int? amount) {
+    if (amount == null || amount == 0) return '';
+    return amount.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (match) => '${match[1]},',
+        );
+  }
+}
+
+/// 내 일별 매출 테이블 한 행 (날짜 + 그날 실적 합계).
+class _DailySalesRow {
+  final DateTime date;
+  final int? amount;
+
+  const _DailySalesRow({required this.date, this.amount});
 }

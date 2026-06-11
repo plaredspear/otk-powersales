@@ -280,6 +280,7 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                 id = 1L,
                 promotionNumber = "PM-2026-001",
                 promotionType = "시식",
+                promotionName = "라면(진라면)",
                 accountId = 100,
                 accountName = "이마트 강남점",
                 startDate = LocalDate.of(2026, 3, 1),
@@ -303,6 +304,7 @@ class PromotionControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.promotionNumber").value("PM-2026-001"))
                 .andExpect(jsonPath("$.data.promotionType").value("시식"))
+                .andExpect(jsonPath("$.data.promotionName").value("라면(진라면)"))
                 .andExpect(jsonPath("$.data.accountId").value(100))
                 .andExpect(jsonPath("$.data.accountName").value("이마트 강남점"))
                 .andExpect(jsonPath("$.data.startDate").value("2026-03-01"))
