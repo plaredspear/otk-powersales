@@ -472,6 +472,8 @@ class MobilePromotionServiceTest {
             assertThat(result.employees[0].actualAmount).isEqualTo(1_000_000L)
             assertThat(result.employees[1].targetAmount).isNull()
             assertThat(result.employees[1].actualAmount).isNull()
+            // 행사 달성금액 = SF ActualAmount__c Roll-Up SUM 재현 = 전 조원 일별 실적 합(1,000,000 + 0)
+            assertThat(result.actualAmount).isEqualTo(1_000_000L)
         }
 
         @Test
