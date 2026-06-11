@@ -66,7 +66,11 @@ class OwnerUserDefaultListener {
         if (!auth.isAuthenticated) return null
         return when (val principal = auth.principal) {
             is WebUserPrincipal -> principal.userId
-            is UserPrincipal -> principal.userId
+            // mobile 영업사원: userId 는 employee.id (user.id 아님) → owner 미기록 (JpaAuditingConfig 정합)
+            // employee.id 를 owner_user FK 로 쓰면 user 에 동일 id 가 없어 fk_*_owner_user 위반.
+            // 레거시(SF Apex ClaimRegist/ProposalRegist)도 OwnerId 미명시 → 통합유저 자동기록,
+            // 영업사원은 owner 가 아니라 employee_id lookup 으로만 추적.
+            is UserPrincipal -> null
             else -> null
         }
     }
