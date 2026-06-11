@@ -49,6 +49,9 @@ app.*.map.json
 # Test temp files
 test/temp/
 
+# Golden test failure artifacts
+test/**/failures/
+
 # Environment config files
 config/*
 !config/*.example
