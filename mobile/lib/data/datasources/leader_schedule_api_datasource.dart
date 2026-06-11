@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../domain/entities/leader_monthly_schedule.dart';
 import '../models/leader_account_model.dart';
 import '../models/leader_daily_status_model.dart';
 import '../models/leader_schedule_create_request_model.dart';
@@ -47,6 +48,38 @@ class LeaderScheduleApiDataSource {
     );
     return LeaderDailyStatusModel.fromJson(
       response.data['data'] as Map<String, dynamic>,
+    );
+  }
+
+  /// 여사원 월간 일정 캘린더 (레거시 mgnSchedule). [employeeId] null 이면 "여사원 전체".
+  Future<LeaderMonthlyCalendar> getMonthlyCalendar({
+    int? employeeId,
+    required int year,
+    required int month,
+  }) async {
+    final response = await _dio.get(
+      '/api/v1/mobile/leader/schedule/monthly',
+      queryParameters: {
+        'year': year,
+        'month': month,
+        'employeeId': ?employeeId,
+      },
+    );
+    final data = response.data['data'] as Map<String, dynamic>;
+    final days = (data['days'] as List<dynamic>? ?? [])
+        .map((json) {
+          final d = json as Map<String, dynamic>;
+          return LeaderCalendarDay(
+            date: d['date'] as String,
+            total: d['total'] as int? ?? 0,
+            attended: d['attended'] as int? ?? 0,
+          );
+        })
+        .toList();
+    return LeaderMonthlyCalendar(
+      year: data['year'] as int,
+      month: data['month'] as int,
+      days: days,
     );
   }
 

@@ -5543,6 +5543,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseLeaderMonthlyCalendarResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LeaderMonthlyCalendarResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseLeaderScheduleCreateResponse" : {
         "properties" : {
           "data" : {
@@ -14385,6 +14414,22 @@
         },
         "type" : "object"
       },
+      "LeaderCalendarDay" : {
+        "properties" : {
+          "attended" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "date" : {
+            "type" : "string"
+          },
+          "total" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "LeaderDailyEmployeeItem" : {
         "properties" : {
           "employeeCode" : {
@@ -14491,6 +14536,25 @@
         },
         "type" : "object"
       },
+      "LeaderMonthlyCalendarResponse" : {
+        "properties" : {
+          "days" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LeaderCalendarDay"
+            },
+            "type" : "array"
+          },
+          "month" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "year" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "LeaderScheduleCreateRequest" : {
         "properties" : {
           "accountId" : {
@@ -14564,6 +14628,9 @@
           },
           "name" : {
             "type" : "string"
+          },
+          "phone" : {
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : [ "string", "null" ]
@@ -34300,6 +34367,49 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseLeaderDailyStatusResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      }
+    },
+    "/api/v1/mobile/leader/schedule/monthly" : {
+      "get" : {
+        "operationId" : "getMonthlyCalendar",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLeaderMonthlyCalendarResponse"
                 }
               }
             },

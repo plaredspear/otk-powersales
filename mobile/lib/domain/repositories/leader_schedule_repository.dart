@@ -1,5 +1,6 @@
 import '../entities/leader_account.dart';
 import '../entities/leader_daily_status.dart';
+import '../entities/leader_monthly_schedule.dart';
 import '../entities/leader_schedule_created.dart';
 import '../entities/leader_team_member.dart';
 
@@ -7,6 +8,13 @@ import '../entities/leader_team_member.dart';
 abstract class LeaderScheduleRepository {
   /// 조장 본인 팀원 목록 조회.
   Future<List<LeaderTeamMember>> getTeamMembers();
+
+  /// 여사원 월간 일정 캘린더 (레거시 mgnSchedule). [employeeId] null 이면 "여사원 전체".
+  Future<LeaderMonthlyCalendar> getMonthlyCalendar({
+    int? employeeId,
+    required int year,
+    required int month,
+  });
 
   /// 여사원 일별 현황 조회 (조회 전용). [date] 기준 진열/행사/연차 + 출근 현황.
   Future<LeaderDailyStatus> getDailyStatus(DateTime date);

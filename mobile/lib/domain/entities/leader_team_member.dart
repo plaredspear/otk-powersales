@@ -6,16 +6,23 @@ class LeaderTeamMember {
   final String? status;
   final String? costCenterCode;
 
+  /// 전화번호(SF Phone__c). null/공백이면 명단 화면에서 전화 버튼 미노출.
+  final String? phone;
+
   const LeaderTeamMember({
     required this.id,
     required this.employeeCode,
     required this.name,
     required this.status,
     required this.costCenterCode,
+    this.phone,
   });
 
   /// 휴직/퇴직 여부 — 화면에서 등록 버튼 비활성 처리에 사용.
   bool get isInactive => status == '휴직' || status == '퇴직';
+
+  /// 전화 버튼 노출 여부 — 레거시 `isEmpty(phone__c) != ''` 정합.
+  bool get hasPhone => phone != null && phone!.trim().isNotEmpty;
 
   @override
   bool operator ==(Object other) =>

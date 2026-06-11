@@ -482,6 +482,94 @@ class LeaderScheduleServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getMonthlyCalendar - 여사원 월간 캘린더 (레거시 mgnSchedule/calSchedule 동등)")
+    inner class GetMonthlyCalendarTests {
+
+        @Test
+        @DisplayName("전체 모드 - 일자별 total/attended 집계 + 일정 없는 날(total=0) 제외")
+        fun monthly_all_success() {
+            val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
+            val w1 = createEmployee(id = 10, authority = AppAuthority.WOMAN, costCenterCode = "C001", name = "김여사")
+            val w2 = createEmployee(id = 11, authority = AppAuthority.WOMAN, costCenterCode = "C001", name = "박여사")
+            val a1 = createAccount(id = 100, branchCode = "C001", accountGroup = "1000", name = "마트A")
+            val a2 = createAccount(id = 101, branchCode = "C001", accountGroup = "1000", name = "마트B")
+            val teamIds = listOf(4001L, 10L, 11L)
+            val date10 = LocalDate.of(2026, 6, 10)
+
+            every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
+            every { employeeRepository.findByCostCenterCodeIn(listOf("C001")) } returns listOf(leader, w1, w2)
+
+            // 기본: 모든 날짜 빈 결과. (월 전체 반복 stub)
+            every { teamMemberScheduleRepository.findDailyStatusByEmployeeIds(any(), teamIds) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(teamIds, any()) } returns emptyList()
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(teamIds, any()) } returns emptyList()
+
+            // 6/10 만 데이터: 진열 w1@a1(출근완료), 행사 w2@a2(미출근) → total=2, attended=1
+            every { teamMemberScheduleRepository.findDailyStatusByEmployeeIds(date10, teamIds) } returns listOf(
+                tms(employee = w1, account = a1, type = WorkingType.WORK, cat1 = WorkingCategory1.DISPLAY, attended = true),
+                tms(employee = w2, account = a2, type = WorkingType.WORK, cat1 = WorkingCategory1.EVENT, attended = false),
+            )
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(teamIds, date10) } returns
+                listOf(displayMaster(employee = w1, account = a1))
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(teamIds, date10) } returns
+                listOf(safetySubmission(10L))
+
+            val result = leaderScheduleService.getMonthlyCalendar(leader.id, null, 2026, 6)
+
+            assertThat(result.year).isEqualTo(2026)
+            assertThat(result.month).isEqualTo(6)
+            assertThat(result.days).hasSize(1) // total=0 인 날짜는 제외
+            assertThat(result.days[0].date).isEqualTo("2026-06-10")
+            assertThat(result.days[0].total).isEqualTo(2)
+            assertThat(result.days[0].attended).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("개인 모드 - 대상 조원만 집계")
+        fun monthly_personal_success() {
+            val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
+            val w1 = createEmployee(id = 10, authority = AppAuthority.WOMAN, costCenterCode = "C001", name = "김여사")
+            val a1 = createAccount(id = 100, branchCode = "C001", accountGroup = "1000", name = "마트A")
+            val targetIds = listOf(10L)
+            val date10 = LocalDate.of(2026, 6, 10)
+
+            every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
+            every { employeeRepository.findByCostCenterCodeIn(listOf("C001")) } returns
+                listOf(leader, w1, createEmployee(id = 11, authority = AppAuthority.WOMAN, costCenterCode = "C001"))
+
+            every { teamMemberScheduleRepository.findDailyStatusByEmployeeIds(any(), targetIds) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(targetIds, any()) } returns emptyList()
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(targetIds, any()) } returns emptyList()
+
+            // 6/10: 조원10 진열 1건 출근완료 → total=1, attended=1
+            every { teamMemberScheduleRepository.findDailyStatusByEmployeeIds(date10, targetIds) } returns listOf(
+                tms(employee = w1, account = a1, type = WorkingType.WORK, cat1 = WorkingCategory1.DISPLAY, attended = true),
+            )
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(targetIds, date10) } returns
+                listOf(displayMaster(employee = w1, account = a1))
+            every { safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(targetIds, date10) } returns
+                listOf(safetySubmission(10L))
+
+            val result = leaderScheduleService.getMonthlyCalendar(leader.id, 10L, 2026, 6)
+
+            assertThat(result.days).hasSize(1)
+            assertThat(result.days[0].total).isEqualTo(1)
+            assertThat(result.days[0].attended).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("실패 - 개인 모드 대상이 본인 팀원 아님 -> NOT_TEAM_MEMBER")
+        fun monthly_personal_notTeamMember() {
+            val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
+            every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
+            every { employeeRepository.findByCostCenterCodeIn(listOf("C001")) } returns listOf(leader)
+
+            assertThatThrownBy { leaderScheduleService.getMonthlyCalendar(leader.id, 999L, 2026, 6) }
+                .isInstanceOf(LeaderScheduleNotTeamMemberException::class.java)
+        }
+    }
+
     // ========== Helpers ==========
 
     private fun tms(

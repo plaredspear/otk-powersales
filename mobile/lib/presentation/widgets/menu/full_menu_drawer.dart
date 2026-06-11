@@ -76,7 +76,7 @@ class FullMenuDrawer extends ConsumerWidget {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // 메뉴 그룹 목록 (조장/지점장은 "거래처" 다음에 "팀 관리" 삽입)
+                      // 메뉴 그룹 목록 (조장/지점장은 "거래처" 다음에 "여사원 관리" 삽입)
                       ..._buildMenuGroups(context, user?.role),
                       // 메뉴 가장 하단에 현재 버전 표시 (메뉴와 함께 스크롤)
                       const _MenuVersionFooter(),
@@ -93,7 +93,7 @@ class FullMenuDrawer extends ConsumerWidget {
 
   /// 메뉴 그룹 위젯 목록 생성
   ///
-  /// LEADER/ADMIN일 때 "거래처" 그룹 다음에 "팀 관리" 그룹을 삽입한다.
+  /// LEADER/ADMIN일 때 "거래처" 그룹 다음에 "여사원 관리" 그룹을 삽입한다.
   List<Widget> _buildMenuGroups(BuildContext context, String? role) {
     final isLeaderOrAdmin = role == 'LEADER' || role == 'ADMIN';
 
