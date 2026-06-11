@@ -304,7 +304,9 @@ class AdminClaimCreateService(
         map["ClaimDate"] = parsed.claimDate.toSfDate()
         map["Quantity"] = parsed.quantity.toPlainString()
         map["PurchaseMethod"] = parsed.purchaseMethod?.sfValue ?: ""
-        map["Amount"] = parsed.amount?.toPlainString() ?: ""
+        // SF Apex `IF_REST_MOBILE_ClaimRegist` 는 `if(Amount != null) Decimal.valueOf(Amount)` 로 파싱한다.
+        // 빈 문자열을 보내면 `Decimal.valueOf("")` 가 Exception 을 던지므로, 미입력 시 JSON null 로 전송한다.
+        map["Amount"] = parsed.amount?.toPlainString()
         map["RequestType"] = parsed.requestTypes.joinToString(";") { it.displayName }
         map["Description"] = parsed.description
         map["Channel"] = "WEB"
@@ -465,6 +467,9 @@ class AdminClaimCreateService(
     )
 
     companion object {
-        private val SF_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+        // SF Apex `IF_REST_MOBILE_ClaimRegist` 는 날짜 3종 (ExpirationDate/ManufacturingDate/ClaimDate) 을
+        // `Date.valueOf(String)` 으로 파싱한다 — Apex `Date.valueOf` 는 'YYYY-MM-DD' (ISO) 만 받으므로
+        // 'yyyyMMdd' 를 보내면 Exception → 전송 실패한다. 레거시 Heroku 도 ISO 포맷으로 전송했다.
+        private val SF_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     }
 }

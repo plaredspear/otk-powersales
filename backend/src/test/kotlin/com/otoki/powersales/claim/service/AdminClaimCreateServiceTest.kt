@@ -195,9 +195,12 @@ class AdminClaimCreateServiceTest {
         assertThat(apiMapSlot.captured["Channel"]).isEqualTo("WEB")
         assertThat(apiMapSlot.captured["SAPAccountCode"]).isEqualTo("SAP-001")
         assertThat(apiMapSlot.captured["EmployeeCode"]).isEqualTo("EMP-001")
-        assertThat(apiMapSlot.captured["ExpirationDate"]).isEqualTo("20270101")
+        assertThat(apiMapSlot.captured["ExpirationDate"]).isEqualTo("2027-01-01")
         assertThat(apiMapSlot.captured["ManufacturingDate"]).isEqualTo("")
         assertThat(apiMapSlot.captured["Quantity"]).isEqualTo("5")
+        // Amount 미입력 시 null — SF Apex `Decimal.valueOf("")` Exception 회피 (빈 문자열 아님)
+        assertThat(apiMapSlot.captured.containsKey("Amount")).isTrue()
+        assertThat(apiMapSlot.captured["Amount"]).isNull()
     }
 
     @Test
@@ -378,7 +381,7 @@ class AdminClaimCreateServiceTest {
             receiptPhoto = null,
         )
 
-        assertThat(apiMapSlot.captured["ManufacturingDate"]).isEqualTo("20250101")
+        assertThat(apiMapSlot.captured["ManufacturingDate"]).isEqualTo("2025-01-01")
         assertThat(apiMapSlot.captured["ExpirationDate"]).isEqualTo("")
     }
 
