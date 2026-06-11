@@ -4557,6 +4557,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseExternalApiIntegrationInfoResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ExternalApiIntegrationInfoResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseFemaleEmployeePlacementCheckResponse" : {
         "properties" : {
           "data" : {
@@ -9724,6 +9753,40 @@
           "keysBefore" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ExternalApiIntegrationInfo" : {
+        "properties" : {
+          "authType" : {
+            "type" : "string"
+          },
+          "endpoint" : {
+            "type" : "string"
+          },
+          "externalSystem" : {
+            "type" : "string"
+          },
+          "httpMethod" : {
+            "type" : "string"
+          },
+          "key" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ExternalApiIntegrationInfoResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ExternalApiIntegrationInfo"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -18807,6 +18870,24 @@
           }
         },
         "tags" : [ "admin-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/external-api/integration-info" : {
+      "get" : {
+        "operationId" : "getIntegrationInfo",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseExternalApiIntegrationInfoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "external-api-integration-info-controller" ]
       }
     },
     "/api/v1/admin/female-employee-schedule/events" : {

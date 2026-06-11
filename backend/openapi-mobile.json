@@ -4143,6 +4143,9 @@
           "productType" : {
             "type" : [ "string", "null" ]
           },
+          "promotionName" : {
+            "type" : [ "string", "null" ]
+          },
           "promotionNumber" : {
             "type" : "string"
           },
