@@ -4,6 +4,7 @@ import { PlusOutlined, DownloadOutlined, CrownOutlined, CopyOutlined } from '@an
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 import {
   useAppPackages,
   useDeleteAppPackage,
@@ -51,7 +52,7 @@ async function copyToClipboard(text: string): Promise<void> {
 function PlatformTable({ platform }: { platform: AppPlatform }) {
   const [page, setPage] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const { data, isLoading } = useAppPackages(platform, page, DEFAULT_SIZE);
+  const { data, isLoading, refetch, isFetching } = useAppPackages(platform, page, DEFAULT_SIZE);
   const isIos = platform === 'IOS';
   const { data: distributionUrls } = useDistributionUrls();
   const distributionUrl = isIos
@@ -271,7 +272,8 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
           )
         }
       />
-      <div style={{ marginBottom: 16, textAlign: 'right' }}>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setUploadOpen(true)}>
           패키지 업로드
         </Button>
