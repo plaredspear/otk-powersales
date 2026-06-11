@@ -114,3 +114,11 @@ class LeaderEventScheduleClosedException : BusinessException(
     message = "마감된 행사 일정은 변경/삭제할 수 없습니다.",
     httpStatus = HttpStatus.CONFLICT
 )
+
+// ===== 진열 일정(마스터) 변경/삭제 (레거시 scheduleChange 진열) =====
+
+class LeaderDisplayScheduleNotFoundException : BusinessException(
+    errorCode = "DISPLAY_SCHEDULE_NOT_FOUND",
+    message = "진열 일정 정보를 찾을 수 없습니다.",
+    httpStatus = HttpStatus.NOT_FOUND
+)

@@ -8,6 +8,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/throttled_tap_mixin.dart';
 import '../../../domain/entities/leader_daily_status.dart';
 import '../../providers/leader_schedule_provider.dart';
+import 'leader_display_schedule_edit_screen.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/loading_indicator.dart';
 
@@ -435,6 +436,41 @@ class _LeaderDailyStatusScreenState
     });
   }
 
+  /// 진열 일정 변경 — 해당 거래처 master 편집 화면 진입 (레거시 scheduleChange 진열 변경/삭제).
+  void _openDisplayEdit(LeaderDailyWorker row, String employeeName) {
+    final masterId = row.displayWorkScheduleId;
+    if (masterId == null) return;
+    throttledTapAsync(() async {
+      await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => LeaderDisplayScheduleEditScreen(
+            displayWorkScheduleId: masterId,
+            employeeName: employeeName,
+            initialDate: ref.read(leaderDailyStatusProvider).selectedDate,
+          ),
+        ),
+      );
+      // 성공 시 notifier 가 이미 재조회. (취소 시 변동 없음)
+    });
+  }
+
+  /// 진열 일정 추가 — 해당 여사원의 새 진열 master 생성 화면 진입.
+  void _openDisplayAdd(_GroupedWorker group) {
+    final employeeId = group.rows.first.employeeId;
+    if (employeeId == null) return;
+    throttledTapAsync(() async {
+      await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => LeaderDisplayScheduleEditScreen(
+            targetEmployeeId: employeeId,
+            employeeName: group.employeeName,
+            initialDate: ref.read(leaderDailyStatusProvider).selectedDate,
+          ),
+        ),
+      );
+    });
+  }
+
   /// 최초 로드 중/실패 시 표시 위젯, 데이터 보유 시 null.
   Widget? _loadingOrError(LeaderDailyStatusState state) {
     if (state.isLoading && state.data == null) {
@@ -499,7 +535,13 @@ class _LeaderDailyStatusScreenState
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         children: [
-          for (final g in displayGroups) _WorkerCard(worker: g, isEvent: false),
+          for (final g in displayGroups)
+            _WorkerCard(
+              worker: g,
+              isEvent: false,
+              onDisplayRowTap: (r) => _openDisplayEdit(r, g.employeeName),
+              onDisplayAdd: () => _openDisplayAdd(g),
+            ),
           for (final g in eventGroups)
             _WorkerCard(
               worker: g,
@@ -592,6 +634,10 @@ class _LeaderDailyStatusScreenState
               isEvent: isEvent,
               // 행사 + 미출근(변경 가능)일 때만 변경 흐름 진입.
               onChange: (isEvent && !g.attended) ? () => _openEventChangeFlow(g) : null,
+              // 진열: 거래처 row 탭 → master 편집, 카드 하단 진열 추가.
+              onDisplayRowTap:
+                  isEvent ? null : (r) => _openDisplayEdit(r, g.employeeName),
+              onDisplayAdd: isEvent ? null : () => _openDisplayAdd(g),
             ))
         .toList();
   }
@@ -1650,7 +1696,19 @@ class _WorkerCard extends StatelessWidget {
   /// 행사 변경 흐름 진입 콜백 (행사 카드·미출근일 때만 전달).
   final VoidCallback? onChange;
 
-  const _WorkerCard({required this.worker, required this.isEvent, this.onChange});
+  /// 진열 거래처 row 탭 → 해당 master 편집 (진열 카드에서만 전달).
+  final ValueChanged<LeaderDailyWorker>? onDisplayRowTap;
+
+  /// 진열 추가 진입 (진열 카드에서만 전달).
+  final VoidCallback? onDisplayAdd;
+
+  const _WorkerCard({
+    required this.worker,
+    required this.isEvent,
+    this.onChange,
+    this.onDisplayRowTap,
+    this.onDisplayAdd,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1665,45 +1723,101 @@ class _WorkerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${worker.employeeName} (${worker.employeeCode})',
-                  style: AppTypography.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${worker.employeeName} (${worker.employeeCode})',
+                      style: AppTypography.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    // 담당 거래처별 1줄: "거래처명 | 진열/상시/순회"
+                    // 진열은 탭 시 master 편집(변경/삭제) 진입.
+                    ...worker.rows.map((r) => _RowLine(
+                          row: r,
+                          onTap: (!isEvent && onDisplayRowTap != null)
+                              ? () => onDisplayRowTap!(r)
+                              : null,
+                        )),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              // 행사: 변경/변경불가 버튼, 진열: 등록완료/미등록 배지.
+              if (isEvent)
+                _ChangeButton(attended: worker.attended, onChange: onChange)
+              else
+                _AttendanceBadge(attended: worker.attended),
+            ],
+          ),
+          // 진열 추가 (레거시 scheduleChange 진열 추가).
+          if (!isEvent && onDisplayAdd != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: onDisplayAdd,
+                icon: const Icon(Icons.add, size: 16, color: AppColors.secondary),
+                label: Text(
+                  '진열 추가',
+                  style: AppTypography.labelSmall.copyWith(
+                    color: AppColors.secondary,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                // 담당 거래처별 1줄: "거래처명 | 진열/상시/순회"
-                ...worker.rows.map((r) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
-                      child: Text(
-                        r.workCategoryLabel.isEmpty
-                            ? r.accountName
-                            : '${r.accountName} | ${r.workCategoryLabel}',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    )),
-              ],
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          // 행사: 변경/변경불가 버튼, 진열: 등록완료/미등록 배지.
-          if (isEvent)
-            _ChangeButton(attended: worker.attended, onChange: onChange)
-          else
-            _AttendanceBadge(attended: worker.attended),
         ],
       ),
     );
+  }
+}
+
+/// 카드 내 거래처 1줄 — 진열은 탭 가능(편집), 그 외 텍스트.
+class _RowLine extends StatelessWidget {
+  final LeaderDailyWorker row;
+  final VoidCallback? onTap;
+
+  const _RowLine({required this.row, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final text = row.workCategoryLabel.isEmpty
+        ? row.accountName
+        : '${row.accountName} | ${row.workCategoryLabel}';
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              text,
+              style: AppTypography.bodyMedium
+                  .copyWith(color: AppColors.textPrimary),
+            ),
+          ),
+          if (onTap != null)
+            const Icon(Icons.edit_outlined,
+                size: 15, color: AppColors.textSecondary),
+        ],
+      ),
+    );
+    if (onTap == null) return content;
+    return InkWell(onTap: onTap, child: content);
   }
 }
 

@@ -42,6 +42,9 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
      */
     fun existsByDisplayWorkSchedule(displayWorkSchedule: DisplayWorkSchedule): Boolean
 
+    /** 진열 마스터 삭제 시 연결 TMS 의 FK SetNull 처리용 (SF deleteConstraint=SetNull 동등). */
+    fun findByDisplayWorkSchedule(displayWorkSchedule: DisplayWorkSchedule): List<TeamMemberSchedule>
+
     fun findByEmployeeAndAccountAndWorkingDate(employee: Employee, account: Account, workingDate: LocalDate): TeamMemberSchedule?
 
     /**
