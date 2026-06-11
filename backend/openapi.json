@@ -5543,6 +5543,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseLeaderDisplayScheduleResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LeaderDisplayScheduleResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseLeaderEventScheduleChangeResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LeaderEventScheduleChangeResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseLeaderMonthlyCalendarResponse" : {
         "properties" : {
           "data" : {
@@ -14510,6 +14568,10 @@
           "attended" : {
             "type" : "boolean"
           },
+          "displayWorkScheduleId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "employeeCode" : {
             "type" : "string"
           },
@@ -14536,6 +14598,140 @@
         },
         "type" : "object"
       },
+      "LeaderDisplayScheduleCreateRequest" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "endDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "targetEmployeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "typeOfWork3" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork4" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork5" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "accountId", "startDate", "targetEmployeeId", "typeOfWork3", "typeOfWork4", "typeOfWork5" ],
+        "type" : "object"
+      },
+      "LeaderDisplayScheduleResponse" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "displayWorkScheduleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "employeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "endDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork3" : {
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork4" : {
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork5" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "LeaderDisplayScheduleUpdateRequest" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "endDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork3" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork4" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "typeOfWork5" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "accountId", "startDate", "typeOfWork3", "typeOfWork4", "typeOfWork5" ],
+        "type" : "object"
+      },
+      "LeaderEventScheduleChangeRequest" : {
+        "properties" : {
+          "targetEmployeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "workingDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "targetEmployeeId", "workingDate" ],
+        "type" : "object"
+      },
+      "LeaderEventScheduleChangeResponse" : {
+        "properties" : {
+          "scheduleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "targetEmployeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "workingDate" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "LeaderMonthlyCalendarResponse" : {
         "properties" : {
           "days" : {
@@ -14553,6 +14749,24 @@
             "type" : "integer"
           }
         },
+        "type" : "object"
+      },
+      "LeaderProxyAttendanceRequest" : {
+        "properties" : {
+          "displayWorkScheduleId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "scheduleId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "targetEmployeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "targetEmployeeId" ],
         "type" : "object"
       },
       "LeaderScheduleCreateRequest" : {
@@ -34350,6 +34564,34 @@
         "tags" : [ "leader-schedule-controller" ]
       }
     },
+    "/api/v1/mobile/leader/attendance" : {
+      "post" : {
+        "operationId" : "registerProxyAttendance",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LeaderProxyAttendanceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAttendanceRegisterResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      }
+    },
     "/api/v1/mobile/leader/daily-status" : {
       "get" : {
         "operationId" : "getDailyStatus",
@@ -34367,6 +34609,183 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseLeaderDailyStatusResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      }
+    },
+    "/api/v1/mobile/leader/display-schedule" : {
+      "post" : {
+        "operationId" : "createDisplaySchedule",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LeaderDisplayScheduleCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLeaderDisplayScheduleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      }
+    },
+    "/api/v1/mobile/leader/display-schedule/{displayWorkScheduleId}" : {
+      "delete" : {
+        "operationId" : "deleteDisplaySchedule",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "displayWorkScheduleId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      },
+      "get" : {
+        "operationId" : "getDisplaySchedule",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "displayWorkScheduleId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLeaderDisplayScheduleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateDisplaySchedule",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "displayWorkScheduleId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LeaderDisplayScheduleUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLeaderDisplayScheduleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      }
+    },
+    "/api/v1/mobile/leader/event-schedule/{scheduleId}" : {
+      "delete" : {
+        "operationId" : "deleteEventAssignment",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "scheduleId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      },
+      "put" : {
+        "operationId" : "changeEventAssignment",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "scheduleId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LeaderEventScheduleChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLeaderEventScheduleChangeResponse"
                 }
               }
             },
