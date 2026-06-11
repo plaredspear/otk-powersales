@@ -11,6 +11,7 @@ import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import EmployeeRegisterModal from '@/pages/employee/components/EmployeeRegisterModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const STATUS_TAG: Record<string, string> = {
   재직: 'green',
@@ -56,7 +57,7 @@ export default function EmployeeListPage() {
   const canResetCredentials = hasSystemPermission('MANAGE_USERS');
   const canWrite = hasEntityPermission('employee', 'EDIT');
 
-  const { data, isLoading, isError, error, refetch } = useEmployees({
+  const { data, isLoading, isError, error, refetch, isFetching } = useEmployees({
     status: status || undefined,
     costCenterCode: costCenterCode || undefined,
     keyword: keyword || undefined,
@@ -214,13 +215,14 @@ export default function EmployeeListPage() {
           style={{ width: 240 }}
           onSearch={(val) => setFilter('keyword', val || '')}
         />
-        <div style={{ marginLeft: 'auto' }}>
+        <Space style={{ marginLeft: 'auto' }}>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
           {canWrite && (
             <Button type="primary" onClick={() => setRegisterOpen(true)}>
               + 신규 사원 등록
             </Button>
           )}
-        </div>
+        </Space>
       </div>
 
       <ResizableTable

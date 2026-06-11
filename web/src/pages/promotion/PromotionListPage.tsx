@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button, Checkbox, DatePicker, Input, Select, Tag, Typography } from 'antd';
+import { Button, Checkbox, DatePicker, Input, Select, Space, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
+import RefreshButton from '@/components/common/RefreshButton';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
 import { usePermission } from '@/hooks/usePermission';
@@ -75,7 +76,7 @@ export default function PromotionListPage() {
     navigate(`/users/${userId}`, { state: { listSearch: location.search } }),
   );
   const handleCreate = useThrottleClick(() => navigate('/promotions/new'));
-  const { data, isLoading } = usePromotions({
+  const { data, isLoading, refetch, isFetching } = usePromotions({
     keyword: keyword || undefined,
     promotionType: promotionType || undefined,
     startDate: startDate || undefined,
@@ -235,11 +236,14 @@ export default function PromotionListPage() {
           marginBottom: 16,
         }}
       >
-        {canWrite && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-            행사마스터 등록
-          </Button>
-        )}
+        <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          {canWrite && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              행사마스터 등록
+            </Button>
+          )}
+        </Space>
       </div>
 
       <div style={{ marginBottom: 16 }}>

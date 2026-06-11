@@ -9,6 +9,7 @@ import { useProductInventorySearchStore } from '@/stores/productInventorySearchS
 import InventorySearchModal from '@/components/product/InventorySearchModal';
 import SelectedProductsCompareModal from '@/components/product/SelectedProductsCompareModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const STATUS_TAG: Record<string, string> = {
   판매중: 'green',
@@ -56,7 +57,7 @@ export default function ProductPage() {
   const [downloading, setDownloading] = useState(false);
   const setInventoryTargets = useProductInventorySearchStore((s) => s.setTargets);
 
-  const { data, isLoading, isError, error, refetch } = useProducts({
+  const { data, isLoading, isError, error, refetch, isFetching } = useProducts({
     keyword: keyword || undefined,
     category1: category1 || undefined,
     category2: category2 || undefined,
@@ -307,6 +308,7 @@ export default function ProductPage() {
       </div>
 
       <Space style={{ marginBottom: 12 }}>
+        <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         <Button
           type="primary"
           disabled={selectedRowKeys.length === 0}

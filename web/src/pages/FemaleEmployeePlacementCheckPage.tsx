@@ -8,6 +8,7 @@ import {
   type FemaleEmployeePlacementCheckItem,
 } from '@/api/femaleEmployeePlacementCheck';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
+import RefreshButton from '@/components/common/RefreshButton';
 import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
@@ -97,6 +98,11 @@ export default function FemaleEmployeePlacementCheckPage() {
         exportDisabled={!query.data || query.data.items.length === 0}
         searchLoading={query.isLoading}
         showMonth
+        extraActions={
+          queryParams != null ? (
+            <RefreshButton onRefresh={query.refetch} refreshing={query.isFetching} />
+          ) : undefined
+        }
       />
 
       {queryParams != null && (

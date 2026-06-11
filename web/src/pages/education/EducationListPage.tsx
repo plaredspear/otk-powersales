@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, Select, Tag } from 'antd';
+import { Button, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { useEducationPosts } from '@/hooks/education/useEducationPosts';
@@ -8,6 +8,7 @@ import { useEducationCategories } from '@/hooks/education/useEducationCategories
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { EducationSummary } from '@/api/education';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   c00001: { color: 'orange', label: '시식매뉴얼' },
@@ -22,7 +23,7 @@ export default function EducationListPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useEducationPosts({ category, search: search || undefined, page, size: 10 });
+  const { data, isLoading, refetch, isFetching } = useEducationPosts({ category, search: search || undefined, page, size: 10 });
   const { data: categories } = useEducationCategories();
   const handleRowClick = useThrottleClick((id: string) => navigate(`/education/${id}`));
   const handleCreate = useThrottleClick(() => navigate('/education/new'));
@@ -69,9 +70,12 @@ export default function EducationListPage() {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          교육 등록
-        </Button>
+        <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            교육 등록
+          </Button>
+        </Space>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>

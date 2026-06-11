@@ -8,6 +8,7 @@ import { useClaims } from '@/hooks/claims/useClaims';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { ClaimListItem } from '@/api/claims';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 import ClaimCard from './components/ClaimCard';
 import { STATUS_TAG } from './claimDisplay';
 
@@ -46,7 +47,7 @@ export default function ClaimListPage() {
     size: PAGE_SIZE,
   });
 
-  const { data, isLoading } = useClaims(searchParams);
+  const { data, isLoading, refetch, isFetching } = useClaims(searchParams);
   const handleRowClick = useThrottleClick((claimId: number) => navigate(`/claims/${claimId}`));
 
   const handleSearch = () => {
@@ -142,9 +143,12 @@ export default function ClaimListPage() {
             { label: '카드', value: 'card', icon: <AppstoreOutlined /> },
           ]}
         />
-        <Button type="primary" onClick={() => navigate('/claims/new')}>
-          신규 등록
-        </Button>
+        <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          <Button type="primary" onClick={() => navigate('/claims/new')}>
+            신규 등록
+          </Button>
+        </Space>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16, alignItems: 'center' }}>
         <Space wrap>

@@ -8,6 +8,7 @@ import {
   type PptConfirmedReportItem,
 } from '@/api/pptConfirmedReport';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -49,6 +50,9 @@ export default function PptConfirmedReportPage() {
         <Button type="primary" onClick={() => query.refetch()} loading={query.isFetching}>
           조회
         </Button>
+        {query.data && (
+          <RefreshButton onRefresh={() => query.refetch()} refreshing={query.isFetching} />
+        )}
         <Button onClick={handleExport} disabled={!query.data || query.data.items.length === 0}>
           엑셀 다운로드
         </Button>

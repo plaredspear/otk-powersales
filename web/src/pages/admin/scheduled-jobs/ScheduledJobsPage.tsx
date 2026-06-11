@@ -26,6 +26,7 @@ import type {
 } from '@/api/admin/scheduledJob';
 import JobRunDetailModal from './JobRunDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -315,9 +316,21 @@ export default function ScheduledJobsPage() {
     },
   ];
 
+  // 상단 요약 카드와 실행 이력 목록은 한 화면의 핵심 데이터라 함께 새로고침한다.
+  const handleRefresh = () => {
+    summaryQuery.refetch();
+    runsQuery.refetch();
+  };
+
   return (
     <div style={{ padding: 24 }}>
-      <Title level={3}>스케줄 잡 실행 이력</Title>
+      <Space style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+        <Title level={3} style={{ margin: 0 }}>스케줄 잡 실행 이력</Title>
+        <RefreshButton
+          onRefresh={handleRefresh}
+          refreshing={summaryQuery.isFetching || runsQuery.isFetching}
+        />
+      </Space>
       <Text type="secondary">
         backend `@Scheduled` 배치의 실행 상태를 조회합니다. 요약 카드는 최근 24시간 윈도우 기준입니다.
       </Text>

@@ -9,6 +9,7 @@ import {
   type FemaleEmployeeSafetyCheckReportItem,
 } from '@/api/femaleEmployeeSafetyCheckReport';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -85,6 +86,9 @@ export default function FemaleEmployeeSafetyCheckReportPage() {
         <Button type="primary" onClick={handleSearch} loading={query.isLoading}>
           조회
         </Button>
+        {queryDate != null && (
+          <RefreshButton onRefresh={query.refetch} refreshing={query.isFetching} />
+        )}
         <Button onClick={handleExport} disabled={!query.data || query.data.items.length === 0}>
           엑셀 다운로드
         </Button>

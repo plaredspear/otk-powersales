@@ -9,6 +9,7 @@ import {
 } from '@/api/electronicSalesDashboard';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 import ElectronicSalesDashboardDetailModal from './ElectronicSalesDashboardDetailModal';
 
 const { Text } = Typography;
@@ -158,11 +159,19 @@ export default function ElectronicSalesDashboardPage() {
       />
 
       {queryParams != null && (
-        <div style={{ marginBottom: 8 }}>
+        <div
+          style={{
+            marginBottom: 8,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Text type="secondary">
             {queryParams.year}-{String(queryParams.month).padStart(2, '0')} · {queryParams.codes.length}개 지점
             {queryParams.customerKeyword && ` · 거래처: ${queryParams.customerKeyword}`}
           </Text>
+          <RefreshButton onRefresh={() => listQuery.refetch()} refreshing={listQuery.isFetching} />
         </div>
       )}
 

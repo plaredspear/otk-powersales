@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Alert, Button, Spin, Tag } from 'antd';
+import { Alert, Button, Space, Spin, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 import { usePermissionSetChangeLog } from '@/hooks/admin/usePermissionSetChangeLog';
 import type { PermissionSetChangeLogEntry } from '@/api/admin/permission';
 import PermissionSetChangeLogDiffModal from './PermissionSetChangeLogDiffModal';
@@ -27,7 +28,7 @@ const EVENT_TYPE_COLOR: Record<PermissionSetChangeLogEntry['eventType'], string>
 export default function PermissionSetChangeLogTab({ permissionSetId }: Props) {
   const [page, setPage] = useState(0);
   const [diffTarget, setDiffTarget] = useState<PermissionSetChangeLogEntry | null>(null);
-  const { data, isLoading, isError, error } = usePermissionSetChangeLog(permissionSetId, page, PAGE_SIZE);
+  const { data, isLoading, isError, error, refetch, isFetching } = usePermissionSetChangeLog(permissionSetId, page, PAGE_SIZE);
 
   if (isLoading && !data) {
     return (
@@ -68,6 +69,9 @@ export default function PermissionSetChangeLogTab({ permissionSetId }: Props) {
 
   return (
     <>
+      <Space style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>
+        <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+      </Space>
       <ResizableTable<PermissionSetChangeLogEntry>
         dataSource={data?.content ?? []}
         rowKey="changeLogId"

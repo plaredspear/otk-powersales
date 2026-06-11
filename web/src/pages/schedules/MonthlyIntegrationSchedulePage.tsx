@@ -7,6 +7,7 @@ import { useMonthlyIntegrationSchedule } from '@/hooks/schedules/useMonthlyInteg
 import { useMonthlyIntegrationExport } from '@/hooks/schedules/useMonthlyIntegrationExport';
 import type { MonthlyIntegrationScheduleItem } from '@/api/monthlyIntegration';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -112,7 +113,7 @@ export default function MonthlyIntegrationSchedulePage() {
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
-  const { data, isLoading, isError, error } = useMonthlyIntegrationSchedule(
+  const { data, isLoading, isError, error, refetch, isFetching } = useMonthlyIntegrationSchedule(
     queryParams?.year ?? year,
     queryParams?.month ?? month,
     queryParams?.codes ?? [],
@@ -174,6 +175,12 @@ export default function MonthlyIntegrationSchedulePage() {
           description={error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다'}
           style={{ marginBottom: 16 }}
         />
+      )}
+
+      {queryParams != null && !isMobile && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+        </div>
       )}
 
       {isLoading ? (

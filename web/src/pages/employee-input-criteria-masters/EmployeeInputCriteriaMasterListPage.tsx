@@ -33,6 +33,7 @@ import type {
   ValidStatusFilter,
 } from '@/api/employeeInputCriteriaMaster';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Title, Text } = Typography;
 
@@ -76,7 +77,7 @@ export default function EmployeeInputCriteriaMasterListPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [form] = Form.useForm<FormValues>();
 
-  const { data: items, isLoading } = useEmployeeInputCriteriaMasters(status);
+  const { data: items, isLoading, refetch, isFetching } = useEmployeeInputCriteriaMasters(status);
   const { data: categories } = useAccountCategoryOptions();
   const createMutation = useCreateEmployeeInputCriteriaMaster();
   const updateMutation = useUpdateEmployeeInputCriteriaMaster();
@@ -315,6 +316,7 @@ export default function EmployeeInputCriteriaMasterListPage() {
           options={STATUS_OPTIONS}
         />
         <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
           <Popconfirm
             title="일괄 확정"
             description={`선택한 ${selectedRowKeys.length}건을 일괄 확정합니다. 진행하시겠습니까?`}

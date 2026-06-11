@@ -7,6 +7,7 @@ import type {
   FetchAttendanceLogParams,
 } from '@/api/attendanceLog';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import RefreshButton from '@/components/common/RefreshButton';
 import AttendanceLogFilter from './attendance/components/AttendanceLogFilter';
 import AttendanceLogList from './attendance/components/AttendanceLogList';
 import AttendanceLogDetailModal from './attendance/components/AttendanceLogDetailModal';
@@ -38,7 +39,7 @@ export default function AttendancePage() {
     size: pageSize,
   };
 
-  const { data, isLoading } = useAttendanceLogList(queryParams);
+  const { data, isLoading, refetch, isFetching } = useAttendanceLogList(queryParams);
 
   const handleFilterChange = (next: FetchAttendanceLogParams) => {
     setFilters({
@@ -63,6 +64,7 @@ export default function AttendancePage() {
         <Title level={3} style={{ margin: 0 }}>
           근무 등록현황
         </Title>
+        <RefreshButton onRefresh={refetch} refreshing={isFetching} />
       </Space>
       <Tag color="blue" style={{ marginBottom: 16 }}>
         모바일 앱에서 등록된 사원의 출근 이력 (DKRetail__CommuteLog__c) 조회 전용

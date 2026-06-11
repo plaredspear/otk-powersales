@@ -3,6 +3,7 @@ import { Alert, Button, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 import { useAccounts } from '@/hooks/account/useAccounts';
 import { usePermission } from '@/hooks/usePermission';
 import type { Account } from '@/api/account';
@@ -80,7 +81,7 @@ export default function AccountPage() {
     navigate(`/account/${id}`, { state: { listSearch } });
   };
 
-  const { data, isLoading, isError, error, refetch } = useAccounts({
+  const { data, isLoading, isError, error, refetch, isFetching } = useAccounts({
     keyword,
     abcType,
     branchCode,
@@ -189,11 +190,14 @@ export default function AccountPage() {
             onSearch={(val) => { setKeyword(val || undefined); setPage(0); }}
           />
         </Space>
-        {canCreateAccount && (
-          <Button type="primary" onClick={() => setCreateModalOpen(true)}>
-            신규 등록
-          </Button>
-        )}
+        <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          {canCreateAccount && (
+            <Button type="primary" onClick={() => setCreateModalOpen(true)}>
+              신규 등록
+            </Button>
+          )}
+        </Space>
       </Space>
 
       <ResizableTable

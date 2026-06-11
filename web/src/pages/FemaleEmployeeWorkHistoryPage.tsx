@@ -9,6 +9,7 @@ import {
   type FemaleEmployeeWorkHistoryItem,
 } from '@/api/femaleEmployeeWorkHistory';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -103,6 +104,9 @@ export default function FemaleEmployeeWorkHistoryPage() {
         <Button type="primary" onClick={handleSearch} loading={query.isLoading}>
           조회
         </Button>
+        {queryParams != null && (
+          <RefreshButton onRefresh={query.refetch} refreshing={query.isFetching} />
+        )}
         <Button
           onClick={handleExport}
           disabled={!query.data || query.data.items.length === 0}

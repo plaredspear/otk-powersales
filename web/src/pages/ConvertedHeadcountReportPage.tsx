@@ -10,6 +10,7 @@ import {
   type ConvertedHeadcountReportVariant,
 } from '@/api/convertedHeadcountReport';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -105,6 +106,9 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
         <Button type="primary" onClick={handleSearch} loading={reportQuery.isLoading}>
           조회
         </Button>
+        {query != null && (
+          <RefreshButton onRefresh={() => reportQuery.refetch()} refreshing={reportQuery.isFetching} />
+        )}
         <Button onClick={handleExport} disabled={!hasResult}>
           엑셀 다운로드
         </Button>

@@ -6,6 +6,7 @@ import { useCategorySchedule } from '@/hooks/schedules/useCategorySchedule';
 import { useCategoryExport } from '@/hooks/schedules/useCategoryExport';
 import type { CategoryScheduleItem } from '@/api/monthlyIntegration';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 function formatDecimal1(value: number): string {
   return value.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -67,7 +68,7 @@ export default function CategorySchedulePage() {
     codes: string[];
   } | null>(null);
 
-  const { data, isLoading, isError, error } = useCategorySchedule(
+  const { data, isLoading, isError, error, refetch, isFetching } = useCategorySchedule(
     queryParams?.year ?? year,
     queryParams?.month ?? month,
     queryParams?.codes ?? [],
@@ -128,6 +129,12 @@ export default function CategorySchedulePage() {
           description={error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다'}
           style={{ marginBottom: 16 }}
         />
+      )}
+
+      {queryParams != null && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+        </div>
       )}
 
       {isLoading ? (

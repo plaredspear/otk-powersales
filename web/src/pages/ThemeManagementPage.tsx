@@ -27,6 +27,7 @@ import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { usePermission } from '@/hooks/usePermission';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const PAGE_SIZE = 20;
 
@@ -66,7 +67,7 @@ export default function ThemeManagementPage() {
     size: PAGE_SIZE,
   };
 
-  const { data, isLoading } = useThemes(searchParams);
+  const { data, isLoading, refetch, isFetching } = useThemes(searchParams);
   const { data: detail, isLoading: detailLoading } = useThemeDetail(detailId);
   const { data: ownerCandidates } = useUsers({
     keyword: ownerKeyword || undefined,
@@ -260,11 +261,14 @@ export default function ThemeManagementPage() {
           </Button>
           <Button onClick={handleReset}>초기화</Button>
         </Space>
-        {canCreate && (
-          <Button type="primary" onClick={openCreate}>
-            테마 등록
-          </Button>
-        )}
+        <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          {canCreate && (
+            <Button type="primary" onClick={openCreate}>
+              테마 등록
+            </Button>
+          )}
+        </Space>
       </div>
 
       <ResizableTable

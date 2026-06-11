@@ -30,6 +30,7 @@ import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, Sche
 import { PresetFilterSelect, type PresetOption } from '@/components/common/PresetFilterSelect';
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 /**
  * 레거시 SF List View 10개 매핑 — `docs/plan/legacy-pages/진열사원스케줄마스터/UC-01.md` 참조.
@@ -590,6 +591,10 @@ export default function DisplaySchedulePage() {
           <Button icon={<UndoOutlined />} onClick={handleReset}>
             초기화
           </Button>
+          <RefreshButton
+            onRefresh={scheduleListQuery.refetch}
+            refreshing={scheduleListQuery.isFetching}
+          />
         </Space>
 
         <Space style={{ marginBottom: 16 }}>

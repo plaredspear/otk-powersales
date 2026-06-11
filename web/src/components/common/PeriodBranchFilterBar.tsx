@@ -19,6 +19,8 @@ interface PeriodBranchFilterBarProps {
   hideExport?: boolean;
   showMonth?: boolean;
   extraFilters?: ReactNode;
+  /** 액션 버튼 행(조회/엑셀 다운로드)의 조회 버튼 왼쪽에 들어가는 추가 액션. 예: 새로고침 버튼. */
+  extraActions?: ReactNode;
 }
 
 export default function PeriodBranchFilterBar({
@@ -36,6 +38,7 @@ export default function PeriodBranchFilterBar({
   hideExport = false,
   showMonth = true,
   extraFilters,
+  extraActions,
 }: PeriodBranchFilterBarProps) {
   const { data: branches = [] } = useTeamScheduleBranches();
 
@@ -116,6 +119,7 @@ export default function PeriodBranchFilterBar({
       </Space>
       <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <Space>
+          {extraActions}
           <Button
             type="primary"
             icon={<SearchOutlined />}

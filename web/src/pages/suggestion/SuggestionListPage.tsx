@@ -11,6 +11,7 @@ import type {
   SuggestionListParams,
 } from '@/api/suggestions';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { RangePicker } = DatePicker;
 
@@ -51,7 +52,7 @@ export default function SuggestionListPage() {
     size: PAGE_SIZE,
   });
 
-  const { data, isLoading } = useSuggestions(searchParams);
+  const { data, isLoading, refetch, isFetching } = useSuggestions(searchParams);
   const handleRowClick = useThrottleClick((id: number) => navigate(`/suggestion/${id}`));
 
   const handleSearch = () => {
@@ -232,6 +233,7 @@ export default function SuggestionListPage() {
           <Button type="primary" onClick={handleSearch}>검색</Button>
           <Button onClick={handleReset}>초기화</Button>
           <Button type="default" onClick={() => navigate('/suggestion/new')}>신규 등록</Button>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         </Space>
       </div>
 

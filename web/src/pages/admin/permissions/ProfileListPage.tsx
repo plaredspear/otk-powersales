@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
-import { Alert, Card, Spin, Tag, Typography } from 'antd';
+import { Alert, Card, Space, Spin, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useProfiles } from '@/hooks/admin/useAdminPermission';
 import type { ProfileSummary } from '@/api/admin/permission';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Title } = Typography;
 
@@ -14,7 +15,7 @@ const { Title } = Typography;
  */
 export default function ProfileListPage() {
   const navigate = useNavigate();
-  const { data, isLoading, isError, error } = useProfiles();
+  const { data, isLoading, isError, error, refetch, isFetching } = useProfiles();
 
   if (isLoading) {
     return (
@@ -56,7 +57,10 @@ export default function ProfileListPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <Title level={4}>Profile 관리</Title>
+      <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
+        <Title level={4} style={{ margin: 0 }}>Profile 관리</Title>
+        <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+      </Space>
       <Card>
         <ResizableTable<ProfileSummary>
           dataSource={data ?? []}

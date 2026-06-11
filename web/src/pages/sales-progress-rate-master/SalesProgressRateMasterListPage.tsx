@@ -6,6 +6,7 @@ import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import type { SalesProgressRateMasterListItem } from '@/api/salesProgressRateMaster';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 function formatAmount(value: number | null): string {
   return value != null ? value.toLocaleString() : '-';
@@ -29,7 +30,7 @@ export default function SalesProgressRateMasterListPage() {
     navigate(`/sales-progress-rate-masters/${id}`, { state: { listSearch: location.search } }),
   );
 
-  const { data, isLoading } = useSalesProgressRateMasters({
+  const { data, isLoading, refetch, isFetching } = useSalesProgressRateMasters({
     keyword: keyword || undefined,
     targetYear: targetYear || undefined,
     targetMonth: targetMonth || undefined,
@@ -185,6 +186,9 @@ export default function SalesProgressRateMasterListPage() {
           style={{ width: 250 }}
           onSearch={(val) => setFilter('keyword', val)}
         />
+        <div style={{ marginLeft: 'auto' }}>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+        </div>
       </div>
 
       <ResizableTable

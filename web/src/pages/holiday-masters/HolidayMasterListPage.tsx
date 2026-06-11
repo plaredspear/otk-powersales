@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DatePicker, Form, Input, Modal, Popconfirm, Select, message } from 'antd';
+import { Button, DatePicker, Form, Input, Modal, Popconfirm, Select, Space, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -11,6 +11,7 @@ import {
 } from '@/hooks/holiday/useHolidayMasterMutation';
 import type { HolidayMaster } from '@/api/holidayMaster';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const HOLIDAY_TYPES = ['법정공휴일', '대체공휴일', '임시공휴일'];
 
@@ -23,7 +24,7 @@ interface FormValues {
 export default function HolidayMasterListPage() {
   const currentYear = dayjs().year();
   const [year, setYear] = useState(currentYear);
-  const { data: holidays, isLoading } = useHolidayMasters(year);
+  const { data: holidays, isLoading, refetch, isFetching } = useHolidayMasters(year);
   const createMutation = useCreateHolidayMaster();
   const updateMutation = useUpdateHolidayMaster();
   const deleteMutation = useDeleteHolidayMaster();
@@ -141,9 +142,12 @@ export default function HolidayMasterListPage() {
           style={{ width: 120 }}
           options={yearOptions.map((y) => ({ value: y, label: `${y}년` }))}
         />
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          공휴일 등록
-        </Button>
+        <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            공휴일 등록
+          </Button>
+        </Space>
       </div>
 
       <ResizableTable

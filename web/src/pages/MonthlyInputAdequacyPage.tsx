@@ -9,6 +9,7 @@ import {
 } from '@/api/monthlyInputAdequacy';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -129,11 +130,19 @@ export default function MonthlyInputAdequacyPage() {
       />
 
       {queryParams != null && (
-        <div style={{ marginBottom: 8 }}>
+        <div
+          style={{
+            marginBottom: 8,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Text type="secondary">
             {queryParams.year}년 · {queryParams.codes.length}개 지점
             {queryParams.workingCategory3 !== '전체' && ` · 근무형태3: ${queryParams.workingCategory3}`}
           </Text>
+          <RefreshButton onRefresh={() => matrixQuery.refetch()} refreshing={matrixQuery.isFetching} />
         </div>
       )}
 

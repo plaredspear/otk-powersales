@@ -10,6 +10,7 @@ import {
 } from '@/api/promotionTargetActualReport';
 import PromotionActualDonutChart from '@/components/charts/PromotionActualDonutChart';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -96,6 +97,9 @@ export default function PromotionTargetActualReportPage() {
         <Button type="primary" onClick={handleSearch} loading={query.isLoading}>
           조회
         </Button>
+        {range != null && (
+          <RefreshButton onRefresh={() => query.refetch()} refreshing={query.isFetching} />
+        )}
         <Button onClick={handleExport} disabled={!query.data || query.data.groups.length === 0}>
           엑셀 다운로드
         </Button>

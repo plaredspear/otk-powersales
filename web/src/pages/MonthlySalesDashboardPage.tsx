@@ -12,6 +12,7 @@ import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import MonthlyTrendChart from '@/components/charts/MonthlyTrendChart';
 import MonthlySalesDashboardDetailModal from './MonthlySalesDashboardDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -255,11 +256,25 @@ export default function MonthlySalesDashboardPage() {
       )}
 
       {queryParams != null && (
-        <div style={{ marginBottom: 8 }}>
+        <div
+          style={{
+            marginBottom: 8,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Text type="secondary">
             {queryParams.year}-{String(queryParams.month).padStart(2, '0')} · {queryParams.codes.length}개 지점
             {queryParams.customerKeyword && ` · 거래처: ${queryParams.customerKeyword}`}
           </Text>
+          <RefreshButton
+            onRefresh={() => {
+              summaryQuery.refetch();
+              listQuery.refetch();
+            }}
+            refreshing={summaryQuery.isFetching || listQuery.isFetching}
+          />
         </div>
       )}
 

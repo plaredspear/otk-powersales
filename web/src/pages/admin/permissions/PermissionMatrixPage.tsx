@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { usePermissionMatrix } from '@/hooks/admin/useAdminPermission';
 import type { EntityProfileRow } from '@/api/admin/permission';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Title } = Typography;
 
@@ -14,7 +15,7 @@ const { Title } = Typography;
  * 5분 캐시 → Profile/Assignment 변경 후 최대 5분 stale.
  */
 export default function PermissionMatrixPage() {
-  const { data, isLoading, isError, error } = usePermissionMatrix();
+  const { data, isLoading, isError, error, refetch, isFetching } = usePermissionMatrix();
   const [entityKeyword, setEntityKeyword] = useState('');
 
   const filteredRows: EntityProfileRow[] = useMemo(() => {
@@ -93,13 +94,14 @@ export default function PermissionMatrixPage() {
         style={{ marginBottom: 16 }}
       />
       <Card>
-        <Space style={{ marginBottom: 12 }}>
+        <Space style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', width: '100%' }}>
           <Input.Search
             placeholder="entity 검색"
             allowClear
             onSearch={(value) => setEntityKeyword(value)}
             style={{ width: 240 }}
           />
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         </Space>
         <ResizableTable<EntityProfileRow>
           dataSource={filteredRows}

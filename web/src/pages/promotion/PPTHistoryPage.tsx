@@ -11,6 +11,7 @@ import {
 } from '@/constants/pptTeamType';
 import PPTHistoryDetailModal from './components/PPTHistoryDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const TEAM_TYPE_FILTER_OPTIONS = [
   { value: '', label: '전체' },
@@ -50,7 +51,7 @@ export default function PPTHistoryPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState<PPTHistory | null>(null);
 
-  const { data, isLoading } = usePPTHistories({
+  const { data, isLoading, refetch, isFetching } = usePPTHistories({
     page,
     size,
     employeeName: filters.employeeName || undefined,
@@ -177,6 +178,7 @@ export default function PPTHistoryPage() {
           <Button type="primary" onClick={handleSearch}>
             조회
           </Button>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         </Space>
       </Card>
 

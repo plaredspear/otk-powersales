@@ -26,6 +26,7 @@ import type {
   InspectionListItem,
 } from '@/api/inspections';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { RangePicker } = DatePicker;
 
@@ -90,7 +91,7 @@ export default function FieldInspectionPage() {
   const canDelete = hasEntityPermission('site_activity', 'DELETE');
   const deleteMutation = useDeleteInspection();
 
-  const { data, isLoading } = useInspections({
+  const { data, isLoading, refetch, isFetching } = useInspections({
     startDate: filters.startDate,
     endDate: filters.endDate,
     category: (filters.category || undefined) as InspectionCategory | undefined,
@@ -230,11 +231,14 @@ export default function FieldInspectionPage() {
           <Button type="primary" onClick={handleSearch}>검색</Button>
           <Button onClick={handleReset}>초기화</Button>
         </Space>
-        {canCreate && (
-          <Button type="primary" onClick={() => setCreateOpen(true)}>
-            현장점검 등록
-          </Button>
-        )}
+        <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          {canCreate && (
+            <Button type="primary" onClick={() => setCreateOpen(true)}>
+              현장점검 등록
+            </Button>
+          )}
+        </Space>
       </div>
 
       <ResizableTable

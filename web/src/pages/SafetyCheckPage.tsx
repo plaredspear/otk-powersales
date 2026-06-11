@@ -9,6 +9,7 @@ import {
   type MemberStatus,
 } from '@/api/safetyCheck';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -33,7 +34,7 @@ export default function SafetyCheckPage() {
   const dateStr = selectedDate.format('YYYY-MM-DD');
   const dayOfWeek = selectedDate.format('ddd');
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['admin', 'safety-check', 'status', dateStr],
     queryFn: () => fetchSafetyCheckStatus(dateStr),
   });
@@ -159,6 +160,9 @@ export default function SafetyCheckPage() {
         </Text>
         <Button icon={<RightOutlined />} size="small" onClick={goToNextDay} />
         <DatePicker value={selectedDate} onChange={onDateChange} allowClear={false} />
+        <div style={{ marginLeft: 'auto' }}>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+        </div>
       </div>
 
       <div style={{ marginBottom: 16 }}>

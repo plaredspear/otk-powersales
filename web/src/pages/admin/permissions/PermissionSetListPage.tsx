@@ -5,6 +5,7 @@ import { usePermissionSets } from '@/hooks/admin/useAdminPermission';
 import { usePermission } from '@/hooks/usePermission';
 import type { PermissionSetSummary } from '@/api/admin/permission';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Title } = Typography;
 
@@ -14,7 +15,7 @@ const { Title } = Typography;
  */
 export default function PermissionSetListPage() {
   const navigate = useNavigate();
-  const { data, isLoading, isError, error } = usePermissionSets();
+  const { data, isLoading, isError, error, refetch, isFetching } = usePermissionSets();
   const { hasSystemPermission } = usePermission();
   const canManage = hasSystemPermission('MANAGE_USERS');
 
@@ -83,11 +84,14 @@ export default function PermissionSetListPage() {
     <div style={{ padding: 16 }}>
       <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
         <Title level={4} style={{ margin: 0 }}>PermissionSet 관리</Title>
-        {canManage && (
-          <Button type="primary" onClick={() => navigate('/admin/permissions/permission-sets/new')}>
-            + 신규 PS 등록
-          </Button>
-        )}
+        <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          {canManage && (
+            <Button type="primary" onClick={() => navigate('/admin/permissions/permission-sets/new')}>
+              + 신규 PS 등록
+            </Button>
+          )}
+        </Space>
       </Space>
       <Card>
         <ResizableTable<PermissionSetSummary>

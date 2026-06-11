@@ -4,6 +4,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useAttendInfoList, useDeleteAttendInfo } from '@/hooks/attend-info/useAttendInfo';
 import { usePermission } from '@/hooks/usePermission';
 import type { AttendInfoListItem, FetchAttendInfoParams } from '@/api/attendInfo';
+import RefreshButton from '@/components/common/RefreshButton';
 import AttendInfoFilter from './components/AttendInfoFilter';
 import AttendInfoList from './components/AttendInfoList';
 import AttendInfoCreateModal from './components/AttendInfoCreateModal';
@@ -27,7 +28,7 @@ export default function AttendInfoPage() {
   const canWrite = hasEntityPermission('attend_info', 'EDIT');
   const canDelete = hasEntityPermission('attend_info', 'DELETE');
 
-  const { data, isLoading } = useAttendInfoList(filters);
+  const { data, isLoading, refetch, isFetching } = useAttendInfoList(filters);
   const deleteMutation = useDeleteAttendInfo();
 
   const handleFilterChange = (next: FetchAttendInfoParams) => {
@@ -57,11 +58,14 @@ export default function AttendInfoPage() {
         <Title level={3} style={{ margin: 0 }}>
           근무기간 조회
         </Title>
-        {canWrite && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-            신규 등록
-          </Button>
-        )}
+        <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          {canWrite && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+              신규 등록
+            </Button>
+          )}
+        </Space>
       </Space>
       <Tag color="orange" style={{ marginBottom: 16 }}>
         SAP HR 인바운드 적재 근무기간 데이터 — admin 보정 입력 / 수정 / 삭제 시 연차 일정 자동 cascade

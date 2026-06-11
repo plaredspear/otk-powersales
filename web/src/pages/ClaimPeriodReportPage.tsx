@@ -10,6 +10,7 @@ import {
   type ClaimPeriodReportType,
 } from '@/api/claimPeriodReport';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -105,6 +106,9 @@ export default function ClaimPeriodReportPage({ type }: Props) {
         <Button type="primary" onClick={handleSearch} loading={query.isLoading}>
           조회
         </Button>
+        {range != null && (
+          <RefreshButton onRefresh={() => query.refetch()} refreshing={query.isFetching} />
+        )}
         <Button onClick={handleExport} disabled={!query.data || query.data.items.length === 0}>
           엑셀 다운로드
         </Button>

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFemaleEmployees } from '@/hooks/employee/useEmployees';
 import type { Employee } from '@/api/employee';
@@ -51,7 +52,7 @@ export default function EmployeePage() {
   const canResetCredentials = hasSystemPermission('MANAGE_USERS');
   const canWrite = hasEntityPermission('employee', 'EDIT');
 
-  const { data, isLoading, isError, error, refetch } = useFemaleEmployees({
+  const { data, isLoading, isError, error, refetch, isFetching } = useFemaleEmployees({
     status: status || undefined,
     costCenterCode: costCenterCode || undefined,
     keyword: keyword || undefined,
@@ -207,13 +208,14 @@ export default function EmployeePage() {
           style={{ width: 240 }}
           onSearch={(val) => setFilter('keyword', val)}
         />
-        <div style={{ marginLeft: 'auto' }}>
+        <Space style={{ marginLeft: 'auto' }}>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
           {canWrite && (
             <Button type="primary" onClick={() => setRegisterOpen(true)}>
               + 신규 사원 등록
             </Button>
           )}
-        </div>
+        </Space>
       </div>
 
       <ResizableTable

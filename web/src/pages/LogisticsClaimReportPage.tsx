@@ -10,6 +10,7 @@ import {
   type LogisticsClaimReportPeriod,
 } from '@/api/logisticsClaimReport';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -140,6 +141,9 @@ export default function LogisticsClaimReportPage({ period }: Props) {
         <Button type="primary" onClick={handleSearch} loading={query.isLoading || query.isFetching}>
           조회
         </Button>
+        {enabled && (
+          <RefreshButton onRefresh={() => query.refetch()} refreshing={query.isFetching} />
+        )}
         <Button onClick={handleExport} disabled={!query.data || query.data.items.length === 0}>
           엑셀 다운로드
         </Button>

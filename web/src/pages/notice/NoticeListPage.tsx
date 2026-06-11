@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, Select, Tag } from 'antd';
+import { Button, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { useNotices } from '@/hooks/notice/useNotices';
@@ -8,6 +8,7 @@ import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { NoticeSummary } from '@/api/notice';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   COMPANY: { color: 'blue', label: '회사공지' },
@@ -20,7 +21,7 @@ export default function NoticeListPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useNotices({ category, search: search || undefined, page, size: 10 });
+  const { data, isLoading, refetch, isFetching } = useNotices({ category, search: search || undefined, page, size: 10 });
   const { data: formMeta } = useNoticeFormMeta();
   const handleRowClick = useThrottleClick((id: number) => navigate(`/notices/${id}`));
   const handleCreate = useThrottleClick(() => navigate('/notices/new'));
@@ -84,9 +85,12 @@ export default function NoticeListPage() {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          작성
-        </Button>
+        <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            작성
+          </Button>
+        </Space>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>

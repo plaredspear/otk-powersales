@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Alert, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Space, Tag, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useSapOutboundOutboxPending } from '@/hooks/admin/useSapOutbound';
 import type { SapOutboxPendingRow } from '@/api/admin/sapIntegration';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -103,6 +104,9 @@ export default function SapOutboundOutboxTab() {
         message="본 탭은 큐에 남아있는 항목입니다 (PENDING + RETRY)."
         description="정상 발송된 항목은 호출 이력 탭에 표시됩니다. 30초마다 자동 새로고침됩니다."
       />
+      <Space style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>
+        <RefreshButton onRefresh={outboxQuery.refetch} refreshing={outboxQuery.isFetching} />
+      </Space>
       <ResizableTable<SapOutboxPendingRow>
         rowKey="id"
         loading={outboxQuery.isLoading}

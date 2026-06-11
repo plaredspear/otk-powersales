@@ -12,6 +12,7 @@ import type {
 } from '@/api/admin/sapIntegration';
 import SapOutboundLogDetailModal from './SapOutboundLogDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -168,7 +169,8 @@ export default function SapOutboundLogsTab({
   return (
     <>
       <Card size="small" style={{ marginBottom: 16 }}>
-        <Space wrap>
+        <Space wrap style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+          <Space wrap>
           {lockedInterfaceId === undefined && (
             <Select
               allowClear
@@ -212,6 +214,8 @@ export default function SapOutboundLogsTab({
             }}
             options={PAGE_SIZE_OPTIONS}
           />
+          </Space>
+          <RefreshButton onRefresh={logsQuery.refetch} refreshing={logsQuery.isFetching} />
         </Space>
       </Card>
 

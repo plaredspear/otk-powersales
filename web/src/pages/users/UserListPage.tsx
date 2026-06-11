@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Input, Select, Tag } from 'antd';
+import { Alert, Button, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useUsers } from '@/hooks/user/useUsers';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { UserSummary } from '@/api/user';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const PAGE_SIZE = 20;
 
@@ -21,7 +22,7 @@ export default function UserListPage() {
   const [isActive, setIsActive] = useState<boolean | undefined>();
   const [page, setPage] = useState(0);
 
-  const { data, isLoading, isError, error, refetch } = useUsers({
+  const { data, isLoading, isError, error, refetch, isFetching } = useUsers({
     keyword,
     isActive,
     page,
@@ -87,6 +88,9 @@ export default function UserListPage() {
             setPage(0);
           }}
         />
+        <Space style={{ marginLeft: 'auto' }}>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+        </Space>
       </div>
 
       <ResizableTable

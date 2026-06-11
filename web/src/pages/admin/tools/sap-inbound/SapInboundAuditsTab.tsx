@@ -9,6 +9,7 @@ import {
 import type { SapInboundAuditRow } from '@/api/admin/sapIntegration';
 import SapInboundAuditDetailModal from './SapInboundAuditDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { RangePicker } = DatePicker;
 
@@ -172,7 +173,8 @@ export default function SapInboundAuditsTab({
   return (
     <>
       <Card size="small" style={{ marginBottom: 16 }}>
-        <Space wrap>
+        <Space wrap style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+          <Space wrap>
           <Select
             allowClear
             placeholder="Client ID"
@@ -228,6 +230,8 @@ export default function SapInboundAuditsTab({
             }}
             options={PAGE_SIZE_OPTIONS}
           />
+          </Space>
+          <RefreshButton onRefresh={auditsQuery.refetch} refreshing={auditsQuery.isFetching} />
         </Space>
       </Card>
 

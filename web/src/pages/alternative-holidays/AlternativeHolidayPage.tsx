@@ -22,6 +22,7 @@ import {
 } from '@/hooks/alternative-holiday/useAlternativeHolidayMutation';
 import type { AlternativeHolidayItem } from '@/api/alternativeHoliday';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const STATUS_OPTIONS = [
   { label: '전체', value: '' },
@@ -51,7 +52,7 @@ export default function AlternativeHolidayPage() {
     employeeCode: '',
   });
 
-  const { data, isLoading } = useAlternativeHolidays({
+  const { data, isLoading, refetch, isFetching } = useAlternativeHolidays({
     startDate: filters.dateRange[0].format('YYYY-MM-DD'),
     endDate: filters.dateRange[1].format('YYYY-MM-DD'),
     status: filters.status || undefined,
@@ -223,6 +224,7 @@ export default function AlternativeHolidayPage() {
           검색
         </Button>
         <div style={{ flex: 1 }} />
+        <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         <Button type="primary" icon={<PlusOutlined />} onClick={() => { createForm.resetFields(); setCreateOpen(true); }}>
           대체휴무 신청
         </Button>

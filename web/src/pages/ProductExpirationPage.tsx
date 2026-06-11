@@ -32,6 +32,7 @@ import { fetchProducts } from '@/api/product';
 import type { ProductExpiration, CreateProductExpirationRequest, UpdateProductExpirationRequest } from '@/api/productExpiration';
 import { useAuthStore } from '@/stores/authStore';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { RangePicker } = DatePicker;
 
@@ -67,7 +68,7 @@ export default function ProductExpirationPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
 
   // Queries
-  const { data, isLoading } = useProductExpirations({
+  const { data, isLoading, refetch, isFetching } = useProductExpirations({
     ...appliedFilter,
     fromDate: appliedFilter.fromDate || undefined,
     toDate: appliedFilter.toDate || undefined,
@@ -327,6 +328,7 @@ export default function ProductExpirationPage() {
 
       {/* Action Buttons */}
       <Space style={{ marginBottom: 16 }}>
+        <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
           등록
         </Button>

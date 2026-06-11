@@ -18,6 +18,7 @@ import {
   getPPTTeamTypeColor,
 } from '@/constants/pptTeamType';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 
 const TEAM_TYPE_FILTER_OPTIONS = [{ value: '', label: '전체' }, ...PPT_TEAM_TYPE_OPTIONS];
@@ -75,7 +76,7 @@ export default function PPTMasterPage() {
   const [filterTeamType, setFilterTeamType] = useState(filters.teamType);
   const [filterValidOnly, setFilterValidOnly] = useState(validOnly);
 
-  const { data, isLoading } = usePPTMasters({
+  const { data, isLoading, refetch, isFetching } = usePPTMasters({
     page,
     size: pageSize,
     employeeName: filters.employeeName || undefined,
@@ -366,6 +367,7 @@ export default function PPTMasterPage() {
           </Button>
         </Popconfirm>
         <Space>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
           <Button icon={<PlusOutlined />} type="primary" onClick={handleAdd}>
             마스터 등록
           </Button>

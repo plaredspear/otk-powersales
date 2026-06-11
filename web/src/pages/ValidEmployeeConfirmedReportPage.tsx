@@ -8,6 +8,7 @@ import {
   type ScheduleListItem,
 } from '@/api/schedule';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const { Text } = Typography;
 
@@ -72,6 +73,9 @@ export default function ValidEmployeeConfirmedReportPage() {
         <Button type="primary" onClick={handleSearch} loading={query.isLoading}>
           조회
         </Button>
+        {requested && (
+          <RefreshButton onRefresh={() => query.refetch()} refreshing={query.isFetching} />
+        )}
         <Button onClick={handleExport} disabled={rows.length === 0}>
           엑셀 다운로드
         </Button>

@@ -19,6 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchAccountsForPosSalesLookup } from '@/api/account';
 import { fetchPosSales, type PosSalesProduct } from '@/api/posSales';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 
 const { Text } = Typography;
@@ -138,6 +139,12 @@ export default function SalesQueryPage() {
           <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
             조회
           </Button>
+          {hasQuery && (
+            <RefreshButton
+              onRefresh={posSalesQuery.refetch}
+              refreshing={posSalesQuery.isFetching}
+            />
+          )}
         </Space>
       </Card>
 

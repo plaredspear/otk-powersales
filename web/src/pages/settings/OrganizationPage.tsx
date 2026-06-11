@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Alert, Button, Input, Select } from 'antd';
+import { Alert, Button, Input, Select, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useOrganizations } from '@/hooks/organization/useOrganizations';
 import type { Organization } from '@/api/organization';
 import ResizableTable from '@/components/common/ResizableTable';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const LEVEL_OPTIONS = [
   { value: '', label: '레벨 전체' },
@@ -19,7 +20,7 @@ export default function OrganizationPage() {
   const [keyword, setKeyword] = useState<string | undefined>();
   const [level, setLevel] = useState<string | undefined>();
 
-  const { data, isLoading, isError, error, refetch } = useOrganizations({ keyword, level });
+  const { data, isLoading, isError, error, refetch, isFetching } = useOrganizations({ keyword, level });
 
   const columns: ColumnsType<Organization> = [
     { title: 'L2 조직명', dataIndex: 'orgNameLevel2', width: 120, render: renderNull },
@@ -61,6 +62,9 @@ export default function OrganizationPage() {
           style={{ width: 280 }}
           onSearch={(val) => setKeyword(val || undefined)}
         />
+        <Space style={{ marginLeft: 'auto' }}>
+          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+        </Space>
       </div>
 
       <ResizableTable
