@@ -4,6 +4,7 @@ import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/dio_provider.dart';
+import '../../core/network/request_cancel_controller.dart';
 import '../../core/services/fcm_token_registrar.dart';
 import '../../core/session/session_reset_controller.dart';
 import '../../data/datasources/auth_api_datasource.dart';
@@ -141,12 +142,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> tryAutoLogin() async {
     try {
       final isAutoLogin = await _localDataSource.isAutoLoginEnabled();
+      // 앱 종료/ProviderScope 재생성으로 notifier 가 dispose 되면 state 대입은
+      // 예외를 던진다. await 뒤마다 mounted 를 확인해 dispose 후 작업을 가드한다.
+      if (!mounted) return;
       if (!isAutoLogin) {
         state = state.toUnauthenticated();
         return;
       }
 
       final refreshToken = await _localDataSource.getRefreshToken();
+      if (!mounted) return;
       if (refreshToken == null || refreshToken.isEmpty) {
         state = state.toUnauthenticated();
         return;
@@ -166,11 +171,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // refresh 응답은 토큰만 주므로 /me 로 사용자 정보를 조회해 인증을 완료한다.
       // (방금 저장한 access token 이 인터셉터를 통해 자동 첨부됨)
       final user = await _repository.getMe();
+      if (!mounted) return;
       state = state.toAuthenticated(user);
       _registerFcmToken();
-    } catch (_) {
+    } catch (e) {
+      // 백그라운드 전환 등으로 요청이 취소된 경우 — 인증 실패가 아니므로 토큰을
+      // 삭제하지 않는다. 재개 시 다시 자동 로그인을 시도할 수 있어야 한다.
+      if (isRequestCancelled(e)) return;
       // 자동 로그인 실패 → 토큰 삭제 → 로그인 화면
       await _localDataSource.clearTokens();
+      if (!mounted) return;
       state = state.toUnauthenticated();
     }
   }

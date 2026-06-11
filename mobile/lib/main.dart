@@ -10,6 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app_router.dart';
 import 'core/navigation/navigator_key.dart';
+import 'core/network/request_cancel_controller.dart';
 import 'core/services/fcm_token_registrar.dart';
 import 'core/services/push_notification_service.dart';
 import 'core/session/session_reset_controller.dart';
@@ -122,6 +123,14 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
       });
     }
     WidgetsBinding.instance.addObserver(this);
+    // 첫 프레임 직후 현재 authState 로 화면 전환을 1회 평가한다.
+    // `ref.listen` 은 상태 "변화" 만 잡으므로, 자동 로그인이 첫 build 와 listen 등록
+    // 사이의 좁은 창에서 종료 상태로 전이를 끝내버리면 그 전이를 영영 놓쳐 스플래시가
+    // 멈춘다. 여기서 현재 상태를 직접 읽어 평가하면 그런 누락을 복구한다(상태 기반 전환).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _applyNavigation();
+    });
     // 인증 초기화(자동 로그인)는 SplashScreen 이 버전 게이트 통과 후 호출한다.
     // 여기서는 게이트와 무관한 FCM 초기화만 수행한다.
     Future.microtask(() {
@@ -151,6 +160,12 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkGpsConsentOnResume();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      // 백그라운드/종료 전환 시 진행 중인 느린 외부 요청을 취소한다.
+      // 취소하지 않으면 요청이 timeout 까지 매달려, 재개 시 stale 응답이 상태를
+      // 뒤늦게 덮어쓸 수 있다. 토큰은 내부에서 새 것으로 교체되어 재개 후 요청은 정상.
+      requestCancelController.cancelAll('app lifecycle: $state');
     }
   }
 
@@ -174,47 +189,68 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     }
   }
 
+  /// authState 의 종료 상태로부터 네비게이션 목적지를 도출한다.
+  ///
+  /// 종료 상태가 아니거나(초기화 전·로딩 중) 재네비게이션 대상이 아니면 null.
+  String? _navigationTargetFor(AuthState state) {
+    // 초기화 완료 전에는 전환하지 않음.
+    if (!state.isInitialized) return null;
+
+    // 진행 중(로딩) 상태에는 화면 전환하지 않음 — 동일 화면 재진입(깜빡임) 방지.
+    // 네비게이션 대상은 모두 종료 상태(authenticated/passwordChangeRequired/gpsConsent/login)이며,
+    // 로딩은 항상 종료 상태로 이어지는 과도 상태이므로 건너뛰어도 안전하다.
+    if (state.isLoading) return null;
+
+    if (state.isAuthenticated) {
+      // 인증 완료 → 메인 화면
+      return AppRouter.main;
+    } else if (state.passwordChangeRequired) {
+      // 비밀번호 변경 필요 → 비밀번호 변경 화면
+      return AppRouter.changePassword;
+    } else if (state.requiresGpsConsent && state.user != null) {
+      // GPS 동의 필요 → GPS 동의 화면
+      return AppRouter.gpsConsent;
+    } else if (state.user == null && state.errorMessage == null) {
+      // 미인증 상태(로그아웃·자동로그인 실패·토큰만료) → 로그인 화면.
+      return AppRouter.login;
+    }
+    // 로그인 에러(errorMessage != null)는 이미 로그인 화면에서 발생한 것이므로
+    // 재네비게이션하지 않는다(에러는 화면 내 오버레이로 즉시 표시됨).
+    return null;
+  }
+
+  /// 현재 authState 기준으로 화면 전환을 수행한다(상태 기반 — edge 가 아니라 현재 값).
+  ///
+  /// Navigator 가 아직 attach 되지 않았으면(앱 시작 직후 GlobalKey 미부착) 다음 프레임에
+  /// 재시도한다. `ref.listen` 은 상태 "변화" 만 잡으므로, 종료 상태로의 전이가
+  /// Navigator attach 보다 먼저 일어나 한 번 흘려보내면 재발화가 없어 스플래시가 영구
+  /// 정지한다 — 이 메서드는 그 종료 상태를 현재 값으로 다시 평가해 복구한다.
+  void _applyNavigation() {
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) {
+      // Navigator 미부착 — 다음 프레임에 현재 상태로 재평가(놓친 전이 복구).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _applyNavigation();
+      });
+      return;
+    }
+
+    final target = _navigationTargetFor(ref.read(authProvider));
+
+    // 동일 목적지로의 중복 push 차단.
+    // LoginScreen 진입 후 savedEmployeeNumber 로드 등으로 authState 가 다시 emit 되어도
+    // 목적지가 변하지 않으면 재 push 하지 않는다 — 로그인 화면이 무한히 쌓이는 루프 방지.
+    if (target == null || target == _lastAuthRoute) return;
+    _lastAuthRoute = target;
+    navigator.pushNamedAndRemoveUntil(target, (route) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 인증 상태 변화 감지 → 화면 전환
+    // 인증 상태 변화 감지 → 현재 상태 기준으로 화면 전환(navigator 미부착 시 재시도).
     ref.listen<AuthState>(authProvider, (previous, next) {
-      final navigator = navigatorKey.currentState;
-      if (navigator == null) return;
-
-      // 초기화 완료 전에는 무시
-      if (!next.isInitialized) return;
-
-      // 진행 중(로딩) 상태에는 화면 전환하지 않음 — 동일 화면 재진입(깜빡임) 방지.
-      // 네비게이션 대상은 모두 종료 상태(authenticated/passwordChangeRequired/gpsConsent/login)이며,
-      // 로딩은 항상 종료 상태로 이어지는 과도 상태이므로 건너뛰어도 안전하다.
-      if (next.isLoading) return;
-
-      // 상태에서 네비게이션 목적지를 도출한다.
-      final String? target;
-      if (next.isAuthenticated) {
-        // 인증 완료 → 메인 화면
-        target = AppRouter.main;
-      } else if (next.passwordChangeRequired) {
-        // 비밀번호 변경 필요 → 비밀번호 변경 화면
-        target = AppRouter.changePassword;
-      } else if (next.requiresGpsConsent && next.user != null) {
-        // GPS 동의 필요 → GPS 동의 화면
-        target = AppRouter.gpsConsent;
-      } else if (next.user == null && next.errorMessage == null) {
-        // 미인증 상태(로그아웃·자동로그인 실패·토큰만료) → 로그인 화면.
-        target = AppRouter.login;
-      } else {
-        // 로그인 에러(errorMessage != null)는 이미 로그인 화면에서 발생한 것이므로
-        // 재네비게이션하지 않는다(에러는 화면 내 오버레이로 즉시 표시됨).
-        target = null;
-      }
-
-      // 동일 목적지로의 중복 push 차단.
-      // LoginScreen 진입 후 savedEmployeeNumber 로드 등으로 authState 가 다시 emit 되어도
-      // 목적지가 변하지 않으면 재 push 하지 않는다 — 로그인 화면이 무한히 쌓이는 루프 방지.
-      if (target == null || target == _lastAuthRoute) return;
-      _lastAuthRoute = target;
-      navigator.pushNamedAndRemoveUntil(target, (route) => false);
+      _applyNavigation();
     });
 
     return MaterialApp(

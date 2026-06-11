@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/auth_interceptor.dart';
 import '../../presentation/providers/auth_provider.dart';
 import '../config/app_config.dart';
+import 'request_cancel_controller.dart';
 
 /// 앱 전역 Dio HTTP Client Provider
 ///
@@ -18,6 +19,10 @@ final dioProvider = Provider<Dio>((ref) {
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
   ));
+
+  // 생명주기 취소 토큰을 모든 요청에 자동 첨부 — AuthInterceptor 보다 먼저 등록해
+  // 토큰 갱신 등 내부 재요청에도 취소가 전파되도록 한다.
+  requestCancelController.attachTo(dio);
 
   final localDataSource = ref.watch(authLocalDataSourceProvider);
   final interceptor = AuthInterceptor(
