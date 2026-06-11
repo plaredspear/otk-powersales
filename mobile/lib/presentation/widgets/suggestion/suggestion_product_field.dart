@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'suggestion_logistics_claim_fields.dart';
 
-/// 제안하기 제품 선택 필드
+/// 제안하기 제품 선택 필드 (레거시 suggestWrite.jsp 정합)
 ///
 /// - 신제품 제안: [enabled] = false → "신제품 제안 시 선택 불필요" 안내, 버튼 비활성
-/// - 기존제품 / 물류 클레임: 바코드·선택 버튼 활성, [required] = true ("대표 제품 *")
+/// - 기존제품 / 물류 클레임: 바코드·선택 pill 버튼 활성, [required] = true ("대표 제품 *")
+///
+/// 레거시는 라벨 우측에 바코드/+선택 pill 버튼을 두고, 미선택 시 빨간 안내만
+/// 노출한다(별도 입력 박스 없음). 선택 시 제품명/코드를 평면 텍스트로 보여준다.
 class SuggestionProductField extends StatelessWidget {
   const SuggestionProductField({
     super.key,
@@ -35,91 +38,62 @@ class SuggestionProductField extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasProduct = productName != null && productCode != null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 레이블과 버튼
-        Row(
-          children: [
-            SuggestionFieldLabel(text: label, required: required),
-            const Spacer(),
-            // 바코드 버튼
-            OutlinedButton.icon(
-              onPressed: enabled ? onBarcodePressed : null,
-              icon: const Icon(Icons.qr_code_scanner, size: 18),
-              label: const Text('바코드'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: const Size(0, 36),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-            const SizedBox(width: 8),
-            // 선택 버튼
-            OutlinedButton.icon(
-              onPressed: enabled ? onSelectPressed : null,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('선택'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: const Size(0, 36),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-
-        // 제품 표시 필드
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: enabled ? Colors.white : Colors.grey.shade100,
-            border: Border.all(
-              color: enabled ? Colors.grey.shade300 : Colors.grey.shade200,
-            ),
-            borderRadius: BorderRadius.circular(4),
+    return SuggestionFieldRow(
+      label: label,
+      required: required,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SuggestionPillButton(
+            icon: Icons.qr_code_scanner,
+            label: '바코드',
+            onPressed: enabled ? onBarcodePressed : null,
           ),
-          child: hasProduct
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      productName!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      productCode!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                )
-              : Text(
-                  enabled ? '제품 선택' : '신제품 제안 시 선택 불필요',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-        ),
-
-        // 미선택 안내 문구 (레거시 빨간 가이드)
-        if (guideText != null && !hasProduct) ...[
-          const SizedBox(height: 6),
-          Text(
-            guideText!,
-            style: const TextStyle(fontSize: 12, color: Colors.red),
+          const SizedBox(width: 8),
+          SuggestionPillButton(
+            icon: Icons.add,
+            label: '선택',
+            onPressed: enabled ? onSelectPressed : null,
           ),
         ],
-      ],
+      ),
+      guideText: (!hasProduct && guideText != null) ? guideText : null,
+      child: _buildValue(hasProduct),
     );
+  }
+
+  Widget? _buildValue(bool hasProduct) {
+    if (hasProduct) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            productName!,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: kSuggestionValueColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            productCode!,
+            style: const TextStyle(
+              fontSize: 13,
+              color: kSuggestionPlaceholderColor,
+            ),
+          ),
+        ],
+      );
+    }
+    // 신제품 제안 — 선택 불필요 안내
+    if (!enabled) {
+      return const Text(
+        '신제품 제안 시 선택 불필요',
+        style: TextStyle(fontSize: 15, color: kSuggestionPlaceholderColor),
+      );
+    }
+    // 선택 가능하나 미선택 — 레거시처럼 빨간 안내(guideText)만 노출, 별도 값 없음
+    return null;
   }
 }

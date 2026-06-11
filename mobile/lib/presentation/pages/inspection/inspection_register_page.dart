@@ -3,14 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_router.dart';
 import '../../../core/utils/image_picker_helper.dart';
-import '../../../domain/entities/inspection_field_type.dart';
-import '../../../domain/entities/inspection_list_item.dart';
 import '../../../domain/entities/product.dart';
-import '../../../domain/entities/inspection_theme.dart';
+import '../../../domain/repositories/my_account_repository.dart';
 import '../../providers/inspection_register_provider.dart';
 import '../../providers/inspection_register_state.dart';
 import '../../providers/pos_sales_provider.dart';
 import '../../screens/barcode_scanner_screen.dart';
+import '../../widgets/account/account_selector_sheet.dart';
 import '../../widgets/inspection/inspection_common_form.dart';
 import '../../widgets/inspection/inspection_competitor_form.dart';
 import '../../widgets/inspection/inspection_own_form.dart';
@@ -55,106 +54,116 @@ class _InspectionRegisterPageState
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
+      // 숫자 키패드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 키보드를 닫는다.
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  // 공통 필드 폼
-                  InspectionCommonForm(
-                    selectedTheme: state.selectedTheme,
-                    category: state.category,
-                    selectedAccountName: state.selectedAccountName,
-                    inspectionDate: state.form?.inspectionDate ?? DateTime.now(),
-                    selectedFieldType: state.selectedFieldType,
-                    onThemeTap: () => _showThemeSelector(context),
-                    onCategoryChanged: (category) {
-                      ref
-                          .read(inspectionRegisterProvider.notifier)
-                          .changeCategory(category);
-                    },
-                    onAccountTap: () => _showAccountSelector(context),
-                    onDateChanged: (date) {
-                      ref
-                          .read(inspectionRegisterProvider.notifier)
-                          .updateInspectionDate(date);
-                    },
-                    onFieldTypeTap: () => _showFieldTypeSelector(context),
-                  ),
+          : GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Column(
+                  children: [
+                    // 공통 필드 폼
+                    InspectionCommonForm(
+                      selectedTheme: state.selectedTheme,
+                      category: state.category,
+                      selectedAccountName: state.selectedAccountName,
+                      inspectionDate:
+                          state.form?.inspectionDate ?? DateTime.now(),
+                      selectedFieldType: state.selectedFieldType,
+                      onThemeTap: () => _showThemeSelector(context),
+                      onCategoryChanged: (category) {
+                        ref
+                            .read(inspectionRegisterProvider.notifier)
+                            .changeCategory(category);
+                      },
+                      onAccountTap: () => _showAccountSelector(context),
+                      onDateChanged: (date) {
+                        ref
+                            .read(inspectionRegisterProvider.notifier)
+                            .updateInspectionDate(date);
+                      },
+                      onFieldTypeTap: () => _showFieldTypeSelector(context),
+                    ),
 
-                  const Divider(height: 32, thickness: 8),
+                    const Divider(height: 32, thickness: 8),
 
-                  // 활동 정보 폼 (분류에 따라 변경)
-                  if (state.isOwn)
-                    InspectionOwnForm(
-                      selectedProductName: state.selectedProductName,
-                      description: state.form?.description,
-                      onDescriptionChanged: (desc) {
+                    // 활동 정보 폼 (분류에 따라 변경)
+                    if (state.isOwn)
+                      InspectionOwnForm(
+                        selectedProductName: state.selectedProductName,
+                        description: state.form?.description,
+                        onDescriptionChanged: (desc) {
+                          ref
+                              .read(inspectionRegisterProvider.notifier)
+                              .updateDescription(desc);
+                        },
+                        onBarcodeScan: () => _handleBarcodeScan(),
+                        onProductSelect: () => _showProductSelector(context),
+                      )
+                    else
+                      InspectionCompetitorForm(
+                        competitorName: state.form?.competitorName,
+                        competitorActivity: state.form?.competitorActivity,
+                        competitorTasting: state.form?.competitorTasting,
+                        competitorProductName:
+                            state.form?.competitorProductName,
+                        competitorProductPrice:
+                            state.form?.competitorProductPrice,
+                        competitorSalesQuantity:
+                            state.form?.competitorSalesQuantity,
+                        onCompetitorNameChanged: (name) {
+                          ref
+                              .read(inspectionRegisterProvider.notifier)
+                              .updateCompetitorName(name);
+                        },
+                        onCompetitorActivityChanged: (activity) {
+                          ref
+                              .read(inspectionRegisterProvider.notifier)
+                              .updateCompetitorActivity(activity);
+                        },
+                        onCompetitorTastingChanged: (tasting) {
+                          ref
+                              .read(inspectionRegisterProvider.notifier)
+                              .updateCompetitorTasting(tasting);
+                        },
+                        onCompetitorProductNameChanged: (name) {
+                          ref
+                              .read(inspectionRegisterProvider.notifier)
+                              .updateCompetitorProductName(name);
+                        },
+                        onCompetitorProductPriceChanged: (price) {
+                          final priceInt = int.tryParse(price) ?? 0;
+                          ref
+                              .read(inspectionRegisterProvider.notifier)
+                              .updateCompetitorProductPrice(priceInt);
+                        },
+                        onCompetitorSalesQuantityChanged: (quantity) {
+                          final quantityInt = int.tryParse(quantity) ?? 0;
+                          ref
+                              .read(inspectionRegisterProvider.notifier)
+                              .updateCompetitorSalesQuantity(quantityInt);
+                        },
+                      ),
+
+                    const Divider(height: 32, thickness: 8),
+
+                    // 사진 선택
+                    InspectionPhotoPicker(
+                      photos: state.form?.photos ?? [],
+                      onAddPhoto: () => _handleAddPhoto(),
+                      onRemovePhoto: (index) {
                         ref
                             .read(inspectionRegisterProvider.notifier)
-                            .updateDescription(desc);
-                      },
-                      onBarcodeScan: () => _handleBarcodeScan(),
-                      onProductSelect: () => _showProductSelector(context),
-                    )
-                  else
-                    InspectionCompetitorForm(
-                      competitorName: state.form?.competitorName,
-                      competitorActivity: state.form?.competitorActivity,
-                      competitorTasting: state.form?.competitorTasting,
-                      competitorProductName: state.form?.competitorProductName,
-                      competitorProductPrice: state.form?.competitorProductPrice,
-                      competitorSalesQuantity:
-                          state.form?.competitorSalesQuantity,
-                      onCompetitorNameChanged: (name) {
-                        ref
-                            .read(inspectionRegisterProvider.notifier)
-                            .updateCompetitorName(name);
-                      },
-                      onCompetitorActivityChanged: (activity) {
-                        ref
-                            .read(inspectionRegisterProvider.notifier)
-                            .updateCompetitorActivity(activity);
-                      },
-                      onCompetitorTastingChanged: (tasting) {
-                        ref
-                            .read(inspectionRegisterProvider.notifier)
-                            .updateCompetitorTasting(tasting);
-                      },
-                      onCompetitorProductNameChanged: (name) {
-                        ref
-                            .read(inspectionRegisterProvider.notifier)
-                            .updateCompetitorProductName(name);
-                      },
-                      onCompetitorProductPriceChanged: (price) {
-                        final priceInt = int.tryParse(price) ?? 0;
-                        ref
-                            .read(inspectionRegisterProvider.notifier)
-                            .updateCompetitorProductPrice(priceInt);
-                      },
-                      onCompetitorSalesQuantityChanged: (quantity) {
-                        final quantityInt = int.tryParse(quantity) ?? 0;
-                        ref
-                            .read(inspectionRegisterProvider.notifier)
-                            .updateCompetitorSalesQuantity(quantityInt);
+                            .removePhoto(index);
                       },
                     ),
 
-                  const Divider(height: 32, thickness: 8),
-
-                  // 사진 선택
-                  InspectionPhotoPicker(
-                    photos: state.form?.photos ?? [],
-                    onAddPhoto: () => _handleAddPhoto(),
-                    onRemovePhoto: (index) {
-                      ref
-                          .read(inspectionRegisterProvider.notifier)
-                          .removePhoto(index);
-                    },
-                  ),
-
-                  const SizedBox(height: 80), // 하단 버튼 공간
-                ],
+                    const SizedBox(height: 80), // 하단 버튼 공간
+                  ],
+                ),
               ),
             ),
       bottomNavigationBar: _buildBottomButtons(context, state),
@@ -188,10 +197,7 @@ class _InspectionRegisterPageState
                 backgroundColor: Colors.grey,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text(
-                '임시저장',
-                style: TextStyle(fontSize: 16),
-              ),
+              child: const Text('임시저장', style: TextStyle(fontSize: 16)),
             ),
           ),
           const SizedBox(width: 16),
@@ -229,9 +235,7 @@ class _InspectionRegisterPageState
           return ListTile(
             title: Text(theme.name),
             onTap: () {
-              ref
-                  .read(inspectionRegisterProvider.notifier)
-                  .selectTheme(theme);
+              ref.read(inspectionRegisterProvider.notifier).selectTheme(theme);
               Navigator.pop(context);
             },
           );
@@ -240,27 +244,16 @@ class _InspectionRegisterPageState
     );
   }
 
-  /// 거래처 선택 다이얼로그
-  void _showAccountSelector(BuildContext context) {
-    final accounts = ref.read(inspectionRegisterProvider).accounts;
-    if (accounts.isEmpty) return;
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => ListView(
-        children: accounts.entries.map((entry) {
-          return ListTile(
-            title: Text(entry.value),
-            onTap: () {
-              ref
-                  .read(inspectionRegisterProvider.notifier)
-                  .selectAccount(entry.key, entry.value);
-              Navigator.pop(context);
-            },
-          );
-        }).toList(),
-      ),
+  /// 거래처 선택 — 공용 [AccountSelectorSheet] 바텀시트 재사용 (현장 scope=field, 필수 선택).
+  Future<void> _showAccountSelector(BuildContext context) async {
+    final account = await AccountSelectorSheet.show(
+      context,
+      scope: MyAccountScope.field,
     );
+    if (account == null || !mounted) return;
+    ref
+        .read(inspectionRegisterProvider.notifier)
+        .selectAccount(account.accountId, account.accountName);
   }
 
   /// 현장 유형 선택 다이얼로그
@@ -310,26 +303,27 @@ class _InspectionRegisterPageState
     if (barcode == null || !mounted) return;
 
     try {
-      final product =
-          await ref.read(posProductUseCaseProvider).findByBarcode(barcode);
+      final product = await ref
+          .read(posProductUseCaseProvider)
+          .findByBarcode(barcode);
       if (!mounted) return;
       if (product == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('해당 제품이 없습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('해당 제품이 없습니다')));
         return;
       }
       ref
           .read(inspectionRegisterProvider.notifier)
           .selectProduct(product.productCode, product.productName);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${product.productName} 선택됨')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${product.productName} 선택됨')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제품 조회에 실패했습니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('제품 조회에 실패했습니다')));
     }
   }
 
@@ -343,29 +337,30 @@ class _InspectionRegisterPageState
   /// 임시 저장
   void _handleDraftSave() {
     // TODO: 로컬 저장 구현
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('임시 저장되었습니다')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('임시 저장되었습니다')));
   }
 
   /// 등록 전송
   Future<void> _handleSubmit() async {
-    final success =
-        await ref.read(inspectionRegisterProvider.notifier).submit();
+    final success = await ref
+        .read(inspectionRegisterProvider.notifier)
+        .submit();
 
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('점검이 등록되었습니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('점검이 등록되었습니다')));
       Navigator.of(context).pop();
     } else {
       final errorMessage =
           ref.read(inspectionRegisterProvider).errorMessage ?? '등록 실패';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
       ref.read(inspectionRegisterProvider.notifier).clearError();
     }
   }

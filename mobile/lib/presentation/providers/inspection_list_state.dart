@@ -29,9 +29,6 @@ class InspectionListState {
   /// 검색 종료일
   final DateTime toDate;
 
-  /// 내 거래처 목록 (드롭다운용) - {accountId: accountName}
-  final Map<int, String> accounts;
-
   const InspectionListState({
     this.isLoading = false,
     this.errorMessage,
@@ -42,7 +39,6 @@ class InspectionListState {
     this.selectedCategory,
     required this.fromDate,
     required this.toDate,
-    this.accounts = const {},
   });
 
   /// 초기 상태 (기본 필터: 오늘 기준 앞 7일 ~ 오늘)
@@ -92,7 +88,6 @@ class InspectionListState {
     InspectionCategory? selectedCategory,
     DateTime? fromDate,
     DateTime? toDate,
-    Map<int, String>? accounts,
     bool clearAccountFilter = false,
     bool clearCategoryFilter = false,
   }) {
@@ -109,7 +104,6 @@ class InspectionListState {
           clearCategoryFilter ? null : (selectedCategory ?? this.selectedCategory),
       fromDate: fromDate ?? this.fromDate,
       toDate: toDate ?? this.toDate,
-      accounts: accounts ?? this.accounts,
     );
   }
 }

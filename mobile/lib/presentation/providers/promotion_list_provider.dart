@@ -4,10 +4,8 @@ import '../../core/network/dio_provider.dart';
 import '../../core/utils/error_utils.dart';
 import '../../data/datasources/promotion_api_datasource.dart';
 import '../../data/repositories/promotion_repository_impl.dart';
-import '../../domain/entities/my_account.dart';
 import '../../domain/entities/promotion.dart';
 import '../../domain/repositories/promotion_repository.dart';
-import 'my_accounts_provider.dart';
 import 'promotion_list_state.dart';
 
 // ============================================
@@ -103,9 +101,10 @@ class PromotionListNotifier extends StateNotifier<PromotionListState> {
   }
 
   /// 거래처 필터 변경 (null = 거래처 전체)
-  void updateAccount(int? accountId) {
+  void updateAccount(int? accountId, String? accountName) {
     state = state.copyWith(
       accountId: accountId,
+      accountName: accountName,
       clearAccount: accountId == null,
     );
   }
@@ -132,21 +131,7 @@ final promotionListProvider =
 });
 
 // ============================================
-// 4. 거래처 필터 드롭다운용 거래처 목록
-// ============================================
-
-/// 행사 매출 화면의 "거래처 전체" 드롭다운 옵션 목록.
-///
-/// 레거시 `myAccount`(내 거래처) 와 동일하게 내 거래처 목록을 1회 로드한다.
-final promotionAccountOptionsProvider =
-    FutureProvider.autoDispose<List<MyAccount>>((ref) async {
-  final useCase = ref.watch(getMyAccountsUseCaseProvider);
-  final result = await useCase.call();
-  return result.accounts;
-});
-
-// ============================================
-// 5. 일 매출 등록 진입 — 오늘 담당 행사 목록
+// 4. 일 매출 등록 진입 — 오늘 담당 행사 목록
 // ============================================
 
 /// 홈 "행사매출 등록" → 일 매출 등록 진입화면의 "담당 행사 선택" 목록.

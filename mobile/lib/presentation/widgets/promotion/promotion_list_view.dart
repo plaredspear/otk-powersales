@@ -6,10 +6,11 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/throttled_tap_mixin.dart';
-import '../../../domain/entities/my_account.dart';
+import '../../../domain/repositories/my_account_repository.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/promotion_list_provider.dart';
 import '../../providers/promotion_list_state.dart';
+import '../account/account_selector_field.dart';
 import '../common/date_range_filter_field.dart';
 import '../common/loading_indicator.dart';
 import 'promotion_card.dart';
@@ -130,42 +131,25 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
     );
   }
 
-  /// 거래처 전체 드롭다운 (레거시 `#accountCode` select).
+  /// 거래처 선택 (레거시 `#accountCode` select) — 공용 [AccountSelectorField] 바텀시트 재사용.
+  /// 목록 필터형이므로 "거래처 전체"(필터 해제) 항목/버튼을 노출한다.
   Widget _buildAccountDropdown(PromotionListState state) {
-    final accountsAsync = ref.watch(promotionAccountOptionsProvider);
-    final accounts = accountsAsync.asData?.value ?? const <MyAccount>[];
-
-    return Padding(
+    return AccountSelectorField(
+      selectedName: state.accountName,
+      placeholder: '거래처 전체',
+      scope: MyAccountScope.field,
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: state.accountId,
-          isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down,
-              color: AppColors.textSecondary),
-          style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
-          items: [
-            const DropdownMenuItem<int?>(
-              value: null,
-              child: Text('거래처 전체'),
-            ),
-            ...accounts.map(
-              (a) => DropdownMenuItem<int?>(
-                value: a.accountId,
-                child: Text(
-                  '${a.accountName}(${a.accountCode})',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ],
-          onChanged: (value) {
-            ref.read(promotionListProvider.notifier).updateAccount(value);
-            ref.read(promotionListProvider.notifier).searchPromotions();
-          },
-        ),
-      ),
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      onSelected: (account) {
+        ref
+            .read(promotionListProvider.notifier)
+            .updateAccount(account.accountId, account.accountName);
+        ref.read(promotionListProvider.notifier).searchPromotions();
+      },
+      onCleared: () {
+        ref.read(promotionListProvider.notifier).updateAccount(null, null);
+        ref.read(promotionListProvider.notifier).searchPromotions();
+      },
     );
   }
 

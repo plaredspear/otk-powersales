@@ -48,7 +48,11 @@ class MonthlySalesNotifier extends StateNotifier<MonthlySalesState> {
   }
 
   /// 월매출 조회
+  ///
+  /// 레거시 `promotion/month/list.jsp` 와 동일하게 거래처는 필수 선택이다 —
+  /// 미선택 시 조회하지 않는다(화면은 거래처 선택 안내를 표시).
   Future<void> loadMonthlySales() async {
+    if (state.selectedCustomerId == null) return;
     try {
       state = state.toLoading();
 
@@ -66,18 +70,10 @@ class MonthlySalesNotifier extends StateNotifier<MonthlySalesState> {
     }
   }
 
-  /// 거래처 선택
-  Future<void> setCustomer(String? customerId) async {
+  /// 거래처 선택 (레거시 정합 — 거래처 필수)
+  Future<void> setCustomer(String customerId) async {
     state = state.copyWith(
       selectedCustomerId: customerId,
-    );
-    await loadMonthlySales();
-  }
-
-  /// 거래처 필터 초기화
-  Future<void> clearCustomerFilter() async {
-    state = state.copyWith(
-      clearCustomerFilter: true,
     );
     await loadMonthlySales();
   }

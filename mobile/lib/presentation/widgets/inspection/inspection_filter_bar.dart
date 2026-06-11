@@ -4,17 +4,17 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/inspection_list_item.dart';
+import '../../../domain/repositories/my_account_repository.dart';
+import '../account/account_selector_field.dart';
 import '../common/date_range_filter_field.dart';
 
 /// 현장점검 검색 필터 바
 ///
-/// 거래처 드롭다운 + 분류 드롭다운 + 점검일 날짜 범위 + 검색 버튼
+/// 거래처 선택(공용 [AccountSelectorField] 바텀시트) + 분류 드롭다운
+/// + 점검일 날짜 범위 + 검색 버튼
 class InspectionFilterBar extends StatelessWidget {
-  /// 거래처 목록 {accountId: accountName}
-  final Map<int, String> accounts;
-
-  /// 선택된 거래처 ID
-  final int? selectedAccountId;
+  /// 선택된 거래처명 (null이면 전체)
+  final String? selectedAccountName;
 
   /// 선택된 분류
   final InspectionCategory? selectedCategory;
@@ -42,8 +42,7 @@ class InspectionFilterBar extends StatelessWidget {
 
   const InspectionFilterBar({
     super.key,
-    required this.accounts,
-    this.selectedAccountId,
+    this.selectedAccountName,
     this.selectedCategory,
     required this.fromDate,
     required this.toDate,
@@ -62,13 +61,16 @@ class InspectionFilterBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 거래처 + 분류 드롭다운 (한 줄에 배치)
-          Row(
-            children: [
-              Expanded(child: _buildAccountDropdown()),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _buildCategoryDropdown()),
-            ],
+          // 거래처 선택 + 분류 드롭다운 (한 줄에 배치)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _buildAccountField()),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: _buildCategoryDropdown()),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
 
@@ -79,46 +81,26 @@ class InspectionFilterBar extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountDropdown() {
+  /// 거래처 선택 — 공용 [AccountSelectorField] 바텀시트 재사용.
+  /// 목록 필터형이므로 "거래처 전체"(필터 해제) 항목/버튼을 노출한다(scope=field).
+  Widget _buildAccountField() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: AppSpacing.inputBorderRadius,
         border: Border.all(color: AppColors.border),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: selectedAccountId,
-          isExpanded: true,
-          hint: Text(
-            '거래처 전체',
-            style: AppTypography.bodyMedium
-                .copyWith(color: AppColors.textSecondary),
-          ),
-          items: [
-            DropdownMenuItem<int?>(
-              value: null,
-              child: Text(
-                '거래처 전체',
-                style: AppTypography.bodyMedium,
-              ),
-            ),
-            ...accounts.entries.map((entry) {
-              return DropdownMenuItem<int?>(
-                value: entry.key,
-                child: Text(
-                  entry.value,
-                  style: AppTypography.bodyMedium,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }),
-          ],
-          onChanged: (value) {
-            onAccountChanged(value, value != null ? accounts[value] : null);
-          },
+      child: AccountSelectorField(
+        selectedName: selectedAccountName,
+        placeholder: '거래처 전체',
+        scope: MyAccountScope.field,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
         ),
+        onSelected: (account) =>
+            onAccountChanged(account.accountId, account.accountName),
+        onCleared: () => onAccountChanged(null, null),
       ),
     );
   }

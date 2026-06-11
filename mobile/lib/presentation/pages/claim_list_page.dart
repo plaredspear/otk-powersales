@@ -128,12 +128,17 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
   }
 
   Future<void> _selectAccount() async {
-    final account = await AccountSelectorSheet.show(context);
-    if (account != null) {
-      ref
-          .read(claimListProvider.notifier)
-          .selectAccount(account.accountId, account.accountName);
+    // 클레임 목록은 레거시 `claim/list.jsp` 의 "거래처 전체" 옵션이 있는 필터형 화면.
+    final account =
+        await AccountSelectorSheet.show(context, includeAllOption: true);
+    if (account == null) return;
+    if (AccountSelectorSheet.isAllOption(account)) {
+      ref.read(claimListProvider.notifier).clearAccount();
+      return;
     }
+    ref
+        .read(claimListProvider.notifier)
+        .selectAccount(account.accountId, account.accountName);
   }
 
   Widget _buildDateFilter(dynamic state) {

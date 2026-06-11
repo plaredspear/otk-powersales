@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../common/synced_text_field.dart';
+
 /// 현장 점검 등록 - 경쟁사 활동 정보 폼
 ///
 /// 포함 필드:
@@ -74,18 +76,15 @@ class InspectionCompetitorForm extends StatelessWidget {
           padding: EdgeInsets.all(16),
           child: Text(
             '경쟁사 활동 정보',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
 
         // 경쟁사명 (필수)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: TextField(
-            controller: TextEditingController(text: competitorName),
+          child: SyncedTextField(
+            value: competitorName ?? '',
             onChanged: onCompetitorNameChanged,
             decoration: const InputDecoration(
               labelText: '경쟁사명 *',
@@ -100,8 +99,8 @@ class InspectionCompetitorForm extends StatelessWidget {
         // 경쟁사 활동 내용 (필수)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: TextField(
-            controller: TextEditingController(text: competitorActivity),
+          child: SyncedTextField(
+            value: competitorActivity ?? '',
             onChanged: onCompetitorActivityChanged,
             decoration: const InputDecoration(
               labelText: '경쟁사 활동 내용 *',
@@ -124,17 +123,11 @@ class InspectionCompetitorForm extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: '시식 여부',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.black87),
                     ),
                     TextSpan(
                       text: ' *',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.red,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.red),
                     ),
                   ],
                 ),
@@ -149,10 +142,7 @@ class InspectionCompetitorForm extends StatelessWidget {
                   onCompetitorTastingChanged(index == 0);
                 },
                 borderRadius: BorderRadius.circular(8),
-                constraints: const BoxConstraints(
-                  minWidth: 80,
-                  minHeight: 36,
-                ),
+                constraints: const BoxConstraints(minWidth: 80, minHeight: 36),
                 children: const [
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -177,8 +167,8 @@ class InspectionCompetitorForm extends StatelessWidget {
           // 경쟁사 상품명 (시식=예 시 필수)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: TextEditingController(text: competitorProductName),
+            child: SyncedTextField(
+              value: competitorProductName ?? '',
               onChanged: onCompetitorProductNameChanged,
               decoration: const InputDecoration(
                 labelText: '경쟁사 상품명 *',
@@ -193,10 +183,8 @@ class InspectionCompetitorForm extends StatelessWidget {
           // 제품 가격 (시식=예 시 필수, 숫자만)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: TextEditingController(
-                text: competitorProductPrice?.toString() ?? '',
-              ),
+            child: SyncedTextField(
+              value: competitorProductPrice?.toString() ?? '',
               onChanged: onCompetitorProductPriceChanged,
               decoration: const InputDecoration(
                 labelText: '제품 가격 *',
@@ -205,9 +193,7 @@ class InspectionCompetitorForm extends StatelessWidget {
                 suffixText: '원',
               ),
               keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
           ),
 
@@ -216,10 +202,8 @@ class InspectionCompetitorForm extends StatelessWidget {
           // 판매 수량 (시식=예 시 필수, 숫자만)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: TextEditingController(
-                text: competitorSalesQuantity?.toString() ?? '',
-              ),
+            child: SyncedTextField(
+              value: competitorSalesQuantity?.toString() ?? '',
               onChanged: onCompetitorSalesQuantityChanged,
               decoration: const InputDecoration(
                 labelText: '판매 수량 *',
@@ -228,9 +212,7 @@ class InspectionCompetitorForm extends StatelessWidget {
                 suffixText: '개',
               ),
               keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
           ),
         ],

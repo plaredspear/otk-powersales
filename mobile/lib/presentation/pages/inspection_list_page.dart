@@ -75,8 +75,7 @@ class _InspectionListPageState extends ConsumerState<InspectionListPage> {
         children: [
           // 검색 필터
           InspectionFilterBar(
-            accounts: state.accounts,
-            selectedAccountId: state.selectedAccountId,
+            selectedAccountName: state.selectedAccountName,
             selectedCategory: state.selectedCategory,
             fromDate: state.fromDate,
             toDate: state.toDate,

@@ -113,8 +113,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     final notifier = ref.read(orderFormProvider.notifier);
 
     // hasDraft 가 true 가 되는 순간 자동 다이얼로그 노출 (1회만).
-    ref.listen<bool>(orderFormProvider.select((s) => s.hasDraft),
-        (prev, next) {
+    ref.listen<bool>(orderFormProvider.select((s) => s.hasDraft), (prev, next) {
       if (next == true && !_restoreDialogShown) {
         _restoreDialogShown = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -132,27 +131,28 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
 
     // (I) 납기일 +10일 다이얼로그 트리거 (Spec #598 P3-M §2.6).
     ref.listen<bool>(
-        orderFormProvider.select((s) => s.requiresDeliveryDateConfirm),
-        (prev, next) {
-      if (next == true) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          DeliveryDateWarningDialog.show(
-            context,
-            onConfirm: () => notifier.confirmDeliveryDateAndSubmit(),
-            onCancel: () => notifier.cancelDeliveryDateConfirm(),
-          );
-        });
-      }
-    });
+      orderFormProvider.select((s) => s.requiresDeliveryDateConfirm),
+      (prev, next) {
+        if (next == true) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            DeliveryDateWarningDialog.show(
+              context,
+              onConfirm: () => notifier.confirmDeliveryDateAndSubmit(),
+              onCancel: () => notifier.cancelDeliveryDateConfirm(),
+            );
+          });
+        }
+      },
+    );
 
     // Listen for success/error messages
     ref.listen<OrderFormState>(orderFormProvider, (prev, next) {
       if (next.successMessage != null &&
           next.successMessage != prev?.successMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.successMessage!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.successMessage!)));
         notifier.clearSuccess();
       }
       if (next.errorMessage != null &&
@@ -189,94 +189,102 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
           title: Text(state.isEditMode ? '주문서 수정' : '주문서 작성'),
           centerTitle: true,
         ),
+        // 숫자 키패드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 키보드를 닫는다.
         body: state.isLoading
             ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                controller: _scrollController,
-                padding: AppSpacing.screenAll,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (state.hasDraft)
-                      DraftBanner(
-                        onLoadDraft: () => notifier.acceptDraft(),
-                        onNewOrder: () => notifier.declineDraft(),
-                      ),
-                    if (state.hasDraft) const SizedBox(height: AppSpacing.lg),
-                    // 거래처 선택 (월매출과 동일한 거래처 선택 바텀시트 재사용)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RichText(
-                          text: TextSpan(
-                            text: '거래처 ',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: '*',
-                                style: TextStyle(color: AppColors.error),
+            : GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => FocusScope.of(context).unfocus(),
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: AppSpacing.screenAll,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (state.hasDraft)
+                        DraftBanner(
+                          onLoadDraft: () => notifier.acceptDraft(),
+                          onNewOrder: () => notifier.declineDraft(),
+                        ),
+                      if (state.hasDraft) const SizedBox(height: AppSpacing.lg),
+                      // 거래처 선택 (월매출과 동일한 거래처 선택 바텀시트 재사용)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                            text: TextSpan(
+                              text: '거래처 ',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusMd),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: AccountSelectorField(
-                            selectedName: state.selectedClientName,
-                            scope: MyAccountScope.order,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md,
-                              vertical: AppSpacing.md,
-                            ),
-                            onSelected: (account) => notifier.selectClient(
-                              account.accountId,
-                              account.accountName,
-                              account.accountCode,
+                              children: [
+                                TextSpan(
+                                  text: '*',
+                                  style: TextStyle(color: AppColors.error),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    CreditBalanceDisplay(
-                      creditBalance: state.creditBalance,
-                      isLoading: state.isLoading,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    DeliveryDatePicker(
-                      selectedDate: state.deliveryDate,
-                      onTap: () => _showDatePicker(
-                        context,
-                        notifier,
-                        state.deliveryDate,
+                          const SizedBox(height: AppSpacing.sm),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusMd,
+                              ),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: AccountSelectorField(
+                              selectedName: state.selectedClientName,
+                              scope: MyAccountScope.order,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.md,
+                              ),
+                              onSelected: (account) => notifier.selectClient(
+                                account.accountId,
+                                account.accountName,
+                                account.accountCode,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    ProductListSection(
-                      items: state.items,
-                      validationErrors: state.validationErrors,
-                      allItemsSelected: state.allItemsSelected,
-                      onToggleSelection: notifier.toggleProductSelection,
-                      onToggleSelectAll: notifier.toggleSelectAllProducts,
-                      onAddProduct: () {
-                        AddProductBottomSheet.show(context);
-                      },
-                      onBarcodeScan: () => _handleBarcodeScan(notifier),
-                      onRemoveSelected: notifier.removeSelectedProducts,
-                      onQuantityChanged: notifier.updateProductQuantity,
-                      scrollController: _scrollController,
-                    ),
-                    const SizedBox(height: AppSpacing.xxxl),
-                  ],
+                      const SizedBox(height: AppSpacing.lg),
+                      CreditBalanceDisplay(
+                        creditBalance: state.creditBalance,
+                        isLoading: state.isLoading,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      DeliveryDatePicker(
+                        selectedDate: state.deliveryDate,
+                        onTap: () => _showDatePicker(
+                          context,
+                          notifier,
+                          state.deliveryDate,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      ProductListSection(
+                        items: state.items,
+                        validationErrors: state.validationErrors,
+                        allItemsSelected: state.allItemsSelected,
+                        onToggleSelection: notifier.toggleProductSelection,
+                        onToggleSelectAll: notifier.toggleSelectAllProducts,
+                        onAddProduct: () {
+                          AddProductBottomSheet.show(context);
+                        },
+                        onBarcodeScan: () => _handleBarcodeScan(notifier),
+                        onRemoveSelected: notifier.removeSelectedProducts,
+                        onQuantityChanged: notifier.updateProductQuantity,
+                        scrollController: _scrollController,
+                      ),
+                      const SizedBox(height: AppSpacing.xxxl),
+                    ],
+                  ),
                 ),
               ),
         // 레거시 write.jsp: 총 주문금액 + 삭제/임시저장/승인요청 하단 고정 바.

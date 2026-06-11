@@ -5,11 +5,8 @@ import '../../core/network/dio_provider.dart';
 import '../../data/datasources/product_expiration_api_datasource.dart';
 import '../../data/repositories/product_expiration_repository_impl.dart';
 import '../../domain/entities/product_expiration_item.dart';
-import '../../domain/repositories/my_account_repository.dart';
 import '../../domain/repositories/product_expiration_repository.dart';
-import '../../domain/usecases/get_my_accounts.dart';
 import '../../domain/usecases/get_product_expiration_list_usecase.dart';
-import 'my_accounts_provider.dart';
 import 'product_expiration_list_state.dart';
 
 // ============================================
@@ -37,42 +34,17 @@ final getProductExpirationListUseCaseProvider =
 /// 유통기한 관리 목록 상태 관리 Notifier
 class ProductExpirationListNotifier extends StateNotifier<ProductExpirationListState> {
   final GetProductExpirationList _getProductExpirationList;
-  final GetMyAccounts _getMyAccounts;
 
   ProductExpirationListNotifier({
     required GetProductExpirationList getProductExpirationList,
-    required GetMyAccounts getMyAccounts,
   })  : _getProductExpirationList = getProductExpirationList,
-        _getMyAccounts = getMyAccounts,
         super(ProductExpirationListState.initial());
 
-  /// 초기 데이터 로딩 (거래처 목록 + 자동 검색)
-  Future<void> initialize() async {
-    // 거래처 목록 로드
-    await _loadAccounts();
-
-    // 기본 필터로 자동 검색
-    await searchProductExpiration();
-  }
-
-  /// 내 거래처 목록 로드.
+  /// 초기 데이터 로딩 (기본 필터로 자동 검색).
   ///
-  /// 레거시 유통기한 화면(`product/expiration`)은 현장점검(`fieldChk`)과 동일하게
-  /// `selectMyAccount`/`teamleaderAccList` 를 공유한다 — 즉 FIELD scope 다.
-  /// 등록 화면([AccountSelectorSheet]) 과 동일한 [GetMyAccounts] 경로를 재사용한다.
-  Future<void> _loadAccounts() async {
-    state = state.copyWith(isAccountsLoading: true);
-    try {
-      final result = await _getMyAccounts.call(scope: MyAccountScope.field);
-      final accountsMap = <String, String>{};
-      for (final account in result.accounts) {
-        accountsMap[account.accountCode] = account.accountName;
-      }
-      state = state.copyWith(accounts: accountsMap, isAccountsLoading: false);
-    } catch (e) {
-      // 거래처 로딩 실패 시 빈 목록 유지, "전체" 상태 유지
-      state = state.copyWith(isAccountsLoading: false);
-    }
+  /// 거래처 목록은 [AccountSelectorField] 바텀시트가 온디맨드로 조회하므로 프리로드하지 않는다.
+  Future<void> initialize() async {
+    await searchProductExpiration();
   }
 
   /// 거래처 선택
@@ -140,6 +112,5 @@ final productExpirationListProvider =
 
   return ProductExpirationListNotifier(
     getProductExpirationList: useCase,
-    getMyAccounts: ref.watch(getMyAccountsUseCaseProvider),
   );
 });

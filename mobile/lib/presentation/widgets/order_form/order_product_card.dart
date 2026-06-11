@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../common/synced_text_field.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -79,12 +80,10 @@ class OrderProductCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: TextEditingController(
-                          text: item.quantityBoxes > 0
-                              ? item.quantityBoxes.toString()
-                              : '',
-                        ),
+                      child: SyncedTextField(
+                        value: item.quantityBoxes > 0
+                            ? item.quantityBoxes.toString()
+                            : '',
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
@@ -115,12 +114,10 @@ class OrderProductCard extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
-                      child: TextField(
-                        controller: TextEditingController(
-                          text: item.quantityPieces > 0
-                              ? item.quantityPieces.toString()
-                              : '',
-                        ),
+                      child: SyncedTextField(
+                        value: item.quantityPieces > 0
+                            ? item.quantityPieces.toString()
+                            : '',
                         keyboardType: TextInputType.number,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,

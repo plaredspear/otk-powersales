@@ -7,9 +7,7 @@ import '../../data/repositories/inspection_repository_impl.dart';
 import '../../domain/entities/inspection_list_item.dart';
 import '../../domain/repositories/inspection_repository.dart';
 import '../../domain/usecases/get_inspection_list_usecase.dart';
-import '../../domain/usecases/get_my_accounts.dart';
 import 'inspection_list_state.dart';
-import 'my_accounts_provider.dart';
 
 // ============================================
 // 1. Repository Provider
@@ -34,30 +32,17 @@ final getInspectionListUseCaseProvider = Provider<GetInspectionListUseCase>((ref
 /// 현장점검 목록 화면 상태 관리 Notifier
 class InspectionListNotifier extends StateNotifier<InspectionListState> {
   final GetInspectionListUseCase _getInspectionList;
-  final GetMyAccounts _getMyAccounts;
 
   InspectionListNotifier({
     required GetInspectionListUseCase getInspectionList,
-    required GetMyAccounts getMyAccounts,
   })  : _getInspectionList = getInspectionList,
-        _getMyAccounts = getMyAccounts,
         super(InspectionListState.initial());
 
-  /// 초기 데이터 로딩 (거래처 목록 + 자동 검색)
+  /// 초기 데이터 로딩 (기본 필터로 자동 검색).
+  ///
+  /// 거래처 목록은 [AccountSelectorField] 바텀시트가 열릴 때 자체 로드하므로
+  /// 여기서 미리 받지 않는다.
   Future<void> initialize() async {
-    // 거래처 목록 로드 (필터용 보조 데이터 — 실패해도 점검 목록 조회는 진행한다)
-    try {
-      final accountResult = await _getMyAccounts.call();
-      final accountsMap = <int, String>{};
-      for (final account in accountResult.accounts) {
-        accountsMap[account.accountId] = account.accountName;
-      }
-      state = state.copyWith(accounts: accountsMap);
-    } catch (_) {
-      // 거래처 목록 로딩 실패는 무시하고(필터만 비활성) 본문 검색을 계속한다.
-    }
-
-    // 기본 필터로 자동 검색
     await searchInspections();
   }
 
@@ -152,6 +137,5 @@ final inspectionListProvider =
 
   return InspectionListNotifier(
     getInspectionList: useCase,
-    getMyAccounts: ref.watch(getMyAccountsUseCaseProvider),
   );
 });

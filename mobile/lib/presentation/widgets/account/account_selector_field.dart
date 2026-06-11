@@ -46,8 +46,18 @@ class AccountSelectorField extends StatelessWidget {
   final EdgeInsets padding;
 
   Future<void> _select(BuildContext context) async {
-    final account = await AccountSelectorSheet.show(context, scope: scope);
-    if (account != null) onSelected(account);
+    // 필터형(onCleared 지정)일 때만 시트에 "거래처 전체" 항목 노출.
+    final account = await AccountSelectorSheet.show(
+      context,
+      scope: scope,
+      includeAllOption: onCleared != null,
+    );
+    if (account == null) return;
+    if (AccountSelectorSheet.isAllOption(account)) {
+      onCleared?.call();
+      return;
+    }
+    onSelected(account);
   }
 
   @override

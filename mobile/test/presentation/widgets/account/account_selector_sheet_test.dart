@@ -98,5 +98,50 @@ void main() {
       expect(result!.accountId, 1);
       expect(result!.accountName, '이마트 부산점');
     });
+
+    testWidgets('includeAllOption=false 면 "거래처 전체" 항목이 없다', (tester) async {
+      await openSheet(tester);
+
+      expect(find.text('거래처 전체'), findsNothing);
+    });
+
+    testWidgets('includeAllOption=true 면 "거래처 전체" 선택 시 allOption 을 반환한다',
+        (tester) async {
+      MyAccount? result;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            getMyAccountsUseCaseProvider
+                .overrideWithValue(GetMyAccounts(_FakeMyAccountRepository())),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    result = await AccountSelectorSheet.show(
+                      context,
+                      includeAllOption: true,
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // 최상단 "거래처 전체" + 거래처 목록이 함께 표시
+      expect(find.text('거래처 전체'), findsOneWidget);
+      expect(find.text('이마트 부산점'), findsOneWidget);
+
+      await tester.tap(find.text('거래처 전체'));
+      await tester.pumpAndSettle();
+
+      expect(AccountSelectorSheet.isAllOption(result), isTrue);
+    });
   });
 }

@@ -64,64 +64,72 @@ class ProductExpirationRegisterForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 거래처
-          ClaimFormRow(
-            label: '거래처',
-            isRequired: true,
-            onTap: onSelectAccount,
-            trailing: const ClaimRowChevron(),
-            below: ClaimValueText(
-              value: accountName,
-              placeholder: '거래처 선택',
+    // 키보드는 iOS 에 '완료' 버튼이 없어 빈 영역 탭 / 스크롤로 닫는다.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 거래처
+            ClaimFormRow(
+              label: '거래처',
+              isRequired: true,
+              onTap: onSelectAccount,
+              trailing: const ClaimRowChevron(),
+              below: ClaimValueText(value: accountName, placeholder: '거래처 선택'),
             ),
-          ),
 
-          // 제품
-          ClaimProductField(
-            productName: productName,
-            productCode: productCode,
-            onBarcodePressed: onScanBarcode,
-            onProductSelectPressed: onSelectProduct,
-          ),
+            // 제품
+            ClaimProductField(
+              productName: productName,
+              productCode: productCode,
+              onBarcodePressed: onScanBarcode,
+              onProductSelectPressed: onSelectProduct,
+            ),
 
-          // 유통기한
-          ProductExpirationDateRow(
-            label: '유통기한',
-            date: expiryDate,
-            onDateChanged: onExpiryDateChanged,
-          ),
+            // 유통기한
+            ProductExpirationDateRow(
+              label: '유통기한',
+              date: expiryDate,
+              onDateChanged: onExpiryDateChanged,
+            ),
 
-          // 마감 전 푸시 메세지 알림
-          ProductExpirationDateRow(
-            label: '마감 전 푸시 메세지 알림',
-            date: alertDate,
-            onDateChanged: onAlertDateChanged,
-          ),
+            // 마감 전 푸시 메세지 알림
+            ProductExpirationDateRow(
+              label: '마감 전 푸시 메세지 알림',
+              date: alertDate,
+              onDateChanged: onAlertDateChanged,
+            ),
 
-          // 설명
-          ClaimFormRow(
-            label: '설명',
-            showDivider: false,
-            below: TextFormField(
-              initialValue: description,
-              style: const TextStyle(fontSize: 14, color: ClaimFormColors.value),
-              decoration: const InputDecoration(
-                isCollapsed: true,
-                hintText: '설명 입력',
-                hintStyle:
-                    TextStyle(fontSize: 14, color: ClaimFormColors.placeholder),
-                border: InputBorder.none,
+            // 설명
+            ClaimFormRow(
+              label: '설명',
+              showDivider: false,
+              below: TextFormField(
+                initialValue: description,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: ClaimFormColors.value,
+                ),
+                decoration: const InputDecoration(
+                  isCollapsed: true,
+                  hintText: '설명 입력',
+                  hintStyle: TextStyle(
+                    fontSize: 14,
+                    color: ClaimFormColors.placeholder,
+                  ),
+                  border: InputBorder.none,
+                ),
+                onChanged: onDescriptionChanged,
               ),
-              onChanged: onDescriptionChanged,
             ),
-          ),
 
-          const SizedBox(height: 24),
-        ],
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
