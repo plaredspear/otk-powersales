@@ -163,3 +163,69 @@ export async function resendClaim(claimId: number): Promise<AdminClaimCreateResu
   }
   return res.data.data;
 }
+
+/**
+ * SF ClaimRegist 전송 테스트 입력 (개발자 도구 — 외부 API 테스트).
+ *
+ * 운영 등록([AdminClaimCreateInput])과 달리 이미지 3종이 모두 선택적이다 (SF 계약 검증 목적).
+ */
+export interface ClaimRegistTestInput {
+  sapAccountCode: string;
+  productCode: string;
+  employeeCode: string;
+  dateType: 'EXPIRY_DATE' | 'MANUFACTURE_DATE';
+  expirationDate?: string;
+  manufacturingDate?: string;
+  claimDate: string;
+  claimType1: string;
+  claimType2: string;
+  quantity: string;
+  description: string;
+  purchaseMethod?: string;
+  amount?: string;
+  requestType?: string;
+  claimPhoto?: File;
+  partPhoto?: File;
+  receiptPhoto?: File;
+}
+
+export interface ClaimRegistTestResult {
+  success: boolean;
+  resultCode: string | null;
+  resultMsg: string | null;
+  rawResponse: string | null;
+  /** SF 로 전송한 apiMap JSON (이미지 Buffer 는 길이 표기로 마스킹). */
+  requestPayload: string;
+}
+
+export async function testClaimRegist(
+  input: ClaimRegistTestInput,
+): Promise<ClaimRegistTestResult> {
+  const form = new FormData();
+  appendIfDefined(form, 'sapAccountCode', input.sapAccountCode);
+  appendIfDefined(form, 'productCode', input.productCode);
+  appendIfDefined(form, 'employeeCode', input.employeeCode);
+  appendIfDefined(form, 'dateType', input.dateType);
+  appendIfDefined(form, 'expirationDate', input.expirationDate);
+  appendIfDefined(form, 'manufacturingDate', input.manufacturingDate);
+  appendIfDefined(form, 'claimDate', input.claimDate);
+  appendIfDefined(form, 'claimType1', input.claimType1);
+  appendIfDefined(form, 'claimType2', input.claimType2);
+  appendIfDefined(form, 'quantity', input.quantity);
+  appendIfDefined(form, 'description', input.description);
+  appendIfDefined(form, 'purchaseMethod', input.purchaseMethod);
+  appendIfDefined(form, 'amount', input.amount);
+  appendIfDefined(form, 'requestType', input.requestType);
+  appendIfDefined(form, 'claimPhoto', input.claimPhoto);
+  appendIfDefined(form, 'partPhoto', input.partPhoto);
+  appendIfDefined(form, 'receiptPhoto', input.receiptPhoto);
+
+  const res = await client.post<ApiResponse<ClaimRegistTestResult>>(
+    '/api/v1/admin/claim-regist/test',
+    form,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'SF ClaimRegist 전송 테스트에 실패했습니다');
+  }
+  return res.data.data;
+}

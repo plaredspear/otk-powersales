@@ -230,7 +230,7 @@ class AdminClaimCreateService(
         return invokeSf(apiMap)
     }
 
-    private fun invokeSf(apiMap: Map<String, Any?>): SfPushResult {
+    internal fun invokeSf(apiMap: Map<String, Any?>): SfPushResult {
         return try {
             val response = sfOutboundClient.callApi("/ClaimRegist", apiMap)
             SfPushResult(success = response.isSuccess(), apiResponse = response, errorSummary = null)
@@ -279,7 +279,7 @@ class AdminClaimCreateService(
         receiptContentType = receiptPhoto?.contentType,
     )
 
-    private fun buildApiMapFromBytes(
+    internal fun buildApiMapFromBytes(
         employeeCode: String,
         sapAccountCode: String,
         productCode: String,

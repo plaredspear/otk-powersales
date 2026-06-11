@@ -15,6 +15,11 @@ vi.mock('@/hooks/admin/useNaverGeocodeTest', () => ({
   }),
 }));
 
+const testClaimRegistMock = vi.fn();
+vi.mock('@/api/claims', () => ({
+  testClaimRegist: (...args: unknown[]) => testClaimRegistMock(...args),
+}));
+
 function renderPage() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -31,15 +36,29 @@ function renderPage() {
 describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
   beforeEach(() => {
     mutateAsyncMock.mockReset();
+    testClaimRegistMock.mockReset();
     mutationState.isPending = false;
   });
 
-  it('H1 - 페이지 진입 시 Naver Geocode + SAP 인터페이스별 개별 탭이 모두 노출', () => {
+  it('H1 - 페이지 진입 시 Naver Geocode + SF 클레임 등록 + SAP 인터페이스별 개별 탭이 모두 노출', () => {
     renderPage();
     expect(screen.getByRole('tab', { name: 'Naver Geocode' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'SF 클레임 등록' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '여신 한도 조회' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '주문 등록' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '전문행사조 마스터' })).toBeInTheDocument();
+  });
+
+  it('H4 - SF 클레임 등록 탭 전환 시 클레임 입력 폼과 SF 전송 버튼이 노출', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('tab', { name: 'SF 클레임 등록' }));
+
+    expect(
+      await screen.findByPlaceholderText('account.external_key'),
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('empcode (SFID 아님)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'SF 전송' })).toBeInTheDocument();
   });
 
   it('H2 - 기본 탭(Naver)에서 주소 변환 시 raw JSON 응답을 출력', async () => {

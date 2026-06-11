@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, Space, Tabs, Tag, Typography } from 'antd';
 import type { TabsProps } from 'antd';
 import NaverGeocodeTab from './NaverGeocodeTab';
+import ClaimRegistTab from './ClaimRegistTab';
 import SapOutboundSenderCard from '../sap-outbound/SapOutboundSenderCard';
 import {
   SENDER_CONFIGS,
@@ -27,6 +28,8 @@ const { Title, Text } = Typography;
 const API_DESCRIPTIONS: Record<string, string> = {
   'naver-geocode':
     '입력한 도로명/지번 주소를 Naver Cloud Platform 의 Maps Geocode API 로 전송하여 위도·경도 좌표로 변환합니다. backend 가 받은 응답을 가공 없이 raw JSON 그대로 노출하므로 좌표 변환 정확도와 API 키 동작을 직접 확인할 수 있습니다. 거래처 좌표 보강 배치(account-naver-geocode-batch)가 내부적으로 호출하는 것과 동일한 경로입니다. 조회 전용이라 DB 변경은 발생하지 않습니다.',
+  'claim-regist':
+    '입력한 파라미터로 클레임 등록 apiMap 을 구성하여 Salesforce Apex REST `/services/apexrest/mobile/ClaimRegist` 로 직접 POST 합니다. 레거시 Heroku FieldTalkController 가 클레임 등록 시 호출하던 것과 동일한 SF endpoint 이며, 운영 클레임 등록(dual-write)과 달리 본 테스트는 신규 DB(claim 테이블)에는 저장하지 않고 SF 로만 전송합니다. SF 가 돌려준 RESULT_CODE/RESULT_MSG 와 전송 payload 미리보기를 그대로 노출합니다. 이미지 3종은 모두 선택이며, 미첨부 시 빈 Buffer 로 전송됩니다.',
   'loan-inquiry':
     'SAP 거래처 코드(account.external_key)로 해당 거래처 1건의 여신 한도를 SAP 에서 동기(실시간) 조회합니다. 호출 즉시 실제 SAP 시스템으로 요청이 나가며 응답을 그대로 돌려받습니다. 조회 전용이라 신규 DB 상태 변경은 없고, sap_outbound_log 에 호출 흔적만 남습니다.',
   'order-request-detail':
@@ -82,6 +85,25 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           title="Naver Geocode — 주소 → 좌표 변환"
         />
         <NaverGeocodeTab />
+      </Space>
+    ),
+  },
+  {
+    key: 'claim-regist',
+    label: 'SF 클레임 등록',
+    children: (
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <ApiDescriptionAlert
+          apiKey="claim-regist"
+          title="SF ClaimRegist — 클레임 등록 전송"
+        />
+        <Alert
+          type="warning"
+          showIcon
+          message="이 탭은 실제 Salesforce 로 클레임을 INSERT 합니다."
+          description="'SF 전송' 버튼은 현재 환경의 SF Apex REST 로 호출이 전송되어 SF 에 클레임 row 가 생성됩니다 (테스트 잡데이터 주의). 신규 DB(claim 테이블)에는 저장하지 않습니다. SYSTEM_ADMIN 권한 필요."
+        />
+        <ClaimRegistTab />
       </Space>
     ),
   },
