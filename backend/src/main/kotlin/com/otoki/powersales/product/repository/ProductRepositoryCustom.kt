@@ -18,6 +18,18 @@ interface ProductRepositoryCustom {
     fun findByBarcode(barcode: String, pageable: Pageable): Page<ProductSearchRow>
 
     /**
+     * 주문 작성용 제품 검색 — 레거시 주문 `selectProduct`(searchWord) 정합.
+     * 단일 검색어를 제품명/제품코드/소비자 바코드(ProductBarcode.barcode) OR 부분일치로 매칭하며
+     * orderable 필터 + 선택적 중분류/소분류를 적용한다. 주문에 필요한 전체 필드를 함께 반환한다.
+     */
+    fun searchForOrder(
+        query: String,
+        category2: String?,
+        category3: String?,
+        pageable: Pageable
+    ): Page<ProductSearchRow>
+
+    /**
      * 레거시 제품추가 팝업(productMapper.xml `selectProduct`) 정합 — 제품명/바코드/중분류/소분류 조합 검색.
      * 모든 조건은 선택적이며, 모두 비어 있으면 orderable 제품 전체를 페이지로 반환한다.
      */

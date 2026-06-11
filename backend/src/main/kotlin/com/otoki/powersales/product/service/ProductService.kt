@@ -1,5 +1,6 @@
 package com.otoki.powersales.product.service
 
+import com.otoki.powersales.product.dto.response.OrderProductDto
 import com.otoki.powersales.product.dto.response.ProductCategoryGroup
 import com.otoki.powersales.product.dto.response.ProductDetail
 import com.otoki.powersales.product.dto.response.ProductDto
@@ -105,6 +106,37 @@ class ProductService(
         )
 
         return rowPage.map { ProductDto.from(it.product, it.barcode) }
+    }
+
+    /**
+     * 주문 작성용 제품 검색 — 레거시 주문 `selectProduct`(searchWord) 정합.
+     *
+     * 단일 검색어(제품명/제품코드/소비자 바코드 OR 부분일치)와 선택적 중분류/소분류로 검색하며,
+     * 주문 라인 생성에 필요한 단가/박스입수/전용·시식 차단값을 함께 반환한다.
+     *
+     * @param query 검색어 (제품명/제품코드/바코드)
+     * @param categoryMid 중분류(category2, 선택)
+     * @param categorySub 소분류(category3, 선택)
+     */
+    fun searchProductsForOrder(
+        query: String,
+        categoryMid: String?,
+        categorySub: String?,
+        page: Int,
+        size: Int
+    ): Page<OrderProductDto> {
+        validateTextQuery(query)
+        validatePagination(page, size)
+
+        val pageable = PageRequest.of(page, size)
+        val rowPage = productRepository.searchForOrder(
+            query = query.trim(),
+            category2 = categoryMid?.trim()?.ifBlank { null },
+            category3 = categorySub?.trim()?.ifBlank { null },
+            pageable = pageable
+        )
+
+        return rowPage.map { OrderProductDto.from(it.product, it.barcode) }
     }
 
     /**

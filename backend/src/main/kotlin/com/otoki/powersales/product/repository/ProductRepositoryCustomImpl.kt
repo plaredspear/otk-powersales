@@ -264,6 +264,41 @@ class ProductRepositoryCustomImpl(
         return pagedSearch(orderableProductFilter().and(searchPredicate), pageable)
     }
 
+    override fun searchForOrder(
+        query: String,
+        category2: String?,
+        category3: String?,
+        pageable: Pageable
+    ): Page<ProductSearchRow> {
+        // 레거시 주문 `searchWord`: name OR productCode OR 소비자 바코드(ProductBarcode.barcode) OR LIKE.
+        val lowerPattern = "%${query.lowercase()}%"
+        val rawPattern = "%$query%"
+
+        val barcodeLikeExists = JPAExpressions.selectOne()
+            .from(productBarcode)
+            .where(
+                productBarcode.productId.eq(product.id),
+                productBarcode.unit.eq(product.unit),
+                productBarcode.barcode.like(rawPattern),
+            )
+            .exists()
+
+        var where = orderableProductFilter().and(
+            product.name.lower().like(lowerPattern)
+                .or(product.productCode.lower().like(lowerPattern))
+                .or(barcodeLikeExists)
+        )
+
+        if (!category2.isNullOrBlank()) {
+            where = where.and(product.productCategory2.eq(category2))
+        }
+        if (!category3.isNullOrBlank()) {
+            where = where.and(product.productCategory3.eq(category3))
+        }
+
+        return pagedSearch(where, pageable)
+    }
+
     override fun findByBarcode(barcode: String, pageable: Pageable): Page<ProductSearchRow> {
         // 레거시 selectProduct: `b.productbarcode__c LIKE '%?%' AND a.dkretail__unit__c = b.productunit__c`.
         // 스캐너가 읽는 소비자 바코드는 ProductBarcode.barcode 에 저장되므로(물류 바코드 아님)
