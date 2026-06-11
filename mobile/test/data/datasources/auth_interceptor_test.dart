@@ -215,6 +215,51 @@ void main() {
       expect(localDS.accessToken, isNull);
     });
   });
+
+  group('취소된 요청 가드 (백그라운드 전환)', () {
+    test('취소 에러는 토큰 갱신/로그아웃 없이 그대로 전파한다(토큰 보존)', () async {
+      // 응답 대신 즉시 취소 에러를 방출하는 어댑터 — 백그라운드 cancelAll 을 모사.
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource()
+        ..accessToken = 'liveToken'
+        ..refreshToken = 'refreshTok';
+      d.interceptors.add(AuthInterceptor(localDataSource: localDS, dio: d));
+      d.httpClientAdapter = _CancelAdapter();
+
+      try {
+        await d.get('/api/v1/mobile/sales/summary');
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        // 취소 에러가 그대로 전파되어야 한다.
+        expect(e.type, DioExceptionType.cancel);
+      }
+
+      // 취소는 인증 실패가 아니므로 토큰이 보존되어야 한다(강제 로그아웃 X).
+      expect(localDS.accessToken, 'liveToken');
+      expect(localDS.refreshToken, 'refreshTok');
+    });
+
+    test('401 갱신 도중 요청이 취소되면 로그아웃하지 않고 토큰을 보존한다', () async {
+      // 보호 자원은 401, refresh 시도는 취소 에러를 던지는 어댑터.
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource()
+        ..accessToken = 'oldToken'
+        ..refreshToken = 'refreshTok';
+      d.interceptors.add(AuthInterceptor(localDataSource: localDS, dio: d));
+      d.httpClientAdapter = _Cancel401RefreshAdapter();
+
+      try {
+        await d.get('/api/v1/mobile/education/posts');
+        fail('Expected DioException');
+      } on DioException catch (_) {
+        // 에러 타입은 구현 상세이므로 단정하지 않는다 — 핵심은 토큰 보존이다.
+      }
+
+      // refresh 가 취소된 것은 인증 실패가 아니므로 토큰을 지우면 안 된다.
+      expect(localDS.accessToken, 'oldToken');
+      expect(localDS.refreshToken, 'refreshTok');
+    });
+  });
 }
 
 // --- Fakes ---
@@ -347,6 +392,53 @@ class _Mock401ExceptRefreshAdapter implements HttpClientAdapter {
       );
     }
     protectedCount++;
+    return ResponseBody.fromString(
+      '{"success":false,"data":null,"error":{"code":"UNAUTHORIZED","message":"인증이 필요합니다"}}',
+      401,
+      headers: {
+        'content-type': ['application/json; charset=utf-8'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// 모든 요청을 취소 에러(DioExceptionType.cancel)로 종결하는 어댑터.
+/// 백그라운드 전환 시 cancelAll() 로 진행 중 요청이 취소되는 상황을 모사한다.
+class _CancelAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    throw DioException.requestCancelled(
+      requestOptions: options,
+      reason: 'app lifecycle',
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// 보호 자원은 401, /auth/refresh 시도는 취소 에러로 종결하는 어댑터.
+/// 401 → 토큰 갱신 진행 중에 백그라운드 전환으로 갱신이 취소되는 상황을 모사한다.
+class _Cancel401RefreshAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    if (options.path.contains('/auth/refresh')) {
+      throw DioException.requestCancelled(
+        requestOptions: options,
+        reason: 'app lifecycle',
+      );
+    }
     return ResponseBody.fromString(
       '{"success":false,"data":null,"error":{"code":"UNAUTHORIZED","message":"인증이 필요합니다"}}',
       401,

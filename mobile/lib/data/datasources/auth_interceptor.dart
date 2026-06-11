@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import '../../app_router.dart';
 import '../../core/navigation/navigator_key.dart';
+import '../../core/network/request_cancel_controller.dart';
 import '../../core/session/session_reset_controller.dart';
 import 'auth_local_datasource.dart';
 
@@ -51,6 +52,13 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
+    // 앱 백그라운드/종료 전환으로 취소된 요청은 인증 실패가 아니다.
+    // 토큰 갱신/강제 로그아웃 대상으로 처리하면 안 되므로(원치 않는 로그아웃 방지)
+    // 토큰을 보존한 채 취소 에러를 그대로 전파한다. (auth_provider 와 동일 정책)
+    if (isRequestCancelled(err)) {
+      return handler.next(err);
+    }
+
     final response = err.response;
     if (response == null) {
       return handler.next(err);
@@ -94,6 +102,12 @@ class AuthInterceptor extends Interceptor {
     try {
       final newToken = await _refreshAccessToken();
       if (newToken == null) {
+        // 갱신을 대기하던 동시 요청이 그 사이 취소됐으면(백그라운드 전환) 로그아웃하지
+        // 않는다. 갱신 주도 요청의 취소는 _refreshAccessToken 이 rethrow 해 아래
+        // catch 에서 처리되고, 대기 요청은 여기서 자신의 취소 여부로 가드한다.
+        if (err.requestOptions.cancelToken?.isCancelled == true) {
+          return handler.next(err);
+        }
         await _forceLogout();
         return handler.next(err);
       }
@@ -104,7 +118,12 @@ class AuthInterceptor extends Interceptor {
       options.extra[_retriedKey] = true;
       final retryResponse = await _dio.fetch(options);
       handler.resolve(retryResponse);
-    } catch (_) {
+    } catch (e) {
+      // 재시도가 백그라운드 전환으로 취소된 경우 — 인증 실패가 아니므로 로그아웃하지
+      // 않고 토큰을 보존한다. 재개 후 재요청 시 정상 갱신/재시도가 가능하다.
+      if (isRequestCancelled(e)) {
+        return handler.next(err);
+      }
       await _forceLogout();
       handler.next(err);
     }
@@ -146,7 +165,14 @@ class AuthInterceptor extends Interceptor {
       _refreshCompleter!.complete(newAccessToken);
       return newAccessToken;
     } catch (e) {
+      // 갱신 요청 자체가 취소된 경우(백그라운드 전환) — null(인증 실패)로 환원하면
+      // 호출자가 _forceLogout 으로 빠진다. 취소는 실패가 아니므로 예외를 전파해
+      // _handle401 의 취소 가드가 토큰을 보존하도록 한다. 대기 중인 동시 요청은
+      // null 로 완료시켜 각자 자신의 취소 경로를 타게 한다.
       _refreshCompleter!.complete(null);
+      if (isRequestCancelled(e)) {
+        rethrow;
+      }
       return null;
     } finally {
       _isRefreshing = false;
