@@ -38,7 +38,7 @@ data class MobilePromotionListItem(
         ): MobilePromotionListItem = MobilePromotionListItem(
             id = promotion.id,
             promotionNumber = promotion.promotionNumber,
-            promotionName = buildPromotionName(promotion.productType?.displayName, primaryProductName),
+            promotionName = buildPromotionName(promotion.productType, primaryProductName),
             promotionType = promotion.promotionType?.displayName,
             accountName = accountName,
             startDate = promotion.startDate,
@@ -90,8 +90,11 @@ data class MobilePromotionDetailResponse(
     val targetAmount: Long?,
     /**
      * 행사 실적(달성)금액. 레거시 Heroku `promotion/event/view.jsp` 매출탭 "달성 금액"
-     * 동등. 신규 시스템 표준 컬럼 `dkActualAmount`(`DKRetail__ActualAmount__c`) 사용
-     * (웹 어드민 행사 상세와 정합). 달성률은 모바일에서 actual/target 으로 파생.
+     * 동등. SF `DKRetail__ActualAmount__c` 는 전 조원
+     * `PromotionEmployee.DailyActualSalesAmount__c`(= 대표품목 매출 + 기타매출) 의
+     * Roll-Up SUM 이므로, 신규에서도 동일하게 조원 일별 실적 합으로 산출한다.
+     * (동기화 스칼라 `dkActualAmount` 는 Spec #740 으로 갱신 로직 제거되어 stale.)
+     * 달성률은 모바일에서 actual/target 으로 파생.
      */
     val actualAmount: Long?,
     val employees: List<MobilePromotionEmployeeItem>
@@ -107,7 +110,7 @@ data class MobilePromotionDetailResponse(
             promotionNumber = promotion.promotionNumber,
             promotionType = promotion.promotionType?.displayName,
             promotionName = MobilePromotionListItem.buildPromotionName(
-                promotion.productType?.displayName,
+                promotion.productType,
                 primaryProductName
             ),
             accountId = promotion.account!!.id,
@@ -118,11 +121,12 @@ data class MobilePromotionDetailResponse(
             otherProduct = promotion.otherProduct,
             message = promotion.message,
             standLocation = promotion.standLocation?.displayName,
-            productType = promotion.productType?.displayName,
+            productType = promotion.productType,
             isClosed = promotion.isClosed,
             remark = promotion.remark,
             targetAmount = promotion.dkTargetAmount?.toLong(),
-            actualAmount = promotion.dkActualAmount?.toLong(),
+            // SF ActualAmount__c Roll-Up SUM 재현: 조원 일별 실적(0=null 처리됨) 합산.
+            actualAmount = employees.sumOf { it.actualAmount ?: 0L },
             employees = employees
         )
     }

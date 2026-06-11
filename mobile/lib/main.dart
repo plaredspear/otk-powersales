@@ -110,6 +110,16 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     // 막기 위해 마지막 네비게이션 라우트를 login 으로 맞춰둔다.
     if (widget.startAtLogin) {
       _lastAuthRoute = AppRouter.login;
+      // 전역 navigatorKey(GlobalKey)는 ProviderScope 재생성에도 보존되므로, 새 MaterialApp 의
+      // initialRoute(login)가 무시되고 기존 Navigator 의 홈 스택이 그대로 재사용된다.
+      // 그 결과 화면은 홈에 남고 Provider 만 비워져 영구 로딩에 갇힌다.
+      // 재사용된 Navigator 를 명시적으로 로그인으로 리셋해 옛 홈 스택을 폐기한다.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          AppRouter.login,
+          (route) => false,
+        );
+      });
     }
     WidgetsBinding.instance.addObserver(this);
     // 인증 초기화(자동 로그인)는 SplashScreen 이 버전 게이트 통과 후 호출한다.
