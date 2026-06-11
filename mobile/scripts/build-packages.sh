@@ -169,10 +169,21 @@ build_one() { # <make-target>
 ENVS=()
 case "$ENV" in dev) ENVS=(dev) ;; prod) ENVS=(prod) ;; all) ENVS=(dev prod) ;; esac
 
+# ── 기존 빌드 산출물 정리 (stale 산출물 방지) ───────────────────────
+# 이전 빌드의 APK/IPA 와 빌드 캐시(.dart_tool, build/)가 남아 있으면 (1) Flutter/
+# Gradle 의 incremental 빌드가 산출물 갱신을 건너뛰어 구 소스 기반 산출물이 그대로
+# 남거나, (2) 빌드가 갱신에 실패해도 디렉토리의 구 APK 가 그대로 복사되어, 파일명은
+# 신버전인데 내용은 구버전인 패키지가 배포될 수 있다. 매 빌드 전 clean 으로
+# .dart_tool + build/ 를 통째로 지워 항상 현재 소스 기준으로 새로 빌드한다.
+# (make clean = flutter clean + rm -rf .dart_tool build)
+info "기존 빌드 산출물 정리 (make clean — 이전 APK/IPA + 캐시 삭제)"
+make clean
+
 # 산출물 공통 폴더. 빌드는 Flutter 기본 위치에 생성되고(원본 보존), 빌드 직후
 # build/dist 로 복사하며 <base>-<flavor>-<version> 으로 파일명을 정규화한다.
 # IPA 는 flavor 무관하게 build/ios/ipa/mobile.ipa 한 이름으로 덮여 생성되므로,
 # 다음 flavor 빌드가 덮어쓰기 전에 flavor 별 빌드 직후 즉시 복사해야 한다.
+# 위 make clean 이 build/ 를 통째로 지우므로 여기서 다시 생성한다.
 DIST_DIR="$MOBILE_DIR/build/dist"
 mkdir -p "$DIST_DIR"
 
