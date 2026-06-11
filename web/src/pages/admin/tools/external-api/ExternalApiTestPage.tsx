@@ -3,6 +3,7 @@ import { Alert, Space, Tabs, Tag, Typography } from 'antd';
 import type { TabsProps } from 'antd';
 import NaverGeocodeTab from './NaverGeocodeTab';
 import ClaimRegistTab from './ClaimRegistTab';
+import IntegrationInfoDescriptions from './IntegrationInfoDescriptions';
 import SapOutboundSenderCard from '../sap-outbound/SapOutboundSenderCard';
 import {
   SENDER_CONFIGS,
@@ -84,6 +85,7 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           apiKey="naver-geocode"
           title="Naver Geocode — 주소 → 좌표 변환"
         />
+        <IntegrationInfoDescriptions apiKey="naver-geocode" />
         <NaverGeocodeTab />
       </Space>
     ),
@@ -97,6 +99,7 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           apiKey="claim-regist"
           title="SF ClaimRegist — 클레임 등록 전송"
         />
+        <IntegrationInfoDescriptions apiKey="claim-regist" />
         <Alert
           type="warning"
           showIcon
@@ -117,6 +120,7 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           title={config.title}
           triggerTag={config.triggerTag}
         />
+        <IntegrationInfoDescriptions apiKey={config.kind} />
         <Alert
           type="warning"
           showIcon

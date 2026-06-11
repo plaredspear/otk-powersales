@@ -20,6 +20,38 @@ vi.mock('@/api/claims', () => ({
   testClaimRegist: (...args: unknown[]) => testClaimRegistMock(...args),
 }));
 
+const fetchIntegrationInfoMock = vi.fn();
+vi.mock('@/api/admin/externalApiIntegrationInfo', () => ({
+  fetchExternalApiIntegrationInfo: () => fetchIntegrationInfoMock(),
+}));
+
+const INTEGRATION_INFO_ITEMS = [
+  {
+    key: 'naver-geocode',
+    externalSystem: 'Naver Cloud Platform (Maps Geocode)',
+    endpoint: 'https://maps.apigw.ntruss.com/map-geocode/v2/geocode',
+    httpMethod: 'GET',
+    authType: 'NCP API Key',
+    note: 'query 파라미터로 주소 전송',
+  },
+  {
+    key: 'claim-regist',
+    externalSystem: 'Salesforce (Apex REST)',
+    endpoint: 'https://ottogi.my.salesforce.com/services/apexrest/mobile/ClaimRegist',
+    httpMethod: 'POST',
+    authType: 'OAuth2 Password Grant (Bearer)',
+    note: 'Content-Type: application/json',
+  },
+  {
+    key: 'loan-inquiry',
+    externalSystem: 'SAP (여신 한도 조회)',
+    endpoint: 'https://sap.example.com/LoanInquiry',
+    httpMethod: 'POST',
+    authType: 'HTTP Basic',
+    note: 'interfaceId: LoanInquiry',
+  },
+];
+
 function renderPage() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -37,6 +69,8 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
   beforeEach(() => {
     mutateAsyncMock.mockReset();
     testClaimRegistMock.mockReset();
+    fetchIntegrationInfoMock.mockReset();
+    fetchIntegrationInfoMock.mockResolvedValue({ items: INTEGRATION_INFO_ITEMS });
     mutationState.isPending = false;
   });
 
@@ -59,6 +93,27 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText('empcode (SFID 아님)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'SF 전송' })).toBeInTheDocument();
+  });
+
+  it('H5 - 각 탭에 외부 시스템 연동 정보(endpoint/method/인증)가 노출', async () => {
+    renderPage();
+    // 기본 탭(naver) — endpoint/method
+    expect(
+      await screen.findByText('https://maps.apigw.ntruss.com/map-geocode/v2/geocode'),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('GET').length).toBeGreaterThan(0);
+
+    // SF 클레임 등록 탭 — SF Apex endpoint
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('tab', { name: 'SF 클레임 등록' }));
+    expect(
+      await screen.findByText(
+        'https://ottogi.my.salesforce.com/services/apexrest/mobile/ClaimRegist',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('OAuth2 Password Grant (Bearer)'),
+    ).toBeInTheDocument();
   });
 
   it('H2 - 기본 탭(Naver)에서 주소 변환 시 raw JSON 응답을 출력', async () => {
