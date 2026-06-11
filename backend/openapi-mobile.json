@@ -4110,6 +4110,10 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
+          "actualAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "closed" : {
             "type" : "boolean"
           },
@@ -4154,6 +4158,10 @@
           "startDate" : {
             "format" : "date",
             "type" : "string"
+          },
+          "targetAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           }
         },
         "type" : "object"
