@@ -9817,7 +9817,21 @@
           "androidDownloadUrl" : {
             "type" : [ "string", "null" ]
           },
+          "androidLatestVersionCode" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "androidLatestVersionName" : {
+            "type" : [ "string", "null" ]
+          },
           "iosInstallUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "iosLatestVersionCode" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "iosLatestVersionName" : {
             "type" : [ "string", "null" ]
           }
         },
