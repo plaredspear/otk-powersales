@@ -38,6 +38,9 @@ class LeaderDailyStatusSummary {
 /// 진열/행사 근무자 1건(여사원 × 거래처 일정).
 class LeaderDailyWorker {
   final int scheduleId;
+
+  /// 진열 거래처 대리출근 등록용 진열 마스터 ID(진열 행만). 행사 행은 null.
+  final int? displayWorkScheduleId;
   final int? employeeId;
   final String employeeName;
   final String employeeCode;
@@ -50,6 +53,7 @@ class LeaderDailyWorker {
 
   const LeaderDailyWorker({
     required this.scheduleId,
+    this.displayWorkScheduleId,
     this.employeeId,
     required this.employeeName,
     required this.employeeCode,

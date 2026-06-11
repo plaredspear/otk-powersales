@@ -42,6 +42,19 @@ class LeaderScheduleRepositoryImpl implements LeaderScheduleRepository {
   }
 
   @override
+  Future<void> registerProxyAttendance({
+    required int targetEmployeeId,
+    int? scheduleId,
+    int? displayWorkScheduleId,
+  }) {
+    return _dataSource.registerProxyAttendance(
+      targetEmployeeId: targetEmployeeId,
+      scheduleId: scheduleId,
+      displayWorkScheduleId: displayWorkScheduleId,
+    );
+  }
+
+  @override
   Future<List<LeaderAccount>> getAccounts({String? keyword}) async {
     final models = await _dataSource.getAccounts(keyword: keyword);
     return models.map((m) => m.toEntity()).toList();

@@ -51,6 +51,21 @@ class LeaderScheduleApiDataSource {
     );
   }
 
+  /// 조장 대리출근 등록. 진열=displayWorkScheduleId, 행사·기배정=scheduleId 중 하나 전달.
+  Future<void> registerProxyAttendance({
+    required int targetEmployeeId,
+    int? scheduleId,
+    int? displayWorkScheduleId,
+  }) async {
+    final body = <String, dynamic>{'targetEmployeeId': targetEmployeeId};
+    if (displayWorkScheduleId != null) {
+      body['displayWorkScheduleId'] = displayWorkScheduleId;
+    } else if (scheduleId != null) {
+      body['scheduleId'] = scheduleId;
+    }
+    await _dio.post('/api/v1/mobile/leader/attendance', data: body);
+  }
+
   /// 여사원 월간 일정 캘린더 (레거시 mgnSchedule). [employeeId] null 이면 "여사원 전체".
   Future<LeaderMonthlyCalendar> getMonthlyCalendar({
     int? employeeId,

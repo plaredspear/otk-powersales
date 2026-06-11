@@ -16,8 +16,16 @@ abstract class LeaderScheduleRepository {
     required int month,
   });
 
-  /// 여사원 일별 현황 조회 (조회 전용). [date] 기준 진열/행사/연차 + 출근 현황.
+  /// 여사원 일별 현황 조회. [date] 기준 진열/행사/연차 + 출근 현황.
   Future<LeaderDailyStatus> getDailyStatus(DateTime date);
+
+  /// 조장 대리출근 등록 (레거시 mngDaily addScheduleProc).
+  /// 진열=[displayWorkScheduleId], 행사·기배정=[scheduleId] 중 하나 전달.
+  Future<void> registerProxyAttendance({
+    required int targetEmployeeId,
+    int? scheduleId,
+    int? displayWorkScheduleId,
+  });
 
   /// 조장 본인 거래처 목록 조회. [keyword] 부분 일치 검색 (선택).
   Future<List<LeaderAccount>> getAccounts({String? keyword});

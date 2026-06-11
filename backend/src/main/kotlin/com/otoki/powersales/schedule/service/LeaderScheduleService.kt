@@ -11,7 +11,9 @@ import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmploymentStatus
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.schedule.dto.request.LeaderProxyAttendanceRequest
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
+import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
 import com.otoki.powersales.schedule.dto.response.LeaderDailyEmployeeItem
 import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusResponse
@@ -60,7 +62,8 @@ class LeaderScheduleService(
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
     private val scheduleConflictValidator: ScheduleConflictValidator,
-    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
+    private val attendanceService: AttendanceService
 ) {
 
     companion object {
@@ -142,6 +145,37 @@ class LeaderScheduleService(
         // step 11: 저장 + 응답
         val saved = teamMemberScheduleRepository.save(newSchedule)
         return LeaderScheduleCreateResponse.from(saved)
+    }
+
+    /**
+     * 조장 대리출근 등록 (레거시 mngDaily `addScheduleProc` 동등).
+     *
+     * 조장 권한 + 대상이 조장 팀원(cost_center_code 일치) 검증 후, 실제 출근 등록은
+     * [AttendanceService.registerProxy] 에 위임 (Orora WorkReport 경로 공유, GPS 스킵).
+     */
+    @Transactional
+    fun registerProxyAttendance(
+        registrantId: Long,
+        request: LeaderProxyAttendanceRequest
+    ): AttendanceRegisterResponse {
+        val registrant = findRegistrant(registrantId)
+        requireLeader(registrant)
+
+        val targetEmployeeId = request.targetEmployeeId
+            ?: throw LeaderScheduleTargetEmployeeNotFoundException()
+        val targetEmployee = employeeRepository.findById(targetEmployeeId)
+            .orElseThrow { LeaderScheduleTargetEmployeeNotFoundException() }
+
+        // 팀원 검증 (조장 코스트센터 일치)
+        if (targetEmployee.costCenterCode != registrant.costCenterCode) {
+            throw LeaderScheduleNotTeamMemberException()
+        }
+
+        return attendanceService.registerProxy(
+            targetEmployee = targetEmployee,
+            scheduleId = request.scheduleId,
+            displayWorkScheduleId = request.displayWorkScheduleId
+        )
     }
 
     fun getTeamMembers(registrantId: Long): List<LeaderTeamMemberListResponse> {
@@ -431,6 +465,7 @@ class LeaderScheduleService(
     private fun TeamMemberSchedule.toWorkerItem(): LeaderDailyWorkerItem =
         LeaderDailyWorkerItem(
             scheduleId = id,
+            displayWorkScheduleId = null,
             employeeId = employee?.id,
             employeeName = employee?.name.orEmpty(),
             employeeCode = employee?.employeeCode.orEmpty(),
@@ -454,6 +489,7 @@ class LeaderScheduleService(
         val accId = account?.id
         return LeaderDailyWorkerItem(
             scheduleId = 0L,
+            displayWorkScheduleId = id,
             employeeId = empId,
             employeeName = employee?.name.orEmpty(),
             employeeCode = employee?.employeeCode.orEmpty(),

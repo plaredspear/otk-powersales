@@ -373,6 +373,26 @@ class LeaderDailyStatusNotifier extends StateNotifier<LeaderDailyStatusState> {
     state = state.copyWith(searchKeyword: keyword);
   }
 
+  /// 조장 대리출근 등록 후 재조회. 성공 시 null, 실패 시 에러 메시지 반환.
+  /// 진열=[displayWorkScheduleId], 행사·기배정=[scheduleId] 중 하나 전달.
+  Future<String?> registerProxyAttendance({
+    required int targetEmployeeId,
+    int? scheduleId,
+    int? displayWorkScheduleId,
+  }) async {
+    try {
+      await _repository.registerProxyAttendance(
+        targetEmployeeId: targetEmployeeId,
+        scheduleId: scheduleId,
+        displayWorkScheduleId: displayWorkScheduleId,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      return extractErrorMessage(e);
+    }
+  }
+
   /// 에러 메시지 1회성 소비(SnackBar 표시 후 호출).
   void clearError() => state = state.copyWith(clearError: true);
 }

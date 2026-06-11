@@ -252,6 +252,13 @@ class _LeaderDailyStatusScreenState
   ) {
     final loadingOrError = _loadingOrError(state);
 
+    // 대리등록 가능 조건: 조회 날짜가 오늘 + 17시 이전 (레거시 mngDaily 동일).
+    final now = DateTime.now();
+    final sel = state.selectedDate;
+    final isToday =
+        sel.year == now.year && sel.month == now.month && sel.day == now.day;
+    final canRegister = isToday && now.hour < 17;
+
     final sections = <Widget>[];
     void addGroups(List<_GroupedWorker> groups, String category) {
       for (final g in groups) {
@@ -259,7 +266,15 @@ class _LeaderDailyStatusScreenState
             ? g.rows.where((r) => !r.attended).toList()
             : g.rows;
         if (rows.isEmpty) continue;
-        sections.add(_RegisterPersonBand(name: g.employeeName, category: category));
+        // 한 곳이라도 미등록인 사람에게만 등록 버튼 노출 (레거시 c 규칙).
+        final hasUnregistered = g.rows.any((r) => !r.attended);
+        sections.add(_RegisterPersonBand(
+          name: g.employeeName,
+          category: category,
+          onRegister: (canRegister && hasUnregistered)
+              ? () => _openProxyRegisterSheet(g)
+              : null,
+        ));
         for (final r in rows) {
           sections.add(_RegisterAccountRow(row: r));
         }
@@ -308,6 +323,53 @@ class _LeaderDailyStatusScreenState
         ),
       ],
     );
+  }
+
+  /// 대리출근 등록 시트 — 해당 여사원의 미등록 거래처를 선택해 일괄 등록.
+  /// 레거시 mngDaily addSchedule(체크박스 목록) 동등.
+  void _openProxyRegisterSheet(_GroupedWorker group) {
+    throttledTapAsync(() async {
+      final unregistered = group.rows.where((r) => !r.attended).toList();
+      if (unregistered.isEmpty) return;
+      final employeeId = group.rows.first.employeeId;
+      if (employeeId == null) return;
+
+      final selected = await showModalBottomSheet<List<LeaderDailyWorker>>(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
+        ),
+        builder: (_) => _ProxyRegisterSheet(
+          employeeName: group.employeeName,
+          accounts: unregistered,
+        ),
+      );
+      if (selected == null || selected.isEmpty || !mounted) return;
+
+      final notifier = ref.read(leaderDailyStatusProvider.notifier);
+      String? firstError;
+      var successCount = 0;
+      for (final r in selected) {
+        final err = await notifier.registerProxyAttendance(
+          targetEmployeeId: employeeId,
+          scheduleId: r.displayWorkScheduleId == null ? r.scheduleId : null,
+          displayWorkScheduleId: r.displayWorkScheduleId,
+        );
+        if (err != null) {
+          firstError = err;
+          break;
+        }
+        successCount++;
+      }
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(SnackBar(
+        content: Text(firstError ??
+            '$successCount건 대리출근 등록이 완료되었습니다.'),
+      ));
+    });
   }
 
   /// 최초 로드 중/실패 시 표시 위젯, 데이터 보유 시 null.
@@ -893,12 +955,19 @@ class _UnregisteredFilterBar extends StatelessWidget {
   }
 }
 
-/// 등록 탭 사람별 밴드 — "이름 (진열/행사)" (레거시 list_title).
+/// 등록 탭 사람별 밴드 — "이름 (진열/행사)" + (조건부) 등록 버튼 (레거시 list_title + 등록).
 class _RegisterPersonBand extends StatelessWidget {
   final String name;
   final String category;
 
-  const _RegisterPersonBand({required this.name, required this.category});
+  /// 대리출근 등록 콜백. null 이면 버튼 미노출(레거시: 미등록 1곳 이상 + 당일 17시 전).
+  final VoidCallback? onRegister;
+
+  const _RegisterPersonBand({
+    required this.name,
+    required this.category,
+    this.onRegister,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -909,11 +978,147 @@ class _RegisterPersonBand extends StatelessWidget {
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
-      child: Text(
-        '$name ($category)',
-        style: AppTypography.bodyMedium.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '$name ($category)',
+              style: AppTypography.bodyMedium.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          if (onRegister != null)
+            InkWell(
+              onTap: onRegister,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xxs,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  border: Border.all(color: AppColors.secondary),
+                ),
+                child: Text(
+                  '등록',
+                  style: AppTypography.labelSmall.copyWith(
+                    color: AppColors.secondary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 대리출근 등록 바텀시트 — 여사원의 미등록 거래처 다중 선택(기본 전체 선택) 후 등록.
+class _ProxyRegisterSheet extends StatefulWidget {
+  final String employeeName;
+  final List<LeaderDailyWorker> accounts;
+
+  const _ProxyRegisterSheet({
+    required this.employeeName,
+    required this.accounts,
+  });
+
+  @override
+  State<_ProxyRegisterSheet> createState() => _ProxyRegisterSheetState();
+}
+
+class _ProxyRegisterSheetState extends State<_ProxyRegisterSheet> {
+  late final Set<int> _selected; // accounts 인덱스 집합
+
+  @override
+  void initState() {
+    super.initState();
+    // 기본 전체 선택 (레거시 addSchedule 미등록 항목 일괄).
+    _selected = {for (var i = 0; i < widget.accounts.length; i++) i};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${widget.employeeName} 대리출근 등록',
+              style: AppTypography.bodyLarge.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '등록할 거래처를 선택하세요. 안전점검 미완료 거래처는 등록되지 않습니다.',
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: widget.accounts.length,
+                itemBuilder: (context, i) {
+                  final a = widget.accounts[i];
+                  final checked = _selected.contains(i);
+                  return CheckboxListTile(
+                    value: checked,
+                    activeColor: AppColors.secondary,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(
+                      a.accountName,
+                      style: AppTypography.bodyMedium
+                          .copyWith(color: AppColors.textPrimary),
+                    ),
+                    subtitle: a.workCategoryLabel.isEmpty
+                        ? null
+                        : Text(
+                            a.workCategoryLabel,
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.textSecondary),
+                          ),
+                    onChanged: (v) => setState(() {
+                      if (v == true) {
+                        _selected.add(i);
+                      } else {
+                        _selected.remove(i);
+                      }
+                    }),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondary,
+                  foregroundColor: AppColors.white,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                ),
+                onPressed: _selected.isEmpty
+                    ? null
+                    : () => Navigator.of(context).pop(
+                          [for (final i in _selected) widget.accounts[i]],
+                        ),
+                child: Text('등록 (${_selected.length})'),
+              ),
+            ),
+          ],
         ),
       ),
     );

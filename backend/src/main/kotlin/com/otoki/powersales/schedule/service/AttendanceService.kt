@@ -336,6 +336,150 @@ class AttendanceService(
     }
 
     /**
+     * 조장 대리출근 등록 (레거시 mngDaily `addScheduleProc` 동등).
+     *
+     * 본인 출근 등록([register])과의 차이:
+     * - **GPS 거리 검증 없음** (조장은 현장에 없음 — 레거시 addScheduleProc 동일).
+     * - 안전점검 완료 검증 대상이 **대상 여사원([targetEmployee])** 의 당일 안전점검.
+     * - 시간 제한(서울 17:00) 은 서버에서 동일하게 재검증.
+     *
+     * 진열=displayWorkScheduleId(마스터→TMS 동적 생성/재사용), 행사·기배정=scheduleId 분기.
+     * 조장 권한/팀원 검증은 호출부([LeaderScheduleService.registerProxyAttendance]) 책임.
+     */
+    @Transactional
+    fun registerProxy(
+        targetEmployee: com.otoki.powersales.employee.entity.Employee,
+        scheduleId: Long?,
+        displayWorkScheduleId: Long?,
+    ): AttendanceRegisterResponse {
+        // 타깃 식별자 배타 검증
+        val nonNullCount = listOf(scheduleId, displayWorkScheduleId).count { it != null }
+        if (nonNullCount == 0) throw AttendanceTargetRequiredException()
+        if (nonNullCount > 1) throw AttendanceTargetConflictException()
+
+        // 시간 제한: 17시 이후 차단 (서버 재검증)
+        val now = LocalTime.now(clock.withZone(SEOUL_ZONE))
+        if (!now.isBefore(REGISTRATION_DEADLINE)) {
+            throw AttendanceTimeExceededException()
+        }
+
+        val today = LocalDate.now()
+
+        // 대휴 충돌 검증
+        if (teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(targetEmployee, today, WorkingType.ALT_HOLIDAY)) {
+            throw AttendanceDayOffConflictException()
+        }
+
+        // 대상 여사원 안전점검 완료 검증 (레거시 surveyCnt='Y')
+        if (!safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(targetEmployee.id, today)) {
+            throw SafetyCheckRequiredException()
+        }
+
+        // 스케줄 해석 (진열=마스터 기반 동적 생성, 행사·기배정=scheduleId)
+        val resolved = when {
+            scheduleId != null -> resolveByScheduleId(scheduleId)
+            else -> resolveByDisplayWorkSchedule(displayWorkScheduleId!!, targetEmployee, today)
+        }
+        val teamMemberSchedule = resolved.schedule
+        val displayMaster = resolved.displayMaster
+        val newlyCreated = resolved.newlyCreated
+
+        // scheduleId 분기는 대상 여사원 본인 스케줄인지 확인 (타인 스케줄 등록 차단)
+        if (scheduleId != null && teamMemberSchedule.employee?.id != targetEmployee.id) {
+            throw TeamMemberScheduleNotFoundException()
+        }
+
+        // 중복 등록 검증
+        if (teamMemberSchedule.attendanceLog != null) {
+            if (displayMaster != null) throw DisplayAttendanceDuplicateException()
+            else throw AlreadyRegisteredException()
+        }
+
+        // GPS 거리 검증 없음 (대리등록)
+
+        // 안전점검 데이터 기반 Orora WorkReport 전송 (본인 등록과 동일 경로)
+        val safetyCheckSubmission = safetyCheckSubmissionRepository
+            .findByEmployeeIdAndWorkingDate(targetEmployee.id, today)
+            .orElse(null)
+
+        val request = OroraWorkReportRequest(
+            scheduleId = teamMemberSchedule.id,
+            equipment1 = safetyCheckSubmission?.equipment1,
+            equipment2 = safetyCheckSubmission?.equipment2,
+            equipment3 = safetyCheckSubmission?.equipment3,
+            equipment4 = safetyCheckSubmission?.equipment4,
+            equipment5 = safetyCheckSubmission?.equipment5,
+            equipment6 = safetyCheckSubmission?.equipment6,
+            equipment7 = safetyCheckSubmission?.equipment7,
+            equipment8 = safetyCheckSubmission?.equipment8,
+            equipment9 = safetyCheckSubmission?.equipment9,
+            yesCount = safetyCheckSubmission?.yesCheckCount,
+            noCount = safetyCheckSubmission?.noCheckCount,
+            startTime = safetyCheckSubmission?.startTime?.toString(),
+            completeTime = safetyCheckSubmission?.completeTime?.toString(),
+            precaution = safetyCheckSubmission?.precaution,
+            precautionCount = safetyCheckSubmission?.precautionCheckCount,
+            traversalFlag = safetyCheckSubmission?.traversalFlag
+        )
+        ororaApiService.sendWorkReport(request)
+
+        // 후속 처리: completeWorkYn='Y' + TMS 안전점검 데이터 반영 (본인 등록과 동일)
+        if (safetyCheckSubmission != null) {
+            safetyCheckSubmission.completeWorkYn = "Y"
+            safetyCheckSubmissionRepository.save(safetyCheckSubmission)
+
+            teamMemberScheduleRepository.updateSafetyCheckData(
+                id = teamMemberSchedule.id,
+                equipment1 = safetyCheckSubmission.equipment1,
+                equipment2 = safetyCheckSubmission.equipment2,
+                equipment3 = safetyCheckSubmission.equipment3,
+                equipment4 = safetyCheckSubmission.equipment4,
+                equipment5 = safetyCheckSubmission.equipment5,
+                equipment6 = safetyCheckSubmission.equipment6,
+                equipment7 = safetyCheckSubmission.equipment7,
+                equipment8 = safetyCheckSubmission.equipment8,
+                equipment9 = safetyCheckSubmission.equipment9,
+                yesChkCnt = safetyCheckSubmission.yesCheckCount?.toDouble(),
+                noChkCnt = safetyCheckSubmission.noCheckCount?.toDouble(),
+                startTime = safetyCheckSubmission.startTime,
+                completeTime = safetyCheckSubmission.completeTime,
+                precaution = safetyCheckSubmission.precaution,
+                precautionChk = safetyCheckSubmission.precautionCheckCount?.toDouble(),
+                traversalFlag = safetyCheckSubmission.traversalFlag
+            )
+        }
+
+        // 동적 생성 시 월별여사원 통합일정 갱신
+        val account = teamMemberSchedule.account
+        if (newlyCreated && account != null) {
+            adminMonthlyIntegrationService.refreshIntegration(
+                employeeId = targetEmployee.id,
+                accountId = account.id,
+                yearMonth = YearMonth.from(today)
+            )
+        }
+
+        // 출근 현황 집계
+        val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(targetEmployee.id, today)
+        val totalCount = todayTeamMemberSchedules.size
+        val registeredCount = todayTeamMemberSchedules.count { it.attendanceLog != null || it.id == teamMemberSchedule.id }
+
+        return AttendanceRegisterResponse(
+            scheduleId = teamMemberSchedule.id,
+            accountName = account?.name ?: "",
+            workType = teamMemberSchedule.workingType?.displayName,
+            distanceKm = 0.0,
+            totalCount = totalCount,
+            registeredCount = registeredCount,
+            gpsSkipped = true, // 대리등록은 GPS 미적용
+            attendanceType = if (displayMaster != null) AttendanceType.DISPLAY else AttendanceType.REGULAR,
+            displayWorkScheduleId = displayMaster?.id,
+            scheduleStartDate = displayMaster?.startDate,
+            scheduleEndDate = displayMaster?.endDate,
+        )
+    }
+
+    /**
      * 출근 현황 조회
      */
     fun getStatus(userId: Long): AttendanceStatusResponse {
