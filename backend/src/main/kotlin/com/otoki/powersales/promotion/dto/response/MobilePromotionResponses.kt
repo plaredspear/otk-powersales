@@ -77,6 +77,18 @@ data class MobilePromotionDetailResponse(
     val productType: String?,
     val isClosed: Boolean,
     val remark: String?,
+    /**
+     * 행사 목표금액. 레거시 Heroku `promotion/event/view.jsp` 매출탭 "목표 금액"
+     * (SF `PromotionSearch` 응답 `TargetAmount` = `DKRetail__TargetAmount__c`) 동등.
+     * SF rollup 동기화 스칼라 컬럼 `dkTargetAmount`.
+     */
+    val targetAmount: Long?,
+    /**
+     * 행사 실적(달성)금액. 레거시 Heroku `promotion/event/view.jsp` 매출탭 "달성 금액"
+     * 동등. 신규 시스템 표준 컬럼 `dkActualAmount`(`DKRetail__ActualAmount__c`) 사용
+     * (웹 어드민 행사 상세와 정합). 달성률은 모바일에서 actual/target 으로 파생.
+     */
+    val actualAmount: Long?,
     val employees: List<MobilePromotionEmployeeItem>
 ) {
     companion object {
@@ -100,6 +112,8 @@ data class MobilePromotionDetailResponse(
             productType = promotion.productType?.displayName,
             isClosed = promotion.isClosed,
             remark = promotion.remark,
+            targetAmount = promotion.dkTargetAmount?.toLong(),
+            actualAmount = promotion.dkActualAmount?.toLong(),
             employees = employees
         )
     }
@@ -166,8 +180,12 @@ data class MobilePromotionEmployeeItem(
                 scheduleDate = entity.scheduleDate,
                 workStatus = entity.workStatus?.displayName,
                 workType3 = entity.workType3?.displayName,
-                targetAmount = entity.targetAmount,
-                actualAmount = entity.actualAmount,
+                // 조원별 목표/실적은 SF calculated formula 라 미적재 → 입력 컬럼에서 파생.
+                // 목표: DKRetail__DailyTargetAmount__c (= DailyTargetCount × BasePrice)
+                // 실적: DailyActualSalesAmount__c "총 실적" (= PrimaryProductAmount + OtherSalesAmount),
+                //       레거시 PromotionSearch 와 동일하게 0 은 null(미입력) 로 표시.
+                targetAmount = entity.dkDailyTargetAmount?.toLong(),
+                actualAmount = entity.dailyTotalActualSalesAmount?.toLong()?.takeIf { it != 0L },
                 isMine = currentEmployeeId != null && entity.employeeId == currentEmployeeId,
                 isClosed = entity.promoCloseByTm
             )

@@ -197,11 +197,11 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
         children: [
           Text('실적 현황', style: AppTypography.headlineSmall),
           const SizedBox(height: AppSpacing.md),
-          _achievementRow(
-              '목표', _formatWon(detail.targetAmount)),
+          _achievementRow('목표',
+              PromotionAmountText.formatAmount(detail.targetAmount)),
           const SizedBox(height: AppSpacing.xs),
-          _achievementRow(
-              '실적', _formatWon(detail.actualAmount)),
+          _achievementRow('실적',
+              PromotionAmountText.formatAmount(detail.actualAmount)),
           const SizedBox(height: AppSpacing.xs),
           _achievementRow('달성률', rateText),
         ],
@@ -245,11 +245,4 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
     );
   }
 
-  String _formatWon(int? amount) {
-    if (amount == null) return '-';
-    final formatted = PromotionAmountText.formatAmount(amount);
-    // formatAmount already appends "만" or "원", so just add "원" for 만원 unit
-    if (formatted.endsWith('만')) return '$formatted원';
-    return formatted;
-  }
 }

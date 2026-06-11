@@ -22,17 +22,12 @@ class PromotionAmountText extends StatelessWidget {
     );
   }
 
-  /// 금액을 만원 단위로 포맷
+  /// 금액을 원 단위로 포맷 (레거시 행사 상세 동일: 천단위 콤마 + "원")
   ///
-  /// 10000 이상: 만원 단위 (예: 4800000 → "480만")
-  /// 10000 미만: 원 단위 (예: 5000 → "5,000원")
+  /// 예: 3000000 → "3,000,000원"
   /// null: "-"
   static String formatAmount(int? amount) {
     if (amount == null) return '-';
-    if (amount >= 10000) {
-      final man = amount ~/ 10000;
-      return '${_numberWithCommas(man)}만';
-    }
     return '${_numberWithCommas(amount)}원';
   }
 

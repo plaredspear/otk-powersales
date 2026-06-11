@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.*
 
@@ -109,7 +110,12 @@ class MobilePromotionServiceTest {
         workStatus: String? = null,
         workType3: String? = null,
         targetAmount: Long? = 0,
-        actualAmount: Long? = 0
+        actualAmount: Long? = 0,
+        // SF calculated formula 입력 컬럼 (조원 목표/실적 파생용)
+        dailyTargetCount: BigDecimal? = null,
+        basePrice: BigDecimal? = null,
+        primaryProductAmount: BigDecimal? = null,
+        otherSalesAmount: BigDecimal? = null
     ): PromotionEmployee = PromotionEmployee(
         id = id,
         promotionId = promotionId,
@@ -118,7 +124,11 @@ class MobilePromotionServiceTest {
         workStatus = workStatus?.let { WorkingType.fromDisplayName(it) },
         workType3 = workType3?.let { WorkingCategory3.fromDisplayName(it) },
         targetAmount = targetAmount,
-        actualAmount = actualAmount
+        actualAmount = actualAmount,
+        dailyTargetCount = dailyTargetCount,
+        basePrice = basePrice,
+        primaryProductAmount = primaryProductAmount,
+        otherSalesAmount = otherSalesAmount
     )
 
     private fun createAccount(
@@ -427,6 +437,42 @@ class MobilePromotionServiceTest {
             assertThat(result.employees[1].employeeName).isEqualTo("이수진")
 
             verify(exactly = 0) { promotionEmployeeRepository.existsByPromotionIdAndEmployeeId(any(), any()) }
+        }
+
+        @Test
+        @DisplayName("조원 목표/실적은 SF formula(DailyTargetAmount / 총 실적) 로 파생되고 실적 0 은 null 로 표시한다")
+        fun getPromotion_derivesEmployeeTargetActualFromFormula() {
+            val leader = createEmployee(id = 10L, employeeCode = "20030001", role = AppAuthority.LEADER, costCenterCode = "1234")
+            val account = createAccount(id = 100, name = "이마트 성수점")
+            val promotion = createPromotion(id = 1L, costCenterCode = "1234", account = account)
+            // 목표: DailyTargetCount(3) × BasePrice(1,000,000) = 3,000,000
+            // 실적: PrimaryProductAmount(800,000) + OtherSalesAmount(200,000) = 1,000,000
+            val withSales = createPromotionEmployee(
+                id = 10L, promotionId = 1L, employeeId = 20L,
+                dailyTargetCount = BigDecimal(3),
+                basePrice = BigDecimal(1_000_000),
+                primaryProductAmount = BigDecimal(800_000),
+                otherSalesAmount = BigDecimal(200_000)
+            )
+            // 실적 입력 없음(총 실적 0) → null, 목표 입력 없음 → null
+            val noSales = createPromotionEmployee(
+                id = 11L, promotionId = 1L, employeeId = 21L
+            )
+            val empUser1 = createEmployee(id = 20L, employeeCode = "20030002", name = "김영희")
+            val empUser2 = createEmployee(id = 21L, employeeCode = "20030003", name = "이수진")
+
+            every { employeeRepository.findById(10L) } returns Optional.of(leader)
+            every { promotionRepository.findById(1L) } returns Optional.of(promotion)
+            withSales.employee = empUser1
+            noSales.employee = empUser2
+            every { promotionEmployeeRepository.findWithEmployeeByPromotionId(1L) } returns listOf(withSales, noSales)
+
+            val result = service.getPromotion(userId = 10L, promotionId = 1L)
+
+            assertThat(result.employees[0].targetAmount).isEqualTo(3_000_000L)
+            assertThat(result.employees[0].actualAmount).isEqualTo(1_000_000L)
+            assertThat(result.employees[1].targetAmount).isNull()
+            assertThat(result.employees[1].actualAmount).isNull()
         }
 
         @Test
