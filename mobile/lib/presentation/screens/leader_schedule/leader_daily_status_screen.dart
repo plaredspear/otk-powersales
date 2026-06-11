@@ -197,12 +197,8 @@ class _LeaderDailyStatusScreenState
 
     return Column(
       children: [
-        _DateSelector(
-          date: state.selectedDate,
-          onPrev: () => _shiftDate(-1),
-          onNext: () => _shiftDate(1),
-          onTap: _pickDate,
-        ),
+        // 단일 모드: 레거시처럼 날짜는 텍스트만 (이동 화살표/피커 없음).
+        _DateText(date: state.selectedDate),
         _SingleEmployeeHeader(displayRows: displayRows, eventRows: eventRows),
         Expanded(
           child: _buildSingleBody(state, displayRows: displayRows, eventRows: eventRows),
@@ -450,6 +446,33 @@ class _DateSelector extends StatelessWidget {
             color: AppColors.textSecondary,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 단일 모드 날짜 텍스트 — 레거시 "2023년 09월 07일(목)" 표기 (이동 없음).
+class _DateText extends StatelessWidget {
+  final DateTime date;
+
+  const _DateText({required this.date});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = DateFormat('yyyy년 MM월 dd일(E)', 'ko_KR').format(date);
+    return Container(
+      width: double.infinity,
+      color: AppColors.white,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Text(
+        label,
+        style: AppTypography.bodyLarge.copyWith(
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
       ),
     );
   }
