@@ -162,8 +162,14 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
     {
       title: '릴리스 노트',
       dataIndex: 'releaseNote',
-      ellipsis: true,
-      render: (note: string | null) => note ?? '-',
+      width: 320,
+      // ResizableTable 은 width 지정 컬럼에 ellipsis(한 줄 nowrap 축약) 를 기본 적용한다.
+      // 릴리스 노트는 여러 줄로 펼쳐 보여야 하므로 명시적으로 ellipsis 를 끈다.
+      ellipsis: false,
+      // 고정 폭 안에서 줄바꿈을 보존하며 여러 줄로 펼쳐 보여준다. ellipsis(한 줄 축약) 대신
+      // pre-wrap 으로 처리해야 긴 릴리스 노트가 테이블 폭을 밀어내 좌우 스크롤되는 것을 막는다.
+      render: (note: string | null) =>
+        note ? <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{note}</span> : '-',
     },
     { title: '파일명', dataIndex: 'fileName', width: 200, ellipsis: true },
     {
