@@ -7678,6 +7678,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePageOrderProductDto" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PageOrderProductDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePageProductDto" : {
         "properties" : {
           "data" : {
@@ -16017,6 +16046,49 @@
         },
         "type" : "object"
       },
+      "OrderProductDto" : {
+        "properties" : {
+          "barcode" : {
+            "type" : "string"
+          },
+          "boxSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "categoryMid" : {
+            "type" : [ "string", "null" ]
+          },
+          "categorySub" : {
+            "type" : [ "string", "null" ]
+          },
+          "favorite" : {
+            "type" : "boolean"
+          },
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : "string"
+          },
+          "productType" : {
+            "type" : [ "string", "null" ]
+          },
+          "shelfLife" : {
+            "type" : "string"
+          },
+          "storageType" : {
+            "type" : "string"
+          },
+          "tasteGiftType" : {
+            "type" : [ "string", "null" ]
+          },
+          "unitPrice" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "OrderRequestCancelTestRequest" : {
         "properties" : {
           "orderProductIds" : {
@@ -16965,6 +17037,52 @@
           "size" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PageOrderProductDto" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OrderProductDto"
+            },
+            "type" : "array"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "number" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numberOfElements" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "totalElements" : {
             "format" : "int64",
@@ -34902,6 +35020,64 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePageProductDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "product-controller" ]
+      }
+    },
+    "/api/v1/mobile/products/search/order" : {
+      "get" : {
+        "operationId" : "searchProductsForOrder",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "categoryMid",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "categorySub",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePageOrderProductDto"
                 }
               }
             },
