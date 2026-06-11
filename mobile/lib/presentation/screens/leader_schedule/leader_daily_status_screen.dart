@@ -52,6 +52,9 @@ class _LeaderDailyStatusScreenState
   final GlobalKey _eventSectionKey = GlobalKey();
   final GlobalKey _annualSectionKey = GlobalKey();
 
+  /// 등록 탭 "등록 전" 필터 — 체크 시 미등록 거래처만 노출(레거시 #before-comm-btn).
+  bool _registerUnregisteredOnly = false;
+
   @override
   void initState() {
     super.initState();
@@ -145,7 +148,7 @@ class _LeaderDailyStatusScreenState
     );
   }
 
-  /// "여사원 전체" 모드 — 요약칩 + 검색 + 바로가기 + 진열/행사/연차 섹션.
+  /// "여사원 전체" 모드 — 요약칩 + 검색 + 일정/등록 탭.
   Widget _buildAllMode(LeaderDailyStatusState state) {
     // 레거시 mngDaily 카드 1개 = 여사원 1명 — 백엔드의 (여사원×거래처) 행을 여사원 단위로 그룹핑.
     final displayGroups = _groupByEmployee(state.filteredDisplayWorkers);
@@ -153,35 +156,53 @@ class _LeaderDailyStatusScreenState
     final annualLeaveWorkers = state.filteredAnnualLeaveWorkers;
     final isSearching = state.searchKeyword.isNotEmpty;
 
-    return Column(
-      children: [
-        _DateSelector(
-          date: state.selectedDate,
-          onPrev: () => _shiftDate(-1),
-          onNext: () => _shiftDate(1),
-          onTap: _pickDate,
-        ),
-        _SummaryHeader(summary: state.data?.summary),
-        _SearchField(
-          controller: _searchController,
-          onChanged: (v) =>
-              ref.read(leaderDailyStatusProvider.notifier).setSearchKeyword(v),
-        ),
-        _QuickJumpBar(
-          onDisplay: () => _jumpTo(_displaySectionKey),
-          onEvent: () => _jumpTo(_eventSectionKey),
-          onAnnual: () => _jumpTo(_annualSectionKey),
-        ),
-        Expanded(
-          child: _buildBody(
-            state,
-            displayGroups: displayGroups,
-            eventGroups: eventGroups,
-            annualLeaveWorkers: annualLeaveWorkers,
-            isSearching: isSearching,
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          _DateSelector(
+            date: state.selectedDate,
+            onPrev: () => _shiftDate(-1),
+            onNext: () => _shiftDate(1),
+            onTap: _pickDate,
           ),
-        ),
-      ],
+          _SummaryHeader(summary: state.data?.summary),
+          _SearchField(
+            controller: _searchController,
+            onChanged: (v) => ref
+                .read(leaderDailyStatusProvider.notifier)
+                .setSearchKeyword(v),
+          ),
+          const _ScheduleRegisterTabBar(),
+          Expanded(
+            child: TabBarView(
+              children: [
+                // 일정 탭: 바로가기 + 진열/행사/연차 섹션.
+                Column(
+                  children: [
+                    _QuickJumpBar(
+                      onDisplay: () => _jumpTo(_displaySectionKey),
+                      onEvent: () => _jumpTo(_eventSectionKey),
+                      onAnnual: () => _jumpTo(_annualSectionKey),
+                    ),
+                    Expanded(
+                      child: _buildBody(
+                        state,
+                        displayGroups: displayGroups,
+                        eventGroups: eventGroups,
+                        annualLeaveWorkers: annualLeaveWorkers,
+                        isSearching: isSearching,
+                      ),
+                    ),
+                  ],
+                ),
+                // 등록 탭: 등록 전 필터 + 사람별 밴드 + 거래처별 등록 상태.
+                _buildRegisterTab(state, displayGroups, eventGroups),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -195,16 +216,113 @@ class _LeaderDailyStatusScreenState
     final eventRows =
         (data?.eventWorkers ?? const []).where((w) => w.employeeId == empId).toList();
 
+    final displayGroups = _groupByEmployee(displayRows);
+    final eventGroups = _groupByEmployee(eventRows);
+
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          // 단일 모드: 레거시처럼 날짜는 텍스트만 (이동 화살표/피커 없음).
+          _DateText(date: state.selectedDate),
+          _SingleEmployeeHeader(displayRows: displayRows, eventRows: eventRows),
+          const _ScheduleRegisterTabBar(),
+          Expanded(
+            child: TabBarView(
+              children: [
+                // 일정 탭.
+                _buildSingleBody(state,
+                    displayRows: displayRows, eventRows: eventRows),
+                // 등록 탭.
+                _buildRegisterTab(state, displayGroups, eventGroups),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 등록 탭 공통 빌더 (전체/단일 공유) — 등록 전 필터 + 사람별 밴드 + 거래처별 등록 상태.
+  /// 레거시 mngDaily `#commute` 영역 동등. 대리출근 등록 버튼은 레거시에서 정지(주석)라 미노출.
+  Widget _buildRegisterTab(
+    LeaderDailyStatusState state,
+    List<_GroupedWorker> displayGroups,
+    List<_GroupedWorker> eventGroups,
+  ) {
+    final loadingOrError = _loadingOrError(state);
+
+    final sections = <Widget>[];
+    void addGroups(List<_GroupedWorker> groups, String category) {
+      for (final g in groups) {
+        final rows = _registerUnregisteredOnly
+            ? g.rows.where((r) => !r.attended).toList()
+            : g.rows;
+        if (rows.isEmpty) continue;
+        sections.add(_RegisterPersonBand(name: g.employeeName, category: category));
+        for (final r in rows) {
+          sections.add(_RegisterAccountRow(row: r));
+        }
+      }
+    }
+
+    addGroups(displayGroups, '진열');
+    addGroups(eventGroups, '행사');
+
+    Future<void> onRefresh() =>
+        ref.read(leaderDailyStatusProvider.notifier).load();
+
     return Column(
       children: [
-        // 단일 모드: 레거시처럼 날짜는 텍스트만 (이동 화살표/피커 없음).
-        _DateText(date: state.selectedDate),
-        _SingleEmployeeHeader(displayRows: displayRows, eventRows: eventRows),
+        _UnregisteredFilterBar(
+          value: _registerUnregisteredOnly,
+          onChanged: (v) => setState(() => _registerUnregisteredOnly = v),
+        ),
         Expanded(
-          child: _buildSingleBody(state, displayRows: displayRows, eventRows: eventRows),
+          child: loadingOrError ??
+              RefreshIndicator(
+                onRefresh: onRefresh,
+                color: AppColors.primary,
+                child: sections.isEmpty
+                    ? ListView(
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.35,
+                            child: Center(
+                              child: Text(
+                                _registerUnregisteredOnly
+                                    ? '미등록 거래처가 없습니다'
+                                    : '등록 대상 거래처가 없습니다',
+                                style: AppTypography.bodyMedium
+                                    .copyWith(color: AppColors.textSecondary),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+                        children: sections,
+                      ),
+              ),
         ),
       ],
     );
+  }
+
+  /// 최초 로드 중/실패 시 표시 위젯, 데이터 보유 시 null.
+  Widget? _loadingOrError(LeaderDailyStatusState state) {
+    if (state.isLoading && state.data == null) {
+      return const LoadingIndicator(message: '불러오는 중...');
+    }
+    if (state.errorMessage != null && state.data == null) {
+      return ErrorView(
+        message: '불러올 수 없습니다',
+        description: state.errorMessage,
+        onRetry: () => ref.read(leaderDailyStatusProvider.notifier).load(),
+      );
+    }
+    return null;
   }
 
   Widget _buildSingleBody(
@@ -702,6 +820,158 @@ class _JumpLink extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 일정 / 등록 탭바 (레거시 mngDaily 상단 탭). 선택색은 네이비(가독성).
+class _ScheduleRegisterTabBar extends StatelessWidget {
+  const _ScheduleRegisterTabBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.white,
+      child: const TabBar(
+        labelColor: AppColors.secondary,
+        unselectedLabelColor: AppColors.textSecondary,
+        indicatorColor: AppColors.secondary,
+        tabs: [
+          Tab(text: '일정'),
+          Tab(text: '등록'),
+        ],
+      ),
+    );
+  }
+}
+
+/// 등록 탭 "등록 전" 체크박스 필터 바 (레거시 #before-comm-btn, 우측 정렬).
+class _UnregisteredFilterBar extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _UnregisteredFilterBar({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.white,
+      padding: const EdgeInsets.only(right: AppSpacing.md),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          InkWell(
+            onTap: () => onChanged(!value),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: value,
+                      onChanged: (v) => onChanged(v ?? false),
+                      activeColor: AppColors.secondary,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    '등록 전',
+                    style: AppTypography.bodyMedium
+                        .copyWith(color: AppColors.textPrimary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 등록 탭 사람별 밴드 — "이름 (진열/행사)" (레거시 list_title).
+class _RegisterPersonBand extends StatelessWidget {
+  final String name;
+  final String category;
+
+  const _RegisterPersonBand({required this.name, required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: Text(
+        '$name ($category)',
+        style: AppTypography.bodyMedium.copyWith(
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
+      ),
+    );
+  }
+}
+
+/// 등록 탭 거래처별 행 — 거래처명 / 근무유형 + 등록완료·미등록 (레거시 comm-list li).
+class _RegisterAccountRow extends StatelessWidget {
+  final LeaderDailyWorker row;
+
+  const _RegisterAccountRow({required this.row});
+
+  @override
+  Widget build(BuildContext context) {
+    final done = row.attended;
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  row.accountName,
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (row.workCategoryLabel.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    row.workCategoryLabel,
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            done ? '등록 완료' : '미등록',
+            style: AppTypography.bodySmall.copyWith(
+              color: done ? AppColors.success : AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
