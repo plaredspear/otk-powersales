@@ -21,12 +21,16 @@ import java.time.LocalDate
  *
  * ## 거래처 키 규약 (achieved=0 회귀 방지)
  * 모바일/물류매출 화면과 동일하게 `customerId` 는 **신규 내부 `account.id`** 를 전달받는다
- * ([LogisticsSalesService] 와 동일 규약). 숫자면 [AccountRepository] 로 resolve 하여 SAP 코드
- * (`Account.externalKey`) 를 얻고, RDS 조회는 SAP 코드로 수행한다. 숫자가 아니면 레거시 SAP 코드
- * 직접 호출(관리/테스트) 로 보고 그대로 사용한다.
+ * ([LogisticsSalesService] 와 동일 규약). 숫자면 [AccountRepository] 로 [Account] 를 resolve 하고,
+ * 숫자가 아니면 레거시 SAP 코드 직접 호출(관리/테스트) 로 보고 `externalKey` 로 resolve 한다.
+ * **실적 조회는 resolve 된 `account.id` FK 로 수행한다** ([MonthlySalesHistoryQueryGateway.findBySalesDatesByAccountId]).
+ * 레거시 SF Apex 는 Account 관계(`Account_ExternalKey__c` = `Account__r.Externalkey__c` formula) 로
+ * 조인하는데, 신규 RDS `MonthlySalesHistory.account_id` 는 `account_sfid`(SF `AccountId__c`) → `account.sfid`
+ * 로 resolve 된 안정적 FK 라 이와 동치다. 텍스트 컬럼 `sap_account_code`(SF `SAPAccountCode__c`) 는
+ * 적재 품질(과거 row null/불일치 가능)에 의존하므로 조인 키로 쓰지 않는다.
  *
  * ## 데이터 source
- * - 실적: RDS `MonthlySalesHistory` (SF `MonthlySalesHistory__c` 복제) 실측 마감실적
+ * - 실적: RDS `MonthlySalesHistory` (SF `MonthlySalesHistory__c` 복제) 실측 마감실적 — `account_id` FK 조회
  *   ([MonthlySalesHistoryQueryGateway] 경유).
  * - 목표: RDS `SalesProgressRateMaster` (SF `SalesProgressRateMaster__c` 복제) — 조회 거래처의
  *   해당 (연, 월) 1행. SF Apex SOQL `TargetYear__c = year AND TargetMonth__c = month AND
@@ -61,21 +65,28 @@ class MonthlySalesService(
             return emptyResponse("ALL", request.yearMonth, month)
         }
 
-        // customerId(=내부 account.id) → SAP 코드 resolve. 숫자 아닌 값은 SAP 코드 직접 취급.
+        // customerId(=내부 account.id) → Account resolve. 숫자가 아니면 레거시 SAP 코드 직접 호출(관리/테스트).
         val account = customerIdRaw.toLongOrNull()
             ?.let { accountRepository.findByIdInAndIsDeletedNot(listOf(it), true).firstOrNull() }
             ?: accountRepository.findByExternalKey(customerIdRaw)
-        val sapCode = account?.externalKey ?: customerIdRaw
         val customerName = account?.name ?: customerIdRaw
-        if (sapCode.isBlank()) {
-            return emptyResponse(customerIdRaw, request.yearMonth, month)
-        }
 
+        // 실적: account_id FK 로 조회 (레거시 Account 관계 조인 정합). RDS `MonthlySalesHistory.account_id`
+        // 는 `account_sfid`(SF `AccountId__c`) → `account.sfid` 로 resolve 된 안정적 FK 라, 텍스트 컬럼
+        // `sap_account_code`(SF `SAPAccountCode__c`) 적재 품질과 무관하게 매칭된다. account 미resolve 시
+        // 실적 없음 (전체 0) — baseRate 는 거래처와 무관하게 아래에서 그대로 산출.
         val currentRangeSalesDates = (1..month).map { toSalesDate(year, it) }
         val previousRangeSalesDates = (1..month).map { toSalesDate(year - 1, it) }
-        val rowsByDate = monthlySalesHistoryGateway
-            .findBySalesDates((currentRangeSalesDates + previousRangeSalesDates).distinct(), listOf(sapCode))
-            .associateBy { it.salesDate }
+        val rowsByDate = account
+            ?.let {
+                monthlySalesHistoryGateway
+                    .findBySalesDatesByAccountId(
+                        (currentRangeSalesDates + previousRangeSalesDates).distinct(),
+                        listOf(it.id),
+                    )
+                    .associateBy { row -> row.salesDate }
+            }
+            ?: emptyMap()
 
         val currentRow = rowsByDate[toSalesDate(year, month)]
         val previousRow = rowsByDate[toSalesDate(year - 1, month)]

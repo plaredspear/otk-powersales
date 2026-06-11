@@ -27,6 +27,8 @@ import com.otoki.powersales.schedule.exception.LeaderScheduleNotTeamMemberExcept
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeInactiveException
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeNotFoundException
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
+import com.otoki.powersales.promotion.service.PromotionSchedulesUpsertHelper
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -57,6 +59,17 @@ class LeaderScheduleServiceTest {
 
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
 
+    // 행사 일정 변경/삭제 + 대리출근 경로 전용 의존성 — 본 테스트가 호출하는 메서드
+    // (createTeamMemberSchedule / getTeamMembers / getAccounts / getDailyStatus / getMonthlyCalendar)
+    // 에서는 사용되지 않아 stub 없이 mock 만 주입한다.
+    private val attendanceService: AttendanceService = mockk()
+
+    private val promotionEmployeeRepository: PromotionEmployeeRepository = mockk()
+
+    private val promotionSchedulesUpsertHelper: PromotionSchedulesUpsertHelper = mockk()
+
+    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper = mockk()
+
     private val leaderScheduleService = LeaderScheduleService(
         employeeRepository,
         accountRepository,
@@ -65,6 +78,10 @@ class LeaderScheduleServiceTest {
         safetyCheckSubmissionRepository,
         scheduleConflictValidator,
         teamMemberScheduleOwnerResolver,
+        attendanceService,
+        promotionEmployeeRepository,
+        promotionSchedulesUpsertHelper,
+        teamMemberScheduleCascadeHelper,
     )
 
     init {

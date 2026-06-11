@@ -74,12 +74,14 @@ class MonthlySalesServiceTest {
                 accountRepository.findByIdInAndIsDeletedNot(listOf(100L), true)
             } returns listOf(account)
 
-            // 조회월(202605) 마감 합계 실적 7,796만원. 카테고리 개별 컬럼은 비고 합계만 적재된 케이스.
-            every { monthlySalesHistoryGateway.findBySalesDates(any(), listOf("1000091")) } returns listOf(
+            // 조회월(202605) 마감 합계 실적 7,796만원. account_id FK 로 조회 (레거시 Account 관계 조인 정합).
+            // 카테고리 개별 컬럼은 비고 합계만 적재된 케이스.
+            every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(100L)) } returns listOf(
                 MonthlySalesRow(
                     sapAccountCode = "1000091",
                     salesDate = "202605",
                     closingAmountSum = BigDecimal("77960000"),
+                    accountId = 100L,
                     abcClosingAmount1 = null,
                 )
             )
