@@ -157,11 +157,12 @@ class _HomePageState extends ConsumerState<HomePage>
                         arguments: date,
                       );
                     },
-                    // 조장/지점장: 레거시 근태 영역 "일정 관리" → 팀원 일정 관리
+                    // 조장/지점장: 레거시 home.jsp "일정 관리" → /employee/mgnSchedule
+                    // 여사원 전체 모드의 월간 일정 캘린더(LeaderTeamMemberScheduleScreen)로 연결.
                     onScheduleManageTap: () {
                       AppRouter.navigateTo(
                         context,
-                        AppRouter.leaderTeamMembers,
+                        AppRouter.leaderSchedule,
                       );
                     },
                   ),

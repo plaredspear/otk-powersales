@@ -114,6 +114,10 @@ abstract final class MenuConstants {
   ///
   /// FullMenuDrawer에서 user.role이 LEADER 또는 ADMIN일 때
   /// "거래처" 그룹 다음 위치에 삽입한다.
+  ///
+  /// 레거시 Heroku GNB "여사원 관리" 그룹 정합(gnb.jsp): 항목은 "여사원"(/employee/main)
+  /// 과 "일정 / 등록"(/employee/mgnSchedule) 2개뿐이다. "일정 / 등록"은 월간 캘린더
+  /// 진입점이며, 날짜를 탭하면 일별현황(mngDaily)으로 이어져 변경/등록을 수행한다.
   static const MenuGroup teamManagementGroup = MenuGroup(
     id: 'team-management',
     icon: Icons.groups,
@@ -126,13 +130,8 @@ abstract final class MenuConstants {
       ),
       MenuItem(
         id: 'team-schedule',
-        label: '팀원 일정 관리',
-        route: '/leader/team-members',
-      ),
-      MenuItem(
-        id: 'team-daily-status',
-        label: '여사원 일별현황',
-        route: '/leader/daily-status',
+        label: '일정 / 등록',
+        route: '/leader/schedule',
       ),
     ],
   );
