@@ -15,6 +15,10 @@ import '../../widgets/common/loading_indicator.dart';
 ///
 /// 선택 날짜의 팀 여사원 진열/행사/연차 근무 현황 + 거래처별 출근 등록 현황을 **조회 전용**으로 표시한다.
 /// 진열은 진열 마스터(확정·안전점검 제출자) 기준이라 레거시와 동일하게 조회만 제공한다.
+///
+/// 레거시 정합: 탭이 아니라 한 화면에 진열/행사/연차 근무자 섹션을 세로로 나열하고,
+/// 상단 "바로가기"(진열/행사/연차) 로 각 섹션으로 스크롤 이동한다. 카드는 여사원 1명 단위로
+/// 묶어 담당 거래처를 여러 줄로 표시한다(레거시 mngDaily 카드 = 여사원 1명).
 class LeaderDailyStatusScreen extends ConsumerStatefulWidget {
   /// 진입 시 조회할 초기 날짜. null 이면 오늘. (조원 월간 캘린더 날짜 탭 진입용)
   final DateTime? initialDate;
@@ -36,6 +40,12 @@ class LeaderDailyStatusScreen extends ConsumerStatefulWidget {
 class _LeaderDailyStatusScreenState
     extends ConsumerState<LeaderDailyStatusScreen> with ThrottledTapMixin {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  // 바로가기 스크롤 앵커 (레거시 #move1/#move2/#move3).
+  final GlobalKey _displaySectionKey = GlobalKey();
+  final GlobalKey _eventSectionKey = GlobalKey();
+  final GlobalKey _annualSectionKey = GlobalKey();
 
   @override
   void initState() {
@@ -59,6 +69,7 @@ class _LeaderDailyStatusScreenState
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -89,6 +100,17 @@ class _LeaderDailyStatusScreenState
     });
   }
 
+  void _jumpTo(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      alignment: 0.0,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 재조회 실패(데이터 보유 상태)는 SnackBar 로 1회성 노출 — 최초 로드 실패는 ErrorView 가 담당.
@@ -106,64 +128,57 @@ class _LeaderDailyStatusScreenState
     );
 
     final state = ref.watch(leaderDailyStatusProvider);
-    final displayWorkers = state.filteredDisplayWorkers;
-    final eventWorkers = state.filteredEventWorkers;
+    // 레거시 mngDaily 카드 1개 = 여사원 1명 — 백엔드의 (여사원×거래처) 행을 여사원 단위로 그룹핑.
+    final displayGroups = _groupByEmployee(state.filteredDisplayWorkers);
+    final eventGroups = _groupByEmployee(state.filteredEventWorkers);
     final annualLeaveWorkers = state.filteredAnnualLeaveWorkers;
     final isSearching = state.searchKeyword.isNotEmpty;
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('여사원 일별 현황'),
-          backgroundColor: AppColors.white,
-          foregroundColor: AppColors.textPrimary,
-          elevation: 0,
-        ),
-        body: Column(
-          children: [
-            _DateSelector(
-              date: state.selectedDate,
-              onPrev: () => _shiftDate(-1),
-              onNext: () => _shiftDate(1),
-              onTap: _pickDate,
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('여사원 일별 현황'),
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          _DateSelector(
+            date: state.selectedDate,
+            onPrev: () => _shiftDate(-1),
+            onNext: () => _shiftDate(1),
+            onTap: _pickDate,
+          ),
+          _SummaryHeader(summary: state.data?.summary),
+          _SearchField(
+            controller: _searchController,
+            onChanged: (v) =>
+                ref.read(leaderDailyStatusProvider.notifier).setSearchKeyword(v),
+          ),
+          _QuickJumpBar(
+            onDisplay: () => _jumpTo(_displaySectionKey),
+            onEvent: () => _jumpTo(_eventSectionKey),
+            onAnnual: () => _jumpTo(_annualSectionKey),
+          ),
+          Expanded(
+            child: _buildBody(
+              state,
+              displayGroups: displayGroups,
+              eventGroups: eventGroups,
+              annualLeaveWorkers: annualLeaveWorkers,
+              isSearching: isSearching,
             ),
-            _SummaryHeader(summary: state.data?.summary),
-            _SearchField(
-              controller: _searchController,
-              onChanged: (v) =>
-                  ref.read(leaderDailyStatusProvider.notifier).setSearchKeyword(v),
-            ),
-            TabBar(
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondary,
-              indicatorColor: AppColors.primary,
-              tabs: [
-                Tab(text: '진열 ${displayWorkers.length}'),
-                Tab(text: '행사 ${eventWorkers.length}'),
-                Tab(text: '연차 ${annualLeaveWorkers.length}'),
-              ],
-            ),
-            Expanded(
-              child: _buildBody(
-                state,
-                displayWorkers: displayWorkers,
-                eventWorkers: eventWorkers,
-                annualLeaveWorkers: annualLeaveWorkers,
-                isSearching: isSearching,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildBody(
     LeaderDailyStatusState state, {
-    required List<LeaderDailyWorker> displayWorkers,
-    required List<LeaderDailyWorker> eventWorkers,
+    required List<_GroupedWorker> displayGroups,
+    required List<_GroupedWorker> eventGroups,
     required List<LeaderDailyEmployee> annualLeaveWorkers,
     required bool isSearching,
   }) {
@@ -180,27 +195,111 @@ class _LeaderDailyStatusScreenState
 
     Future<void> onRefresh() =>
         ref.read(leaderDailyStatusProvider.notifier).load();
-    return TabBarView(
-      children: [
-        // 진열/행사/연차 모두 조회 전용 (레거시 mngDaily 동등).
-        _WorkerList(
-          workers: displayWorkers,
-          emptyText: isSearching ? '검색 결과가 없습니다' : '진열 근무자가 없습니다',
-          onRefresh: onRefresh,
-        ),
-        _WorkerList(
-          workers: eventWorkers,
-          emptyText: isSearching ? '검색 결과가 없습니다' : '행사 근무자가 없습니다',
-          onRefresh: onRefresh,
-        ),
-        _AnnualLeaveList(
-          employees: annualLeaveWorkers,
-          emptyText: isSearching ? '검색 결과가 없습니다' : '연차 여사원이 없습니다',
-          onRefresh: onRefresh,
-        ),
-      ],
+
+    final emptyHint = isSearching ? '검색 결과가 없습니다' : null;
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      color: AppColors.primary,
+      child: ListView(
+        controller: _scrollController,
+        padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+        children: [
+          // ── 진열 근무자 섹션 ──
+          _SectionHeader(
+            key: _displaySectionKey,
+            title: '진열 근무자',
+            count: displayGroups.length,
+          ),
+          ..._buildWorkerCards(
+            displayGroups,
+            emptyText: emptyHint ?? '진열 근무자가 없습니다',
+            isEvent: false,
+          ),
+          // ── 행사 근무자 섹션 ──
+          _SectionHeader(
+            key: _eventSectionKey,
+            title: '행사 근무자',
+            count: eventGroups.length,
+          ),
+          ..._buildWorkerCards(
+            eventGroups,
+            emptyText: emptyHint ?? '행사 근무자가 없습니다',
+            isEvent: true,
+          ),
+          // ── 연차 근무자 섹션 ──
+          _SectionHeader(
+            key: _annualSectionKey,
+            title: '연차 근무자',
+            count: annualLeaveWorkers.length,
+          ),
+          ..._buildAnnualCards(
+            annualLeaveWorkers,
+            emptyText: emptyHint ?? '연차 여사원이 없습니다',
+          ),
+        ],
+      ),
     );
   }
+
+  List<Widget> _buildWorkerCards(
+    List<_GroupedWorker> groups, {
+    required String emptyText,
+    required bool isEvent,
+  }) {
+    if (groups.isEmpty) {
+      return [_SectionEmpty(text: emptyText)];
+    }
+    return groups.map((g) => _WorkerCard(worker: g, isEvent: isEvent)).toList();
+  }
+
+  List<Widget> _buildAnnualCards(
+    List<LeaderDailyEmployee> employees, {
+    required String emptyText,
+  }) {
+    if (employees.isEmpty) {
+      return [_SectionEmpty(text: emptyText)];
+    }
+    return employees.map((e) => _AnnualLeaveCard(employee: e)).toList();
+  }
+}
+
+/// 백엔드의 (여사원×거래처) 행을 여사원 단위로 묶는다. 등장 순서(백엔드 정렬) 유지.
+List<_GroupedWorker> _groupByEmployee(List<LeaderDailyWorker> workers) {
+  final order = <String>[];
+  final map = <String, List<LeaderDailyWorker>>{};
+  for (final w in workers) {
+    final key = w.employeeId?.toString() ?? 'code:${w.employeeCode}';
+    if (!map.containsKey(key)) {
+      map[key] = <LeaderDailyWorker>[];
+      order.add(key);
+    }
+    map[key]!.add(w);
+  }
+  return order.map((k) {
+    final rows = map[k]!;
+    return _GroupedWorker(
+      employeeName: rows.first.employeeName,
+      employeeCode: rows.first.employeeCode,
+      rows: rows,
+    );
+  }).toList();
+}
+
+/// 여사원 1명 단위 일별 근무 묶음 (레거시 mngDaily 카드 = 여사원 1명, 담당 거래처 N줄).
+class _GroupedWorker {
+  final String employeeName;
+  final String employeeCode;
+  final List<LeaderDailyWorker> rows;
+
+  const _GroupedWorker({
+    required this.employeeName,
+    required this.employeeCode,
+    required this.rows,
+  });
+
+  /// 담당 거래처 중 하나라도 출근(출근등록)했으면 등록완료 (레거시 commuteNullChk 동등).
+  bool get attended => rows.any((r) => r.attended);
 }
 
 class _DateSelector extends StatelessWidget {
@@ -371,38 +470,154 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _WorkerList extends StatelessWidget {
-  final List<LeaderDailyWorker> workers;
-  final String emptyText;
-  final Future<void> Function() onRefresh;
+/// 상단 바로가기 (레거시 "바로가기 | 진열 행사 연차" 앵커).
+class _QuickJumpBar extends StatelessWidget {
+  final VoidCallback onDisplay;
+  final VoidCallback onEvent;
+  final VoidCallback onAnnual;
 
-  const _WorkerList({
-    required this.workers,
-    required this.emptyText,
-    required this.onRefresh,
+  const _QuickJumpBar({
+    required this.onDisplay,
+    required this.onEvent,
+    required this.onAnnual,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (workers.isEmpty) {
-      return _EmptyList(text: emptyText, onRefresh: onRefresh);
-    }
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      color: AppColors.primary,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        itemCount: workers.length,
-        itemBuilder: (context, index) => _WorkerCard(worker: workers[index]),
+    return Container(
+      width: double.infinity,
+      color: AppColors.white,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Text(
+            '바로가기',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Container(width: 1, height: 12, color: AppColors.border),
+          const SizedBox(width: AppSpacing.sm),
+          _JumpLink(label: '진열', onTap: onDisplay),
+          const SizedBox(width: AppSpacing.md),
+          _JumpLink(label: '행사', onTap: onEvent),
+          const SizedBox(width: AppSpacing.md),
+          _JumpLink(label: '연차', onTap: onAnnual),
+        ],
       ),
     );
   }
 }
 
-class _WorkerCard extends StatelessWidget {
-  final LeaderDailyWorker worker;
+class _JumpLink extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
 
-  const _WorkerCard({required this.worker});
+  const _JumpLink({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs,
+          vertical: AppSpacing.xxs,
+        ),
+        child: Text(
+          label,
+          style: AppTypography.bodyMedium.copyWith(
+            color: AppColors.secondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 섹션 헤더 — "진열 근무자 (N)" (N 은 레거시처럼 빨강 강조).
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final int count;
+
+  const _SectionHeader({super.key, required this.title, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.xs,
+      ),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: AppTypography.bodyLarge.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            '($count)',
+            style: AppTypography.bodyLarge.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.error,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 섹션 내 빈 상태 안내 (레거시 (0) 헤더와 함께 빈 화면 방지).
+class _SectionEmpty extends StatelessWidget {
+  final String text;
+
+  const _SectionEmpty({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.xs,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Text(
+        text,
+        style: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+/// 여사원 1명 카드 — 이름(사번) + 담당 거래처 N줄(거래처명 | 진열/상시/순회).
+///
+/// 우측 표시는 레거시 mngDaily 정합:
+/// - 진열([isEvent]=false): 출근 상태 배지(등록완료/미등록).
+/// - 행사([isEvent]=true): 변경/변경불가 버튼. 행사 일정변경(mutation)은 보류라 `변경`은
+///   안내만 노출(레거시 promotionScheduleChange 이동 자리).
+class _WorkerCard extends StatelessWidget {
+  final _GroupedWorker worker;
+  final bool isEvent;
+
+  const _WorkerCard({required this.worker, required this.isEvent});
 
   @override
   Widget build(BuildContext context) {
@@ -431,28 +646,89 @@ class _WorkerCard extends StatelessWidget {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  worker.accountName,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                if (worker.workCategoryLabel.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.xxs),
-                  Text(
-                    worker.workCategoryLabel,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+                const SizedBox(height: AppSpacing.xs),
+                // 담당 거래처별 1줄: "거래처명 | 진열/상시/순회"
+                ...worker.rows.map((r) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                      child: Text(
+                        r.workCategoryLabel.isEmpty
+                            ? r.accountName
+                            : '${r.accountName} | ${r.workCategoryLabel}',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    )),
               ],
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          _AttendanceBadge(attended: worker.attended),
+          // 행사: 변경/변경불가 버튼, 진열: 등록완료/미등록 배지.
+          if (isEvent)
+            _ChangeButton(attended: worker.attended)
+          else
+            _AttendanceBadge(attended: worker.attended),
         ],
+      ),
+    );
+  }
+}
+
+/// 행사 근무자 변경/변경불가 버튼 (레거시 mngDaily commuteNullChk 정합).
+///
+/// - 출근등록 없음([attended]=false) → "변경"(활성). 탭 시 행사 일정변경은 보류 안내.
+/// - 출근등록 있음([attended]=true) → "변경불가"(비활성 라벨).
+class _ChangeButton extends StatelessWidget {
+  final bool attended;
+
+  const _ChangeButton({required this.attended});
+
+  @override
+  Widget build(BuildContext context) {
+    if (attended) {
+      // 변경불가 — 비활성 라벨.
+      return Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Text(
+          '변경불가',
+          style: AppTypography.labelSmall.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+    // 변경 — 활성. mutation 보류라 안내만.
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('행사 일정 변경 기능은 추후 제공됩니다.')),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+          border: Border.all(color: AppColors.secondary),
+        ),
+        child: Text(
+          '변경',
+          style: AppTypography.labelSmall.copyWith(
+            color: AppColors.secondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
@@ -486,35 +762,6 @@ class _AttendanceBadge extends StatelessWidget {
   }
 }
 
-class _AnnualLeaveList extends StatelessWidget {
-  final List<LeaderDailyEmployee> employees;
-  final String emptyText;
-  final Future<void> Function() onRefresh;
-
-  const _AnnualLeaveList({
-    required this.employees,
-    required this.emptyText,
-    required this.onRefresh,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (employees.isEmpty) {
-      return _EmptyList(text: emptyText, onRefresh: onRefresh);
-    }
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      color: AppColors.primary,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        itemCount: employees.length,
-        itemBuilder: (context, index) =>
-            _AnnualLeaveCard(employee: employees[index]),
-      ),
-    );
-  }
-}
-
 class _AnnualLeaveCard extends StatelessWidget {
   final LeaderDailyEmployee employee;
 
@@ -543,33 +790,3 @@ class _AnnualLeaveCard extends StatelessWidget {
     );
   }
 }
-
-class _EmptyList extends StatelessWidget {
-  final String text;
-  final Future<void> Function() onRefresh;
-
-  const _EmptyList({required this.text, required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: ListView(
-        children: [
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.4,
-            child: Center(
-              child: Text(
-                text,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-

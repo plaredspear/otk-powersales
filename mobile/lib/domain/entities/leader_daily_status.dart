@@ -61,12 +61,12 @@ class LeaderDailyWorker {
     required this.attended,
   });
 
-  /// 근무유형 표시용 — 비어있지 않은 카테고리만 `/` 로 연결.
+  /// 근무유형 표시용 — 비어있지 않은 카테고리만 `/` 로 연결 (레거시 `진열/상시/순회`).
   String get workCategoryLabel => [
         workingCategory1,
         workingCategory2,
         workingCategory3,
-      ].whereType<String>().where((e) => e.isNotEmpty).join(' / ');
+      ].whereType<String>().where((e) => e.isNotEmpty).join('/');
 
   @override
   bool operator ==(Object other) {
