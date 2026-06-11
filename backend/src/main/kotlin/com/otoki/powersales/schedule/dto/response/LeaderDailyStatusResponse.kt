@@ -34,6 +34,8 @@ data class LeaderDailyStatusSummary(
  */
 data class LeaderDailyWorkerItem(
     val scheduleId: Long,
+    /** 진열 거래처 대리출근 등록용 진열 마스터 ID(진열 행만 채워짐). 행사 행은 null. */
+    val displayWorkScheduleId: Long?,
     val employeeId: Long?,
     val employeeName: String,
     val employeeCode: String,

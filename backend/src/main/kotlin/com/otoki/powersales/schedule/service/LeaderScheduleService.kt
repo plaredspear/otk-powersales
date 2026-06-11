@@ -11,7 +11,14 @@ import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmploymentStatus
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.promotion.exception.PromotionNotFoundException
+import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
+import com.otoki.powersales.promotion.service.PromotionSchedulesUpsertHelper
+import com.otoki.powersales.schedule.dto.request.LeaderEventScheduleChangeRequest
+import com.otoki.powersales.schedule.dto.request.LeaderProxyAttendanceRequest
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
+import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
+import com.otoki.powersales.schedule.dto.response.LeaderEventScheduleChangeResponse
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
 import com.otoki.powersales.schedule.dto.response.LeaderDailyEmployeeItem
 import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusResponse
@@ -35,6 +42,10 @@ import com.otoki.powersales.schedule.exception.LeaderScheduleNotLeaderException
 import com.otoki.powersales.schedule.exception.LeaderScheduleNotTeamMemberException
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeInactiveException
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeNotFoundException
+import com.otoki.powersales.schedule.exception.LeaderEventScheduleAttendedException
+import com.otoki.powersales.schedule.exception.LeaderEventScheduleClosedException
+import com.otoki.powersales.schedule.exception.LeaderEventScheduleNotEventException
+import com.otoki.powersales.schedule.exception.LeaderEventScheduleNotFoundException
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -60,7 +71,11 @@ class LeaderScheduleService(
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
     private val scheduleConflictValidator: ScheduleConflictValidator,
-    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
+    private val attendanceService: AttendanceService,
+    private val promotionEmployeeRepository: PromotionEmployeeRepository,
+    private val promotionSchedulesUpsertHelper: PromotionSchedulesUpsertHelper,
+    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper
 ) {
 
     companion object {
@@ -70,6 +85,9 @@ class LeaderScheduleService(
         private val WORKING_CATEGORY2_DEDICATED = WorkingCategory2.DEDICATED
         private val WORKING_CATEGORY3_ALLOWED = setOf("고정", "격고", "순회")
         private val LEADER_ACCOUNT_GROUPS = listOf("1000", "1010")
+
+        /** 레거시 PromotionEmployeeTriggerHandler.removeScheduleOnDelete 마감 삭제 차단 우회 사번. */
+        private const val SPECIAL_BYPASS_EMPLOYEE_CODE = "00000009"
 
         /** 진열 cat2 '임시' 표시값 (레거시 tempList `workingcategory2__c.contains("임시")` 정합). */
         private val DISPLAY_CATEGORY2_TEMPORARY = TypeOfWork5.TEMPORARY.displayName
@@ -142,6 +160,154 @@ class LeaderScheduleService(
         // step 11: 저장 + 응답
         val saved = teamMemberScheduleRepository.save(newSchedule)
         return LeaderScheduleCreateResponse.from(saved)
+    }
+
+    /**
+     * 조장 대리출근 등록 (레거시 mngDaily `addScheduleProc` 동등).
+     *
+     * 조장 권한 + 대상이 조장 팀원(cost_center_code 일치) 검증 후, 실제 출근 등록은
+     * [AttendanceService.registerProxy] 에 위임 (Orora WorkReport 경로 공유, GPS 스킵).
+     */
+    @Transactional
+    fun registerProxyAttendance(
+        registrantId: Long,
+        request: LeaderProxyAttendanceRequest
+    ): AttendanceRegisterResponse {
+        val registrant = findRegistrant(registrantId)
+        requireLeader(registrant)
+
+        val targetEmployeeId = request.targetEmployeeId
+            ?: throw LeaderScheduleTargetEmployeeNotFoundException()
+        val targetEmployee = employeeRepository.findById(targetEmployeeId)
+            .orElseThrow { LeaderScheduleTargetEmployeeNotFoundException() }
+
+        // 팀원 검증 (조장 코스트센터 일치)
+        if (targetEmployee.costCenterCode != registrant.costCenterCode) {
+            throw LeaderScheduleNotTeamMemberException()
+        }
+
+        return attendanceService.registerProxy(
+            targetEmployee = targetEmployee,
+            scheduleId = request.scheduleId,
+            displayWorkScheduleId = request.displayWorkScheduleId
+        )
+    }
+
+    /**
+     * 조장 행사 일정 변경 — 담당 여사원/투입일 재배정 (레거시 `scheduleChangePromo` updatePromtSchedule M 동등).
+     *
+     * 행사 일정은 `Promotion → PromotionEmployee → TeamMemberSchedule(1:1)` 파생 구조라 TMS 직접 수정이 아니라
+     * **진실원본 PromotionEmployee 의 employee/scheduleDate 를 갱신 후 [PromotionSchedulesUpsertHelper.upsert]
+     * 로 TMS 를 재파생**한다 (SF `PromotionToScheduleQuickActionController.upsertPromotionSchedules` 동등).
+     *
+     * 거래처/근무유형은 행사 마스터 파생이라 변경 대상이 아니다.
+     * - 출근완료(`attendanceLog`) 일정은 변경 불가 (레거시 "등록하지 않은 항목만 수정").
+     * - 행사조원 마감(`promoCloseByTm`) + 핵심필드 변경 시 조장(비admin)은 차단.
+     * - 투입일 행사기간 범위/근무유형3 한도/중복/연차충돌 검증은 upsert 가 수행.
+     */
+    @Transactional
+    fun changeEventAssignment(
+        registrantId: Long,
+        scheduleId: Long,
+        request: LeaderEventScheduleChangeRequest
+    ): LeaderEventScheduleChangeResponse {
+        val registrant = findRegistrant(registrantId)
+        requireLeader(registrant)
+
+        val targetEmployeeId = request.targetEmployeeId
+            ?: throw LeaderScheduleTargetEmployeeNotFoundException()
+        val workingDate = request.workingDate
+            ?: throw LeaderScheduleTargetEmployeeNotFoundException()
+
+        val (schedule, pe) = resolveEventAssignment(scheduleId, registrant)
+
+        // 출근완료 가드 (레거시 "등록하지 않은 항목만 수정")
+        if (schedule.attendanceLog != null) throw LeaderEventScheduleAttendedException()
+
+        // 신규 담당 여사원 검증 (조장 팀원)
+        val targetEmployee = employeeRepository.findById(targetEmployeeId)
+            .orElseThrow { LeaderScheduleTargetEmployeeNotFoundException() }
+        if (targetEmployee.costCenterCode != registrant.costCenterCode) {
+            throw LeaderScheduleNotTeamMemberException()
+        }
+        if (targetEmployee.status == EMPLOYEE_STATUS_ON_LEAVE || targetEmployee.status == EMPLOYEE_STATUS_RETIRED) {
+            throw LeaderScheduleTargetEmployeeInactiveException()
+        }
+
+        // 마감 가드 (admin validateClosedEmployeeModification 동등 — 조장=비admin)
+        val criticalChanged = pe.employeeId != targetEmployeeId || pe.scheduleDate != workingDate
+        if (pe.teamMemberScheduleId != null && pe.promoCloseByTm && criticalChanged) {
+            throw LeaderEventScheduleClosedException()
+        }
+
+        // 진실원본 PromotionEmployee 갱신 (다른 필드 보존 — pe.update() 전체초기화 호출 금지)
+        pe.employeeId = targetEmployeeId
+        pe.scheduleDate = workingDate
+        promotionEmployeeRepository.save(pe)
+
+        // TMS 재파생 (기존 TMS 가 있으면 in-place update, 없으면 신규 생성). 행사기간/한도/중복 검증 포함.
+        val promotionId = pe.promotionId ?: throw PromotionNotFoundException()
+        promotionSchedulesUpsertHelper.upsert(promotionId)
+
+        // 재파생된 TMS 조회 후 응답
+        val updated = teamMemberScheduleRepository.findById(pe.teamMemberScheduleId ?: scheduleId)
+            .orElse(schedule)
+        return LeaderEventScheduleChangeResponse.from(updated)
+    }
+
+    /**
+     * 조장 행사 일정 삭제 — 행사 배정 해제 (레거시 `scheduleChangePromo` updatePromtSchedule D 동등).
+     *
+     * TMS cascade 삭제(MFEIS 일관) + PromotionEmployee 삭제 (admin `deleteEmployee` 동등).
+     */
+    @Transactional
+    fun deleteEventAssignment(registrantId: Long, scheduleId: Long) {
+        val registrant = findRegistrant(registrantId)
+        requireLeader(registrant)
+
+        val (schedule, pe) = resolveEventAssignment(scheduleId, registrant)
+
+        // 출근완료 가드 (레거시 deleteblock — 비admin 삭제 차단)
+        if (schedule.attendanceLog != null) throw LeaderEventScheduleAttendedException()
+
+        // 마감 가드 (admin deleteEmployee 동등 — 사번 00000009 예외 유지)
+        if (pe.teamMemberScheduleId != null && pe.promoCloseByTm &&
+            pe.employee?.employeeCode != SPECIAL_BYPASS_EMPLOYEE_CODE
+        ) {
+            throw LeaderEventScheduleClosedException()
+        }
+
+        // TMS cascade 삭제 (조장=비admin) + PromotionEmployee 삭제
+        teamMemberScheduleCascadeHelper.cascadeDeleteByIds(actorIsAdminGrade = false, listOf(schedule.id))
+        promotionEmployeeRepository.delete(pe)
+        promotionEmployeeRepository.flush()
+    }
+
+    /**
+     * 행사 일정 변경/삭제 공통 — scheduleId 로 TMS 를 로드하고 행사·팀원·연관 검증 후 (TMS, PE) 반환.
+     */
+    private fun resolveEventAssignment(
+        scheduleId: Long,
+        registrant: Employee
+    ): Pair<TeamMemberSchedule, com.otoki.powersales.promotion.entity.PromotionEmployee> {
+        val schedule = teamMemberScheduleRepository.findById(scheduleId)
+            .orElseThrow { LeaderEventScheduleNotFoundException() }
+
+        // 행사 근무 일정만 대상
+        if (schedule.workingCategory1 != WorkingCategory1.EVENT) {
+            throw LeaderEventScheduleNotEventException()
+        }
+
+        // 현재 담당 여사원이 조장 팀원인지 검증
+        if (schedule.employee?.costCenterCode != registrant.costCenterCode) {
+            throw LeaderScheduleNotTeamMemberException()
+        }
+
+        // 진실원본 PromotionEmployee 연관 필수
+        val pe = schedule.promotionEmployee
+            ?: throw LeaderEventScheduleNotFoundException()
+
+        return schedule to pe
     }
 
     fun getTeamMembers(registrantId: Long): List<LeaderTeamMemberListResponse> {
@@ -431,6 +597,7 @@ class LeaderScheduleService(
     private fun TeamMemberSchedule.toWorkerItem(): LeaderDailyWorkerItem =
         LeaderDailyWorkerItem(
             scheduleId = id,
+            displayWorkScheduleId = null,
             employeeId = employee?.id,
             employeeName = employee?.name.orEmpty(),
             employeeCode = employee?.employeeCode.orEmpty(),
@@ -454,6 +621,7 @@ class LeaderScheduleService(
         val accId = account?.id
         return LeaderDailyWorkerItem(
             scheduleId = 0L,
+            displayWorkScheduleId = id,
             employeeId = empId,
             employeeName = employee?.name.orEmpty(),
             employeeCode = employee?.employeeCode.orEmpty(),

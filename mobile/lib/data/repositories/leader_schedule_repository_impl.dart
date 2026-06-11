@@ -1,5 +1,6 @@
 import '../../domain/entities/leader_account.dart';
 import '../../domain/entities/leader_daily_status.dart';
+import '../../domain/entities/leader_display_schedule.dart';
 import '../../domain/entities/leader_monthly_schedule.dart';
 import '../../domain/entities/leader_schedule_created.dart';
 import '../../domain/entities/leader_team_member.dart';
@@ -39,6 +40,89 @@ class LeaderScheduleRepositoryImpl implements LeaderScheduleRepository {
   Future<LeaderDailyStatus> getDailyStatus(DateTime date) async {
     final model = await _dataSource.getDailyStatus(_formatDate(date));
     return model.toEntity();
+  }
+
+  @override
+  Future<void> registerProxyAttendance({
+    required int targetEmployeeId,
+    int? scheduleId,
+    int? displayWorkScheduleId,
+  }) {
+    return _dataSource.registerProxyAttendance(
+      targetEmployeeId: targetEmployeeId,
+      scheduleId: scheduleId,
+      displayWorkScheduleId: displayWorkScheduleId,
+    );
+  }
+
+  @override
+  Future<void> changeEventAssignment({
+    required int scheduleId,
+    required int targetEmployeeId,
+    required DateTime workingDate,
+  }) {
+    return _dataSource.changeEventAssignment(
+      scheduleId: scheduleId,
+      targetEmployeeId: targetEmployeeId,
+      workingDate: workingDate,
+    );
+  }
+
+  @override
+  Future<void> deleteEventAssignment(int scheduleId) {
+    return _dataSource.deleteEventAssignment(scheduleId);
+  }
+
+  @override
+  Future<LeaderDisplaySchedule> getDisplaySchedule(int displayWorkScheduleId) {
+    return _dataSource.getDisplaySchedule(displayWorkScheduleId);
+  }
+
+  @override
+  Future<void> createDisplaySchedule({
+    required int targetEmployeeId,
+    required int accountId,
+    required DateTime startDate,
+    DateTime? endDate,
+    required String typeOfWork3,
+    required String typeOfWork4,
+    required String typeOfWork5,
+  }) {
+    return _dataSource.createDisplaySchedule(
+      targetEmployeeId: targetEmployeeId,
+      accountId: accountId,
+      startDate: startDate,
+      endDate: endDate,
+      typeOfWork3: typeOfWork3,
+      typeOfWork4: typeOfWork4,
+      typeOfWork5: typeOfWork5,
+    );
+  }
+
+  @override
+  Future<void> updateDisplaySchedule({
+    required int displayWorkScheduleId,
+    required int accountId,
+    required DateTime startDate,
+    DateTime? endDate,
+    required String typeOfWork3,
+    required String typeOfWork4,
+    required String typeOfWork5,
+  }) {
+    return _dataSource.updateDisplaySchedule(
+      displayWorkScheduleId: displayWorkScheduleId,
+      accountId: accountId,
+      startDate: startDate,
+      endDate: endDate,
+      typeOfWork3: typeOfWork3,
+      typeOfWork4: typeOfWork4,
+      typeOfWork5: typeOfWork5,
+    );
+  }
+
+  @override
+  Future<void> deleteDisplaySchedule(int displayWorkScheduleId) {
+    return _dataSource.deleteDisplaySchedule(displayWorkScheduleId);
   }
 
   @override

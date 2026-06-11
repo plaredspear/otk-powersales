@@ -88,3 +88,37 @@ class LeaderScheduleCategory3ConflictException : BusinessException(
     message = "동일 날짜와 직원으로 다른 유형의 일정이 존재합니다.",
     httpStatus = HttpStatus.CONFLICT
 )
+
+// ===== 행사 일정 변경/삭제 (레거시 scheduleChangePromo) =====
+
+class LeaderEventScheduleNotFoundException : BusinessException(
+    errorCode = "EVENT_SCHEDULE_NOT_FOUND",
+    message = "행사 일정 정보를 찾을 수 없습니다.",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+class LeaderEventScheduleNotEventException : BusinessException(
+    errorCode = "NOT_EVENT_SCHEDULE",
+    message = "행사 근무 일정만 변경/삭제할 수 있습니다.",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class LeaderEventScheduleAttendedException : BusinessException(
+    errorCode = "EVENT_SCHEDULE_ATTENDED",
+    message = "이미 출근 등록된 행사 일정은 변경/삭제할 수 없습니다.",
+    httpStatus = HttpStatus.CONFLICT
+)
+
+class LeaderEventScheduleClosedException : BusinessException(
+    errorCode = "EVENT_SCHEDULE_CLOSED",
+    message = "마감된 행사 일정은 변경/삭제할 수 없습니다.",
+    httpStatus = HttpStatus.CONFLICT
+)
+
+// ===== 진열 일정(마스터) 변경/삭제 (레거시 scheduleChange 진열) =====
+
+class LeaderDisplayScheduleNotFoundException : BusinessException(
+    errorCode = "DISPLAY_SCHEDULE_NOT_FOUND",
+    message = "진열 일정 정보를 찾을 수 없습니다.",
+    httpStatus = HttpStatus.NOT_FOUND
+)

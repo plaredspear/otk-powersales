@@ -1,5 +1,6 @@
 import '../entities/leader_account.dart';
 import '../entities/leader_daily_status.dart';
+import '../entities/leader_display_schedule.dart';
 import '../entities/leader_monthly_schedule.dart';
 import '../entities/leader_schedule_created.dart';
 import '../entities/leader_team_member.dart';
@@ -16,8 +17,54 @@ abstract class LeaderScheduleRepository {
     required int month,
   });
 
-  /// 여사원 일별 현황 조회 (조회 전용). [date] 기준 진열/행사/연차 + 출근 현황.
+  /// 여사원 일별 현황 조회. [date] 기준 진열/행사/연차 + 출근 현황.
   Future<LeaderDailyStatus> getDailyStatus(DateTime date);
+
+  /// 조장 대리출근 등록 (레거시 mngDaily addScheduleProc).
+  /// 진열=[displayWorkScheduleId], 행사·기배정=[scheduleId] 중 하나 전달.
+  Future<void> registerProxyAttendance({
+    required int targetEmployeeId,
+    int? scheduleId,
+    int? displayWorkScheduleId,
+  });
+
+  /// 조장 행사 일정 변경 — 담당 여사원/투입일 재배정 (레거시 scheduleChangePromo M).
+  Future<void> changeEventAssignment({
+    required int scheduleId,
+    required int targetEmployeeId,
+    required DateTime workingDate,
+  });
+
+  /// 조장 행사 일정 삭제 — 행사 배정 해제 (레거시 scheduleChangePromo D).
+  Future<void> deleteEventAssignment(int scheduleId);
+
+  /// 진열 일정(마스터) 상세 조회 — 편집 화면 선조회용.
+  Future<LeaderDisplaySchedule> getDisplaySchedule(int displayWorkScheduleId);
+
+  /// 진열 일정(마스터) 추가 (레거시 scheduleChange 진열 추가).
+  Future<void> createDisplaySchedule({
+    required int targetEmployeeId,
+    required int accountId,
+    required DateTime startDate,
+    DateTime? endDate,
+    required String typeOfWork3,
+    required String typeOfWork4,
+    required String typeOfWork5,
+  });
+
+  /// 진열 일정(마스터) 변경 (레거시 scheduleChange 진열 변경).
+  Future<void> updateDisplaySchedule({
+    required int displayWorkScheduleId,
+    required int accountId,
+    required DateTime startDate,
+    DateTime? endDate,
+    required String typeOfWork3,
+    required String typeOfWork4,
+    required String typeOfWork5,
+  });
+
+  /// 진열 일정(마스터) 삭제.
+  Future<void> deleteDisplaySchedule(int displayWorkScheduleId);
 
   /// 조장 본인 거래처 목록 조회. [keyword] 부분 일치 검색 (선택).
   Future<List<LeaderAccount>> getAccounts({String? keyword});

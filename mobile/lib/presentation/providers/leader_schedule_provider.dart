@@ -285,13 +285,17 @@ class LeaderDailyStatusState {
     this.hasLoaded = false,
   });
 
+  /// 공백·대소문자 무시 매칭 (레거시 `REGEXP_REPLACE(..,'\s','')` + 검색어 공백 제거 정합).
   bool _matches(String name, String code, String account) {
-    if (searchKeyword.isEmpty) return true;
-    final needle = searchKeyword.toLowerCase();
-    return name.toLowerCase().contains(needle) ||
-        code.toLowerCase().contains(needle) ||
-        account.toLowerCase().contains(needle);
+    final needle = _normalize(searchKeyword);
+    if (needle.isEmpty) return true;
+    return _normalize(name).contains(needle) ||
+        _normalize(code).contains(needle) ||
+        _normalize(account).contains(needle);
   }
+
+  static String _normalize(String s) =>
+      s.toLowerCase().replaceAll(RegExp(r'\s+'), '');
 
   List<LeaderDailyWorker> get filteredDisplayWorkers =>
       (data?.displayWorkers ?? const [])
@@ -367,6 +371,121 @@ class LeaderDailyStatusNotifier extends StateNotifier<LeaderDailyStatusState> {
   /// 검색어 설정 — 로드된 데이터에 대한 클라이언트 측 필터에만 사용(재조회 없음).
   void setSearchKeyword(String keyword) {
     state = state.copyWith(searchKeyword: keyword);
+  }
+
+  /// 조장 대리출근 등록 후 재조회. 성공 시 null, 실패 시 에러 메시지 반환.
+  /// 진열=[displayWorkScheduleId], 행사·기배정=[scheduleId] 중 하나 전달.
+  Future<String?> registerProxyAttendance({
+    required int targetEmployeeId,
+    int? scheduleId,
+    int? displayWorkScheduleId,
+  }) async {
+    try {
+      await _repository.registerProxyAttendance(
+        targetEmployeeId: targetEmployeeId,
+        scheduleId: scheduleId,
+        displayWorkScheduleId: displayWorkScheduleId,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      return extractErrorMessage(e);
+    }
+  }
+
+  /// 행사 일정 변경 — 담당 여사원/투입일 재배정. 성공 시 null, 실패 시 에러 메시지.
+  Future<String?> changeEventAssignment({
+    required int scheduleId,
+    required int targetEmployeeId,
+    required DateTime workingDate,
+  }) async {
+    try {
+      await _repository.changeEventAssignment(
+        scheduleId: scheduleId,
+        targetEmployeeId: targetEmployeeId,
+        workingDate: workingDate,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      return extractErrorMessage(e);
+    }
+  }
+
+  /// 행사 일정 삭제 — 행사 배정 해제. 성공 시 null, 실패 시 에러 메시지.
+  Future<String?> deleteEventAssignment(int scheduleId) async {
+    try {
+      await _repository.deleteEventAssignment(scheduleId);
+      await load();
+      return null;
+    } catch (e) {
+      return extractErrorMessage(e);
+    }
+  }
+
+  /// 진열 일정(마스터) 추가. 성공 시 null, 실패 시 에러 메시지.
+  Future<String?> createDisplaySchedule({
+    required int targetEmployeeId,
+    required int accountId,
+    required DateTime startDate,
+    DateTime? endDate,
+    required String typeOfWork3,
+    required String typeOfWork4,
+    required String typeOfWork5,
+  }) async {
+    try {
+      await _repository.createDisplaySchedule(
+        targetEmployeeId: targetEmployeeId,
+        accountId: accountId,
+        startDate: startDate,
+        endDate: endDate,
+        typeOfWork3: typeOfWork3,
+        typeOfWork4: typeOfWork4,
+        typeOfWork5: typeOfWork5,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      return extractErrorMessage(e);
+    }
+  }
+
+  /// 진열 일정(마스터) 변경. 성공 시 null, 실패 시 에러 메시지.
+  Future<String?> updateDisplaySchedule({
+    required int displayWorkScheduleId,
+    required int accountId,
+    required DateTime startDate,
+    DateTime? endDate,
+    required String typeOfWork3,
+    required String typeOfWork4,
+    required String typeOfWork5,
+  }) async {
+    try {
+      await _repository.updateDisplaySchedule(
+        displayWorkScheduleId: displayWorkScheduleId,
+        accountId: accountId,
+        startDate: startDate,
+        endDate: endDate,
+        typeOfWork3: typeOfWork3,
+        typeOfWork4: typeOfWork4,
+        typeOfWork5: typeOfWork5,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      return extractErrorMessage(e);
+    }
+  }
+
+  /// 진열 일정(마스터) 삭제. 성공 시 null, 실패 시 에러 메시지.
+  Future<String?> deleteDisplaySchedule(int displayWorkScheduleId) async {
+    try {
+      await _repository.deleteDisplaySchedule(displayWorkScheduleId);
+      await load();
+      return null;
+    } catch (e) {
+      return extractErrorMessage(e);
+    }
   }
 
   /// 에러 메시지 1회성 소비(SnackBar 표시 후 호출).

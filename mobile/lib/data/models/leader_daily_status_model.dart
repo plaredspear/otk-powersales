@@ -82,6 +82,7 @@ class LeaderDailyStatusSummaryModel {
 
 class LeaderDailyWorkerModel {
   final int scheduleId;
+  final int? displayWorkScheduleId;
   final int? employeeId;
   final String employeeName;
   final String employeeCode;
@@ -94,6 +95,7 @@ class LeaderDailyWorkerModel {
 
   const LeaderDailyWorkerModel({
     required this.scheduleId,
+    this.displayWorkScheduleId,
     this.employeeId,
     required this.employeeName,
     required this.employeeCode,
@@ -108,6 +110,7 @@ class LeaderDailyWorkerModel {
   factory LeaderDailyWorkerModel.fromJson(Map<String, dynamic> json) {
     return LeaderDailyWorkerModel(
       scheduleId: json['scheduleId'] as int,
+      displayWorkScheduleId: json['displayWorkScheduleId'] as int?,
       employeeId: json['employeeId'] as int?,
       employeeName: json['employeeName'] as String? ?? '',
       employeeCode: json['employeeCode'] as String? ?? '',
@@ -122,6 +125,7 @@ class LeaderDailyWorkerModel {
 
   LeaderDailyWorker toEntity() => LeaderDailyWorker(
         scheduleId: scheduleId,
+        displayWorkScheduleId: displayWorkScheduleId,
         employeeId: employeeId,
         employeeName: employeeName,
         employeeCode: employeeCode,
