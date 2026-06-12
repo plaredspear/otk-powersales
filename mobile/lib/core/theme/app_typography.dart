@@ -6,6 +6,12 @@ import 'app_colors.dart';
 /// PPTX 스크린샷 기반으로 추출한 텍스트 스타일.
 /// 디자인 가이드: apps/mobile/docs/DESIGN_GUIDE.md
 abstract final class AppTypography {
+  /// 앱 기본 폰트 패밀리 (오뚜기 산스체)
+  ///
+  /// weight 매핑: ExtraLight(200) / Light(300) / Medium(500) / Bold(700) / ExtraBold(800)
+  /// w400·w600 등 미보유 weight는 Flutter가 가장 가까운 weight로 폴백.
+  static const String fontFamily = 'OtokiSans';
+
   // ─── Display ─────────────────────────────────────────────
   /// 실적 금액 등 대형 숫자 (28sp, Bold)
   /// 사용: "2,921만원" 등 핵심 수치
@@ -96,8 +102,8 @@ abstract final class AppTypography {
   );
 
   // ─── Legacy (Heroku 디자인 정렬용) ───────────────────────
-  /// 레거시 폰트 패밀리 (NanumSquareNeo)
-  static const String legacyFontFamily = 'NanumSquareNeo';
+  /// 레거시 폰트 패밀리 (앱 기본 폰트와 동일하게 오뚜기 산스체 사용)
+  static const String legacyFontFamily = fontFamily;
 
   /// 스케줄 카드 날짜 헤더 (22/800)
   static const TextStyle legacyTitleXXL = TextStyle(
