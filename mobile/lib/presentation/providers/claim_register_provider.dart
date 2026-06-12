@@ -414,8 +414,12 @@ class ClaimRegisterNotifier extends StateNotifier<ClaimRegisterState> {
 // ============================================
 
 /// 클레임 등록 Provider
+///
+/// autoDispose: 등록 화면을 벗어나면 폼 state 를 폐기한다.
+/// (미적용 시 provider 가 싱글톤처럼 유지되어 작성 중 이탈 후 재진입 시 이전 입력값이 남는다)
 final claimRegisterProvider =
-    StateNotifierProvider<ClaimRegisterNotifier, ClaimRegisterState>((ref) {
+    StateNotifierProvider.autoDispose<ClaimRegisterNotifier, ClaimRegisterState>(
+        (ref) {
   return ClaimRegisterNotifier(
     registerClaimUseCase: ref.watch(registerClaimUseCaseProvider),
     claimRepository: ref.watch(claimRepositoryProvider),
