@@ -141,7 +141,8 @@ class AdminInspectionThemeService(
             endDate = request.endDate?.let { LocalDate.parse(it) },
             department = employee.orgName,
             branchCode = employee.costCenterCode,
-            publicFlag = true,
+            // 레거시 Theme__c.PublicFlag__c 기본값 정합(입력란 없이 false 생성). 조회 필터엔 미사용.
+            publicFlag = false,
             isDeleted = false,
         )
         val saved = inspectionThemeRepository.save(theme)
