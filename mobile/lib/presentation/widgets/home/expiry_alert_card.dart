@@ -16,15 +16,10 @@ class ExpiryAlertCard extends StatelessWidget {
   /// 카드 탭 콜백 (유통기한 관리 화면으로 이동)
   final VoidCallback? onTap;
 
-  /// 아바타를 위로 끌어올려 노란 영역에 겹치게 하는 깊이 (paint-only).
-  /// 레이아웃은 그대로라 이름·유통기한 텍스트 위치는 변하지 않는다.
-  final double avatarTopOverlap;
-
   const ExpiryAlertCard({
     super.key,
     this.expiryAlert,
     this.onTap,
-    this.avatarTopOverlap = 0,
   });
 
   @override
@@ -45,15 +40,11 @@ class ExpiryAlertCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // 프로필 일러스트 (레거시 64×64)
-            // avatarTopOverlap 만큼 위로 끌어올려 노란 영역에 상단만 겹친다(paint-only).
-            Transform.translate(
-              offset: Offset(0, -avatarTopOverlap),
-              child: Image.asset(
-                'assets/images/img_profile.png',
-                width: AppSpacing.homeProfileSize,
-                height: AppSpacing.homeProfileSize,
-                fit: BoxFit.contain,
-              ),
+            Image.asset(
+              'assets/images/img_profile.png',
+              width: AppSpacing.homeProfileSize,
+              height: AppSpacing.homeProfileSize,
+              fit: BoxFit.contain,
             ),
             const SizedBox(width: 10),
 

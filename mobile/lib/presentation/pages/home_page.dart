@@ -190,19 +190,23 @@ class _HomePageState extends ConsumerState<HomePage>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // #2 프로필 / 유통기한 알림
-              // 아바타만 위로 끌어올려 ① 노란 영역에 상단을 겹치고,
-              // 지점·이름·유통기한 텍스트는 그라데이션(흰색) 위에 둔다.
-              Padding(
-                padding: horizontalGutter,
-                child: ExpiryAlertCard(
-                  expiryAlert: homeData.expiryAlert,
-                  avatarTopOverlap: AppSpacing.homeProfileAvatarRaise,
-                  onTap: () {
-                    AppRouter.navigateTo(context, AppRouter.productExpiration);
-                  },
+              // 프로필 행(아바타+텍스트)을 통째로 끌어올려 세로 정렬을 유지한 채
+              // ① 노란 영역에 겹친다. 키가 큰 아바타 상단만 노랑에 걸치고
+              // 텍스트는 그라데이션(흰색) 위에 놓인다.
+              Transform.translate(
+                offset: const Offset(0, -AppSpacing.homeProfileRaise),
+                child: Padding(
+                  padding: horizontalGutter,
+                  child: ExpiryAlertCard(
+                    expiryAlert: homeData.expiryAlert,
+                    onTap: () {
+                      AppRouter.navigateTo(context, AppRouter.productExpiration);
+                    },
+                  ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
+              // 끌어올림으로 생긴 시각적 간격 보정
+              const SizedBox(height: AppSpacing.sm),
 
               // #3 공지 영역 (가로 스크롤)
               NoticeCarousel(
