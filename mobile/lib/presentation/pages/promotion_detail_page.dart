@@ -207,21 +207,10 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
   /// 프로그레스 바 표시 안정성을 위해 0~100 범위로 클램프.
   Widget _buildProgressSection(PromotionDetail detail) {
     final percent = _progressPercent(detail);
-    final remaining = _remainingLabel(detail);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader(
-          Icons.show_chart,
-          '기간 경과율',
-          trailing: remaining == null
-              ? null
-              : Text(
-                  remaining,
-                  style: AppTypography.bodyMedium
-                      .copyWith(color: AppColors.textSecondary),
-                ),
-        ),
+        _sectionHeader(Icons.show_chart, '기간 경과율'),
         const SizedBox(height: AppSpacing.md),
         ClipRRect(
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
@@ -542,16 +531,12 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
 
   // ─── 공통 위젯 ──────────────────────────────────────────────
 
-  Widget _sectionHeader(IconData icon, String title, {Widget? trailing}) {
+  Widget _sectionHeader(IconData icon, String title) {
     return Row(
       children: [
         Icon(icon, size: 18, color: AppColors.secondary),
         const SizedBox(width: AppSpacing.xs),
         Text(title, style: AppTypography.headlineSmall),
-        if (trailing != null) ...[
-          const Spacer(),
-          trailing,
-        ],
       ],
     );
   }
@@ -605,23 +590,6 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
   int _ceilDays(DateTime a, DateTime b) {
     final ms = a.difference(b).inMilliseconds.abs();
     return (ms / Duration.millisecondsPerDay).ceil();
-  }
-
-  /// 기간 경과율 헤더 우측 라벨. 경과율 바와 경계를 맞춰
-  /// 종료(`now >= end`)/시작 전(`now < start`)/진행 중(남은 일수)을 구분.
-  String? _remainingLabel(PromotionDetail detail) {
-    final start = DateTime.tryParse(detail.startDate);
-    final end = DateTime.tryParse(detail.endDate);
-    if (start == null || end == null) return null;
-
-    final now = DateTime.now();
-    if (!now.isBefore(end)) return '종료';
-    if (now.isBefore(start)) return '시작 전';
-
-    final today = DateTime(now.year, now.month, now.day);
-    final endDay = DateTime(end.year, end.month, end.day);
-    final days = endDay.difference(today).inDays;
-    return days <= 0 ? '오늘 종료' : '$days일 남음';
   }
 
   /// 행사 기간(start~end) 전체 날짜 행 구성. 각 날짜의 조원 실적 합계를 매핑
