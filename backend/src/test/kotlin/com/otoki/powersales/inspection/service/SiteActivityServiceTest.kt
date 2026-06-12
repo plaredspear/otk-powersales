@@ -165,6 +165,7 @@ class SiteActivityServiceTest {
             every { accountRepository.findById(1) } returns Optional.of(account())
             every { inspectionThemeRepository.findById(10L) } returns Optional.of(theme())
             every { productRepository.findByProductCode("P001") } returns null
+            every { siteActivityRepository.getNextNameSeq() } returns 1765L
             val saved = slot<SiteActivity>()
             every { siteActivityRepository.save(capture(saved)) } answers { saved.captured.apply { } }
 
@@ -178,6 +179,8 @@ class SiteActivityServiceTest {
             assertThat(captured.salesQuantity?.toInt()).isEqualTo(30)
             assertThat(captured.costCenterCode).isEqualTo("CC1")
             assertThat(captured.sapAccountCode).isEqualTo("SAP1")
+            // SF Name AutoNumber(SA{00000000}) 채번 — prefix SA + 8자리 zero-pad
+            assertThat(captured.name).isEqualTo("SA00001765")
         }
 
         @Test
@@ -203,6 +206,7 @@ class SiteActivityServiceTest {
             every { accountRepository.findById(1) } returns Optional.of(account())
             every { inspectionThemeRepository.findById(10L) } returns Optional.of(theme())
             every { productRepository.findByProductCode("P001") } returns null
+            every { siteActivityRepository.getNextNameSeq() } returns 1765L
             every { siteActivityRepository.save(any()) } answers { (it.invocation.args[0] as SiteActivity) }
             every { fileStorageService.uploadSiteActivityPhoto(any(), any()) } returns "uploads/site-activity/2026/05/01/x.jpg"
             val savedFile = slot<UploadFile>()

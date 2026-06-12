@@ -68,6 +68,7 @@ class AdminSiteActivityMutationServiceTest {
         every { accountRepository.findById(1) } returns Optional.of(account())
         every { inspectionThemeRepository.findById(10L) } returns Optional.of(theme())
         every { productRepository.findByProductCode("P001") } returns Product(id = 5, name = "제품A", productCode = "P001")
+        every { siteActivityRepository.getNextNameSeq() } returns 1765L
         val saved = slot<SiteActivity>()
         every { siteActivityRepository.save(capture(saved)) } answers { saved.captured }
 
@@ -82,6 +83,8 @@ class AdminSiteActivityMutationServiceTest {
         assertThat(c.sapAccountCode).isEqualTo("SAP1")
         assertThat(c.sampleTastFlag).isEqualTo("Y")
         assertThat(c.competitorProudctPrice?.toInt()).isEqualTo(1500)
+        // SF Name AutoNumber(SA{00000000}) 채번 — prefix SA + 8자리 zero-pad
+        assertThat(c.name).isEqualTo("SA00001765")
         assertThat(response.id).isEqualTo(c.id)
     }
 
@@ -90,6 +93,7 @@ class AdminSiteActivityMutationServiceTest {
         every { employeeRepository.findById(100L) } returns Optional.of(employee())
         every { accountRepository.findById(1) } returns Optional.of(account())
         every { inspectionThemeRepository.findById(10L) } returns Optional.of(theme())
+        every { siteActivityRepository.getNextNameSeq() } returns 1766L
         val saved = slot<SiteActivity>()
         every { siteActivityRepository.save(capture(saved)) } answers { saved.captured }
 
