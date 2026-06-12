@@ -2193,6 +2193,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseSiteActivityDraftResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SiteActivityDraftResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseSuggestionCreateResponse" : {
         "properties" : {
           "data" : {
@@ -4278,6 +4307,16 @@
       },
       "LoginRequest" : {
         "properties" : {
+          "appPlatform" : {
+            "type" : [ "string", "null" ]
+          },
+          "appVersionCode" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "appVersionName" : {
+            "type" : [ "string", "null" ]
+          },
           "deviceId" : {
             "minLength" : 1,
             "type" : "string"
@@ -6072,6 +6111,16 @@
       },
       "RefreshTokenRequest" : {
         "properties" : {
+          "appPlatform" : {
+            "type" : [ "string", "null" ]
+          },
+          "appVersionCode" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "appVersionName" : {
+            "type" : [ "string", "null" ]
+          },
           "refreshToken" : {
             "minLength" : 1,
             "type" : "string"
@@ -6197,6 +6246,120 @@
           "submittedAt" : {
             "format" : "date-time",
             "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "SiteActivityDraftRequest" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorActivity" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductPrice" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorSalesQuantity" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorTasting" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "fieldTypeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "inspectionDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "themeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "SiteActivityDraftResponse" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "category" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorActivity" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "competitorProductPrice" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorSalesQuantity" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "competitorTasting" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "fieldTypeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "inspectionDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "photoUrls" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "themeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           }
         },
         "type" : "object"
@@ -7233,7 +7396,7 @@
     },
     "/api/v1/mobile/claims/draft" : {
       "delete" : {
-        "operationId" : "deleteDraft_1",
+        "operationId" : "deleteDraft_2",
         "responses" : {
           "200" : {
             "content" : {
@@ -7249,7 +7412,7 @@
         "tags" : [ "claim-controller" ]
       },
       "post" : {
-        "operationId" : "saveDraft_1",
+        "operationId" : "saveDraft_2",
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -7763,6 +7926,78 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseInspectionListItem"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "inspection-controller" ]
+      }
+    },
+    "/api/v1/mobile/inspections/draft" : {
+      "delete" : {
+        "operationId" : "deleteDraft_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "inspection-controller" ]
+      },
+      "get" : {
+        "operationId" : "getDraft",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSiteActivityDraftResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "inspection-controller" ]
+      },
+      "post" : {
+        "operationId" : "saveDraft_1",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "photos" : {
+                    "items" : {
+                      "format" : "binary",
+                      "type" : "string"
+                    },
+                    "type" : "array"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/SiteActivityDraftRequest"
+                  }
+                },
+                "required" : [ "request" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSiteActivityDraftResponse"
                 }
               }
             },

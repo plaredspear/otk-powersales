@@ -9273,6 +9273,19 @@
           "appLoginActive" : {
             "type" : [ "boolean", "null" ]
           },
+          "appPlatform" : {
+            "type" : [ "string", "null" ]
+          },
+          "appVersionCode" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "appVersionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "appVersionSeenAt" : {
+            "type" : [ "string", "null" ]
+          },
           "appointmentDate" : {
             "type" : [ "string", "null" ]
           },
