@@ -10,8 +10,9 @@ import org.springframework.stereotype.Component
  * ORORA 월별 마감 → `monthly_sales_history` 적재 daily batch (Spec #855).
  *
  * legacy `IF_REST_ORORA_ReceiveMonthlySalesHistory` (ORORA pull, ABC/Ship 마감) 동등.
- * SAP PO 어댑터 callout → ORORA DB 직조회. 대상 월은 당월 동적 산출 (Q2). 처리 로직은
- * [OroraSalesMaterializeFacade.materializeMonthly] 위임.
+ * SAP PO 어댑터 callout → ORORA DB 직조회. 레거시는 익월 초 1회 실행되어 **전월** 마감분을 적재했으며
+ * (운영자 수동, `OroraYearMonth__mdt` 전월값) 운영 DB 적재 분포도 이를 확인 → 본 batch 는 **월 1회**
+ * cron 으로 **전월** 동적 산출. 처리 로직은 [OroraSalesMaterializeFacade.materializeMonthly] 위임.
  *
  * 현재 [BatchConfig] 의 `@EnableScheduling` 전면 임시 비활성 (commit d927d1bc, 2026-05-14) — 본 batch
  * fire 도 비활성 상태와 무관. 어노테이션 한 줄 복원 시 즉시 활성.
@@ -22,7 +23,7 @@ class OroraMonthlySalesMaterializeBatch(
     private val scheduledJobRunner: ScheduledJobRunner,
 ) {
 
-    @Scheduled(cron = "\${app.batch.orora.monthly.cron:0 0 5 * * *}")
+    @Scheduled(cron = "\${app.batch.orora.monthly.cron:0 0 5 3 * *}")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT30M", lockAtLeastFor = "PT30S")
     fun run() {
         scheduledJobRunner.run(JOB_NAME) { ctx ->

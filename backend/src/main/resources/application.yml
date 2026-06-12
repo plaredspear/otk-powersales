@@ -233,7 +233,8 @@ app:
       daily:
         cron: ${ORORA_MATERIALIZE_DAILY_CRON:0 30 4 * * *}
       monthly:
-        cron: ${ORORA_MATERIALIZE_MONTHLY_CRON:0 0 5 * * *}
+        # 월 1회 — 매월 3일 05:00 KST (레거시 익월 초 전월분 적재 분포 정합)
+        cron: ${ORORA_MATERIALIZE_MONTHLY_CRON:0 0 5 3 * *}
 
   # ---------------------------------------------------------------------------
   # ORORA 외부 MSSQL DB 직결 DataSource
