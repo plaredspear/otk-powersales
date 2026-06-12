@@ -98,169 +98,154 @@ class _HomePageState extends ConsumerState<HomePage>
     );
   }
 
-  /// 홈 화면 콘텐츠 (Stack: 배경 레이어 + 콘텐츠 레이어, 함께 스크롤)
+  /// 홈 화면 콘텐츠
+  ///
+  /// 두 블록으로 분리해 관리한다(겹치지 않음):
+  ///  ① 헤더 + 카드 영역  → 노란 배경(레거시 #header.main_header)
+  ///  ②③ 프로필 + 본문 영역 → 회색→흰 그라데이션(레거시 .main_bg)
+  /// 프로필 아바타만 ① 노란 영역 위로 끌어올려 상단을 겹치고, 텍스트는 흰색 위에 둔다.
   Widget _buildContent(HomeState state, String userRole) {
     final homeData = state.homeData!;
     final mediaPadding = MediaQuery.of(context).padding;
     final topPadding = mediaPadding.top;
     final bottomPadding = mediaPadding.bottom;
-    // 노란 헤더 높이 = status bar/노치 + 레거시 헤더 116dp(#header.main_header)
-    // 레거시: 헤더 116 전체가 노란색, 그 아래는 회색→흰색 그라데이션(.main_bg)
-    final yellowHeight = topPadding + AppSpacing.homeHeaderHeight;
     const horizontalGutter = EdgeInsets.symmetric(
       horizontal: AppSpacing.homeGutter,
     );
 
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 배경 레이어: 상단 노란 헤더(116) + 하단 회색→흰색 그라데이션
-        // 레거시 common.css: #header.main_header(#FFE40C) + .main_bg:after(#f7f7f7→#fff)
-        // 콘텐츠 전체 높이를 채워 카드 하단/프로필은 그라데이션 위에 놓이게 한다.
-        Positioned.fill(
+        // ── ① 헤더 + 카드 영역 (노란 배경) ──
+        // 카드는 -55 로 헤더를 겹쳐 솟고, 카드 아래 남는 노란 영역에
+        // 프로필 아바타 상단이 걸친다(카드와 프로필은 겹치지 않음).
+        ColoredBox(
+          color: AppColors.legacyYellow,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: yellowHeight,
-                width: double.infinity,
-                color: AppColors.legacyYellow,
-              ),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.homeBgGradientStart,
-                        AppColors.homeBgGradientEnd,
-                      ],
+              // SafeArea 상단 여백 (status bar/노치 회피)
+              SizedBox(height: topPadding),
+
+              // AppBar 영역 (로고 + 햄버거 메뉴)
+              _buildAppBar(),
+
+              // #1 스케줄 카드 (Transform.translate -55 로 노란 헤더 겹침)
+              // 출근/근태 대상(여사원/조장)만 노출. 지점장 등은 카드 자체를 숨김.
+              if (homeData.attendanceApplicable)
+                Transform.translate(
+                  offset: const Offset(0, -AppSpacing.homeCardOverlap),
+                  child: Padding(
+                    padding: horizontalGutter,
+                    child: ScheduleCard(
+                      schedules: homeData.todaySchedules,
+                      currentDate: homeData.currentDate,
+                      attendanceSummary: homeData.attendanceSummary,
+                      userRole: userRole,
+                      onRegisterTap: () => throttledTapAsync(() async {
+                        await _handleRegisterTap(userRole);
+                        if (mounted) {
+                          ref.read(homeProvider.notifier).refresh();
+                        }
+                      }),
+                      onScheduleTap: (schedule) {
+                        final date =
+                            DateTime.tryParse(homeData.currentDate) ??
+                                DateTime.now();
+                        AppRouter.navigateTo(
+                          context,
+                          AppRouter.myScheduleDetail,
+                          arguments: date,
+                        );
+                      },
+                      // 조장/지점장: 레거시 home.jsp "일정 관리" → /employee/mgnSchedule
+                      // 여사원 전체 모드의 월간 일정 캘린더(LeaderTeamMemberScheduleScreen)로 연결.
+                      onScheduleManageTap: () {
+                        AppRouter.navigateTo(
+                          context,
+                          AppRouter.leaderSchedule,
+                        );
+                      },
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
-        // 콘텐츠 레이어 (배경 투명 — 배경 레이어가 노란/그라데이션 담당)
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // SafeArea 상단 여백 (status bar/노치 회피)
-            SizedBox(height: topPadding),
 
-            // AppBar 영역 (로고 + 햄버거 메뉴)
-            _buildAppBar(),
+        // ── ②③ 프로필 + 본문 영역 (회색→흰 그라데이션) ──
+        // 레거시 .main_bg:after linear-gradient(#f7f7f7 → #ffffff)
+        DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.homeBgGradientStart,
+                AppColors.homeBgGradientEnd,
+              ],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // #2 프로필 / 유통기한 알림
+              // 아바타만 위로 끌어올려 ① 노란 영역에 상단을 겹치고,
+              // 지점·이름·유통기한 텍스트는 그라데이션(흰색) 위에 둔다.
+              Padding(
+                padding: horizontalGutter,
+                child: ExpiryAlertCard(
+                  expiryAlert: homeData.expiryAlert,
+                  avatarTopOverlap: AppSpacing.homeProfileAvatarRaise,
+                  onTap: () {
+                    AppRouter.navigateTo(context, AppRouter.productExpiration);
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
 
-            // #1 스케줄 카드 (Transform.translate -55 로 노란 헤더 겹침)
-            // 출근/근태 대상(여사원/조장)만 노출. 지점장 등은 카드 자체를 숨김.
-            if (homeData.attendanceApplicable)
-              Transform.translate(
-                offset: const Offset(0, -AppSpacing.homeCardOverlap),
-                child: Padding(
-                  padding: horizontalGutter,
-                  child: ScheduleCard(
-                    schedules: homeData.todaySchedules,
-                    currentDate: homeData.currentDate,
-                    attendanceSummary: homeData.attendanceSummary,
-                    userRole: userRole,
-                    onRegisterTap: () => throttledTapAsync(() async {
-                      await _handleRegisterTap(userRole);
-                      if (mounted) {
-                        ref.read(homeProvider.notifier).refresh();
-                      }
-                    }),
-                    onScheduleTap: (schedule) {
-                      final date =
-                          DateTime.tryParse(homeData.currentDate) ??
-                              DateTime.now();
-                      AppRouter.navigateTo(
-                        context,
-                        AppRouter.myScheduleDetail,
-                        arguments: date,
-                      );
-                    },
-                    // 조장/지점장: 레거시 home.jsp "일정 관리" → /employee/mgnSchedule
-                    // 여사원 전체 모드의 월간 일정 캘린더(LeaderTeamMemberScheduleScreen)로 연결.
-                    onScheduleManageTap: () {
-                      AppRouter.navigateTo(
-                        context,
-                        AppRouter.leaderSchedule,
-                      );
-                    },
-                  ),
+              // #3 공지 영역 (가로 스크롤)
+              NoticeCarousel(
+                notices: homeData.notices,
+                onNoticeTap: (notice) {
+                  AppRouter.navigateTo(
+                    context,
+                    AppRouter.noticeDetail,
+                    arguments: notice.id,
+                  );
+                },
+                onViewAllTap: () {
+                  AppRouter.navigateTo(context, AppRouter.notices);
+                },
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // #4 제품 검색 바
+              Padding(
+                padding: horizontalGutter,
+                child: ProductSearchBar(
+                  onTap: () {
+                    AppRouter.navigateTo(context, AppRouter.productSearch);
+                  },
+                ),
+              ),
+              // 레거시(common.css): 검색창 ~ 메뉴 그리드 간격 20px
+              const SizedBox(height: AppSpacing.xl),
+
+              // #5 빠른 메뉴
+              Padding(
+                padding: horizontalGutter,
+                child: QuickMenuGrid(
+                  onMenuTap: (item) {
+                    throttledTap(() => _handleQuickMenuTap(item, userRole));
+                  },
                 ),
               ),
 
-            // 스케줄 카드 이후 콘텐츠 (배경은 뒤쪽 그라데이션 레이어가 담당)
-            // 카드가 있을 때만 -55 겹침. 카드 미노출 시 헤더 바로 아래에서 시작.
-            Transform.translate(
-              offset: homeData.attendanceApplicable
-                  ? const Offset(0, -AppSpacing.homeCardOverlap)
-                  : Offset.zero,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // #2 유통기한 알림
-                  Padding(
-                    padding: horizontalGutter,
-                    child: ExpiryAlertCard(
-                      expiryAlert: homeData.expiryAlert,
-                      onTap: () {
-                        AppRouter.navigateTo(
-                            context, AppRouter.productExpiration);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // #3 공지 영역 (가로 스크롤)
-                  NoticeCarousel(
-                    notices: homeData.notices,
-                    onNoticeTap: (notice) {
-                      AppRouter.navigateTo(
-                        context,
-                        AppRouter.noticeDetail,
-                        arguments: notice.id,
-                      );
-                    },
-                    onViewAllTap: () {
-                      AppRouter.navigateTo(context, AppRouter.notices);
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // #4 제품 검색 바
-                  Padding(
-                    padding: horizontalGutter,
-                    child: ProductSearchBar(
-                      onTap: () {
-                        AppRouter.navigateTo(
-                            context, AppRouter.productSearch);
-                      },
-                    ),
-                  ),
-                  // 레거시(common.css): 검색창 ~ 메뉴 그리드 간격 20px
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // #5 빠른 메뉴
-                  Padding(
-                    padding: horizontalGutter,
-                    child: QuickMenuGrid(
-                      onMenuTap: (item) {
-                        throttledTap(() => _handleQuickMenuTap(item, userRole));
-                      },
-                    ),
-                  ),
-
-                  // 마지막 여백: home indicator/네비바 회피
-                  SizedBox(height: AppSpacing.xxxl + bottomPadding),
-                ],
-              ),
-            ),
-          ],
+              // 마지막 여백: home indicator/네비바 회피
+              SizedBox(height: AppSpacing.xxxl + bottomPadding),
+            ],
+          ),
         ),
       ],
     );

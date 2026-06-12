@@ -103,6 +103,10 @@ abstract final class AppSpacing {
   /// 직원 정보 영역 캐릭터 일러스트 크기
   static const double homeProfileSize = 64;
 
+  /// 프로필 아바타가 노란 영역 위로 끌어올려져 겹치는 깊이
+  /// (아바타 상단만 노란 배경에 걸치고, 이름·유통기한 텍스트는 흰색 위)
+  static const double homeProfileAvatarRaise = 32;
+
   // ─── Component Sizes ─────────────────────────────────────
   /// AppBar 높이
   static const double appBarHeight = 56;
