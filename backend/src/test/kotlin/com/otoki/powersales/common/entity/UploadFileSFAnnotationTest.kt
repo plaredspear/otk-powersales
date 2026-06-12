@@ -36,15 +36,16 @@ class UploadFileSFAnnotationTest {
     }
 
     @Nested
-    @DisplayName("AC2 — @SFField 매핑 키셋 (13개)")
+    @DisplayName("AC2 — @SFField 매핑 키셋 (14개)")
     inner class SfFieldMapping {
 
         private val mapping = SFSchemaUtils.getSFMapping(UploadFile::class.java)
 
         @Test
-        @DisplayName("매핑 키 수 = 15 (기존 8 + Spec #712 신규 5 + audit CreatedDate + LastModifiedDate)")
+        @DisplayName("매핑 키 수 = 14 (기존 8 + Spec #712 신규 5 + audit CreatedDate/LastModifiedDate, Date__c formula 정합 제거)")
         fun mappingKeySize() {
-            assertThat(mapping).hasSize(15)
+            // Date__c (formula = CreatedDate 날짜부) 는 SF formula 정합 제거 — created_at.toLocalDate() 파생으로 해소.
+            assertThat(mapping).hasSize(14)
         }
 
         @Test

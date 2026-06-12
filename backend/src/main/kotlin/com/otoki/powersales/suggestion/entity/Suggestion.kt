@@ -103,10 +103,6 @@ class Suggestion(
     @Column(name = "product_sfid", length = 18)
     val productSfid: String? = null,
 
-    @SFField("ProductCode__c")
-    @Column(name = "product_code", length = 1300)
-    var productCode: String? = null,
-
     @SFField("OrgCostCenterCode__c")
     @Column(name = "org_cost_center_code", length = 100)
     var orgCostCenterCode: String? = null,

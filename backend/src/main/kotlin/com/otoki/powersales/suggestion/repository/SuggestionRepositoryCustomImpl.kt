@@ -54,6 +54,7 @@ class SuggestionRepositoryCustomImpl(
             .from(suggestion)
             .leftJoin(suggestion.employee, employee)
             .leftJoin(suggestion.account, account)
+            .leftJoin(suggestion.product, product)
             .where(where)
 
         return PageableExecutionUtils.getPage(content, pageable) {
@@ -118,6 +119,6 @@ class SuggestionRepositoryCustomImpl(
     private fun productCodeEq(filter: AdminSuggestionFilter): Predicate? {
         val code = filter.productCode?.trim().orEmpty()
         if (code.isBlank()) return null
-        return suggestion.productCode.eq(code)
+        return product.productCode.eq(code)
     }
 }

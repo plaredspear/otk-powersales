@@ -43,7 +43,7 @@ data class SuggestionResponse(
                 categoryName = suggestion.category.displayName,
                 title = suggestion.title,
                 content = suggestion.content,
-                productCode = suggestion.productCode,
+                productCode = suggestion.product?.productCode,
                 sapAccountCode = suggestion.sapAccountCode,
                 accountId = suggestion.account?.id?.toLong(),
                 employeeId = suggestion.employee?.id,

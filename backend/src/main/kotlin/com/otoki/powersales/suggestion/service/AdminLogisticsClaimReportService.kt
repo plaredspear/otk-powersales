@@ -161,7 +161,7 @@ class AdminLogisticsClaimReportService(
             claimType = s.claimType,
             title = s.title,
             content = s.content,
-            productCode = s.productCode,
+            productCode = prod?.productCode,
             productName = prod?.name,
             productCategory = prod?.productCategory1,
             branchName = acc?.branchName,

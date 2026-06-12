@@ -1255,7 +1255,6 @@ object Stage1Targets {
             FieldMapping("Url__c", "url"),
             FieldMapping("UploadKbn__c", "upload_kbn"),
             FieldMapping("FileId__c", "file_id"),
-            FieldMapping("Date__c", "file_date"),
             FieldMapping("IsDeleted", "is_deleted"),
             FieldMapping("CreatedDate", "created_at", nullable = false),
             // SF LastModifiedDate → updated_at. Stage1 은 네이티브 COPY 라 JPA @LastModifiedDate
@@ -1338,7 +1337,6 @@ object Stage1Targets {
             FieldMapping("DKRetail__SAPAccountCode__c", "sap_account_code"),
             FieldMapping("DKRetail__EmployeeId__c", "employee_sfid"),
             FieldMapping("DKRetail__ProductId__c", "product_sfid"),
-            FieldMapping("ProductCode__c", "product_code"),
             FieldMapping("OrgCostCenterCode__c", "org_cost_center_code"),
             // SF CostCenterCode__c (라벨 "조직유형") — 사원 소속 코스트센터코드 원본. 데이터 보존용.
             FieldMapping("CostCenterCode__c", "cost_center_code"),

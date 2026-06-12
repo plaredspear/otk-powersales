@@ -118,7 +118,6 @@ class SuggestionService(
             category2 = product?.productCategory2,
             category3 = product?.productCategory3,
             sapAccountCode = request.sapAccountCode,
-            productCode = product?.productCode ?: request.productCode,
             orgCostCenterCode = orgCostCenterCode,
             carNumber = request.carNumber,
             claimDate = request.claimDate,
@@ -133,7 +132,8 @@ class SuggestionService(
             duplicateProposalNum = request.duplicateProposalNum,
             isDeleted = false,
             account = account,
-            employee = employee
+            employee = employee,
+            product = product,
         )
 
         // step 5 — INSERT + 첨부 N건

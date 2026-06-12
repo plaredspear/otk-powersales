@@ -213,7 +213,6 @@ class AdminSuggestionService(
             category2 = product?.productCategory2,
             category3 = product?.productCategory3,
             sapAccountCode = request.sapAccountCode,
-            productCode = product?.productCode ?: request.productCode,
             orgCostCenterCode = orgCostCenterCode,
             carNumber = request.carNumber,
             claimDate = request.claimDate,
@@ -227,7 +226,8 @@ class AdminSuggestionService(
             duplicateProposalNum = request.duplicateProposalNum,
             isDeleted = false,
             account = account,
-            employee = employee
+            employee = employee,
+            product = product,
         )
         val saved = suggestionRepository.save(suggestion)
 

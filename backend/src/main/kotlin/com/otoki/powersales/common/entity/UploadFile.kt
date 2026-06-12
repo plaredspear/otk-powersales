@@ -75,11 +75,6 @@ class UploadFile(
     @Column(name = "file_id", length = 100)
     val fileId: String? = null,
 
-    // -- Spec #747 카테고리 A — D 분류 누락 (생성일) --
-    @SFField("Date__c")
-    @Column(name = "file_date")
-    val fileDate: java.time.LocalDate? = null,
-
     // -- Spec #712: Group A — IsDeleted --
     @SFField("IsDeleted")
     @Column(name = "is_deleted")
