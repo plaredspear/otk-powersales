@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 
 /**
@@ -97,6 +98,14 @@ class AuthService(
 
         // Refresh Token Rotation: 신규 familyId 로 발급
         val refreshToken = issueRefreshToken(employee.id, UUID.randomUUID().toString())
+
+        // 현재 사용 중인 앱 버전 기록 (같은 트랜잭션 dirty checking 으로 영속. 미보고면 no-op).
+        employee.recordAppVersion(
+            request.appVersionName,
+            request.appVersionCode,
+            request.appPlatform,
+            LocalDateTime.now(TimeZones.SEOUL_ZONE)
+        )
 
         return LoginResponse(
             user = UserInfo.from(employee),
@@ -218,7 +227,11 @@ class AuthService(
      * 6. 새 tokenId 생성, 동일 familyId로 새 Refresh Token 발급
      * 7. Redis에 새 Refresh Token 저장
      * 8. 새 Access Token + 새 Refresh Token 반환
+     *
+     * 클래스 기본 readOnly 트랜잭션을 RW 로 재정의 — 리프레시 시 보고된 앱 버전을
+     * employee_info 에 dirty checking 으로 영속한다(자동 로그인 중 현재 버전 최신화).
      */
+    @Transactional
     fun refreshAccessToken(request: RefreshTokenRequest): TokenResponse {
         // 1. JWT 서명/만료 검증
         if (!jwtTokenProvider.validateToken(request.refreshToken)) {
@@ -253,6 +266,14 @@ class AuthService(
         val userId = jwtTokenProvider.getUserIdFromToken(request.refreshToken)
         val employee = employeeRepository.findWithEmployeeInfoById(userId)
             ?: throw InvalidTokenException()
+
+        // 현재 사용 중인 앱 버전 기록 (RW 트랜잭션 dirty checking 으로 영속. 미보고면 no-op).
+        employee.recordAppVersion(
+            request.appVersionName,
+            request.appVersionCode,
+            request.appPlatform,
+            LocalDateTime.now(TimeZones.SEOUL_ZONE)
+        )
 
         // 7. 새 토큰 발급 (동일 familyId 재사용, 새 tokenId). access token 에 현재 단말 재각인 →
         //    리프레시 후에도 매 요청 단말 검증 유지. 리셋된 단말의 refresh 는 5번에서 이미 차단됨.

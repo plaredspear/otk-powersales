@@ -223,6 +223,21 @@ export default function EmployeeDetailPage() {
           <Descriptions.Item label="전문행사조">
             {employee.professionalPromotionTeam ?? '-'}
           </Descriptions.Item>
+          <Descriptions.Item label="현재 앱 버전">
+            {employee.appVersionName
+              ? `${employee.appVersionName}${
+                  employee.appVersionCode != null ? ` (${employee.appVersionCode})` : ''
+                }`
+              : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="앱 플랫폼">
+            {employee.appPlatform ?? '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="버전 보고 시각" span={2}>
+            {employee.appVersionSeenAt
+              ? new Date(employee.appVersionSeenAt).toLocaleString('ko-KR')
+              : '-'}
+          </Descriptions.Item>
           <Descriptions.Item label="GPS 동의" span={2}>
             {employee.agreementFlag === true ? (
               <Tag color="green">동의</Tag>

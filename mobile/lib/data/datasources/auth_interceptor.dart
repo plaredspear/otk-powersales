@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../../app_router.dart';
 import '../../core/navigation/navigator_key.dart';
 import '../../core/network/request_cancel_controller.dart';
+import '../../core/services/app_version_fields.dart';
 import '../../core/session/session_reset_controller.dart';
 import 'auth_local_datasource.dart';
 
@@ -155,7 +156,11 @@ class AuthInterceptor extends Interceptor {
 
       final response = await _dio.post(
         '/api/v1/mobile/auth/refresh',
-        data: {'refreshToken': refreshToken},
+        data: {
+          'refreshToken': refreshToken,
+          // 현재 사용 중인 앱 버전 보고 (자동 리프레시로 현재 버전 최신화).
+          ...await appVersionFields(),
+        },
       );
 
       final data = response.data['data'] as Map<String, dynamic>;

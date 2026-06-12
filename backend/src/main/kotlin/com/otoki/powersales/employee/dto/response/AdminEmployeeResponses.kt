@@ -113,6 +113,11 @@ data class EmployeeDetailResponse(
     val lockingFlag: Boolean?,
     val professionalPromotionTeam: String?,
     val agreementFlag: Boolean?,
+    // 사용자가 마지막 로그인/리프레시 때 보고한 현재 사용 앱 버전 (미보고 시 null).
+    val appVersionName: String?,
+    val appVersionCode: Long?,
+    val appPlatform: String?,
+    val appVersionSeenAt: String?,
 
     // -- 근무 정보 --
     val crmWorkType: String?,
@@ -154,6 +159,10 @@ data class EmployeeDetailResponse(
             lockingFlag = employee.lockingFlag,
             professionalPromotionTeam = employee.professionalPromotionTeam?.name,
             agreementFlag = employee.agreementFlag,
+            appVersionName = employee.appVersionName,
+            appVersionCode = employee.appVersionCode,
+            appPlatform = employee.appPlatform,
+            appVersionSeenAt = employee.appVersionSeenAt?.toString(),
             crmWorkType = employee.crmWorkType?.name,
             crmWorkStartDate = employee.crmWorkStartDate?.toString(),
             totalAnnualLeave = employee.totalAnnualLeave?.toPlainString(),

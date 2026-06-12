@@ -23,7 +23,12 @@ data class LoginRequest(
     val password: String,
 
     @field:NotBlank(message = "단말기 식별자는 필수입니다")
-    val deviceId: String
+    val deviceId: String,
+
+    // 현재 사용 중인 앱 버전 보고 (선택 — 구버전 클라이언트는 미전송). 서버가 사용자별 현재 버전 기록용.
+    val appVersionName: String? = null,
+    val appVersionCode: Long? = null,
+    val appPlatform: String? = null
 )
 
 /**
@@ -46,7 +51,12 @@ data class ChangePasswordRequest(
  */
 data class RefreshTokenRequest(
     @field:NotBlank(message = "Refresh Token은 필수입니다")
-    val refreshToken: String
+    val refreshToken: String,
+
+    // 현재 사용 중인 앱 버전 보고 (선택). 자동 로그인 중 주기적 리프레시로 현재 버전이 최신화된다.
+    val appVersionName: String? = null,
+    val appVersionCode: Long? = null,
+    val appPlatform: String? = null
 )
 
 /**
